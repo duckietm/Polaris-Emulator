@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.rooms.items;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -21,7 +22,7 @@ public class RoomPickupChooserEvent extends MessageHandler {
         if (room == null) return;
 
         for (int i = 0; i < count; i++) {
-            int itemId = this.packet.readInt();
+            int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
             HabboItem item = room.getHabboItem(itemId);
 
             if (item != null) {

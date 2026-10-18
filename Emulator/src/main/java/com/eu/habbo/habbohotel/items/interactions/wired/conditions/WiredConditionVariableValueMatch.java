@@ -29,6 +29,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
@@ -229,15 +230,19 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return false;
         }
 
-        WiredArrayVariableDefinition arrayDefinition =
-                this.resolveArrayDefinition(room, this.targetType, this.variableItemId);
-        if (arrayDefinition != null) return this.evaluateArray(ctx, arrayDefinition);
+        // A pointer is compared as the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        int referenceId = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableItemId);
+        if (variableId <= 0 && !isInternalVariableToken(this.variableToken)) return false;
+
+        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, this.targetType, variableId);
+        if (arrayDefinition != null) return this.evaluateArray(ctx, arrayDefinition, variableId, referenceId);
 
         return switch (this.targetType) {
-            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room);
-            case TARGET_ROOM -> this.evaluateRoomTarget(ctx, room);
-            case TARGET_CONTEXT -> this.evaluateContextTarget(ctx, room);
-            default -> this.evaluateUserTargets(ctx, room);
+            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, variableId, referenceId);
+            case TARGET_ROOM -> this.evaluateRoomTarget(ctx, room, variableId, referenceId);
+            case TARGET_CONTEXT -> this.evaluateContextTarget(ctx, room, variableId, referenceId);
+            default -> this.evaluateUserTargets(ctx, room, variableId, referenceId);
         };
     }
 
@@ -345,16 +350,16 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                         && this.referenceUserSource == WiredSourceUtil.SOURCE_TRIGGER);
     }
 
-    private boolean evaluateUserTargets(WiredContext ctx, Room room) {
+    private boolean evaluateUserTargets(WiredContext ctx, Room room, int variableId, int referenceId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return false;
 
-        ReferenceSnapshot references = this.resolveReferences(ctx, room);
+        ReferenceSnapshot references = this.resolveReferences(ctx, room, variableId, referenceId);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             int index = 0;
             for (RoomUnit roomUnit : targets) {
-                Integer currentValue = this.readUserValue(room, roomUnit);
+                Integer currentValue = this.readUserValue(room, roomUnit, variableId, referenceId);
                 Long referenceValue =
                         this.referenceFor(references, roomUnit != null ? roomUnit.getId() : 0, TARGET_USER, index++);
 
@@ -366,7 +371,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
         int index = 0;
         for (RoomUnit roomUnit : targets) {
-            Integer currentValue = this.readUserValue(room, roomUnit);
+            Integer currentValue = this.readUserValue(room, roomUnit, variableId, referenceId);
             Long referenceValue =
                     this.referenceFor(references, roomUnit != null ? roomUnit.getId() : 0, TARGET_USER, index++);
 
@@ -376,18 +381,18 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         return true;
     }
 
-    private boolean evaluateFurniTargets(WiredContext ctx, Room room) {
+    private boolean evaluateFurniTargets(WiredContext ctx, Room room, int variableId, int referenceId) {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
         if (targets.isEmpty()) return false;
 
-        ReferenceSnapshot references = this.resolveReferences(ctx, room);
+        ReferenceSnapshot references = this.resolveReferences(ctx, room, variableId, referenceId);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             int index = 0;
             for (HabboItem item : targets) {
-                Integer currentValue = this.readFurniValue(room, item);
+                Integer currentValue = this.readFurniValue(room, item, variableId, referenceId);
                 Long referenceValue =
                         this.referenceFor(references, item != null ? item.getId() : 0, TARGET_FURNI, index++);
 
@@ -399,7 +404,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
         int index = 0;
         for (HabboItem item : targets) {
-            Integer currentValue = this.readFurniValue(room, item);
+            Integer currentValue = this.readFurniValue(room, item, variableId, referenceId);
             Long referenceValue = this.referenceFor(references, item != null ? item.getId() : 0, TARGET_FURNI, index++);
 
             if (!this.matchesComparison(currentValue, referenceValue)) return false;
@@ -408,32 +413,32 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         return true;
     }
 
-    private boolean evaluateRoomTarget(WiredContext ctx, Room room) {
-        Integer currentValue = this.readRoomValue(room);
-        Long referenceValue = this.referenceFor(this.resolveReferences(ctx, room), room.getId(), TARGET_ROOM, 0);
+    private boolean evaluateRoomTarget(WiredContext ctx, Room room, int variableId, int referenceId) {
+        Integer currentValue = this.readRoomValue(room, variableId, referenceId);
+        Long referenceValue = this.referenceFor(
+                this.resolveReferences(ctx, room, variableId, referenceId), room.getId(), TARGET_ROOM, 0);
 
         return this.matchesComparison(currentValue, referenceValue);
     }
 
-    private boolean evaluateContextTarget(WiredContext ctx, Room room) {
-        Long currentValue = this.readContextTargetValue(ctx, room);
-        Long referenceValue =
-                this.referenceFor(this.resolveReferences(ctx, room), this.variableItemId, TARGET_CONTEXT, 0);
+    private boolean evaluateContextTarget(WiredContext ctx, Room room, int variableId, int referenceId) {
+        Long currentValue = this.readContextTargetValue(ctx, room, variableId, referenceId);
+        Long referenceValue = this.referenceFor(
+                this.resolveReferences(ctx, room, variableId, referenceId), variableId, TARGET_CONTEXT, 0);
 
         return this.matchesComparison(currentValue, referenceValue);
     }
 
-    private boolean evaluateArray(WiredContext ctx, WiredArrayVariableDefinition definition) {
+    private boolean evaluateArray(
+            WiredContext ctx, WiredArrayVariableDefinition definition, int variableId, int referenceId) {
         int source =
                 definition.getArrayVariableType() == WiredArrayVariableType.FURNI ? this.furniSource : this.userSource;
         List<WiredArrayRuntimeSupport.Owner> owners =
                 WiredArrayRuntimeSupport.resolveOwners(ctx, this.selectedItems, definition, source);
         if (owners.isEmpty()) return false;
         ReferenceSnapshot scalarReferences = this.referenceMode == REFERENCE_VARIABLE
-                        && this.resolveArrayDefinition(
-                                        ctx.room(), this.referenceTargetType, this.referenceVariableItemId)
-                                == null
-                ? this.resolveReferences(ctx, ctx.room())
+                        && this.resolveArrayDefinition(ctx.room(), this.referenceTargetType, referenceId) == null
+                ? this.resolveReferences(ctx, ctx.room(), variableId, referenceId)
                 : null;
         boolean any = this.quantifier == QUANTIFIER_ANY;
 
@@ -443,7 +448,8 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                     ctx, this.selectedItems, this.arrayAddress, definition, owner);
             WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             Long current = index == null || value == null ? null : value.readField(index, this.arrayAddress.fieldId);
-            Long reference = this.resolveArrayComparisonReference(ctx, owner, scalarReferences, destinationIndex++);
+            Long reference = this.resolveArrayComparisonReference(
+                    ctx, owner, scalarReferences, destinationIndex++, variableId, referenceId);
             boolean match = current != null
                     && reference != null
                     && WiredArrayRuntimeSupport.compare(current, reference, this.comparison);
@@ -457,7 +463,9 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             WiredContext ctx,
             WiredArrayRuntimeSupport.Owner owner,
             ReferenceSnapshot scalarReferences,
-            int destinationIndex) {
+            int destinationIndex,
+            int variableId,
+            int referenceId) {
         if (this.referenceMode == REFERENCE_CONSTANT) {
             try {
                 return Long.parseLong(this.arrayReferenceConstant);
@@ -466,7 +474,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             }
         }
         WiredArrayVariableDefinition referenceDefinition =
-                this.resolveArrayDefinition(ctx.room(), this.referenceTargetType, this.referenceVariableItemId);
+                this.resolveArrayDefinition(ctx.room(), this.referenceTargetType, referenceId);
         if (referenceDefinition == null) {
             Long value = this.referenceFor(
                     scalarReferences,
@@ -507,10 +515,9 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         };
     }
 
-    private ReferenceSnapshot resolveReferences(WiredContext ctx, Room room) {
+    private ReferenceSnapshot resolveReferences(WiredContext ctx, Room room, int variableId, int referenceId) {
         if (this.referenceMode != REFERENCE_VARIABLE) return null;
-        WiredArrayVariableDefinition array =
-                this.resolveArrayDefinition(room, this.referenceTargetType, this.referenceVariableItemId);
+        WiredArrayVariableDefinition array = this.resolveArrayDefinition(room, this.referenceTargetType, referenceId);
         if (array != null) {
             ReferenceSnapshot snapshot = new ReferenceSnapshot(this.referenceTargetType);
             int source = array.getArrayVariableType() == WiredArrayVariableType.FURNI
@@ -533,15 +540,15 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         }
 
         return switch (this.referenceTargetType) {
-            case TARGET_USER -> this.userReferences(ctx, room);
-            case TARGET_FURNI -> this.furniReferences(ctx, room);
-            case TARGET_CONTEXT -> this.contextReferences(ctx, room);
-            case TARGET_ROOM -> this.roomReferences(room);
+            case TARGET_USER -> this.userReferences(ctx, room, variableId, referenceId);
+            case TARGET_FURNI -> this.furniReferences(ctx, room, variableId, referenceId);
+            case TARGET_CONTEXT -> this.contextReferences(ctx, room, variableId, referenceId);
+            case TARGET_ROOM -> this.roomReferences(room, variableId, referenceId);
             default -> null;
         };
     }
 
-    private ReferenceSnapshot userReferences(WiredContext ctx, Room room) {
+    private ReferenceSnapshot userReferences(WiredContext ctx, Room room, int variableId, int referenceId) {
         ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_USER);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -556,8 +563,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return snapshot.isEmpty() ? null : snapshot;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getUserVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(referenceId);
         if (definition == null || !definition.hasValue()) return null;
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSourceInUse())) {
@@ -565,15 +571,13 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
             int holder = UserVariableHolders.of(room, roomUnit);
             if (holder != 0)
-                snapshot.add(
-                        roomUnit.getId(),
-                        room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId));
+                snapshot.add(roomUnit.getId(), room.getUserVariableManager().getCurrentValue(holder, referenceId));
         }
 
         return snapshot.isEmpty() ? null : snapshot;
     }
 
-    private ReferenceSnapshot furniReferences(WiredContext ctx, Room room) {
+    private ReferenceSnapshot furniReferences(WiredContext ctx, Room room, int variableId, int referenceId) {
         int source = this.sameHolder
                 ? this.furniSource
                 : (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED)
@@ -597,21 +601,18 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return snapshot.isEmpty() ? null : snapshot;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getFurniVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(referenceId);
         if (definition == null || !definition.hasValue()) return null;
 
         for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, referenceItems)) {
             if (item != null)
-                snapshot.add(
-                        item.getId(),
-                        room.getFurniVariableManager().getCurrentValue(item.getId(), this.referenceVariableItemId));
+                snapshot.add(item.getId(), room.getFurniVariableManager().getCurrentValue(item.getId(), referenceId));
         }
 
         return snapshot.isEmpty() ? null : snapshot;
     }
 
-    private ReferenceSnapshot roomReferences(Room room) {
+    private ReferenceSnapshot roomReferences(Room room, int variableId, int referenceId) {
         ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_ROOM);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -625,15 +626,14 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return snapshot;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getRoomVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(referenceId);
         if (definition == null || !definition.hasValue()) return null;
 
-        snapshot.add(room.getId(), room.getRoomVariableManager().getCurrentValue(this.referenceVariableItemId));
+        snapshot.add(room.getId(), room.getRoomVariableManager().getCurrentValue(referenceId));
         return snapshot;
     }
 
-    private ReferenceSnapshot contextReferences(WiredContext ctx, Room room) {
+    private ReferenceSnapshot contextReferences(WiredContext ctx, Room room, int variableId, int referenceId) {
         ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -643,26 +643,22 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             Long value = WiredInternalVariableSupport.readContextLongValue(ctx, key);
             if (value == null) return null;
 
-            snapshot.add(
-                    this.referenceVariableItemId > 0 ? this.referenceVariableItemId : (room != null ? room.getId() : 0),
-                    value);
+            snapshot.add(referenceId > 0 ? referenceId : (room != null ? room.getId() : 0), value);
             return snapshot;
         }
 
-        WiredVariableDefinitionInfo definition =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.referenceVariableItemId);
-        if (definition == null
-                || !definition.hasValue()
-                || !WiredContextVariableSupport.hasVariable(ctx, this.referenceVariableItemId)) return null;
+        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, referenceId);
+        if (definition == null || !definition.hasValue() || !WiredContextVariableSupport.hasVariable(ctx, referenceId))
+            return null;
 
-        Integer value = WiredContextVariableSupport.getCurrentValue(ctx, this.referenceVariableItemId);
+        Integer value = WiredContextVariableSupport.getCurrentValue(ctx, referenceId);
         if (value == null) return null;
 
-        snapshot.add(this.referenceVariableItemId, value);
+        snapshot.add(referenceId, value);
         return snapshot;
     }
 
-    private Integer readUserValue(Room room, RoomUnit roomUnit) {
+    private Integer readUserValue(Room room, RoomUnit roomUnit, int variableId, int referenceId) {
         if (room == null || roomUnit == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -670,14 +666,14 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return canUseUserInternalReference(key) ? this.readUserInternalValue(room, roomUnit, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(variableId);
         if (definition == null || !definition.hasValue()) return null;
 
         int holder = UserVariableHolders.of(room, roomUnit);
-        return (holder != 0) ? room.getUserVariableManager().getCurrentValue(holder, this.variableItemId) : null;
+        return (holder != 0) ? room.getUserVariableManager().getCurrentValue(holder, variableId) : null;
     }
 
-    private Integer readFurniValue(Room room, HabboItem item) {
+    private Integer readFurniValue(Room room, HabboItem item, int variableId, int referenceId) {
         if (room == null || item == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -685,13 +681,13 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return canUseFurniInternalReference(key) ? this.readFurniInternalValue(room, item, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(variableId);
         return (definition != null && definition.hasValue())
-                ? room.getFurniVariableManager().getCurrentValue(item.getId(), this.variableItemId)
+                ? room.getFurniVariableManager().getCurrentValue(item.getId(), variableId)
                 : null;
     }
 
-    private Integer readRoomValue(Room room) {
+    private Integer readRoomValue(Room room, int variableId, int referenceId) {
         if (room == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -699,13 +695,13 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             return canUseRoomInternalReference(key) ? this.readRoomInternalValue(room, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(variableId);
         return (definition != null && definition.hasValue())
-                ? room.getRoomVariableManager().getCurrentValue(this.variableItemId)
+                ? room.getRoomVariableManager().getCurrentValue(variableId)
                 : null;
     }
 
-    private Long readContextTargetValue(WiredContext ctx, Room room) {
+    private Long readContextTargetValue(WiredContext ctx, Room room, int variableId, int referenceId) {
         if (ctx == null || room == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -715,13 +711,11 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                     : null;
         }
 
-        WiredVariableDefinitionInfo definition =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
-        if (definition == null
-                || !definition.hasValue()
-                || !WiredContextVariableSupport.hasVariable(ctx, this.variableItemId)) return null;
+        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, variableId);
+        if (definition == null || !definition.hasValue() || !WiredContextVariableSupport.hasVariable(ctx, variableId))
+            return null;
 
-        Integer value = WiredContextVariableSupport.getCurrentValue(ctx, this.variableItemId);
+        Integer value = WiredContextVariableSupport.getCurrentValue(ctx, variableId);
         return value == null ? null : value.longValue();
     }
 

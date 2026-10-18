@@ -26,6 +26,7 @@ public class FurnitureTextProvider {
 
     private final boolean enabled;
     private volatile Map<String, FurniText> index = Map.of();
+    private volatile Map<String, Integer> defaultDirections = Map.of();
     private volatile Path source;
     private volatile String sourceDescription = "unknown";
     private FurnidataWatcher watcher;
@@ -47,7 +48,9 @@ public class FurnitureTextProvider {
                 LOGGER.warn("FurnitureTextProvider: no furnidata source resolved - names fall back to public_name");
                 return;
             }
-            reindex(new FurnidataReader(this.source, DEFAULT_MAX_BYTES).read());
+            FurnidataReader reader = new FurnidataReader(this.source, DEFAULT_MAX_BYTES);
+            reindex(reader.read());
+            indexDefaultDirections(reader.defaultDirections());
             LOGGER.info(
                     "Furniture Text Provider -> Indexed! ({} names, source: {})",
                     this.index.size(),
@@ -91,7 +94,10 @@ public class FurnitureTextProvider {
     public java.util.List<FurnidataEntry> reindexFromSource() {
         try {
             if (this.source == null) return java.util.List.of();
-            return reindex(new FurnidataReader(this.source, DEFAULT_MAX_BYTES).read());
+            FurnidataReader reader = new FurnidataReader(this.source, DEFAULT_MAX_BYTES);
+            java.util.List<FurnidataEntry> delta = reindex(reader.read());
+            indexDefaultDirections(reader.defaultDirections());
+            return delta;
         } catch (Exception e) {
             LOGGER.warn("FurnitureTextProvider.reindexFromSource failed", e);
             return java.util.List.of();
@@ -138,6 +144,21 @@ public class FurnitureTextProvider {
 
         this.index = next; // atomic reference swap
         return delta;
+    }
+
+    /** Replaces the floor furni {@code defaultdir} index (lowercased base classname to 0..7). */
+    public void indexDefaultDirections(Map<String, Integer> directions) {
+        this.defaultDirections = directions == null ? Map.of() : Map.copyOf(directions);
+    }
+
+    /**
+     * The furnidata {@code defaultdir} of a floor furni classname ({@code name*3} uses {@code
+     * name}), or -1 when the furnidata does not list one. Independent of the names toggle.
+     */
+    public int getDefaultDirection(String classname) {
+        String key = baseKey(classname);
+        Integer direction = key == null ? null : this.defaultDirections.get(key);
+        return direction == null ? -1 : direction;
     }
 
     /** Returns the sanitized display name for a DB classname, or null if absent/disabled. */

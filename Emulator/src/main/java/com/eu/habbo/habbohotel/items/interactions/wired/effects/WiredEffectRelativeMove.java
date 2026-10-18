@@ -81,7 +81,8 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
                 continue;
             }
 
-            WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), null, true, ctx);
+            // Joins the firing's movement packet, so a match back in the same firing cancels it out.
+            WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), null, false, ctx);
         }
     }
 

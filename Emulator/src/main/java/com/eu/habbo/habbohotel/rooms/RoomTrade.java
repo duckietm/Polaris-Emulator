@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
@@ -393,6 +394,9 @@ public class RoomTrade {
     }
 
     public static int getCreditsByItem(HabboItem item) {
+        // A wired chest is never credit furni, whatever it is named: it trades as itself, with what it
+        // holds, instead of being destroyed by RoomTradeTransaction's redeem delete.
+        if (item instanceof InteractionWiredChest) return 0;
         if (!Emulator.getConfig().getBoolean("redeem.currency.trade")) return 0;
 
         if (!item.getBaseItem().getName().startsWith("CF_")

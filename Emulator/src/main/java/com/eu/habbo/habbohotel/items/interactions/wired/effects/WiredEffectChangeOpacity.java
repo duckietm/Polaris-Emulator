@@ -8,10 +8,13 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.WiredOpacityState;
+import com.eu.habbo.habbohotel.rooms.WiredUserTransparency;
+import com.eu.habbo.habbohotel.rooms.WiredVisualizationBroadcaster;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredDelay;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
@@ -30,8 +33,9 @@ import java.util.Map;
  * Official set furni transparency (61). Int params, official: {@code [audience (1 everyone), visibility
  * (0 visible, 100 invisible), click through, easing, target users]}; ours follows: {@code transition
  * seconds}. The visibility is the transparency: in-between values are ours. Furni source slot 0 is
- * the target furni; user slot 0 the audience, slot 1 the target users (stored only: avatars are not
- * made transparent yet). Internally the box keeps its opacity (100 = fully visible).
+ * the target furni; user slot 0 the audience, slot 1 the target users, whose avatars get the same
+ * transparency through the official avatar packet when target users is on. Internally the box keeps
+ * its opacity (100 = fully visible).
  */
 public class WiredEffectChangeOpacity extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.CHANGE_OPACITY;
@@ -74,6 +78,9 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect implements 
         }
 
         Room room = context.room();
+        if (this.targetUsers) {
+            applyToUsers(room, context);
+        }
         List<HabboItem> targets =
                 currentTargets(room, WiredSourceUtil.resolveItems(context, this.furniSource, this.items));
         if (targets.isEmpty()) {
@@ -130,7 +137,7 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect implements 
 
         int delay = settings.getDelay();
         int maximumDelay = WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
-        if (delay < 0 || delay > maximumDelay) {
+        if (!WiredDelay.isValid(delay, maximumDelay)) {
             throw new WiredSaveException("Delay out of range");
         }
 
@@ -254,6 +261,22 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect implements 
     @Override
     public void onPickUp() {
         reset();
+    }
+
+    private void applyToUsers(Room room, WiredContext context) {
+        List<RoomUnit> users = WiredSourceUtil.resolveUsers(context, this.targetUserSource);
+        if (users.isEmpty()) {
+            return;
+        }
+        WiredUserTransparency transparency =
+                new WiredUserTransparency(MAXIMUM_OPACITY - this.opacity, this.clickThrough, this.easing);
+        WiredVisualizationBroadcaster.setUserTransparency(
+                room,
+                this.visibility == VISIBILITY_EVERYONE
+                        ? null
+                        : resolveRecipients(room, context).values(),
+                users,
+                transparency);
     }
 
     private Map<Integer, Habbo> resolveRecipients(Room room, WiredContext context) {

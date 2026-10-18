@@ -6,7 +6,9 @@ import com.eu.habbo.habbohotel.rooms.Room;
 
 public class PickallCommand extends Command {
     public PickallCommand() {
-        super("cmd_pickall", Emulator.getTexts().getValue("commands.keys.cmd_pickall").split(";"));
+        super(
+                "cmd_pickall",
+                Emulator.getTexts().getValue("commands.keys.cmd_pickall").split(";"));
     }
 
     @Override
@@ -15,7 +17,8 @@ public class PickallCommand extends Command {
 
         if (room != null) {
             if (room.isOwner(gameClient.getHabbo())) {
-                room.ejectAll();
+                // Builders Club furni stay: as in Habbo, only :pickallbc takes them out.
+                room.getItemManager().ejectAllExceptBuildersClub();
                 return true;
             }
 

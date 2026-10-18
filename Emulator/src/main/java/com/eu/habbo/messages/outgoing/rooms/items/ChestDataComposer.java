@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredIt
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -62,7 +63,7 @@ public class ChestDataComposer extends MessageComposer {
                 : ChestStorage.KIND_CURRENCY;
 
         this.response.init(Outgoing.ChestDataComposer);
-        this.response.appendInt(this.chest.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.chest.getId()));
         this.response.appendString(c.getName());
         this.response.appendString(c.getDescription());
         this.response.appendInt(c.getCapacityMax());

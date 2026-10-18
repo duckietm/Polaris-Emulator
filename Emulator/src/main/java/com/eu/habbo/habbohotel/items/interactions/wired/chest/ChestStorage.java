@@ -97,9 +97,9 @@ public class ChestStorage {
     private int notifyMode = 0; // 0 = always
     /**
      * Anti-theft switch, set from the chest's own window or across the room from the wired chests
-     * tab. A locked chest still answers wired effects but refuses everything anyone <em>else</em>
-     * does by hand, deposits included. The owner is never locked out of their own chest, which is
-     * what makes the lock safe to leave on.
+     * tab. A locked chest refuses everything anyone <em>else</em> does by hand, deposits included,
+     * and wired cannot take from it either. The owner is never locked out of their own chest, which
+     * is what makes the lock safe to leave on.
      */
     private boolean locked = false;
 
@@ -134,6 +134,57 @@ public class ChestStorage {
      * told to stop at five hundred.
      */
     private int capacity = DEFAULT_CAPACITY;
+
+    /** How many capacity upgrades were bought (AIR {@code capacity_level}). */
+    private int capacityLevel = 0;
+
+    /** Coins the official coin chest holds: credits, stored as the credits currency entry. */
+    public static final int COINS_TYPE = -1;
+
+    /**
+     * Apply the AIR capacity rules for this chest's kind: the bought ceiling follows the capacity
+     * level, and an owner ceiling above it comes down to it. A ceiling of zero means "use it all".
+     */
+    public synchronized void configureCapacity(int kind, boolean starter) {
+        this.capacityLevel = Math.max(0, Math.min(this.capacityLevel, ChestCapacity.maxLevel(kind, starter)));
+        boolean wasUsingEverything = this.capacity <= 0 || this.capacity >= this.capacityMax;
+        this.capacityMax = ChestCapacity.maxCapacity(kind, starter, this.capacityLevel);
+        if (wasUsingEverything || this.capacity > this.capacityMax) this.capacity = this.capacityMax;
+    }
+
+    public synchronized int getCapacityLevel() {
+        return this.capacityLevel;
+    }
+
+    /**
+     * Buy {@code levels} more capacity levels.
+     *
+     * @return false when that would pass the kind's top level; nothing changes then
+     */
+    public synchronized boolean upgradeCapacity(int levels, int kind, boolean starter) {
+        if (levels <= 0 || this.capacityLevel + levels > ChestCapacity.maxLevel(kind, starter)) return false;
+
+        boolean wasUsingEverything = this.capacity <= 0 || this.capacity >= this.capacityMax;
+        this.capacityLevel += levels;
+        this.capacityMax = ChestCapacity.maxCapacity(kind, starter, this.capacityLevel);
+        if (wasUsingEverything) this.capacity = this.capacityMax;
+        return true;
+    }
+
+    /** The coins in a coin chest. */
+    public synchronized int getCoins() {
+        return this.count(KIND_CURRENCY, COINS_TYPE);
+    }
+
+    /** Put stored furni rows back after a move the database refused. Ids are kept. */
+    public synchronized void restoreFurniItems(List<ChestFurniStoredItem> rows) {
+        if (rows == null) return;
+        for (ChestFurniStoredItem row : rows) {
+            if (row != null && !this.furniItems.contains(row)) this.addFurniItem(row);
+        }
+        this.furniItems.sort(java.util.Comparator.comparingLong((ChestFurniStoredItem row) -> row.transactionId)
+                .thenComparingInt(row -> row.inventoryId));
+    }
 
     /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
     public synchronized List<Entry> entries() {
@@ -507,9 +558,17 @@ public class ChestStorage {
         return this.wiredEnabled;
     }
 
-    /** One way only: a room built on a chest must not lose it. */
+    /**
+     * One way only: a room built on a chest must not lose it.
+     *
+     * <p>The upgrade leaves the chest locked, as the official hotel does: a freshly upgraded chest is
+     * not open to wired (or anyone but its owner) until the owner unlocks it on purpose.
+     */
     public void enableWired() {
+        if (this.wiredEnabled) return;
+
         this.wiredEnabled = true;
+        this.locked = true;
     }
 
     public int getPreviewMode() {
@@ -521,7 +580,8 @@ public class ChestStorage {
     }
 
     public void setPreview(int mode, int amount) {
-        this.previewMode = mode > 0 ? 1 : 0;
+        // AIR preview modes 0 (off) to 7.
+        this.previewMode = Math.max(0, Math.min(mode, 7));
         this.previewAmount = Math.max(1, Math.min(amount, MAX_PREVIEW_ITEMS));
     }
 
@@ -618,6 +678,99 @@ public class ChestStorage {
         data.furniItems = this.furniItems;
         data.nextFurniInventoryId = this.nextFurniInventoryId;
         return WiredManager.getGson().toJson(data);
+    }
+
+    /**
+     * The chest's settings as {@code wired_chests.settings} stores them: everything the windows edit
+     * plus the rolling log, but none of the contents -- coins and furni have their own storage.
+     */
+    public synchronized String toSettingsJson() {
+        JsonData data = new JsonData();
+        data.entries = null;
+        data.name = this.name;
+        data.description = this.description;
+        data.accessOpen = this.accessOpen;
+        data.accessDonate = this.accessDonate;
+        data.capacityMax = this.capacityMax;
+        data.appearanceState = this.appearanceState;
+        data.notifyFull = this.notifyFull;
+        data.notifyDonation = this.notifyDonation;
+        data.notifyWithdraw = this.notifyWithdraw;
+        data.notifyEmpty = this.notifyEmpty;
+        data.notifyWired = this.notifyWired;
+        data.notifyMode = this.notifyMode;
+        data.locked = this.locked;
+        data.autoLock = this.autoLock;
+        data.wiredEnabled = this.wiredEnabled;
+        data.previewMode = this.previewMode;
+        data.previewAmount = this.previewAmount;
+        data.capacity = this.capacity;
+        data.log = this.log;
+        return WiredManager.getGson().toJson(data);
+    }
+
+    /**
+     * Build a chest from its stored state (AIR model).
+     *
+     * @param settings {@code wired_chests.settings}; a missing or broken value reads as defaults
+     * @param coins the coins of a coin chest
+     * @param capacityLevel the bought capacity level
+     * @param furni the stored furni, oldest first
+     */
+    public static ChestStorage fromStore(
+            String settings,
+            int coins,
+            int capacityLevel,
+            List<ChestFurniStoredItem> furni,
+            int kind,
+            boolean starter) {
+        ChestStorage chest = new ChestStorage();
+        // A store row always carries the upgrade flag explicitly; absent means a fresh, unupgraded chest.
+        chest.wiredEnabled = false;
+        if (settings != null && settings.startsWith("{")) {
+            try {
+                JsonData data = WiredManager.getGson().fromJson(settings, JsonData.class);
+                if (data != null) chest.readConfig(data, false);
+            } catch (Exception malformed) {
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.CHEST_STORAGE_NUMERIC_FIELD, malformed);
+            }
+        }
+        if (coins > 0) chest.add(KIND_CURRENCY, COINS_TYPE, coins);
+        if (furni != null) {
+            for (ChestFurniStoredItem item : furni) {
+                if (item != null) chest.addFurniItem(item);
+            }
+        }
+        chest.capacityLevel = Math.max(0, capacityLevel);
+        chest.configureCapacity(kind, starter);
+        return chest;
+    }
+
+    private void readConfig(JsonData data, boolean legacyWiredDefault) {
+        this.name = (data.name == null) ? "" : data.name;
+        this.description = (data.description == null) ? "" : data.description;
+        this.accessOpen = data.accessOpen;
+        this.accessDonate = data.accessDonate;
+        this.capacityMax = (data.capacityMax <= 0) ? DEFAULT_CAPACITY : data.capacityMax;
+        this.appearanceState = data.appearanceState;
+        this.notifyFull = data.notifyFull;
+        this.notifyDonation = data.notifyDonation;
+        this.notifyWithdraw = data.notifyWithdraw;
+        this.notifyEmpty = data.notifyEmpty;
+        this.notifyWired = data.notifyWired;
+        this.notifyMode = data.notifyMode;
+        this.locked = data.locked;
+        this.autoLock = data.autoLock;
+        this.wiredEnabled = (data.wiredEnabled == null) ? legacyWiredDefault : data.wiredEnabled;
+        this.previewMode = data.previewMode;
+        this.previewAmount = data.previewAmount <= 0 ? 1 : data.previewAmount;
+        this.capacity = data.capacity > 0 ? data.capacity : this.capacityMax;
+        if (data.log != null) {
+            for (LogEntry le : data.log) {
+                if (le != null) this.log.add(le);
+            }
+        }
     }
 
     /** Parse from a wired_data JSON string. Null / blank / malformed → an empty chest (never throws). */

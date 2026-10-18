@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.selector;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -16,10 +17,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredEffectUsersByName extends InteractionWiredEffect implements WiredOfficialSelector {
+    static final int MAX_NAMES = 20;
+    static final int MAX_NAMES_TEXT_LENGTH = 1000;
     public static final WiredEffectType type = WiredEffectType.USERS_BY_NAME_SELECTOR;
 
     private String namesText = "";
@@ -67,7 +71,9 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        this.namesText = this.normalizeNamesText(settings.getStringParam());
+        String names = this.normalizeNamesText(settings.getStringParam());
+        refuseOversizedNames(settings.getStringParam(), names);
+        this.namesText = names;
         this.usernames = this.parseUsernames(this.namesText);
         this.filterExisting = settings.isSelectorFilter();
         this.invert = settings.isSelectorInvert();
@@ -179,6 +185,21 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
         if (bot != null) return bot.getName();
         var pet = room.getPet(unit);
         return pet != null ? pet.getName() : null;
+    }
+
+    /**
+     * The official editor takes at most 20 names and 1000 characters (UsersByName: TextAreaParam(140,-1,20,-1,1000)).
+     * Behaviour observed in plus-emulator/PlusEMU b8f78f2a, reimplemented.
+     */
+    static void refuseOversizedNames(String raw, String normalized) {
+        if (raw != null && raw.length() > MAX_NAMES_TEXT_LENGTH) {
+            throw new WiredSaveRefusedException(
+                    "wiredfurni.error.too_much_text", Map.of("limit", String.valueOf(MAX_NAMES_TEXT_LENGTH)));
+        }
+        if (!normalized.isEmpty() && normalized.split("\n").length > MAX_NAMES) {
+            throw new WiredSaveRefusedException(
+                    "wiredfurni.error.usernames_count", Map.of("max_usernames", String.valueOf(MAX_NAMES)));
+        }
     }
 
     private String normalizeNamesText(String value) {

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.games.GamePlayer;
 import com.eu.habbo.habbohotel.games.GameTeam;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
@@ -22,6 +23,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
+import com.eu.habbo.messages.outgoing.users.UserProfileLevel;
 import com.eu.habbo.util.HotelDateTimeUtil;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
@@ -143,6 +145,12 @@ public final class WiredInternalVariableSupport {
                     && room.getWiredRuntime().getProjectileFlights().holds(item, normalized);
         }
 
+        if ("@can_move_freely".equals(normalized)) {
+            return room != null
+                    && room.getWiredRuntime() != null
+                    && room.getWiredRuntime().movesFreely(item);
+        }
+
         return hasFurniValue(item, normalized);
     }
 
@@ -201,7 +209,11 @@ public final class WiredInternalVariableSupport {
             case "@index" -> roomUnit.getId();
             case "@type" -> getUserTypeValue(habbo, bot, pet);
             case "@gender" -> getGenderValue(habbo, bot);
-            case "@level" -> (roomUnit.getRightsLevel() != null) ? roomUnit.getRightsLevel().level : 0;
+            // The account level the extended profile shows, from the achievement score; not the room rights.
+            case "@level" ->
+                (habbo != null)
+                        ? UserProfileLevel.accountLevel(habbo.getHabboStats().getAchievementScore())
+                        : 0;
             case "@achievement_score" -> (habbo != null) ? habbo.getHabboStats().getAchievementScore() : null;
             case "@is_hc" -> (habbo != null && habbo.getHabboStats().hasActiveClub()) ? 1 : 0;
             case "@has_rights" ->
@@ -469,7 +481,7 @@ public final class WiredInternalVariableSupport {
             case "@gravity" -> room.getWiredRuntime().setGravityEnabled(item, value != 0);
             case "@position_x" -> moveFurniTo(room, item, value, item.getY(), item.getRotation(), item.getZ());
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
-            case "@rotation" -> moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
+            case "@rotation" -> writeFurniRotation(room, item, value);
             case "@altitude" -> moveFurniTo(room, item, item.getX(), item.getY(), item.getRotation(), value / 100.0);
             // Builders Club furni only, into the nearest colour of its palette.
             case "~recolorable_furni.color.rgb",
@@ -506,7 +518,8 @@ public final class WiredInternalVariableSupport {
             case "@timezone_server" -> HotelDateTimeUtil.now().getOffset().getTotalSeconds() / 60;
             case "@timezone_client" -> 0;
             case "@current_time" -> (int) now.toEpochSecond();
-            case "@current_time.millisecond_of_second" -> now.getNano() / 1_000_000;
+            case "@current_time.milliseconds_of_seconds", "@current_time.millisecond_of_second" ->
+                now.getNano() / 1_000_000;
             case "@current_time.seconds_of_minute" -> now.getSecond();
             case "@current_time.minute_of_hour" -> now.getMinute();
             case "@current_time.hour_of_day" -> now.getHour();
@@ -920,6 +933,20 @@ public final class WiredInternalVariableSupport {
         entry.yDirty = false;
         if (written && xChanged) emitUserChange(entry.room, entry.roomUnit, "@position_x", previousX, entry.targetX);
         if (written && yChanged) emitUserChange(entry.room, entry.roomUnit, "@position_y", previousY, entry.targetY);
+    }
+
+    /**
+     * An @rotation write: with the furni's directions from its asset, a value it lacks takes the
+     * nearest direction within 45 degrees (clockwise first) and anything further is refused, as in
+     * Habbo; without them the value is written as before.
+     */
+    private static boolean writeFurniRotation(Room room, HabboItem item, int value) {
+        FurnitureDirections directions = FurnitureDirections.of(item);
+        if (!directions.isKnown()) {
+            return moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
+        }
+        Integer rotation = directions.write(value);
+        return rotation != null && moveFurniTo(room, item, item.getX(), item.getY(), rotation, item.getZ());
     }
 
     private static boolean moveFurniTo(Room room, HabboItem item, int x, int y, int rotation, double z) {

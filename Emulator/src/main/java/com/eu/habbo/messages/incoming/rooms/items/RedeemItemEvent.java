@@ -2,6 +2,8 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -23,7 +25,7 @@ public class RedeemItemEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
@@ -32,7 +34,11 @@ public class RedeemItemEvent extends MessageHandler {
         if (room != null) {
             HabboItem item = room.getHabboItem(itemId);
 
-            if (item != null && this.client.getHabbo().getHabboInfo().getId() == item.getUserId()) {
+            // A wired chest is never redeemed for currency, whatever it is named: redeeming deletes it
+            // without releasing what it holds (RedeemItemTransaction deletes the row directly).
+            if (item != null
+                    && !(item instanceof InteractionWiredChest)
+                    && this.client.getHabbo().getHabboInfo().getId() == item.getUserId()) {
                 boolean furnitureRedeemEventRegistered =
                         Emulator.getPluginManager().isRegistered(FurnitureRedeemedEvent.class, true);
                 FurnitureRedeemedEvent furniRedeemEvent =

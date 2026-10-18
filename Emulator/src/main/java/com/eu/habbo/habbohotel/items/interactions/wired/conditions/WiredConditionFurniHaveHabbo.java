@@ -61,8 +61,8 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
-        // Nothing to check has nobody on it, as in Habbo; the NOT box passes instead.
-        if (targets.isEmpty()) return false;
+        // Habbo passes an empty selection under both "all" and "any".
+        if (targets.isEmpty()) return true;
 
         if (room.getLayout() == null) return false;
 
@@ -222,16 +222,13 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
         return occupiedTiles != null
                 && (habbos.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation()))
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit())))
                         || bots.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation()))
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit())))
                         || pets.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation())));
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit()))));
     }
 
     private void refresh() {
@@ -266,5 +263,11 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
             this.furniSource = furniSource;
             this.all = all;
         }
+    }
+
+    /** Where the condition counts a unit: the tile of the step being announced, or its current tile. */
+    private static RoomTile wiredLocationOf(RoomUnit unit) {
+        RoomTile stepping = unit.getWiredLocation();
+        return stepping != null ? stepping : unit.getCurrentLocation();
     }
 }

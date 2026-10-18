@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredComparison;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
@@ -46,6 +47,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
     static final int TARGET_ROOM = 3;
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
+    static final String REQUIRE_CHESTS = "wiredfurni.error.require_chests";
 
     private final List<Integer> chestIds = new ArrayList<>();
     private int amount = 1;
@@ -69,13 +71,19 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         if (room == null) return false;
 
         int total = 0;
+        boolean anyChest = false;
         for (Integer id : this.chestIds) {
             HabboItem item = room.getHabboItem(id);
+            anyChest |= item instanceof InteractionWiredChest;
             // Wired only reaches a chest whose owner upgraded it to answer wired.
             if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
                 total += chest.getContents().total(ChestStorage.KIND_CURRENCY)
                         + chest.getContents().total(ChestStorage.KIND_FURNI);
             }
+        }
+        // With no chest to check Habbo passes, whatever the comparison.
+        if (!anyChest) {
+            return true;
         }
         Integer threshold = this.resolveAmount(ctx, room);
         return threshold != null && WiredComparison.compare(total, threshold, this.comparison);
@@ -157,8 +165,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
     }
 
     /**
-     * Keeps only the selected furni that are chests the room knows, and no more of them than the hotel
-     * lets a wired box select - a plain furni or an id nobody can look up is not a chest.
+     * Keeps the selected chests, no more of them than the hotel lets a wired box select; a picked furni
+     * that is not a chest refuses the save with Habbo's text.
      */
     private boolean selectChests(WiredSettings settings) {
         int[] furniIds = (settings.getFurniIds() != null) ? settings.getFurniIds() : new int[0];
@@ -175,12 +183,19 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
             return false;
         }
 
-        this.chestIds.clear();
+        // Habbo refuses a picked furni that is not a chest; an id the room no longer knows (picked up
+        // meanwhile) is simply left out.
+        List<Integer> chests = new ArrayList<>();
         for (int id : furniIds) {
-            if (room.getHabboItem(id) instanceof InteractionWiredChest) {
-                this.chestIds.add(id);
+            HabboItem item = room.getHabboItem(id);
+            if (item instanceof InteractionWiredChest) {
+                chests.add(id);
+            } else if (item != null) {
+                throw new WiredSaveRefusedException(REQUIRE_CHESTS);
             }
         }
+        this.chestIds.clear();
+        this.chestIds.addAll(chests);
         return true;
     }
 

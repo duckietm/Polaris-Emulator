@@ -6,9 +6,9 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -69,14 +69,38 @@ public abstract class InteractionWired extends InteractionDefault {
     private final AtomicBoolean processing = new AtomicBoolean(false);
     private final ConcurrentHashMap<Long, Long> userExecutionCache = new ConcurrentHashMap<>();
 
+    /** The box was never saved since it was placed: its editor opens on the official default sources. */
+    private volatile boolean editorFresh;
+
     InteractionWired(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
         this.setExtradata("0");
+        this.editorFresh = storedWiredDataIsEmpty(set);
     }
 
     InteractionWired(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
+        this.editorFresh = true;
+    }
+
+    private static boolean storedWiredDataIsEmpty(ResultSet set) {
+        try {
+            String stored = set.getString("wired_data");
+            return stored == null || stored.isBlank();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /** Whether the box was never saved since it was placed. */
+    public boolean isEditorFresh() {
+        return this.editorFresh;
+    }
+
+    /** A save went through: the editor now opens on what the box holds. */
+    public void markEditorSaved() {
+        this.editorFresh = false;
     }
 
     /**
@@ -135,10 +159,21 @@ public abstract class InteractionWired extends InteractionDefault {
     }
 
     public void activateBox(Room room, RoomUnit roomUnit, long millis) {
-        if (!room.isHideWired()) {
-            this.setExtradata(this.getExtradata().equals("1") ? "0" : "1");
-            room.sendComposer(new ItemStateComposer(this).compose());
+        this.flashBox(room);
+        this.recordExecution(roomUnit, millis);
+    }
+
+    /** Flips the box's light; the room cycle sends every flipped box together, once per 500 ms. */
+    public void flashBox(Room room) {
+        if (room == null || room.isHideWired() || room.getWiredRuntime() == null) {
+            return;
         }
+
+        room.getWiredRuntime().getBoxFlashes().flip(this, WiredBoxFlashes::toggle);
+    }
+
+    /** Remembers that this box ran for the user, for its per-user cooldown, without flashing it. */
+    public void recordExecution(RoomUnit roomUnit, long millis) {
         if (roomUnit != null) {
             this.addUserExecutionCache(roomUnit.getId(), millis);
         }

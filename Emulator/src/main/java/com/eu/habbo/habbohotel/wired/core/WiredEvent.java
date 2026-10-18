@@ -9,8 +9,13 @@ import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Immutable event representing what happened in the room that triggered wired execution.
@@ -155,7 +160,13 @@ public final class WiredEvent {
          * Furniture state was updated by anyone or anything, wired effects included. Last so the
          * ordinals plugins compiled against stay where they were.
          */
-        FURNI_STATE_UPDATED(WiredTriggerType.STATE_CHANGE);
+        FURNI_STATE_UPDATED(WiredTriggerType.STATE_CHANGE),
+
+        /** A WIRED Link received a link message (text carries it); appended to keep the ordinals. */
+        LINK_MESSAGE_RECEIVED(WiredTriggerType.RECEIVE_LINK_MESSAGE),
+
+        /** A WIRED Link received a link dataframe (link values carry it); appended to keep the ordinals. */
+        LINK_DATAFRAME_RECEIVED(WiredTriggerType.RECEIVE_LINK_DATAFRAME);
 
         private final WiredTriggerType legacyType;
 
@@ -215,6 +226,7 @@ public final class WiredEvent {
     // The whole sets a signal or a stack call passed on; empty when it passed on nothing.
     private final List<RoomUnit> forwardedUsers;
     private final List<HabboItem> forwardedItems;
+    private final Set<Integer> signalPath; // the antennas a signal chain already went through
     private final boolean stackCall; // raised by a call-stacks box rather than by the stack's trigger
     private final int variableTargetType;
     private final int variableDefinitionItemId;
@@ -228,6 +240,8 @@ public final class WiredEvent {
     private final long newVariableValue;
     private final WiredContextVariableScope contextVariableScope;
     private final long createdAtMs;
+    private final int linkHops; // WIRED Link deliveries this event is away from the first send
+    private final Map<String, String> linkValues; // a received link dataframe: key to value
 
     private WiredEvent(Builder builder) {
         this.type = builder.type;
@@ -251,6 +265,7 @@ public final class WiredEvent {
         this.signalFurniCount = builder.signalFurniCount;
         this.forwardedUsers = builder.forwardedUsers;
         this.forwardedItems = builder.forwardedItems;
+        this.signalPath = builder.signalPath;
         this.stackCall = builder.stackCall;
         this.variableTargetType = builder.variableTargetType;
         this.variableDefinitionItemId = builder.variableDefinitionItemId;
@@ -264,6 +279,18 @@ public final class WiredEvent {
         this.newVariableValue = builder.newVariableValue;
         this.contextVariableScope = builder.contextVariableScope;
         this.createdAtMs = builder.createdAtMs;
+        this.linkHops = builder.linkHops;
+        this.linkValues = builder.linkValues;
+    }
+
+    /** How many WIRED Link deliveries this event is away from the stack that sent the first one. */
+    public int getLinkHops() {
+        return linkHops;
+    }
+
+    /** The key/value rows of a received link dataframe, in row order; empty for other events. */
+    public Map<String, String> getLinkValues() {
+        return linkValues;
     }
 
     // Getters
@@ -410,6 +437,14 @@ public final class WiredEvent {
         return forwardedItems;
     }
 
+    /**
+     * The antennas the signal chain this event belongs to already went through, its own antenna
+     * included; empty for an event that is not a signal. A chain reaches each antenna once.
+     */
+    public Set<Integer> getSignalPath() {
+        return signalPath;
+    }
+
     /** Whether a call-stacks box raised this, so the called stack runs without its trigger. */
     public boolean isStackCall() {
         return stackCall;
@@ -527,6 +562,7 @@ public final class WiredEvent {
         private int signalFurniCount;
         private List<RoomUnit> forwardedUsers = List.of();
         private List<HabboItem> forwardedItems = List.of();
+        private Set<Integer> signalPath = Set.of();
         private boolean stackCall;
         private int variableTargetType = -1;
         private int variableDefinitionItemId;
@@ -541,12 +577,34 @@ public final class WiredEvent {
         private long newVariableValue;
         private WiredContextVariableScope contextVariableScope;
         private long createdAtMs = System.currentTimeMillis();
+        private int linkHops;
+        private Map<String, String> linkValues = Map.of();
 
         private Builder(Type type, Room room) {
             if (type == null) throw new IllegalArgumentException("Event type cannot be null");
             if (room == null) throw new IllegalArgumentException("Room cannot be null");
             this.type = type;
             this.room = room;
+        }
+
+        /** WIRED Link deliveries away from the first send (0 for events that did not come over a Link). */
+        public Builder linkHops(int linkHops) {
+            this.linkHops = Math.max(0, linkHops);
+            return this;
+        }
+
+        /** The rows of a received link dataframe; copied, null keys and values dropped. */
+        public Builder linkValues(Map<String, String> values) {
+            if (values == null || values.isEmpty()) {
+                this.linkValues = Map.of();
+                return this;
+            }
+            LinkedHashMap<String, String> copy = new LinkedHashMap<>();
+            values.forEach((key, value) -> {
+                if (key != null && value != null) copy.put(key, value);
+            });
+            this.linkValues = Collections.unmodifiableMap(copy);
+            return this;
         }
 
         /** Marks the event as a call-stacks box's call. */
@@ -564,6 +622,20 @@ public final class WiredEvent {
         /** The furni a signal or a stack call passes on (nulls are skipped). */
         public Builder forwardedItems(Collection<HabboItem> items) {
             this.forwardedItems = immutableWithoutNulls(items);
+            return this;
+        }
+
+        /** The antennas a signal chain went through, the receiving antenna included (nulls are skipped). */
+        public Builder signalPath(Collection<Integer> antennaIds) {
+            if (antennaIds == null || antennaIds.isEmpty()) {
+                this.signalPath = Set.of();
+                return this;
+            }
+            Set<Integer> path = new LinkedHashSet<>();
+            for (Integer id : antennaIds) {
+                if (id != null) path.add(id);
+            }
+            this.signalPath = Collections.unmodifiableSet(path);
             return this;
         }
 

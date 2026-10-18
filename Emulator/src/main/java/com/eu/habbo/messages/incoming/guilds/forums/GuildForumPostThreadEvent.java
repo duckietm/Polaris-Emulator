@@ -46,9 +46,7 @@ public class GuildForumPostThreadEvent extends MessageHandler {
             return;
         }
 
-        if (message.length() < 10
-                || message.length() > 4000
-                || (threadId == 0 && (subject.length() < 10 || subject.length() > 120))) {
+        if (!validLengths(message, subject, threadId == 0)) {
             this.client.sendResponse(new ConnectionErrorComposer(400));
             return;
         }
@@ -159,5 +157,14 @@ public class GuildForumPostThreadEvent extends MessageHandler {
         if (owner != null && owner.getClient() != null) {
             owner.getClient().sendResponse(new RoomMessagesPostedCountComposer(room, messageCount));
         }
+    }
+
+    /**
+     * The official editor refuses a message (and a new thread's subject) of 10 characters or fewer
+     * (ComposeMessageView: length &lt;= 10), so at least 11 are needed.
+     */
+    static boolean validLengths(String message, String subject, boolean newThread) {
+        if (message.length() <= 10 || message.length() > 4000) return false;
+        return !newThread || (subject.length() > 10 && subject.length() <= 120);
     }
 }

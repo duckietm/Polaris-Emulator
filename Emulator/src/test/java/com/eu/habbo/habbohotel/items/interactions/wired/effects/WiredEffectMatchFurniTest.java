@@ -92,4 +92,31 @@ class WiredEffectMatchFurniTest {
                 WiredSourceUtil.SOURCE_TRIGGER, json(box).get("furniSource").getAsInt());
         assertEquals(0, json(box).getAsJsonArray("items").size());
     }
+
+    @Test
+    void unpickedTargetsAreDealtTheSnapshotSpotsInTurnAndReuseThem() {
+        java.util.List<WiredMatchFurniSetting> settings = java.util.List.of(
+                new WiredMatchFurniSetting(1, "0", 0, 1, 1),
+                new WiredMatchFurniSetting(2, "1", 2, 2, 2),
+                new WiredMatchFurniSetting(3, "2", 4, 3, 3));
+
+        java.util.List<WiredMatchFurniSetting> dealt =
+                WiredEffectMatchFurni.dealSpots(settings, 7, new java.util.Random(42));
+
+        assertEquals(7, dealt.size());
+        // Every spot is dealt once before any is dealt again.
+        assertEquals(3, new java.util.HashSet<>(dealt.subList(0, 3)).size());
+        assertEquals(dealt.subList(0, 3), dealt.subList(3, 6));
+        assertEquals(dealt.get(0), dealt.get(6));
+    }
+
+    @Test
+    void aOneFurniSnapshotGivesItsEntryToEveryTarget() {
+        WiredMatchFurniSetting only = new WiredMatchFurniSetting(9, "3", 0, 4, 4);
+
+        java.util.List<WiredMatchFurniSetting> dealt =
+                WiredEffectMatchFurni.dealSpots(java.util.List.of(only), 4, new java.util.Random(1));
+
+        assertEquals(java.util.List.of(only, only, only, only), dealt);
+    }
 }

@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -25,7 +26,7 @@ public class ItemsStateUpdateComposer extends MessageComposer {
 
         this.response.appendInt(this.items.size());
         for (HabboItem item : this.items) {
-            this.response.appendInt(item.getId());
+            this.response.appendInt(BuildersClubItemIds.toWire(item.getId()));
             this.response.appendString(item.getExtradata());
         }
 

@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -38,7 +39,9 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
+import com.eu.habbo.threading.ThreadPooling;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -159,6 +162,29 @@ class WiredEffectForwardUserToRoomTest {
     }
 
     @Test
+    void theUserGlowsFromTheFiringAndIsForwardedAboutASecondLater() throws Exception {
+        WiredEffectForwardUserToRoom box = box();
+        box.loadWiredData(row("{\"roomIdText\":\"77\",\"delay\":0,\"userSource\":0}"), this.room);
+        target(77, RoomState.OPEN);
+        RoomUnit unit = mock(RoomUnit.class);
+        Habbo habbo = visitor(unit);
+        when(habbo.getRoomUnit()).thenReturn(unit);
+        ThreadPooling threading = mock(ThreadPooling.class);
+        this.platform.when(WiredPlatform::threading).thenReturn(threading);
+        ArgumentCaptor<Runnable> forward = ArgumentCaptor.forClass(Runnable.class);
+
+        box.execute(context(this.room, unit));
+
+        verify(this.room).sendComposer(any(ServerMessage.class));
+        verify(habbo.getClient(), never()).sendResponse(any(ForwardToRoomComposer.class));
+        verify(threading).run(forward.capture(), eq(WiredEffectForwardUserToRoom.FORWARD_DELAY_MS));
+
+        forward.getValue().run();
+        assertEquals(77, forwardedRoom(habbo));
+        verify(habbo.getHabboInfo()).setRoomForwardGlow(eq(77), anyLong());
+    }
+
+    @Test
     void savesATypedRoomAndRefusesWhatIsNoRoom() throws Exception {
         WiredEffectForwardUserToRoom box = box();
 
@@ -180,7 +206,11 @@ class WiredEffectForwardUserToRoomTest {
         when(this.room.getHabboItem(8)).thenReturn(linker);
         WiredEffectForwardUserToRoom box = box();
 
-        assertFalse(box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
+        com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException refused =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException.class,
+                        () -> box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
+        assertEquals("wiredfurni.error.require_room_linker", refused.getMessage());
         assertTrue(box.saveData(settings("", new int[] {6}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertEquals(6, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
         assertTrue(box.saveData(settings("", new int[] {8}, 0, WiredSourceUtil.SOURCE_SELECTED), null));

@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionDice;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -14,7 +15,7 @@ public class TriggerDiceEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -26,8 +27,10 @@ public class TriggerDiceEvent extends MessageHandler {
 
         if (item != null) {
             if (item instanceof InteractionDice) {
-                if (RoomLayout.tilesAdjecent(room.getLayout().getTile(item.getX(), item.getY()), this.client.getHabbo().getRoomUnit().getCurrentLocation())) {
-                    item.onClick(this.client, room, new Object[]{});
+                if (RoomLayout.tilesAdjecent(
+                        room.getLayout().getTile(item.getX(), item.getY()),
+                        this.client.getHabbo().getRoomUnit().getCurrentLocation())) {
+                    item.onClick(this.client, room, new Object[] {});
                 }
             }
         }

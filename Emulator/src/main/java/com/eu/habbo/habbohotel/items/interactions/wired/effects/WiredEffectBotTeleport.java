@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
-import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -19,13 +18,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserEffectComposer;
-import com.eu.habbo.threading.runnables.RoomUnitTeleport;
-import com.eu.habbo.threading.runnables.SendRoomUnitEffectComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,58 +44,13 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect implements Wi
         this.items = new LinkedHashSet<>();
     }
 
+    /**
+     * Bot Teleport uses the same steps as a user's normal Teleport To: the room's 500 ms grid, effect 4 and the
+     * landing next to a blocked target (north first). Behaviour observed in plus-emulator/PlusEMU 58a2f279,
+     * reimplemented.
+     */
     public static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile) {
-        if (roomUnit == null || tile == null || roomUnit.isWiredTeleporting) return;
-
-        Room room = roomUnit.getRoom();
-
-        if (room == null) {
-            return;
-        }
-
-        // makes a temporary effect
-
-        roomUnit.getRoom().unIdle(roomUnit.getRoom().getHabbo(roomUnit));
-        room.sendComposer(new RoomUserEffectComposer(roomUnit, 4).compose());
-        Emulator.getThreading().run(new SendRoomUnitEffectComposer(room, roomUnit), WiredManager.TELEPORT_DELAY + 1000);
-
-        if (tile == roomUnit.getCurrentLocation()) {
-            return;
-        }
-
-        if (tile.state == RoomTileState.INVALID || tile.state == RoomTileState.BLOCKED) {
-            RoomTile alternativeTile = null;
-            List<RoomTile> optionalTiles = room.getLayout().getTilesAround(tile);
-
-            Collections.reverse(optionalTiles);
-            for (RoomTile optionalTile : optionalTiles) {
-                if (optionalTile.state != RoomTileState.INVALID && optionalTile.state != RoomTileState.BLOCKED) {
-                    alternativeTile = optionalTile;
-                    break;
-                }
-            }
-
-            if (alternativeTile != null) {
-                tile = alternativeTile;
-            }
-        }
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            roomUnit.isWiredTeleporting = true;
-                        },
-                        Math.max(0, WiredManager.TELEPORT_DELAY - 500));
-        Emulator.getThreading()
-                .run(
-                        new RoomUnitTeleport(
-                                roomUnit,
-                                room,
-                                tile.x,
-                                tile.y,
-                                tile.getStackHeight() + (tile.state == RoomTileState.SIT ? -0.5 : 0),
-                                roomUnit.getEffectId()),
-                        WiredManager.TELEPORT_DELAY);
+        WiredEffectTeleport.teleportUnitToTile(roomUnit, tile, false);
     }
 
     @Override

@@ -196,6 +196,12 @@ public class RoomUnitManager {
             this.currentHabbos.remove(habbo.getHabboInfo().getId());
         }
         this.room.forgetWiredOpacityUser(habbo.getHabboInfo().getId());
+        RoomWiredRuntime wiredRuntime = this.room.getWiredRuntime();
+        if (wiredRuntime != null) {
+            wiredRuntime.forgetVisualizationUser(
+                    habbo.getHabboInfo().getId(),
+                    habbo.getRoomUnit() == null ? -1 : habbo.getRoomUnit().getId());
+        }
         this.room
                 .getUserVariableManager()
                 .clearAssignmentsForUser(habbo.getHabboInfo().getId());
@@ -344,38 +350,7 @@ public class RoomUnitManager {
                     habbo.getRoomUnit().setPreviousLocationZ(z);
                 }
             } else if (topItem != null && topItem.getBaseItem().allowLay()) {
-                BedProfile bedProfile = new BedProfile(topItem);
-
-                RoomTile pillowTile = bedProfile.snapToLay(
-                        this.room,
-                        topItem,
-                        habbo.getRoomUnit().getX(),
-                        habbo.getRoomUnit().getY());
-
-                if (pillowTile != null && bedProfile.isDouble()) {
-                    Set<Habbo> habbosAtPillow = this.getHabbosAt(pillowTile.x, pillowTile.y);
-                    for (Habbo other : habbosAtPillow) {
-                        if (other == habbo || other.getRoomUnit() == null) continue;
-                        RoomTile otherSide = bedProfile.getOtherSide(this.room, topItem, pillowTile);
-                        if (otherSide != null) {
-                            pillowTile = otherSide;
-                        }
-                        break;
-                    }
-                }
-
-                if (pillowTile != null) {
-                    habbo.getRoomUnit().setLocation(pillowTile);
-                }
-
-                habbo.getRoomUnit().setZ(topItem.getZ());
-                habbo.getRoomUnit().setPreviousLocationZ(topItem.getZ());
-                habbo.getRoomUnit().setRotation(RoomUserRotation.fromValue(topItem.getRotation() % 4));
-                double layHeight = Item.getCurrentHeight(topItem) + bedProfile.getLayZOffset();
-                habbo.getRoomUnit()
-                        .setStatus(
-                                RoomUnitStatus.LAY,
-                                layHeight + ";" + bedProfile.getLayXOffset() + ";" + bedProfile.getLayYOffset());
+                BedProfile.lay(this.room, topItem, habbo.getRoomUnit());
             } else {
                 if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
                     habbo.getRoomUnit().removeStatus(RoomUnitStatus.SIT);
@@ -632,15 +607,7 @@ public class RoomUnitManager {
                 bot.getRoomUnit().setRotation(RoomUserRotation.fromValue(topItem.getRotation()));
                 bot.getRoomUnit().setStatus(RoomUnitStatus.SIT, String.valueOf(Item.getCurrentHeight(topItem)));
             } else if (topItem != null && topItem.getBaseItem().allowLay()) {
-                bot.getRoomUnit().setZ(topItem.getZ());
-                bot.getRoomUnit().setPreviousLocationZ(topItem.getZ());
-                BedProfile botBedProfile = new BedProfile(topItem);
-                double botLayHeight = Item.getCurrentHeight(topItem) + botBedProfile.getLayZOffset();
-                bot.getRoomUnit()
-                        .setStatus(
-                                RoomUnitStatus.LAY,
-                                botLayHeight + ";" + botBedProfile.getLayXOffset() + ";"
-                                        + botBedProfile.getLayYOffset());
+                BedProfile.layInPlace(topItem, bot.getRoomUnit());
             } else {
                 if (bot.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
                     bot.getRoomUnit().removeStatus(RoomUnitStatus.SIT);

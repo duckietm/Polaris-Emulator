@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredProjectileFlights;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
@@ -20,6 +21,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
@@ -235,6 +237,11 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
+        // A pointer only exists while a stack runs, so nothing can watch it change (AIR VariableUpdate filter).
+        if (room != null && WiredPointerVariableSupport.isPointer(room, this.variableItemId)) {
+            throw new WiredTriggerSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
+        }
+
         if (room == null || !this.isValidDefinition(room)) {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
@@ -339,10 +346,21 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             this.unchangedEnabled = false;
         }
 
-        if (this.targetType == TARGET_ROOM || this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
+        // Room variables and built-ins are never created or deleted, except a projectile's counts: its
+        // traveling flag goes when it lands, which Habbo reports as a deletion.
+        if (this.targetType == TARGET_ROOM
+                || (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX) && !this.watchesProjectile())) {
             this.createdEnabled = false;
             this.deletedEnabled = false;
         }
+    }
+
+    /** Whether the box watches one of the projectile counts Habbo lets Variable Changed watch. */
+    private boolean watchesProjectile() {
+        return this.targetType == TARGET_FURNI
+                && this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)
+                && WiredProjectileFlights.WATCHED.contains(WiredInternalVariableSupport.normalizeKey(
+                        this.variableToken.substring(INTERNAL_TOKEN_PREFIX.length())));
     }
 
     private boolean hasAnyEnabledOption() {
@@ -356,7 +374,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         if (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
             String key = this.variableToken.substring(INTERNAL_TOKEN_PREFIX.length());
             return switch (this.targetType) {
-                case TARGET_FURNI -> WiredInternalVariableSupport.canUseFurniDestination(key);
+                case TARGET_FURNI ->
+                    WiredInternalVariableSupport.canUseFurniDestination(key) || this.watchesProjectile();
                 case TARGET_ROOM -> WiredInternalVariableSupport.canUseRoomDestination(key);
                 case TARGET_USER ->
                     WiredInternalVariableSupport.canUseUserDestination(key) || "@has_rights".equals(key);

@@ -33,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +55,9 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
     private static final int ANTENNA_TRIGGER = 1;
     private static final String ANTENNA_INTERACTION = "antenna";
     private static final String FORWARD_ITEM_SPLIT_REGEX = "[;,\\t]";
-    private static final long ANTENNA_PULSE_MS = 300L;
     // Users x furni x antennas can multiply; one firing never sends more than this many signals.
     static final int MAX_SIGNALS_PER_FIRING = 250;
     static final int MAX_FORWARDED = 100;
-    private static final ConcurrentHashMap<Integer, Long> ANTENNA_PULSE_TOKENS = new ConcurrentHashMap<>();
 
     private Set<HabboItem> items;
     private Set<HabboItem> forwardItems;
@@ -127,6 +124,15 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                     .filter(Objects::nonNull)
                     .filter(this::isAntennaItem)
                     .limit(WiredManager.MAXIMUM_FURNI_SELECTION)
+                    .collect(Collectors.toList());
+        }
+
+        // A signal chain reaches each antenna once: a signal to an antenna the chain already went
+        // through (its own, or one earlier in a cycle) is dropped, as in Habbo.
+        Set<Integer> signalPath = ctx.event().getSignalPath();
+        if (!signalPath.isEmpty()) {
+            resolvedAntennas = resolvedAntennas.stream()
+                    .filter(antenna -> !signalPath.contains(antenna.getId()))
                     .collect(Collectors.toList());
         }
 
@@ -266,6 +272,10 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 actor != null ? actor.getId() : "null",
                 sourceItem != null ? sourceItem.getId() : "null");
 
+        // The furni of the signal are reached through "furni from signal" (201) only; the receiving stack's
+        // triggering furni is the antenna, as in Habbo.
+        List<HabboItem> forwarded = furniCarried.isEmpty() && sourceItem != null ? List.of(sourceItem) : furniCarried;
+
         WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
                 .tile(tile)
                 .callStackDepth(depth)
@@ -273,46 +283,35 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 .signalUserCount(signalUserCount)
                 .signalFurniCount(signalFurniCount)
                 .forwardedUsers(usersCarried)
-                .forwardedItems(furniCarried)
+                .forwardedItems(forwarded)
+                .sourceItem(antenna)
                 .contextVariableScope(ctx.contextVariables().copy())
+                .signalPath(withAntenna(ctx.event().getSignalPath(), signalChannel))
                 .triggeredByEffect(true);
 
         if (actor != null) builder.actor(actor);
         if (originActor != null) builder.originActor(originActor);
-        if (sourceItem != null) builder.sourceItem(sourceItem);
 
         boolean result = dispatchSignalEvent(builder.build());
         LOGGER.debug("[SendSignal] handleEvent returned: {}", result);
     }
 
+    private static Set<Integer> withAntenna(Set<Integer> path, int antennaId) {
+        Set<Integer> next = new LinkedHashSet<>(path);
+        next.add(antennaId);
+        return next;
+    }
+
+    // Habbo flips an antenna on every signal it carries (it does not light up and reset).
     private void pulseAntenna(Room room, HabboItem antenna) {
         if (room == null || antenna == null || antenna.getBaseItem() == null) return;
         if (antenna.getBaseItem().getStateCount() <= 1) return;
 
-        final long token = System.currentTimeMillis();
-        ANTENNA_PULSE_TOKENS.put(antenna.getId(), token);
-
-        if ("1".equals(antenna.getExtradata())) {
-            antenna.setExtradata("0");
-            room.updateItemState(antenna);
+        synchronized (antenna) {
+            antenna.setExtradata("1".equals(antenna.getExtradata()) ? "0" : "1");
         }
 
-        antenna.setExtradata("1");
         room.updateItemState(antenna);
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            if (!room.isLoaded()) return;
-
-                            Long currentToken = ANTENNA_PULSE_TOKENS.get(antenna.getId());
-                            if (currentToken == null || currentToken.longValue() != token) return;
-
-                            antenna.setExtradata("0");
-                            room.updateItemState(antenna);
-                            ANTENNA_PULSE_TOKENS.remove(antenna.getId(), token);
-                        },
-                        ANTENNA_PULSE_MS);
     }
 
     @Override
@@ -380,7 +379,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
 
         for (HabboItem receiver : newItems) {
             if (!isAntennaItem(receiver)) {
-                throw new WiredSaveException("Only antenna furni can be selected");
+                throw new WiredSaveException("wiredfurni.error.require_antenna_furni");
             }
         }
 

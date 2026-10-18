@@ -16,6 +16,9 @@ import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
+import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
+import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
+import com.eu.habbo.imaging.camera.CameraRenderRuntime;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
 import com.eu.habbo.networking.gameserver.GameServer;
@@ -178,6 +181,7 @@ final class PolarisBootstrap {
         texts.register("camera.permission", "You don't have permission to use the camera!");
         texts.register("camera.wait", "Please wait %seconds% seconds before making another picture.");
         texts.register("camera.error.creation", "Failed to create your picture. *sadpanda*");
+        texts.register("camera.render.busy", "The camera is busy right now. Please try again in a moment.");
 
         File thumbnailDirectory = new File(runtime.configuration().getValue("imager.location.output.thumbnail"));
         if (!thumbnailDirectory.exists()) {
@@ -232,13 +236,19 @@ final class PolarisBootstrap {
         runtime.installRconServer(rconServer);
         Emulator.synchronizeLegacyFacade(runtime);
 
+        FurnitureTextProvider furnitureTexts = runtime.gameEnvironment().getFurnitureTextProvider();
+        FurnitureDirectionsRuntime.start(
+                configuration, furnitureTexts == null ? null : furnitureTexts::getDefaultDirection);
+
         gameServer.initializePipeline();
         gameServer.connect();
         gameServer.getGameClientManager().CFKeepAlive();
         rconServer.initializePipeline();
         rconServer.connect();
-        runtime.installBadgeImager(new BadgeImager());
+        BadgeImager badgeImager = new BadgeImager();
+        runtime.installBadgeImager(badgeImager);
         Emulator.synchronizeLegacyFacade(runtime);
+        CameraRenderRuntime.start(configuration, badgeImager::compose);
         return true;
     }
 }

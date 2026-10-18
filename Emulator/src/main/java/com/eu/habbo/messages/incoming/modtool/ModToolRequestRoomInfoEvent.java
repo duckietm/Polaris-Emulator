@@ -17,13 +17,19 @@ public class ModToolRequestRoomInfoEvent extends MessageHandler {
                 return;
             }
 
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
+            Room room = ModToolRoomLookup.find(Emulator.getGameEnvironment().getRoomManager(), roomId);
 
             if (room != null) {
                 this.client.sendResponse(new ModToolRoomInfoComposer(room));
             }
         } else {
-            ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.roominfo").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));
+            ScripterManager.scripterDetected(
+                    this.client,
+                    Emulator.getTexts()
+                            .getValue("scripter.warning.modtools.roominfo")
+                            .replace(
+                                    "%username%",
+                                    this.client.getHabbo().getHabboInfo().getUsername()));
         }
     }
 }

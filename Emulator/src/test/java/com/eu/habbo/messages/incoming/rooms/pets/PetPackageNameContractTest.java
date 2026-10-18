@@ -1,22 +1,23 @@
 package com.eu.habbo.messages.incoming.rooms.pets;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class PetPackageNameContractTest {
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/pets/PetPackageNameEvent.java"));
+        return Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/pets/PetPackageNameEvent.java"));
     }
 
     @Test
     void validatesItemIdBeforeRoomItemLookup() throws Exception {
         String source = source();
 
-        int itemIdRead = source.indexOf("int itemId = this.packet.readInt()");
+        int itemIdRead =
+                source.indexOf("int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt())");
         int idGuard = source.indexOf("RoomItemInputGuard.isPositiveId(itemId)", itemIdRead);
         int lookup = source.indexOf("HabboItem item = room.getHabboItem(itemId)", idGuard);
 
@@ -42,11 +43,14 @@ class PetPackageNameContractTest {
     void packageNamesUseNormalPetNamePolicy() throws Exception {
         String source = source();
 
-        assertTrue(source.contains("CheckPetNameEvent.PET_NAME_LENGTH_MINIMUM"),
+        assertTrue(
+                source.contains("CheckPetNameEvent.PET_NAME_LENGTH_MINIMUM"),
                 "package pet names should use the configured minimum pet-name length");
-        assertTrue(source.contains("CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM"),
+        assertTrue(
+                source.contains("CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM"),
                 "package pet names should use the configured maximum pet-name length");
-        assertTrue(source.contains("StringUtils.isAlphanumeric(name)"),
+        assertTrue(
+                source.contains("StringUtils.isAlphanumeric(name)"),
                 "package pet names should use alphanumeric validation");
     }
 }

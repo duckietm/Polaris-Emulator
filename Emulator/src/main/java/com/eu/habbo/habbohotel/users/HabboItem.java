@@ -19,8 +19,10 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -79,6 +81,8 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
      * never saved or given to an inventory, and is gone when the room unloads.
      */
     private volatile boolean temporary = false;
+
+    private int temporaryOwnerId;
 
     private boolean isFromGift = false;
     /** Avatars may walk underneath this item when it is raised high enough, even when the room-wide underpass setting is off. */
@@ -145,7 +149,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
 
     public void serializeFloorData(ServerMessage serverMessage) {
         try {
-            serverMessage.appendInt(this.getId());
+            serverMessage.appendInt(BuildersClubItemIds.toWire(this.getId()));
             serverMessage.appendInt(this.baseItem.getSpriteId());
             serverMessage.appendInt(this.x);
             serverMessage.appendInt(this.y);
@@ -177,7 +181,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     }
 
     public void serializeWallData(ServerMessage serverMessage) {
-        serverMessage.appendString(this.getId() + "");
+        serverMessage.appendString(BuildersClubItemIds.toWire(this.getId()) + "");
         serverMessage.appendInt(this.baseItem.getSpriteId());
         serverMessage.appendString(this.wallPosition);
 
@@ -193,7 +197,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         serverMessage.appendInt(this.getBaseItem().allowWalk() ? 1 : 0);
         serverMessage.appendInt(this.getBaseItem().getWidth());
         serverMessage.appendInt(this.getBaseItem().getLength());
-        serverMessage.appendInt(this.getTeleportTargetId());
+        serverMessage.appendInt(BuildersClubItemIds.toWire(this.getTeleportTargetId()));
     }
 
     public int getTeleportTargetId() {
@@ -364,6 +368,17 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         this.temporary = true;
     }
 
+    /** A temporary copy placed by a box: its owner may pick the copy up, like the room owner. */
+    public void markTemporary(int ownerId) {
+        this.markTemporary();
+        this.temporaryOwnerId = ownerId;
+    }
+
+    /** The owner of the box that placed this temporary copy, or 0. */
+    public int getTemporaryOwnerId() {
+        return this.temporaryOwnerId;
+    }
+
     @Override
     public void run() {
         if (this.temporary) {
@@ -371,6 +386,11 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
             this.needsUpdate = false;
             this.needsDelete = false;
             return;
+        }
+
+        if (this.needsDelete) {
+            // A wired chest gives what it holds back to its owner before its row goes.
+            ChestRelease.releaseToOwner(this);
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
@@ -441,6 +461,16 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     }
 
     public abstract boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects);
+
+    /**
+     * "State changed" for a furni whose state a user changed outside the plain toggle (a dice roll, a vending
+     * machine, a random-state furni), as in Habbo. Behaviour observed in plus-emulator/PlusEMU 54c5c942 and 72f46ba0,
+     * reimplemented.
+     */
+    protected static void notifyStateChanged(Room room, RoomUnit unit, HabboItem item) {
+        WiredManager.triggerFurniStateChanged(room, unit, item);
+        WiredManager.triggerFurniStateUpdated(room, unit, item, false);
+    }
 
     public abstract boolean isWalkable();
 

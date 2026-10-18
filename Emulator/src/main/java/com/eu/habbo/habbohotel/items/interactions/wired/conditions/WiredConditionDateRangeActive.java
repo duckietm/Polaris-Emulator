@@ -59,13 +59,15 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
-        int time = Emulator.getIntUnixTimestamp();
-        if (this.startDate <= 0 && this.endDate <= 0) {
-            return false;
-        }
+        return isActive(this.startDate, this.endDate, Emulator.getIntUnixTimestamp());
+    }
 
-        // No end date is an open range: active from the start on.
-        return this.startDate <= time && (this.endDate <= 0 || this.endDate >= time);
+    /**
+     * Official rule: a range without an end date (0) never passes. A start of 0 means "since always". Behaviour
+     * observed in plus-emulator/PlusEMU 06b4ae9a, reimplemented.
+     */
+    static boolean isActive(int startDate, int endDate, int now) {
+        return endDate > 0 && startDate <= now && endDate >= now;
     }
 
     @Deprecated

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredRoomLinker;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -72,7 +73,7 @@ public class RoomFloorItemsComposer extends MessageComposer {
             this.response.appendInt(item.getBaseItem().allowWalk() ? 1 : 0);
             this.response.appendInt(item.getBaseItem().getWidth());
             this.response.appendInt(item.getBaseItem().getLength());
-            this.response.appendInt(item.getTeleportTargetId());
+            this.response.appendInt(BuildersClubItemIds.toWire(item.getTeleportTargetId()));
         }
         return this.response;
     }

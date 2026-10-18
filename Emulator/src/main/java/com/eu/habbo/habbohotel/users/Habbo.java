@@ -37,7 +37,6 @@ import com.eu.habbo.messages.outgoing.inventory.RemovePetComposer;
 import com.eu.habbo.messages.outgoing.rooms.FloodCounterComposer;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserActionComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserRespectComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserShoutComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTalkComposer;
@@ -734,22 +733,15 @@ public class Habbo implements Runnable {
         if (!this.hasPermission(Permission.ACC_NOMUTE)) {
             int remaining = this.habboStats.addMuteTime(seconds);
             this.client.sendResponse(new FloodCounterComposer(remaining));
+            // RemainingMutePeriod reaches the muted user only, as in AIR. The room is not told: an
+            // IgnoreResult would put this user on every other client's own ignore list.
             this.client.sendResponse(new MutedWhisperComposer(remaining));
-
-            Room room = this.getHabboInfo().getCurrentRoom();
-            if (room != null && !isFlood) {
-                room.sendComposer(new RoomUserIgnoredComposer(this, RoomUserIgnoredComposer.MUTED).compose());
-            }
         }
     }
 
     public void unMute() {
         this.habboStats.unMute();
         this.client.sendResponse(new FloodCounterComposer(3));
-        Room room = this.getHabboInfo().getCurrentRoom();
-        if (room != null) {
-            room.sendComposer(new RoomUserIgnoredComposer(this, RoomUserIgnoredComposer.UNIGNORED).compose());
-        }
     }
 
     public int noobStatus() {

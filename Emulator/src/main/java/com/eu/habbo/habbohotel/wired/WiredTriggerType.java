@@ -59,7 +59,10 @@ public enum WiredTriggerType {
     // user toggled it or a wired effect set it. STATE_CHANGED (4) stays the user-toggle-only box.
     STATE_CHANGE(20),
     // Official: fires once when the room loads, before any other trigger.
-    ROOM_INITIALIZED(28);
+    ROOM_INITIALIZED(28),
+    // Official WIRED Link triggers: a picked Link received a link message / a link dataframe.
+    RECEIVE_LINK_MESSAGE(29),
+    RECEIVE_LINK_DATAFRAME(30);
 
     public final int code;
 

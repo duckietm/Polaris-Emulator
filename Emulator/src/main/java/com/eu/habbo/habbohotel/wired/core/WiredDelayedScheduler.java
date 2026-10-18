@@ -155,7 +155,7 @@ final class WiredDelayedScheduler {
             return;
         }
 
-        long delayMs = delay * 500L;
+        long delayMs = WiredDelay.toMillis(delay);
         long elapsedSinceTrigger = Math.max(0L, this.clock.getAsLong() - snapshot.triggerTime());
         long remainingDelayMs = Math.max(0L, delayMs - elapsedSinceTrigger);
 

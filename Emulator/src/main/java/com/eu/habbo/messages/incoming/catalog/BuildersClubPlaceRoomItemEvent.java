@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.catalog.BuildersClubPlacementWarningComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import java.util.Iterator;
@@ -27,6 +28,7 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         short x = this.packet.readInt().shortValue();
         short y = this.packet.readInt().shortValue();
         int rotation = this.packet.readInt();
+        boolean confirmed = this.packet.readBoolean();
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());
@@ -50,22 +52,21 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
             return;
         }
 
+        // Members build up to their package limit, trial users up to the trial limit.
+        if (BuildersClubRoomSupport.getTrackedFurniCount(placementUserId)
+                >= BuildersClubRoomSupport.getFurniLimit(placementUserId)) {
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
+            BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
+            return;
+        }
+
         if (!BuildersClubRoomSupport.hasActiveMembership(
-                this.client.getHabbo().getHabboInfo().getId())) {
-            int trackedFurniCount = BuildersClubRoomSupport.getTrackedFurniCount(placementUserId);
-
-            if (trackedFurniCount >= BuildersClubRoomSupport.getFurniLimit(placementUserId)) {
-                this.client.sendResponse(new BubbleAlertComposer(
-                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
-                BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
-                return;
-            }
-
-            if (BuildersClubRoomSupport.hasPlacementVisitors(room, this.client.getHabbo())) {
-                this.client.sendResponse(new BubbleAlertComposer(
-                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
-                return;
-            }
+                        this.client.getHabbo().getHabboInfo().getId())
+                && BuildersClubRoomSupport.hasPlacementVisitors(room, this.client.getHabbo())) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
+            return;
         }
 
         CatalogItem catalogItem = resolveCatalogItem(pageId, offerId);
@@ -82,6 +83,12 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         if (tile == null) {
             this.client.sendResponse(new BubbleAlertComposer(
                     BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            return;
+        }
+
+        if (!confirmed && BuildersClubRoomSupport.placementWouldHideRoom(room)) {
+            this.client.sendResponse(
+                    BuildersClubPlacementWarningComposer.floor(pageId, offerId, extraData, x, y, rotation));
             return;
         }
 
@@ -111,16 +118,18 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
             return;
         }
 
+        // Tracked before it enters the room, so the room hands it a Builders Club band id before announcing it.
+        BuildersClubRoomSupport.trackPlacedItem(item.getId(), placementUserId, room.getId());
         error = room.placeFloorFurniAt(item, tile, rotation, this.client.getHabbo());
 
         if (!error.equals(FurnitureMovementError.NONE)) {
+            BuildersClubRoomSupport.deleteTrackedItem(item.getId());
             Emulator.getGameEnvironment().getItemManager().deleteItem(item);
             this.client.sendResponse(
                     new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             return;
         }
 
-        BuildersClubRoomSupport.trackPlacedItem(item.getId(), placementUserId, room.getId());
         com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                 this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_BUILDERS_CLUB_FURNI, 1);
 

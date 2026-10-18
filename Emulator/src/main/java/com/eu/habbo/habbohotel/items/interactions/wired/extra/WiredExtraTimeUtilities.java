@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +23,14 @@ import java.util.List;
 /**
  * Time-utilities add-on (furni classname {@code wf_xtra_var_time_util}). Placed on the tile of a variable
  * definition, it reads the variable as a point in time (its value as unix seconds, its creation time or its
- * last update time) and exposes read-only sub-variables: calendar parts in the room's wired timezone and
- * whole time units counted from 1970.
+ * last update time) and exposes sub-variables: calendar parts in the room's wired timezone and whole time
+ * units counted from 1970. In the value mode the parts are writable: writing one moves the variable by the
+ * difference in that part. The timestamp modes are read-only and also list the timestamp itself as
+ * {@code <parent>.creation_time} / {@code <parent>.last_update_time}.
  *
  * <p>Int params {@code [mask, mode]}. Bit {@code id} of the mask selects the sub-variable with that id:
- * calendar parts 1-10, units 20-26.</p>
+ * calendar parts 1-10, units 20-26. Our variables are 32-bit, so the value is read as unix seconds (AIR's
+ * hotel stores epoch milliseconds).</p>
  */
 public class WiredExtraTimeUtilities extends InteractionWiredExtra implements WiredDerivedVariableBox {
     public static final int CODE = 98;
@@ -57,6 +61,8 @@ public class WiredExtraTimeUtilities extends InteractionWiredExtra implements Wi
     public static final int SUB_DAYS = 24;
     public static final int SUB_WEEKS = 25;
     public static final int SUB_MONTHS = 26;
+    /** The raw timestamp of a timestamp mode, listed as {@code <parent>.creation_time} or {@code .last_update_time}. */
+    public static final int SUB_TIMESTAMP = 31;
 
     private static final int CALENDAR_MASK = 0x7FE;
     private static final int UNITS_MASK = 0x7F00000;
@@ -184,10 +190,51 @@ public class WiredExtraTimeUtilities extends InteractionWiredExtra implements Wi
         return subType > 0 && subType <= MAX_SUB_ID && (this.subvariableMask & (1 << subType)) != 0;
     }
 
+    /**
+     * The sub-variables this box lists: the selected parts and, in a timestamp mode, the timestamp itself.
+     * Behaviour observed in plus-emulator/PlusEMU 2ec172ff, reimplemented.
+     */
+    public List<Integer> getListedSubvariables() {
+        List<Integer> result = this.getSelectedSubvariables();
+        if (this.readsTimestamps()) result.add(SUB_TIMESTAMP);
+        return result;
+    }
+
+    /** Whether this box lists a sub-variable (see {@link #getListedSubvariables()}). */
+    public boolean listsSubvariable(int subType) {
+        return this.hasSubvariable(subType) || (subType == SUB_TIMESTAMP && this.readsTimestamps());
+    }
+
+    /** Value-mode parts are writable; timestamp parts and the timestamp itself are not. */
+    public boolean isWritable(int subType) {
+        return this.mode == MODE_VALUE && this.hasSubvariable(subType);
+    }
+
+    /**
+     * The official name of a part: {@code <mode>.<part>}, so a variable reads as {@code name.value.hour_of_day} or
+     * {@code name.creation_time.year}, with AIR's part keys (VariableTimeUtilAddon). Saved boxes keep working: they
+     * refer to the parts by id, not by name. Behaviour observed in plus-emulator/PlusEMU 89f01ebf and ebf4f1fa,
+     * reimplemented.
+     */
     @Override
     public String subvariableKey(int subType) {
+        if (subType == SUB_TIMESTAMP) return modeKey(this.mode);
+        return modeKey(this.mode) + "." + partKey(subType);
+    }
+
+    /** The mode segment of the official part names. */
+    public static String modeKey(int mode) {
+        return switch (mode) {
+            case MODE_CREATION_TIME -> "creation_time";
+            case MODE_LAST_UPDATE_TIME -> "last_update_time";
+            default -> "value";
+        };
+    }
+
+    /** AIR's key of a part, without the mode segment. */
+    public static String partKey(int subType) {
         return switch (subType) {
-            case SUB_MILLISECOND_OF_SECOND -> "millisecond_of_second";
+            case SUB_MILLISECOND_OF_SECOND -> "milliseconds_of_seconds";
             case SUB_SECONDS_OF_MINUTE -> "seconds_of_minute";
             case SUB_MINUTE_OF_HOUR -> "minute_of_hour";
             case SUB_HOUR_OF_DAY -> "hour_of_day";
@@ -216,14 +263,71 @@ public class WiredExtraTimeUtilities extends InteractionWiredExtra implements Wi
     /** The sub-variable for a variable's value and timestamps (unix seconds), calendar parts in {@code zone}. */
     public Integer derive(int subType, Integer value, int createdAt, int updatedAt, ZoneId zone) {
         Long seconds = this.resolveSeconds(value, createdAt, updatedAt);
-        return (seconds != null) ? deriveFromSeconds(subType, seconds, zone) : null;
+        if (seconds == null) return null;
+        if (subType == SUB_TIMESTAMP) return this.readsTimestamps() ? clamp(seconds) : null;
+        return deriveFromSeconds(subType, seconds, zone);
+    }
+
+    /**
+     * The variable value (unix seconds) after writing {@code partValue} into a value-mode part: the variable
+     * moves by the difference between the new and the current part, so 25 hours of day reads as 1 o'clock the
+     * next day. Null when the part is not writable or the result does not fit the variable.
+     * Behaviour observed in plus-emulator/PlusEMU ebf4f1fa, reimplemented.
+     */
+    public Integer write(int subType, int value, int partValue, ZoneId zone) {
+        if (!this.isWritable(subType)) return null;
+        Long result = writeSeconds(subType, value, partValue, (zone != null) ? zone : ZoneOffset.UTC);
+        return (result != null && result >= Integer.MIN_VALUE && result <= Integer.MAX_VALUE)
+                ? (int) (long) result
+                : null;
+    }
+
+    static Long writeSeconds(int subType, long seconds, long partValue, ZoneId zone) {
+        try {
+            return switch (subType) {
+                // Our variables hold seconds, so a millisecond write only moves whole seconds.
+                case SUB_MILLISECOND_OF_SECOND -> Math.floorDiv(seconds * 1000L + partValue, 1000L);
+                case SUB_MILLISECONDS -> Math.floorDiv(partValue, 1000L);
+                case SUB_SECONDS -> partValue;
+                case SUB_MINUTES -> seconds + (partValue - Math.floorDiv(seconds, 60L)) * 60L;
+                case SUB_HOURS -> seconds + (partValue - Math.floorDiv(seconds, 3_600L)) * 3_600L;
+                case SUB_DAYS -> seconds + (partValue - Math.floorDiv(seconds, 86_400L)) * 86_400L;
+                case SUB_WEEKS -> seconds + (partValue - Math.floorDiv(seconds, 604_800L)) * 604_800L;
+                case SUB_MONTHS -> {
+                    ZonedDateTime utc = Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC);
+                    long current = ChronoUnit.MONTHS.between(Instant.EPOCH.atZone(ZoneOffset.UTC), utc);
+                    yield utc.plusMonths(partValue - current).toEpochSecond();
+                }
+                default -> {
+                    Integer current = deriveFromSeconds(subType, seconds, zone);
+                    if (current == null) yield null;
+                    long delta = partValue - current;
+                    ZonedDateTime local = Instant.ofEpochSecond(seconds).atZone(zone);
+                    ZonedDateTime moved =
+                            switch (subType) {
+                                case SUB_SECONDS_OF_MINUTE -> local.plusSeconds(delta);
+                                case SUB_MINUTE_OF_HOUR -> local.plusMinutes(delta);
+                                case SUB_HOUR_OF_DAY -> local.plusHours(delta);
+                                case SUB_DAY_OF_WEEK, SUB_DAY_OF_MONTH, SUB_DAY_OF_YEAR -> local.plusDays(delta);
+                                case SUB_WEEK_OF_YEAR -> local.plusWeeks(delta);
+                                case SUB_MONTH_OF_YEAR -> local.plusMonths(delta);
+                                case SUB_YEAR -> local.plusYears(delta);
+                                default -> null;
+                            };
+                    yield (moved != null) ? moved.toEpochSecond() : null;
+                }
+            };
+        } catch (ArithmeticException | java.time.DateTimeException e) {
+            return null;
+        }
     }
 
     private Long resolveSeconds(Integer value, int createdAt, int updatedAt) {
         return switch (this.mode) {
             case MODE_CREATION_TIME -> (createdAt > 0) ? (long) createdAt : null;
             case MODE_LAST_UPDATE_TIME -> (updatedAt > 0) ? (long) updatedAt : null;
-            default -> (value != null) ? (long) Math.max(0, value) : null;
+            // Values before 1970 read like any other.
+            default -> (value != null) ? (long) value : null;
         };
     }
 
@@ -236,10 +340,11 @@ public class WiredExtraTimeUtilities extends InteractionWiredExtra implements Wi
                 case SUB_HOURS -> clamp(Math.floorDiv(seconds, 3_600L));
                 case SUB_DAYS -> clamp(Math.floorDiv(seconds, 86_400L));
                 case SUB_WEEKS -> clamp(Math.floorDiv(seconds, 604_800L));
-                case SUB_MONTHS -> {
-                    ZonedDateTime utc = Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC);
-                    yield clamp((utc.getYear() - 1970L) * 12L + utc.getMonthValue() - 1L);
-                }
+                // Whole months since 1970, counted towards zero (a moment late in December 1969 is month 0).
+                case SUB_MONTHS ->
+                    clamp(ChronoUnit.MONTHS.between(
+                            Instant.EPOCH.atZone(ZoneOffset.UTC),
+                            Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC)));
                 default -> null;
             };
         }

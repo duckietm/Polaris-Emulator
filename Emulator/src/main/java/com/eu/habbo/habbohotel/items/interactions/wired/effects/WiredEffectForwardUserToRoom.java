@@ -8,20 +8,24 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.PendingRoomEntry;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomForwardGlow;
 import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredDelay;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
+import com.eu.habbo.threading.ThreadPooling;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,6 +49,8 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
 
     static final String ROOM_LINK_KEY = "internalLink";
     static final long FORWARD_INTERVAL_MS = 2000L;
+    static final long FORWARD_DELAY_MS = 950L;
+    static final long GLOW_END_IF_STAYED_MS = 3000L;
     static final int MAX_FORWARDS_PER_RUN = 50;
     static final int MAX_FURNI_CHECKED = 20;
     static final long PAIR_LOOKUP_INTERVAL_MS = 1000L;
@@ -135,10 +141,9 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                     return false;
                 }
                 // Room linkers are teleporters, so they pass here with plain teleporters and room links.
-                // The client refuses any other pick with the room-linker text before it is sent; this
-                // save keeps its published signature, so a forged pick is refused without a message.
+                // Any other pick refuses the save with the room-linker text, as on the official server.
                 if (!isRoomLink(item) && !(item instanceof InteractionTeleport)) {
-                    return false;
+                    throw new WiredSaveRefusedException("wiredfurni.error.require_room_linker");
                 }
                 if (!picked.contains(item)) {
                     picked.add(item);
@@ -154,7 +159,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         int maxDelay = (WiredPlatform.configuration() == null)
                 ? 20
                 : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
-        if (delay < 0 || delay > maxDelay) {
+        if (!WiredDelay.isValid(delay, maxDelay)) {
             return false;
         }
 
@@ -213,6 +218,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             return;
         }
 
+        ThreadPooling threading = WiredPlatform.threading();
         for (Habbo habbo : candidates) {
             if (!mayForward(habbo, target)) {
                 continue;
@@ -220,9 +226,34 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             if (!habbo.getHabboInfo().tryAcquireRoomForward(now, FORWARD_INTERVAL_MS)) {
                 continue;
             }
-            habbo.getHabboInfo().setPendingRoomEntry(destination.entry(now));
-            habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getId()));
+
+            if (threading == null) {
+                forward(habbo, room, target, destination, now);
+                continue;
+            }
+
+            // As in Habbo: the user glows from the firing, is taken into the linked room about a
+            // second later, and arrives there still glowing. One the client did not take away gets
+            // their own effect back a little later.
+            RoomUnit unit = habbo.getRoomUnit();
+            RoomForwardGlow.show(room, unit);
+            threading.run(
+                    () -> {
+                        if (habbo.getClient() != null && habbo.getHabboInfo().getCurrentRoom() == room) {
+                            forward(habbo, room, target, destination, System.currentTimeMillis());
+                        }
+                    },
+                    FORWARD_DELAY_MS);
+            threading.run(() -> RoomForwardGlow.end(room, unit), GLOW_END_IF_STAYED_MS);
         }
+    }
+
+    private static void forward(Habbo habbo, Room room, Room target, Destination destination, long now) {
+        habbo.getHabboInfo().setPendingRoomEntry(destination.entry(now));
+        if (room != null && habbo.getRoomUnit() != null) {
+            habbo.getHabboInfo().setRoomForwardGlow(target.getId(), now + PendingRoomEntry.LIFETIME_MS);
+        }
+        habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getId()));
     }
 
     Destination resolveDestination(WiredContext ctx, Room room, GameEnvironment environment, long now) {

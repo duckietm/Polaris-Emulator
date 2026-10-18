@@ -29,7 +29,6 @@ import com.eu.habbo.threading.runnables.SendRoomUnitEffectComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,11 +52,71 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
         this.items = new ArrayList<>();
     }
 
-    public static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile) {
-        teleportUnitToTile(roomUnit, tile, false);
+    // Habbo's Teleport To, counted from the first 500 ms room boundary after the firing: the user is
+    // sent again in place 1000 ms later and lands at 1500 ms; the effect ends at 3000 ms. Fast mode
+    // lands on the next boundary and drops its effect 500 ms after that.
+    static final int TELEPORT_EFFECT = 4;
+    static final int FAST_TELEPORT_EFFECT = 235;
+    static final long REPUBLISH_AFTER_BOUNDARY_MS = 1000L;
+    static final long LAND_AFTER_BOUNDARY_MS = 1500L;
+    static final long EFFECT_OFF_AFTER_BOUNDARY_MS = 3000L;
+    static final long FAST_LAND_AFTER_BOUNDARY_MS = 500L;
+    static final long FAST_EFFECT_OFF_AFTER_BOUNDARY_MS = 1000L;
+    private static final long ROOM_CYCLE_MS = 500L;
+
+    /** Until when a unit still glows from a teleport; a teleport during the glow sends no new effect. */
+    private static final java.util.Map<RoomUnit, Long> GLOW_UNTIL =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /**
+     * The grid delays from {@code now}: republish, landing and effect off. Normal: republished one second after the
+     * boundary (3rd tick), lands at 1.5 s (4th), glow off at 3 s (7th). Fast: republished on the boundary (1st tick),
+     * lands at 0.5 s (2nd), glow off at 1 s (3rd). Behaviour observed in plus-emulator/PlusEMU 2aa1704e and
+     * e2fe8d15, reimplemented.
+     */
+    static long[] gridDelays(long boundary, long now, boolean fastTeleport) {
+        long republish = boundary + (fastTeleport ? 0L : REPUBLISH_AFTER_BOUNDARY_MS) - now;
+        long land = boundary + (fastTeleport ? FAST_LAND_AFTER_BOUNDARY_MS : LAND_AFTER_BOUNDARY_MS) - now;
+        long effectOff =
+                boundary + (fastTeleport ? FAST_EFFECT_OFF_AFTER_BOUNDARY_MS : EFFECT_OFF_AFTER_BOUNDARY_MS) - now;
+        return new long[] {republish, land, effectOff};
     }
 
+    /**
+     * Starts the teleport glow unless the unit still glows from an earlier teleport: that one's end clears the glow,
+     * and no new effect is sent. Behaviour observed in plus-emulator/PlusEMU 49c17ea2, reimplemented.
+     */
+    static boolean tryStartGlow(RoomUnit unit, long now, long durationMs) {
+        synchronized (GLOW_UNTIL) {
+            Long until = GLOW_UNTIL.get(unit);
+            if (until != null && now < until) {
+                return false;
+            }
+            GLOW_UNTIL.put(unit, now + Math.max(0L, durationMs));
+            return true;
+        }
+    }
+
+    /** Teleports with the classic timing (games, bots): effect 4 and a landing after the teleport delay. */
+    public static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile) {
+        teleportUnitToTile(roomUnit, tile, false, false);
+    }
+
+    /** Teleports like Habbo's Teleport To, on the room's 500 ms grid. */
     public static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile, boolean fastTeleport) {
+        teleportUnitToTile(roomUnit, tile, fastTeleport, true);
+    }
+
+    /** The first 500 ms room-cycle boundary strictly after {@code now}. */
+    static long nextRoomBoundary(long lastCycle, long now) {
+        if (lastCycle <= 0 || lastCycle > now) {
+            return now + ROOM_CYCLE_MS;
+        }
+
+        return lastCycle + (((now - lastCycle) / ROOM_CYCLE_MS) + 1) * ROOM_CYCLE_MS;
+    }
+
+    private static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile, boolean fastTeleport, boolean onRoomGrid) {
         if (roomUnit == null || tile == null || roomUnit.isWiredTeleporting) return;
 
         Room room = roomUnit.getRoom();
@@ -89,50 +148,95 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
             }
         }
 
-        // makes a temporary effect
-
-        int teleportDelay = getTeleportDelay(fastTeleport);
-
         roomUnit.getRoom().unIdle(roomUnit.getRoom().getHabbo(roomUnit));
-        sendTeleportEffect(room, roomUnit, fastTeleport);
 
-        if (tile == roomUnit.getCurrentLocation()) {
+        long now = System.currentTimeMillis();
+        long landingDelay;
+        long effectDuration;
+        long republishDelay = -1L;
+
+        if (onRoomGrid) {
+            long[] delays = gridDelays(nextRoomBoundary(room.getCycleTimestamp(), now), now, fastTeleport);
+            republishDelay = delays[0];
+            landingDelay = delays[1];
+            effectDuration = delays[2];
+        } else {
+            landingDelay = getTeleportDelay(fastTeleport);
+            effectDuration = getTeleportEffectDuration(fastTeleport);
+        }
+
+        int effect = (onRoomGrid && fastTeleport) ? FAST_TELEPORT_EFFECT : TELEPORT_EFFECT;
+        if (!onRoomGrid || tryStartGlow(roomUnit, now, effectDuration)) {
+            room.sendComposer(new RoomUserEffectComposer(roomUnit, effect).compose());
+            schedule(new SendRoomUnitEffectComposer(room, roomUnit), effectDuration);
+        }
+
+        // Habbo's Teleport To runs the whole teleport for a user already on the target: the glow,
+        // the republish and the landing. The classic timing (games, bots) still stops at the glow.
+        if (!onRoomGrid && tile == roomUnit.getCurrentLocation()) {
             return;
         }
 
-        if (tile.state == RoomTileState.INVALID || tile.state == RoomTileState.BLOCKED) {
-            RoomTile alternativeTile = null;
-            List<RoomTile> optionalTiles = room.getLayout().getTilesAround(tile);
+        // Fast mode ends the walk on the tile being stepped onto; normal mode lets it go on.
+        if (onRoomGrid && fastTeleport) {
+            roomUnit.setGoalLocation(roomUnit.getCurrentLocation());
+        }
 
-            Collections.reverse(optionalTiles);
-            for (RoomTile optionalTile : optionalTiles) {
-                if (optionalTile.state != RoomTileState.INVALID && optionalTile.state != RoomTileState.BLOCKED) {
-                    alternativeTile = optionalTile;
-                    break;
-                }
-            }
+        tile = landingTile(room, tile);
 
-            if (alternativeTile != null) {
-                tile = alternativeTile;
+        if (republishDelay >= 0) {
+            schedule(
+                    () -> {
+                        if (room.isLoaded() && roomUnit.isInRoom()) {
+                            room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
+                        }
+                    },
+                    republishDelay);
+        }
+
+        schedule(
+                () -> {
+                    roomUnit.isWiredTeleporting = true;
+                },
+                Math.max(0, landingDelay - 500));
+        schedule(
+                new RoomUnitTeleport(
+                        roomUnit,
+                        room,
+                        tile.x,
+                        tile.y,
+                        tile.getStackHeight() + (tile.state == RoomTileState.SIT ? -0.5 : 0),
+                        roomUnit.getEffectId()),
+                Math.max(0, landingDelay));
+    }
+
+    private static void schedule(Runnable task, long delay) {
+        Emulator.getThreading().run(task, delay);
+    }
+
+    /**
+     * A target nobody can stand on is not refused: the user lands on a free tile next to it, the
+     * one to the north first.
+     */
+    private static RoomTile landingTile(Room room, RoomTile tile) {
+        if (tile.state != RoomTileState.INVALID && tile.state != RoomTileState.BLOCKED) {
+            return tile;
+        }
+
+        RoomTile north = room.getLayout().getTile(tile.x, (short) (tile.y - 1));
+        if (north != null && north.state != RoomTileState.INVALID && north.state != RoomTileState.BLOCKED) {
+            return north;
+        }
+
+        for (RoomTile optionalTile : room.getLayout().getTilesAround(tile)) {
+            if (optionalTile != null
+                    && optionalTile.state != RoomTileState.INVALID
+                    && optionalTile.state != RoomTileState.BLOCKED) {
+                return optionalTile;
             }
         }
 
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            roomUnit.isWiredTeleporting = true;
-                        },
-                        Math.max(0, teleportDelay - 500));
-        Emulator.getThreading()
-                .run(
-                        new RoomUnitTeleport(
-                                roomUnit,
-                                room,
-                                tile.x,
-                                tile.y,
-                                tile.getStackHeight() + (tile.state == RoomTileState.SIT ? -0.5 : 0),
-                                roomUnit.getEffectId()),
-                        teleportDelay);
+        return tile;
     }
 
     @Override
@@ -354,12 +458,6 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
         return fastTeleport
                 ? Math.max(300, (WiredManager.TELEPORT_DELAY + 1000) / 3)
                 : (WiredManager.TELEPORT_DELAY + 1000);
-    }
-
-    private static void sendTeleportEffect(Room room, RoomUnit roomUnit, boolean fastTeleport) {
-        room.sendComposer(new RoomUserEffectComposer(roomUnit, 4).compose());
-        Emulator.getThreading()
-                .run(new SendRoomUnitEffectComposer(room, roomUnit), getTeleportEffectDuration(fastTeleport));
     }
 
     static class JsonData {

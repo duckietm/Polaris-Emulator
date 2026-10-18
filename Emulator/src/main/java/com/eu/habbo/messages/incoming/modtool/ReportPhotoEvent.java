@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionExternalImage;
 import com.eu.habbo.habbohotel.modtool.CfhTopic;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -26,7 +27,7 @@ public class ReportPhotoEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         this.packet.readInt();
         int topicId = this.packet.readInt();
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         // Official class_2390 and friends end with the unlawful-activity reporter name and
         // e-mail; older clients stop before them, so they are read only while bytes remain.
         String reporterName = "";

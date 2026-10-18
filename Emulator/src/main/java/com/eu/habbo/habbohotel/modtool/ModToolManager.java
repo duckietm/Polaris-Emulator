@@ -434,6 +434,24 @@ public class ModToolManager {
      * {@link Integer#MAX_VALUE}, and adding it to the current time wrapped to a negative
      * expiry: the ban was stored as already expired and never enforced.
      */
+    /** A sanction length in hours as seconds, kept inside an int: a long ban stays long instead of wrapping negative. */
+    public static int hoursToSeconds(long hours) {
+        return clampSeconds(hours * 3600L);
+    }
+
+    /** A sanction length in days as seconds, kept inside an int. */
+    public static int daysToSeconds(long days) {
+        return clampSeconds(days * 86400L);
+    }
+
+    private static int clampSeconds(long seconds) {
+        if (seconds <= 0) {
+            return 0;
+        }
+
+        return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) seconds;
+    }
+
     static int banExpiry(int now, int duration) {
         long expiry = (long) now + duration;
 

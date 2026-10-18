@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
+public class WiredConditionFurniTypeMatch extends InteractionWiredCondition implements WiredOfficialQuantifier {
     protected static final int SOURCE_SECONDARY_SELECTED = 101;
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
@@ -416,5 +417,10 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
             this.compareFurniSource = compareFurniSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
     }
 }

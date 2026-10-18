@@ -33,7 +33,10 @@ public final class ChestAutoLock {
             if (chest.getUserId() != ownerId) continue;
             if (!chest.getContents().applyAutoLockOnOwnerExit()) continue;
 
-            chest.persistContents(room);
+            // The lock lives in the furni data the client reads, so the room is told even when the
+            // lid does not move.
+            chest.persistContents();
+            chest.publishSettings(room);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -64,7 +65,8 @@ public class WiredVariableHoldersPageComposer extends MessageComposer {
         this.response.appendInt(this.elements.size());
         for (RoomWiredVariableCatalog.Holder holder : this.elements) {
             this.response.appendInt(holder.getEntityType());
-            this.response.appendInt(holder.getEntityId());
+            this.response.appendInt(BuildersClubItemIds.toWire(
+                    holder.getEntityId(), holder.getEntityType() == RoomWiredVariableCatalog.TARGET_FURNI));
             this.response.appendString(holder.getEntityName());
             this.response.appendInt(holder.getValue());
             appendLong(this.response, holder.getCreatedAt());

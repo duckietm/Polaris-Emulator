@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -65,7 +66,7 @@ public class WiredMonitorDataComposer extends MessageComposer {
             this.response.appendInt((int) (log.getLastOccurredAtMs() / 1000L));
             this.response.appendString(log.getLatestReason());
             this.response.appendString(log.getLatestSourceLabel());
-            this.response.appendInt(log.getLatestSourceId());
+            this.response.appendInt(BuildersClubItemIds.toWire(log.getLatestSourceId()));
         }
 
         this.response.appendInt(this.snapshot.getHistory().size());
@@ -76,7 +77,7 @@ public class WiredMonitorDataComposer extends MessageComposer {
             this.response.appendInt((int) (historyEntry.getOccurredAtMs() / 1000L));
             this.response.appendString(historyEntry.getReason());
             this.response.appendString(historyEntry.getSourceLabel());
-            this.response.appendInt(historyEntry.getSourceId());
+            this.response.appendInt(BuildersClubItemIds.toWire(historyEntry.getSourceId()));
         }
 
         return this.response;

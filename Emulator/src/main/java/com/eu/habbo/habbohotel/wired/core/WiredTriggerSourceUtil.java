@@ -121,10 +121,10 @@ public final class WiredTriggerSourceUtil {
         WiredTargets.Defaults defaults = ctx.targets().setDefaultsAside();
         try {
             runSelectors(ctx, room, selectors, false);
+            runSelectors(ctx, room, selectors, true);
         } finally {
             ctx.targets().restoreDefaults(defaults);
         }
-        runSelectors(ctx, room, selectors, true);
 
         applySelectionFilterExtras(room, trigger, ctx);
 

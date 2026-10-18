@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredConditionTriggererMatch extends InteractionWiredCondition {
+public class WiredConditionTriggererMatch extends InteractionWiredCondition implements WiredOfficialQuantifier {
     protected static final int ENTITY_HABBO = 1;
     protected static final int ENTITY_PET = 2;
     protected static final int ENTITY_BOT = 4;
@@ -372,5 +373,10 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
             this.quantifier = quantifier;
             this.username = username;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
     }
 }

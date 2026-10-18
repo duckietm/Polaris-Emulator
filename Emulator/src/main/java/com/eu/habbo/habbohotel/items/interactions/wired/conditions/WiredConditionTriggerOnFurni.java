@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionOperator;
@@ -13,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
+public class WiredConditionTriggerOnFurni extends InteractionWiredCondition implements WiredOfficialQuantifier {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
 
@@ -73,7 +75,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     protected boolean isAnyUserOnFurni(Collection<RoomUnit> users, Collection<HabboItem> items, Room room) {
         for (RoomUnit roomUnit : users) {
             if (roomUnit == null) continue;
-            Set<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
+            Set<HabboItem> itemsAtUser = room.getItemsAt(wiredLocationOf(roomUnit));
             if (items.stream().anyMatch(itemsAtUser::contains)) {
                 return true;
             }
@@ -87,7 +89,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
                 return false;
             }
 
-            Set<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
+            Set<HabboItem> itemsAtUser = room.getItemsAt(wiredLocationOf(roomUnit));
             if (itemsAtUser == null || items.stream().noneMatch(itemsAtUser::contains)) {
                 return false;
             }
@@ -278,5 +280,16 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
+    }
+
+    /** Where the condition counts a unit: the tile of the step being announced, or its current tile. */
+    private static RoomTile wiredLocationOf(RoomUnit unit) {
+        RoomTile stepping = unit.getWiredLocation();
+        return stepping != null ? stepping : unit.getCurrentLocation();
     }
 }

@@ -58,6 +58,8 @@ public class HabboInfo implements Runnable {
     private int roomEntryTeleportId = 0;
     private PendingRoomEntry pendingRoomEntry;
     private long lastRoomForwardAt;
+    private int roomForwardGlowRoomId;
+    private long roomForwardGlowExpiresAt;
     private int roomQueueId;
     private RideablePet riding;
     private Class<? extends Game> currentGame;
@@ -67,11 +69,12 @@ public class HabboInfo implements Runnable {
     private final Object currencyLock = new Object();
     private final Object ledgerMutationLock = new Object();
     private GamePlayer gamePlayer;
-    private int photoRoomId;
-    private int photoTimestamp;
-    private String photoURL;
-    private String photoJSON;
+    private volatile int photoRoomId;
+    private volatile int photoTimestamp;
+    private volatile String photoURL;
+    private volatile String photoJSON;
     private int webPublishTimestamp;
+    private int purchasedPhotoTimestamp;
     private String machineID;
     private List<NavigatorSavedSearch> savedSearches = new ArrayList<>();
     private List<MessengerCategory> messengerCategories = new ArrayList<>();
@@ -659,6 +662,22 @@ public class HabboInfo implements Runnable {
         return (entry != null && entry.appliesTo(roomId, now)) ? entry : null;
     }
 
+    /** Teleport to Room sent this user to that room: they arrive there still glowing. */
+    public synchronized void setRoomForwardGlow(int roomId, long expiresAt) {
+        this.roomForwardGlowRoomId = roomId;
+        this.roomForwardGlowExpiresAt = expiresAt;
+    }
+
+    /** Whether the user enters this room glowing from Teleport to Room; read once. */
+    public synchronized boolean takeRoomForwardGlow(int roomId, long now) {
+        boolean glows = this.roomForwardGlowRoomId != 0
+                && this.roomForwardGlowRoomId == roomId
+                && now <= this.roomForwardGlowExpiresAt;
+        this.roomForwardGlowRoomId = 0;
+        this.roomForwardGlowExpiresAt = 0;
+        return glows;
+    }
+
     /** Admits one furni-driven room forward per interval for this user. */
     public synchronized boolean tryAcquireRoomForward(long now, long intervalMs) {
         if (this.lastRoomForwardAt != 0 && now - this.lastRoomForwardAt < intervalMs) {
@@ -775,12 +794,46 @@ public class HabboInfo implements Runnable {
         this.photoJSON = photoJSON;
     }
 
-    public int getWebPublishTimestamp() {
+    /**
+     * Marks the photo taken at {@code timestamp} as bought. Returns false when that photo was bought
+     * already, so a repeated purchase packet for the same photo buys nothing.
+     */
+    public synchronized boolean claimPhotoPurchase(int timestamp) {
+        if (timestamp <= 0 || this.purchasedPhotoTimestamp == timestamp) return false;
+
+        this.purchasedPhotoTimestamp = timestamp;
+        return true;
+    }
+
+    /** Undoes {@link #claimPhotoPurchase(int)} when the purchase could not be completed. */
+    public synchronized void releasePhotoPurchase(int timestamp) {
+        if (this.purchasedPhotoTimestamp == timestamp) this.purchasedPhotoTimestamp = 0;
+    }
+
+    public synchronized int getWebPublishTimestamp() {
         return this.webPublishTimestamp;
     }
 
-    public void setWebPublishTimestamp(int webPublishTimestamp) {
+    public synchronized void setWebPublishTimestamp(int webPublishTimestamp) {
         this.webPublishTimestamp = webPublishTimestamp;
+    }
+
+    /**
+     * Takes the web publish slot at {@code now} when the last publish is at least {@code delay}
+     * seconds old. Returns the previous publish time, for {@link #releaseWebPublish(int, int)}, or -1
+     * when the slot is still taken.
+     */
+    public synchronized int claimWebPublish(int now, int delay) {
+        int previous = this.webPublishTimestamp;
+        if (now - previous < delay) return -1;
+
+        this.webPublishTimestamp = now;
+        return previous;
+    }
+
+    /** Gives back a publish slot taken at {@code now} that did not end in a publish. */
+    public synchronized void releaseWebPublish(int now, int previous) {
+        if (this.webPublishTimestamp == now) this.webPublishTimestamp = previous;
     }
 
     public String getMachineID() {

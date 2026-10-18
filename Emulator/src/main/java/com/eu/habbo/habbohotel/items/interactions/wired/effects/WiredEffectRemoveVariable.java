@@ -22,8 +22,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableDefinitionFlash;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -46,7 +48,13 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
     public static final int TARGET_FURNI = 1;
     public static final int TARGET_CONTEXT = 2;
 
+    /** A global variable: Habbo saves it and the box leaves the global's value when it runs. */
+    static final int TARGET_GLOBAL = 3;
+
     private int variableItemId = 0;
+    /** A presence flag Habbo lets this box give to and remove from floor furni, for the room's lifetime. */
+    private static final String FREE_MOVE_KEY = "@can_move_freely";
+
     private String internalVariableKey = "";
     private int targetType = TARGET_USER;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -72,10 +80,31 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
             return;
         }
 
+        // A global always exists: removing one changes nothing.
+        if (this.targetType == TARGET_GLOBAL) {
+            return;
+        }
+
+        if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
+            if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
+                for (HabboItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
+                    room.getWiredRuntime().setMovesFreely(item, false);
+                }
+            }
+            return;
+        }
+
         if (!this.internalVariableKey.isEmpty()) {
             if (this.targetType != TARGET_USER) return;
             for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
                 if (unit == null) continue;
+                if ("@handitem_id".equals(this.internalVariableKey)) {
+                    // Drops what the avatar carries; an empty hand has no @handitem to remove.
+                    if (unit.getHandItem() > 0) {
+                        WiredInternalVariableSupport.writeUserValue(room, unit, "@handitem_id", 0);
+                    }
+                    continue;
+                }
                 if ("@has_rights".equals(this.internalVariableKey)) {
                     Habbo habbo = room.getHabbo(unit);
                     if (habbo == null || habbo.getHabboInfo() == null) continue;
@@ -92,35 +121,38 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
             return;
         }
 
-        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room);
+        // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0) return;
+
+        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room, variableId);
         if (arrayDefinition != null && arrayDefinition.isArray()) {
             this.removeArray(ctx, room, arrayDefinition);
             return;
         }
 
-        switch (this.targetType) {
-            case TARGET_USER:
-                this.executeUserVariables(ctx, room);
-                return;
-            case TARGET_FURNI:
-                this.executeFurniVariables(ctx, room);
-                return;
-            case TARGET_CONTEXT:
-                this.executeContextVariables(ctx, room);
-                return;
-            default:
-                return;
+        boolean removed =
+                switch (this.targetType) {
+                    case TARGET_USER -> this.executeUserVariables(ctx, room, variableId);
+                    case TARGET_FURNI -> this.executeFurniVariables(ctx, room, variableId);
+                    case TARGET_CONTEXT -> this.executeContextVariables(ctx, room, variableId);
+                    default -> false;
+                };
+        // A remove that removed something shows the remove state on the variable's definition box.
+        if (removed) {
+            WiredVariableDefinitionFlash.flash(room, variableId, WiredVariableDefinitionFlash.KIND_REMOVED);
         }
     }
 
-    private void executeUserVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+    private boolean executeUserVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(variableId);
 
         if (definition == null || definition.isReadOnly()) {
-            return;
+            return false;
         }
 
         List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        boolean removed = false;
 
         for (RoomUnit roomUnit : users) {
             if (roomUnit == null) {
@@ -133,8 +165,9 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                 continue;
             }
 
-            room.getUserVariableManager().removeVariable(holder, this.variableItemId);
+            removed |= room.getUserVariableManager().removeVariable(holder, variableId);
         }
+        return removed;
     }
 
     private void removeArray(WiredContext ctx, Room room, WiredArrayVariableDefinition definition) {
@@ -157,21 +190,21 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         }
     }
 
-    private WiredArrayVariableDefinition getArrayDefinition(Room room) {
+    private WiredArrayVariableDefinition getArrayDefinition(Room room, int variableId) {
         int variableType =
                 switch (this.targetType) {
                     case TARGET_FURNI -> WiredArrayVariableType.FURNI.code();
                     case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT.code();
                     default -> WiredArrayVariableType.USER.code();
                 };
-        return WiredArrayDefinitionSupport.resolve(room, variableType, this.variableItemId);
+        return WiredArrayDefinitionSupport.resolve(room, variableType, variableId);
     }
 
-    private void executeFurniVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+    private boolean executeFurniVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(variableId);
 
         if (definition == null || definition.isReadOnly()) {
-            return;
+            return false;
         }
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
@@ -179,37 +212,40 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         }
 
         List<HabboItem> furni = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni);
+        boolean removed = false;
 
         for (HabboItem item : furni) {
             if (item == null) {
                 continue;
             }
 
-            room.getFurniVariableManager().removeVariable(item.getId(), this.variableItemId);
+            removed |= room.getFurniVariableManager().removeVariable(item.getId(), variableId);
         }
+        return removed;
     }
 
-    private void executeContextVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
+    private boolean executeContextVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, variableId);
 
         if (definition == null || definition.isReadOnly()) {
-            return;
+            return false;
         }
 
-        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, this.variableItemId);
+        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, variableId);
 
-        if (WiredContextVariableSupport.removeVariable(ctx, room, this.variableItemId)) {
+        if (WiredContextVariableSupport.removeVariable(ctx, room, variableId)) {
             WiredContextVariableSupport.triggerVariableChanged(
                     ctx,
                     room,
-                    this.variableItemId,
+                    variableId,
                     false,
                     true,
                     WiredEvent.VariableChangeKind.NONE,
                     previous == null ? 0L : previous,
                     0L);
+            return true;
         }
+        return false;
     }
 
     @Deprecated
@@ -245,7 +281,10 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                         ? String.valueOf(this.variableItemId)
                         : "internal:" + this.internalVariableKey);
         message.appendInt(1);
-        message.appendInt(WiredValueVariable.officialOf(this.targetType));
+        message.appendInt(
+                this.targetType == TARGET_GLOBAL
+                        ? WiredValueVariable.TARGET_GLOBAL
+                        : WiredValueVariable.officialOf(this.targetType));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -263,7 +302,8 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         int[] intParams = settings.getIntParams();
         int holder =
                 WiredValueVariable.holderOf((intParams.length > 0) ? intParams[0] : WiredValueVariable.TARGET_USER);
-        int nextTargetType = normalizeTargetType(holder < 0 ? TARGET_USER : holder);
+        boolean globalTarget = intParams.length > 0 && intParams[0] == WiredValueVariable.TARGET_GLOBAL;
+        int nextTargetType = globalTarget ? TARGET_GLOBAL : normalizeTargetType(holder < 0 ? TARGET_USER : holder);
         int[] userSources = settings.getUserSourceTypes();
         int[] furniSources = settings.getFurniSourceTypes();
         int nextUserSource =
@@ -274,7 +314,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         String nextInternalKey = normalizeInternalKey(settings.getStringParam());
         boolean internal = settings.getStringParam() != null
                 && settings.getStringParam().trim().startsWith("internal:");
-        if (internal && (nextInternalKey.isEmpty() || nextTargetType != TARGET_USER)) {
+        if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
@@ -298,6 +338,9 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                     if (furniDefinition == null || furniDefinition.isReadOnly()) {
                         throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                     }
+                    break;
+                case TARGET_GLOBAL:
+                    // Saved like Give Variable on a global: the box then removes nothing.
                     break;
                 case TARGET_CONTEXT:
                     WiredVariableDefinitionInfo contextDefinition =
@@ -379,9 +422,8 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
             if (data != null) {
                 this.variableItemId = Math.max(0, data.variableItemId);
                 this.targetType = normalizeTargetType(data.targetType);
-                this.internalVariableKey = this.targetType == TARGET_USER
-                        ? normalizeInternalKey("internal:" + data.internalVariableKey)
-                        : "";
+                String loadedKey = normalizeInternalKey("internal:" + data.internalVariableKey);
+                this.internalVariableKey = this.targetType == internalTargetOf(loadedKey) ? loadedKey : "";
                 if (!this.internalVariableKey.isEmpty()) this.variableItemId = 0;
                 this.userSource = normalizeUserSource(data.userSource);
                 this.furniSource = normalizeFurniSource(data.furniSource);
@@ -450,6 +492,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         switch (value) {
             case TARGET_FURNI:
             case TARGET_CONTEXT:
+            case TARGET_GLOBAL:
                 return value;
             default:
                 return TARGET_USER;
@@ -474,7 +517,12 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@has_rights").contains(key) ? key : "";
+        return Set.of("@has_rights", "@handitem_id", FREE_MOVE_KEY).contains(key) ? key : "";
+    }
+
+    /** The holder an internal variable of this box lives on: {@code @can_move_freely} on floor furni, the rest on users. */
+    private static int internalTargetOf(String key) {
+        return FREE_MOVE_KEY.equals(key) ? TARGET_FURNI : TARGET_USER;
     }
 
     private static int parseVariableItemId(String value) {

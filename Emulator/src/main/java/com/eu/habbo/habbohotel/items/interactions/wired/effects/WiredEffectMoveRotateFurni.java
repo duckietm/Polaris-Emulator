@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implements ICycleable {
@@ -328,7 +330,7 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
         this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
-        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5)) return false;
+        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 20)) return false;
 
         if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
@@ -356,6 +358,18 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
      * @return new rotation
      */
     private int getNewRotation(HabboItem item) {
+        // With the furni's directions from its asset, turn the way the client rotates it: to the next
+        // direction it has in 45 degree order; without them, keep the old rules below.
+        FurnitureDirections directions = FurnitureDirections.of(item);
+        if (directions.isKnown()) {
+            return switch (this.rotation) {
+                case 1 -> directions.turn(item.getRotation(), true);
+                case 2 -> directions.turn(item.getRotation(), false);
+                case 3 -> directions.random(item.getRotation(), ThreadLocalRandom.current());
+                default -> item.getRotation();
+            };
+        }
+
         if (item.getMaximumRotations() == 2) {
             return item.getRotation() == 0 ? 4 : 0;
         } else if (item.getMaximumRotations() == 1) {

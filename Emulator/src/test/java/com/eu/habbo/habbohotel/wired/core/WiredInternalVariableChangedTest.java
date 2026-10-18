@@ -37,6 +37,42 @@ import org.junit.jupiter.api.Test;
 
 class WiredInternalVariableChangedTest {
     @Test
+    void aDeletedOnlyWatcherOnTheTravelingFlagHearsAProjectileLand() throws Exception {
+        Room room = mock(Room.class);
+        GameEnvironment environment = mock(GameEnvironment.class);
+        RoomManager rooms = mock(RoomManager.class);
+        when(environment.getRoomManager()).thenReturn(rooms);
+        when(rooms.getRoom(anyInt())).thenReturn(room);
+        WiredTriggerVariableChanged trigger = new WiredTriggerVariableChanged(93, 1, null, "", 0, 0);
+        // Official layout, furni target (0): deleted only.
+        WiredSettings settings = new WiredSettings(
+                new int[] {0, 0, 1, 0, -1, 0, 0}, "internal:" + WiredProjectileFlight.IS_TRAVELING, new int[0], 0);
+
+        try (var emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
+            assertTrue(trigger.saveData(settings));
+            // Another built-in is never deleted: a deleted-only watcher on it has nothing to hear.
+            settings.setStringParam("internal:@state");
+            assertFalse(trigger.saveData(settings));
+            settings.setStringParam("internal:" + WiredProjectileFlight.IS_TRAVELING);
+            assertTrue(trigger.saveData(settings));
+        }
+
+        WiredEvent landed = WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
+                .variableTargetType(1)
+                .internalVariableKey(WiredProjectileFlight.IS_TRAVELING)
+                .variableDeleted(true)
+                .build();
+        assertTrue(trigger.matches(trigger, landed));
+        WiredEvent counted = WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
+                .variableTargetType(1)
+                .internalVariableKey(WiredProjectileFlight.IS_TRAVELING)
+                .variableChangeKind(WiredEvent.VariableChangeKind.INCREASED)
+                .build();
+        assertFalse(trigger.matches(trigger, counted));
+    }
+
+    @Test
     void internalTriggerPersistsItsCanonicalKeyAndPreservesCustomMatching() throws Exception {
         Room room = mock(Room.class);
         GameEnvironment environment = mock(GameEnvironment.class);

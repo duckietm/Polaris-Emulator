@@ -19,9 +19,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSimulation;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.migrate.WiredEvents;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import com.eu.habbo.threading.runnables.WiredCollissionRunnable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -156,7 +156,8 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
                             target = roomUnitsAtTile.iterator().next();
                             if (i == 0) { // i = 0 means right next to it
                                 collided = true;
-                                Emulator.getThreading().run(new WiredCollissionRunnable(target, room, item));
+                                // As in Habbo, the collision runs in the pass of this chase.
+                                WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, target, item));
                             }
                             break;
                         }

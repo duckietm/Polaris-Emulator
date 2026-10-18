@@ -10,12 +10,10 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUnitIdleComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -63,6 +61,8 @@ public class RoomCycleManager {
         boolean loaded = this.room.isLoaded();
 
         if (loaded) {
+            // Wired box flashes go out first, ahead of the movement packets of the same cycle.
+            processWiredBoxFlashes();
             processScheduledTasks();
             processCycleTasks();
             processDecoHosting();
@@ -103,8 +103,12 @@ public class RoomCycleManager {
                 if (!updatedUnit.isEmpty()) {
                     ServerMessage statusComposer = new RoomUserStatusComposer(updatedUnit, true).compose();
                     WiredMoveCarryHelper.beginMovementCollection();
-                    WiredMoveCarryHelper.processUserFollowers(this.room, updatedUnit);
-                    ServerMessage wiredMovementsComposer = WiredMoveCarryHelper.finishMovementCollection();
+                    ServerMessage wiredMovementsComposer;
+                    try {
+                        WiredMoveCarryHelper.processUserFollowers(this.room, updatedUnit);
+                    } finally {
+                        wiredMovementsComposer = WiredMoveCarryHelper.finishMovementCollection();
+                    }
 
                     if (wiredMovementsComposer != null) {
                         ArrayList<ServerMessage> batchedMessages = new ArrayList<>(2);
@@ -130,6 +134,14 @@ public class RoomCycleManager {
 
     boolean advanceIdleUnload(boolean empty) {
         return this.room.advanceIdleUnload(empty);
+    }
+
+    private void processWiredBoxFlashes() {
+        Set<HabboItem> flipped = this.room.getWiredRuntime().getBoxFlashes().drain();
+
+        if (!flipped.isEmpty() && !this.room.isHideWired()) {
+            this.room.sendComposer(new ItemsDataUpdateComposer(flipped).compose());
+        }
     }
 
     private void processScheduledTasks() {
@@ -200,9 +212,8 @@ public class RoomCycleManager {
         boolean roomIdleBehaviorEnabled = this.room.isIdleSleepEnabled() || this.room.isIdleAutokickEnabled();
 
         if (Emulator.getConfig().getBoolean("hotel.rooms.auto.idle") || roomIdleBehaviorEnabled) {
-            int sleepCycles = this.room.isIdleSleepEnabled()
-                    ? this.room.getIdleSleepTimeoutSeconds() * 2
-                    : Room.IDLE_CYCLES;
+            int sleepCycles =
+                    this.room.isIdleSleepEnabled() ? this.room.getIdleSleepTimeoutSeconds() * 2 : Room.IDLE_CYCLES;
             int kickCycles = this.room.isIdleAutokickEnabled()
                     ? this.room.getIdleAutokickTimeoutSeconds() * 2
                     : Room.IDLE_CYCLES_KICK;
@@ -230,8 +241,9 @@ public class RoomCycleManager {
 
     private void processHabboMute(Habbo habbo) {
         if (habbo.getHabboStats().mutedBubbleTracker && habbo.getHabboStats().allowTalk()) {
+            // The client counts the RemainingMutePeriod down itself; the room was never told of the
+            // mute, so it is not told of its end either (an IgnoreResult 3 would unignore the user).
             habbo.getHabboStats().mutedBubbleTracker = false;
-            this.room.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
         }
     }
 
@@ -337,7 +349,7 @@ public class RoomCycleManager {
                 for (Habbo queuedHabbo : habboQueue.values()) {
                     if (queuedHabbo.isOnline()) {
                         if (queuedHabbo.getHabboInfo().getRoomQueueId() == room.getId()) {
-                            queuedHabbo.getClient().sendResponse(new RoomAccessDeniedComposer(""));
+                            queuedHabbo.getClient().sendResponse(new RoomAccessDeniedComposer(room.getId(), ""));
                         }
                     }
                 }
@@ -437,22 +449,7 @@ public class RoomCycleManager {
                 }
             } else {
                 if (!unit.hasStatus(RoomUnitStatus.LAY)) {
-                    BedProfile bedProfile = new BedProfile(topItem);
-                    double layHeight = Item.getCurrentHeight(topItem) * 1.0D + bedProfile.getLayZOffset();
-                    LOGGER.debug(
-                            "[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
-                            topItem.getBaseItem().getName(),
-                            topItem.getBaseItem().getHeight(),
-                            bedProfile.isFlat(),
-                            bedProfile.isDouble(),
-                            bedProfile.getLayXOffset(),
-                            bedProfile.getLayYOffset(),
-                            bedProfile.getLayZOffset());
-                    unit.setStatus(
-                            RoomUnitStatus.LAY,
-                            layHeight + ";" + bedProfile.getLayXOffset() + ";" + bedProfile.getLayYOffset());
-                    unit.setRotation(RoomUserRotation.values()[topItem.getRotation() % 4]);
-                    unit.setLocation(bedProfile.snapToLay(this.room, topItem, unit.getX(), unit.getY()));
+                    BedProfile.lay(this.room, topItem, unit);
 
                     this.room.getUnitManager().checkBedLoveEffect(topItem);
 

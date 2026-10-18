@@ -31,6 +31,7 @@ import com.eu.habbo.messages.outgoing.snowwar.SnowStormRejoinPreviousRoomCompose
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserChatMessageComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserRematchedComposer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,9 @@ public class SnowWarGame {
     /** All-time saved scores read when the match starts; {@code null} until loaded or if loading failed. */
     private volatile Map<Integer, Integer> savedTotalsAtStart = null;
 
+    private static final int PREFETCH_ATTEMPTS = 3;
+    private static final long PREFETCH_RETRY_MS = 15_000L;
+
     public SnowWarGame(int id, int mapId, List<Habbo> participants) {
         this.id = id;
         this.mapId = mapId;
@@ -90,14 +94,21 @@ public class SnowWarGame {
         this.idleTimeoutMs = idleTimeoutSeconds <= 0 ? 0 : Math.max(20, idleTimeoutSeconds) * 1000L;
         this.idleWarningMs = Math.min(this.idleTimeoutMs, Math.max(5, idleWarningSeconds) * 1000L);
 
-        // Team assignment round-robin at match creation.
-        int index = 0;
+        // Teams at match creation: rematchers keep their team, the rest fill
+        // the smaller team, then the sizes are balanced (SnowWarTeams). The
+        // lobby line-up uses the same split.
+        List<Integer> participantIds = new ArrayList<>();
         for (Habbo habbo : participants) {
-            SnowWarGamePlayer player = new SnowWarGamePlayer(habbo, this.nextObjectId(), index % this.teamCount);
+            participantIds.add(habbo.getHabboInfo().getId());
+        }
+        Map<Integer, Integer> teams =
+                SnowWarTeams.assign(participantIds, SnowWarManager.getInstance().getPreferredTeams(), this.teamCount);
+        for (Habbo habbo : participants) {
+            int userId = habbo.getHabboInfo().getId();
+            SnowWarGamePlayer player = new SnowWarGamePlayer(habbo, this.nextObjectId(), teams.getOrDefault(userId, 0));
             synchronized (this.players) {
                 this.players.put(player.getUserId(), player);
             }
-            index++;
         }
 
         if (this.map != null) {
@@ -286,9 +297,29 @@ public class SnowWarGame {
         for (SnowWarGamePlayer player : this.getActivePlayers()) {
             userIds.add(player.getUserId());
         }
+        this.prefetchSavedTotals(userIds, 0);
+    }
+
+    /**
+     * Loads the all-time totals in the background; a failed read is retried
+     * while the match runs, so endGame (on the game tick) never has to touch
+     * the database itself.
+     */
+    private void prefetchSavedTotals(List<Integer> userIds, int attempt) {
         Emulator.getThreading()
-                .run(() ->
-                        this.savedTotalsAtStart = SnowWarManager.getInstance().loadSavedTotalScores(userIds));
+                .run(
+                        () -> {
+                            Map<Integer, Integer> totals =
+                                    SnowWarManager.getInstance().loadSavedTotalScores(userIds);
+                            if (totals != null) {
+                                this.savedTotalsAtStart = totals;
+                            } else if (attempt + 1 < PREFETCH_ATTEMPTS
+                                    && this.state != SnowWarGameState.ENDING
+                                    && this.state != SnowWarGameState.ENDED) {
+                                this.prefetchSavedTotals(userIds, attempt + 1);
+                            }
+                        },
+                        attempt == 0 ? 0 : PREFETCH_RETRY_MS);
     }
 
     private void assignSpawnPoints() {
@@ -353,12 +384,12 @@ public class SnowWarGame {
             finalPlayerIds.add(player.getUserId());
         }
         // Scores were queued just above, so they count as pending on top of
-        // the totals read at the start; only fall back to a database read
-        // when those could not be loaded.
+        // the totals read at the start. endGame runs on the game tick, so it
+        // never reads the database: if every background read failed, the
+        // levels come from the pending scores alone.
         Map<Integer, Integer> savedTotals = this.savedTotalsAtStart;
-        Map<Integer, Integer> skillLevels = savedTotals != null
-                ? SnowWarManager.getInstance().skillLevelsFromSavedTotals(finalPlayerIds, savedTotals)
-                : SnowWarManager.getInstance().getSkillLevels(finalPlayerIds);
+        Map<Integer, Integer> skillLevels = SnowWarManager.getInstance()
+                .skillLevelsFromSavedTotals(finalPlayerIds, savedTotals != null ? savedTotals : Map.of());
 
         this.broadcast(new SnowStormOnStageEndingComposer());
         this.broadcast(new SnowStormOnGameEndingComposer(this.restartSeconds, this, skillLevels));
@@ -371,6 +402,18 @@ public class SnowWarGame {
     }
 
     private void cleanup() {
+        // Rematchers still waiting on this match (online, not moved on).
+        List<Habbo> rematchers = new ArrayList<>();
+        Map<Integer, Integer> rematchTeams = new HashMap<>();
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            if (player.isPlayAgain()
+                    && player.getHabbo().getClient() != null
+                    && SnowWarManager.getInstance().getGameByUserId(player.getUserId()) == this) {
+                rematchers.add(player.getHabbo());
+                rematchTeams.put(player.getUserId(), player.getTeamId());
+            }
+        }
+
         for (SnowWarGamePlayer player : this.getActivePlayers()) {
             // Players who rematched may already be part of a new game -
             // never wipe attributes that belong to another running match.
@@ -384,33 +427,32 @@ public class SnowWarGame {
             this.players.clear();
         }
         SnowWarManager.getInstance().onGameFinished(this);
+
+        if (!rematchers.isEmpty()) {
+            SnowWarManager.getInstance().enqueueRematch(rematchers, rematchTeams);
+        }
     }
 
     public void exitGame(int userId) {
-        SnowWarGamePlayer player;
-        synchronized (this.players) {
-            player = this.players.remove(userId);
-        }
+        SnowWarGamePlayer player = this.removeLeaver(userId);
 
         if (player == null) {
             return;
         }
 
-        SnowWarPlayers.remove(userId);
-        SnowWarManager.getInstance().clearUserGame(userId);
-
-        this.broadcast(new SnowStormOnPlayerExitedArenaComposer(player.getObjectId(), userId));
+        // AIR Game2UserBlocked (3508): abandoning a live match blocks starting
+        // a new one for a while (GamesMainViewController.changeBlockStatus).
+        // Kept on the server too, so it also holds after a disconnect.
+        int blockSeconds = this.state == SnowWarGameState.RUNNING
+                ? Math.max(0, setting("gamecenter.game.leave.block.seconds", 180))
+                : 0;
+        SnowWarManager.getInstance().blockUser(userId, blockSeconds);
 
         if (player.getHabbo().getClient() != null) {
             player.getHabbo().getClient().sendResponse(new SnowStormRejoinPreviousRoomComposer());
 
-            // AIR Game2UserBlocked (3508): abandoning a live match blocks the
-            // play button for a while (GamesMainViewController.changeBlockStatus).
-            if (this.state == SnowWarGameState.RUNNING) {
-                int blockSeconds = Math.max(0, setting("gamecenter.game.leave.block.seconds", 180));
-                if (blockSeconds > 0) {
-                    player.getHabbo().getClient().sendResponse(new Game2UserBlockedComposer(blockSeconds));
-                }
+            if (blockSeconds > 0) {
+                player.getHabbo().getClient().sendResponse(new Game2UserBlockedComposer(blockSeconds));
             }
         }
 
@@ -449,6 +491,39 @@ public class SnowWarGame {
         if (remainingPlayers == 0 && this.state == SnowWarGameState.ENDED) {
             SnowWarManager.getInstance().onGameFinished(this);
         }
+    }
+
+    /**
+     * Removes a leaver under the tick monitor while a match runs (the lock
+     * {@link #runAction} uses), so a tick in progress finishes and sends the
+     * leaver's last events before PlayerExitedArena goes out. Only the
+     * removal is locked; ending the game happens outside it.
+     */
+    private SnowWarGamePlayer removeLeaver(int userId) {
+        SnowWarGameTask current = this.task;
+        if (current == null) {
+            return this.removeAndAnnounce(userId);
+        }
+        synchronized (current) {
+            return this.removeAndAnnounce(userId);
+        }
+    }
+
+    private SnowWarGamePlayer removeAndAnnounce(int userId) {
+        SnowWarGamePlayer player;
+        synchronized (this.players) {
+            player = this.players.remove(userId);
+        }
+
+        if (player == null) {
+            return null;
+        }
+
+        SnowWarPlayers.remove(userId);
+        SnowWarManager.getInstance().clearUserGame(userId);
+
+        this.broadcast(new SnowStormOnPlayerExitedArenaComposer(player.getObjectId(), userId));
+        return player;
     }
 
     // ========================================================================
@@ -725,9 +800,13 @@ public class SnowWarGame {
         // results-screen button never goes silently dead.
         boolean withinWindow = System.currentTimeMillis() <= this.restartWindowEndMillis;
 
+        // A rematch inside the window waits for the window to end, so the
+        // whole group goes back into the queue together with its teams (see
+        // cleanup).
         if (withinWindow) {
             player.setPlayAgain(true);
             this.broadcast(new SnowStormUserRematchedComposer(player.getUserId()));
+            return;
         }
 
         SnowWarManager.getInstance().clearUserGame(player.getUserId());

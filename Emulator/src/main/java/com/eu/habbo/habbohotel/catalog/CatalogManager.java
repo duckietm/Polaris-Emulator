@@ -1877,9 +1877,14 @@ public class CatalogManager {
                                                             .getGuildManager()
                                                             .getGuildMember(guild, habbo)
                                                     != null) {
-                                        if (baseItem.getName().equals("guild_forum")
-                                                && guild.getOwnerId()
-                                                        != habbo.getHabboInfo().getId()) {
+                                        if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
+                                                && !GuildForumPurchasePolicy.mayBuy(
+                                                        guild.hasForum(),
+                                                        guild.getOwnerId(),
+                                                        habbo.getHabboInfo().getId(),
+                                                        habbo.getHabboInfo()
+                                                                .getRank()
+                                                                .getLevel())) {
                                             habbo.getClient()
                                                     .sendResponse(new AlertPurchaseFailedComposer(
                                                             AlertPurchaseFailedComposer.SERVER_ERROR));
@@ -2492,10 +2497,14 @@ public class CatalogManager {
                                                 == null) {
                                     throw new SQLException("User cannot purchase furniture for guild " + guildId);
                                 }
-                                if (baseItem.getName().equals("guild_forum")
-                                        && guild.getOwnerId()
-                                                != habbo.getHabboInfo().getId()) {
-                                    throw new SQLException("Only the guild owner can purchase its forum");
+                                if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
+                                        && !GuildForumPurchasePolicy.mayBuy(
+                                                guild.hasForum(),
+                                                guild.getOwnerId(),
+                                                habbo.getHabboInfo().getId(),
+                                                habbo.getHabboInfo().getRank().getLevel())) {
+                                    throw new SQLException(
+                                            "User cannot purchase a forum terminal for guild " + guildId);
                                 }
                                 InteractionGuildFurni created = (InteractionGuildFurni) Emulator.getGameEnvironment()
                                         .getItemManager()

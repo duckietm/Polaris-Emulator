@@ -379,7 +379,8 @@ public class SecureLoginEvent extends MessageHandler {
                 messages.add(new FavoriteRoomsCountComposer(this.client.getHabbo()).compose());
                 messages.add(new GameCenterGameListComposer().compose());
                 messages.add(new GameCenterAccountInfoComposer(3, 100).compose());
-                messages.add(new GameCenterAccountInfoComposer(0, 100).compose());
+                // Game 0 (SnowWar) has a real games-left counter; the hub asks for
+                // it when it opens (Game2GetAccountGameStatus), no placeholder here.
 
                 messages.add(new UserClubComposer(
                                 this.client.getHabbo(),

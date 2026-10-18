@@ -14,13 +14,17 @@ public class RoomChatMessageBubbles {
     public static final RoomChatMessageBubbles YELLOW = new RoomChatMessageBubbles(5, "YELLOW", "", true, true);
     public static final RoomChatMessageBubbles GREEN = new RoomChatMessageBubbles(6, "GREEN", "", true, true);
     public static final RoomChatMessageBubbles BLACK = new RoomChatMessageBubbles(7, "BLACK", "", true, true);
-    public static final RoomChatMessageBubbles FORTUNE_TELLER = new RoomChatMessageBubbles(8, "FORTUNE_TELLER", "", false, false);
-    public static final RoomChatMessageBubbles ZOMBIE_ARM = new RoomChatMessageBubbles(9, "ZOMBIE_ARM", "", true, false);
+    public static final RoomChatMessageBubbles FORTUNE_TELLER =
+            new RoomChatMessageBubbles(8, "FORTUNE_TELLER", "", false, false);
+    public static final RoomChatMessageBubbles ZOMBIE_ARM =
+            new RoomChatMessageBubbles(9, "ZOMBIE_ARM", "", true, false);
     public static final RoomChatMessageBubbles SKELETON = new RoomChatMessageBubbles(10, "SKELETON", "", true, false);
-    public static final RoomChatMessageBubbles LIGHT_BLUE = new RoomChatMessageBubbles(11, "LIGHT_BLUE", "", true, true);
+    public static final RoomChatMessageBubbles LIGHT_BLUE =
+            new RoomChatMessageBubbles(11, "LIGHT_BLUE", "", true, true);
     public static final RoomChatMessageBubbles PINK = new RoomChatMessageBubbles(12, "PINK", "", true, true);
     public static final RoomChatMessageBubbles PURPLE = new RoomChatMessageBubbles(13, "PURPLE", "", true, true);
-    public static final RoomChatMessageBubbles DARK_YELLOW = new RoomChatMessageBubbles(14, "DARK_YELLOW", "", true, true);
+    public static final RoomChatMessageBubbles DARK_YELLOW =
+            new RoomChatMessageBubbles(14, "DARK_YELLOW", "", true, true);
     public static final RoomChatMessageBubbles DARK_BLUE = new RoomChatMessageBubbles(15, "DARK_BLUE", "", true, true);
     public static final RoomChatMessageBubbles HEARTS = new RoomChatMessageBubbles(16, "HEARTS", "", true, true);
     public static final RoomChatMessageBubbles ROSES = new RoomChatMessageBubbles(17, "ROSES", "", true, true);
@@ -37,30 +41,58 @@ public class RoomChatMessageBubbles {
     public static final RoomChatMessageBubbles PARROT = new RoomChatMessageBubbles(28, "PARROT", "", false, false);
     public static final RoomChatMessageBubbles PIRATE = new RoomChatMessageBubbles(29, "PIRATE", "", false, false);
     public static final RoomChatMessageBubbles BOT_GUIDE = new RoomChatMessageBubbles(30, "BOT_GUIDE", "", true, true);
-    public static final RoomChatMessageBubbles BOT_RENTABLE = new RoomChatMessageBubbles(31, "BOT_RENTABLE", "", true, true);
-    public static final RoomChatMessageBubbles SCARY_THING = new RoomChatMessageBubbles(32, "SCARY_THING", "", true, false);
+    public static final RoomChatMessageBubbles BOT_RENTABLE =
+            new RoomChatMessageBubbles(31, "BOT_RENTABLE", "", true, true);
+    public static final RoomChatMessageBubbles SCARY_THING =
+            new RoomChatMessageBubbles(32, "SCARY_THING", "", true, false);
     public static final RoomChatMessageBubbles FRANK = new RoomChatMessageBubbles(33, "FRANK", "", true, false);
     public static final RoomChatMessageBubbles WIRED = new RoomChatMessageBubbles(34, "WIRED", "", false, true);
     public static final RoomChatMessageBubbles GOAT = new RoomChatMessageBubbles(35, "GOAT", "", true, false);
     public static final RoomChatMessageBubbles SANTA = new RoomChatMessageBubbles(36, "SANTA", "", true, false);
-    public static final RoomChatMessageBubbles AMBASSADOR = new RoomChatMessageBubbles(37, "AMBASSADOR", "acc_ambassador", false, true);
+    public static final RoomChatMessageBubbles AMBASSADOR =
+            new RoomChatMessageBubbles(37, "AMBASSADOR", "acc_ambassador", false, true);
     public static final RoomChatMessageBubbles RADIO = new RoomChatMessageBubbles(38, "RADIO", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_39 = new RoomChatMessageBubbles(39, "UNKNOWN_39", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_40 = new RoomChatMessageBubbles(40, "UNKNOWN_40", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_41 = new RoomChatMessageBubbles(41, "UNKNOWN_41", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_42 = new RoomChatMessageBubbles(42, "UNKNOWN_42", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_43 = new RoomChatMessageBubbles(43, "UNKNOWN_43", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_44 = new RoomChatMessageBubbles(44, "UNKNOWN_44", "", true, false);
-    public static final RoomChatMessageBubbles UNKNOWN_45 = new RoomChatMessageBubbles(45, "UNKNOWN_45", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_46 = new RoomChatMessageBubbles(46, "UNKNOWN_46", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_47 = new RoomChatMessageBubbles(47, "UNKNOWN_47", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_48 = new RoomChatMessageBubbles(48, "UNKNOWN_48", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_49 = new RoomChatMessageBubbles(49, "UNKNOWN_49", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_50 = new RoomChatMessageBubbles(50, "UNKNOWN_50", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_51 = new RoomChatMessageBubbles(51, "UNKNOWN_51", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_52 = new RoomChatMessageBubbles(52, "UNKNOWN_52", "", true, false);
-	public static final RoomChatMessageBubbles UNKNOWN_53 = new RoomChatMessageBubbles(53, "UNKNOWN_53", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_39 =
+            new RoomChatMessageBubbles(39, "UNKNOWN_39", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_40 =
+            new RoomChatMessageBubbles(40, "UNKNOWN_40", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_41 =
+            new RoomChatMessageBubbles(41, "UNKNOWN_41", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_42 =
+            new RoomChatMessageBubbles(42, "UNKNOWN_42", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_43 =
+            new RoomChatMessageBubbles(43, "UNKNOWN_43", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_44 =
+            new RoomChatMessageBubbles(44, "UNKNOWN_44", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_45 =
+            new RoomChatMessageBubbles(45, "UNKNOWN_45", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_46 =
+            new RoomChatMessageBubbles(46, "UNKNOWN_46", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_47 =
+            new RoomChatMessageBubbles(47, "UNKNOWN_47", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_48 =
+            new RoomChatMessageBubbles(48, "UNKNOWN_48", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_49 =
+            new RoomChatMessageBubbles(49, "UNKNOWN_49", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_50 =
+            new RoomChatMessageBubbles(50, "UNKNOWN_50", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_51 =
+            new RoomChatMessageBubbles(51, "UNKNOWN_51", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_52 =
+            new RoomChatMessageBubbles(52, "UNKNOWN_52", "", true, false);
+    public static final RoomChatMessageBubbles UNKNOWN_53 =
+            new RoomChatMessageBubbles(53, "UNKNOWN_53", "", true, false);
 
+    // AIR chatstyles 130-133 (wired_team_red/blue/yellow/green, systemStyle): the server puts them on the chat of a
+    // user in a Wired team. A user cannot pick them and their own chat colour does not replace them.
+    public static final RoomChatMessageBubbles WIRED_TEAM_RED =
+            new RoomChatMessageBubbles(130, "WIRED_TEAM_RED", "", false, true);
+    public static final RoomChatMessageBubbles WIRED_TEAM_BLUE =
+            new RoomChatMessageBubbles(131, "WIRED_TEAM_BLUE", "", false, true);
+    public static final RoomChatMessageBubbles WIRED_TEAM_YELLOW =
+            new RoomChatMessageBubbles(132, "WIRED_TEAM_YELLOW", "", false, true);
+    public static final RoomChatMessageBubbles WIRED_TEAM_GREEN =
+            new RoomChatMessageBubbles(133, "WIRED_TEAM_GREEN", "", false, true);
 
     static {
         registerBubble(NORMAL);
@@ -109,14 +141,18 @@ public class RoomChatMessageBubbles {
         registerBubble(UNKNOWN_43);
         registerBubble(UNKNOWN_44);
         registerBubble(UNKNOWN_45);
-		registerBubble(UNKNOWN_46);
-		registerBubble(UNKNOWN_47);
-		registerBubble(UNKNOWN_48);
-		registerBubble(UNKNOWN_49);
-		registerBubble(UNKNOWN_50);
-		registerBubble(UNKNOWN_51);
-		registerBubble(UNKNOWN_52);
-		registerBubble(UNKNOWN_53);
+        registerBubble(UNKNOWN_46);
+        registerBubble(UNKNOWN_47);
+        registerBubble(UNKNOWN_48);
+        registerBubble(UNKNOWN_49);
+        registerBubble(UNKNOWN_50);
+        registerBubble(UNKNOWN_51);
+        registerBubble(UNKNOWN_52);
+        registerBubble(UNKNOWN_53);
+        registerBubble(WIRED_TEAM_RED);
+        registerBubble(WIRED_TEAM_BLUE);
+        registerBubble(WIRED_TEAM_YELLOW);
+        registerBubble(WIRED_TEAM_GREEN);
     }
 
     private final int type;
@@ -125,7 +161,8 @@ public class RoomChatMessageBubbles {
     private final boolean overridable;
     private final boolean triggersTalkingFurniture;
 
-    private RoomChatMessageBubbles(int type, String name, String permission, boolean overridable, boolean triggersTalkingFurniture) {
+    private RoomChatMessageBubbles(
+            int type, String name, String permission, boolean overridable, boolean triggersTalkingFurniture) {
         this.type = type;
         this.name = name;
         this.permission = permission;
@@ -172,14 +209,20 @@ public class RoomChatMessageBubbles {
         return triggersTalkingFurniture;
     }
 
-    public static void addDynamicBubble(int type, String name, String permission, boolean overridable, boolean triggersTalkingFurniture) {
+    public static void addDynamicBubble(
+            int type, String name, String permission, boolean overridable, boolean triggersTalkingFurniture) {
         registerBubble(new RoomChatMessageBubbles(type, name, permission, overridable, triggersTalkingFurniture));
     }
 
     public static void removeDynamicBubbles() {
         synchronized (BUBBLES) {
-            BUBBLES.entrySet().removeIf(entry -> entry.getKey() > 53);
+            BUBBLES.entrySet().removeIf(entry -> entry.getKey() > 53 && !isWiredTeamBubble(entry.getKey()));
         }
+    }
+
+    /** True for the Wired team styles 130-133, which only the server may put on a message. */
+    public static boolean isWiredTeamBubble(int id) {
+        return id >= WIRED_TEAM_RED.getType() && id <= WIRED_TEAM_GREEN.getType();
     }
 
     public static RoomChatMessageBubbles[] values() {

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.modtool.ModToolChatRecordDataContext;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
 import com.eu.habbo.habbohotel.modtool.ModToolIssueChatlogType;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -78,7 +79,8 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
 
             // The photo can be gone after a restart.
             ModToolChatRecordDataContext.PHOTO_ID.append(this.response);
-            this.response.appendString(this.issue.photoItem == null ? "" : this.issue.photoItem.getId() + "");
+            this.response.appendString(
+                    this.issue.photoItem == null ? "" : BuildersClubItemIds.toWire(this.issue.photoItem.getId()) + "");
         } else {
             this.response.appendShort(3); // Context Count
 

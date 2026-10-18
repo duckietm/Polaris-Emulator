@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 
@@ -22,7 +23,7 @@ public class WiredFurniRuntimeStateComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(HEADER);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
         this.response.appendString(this.key);
         this.response.appendInt(this.value);
         this.response.appendBoolean(this.supported);

@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredState;
@@ -98,51 +99,45 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
     }
 
     /**
-     * Picked selector boxes are run, as Habbo's remote selection does, and what they pick - furni,
-     * users or both - is this box's result. False when no selector box is picked, so the box keeps
-     * its signal / picked-furni behaviour.
+     * Habbo's remote selection: each picked box stands for its whole stack (every box on its tile), and the stack's
+     * selectors run. A picked stack without a selector selects nothing. Union or intersection combine the stacks for
+     * both kinds, so a furni-only stack intersected with a users-only stack selects neither. Filter keeps the
+     * matches, Filter + Invert the rest, and Invert alone inverts both kinds over the whole room, Wired boxes and
+     * temporary copies included. False when no Wired box is picked, so the box keeps its signal / picked-furni
+     * behaviour. Behaviour observed in plus-emulator/PlusEMU 74b6b1b0, reimplemented.
      */
     private boolean runPickedSelectors(WiredContext ctx, Room room) {
-        List<InteractionWiredEffect> selectors = new ArrayList<>();
-        for (Integer id : this.pickedFurniIds) {
-            HabboItem item = room.getHabboItem(id);
-            if (item instanceof InteractionWiredEffect effect
-                    && effect.isSelector()
-                    && !(effect instanceof WiredEffectRemoteSelector)) {
-                selectors.add(effect);
-            }
-        }
-
-        if (selectors.isEmpty()) {
+        List<List<InteractionWiredEffect>> stacks = this.pickedStacks(room);
+        if (stacks == null) {
             return false;
         }
 
-        // "Filter the stacks": that many of the picked selectors, chosen at random.
-        if (this.pickCount > 0 && this.pickCount < selectors.size()) {
-            java.util.Collections.shuffle(selectors, java.util.concurrent.ThreadLocalRandom.current());
-            selectors = new ArrayList<>(selectors.subList(0, this.pickCount));
+        // "Filter the stacks": that many of the picked stacks, chosen at random.
+        if (this.pickCount > 0 && this.pickCount < stacks.size()) {
+            java.util.Collections.shuffle(stacks, java.util.concurrent.ThreadLocalRandom.current());
+            stacks = new ArrayList<>(stacks.subList(0, this.pickCount));
         }
 
         Set<HabboItem> items = new LinkedHashSet<>();
         Set<RoomUnit> users = new LinkedHashSet<>();
-        boolean pickedItems = false;
-        boolean pickedUsers = false;
         boolean first = true;
 
-        for (InteractionWiredEffect selector : selectors) {
-            WiredContext scratch = new WiredContext(ctx.event(), ctx.triggerItem(), ctx.services(), new WiredState(20));
-            selector.execute(scratch);
+        for (List<InteractionWiredEffect> stack : stacks) {
+            Set<HabboItem> selectedItems = new LinkedHashSet<>();
+            Set<RoomUnit> selectedUsers = new LinkedHashSet<>();
+            if (!stack.isEmpty()) {
+                WiredContext scratch =
+                        new WiredContext(ctx.event(), ctx.triggerItem(), ctx.services(), new WiredState(20));
+                for (InteractionWiredEffect selector : stack) {
+                    selector.execute(scratch);
+                }
+                if (scratch.targets().isItemsModifiedBySelector())
+                    selectedItems.addAll(scratch.targets().items());
+                if (scratch.targets().isUsersModifiedBySelector())
+                    selectedUsers.addAll(scratch.targets().users());
+            }
 
-            Set<HabboItem> selectedItems = scratch.targets().isItemsModifiedBySelector()
-                    ? new LinkedHashSet<>(scratch.targets().items())
-                    : new LinkedHashSet<>();
-            Set<RoomUnit> selectedUsers = scratch.targets().isUsersModifiedBySelector()
-                    ? new LinkedHashSet<>(scratch.targets().users())
-                    : new LinkedHashSet<>();
-            pickedItems |= scratch.targets().isItemsModifiedBySelector();
-            pickedUsers |= scratch.targets().isUsersModifiedBySelector();
-
-            // Union, or with "intersection" only what every picked selector chose.
+            // Union, or with "intersection" only what every picked stack chose.
             if (first || !this.intersect) {
                 items.addAll(selectedItems);
                 users.addAll(selectedUsers);
@@ -153,22 +148,52 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
             first = false;
         }
 
-        if (pickedItems) {
-            ctx.targets()
-                    .setItems(this.applySelectorModifiers(
-                            items,
-                            this.getSelectableFloorItems(room, ctx),
-                            ctx.targets().items(),
-                            this.filterExisting,
-                            this.invert));
-        }
-        if (pickedUsers) {
-            ctx.targets()
-                    .setUsers(this.applySelectorModifiers(
-                            users, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert));
+        LinkedHashSet<HabboItem> everyFurni = new LinkedHashSet<>();
+        room.getFloorItems().forEach(item -> {
+            if (item != null) everyFurni.add(item);
+        });
+
+        ctx.targets()
+                .setItems(this.applySelectorModifiers(
+                        items, everyFurni, ctx.targets().items(), this.filterExisting, this.invert));
+        ctx.targets()
+                .setUsers(this.applySelectorModifiers(
+                        users, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert));
+        return true;
+    }
+
+    /**
+     * The selectors of every picked stack, one entry per stack (tile), in pick order; null when no Wired box is
+     * picked. Remote selectors are left out so two of them cannot run each other forever.
+     */
+    private List<List<InteractionWiredEffect>> pickedStacks(Room room) {
+        List<List<InteractionWiredEffect>> stacks = new ArrayList<>();
+        Set<Long> tiles = new java.util.HashSet<>();
+        boolean pickedWired = false;
+
+        for (Integer id : this.pickedFurniIds) {
+            HabboItem picked = room.getHabboItem(id);
+            if (!(picked instanceof InteractionWired)) continue;
+            pickedWired = true;
+
+            long tile = (((long) picked.getX()) << 32) | (picked.getY() & 0xFFFFFFFFL);
+            if (!tiles.add(tile)) continue;
+
+            List<InteractionWiredEffect> selectors = new ArrayList<>();
+            Set<HabboItem> onTile = room.getItemsAt(picked.getX(), picked.getY());
+            if (onTile != null) {
+                for (HabboItem item : WiredExecutionOrderUtil.sort(onTile)) {
+                    if (item instanceof InteractionWiredEffect effect
+                            && effect.isSelector()
+                            && !(effect instanceof WiredEffectRemoteSelector)) {
+                        selectors.add(effect);
+                    }
+                }
+            }
+            stacks.add(selectors);
         }
 
-        return true;
+        return pickedWired ? stacks : null;
     }
 
     @Override

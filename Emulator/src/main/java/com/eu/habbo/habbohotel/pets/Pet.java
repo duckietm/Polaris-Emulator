@@ -550,7 +550,7 @@ public class Pet implements ISerialize, Runnable {
         message.appendString(this.color);
         message.appendInt(0);
         message.appendInt(0);
-        message.appendInt(0);
+        message.appendInt(this.level);
         // Rarity level; only monster plants have one.
         message.appendInt(-1);
     }

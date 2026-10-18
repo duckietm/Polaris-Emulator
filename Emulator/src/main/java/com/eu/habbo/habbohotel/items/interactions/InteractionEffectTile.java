@@ -52,7 +52,8 @@ public class InteractionEffectTile extends InteractionPressurePlate {
         if (roomUnit.getRoomUnitType() == RoomUnitType.USER) {
             Habbo habbo = room.getHabbo(roomUnit);
 
-            if (habbo != null) {
+            // A rider keeps the riding effect; the tile's effect would hide the horse.
+            if (habbo != null && habbo.getHabboInfo().getRiding() == null) {
                 this.giveEffect(room, roomUnit, habbo.getHabboInfo().getGender());
             }
         } else if (roomUnit.getRoomUnitType() == RoomUnitType.BOT) {

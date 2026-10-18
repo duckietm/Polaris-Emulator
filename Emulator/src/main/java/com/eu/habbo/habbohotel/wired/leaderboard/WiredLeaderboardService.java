@@ -23,19 +23,26 @@ import org.slf4j.LoggerFactory;
  * panel when a player enters and whenever a panel changes, and the chunks of 50 rows each player
  * subscribed to, sent again whenever their rows or the total change.
  *
- * <p>Chunks are only read again when the room's user variables changed (or a panel did), and a
- * slow refresh catches what that misses (a renamed user, a new figure, a changed level-up box). Each
- * chunk is read once per pass however many players look at it, and only what differs from what a
- * player was last sent goes out. Everything runs under this service's lock: the tick and the
- * subscribe requests both use it.
+ * <p>As in Habbo, row updates go out on a fixed grid of {@link #PUSH_PERIOD_MS} (writes at +0.3 s and
+ * +12.3 s reach the players at +10 s and +20 s), while a changed panel and the first chunks of a new
+ * subscription go out at once. On each grid step chunks are only read again when the room's user
+ * variables changed (or a panel did), and a slow refresh catches what that misses (a renamed user, a
+ * new figure, a changed level-up box). Each chunk is read once per pass however many players look at
+ * it, and only what differs from what a player was last sent goes out. Everything runs under this
+ * service's lock: the tick and the subscribe requests both use it.
+ *
+ * <p>Panels are numbered from 1 in the order of their boxes, and every revision comes from one counter
+ * for the whole room, as the official server numbers them.
  */
 public final class WiredLeaderboardService implements WiredTickable {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredLeaderboardService.class);
 
     /** The tick service's ids are furni ids; this is not one, so it uses a seat no furni has. */
     private static final int SERVICE_ID = -8_000_000;
-    /** How often changes go out. */
+    /** How often the panels are looked at. */
     private static final int FLUSH_MS = 500;
+    /** The grid row updates go out on. */
+    static final long PUSH_PERIOD_MS = 10_000;
     /** How often every subscribed chunk is read again even when no variable changed. */
     private static final int REFRESH_MS = 10_000;
     /** Panels per room; the client shows at most four. */
@@ -46,8 +53,6 @@ public final class WiredLeaderboardService implements WiredTickable {
     static final int MAX_SUBSCRIBED_CHUNKS = 2;
 
     static final int MAX_CHUNK_INDEX = WiredLeaderboardQuery.MAX_FILTERED_HOLDERS;
-    /** Revisions start from the clock, so a service started again never goes back below what a client holds. */
-    private static final long REVISION_EPOCH_SECONDS = 1_700_000_000L;
 
     private final int roomId;
     private final Map<Integer, Revision> revisions = new HashMap<>();
@@ -56,6 +61,8 @@ public final class WiredLeaderboardService implements WiredTickable {
     private String snapshotSignature = "";
     private long changeVersion = -1;
     private long lastRefreshMs;
+    private long lastPushSlot = -1;
+    private int roomRevision;
 
     public WiredLeaderboardService(int roomId) {
         this.roomId = roomId;
@@ -106,13 +113,23 @@ public final class WiredLeaderboardService implements WiredTickable {
         }
 
         long now = System.currentTimeMillis();
+        long slot = pushSlot(now);
+        // Row updates wait for the next step of the grid; a changed panel goes out at once.
+        if (!panelsChanged && slot == this.lastPushSlot) return;
+
         long version = room.getUserVariableManager().getChangeVersion();
         boolean refresh = now - this.lastRefreshMs >= REFRESH_MS;
         if (!panelsChanged && !refresh && version == this.changeVersion) return;
 
+        this.lastPushSlot = slot;
         this.changeVersion = version;
         if (refresh) this.lastRefreshMs = now;
         this.pushChunks(room);
+    }
+
+    /** The step of the push grid a time falls in. */
+    static long pushSlot(long nowMs) {
+        return Math.floorDiv(nowMs, PUSH_PERIOD_MS);
     }
 
     /** A player entered: they start without subscriptions and get every panel. */
@@ -174,6 +191,7 @@ public final class WiredLeaderboardService implements WiredTickable {
     private boolean refreshPanels(Room room) {
         List<Panel> next = new ArrayList<>();
         for (WiredExtraVariableLeaderboard box : boxes(room)) {
+            int overlayId = next.size() + 1;
             WiredLeaderboardConfig config = box.getConfig();
             List<WiredLeaderboardDescriptor.Choice> choices = new ArrayList<>();
             for (WiredExtraUserVariable variable : box.getCandidates(room)) {
@@ -186,11 +204,11 @@ public final class WiredLeaderboardService implements WiredTickable {
             String defaultVariableId = choices.isEmpty()
                     ? WiredLeaderboardCodec.NULL_VARIABLE_ID
                     : choices.get(0).variableId();
-            int revision = this.revisionOf(box.getId(), semanticKey(config, choices));
+            int revision = this.revisionOf(overlayId, box.getId(), semanticKey(config, choices));
             next.add(new Panel(
                     config,
                     new WiredLeaderboardDescriptor(
-                            box.getId(),
+                            overlayId,
                             revision,
                             config.title(),
                             config.description(),
@@ -212,14 +230,18 @@ public final class WiredLeaderboardService implements WiredTickable {
         return true;
     }
 
-    /** The panel's revision, moved on when what it ranks (sort, filter, variables) changed. */
-    private int revisionOf(int overlayId, String semanticKey) {
+    /**
+     * The panel's revision, taken from the room's counter when what it ranks (sort, filter, variables)
+     * changed or another box now shows as this panel, so a client never keeps an older panel's rows.
+     */
+    private int revisionOf(int overlayId, int boxId, String semanticKey) {
         Revision known = this.revisions.get(overlayId);
-        if (known != null && known.semanticKey().equals(semanticKey)) return known.revision();
+        if (known != null && known.boxId() == boxId && known.semanticKey().equals(semanticKey)) {
+            return known.revision();
+        }
 
-        int fromClock = (int) Math.max(1, System.currentTimeMillis() / 1000L - REVISION_EPOCH_SECONDS);
-        int revision = (known == null) ? fromClock : Math.max(known.revision() + 1, fromClock);
-        this.revisions.put(overlayId, new Revision(semanticKey, revision));
+        int revision = ++this.roomRevision;
+        this.revisions.put(overlayId, new Revision(boxId, semanticKey, revision));
         return revision;
     }
 
@@ -295,10 +317,15 @@ public final class WiredLeaderboardService implements WiredTickable {
         return null;
     }
 
-    private List<WiredLeaderboardDescriptor> descriptors() {
+    List<WiredLeaderboardDescriptor> descriptors() {
         List<WiredLeaderboardDescriptor> descriptors = new ArrayList<>(this.panels.size());
         for (Panel panel : this.panels) descriptors.add(panel.descriptor());
         return descriptors;
+    }
+
+    /** The panel number a box shows as (from 1), or 0 when it is not shown. */
+    static int overlayIdOf(Room room, WiredExtraVariableLeaderboard box) {
+        return boxes(room).indexOf(box) + 1;
     }
 
     /** The room's configured leaderboard boxes, oldest first, at most four. */
@@ -315,7 +342,7 @@ public final class WiredLeaderboardService implements WiredTickable {
 
     private record Panel(WiredLeaderboardConfig config, WiredLeaderboardDescriptor descriptor) {}
 
-    private record Revision(String semanticKey, int revision) {}
+    private record Revision(int boxId, String semanticKey, int revision) {}
 
     private record Subscription(int revision, String variableId, int[] chunks, Map<Integer, String> sent) {
         Subscription(int revision, String variableId, int[] chunks) {

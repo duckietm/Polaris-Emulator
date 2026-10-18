@@ -4,17 +4,18 @@ import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public final class WiredSourceUtil {
     public static final int SOURCE_TRIGGER = 0;
+    /** The user a bot reached; only under a Bot Reaches User trigger. */
+    public static final int SOURCE_REACHED_USER = 10;
+
     public static final int SOURCE_CLICKED_USER = 11;
     public static final int SOURCE_SELECTED = 100;
     public static final int SOURCE_SELECTOR = 200;
@@ -91,6 +92,7 @@ public final class WiredSourceUtil {
     public static boolean isDefaultUserSource(int value) {
         switch (value) {
             case SOURCE_TRIGGER:
+            case SOURCE_REACHED_USER:
             case SOURCE_CLICKED_USER:
             case SOURCE_SELECTOR:
             case SOURCE_SIGNAL:
@@ -190,10 +192,10 @@ public final class WiredSourceUtil {
         WiredTargets.Defaults defaults = selectorCtx.targets().setDefaultsAside();
         try {
             executeSelectorEffects(selectorCtx, selectorEffects, false);
+            executeSelectorEffects(selectorCtx, selectorEffects, true);
         } finally {
             selectorCtx.targets().restoreDefaults(defaults);
         }
-        executeSelectorEffects(selectorCtx, selectorEffects, true);
 
         applySelectionFilterExtras(room, triggerItem, selectorCtx);
 
@@ -289,13 +291,16 @@ public final class WiredSourceUtil {
                         : Collections.emptyList();
             case SOURCE_SIGNAL:
                 if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
-                    // Everything the signal passed on; a signal from before the sets were carried
-                    // still names its one furni.
+                    // Everything the signal passed on. A signal built without the sets still names its one
+                    // furni, unless that is the receiving antenna (the triggering furni of the stack).
                     List<HabboItem> forwarded = ctx.event().getForwardedItems();
                     if (!forwarded.isEmpty()) {
                         return new ArrayList<>(forwarded);
                     }
-                    return ctx.sourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
+                    return ctx.sourceItem()
+                            .filter(item -> item.getId() != ctx.event().getSignalChannel())
+                            .map(Collections::singletonList)
+                            .orElse(Collections.emptyList());
                 }
                 return Collections.emptyList();
             default:
@@ -314,6 +319,14 @@ public final class WiredSourceUtil {
                 return triggeringUsers(ctx);
             case SOURCE_CLICKED_USER:
                 if (ctx.eventType() == WiredEvent.Type.USER_CLICKS_USER) {
+                    return ctx.event()
+                            .getTargetUnit()
+                            .map(Collections::singletonList)
+                            .orElse(Collections.emptyList());
+                }
+                return Collections.emptyList();
+            case SOURCE_REACHED_USER:
+                if (ctx.eventType() == WiredEvent.Type.BOT_REACHED_HABBO) {
                     return ctx.event()
                             .getTargetUnit()
                             .map(Collections::singletonList)
@@ -342,23 +355,11 @@ public final class WiredSourceUtil {
     }
 
     /**
-     * The triggering user. When a bot reaches a user, that is the user it reached, as in Habbo:
-     * the event's actor is the bot, and a stack about "the user the bot reached" had no source that
-     * named them.
+     * The triggering user: the event's actor. When a bot reaches a user that is the bot, as in Habbo
+     * (a Bot Talk To Avatar to the triggering user says nothing); the user it reached is the Reached
+     * User source.
      */
     private static List<RoomUnit> triggeringUsers(WiredContext ctx) {
-        // Only when a bot did the reaching: a user walking to hand someone an item raises the same
-        // event, and must not get to pick who the stack acts on.
-        if (ctx.eventType() == WiredEvent.Type.BOT_REACHED_HABBO
-                && ctx.actor()
-                        .map(actor -> actor.getRoomUnitType() == RoomUnitType.BOT)
-                        .orElse(false)) {
-            Optional<RoomUnit> reached = ctx.event().getTargetUnit();
-            if (reached.isPresent()) {
-                return Collections.singletonList(reached.get());
-            }
-        }
-
         return ctx.actor().map(Collections::singletonList).orElse(Collections.emptyList());
     }
 

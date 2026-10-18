@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.rooms.items.lovelock;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionLoveLock;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -18,7 +19,7 @@ public class LoveLockFurniStartComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.LoveLockFurniStartComposer);
-        this.response.appendInt(this.loveLock.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.loveLock.getId()));
         this.response.appendBoolean(this.isOwner);
         return this.response;
     }

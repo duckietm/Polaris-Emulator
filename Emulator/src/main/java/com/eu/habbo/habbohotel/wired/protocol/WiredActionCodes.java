@@ -69,7 +69,10 @@ public final class WiredActionCodes {
             Map.entry(95, 57), // move as group
             Map.entry(152, 58), // progress reward track
             Map.entry(153, 59), // reset reward track
-            Map.entry(114, 61)); // set furni transparency
+            Map.entry(114, 61), // set furni transparency
+            Map.entry(158, 62), // set furni highlight
+            Map.entry(170, 63), // send link message
+            Map.entry(171, 64)); // send link dataframe
 
     private WiredActionCodes() {}
 

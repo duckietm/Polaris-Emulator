@@ -2,22 +2,28 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ChestSettingsUpdatedComposer;
 
 /**
- * Saves a wired chest's settings (room-rights only): {@code int itemId, string name, string description,
- * bool accessOpen, bool accessDonate, int appearanceState} and, from a client that knows about
- * the preview, {@code int previewMode, int previewAmount} after them.
+ * Save a chest's settings (AIR {@code ChestSettingsUI}): {@code int chestId, string name,
+ * string description, bool everyoneCanOpen, bool everyoneCanDonate, int stateMode, int previewMode,
+ * int previewAmount, bool wiredEnabled}.
  *
- * <p>The lock, the auto-lock and the capacity ceiling are not here: they live in the chest
- * window itself and save through {@link ChestSaveOptionsEvent} the moment they are touched,
- * so closing a chest is one click rather than a trip through a settings dialog.
+ * <p>The owner's decision only. The Wired upgrade is this save with {@code wiredEnabled} set: it is
+ * one way (a chest that answers wired keeps answering), it leaves the chest locked, and a starter
+ * chest refuses it. A save that goes through answers {@code ChestSettingsUpdated}; the settings reach
+ * the room with the furni.
  */
 public class ChestSaveSettingsEvent extends MessageHandler {
+    static final int MAX_NAME = 30;
+    static final int MAX_DESCRIPTION = 200;
+    static final int MAX_STATE_MODE = 3;
+
     @Override
     public int getRatelimit() {
         return 500;
@@ -31,32 +37,39 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         Room room = habbo.getHabboInfo().getCurrentRoom();
         if (room == null) return;
 
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         String name = this.packet.readString();
         String description = this.packet.readString();
         boolean accessOpen = this.packet.readBoolean();
         boolean accessDonate = this.packet.readBoolean();
-        int appearanceState = this.packet.readInt();
-
-        // Appended: a client that does not send them leaves the preview as it was.
-        boolean hasPreview = this.packet.bytesAvailable() >= 8;
-        int previewMode = hasPreview ? this.packet.readInt() : 0;
-        int previewAmount = hasPreview ? this.packet.readInt() : 1;
+        int stateMode = this.packet.readInt();
+        int previewMode = this.packet.readInt();
+        int previewAmount = this.packet.readInt();
+        boolean wiredEnabled = this.packet.readBoolean();
 
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
-        if (!room.hasRights(habbo)) return;
+        if (habbo.getHabboInfo().getId() != chest.getUserId()) return;
 
         ChestStorage c = chest.getContents();
-        c.setName(bound(name, 60));
-        c.setDescription(bound(description, 255));
-        c.setAccessOpen(accessOpen);
-        c.setAccessDonate(accessDonate);
-        c.setAppearanceState(appearanceState);
-        if (hasPreview) c.setPreview(previewMode, previewAmount);
-        chest.persistContents(room);
+        if (c.isWiredEnabled() && !wiredEnabled) return;
+        if (wiredEnabled && !c.isWiredEnabled() && chest.isStarterChest()) return;
+        if (stateMode < 0 || stateMode > MAX_STATE_MODE) return;
 
-        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
+        synchronized (c) {
+            c.setName(bound(name, MAX_NAME));
+            c.setDescription(bound(description, MAX_DESCRIPTION));
+            c.setAccessOpen(accessOpen);
+            c.setAccessDonate(accessDonate);
+            c.setAppearanceState(stateMode);
+            // A coin chest has no preview; the client sends whatever its hidden controls held.
+            if (chest.chestKind() == ChestStorage.KIND_FURNI) c.setPreview(previewMode, previewAmount);
+            if (wiredEnabled) c.enableWired();
+        }
+        chest.persistContents();
+        chest.publishSettings(room);
+
+        this.client.sendResponse(new ChestSettingsUpdatedComposer(chest.getId(), false));
     }
 
     private static String bound(String value, int max) {

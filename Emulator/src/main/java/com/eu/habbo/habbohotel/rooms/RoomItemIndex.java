@@ -32,6 +32,7 @@ final class RoomItemIndex {
     private final Int2LongMap itemIncarnations = Int2LongMaps.synchronize(new Int2LongOpenHashMap(0));
     private final AtomicLong incarnationSequence = new AtomicLong();
     private final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache = new ConcurrentHashMap<>();
+    private final RoomBuildersClubIdBand buildersClubIds = new RoomBuildersClubIdBand();
 
     private static final long[] NO_TILES = new long[0];
     /** Floor furni by the tiles they cover, so a tile lookup no longer scans every furni. Guarded by items. */
@@ -64,9 +65,21 @@ final class RoomItemIndex {
         return this.tileCache;
     }
 
+    RoomBuildersClubIdBand buildersClubIds() {
+        return this.buildersClubIds;
+    }
+
     HabboItem get(int id) {
         if (this.room.getRoomSpecialTypes() == null) {
             return null;
+        }
+
+        if (BuildersClubItemIds.isBandId(id)) {
+            // A Builders Club wire id: only the furni holding it here, never a database id that happens to match.
+            id = this.buildersClubIds.itemOf(id);
+            if (id == 0) {
+                return null;
+            }
         }
 
         HabboItem item;
@@ -303,6 +316,7 @@ final class RoomItemIndex {
         synchronized (this.items) {
             this.items.clear();
         }
+        this.buildersClubIds.clear();
         synchronized (this.ownerCounts) {
             this.ownerCounts.clear();
         }

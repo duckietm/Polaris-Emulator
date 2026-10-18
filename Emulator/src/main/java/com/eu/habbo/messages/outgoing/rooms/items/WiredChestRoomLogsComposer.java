@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -38,7 +39,7 @@ public class WiredChestRoomLogsComposer extends MessageComposer {
         this.response.appendInt(this.page.rows().size());
         for (ChestTransactionLog.Row row : this.page.rows()) {
             this.response.appendInt(row.id());
-            this.response.appendInt(row.chestId());
+            this.response.appendInt(BuildersClubItemIds.toWire(row.chestId()));
             this.response.appendInt(row.chestKind());
             this.response.appendInt(row.type());
             this.response.appendInt(row.source());

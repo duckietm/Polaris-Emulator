@@ -6,9 +6,12 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
@@ -17,7 +20,7 @@ import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
 public class WiredEffectSaveDataEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -37,12 +40,16 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                                 effect instanceof WiredLargePayload || extra instanceof WiredLargePayload
                                         ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
                                         : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
-                        settings = InteractionWired.readSettings(this.packet, this.saveKind(), maximumStringLength);
+                        settings = BuildersClubItemIds.fromWire(
+                                InteractionWired.readSettings(this.packet, this.saveKind(), maximumStringLength), room);
                         settings.setRoom(room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));
                         return;
                     }
+
+                    String sourceRefusal = WiredSourceSaveRules.apply(effect != null ? effect : extra, settings, room);
+                    if (sourceRefusal != null) throw new WiredSaveException(sourceRefusal);
                     boolean saved;
 
                     if (effect != null) {
@@ -52,18 +59,15 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                     }
 
                     if (saved) {
+                        if (effect != null) effect.markEditorSaved();
+                        else extra.markEditorSaved();
                         this.client.sendResponse(new WiredSavedComposer());
                         if (effect != null) {
                             if (effect.isSelector()) {
-                                if (effect.usesExistingSelectorTargets()) {
-                                    effect.setExtradata("3");
-                                    room.sendComposer(new ItemStateComposer(effect).compose());
-                                } else if ("3".equals(effect.getExtradata())
-                                        || "4".equals(effect.getExtradata())
-                                        || "5".equals(effect.getExtradata())) {
-                                    effect.setExtradata("0");
-                                    room.sendComposer(new ItemStateComposer(effect).compose());
-                                }
+                                // Every selector save sends its resting state, as in Habbo: 3 with Filter, 0 without
+                                // (Invert does not change it). Behaviour observed in plus-emulator/PlusEMU 74b6b1b0.
+                                effect.setExtradata(selectorRestingState(effect));
+                                room.sendComposer(new ItemStateComposer(effect).compose());
                             }
 
                             effect.needsUpdate(true);
@@ -79,11 +83,18 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(
                                 new UpdateFailedComposer("There was an error while saving that effect"));
                     }
+                } catch (WiredSaveRefusedException refused) {
+                    this.client.sendResponse(new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));
                 } catch (WiredSaveException e) {
                     this.client.sendResponse(new UpdateFailedComposer(e.getMessage()));
                 }
             }
         }
+    }
+
+    /** A selector rests at 3 when it filters the existing selection and at 0 otherwise. */
+    static String selectorRestingState(InteractionWiredEffect selector) {
+        return selector.usesExistingSelectorTargets() ? "3" : "0";
     }
 
     /**

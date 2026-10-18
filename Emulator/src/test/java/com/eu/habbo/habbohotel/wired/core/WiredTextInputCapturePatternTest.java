@@ -38,4 +38,19 @@ class WiredTextInputCapturePatternTest {
         assertTrue(WiredTextInputCaptureSupport.templatePattern("#a#-#b#")
                 == WiredTextInputCaptureSupport.templatePattern("#a#-#b#"));
     }
+
+    @Test
+    void adjacentMarkersNeverMatch() {
+        for (String template : new String[] {"#a##b#", "qr:#(a)#(b)", "#(a)#(b)"}) {
+            Matcher matcher =
+                    WiredTextInputCaptureSupport.templatePattern(template).matcher(template);
+
+            assertFalse(matcher.find(), template);
+            assertFalse(
+                    WiredTextInputCaptureSupport.templatePattern(template)
+                            .matcher("12")
+                            .find(),
+                    template);
+        }
+    }
 }

@@ -2,34 +2,25 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.users.UserProfileLevel;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Passes when the level a user has reached on a chosen variable compares as asked.
+ * Passes when a user's account level compares as asked: the level the extended profile shows (from the achievement
+ * score), the same value as the {@code @level} variable, as in Habbo. Bots and pets have no account level and fail.
  *
- * <p>The official client has a condition of this name, but the level it reads is an account-wide
- * one Polaris has no notion of: the only levels here are a rank's, a pet's, and the one the wired
- * level-up add-on derives from a variable. This reads that last one, which is also the only level a
- * room can actually set and reward, so the condition is ours in substance even though the name is
- * borrowed.
- *
- * <p>The variable therefore has to be a user variable carrying experience, with a level-up add-on
- * attached to say how experience turns into levels. Without that add-on there is no level to read
- * and the condition simply does not pass, rather than silently treating the raw experience as one.
+ * <p>Older saves also stored a variable; it is kept so they load and re-save unchanged, but no longer read.
  */
 public class WiredConditionUserLevel extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.USER_LEVEL;
@@ -76,7 +67,7 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
     @Override
     public boolean evaluate(WiredContext ctx) {
         Room room = ctx == null ? null : ctx.room();
-        if (room == null || this.variableItemId <= 0) {
+        if (room == null) {
             return false;
         }
 
@@ -105,31 +96,12 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         return this.quantifier == QUANTIFIER_ALL && anyMatched;
     }
 
-    private Integer levelOf(Room room, RoomUnit target) {
-        int holder = UserVariableHolders.of(room, target);
-        if (holder == 0) {
+    private static Integer levelOf(Room room, RoomUnit target) {
+        Habbo habbo = room.getHabbo(target);
+        if (habbo == null || habbo.getHabboStats() == null) {
             return null;
         }
-        if (room.getUserVariableManager() == null
-                || !room.getUserVariableManager().hasVariable(holder, this.variableItemId)) {
-            return null;
-        }
-
-        InteractionWiredExtra definition = definitionBox(room, this.variableItemId);
-        WiredExtraVariableLevelUpSystem levelSystem = WiredVariableLevelSystemSupport.getLevelSystem(room, definition);
-        if (levelSystem == null) {
-            return null;
-        }
-
-        int experience = room.getUserVariableManager().getCurrentValue(holder, this.variableItemId);
-        return WiredVariableLevelSystemSupport.getDerivedValue(
-                levelSystem, WiredExtraVariableLevelUpSystem.SUB_CURRENT_LEVEL, experience);
-    }
-
-    private static InteractionWiredExtra definitionBox(Room room, int variableItemId) {
-        return room.getRoomSpecialTypes() == null
-                ? null
-                : room.getRoomSpecialTypes().getExtra(variableItemId);
+        return UserProfileLevel.accountLevel(habbo.getHabboStats().getAchievementScore());
     }
 
     boolean matches(int reached) {

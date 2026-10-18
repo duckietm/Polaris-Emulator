@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -31,6 +32,15 @@ public class ChestUpgradeResultComposer extends MessageComposer {
     /** A starter chest cannot be upgraded at all. Ten is the code the official client uses for it. */
     public static final int RESULT_STARTER_CHEST = 10;
 
+    /** AIR {@code wiredchests.upgrade.result.error.5}. */
+    public static final int RESULT_NOT_ENOUGH_CREDITS = 5;
+
+    /** AIR {@code wiredchests.upgrade.result.error.6}. */
+    public static final int RESULT_NOT_ENOUGH_DIAMONDS = 6;
+
+    /** AIR {@code wiredchests.upgrade.result.error.7}; the old {@link #RESULT_NOT_OWNER} is not official. */
+    public static final int RESULT_NOT_THE_OWNER = 7;
+
     private final int chestId;
     private final int resultCode;
 
@@ -42,7 +52,7 @@ public class ChestUpgradeResultComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.ChestUpgradeResultComposer);
-        this.response.appendInt(this.chestId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.chestId));
         this.response.appendInt(this.resultCode);
         return this.response;
     }

@@ -59,6 +59,8 @@ public class InteractionDice extends HabboItem {
                     this.setExtradata("-1");
                     room.updateItemState(this);
                     Emulator.getThreading().run(this);
+                    // A roll changes the dice's state: "state changed" fires, as in Habbo.
+                    notifyStateChanged(room, client.getHabbo().getRoomUnit(), this);
 
                     if (event.result > 0) {
                         Emulator.getThreading().run(new RandomDiceNumber(room, this, event.result), 1500);

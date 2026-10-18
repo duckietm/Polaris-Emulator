@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.commands.FurniDataCommand;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDice;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionMonsterPlantSeed;
 import com.eu.habbo.habbohotel.pets.MonsterplantPet;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -45,7 +46,7 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
             if (room == null) return;
 
-            int itemId = this.packet.readInt();
+            int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
             int state = this.packet.readInt();
 
             if (!RoomItemInputGuard.isPositiveId(itemId)) return;

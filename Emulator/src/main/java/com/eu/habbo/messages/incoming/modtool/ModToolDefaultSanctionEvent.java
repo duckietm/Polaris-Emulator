@@ -18,7 +18,6 @@ import com.eu.habbo.messages.outgoing.modtool.ModeratorActionResultComposer;
  * was started from a ticket.
  */
 public class ModToolDefaultSanctionEvent extends MessageHandler {
-    private static final int DAY_IN_SECONDS = 24 * 60 * 60;
 
     @Override
     public int getRatelimit() {
@@ -66,7 +65,7 @@ public class ModToolDefaultSanctionEvent extends MessageHandler {
                             userId,
                             this.client.getHabbo(),
                             reason,
-                            sanction.banLength * DAY_IN_SECONDS,
+                            ModToolManager.daysToSeconds(sanction.banLength),
                             ModToolBanType.ACCOUNT,
                             topic.id);
             ModToolManager.bumpUserSettingCounter(userId, "cfh_bans");
@@ -76,7 +75,7 @@ public class ModToolDefaultSanctionEvent extends MessageHandler {
                 return;
             }
 
-            target.mute(sanction.muteLength * DAY_IN_SECONDS, false);
+            target.mute(ModToolManager.daysToSeconds(sanction.muteLength), false);
             ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
         } else {
             if (target == null) {

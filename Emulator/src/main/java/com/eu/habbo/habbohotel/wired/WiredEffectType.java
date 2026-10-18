@@ -141,7 +141,14 @@ public enum WiredEffectType {
     PROGRESS_REWARD_TRACK(152),
     RESET_REWARD_TRACK(153),
     /** Ours: give a hand item; it shared the official give effect's code (52) and the text editor. */
-    GIVE_HAND_ITEM(157);
+    GIVE_HAND_ITEM(157),
+    // Habbo's "set furni highlight": a style, strength, colour and animation on furni and avatars,
+    // drawn by the client. Its dialog is its own, so it takes the next free code.
+    SET_HIGHLIGHT(158),
+    // Habbo's WIRED Link actions: send a message / a dataframe through the picked Links. They sit at
+    // 170 so the seats right after 158 stay free for the other official boxes.
+    SEND_LINK_MESSAGE(170),
+    SEND_LINK_DATAFRAME(171);
 
     public final int code;
 

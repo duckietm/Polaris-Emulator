@@ -4,9 +4,10 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredChestPayouts;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -19,12 +20,11 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Initiate Transaction (furni classname {@code wf_act_init_transaction}). Selects one or more wired
@@ -65,9 +65,13 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         if (room == null || room.getLayout() == null) return;
 
         List<InteractionWiredContract> contracts = new ArrayList<>();
+        // AIR picks the chests a transaction pays into and out of on this box, next to the contracts; a contract's
+        // own chest picks (our older editor) still count as well.
+        List<HabboItem> linked = new ArrayList<>();
         for (Integer id : this.contractIds) {
             HabboItem item = room.getHabboItem(id);
             if (item instanceof InteractionWiredContract contract) contracts.add(contract);
+            else if (item instanceof InteractionWiredChest) linked.add(item);
         }
 
         // No contracts → v1 signal behaviour (fire COMPLETE unconditionally).
@@ -83,142 +87,111 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
             return;
         }
 
-        // A contract that asks the player for something is negotiated: they see what it costs, choose
-        // which items pay for it and confirm. One that asks for nothing has nothing to negotiate, so
-        // it stays instant -- a pure reward should not make somebody click through a trade window.
-        ContractRules rules = ContractRules.from(contracts);
-        if (!rules.asksForNothing()) {
-            openNegotiation(room, actor, contracts, rules);
+        // AIR: a contract only works with the chests that answer wired and are not locked.
+        for (InteractionWiredContract contract : contracts) {
+            for (Integer chestId : contract.getChestIds()) {
+                HabboItem item = room.getHabboItem(chestId);
+                if (item != null && !linked.contains(item)) linked.add(item);
+            }
+        }
+        List<InteractionWiredChest> chests = WiredChestPayouts.usable(linked);
+
+        // A payment contract in the official donation mode takes whatever the player offers.
+        if (isDonation(contracts)) {
+            room.getWiredRuntime()
+                    .getTradingManager()
+                    .openDonation(
+                            actor, tradeText(contracts), layoutType(contracts), NEGOTIATION_TIMEOUT_SECONDS, chests);
             return;
         }
 
-        // --- Aggregate (cumulative, so multiple terms of the same currency can't bypass the check) ---
-        Map<Integer, Long> payTotal = new HashMap<>(); // currencyType -> total to debit
-        Map<Integer, InteractionWiredChest> chestById = new HashMap<>();
-        Map<Integer, Map<Integer, Long>> chestTakeTotal = new HashMap<>(); // chestId -> (currencyType -> total to take)
-
-        for (InteractionWiredContract contract : contracts) {
-            InteractionWiredChest chest = this.resolveChest(room, contract.getChestIds());
-            if (chest != null) chestById.put(chest.getId(), chest);
-
-            for (InteractionWiredContract.Term term : contract.getTerms()) {
-                if (term.amount <= 0) continue;
-
-                if (term.direction == InteractionWiredContract.DIR_PAY) {
-                    payTotal.merge(term.currencyType, (long) term.amount, Long::sum);
-                } else if (chest != null) {
-                    chestTakeTotal
-                            .computeIfAbsent(chest.getId(), k -> new HashMap<>())
-                            .merge(term.currencyType, (long) term.amount, Long::sum);
-                }
-                // RECEIVE without a linked chest = direct mint (no precondition needed).
-            }
+        // A contract that asks the player for something is negotiated in the wired trade window: they
+        // put credit furni and furni on the table and confirm.
+        ContractRules rules = ContractRules.from(contracts);
+        if (!rules.asksForNothing()) {
+            room.getWiredRuntime()
+                    .getTradingManager()
+                    .open(
+                            actor,
+                            rules,
+                            contracts.get(0).contractType(),
+                            tradeText(contracts),
+                            layoutType(contracts),
+                            NEGOTIATION_TIMEOUT_SECONDS,
+                            chests);
+            return;
         }
 
-        // --- Pre-check: nothing is mutated yet ---
-        for (Map.Entry<Integer, Long> entry : payTotal.entrySet()) {
-            if (balance(actor, entry.getKey()) < entry.getValue()) {
-                this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
-                return;
+        // A reward asks for nothing: it is paid at once, out of the chests and only out of them. When
+        // they cannot pay all of it, nothing is paid and the player is told why.
+        List<InteractionWiredContract.Term> reward = rules.getRule();
+        int failure = WiredChestPayouts.holding(chests, () -> {
+            int cover = chests.isEmpty()
+                    ? ChestTransactionFailures.NO_OR_LOCKED_CHESTS
+                    : WiredChestPayouts.coverFailure(chests, reward);
+            if (cover != ChestTransactionFailures.NONE) return cover;
+
+            List<InteractionWiredContract.Term> given = WiredChestPayouts.give(actor, room, chests, reward);
+            if (!given.isEmpty() && actor.getClient() != null) {
+                actor.getClient()
+                        .sendResponse(WiredTransactionSuccessComposer.reward(
+                                given, rewardText(contracts), showRewardDialog(contracts)));
             }
+            return ChestTransactionFailures.NONE;
+        });
+
+        if (failure != ChestTransactionFailures.NONE) {
+            ChestTransactionFailures.send(actor, failure);
+            this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
+            return;
         }
-        for (Map.Entry<Integer, Map<Integer, Long>> chestEntry : chestTakeTotal.entrySet()) {
-            InteractionWiredChest chest = chestById.get(chestEntry.getKey());
-            if (chest == null) {
-                this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
-                return;
-            }
-            for (Map.Entry<Integer, Long> typeEntry : chestEntry.getValue().entrySet()) {
-                if (chest.getContents().count(ChestStorage.KIND_CURRENCY, typeEntry.getKey()) < typeEntry.getValue()) {
-                    this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
-                    return;
-                }
-            }
-        }
-
-        // --- Commit: all preconditions passed ---
-        for (InteractionWiredContract contract : contracts) {
-            InteractionWiredChest chest = this.resolveChest(room, contract.getChestIds());
-            boolean chestDirty = false;
-
-            for (InteractionWiredContract.Term term : contract.getTerms()) {
-                if (term.amount <= 0) continue;
-
-                if (term.direction == InteractionWiredContract.DIR_PAY) {
-                    debit(actor, term.currencyType, term.amount);
-                    if (chest != null) {
-                        chest.getContents().add(ChestStorage.KIND_CURRENCY, term.currencyType, term.amount);
-                        chestDirty = true;
-                    }
-                } else {
-                    if (chest != null) {
-                        chest.getContents().take(ChestStorage.KIND_CURRENCY, term.currencyType, term.amount);
-                        chestDirty = true;
-                    }
-                    credit(actor, term.currencyType, term.amount);
-                }
-            }
-
-            if (chestDirty && chest != null) chest.persistContents();
-        }
-
         this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
     }
 
-    /**
-     * Hand the player over to the negotiation window. The outcome is not known here: it arrives when
-     * they confirm or walk away, and the transaction triggers fire from there instead.
-     */
-    private void openNegotiation(
-            Room room, Habbo actor, List<InteractionWiredContract> contracts, ContractRules rules) {
-        InteractionWiredChest chest = null;
+    /** Every selected contract is a payment contract in donation mode. */
+    static boolean isDonation(List<InteractionWiredContract> contracts) {
+        if (contracts.isEmpty()) return false;
         for (InteractionWiredContract contract : contracts) {
-            chest = this.resolveChest(room, contract.getChestIds());
-            if (chest != null) break;
+            if (!contract.isDonation()) return false;
         }
-
-        room.getWiredRuntime()
-                .getTradingManager()
-                .open(
-                        actor,
-                        rules,
-                        contracts.get(0).contractType(),
-                        "",
-                        LAYOUT_GENERIC,
-                        NEGOTIATION_TIMEOUT_SECONDS,
-                        chest);
+        return true;
     }
 
-    private InteractionWiredChest resolveChest(Room room, List<Integer> ids) {
-        if (ids == null) return null;
-        for (Integer id : ids) {
-            HabboItem item = room.getHabboItem(id);
-            // Wired only reaches a chest whose owner upgraded it to answer wired.
-            if (item instanceof InteractionWiredChest chest && chest.answersWired()) return chest;
+    /**
+     * What the trade window tells the player they get: a payment contract's receive text, else a reward contract's
+     * reward text (AIR {@code PaymentContract} / {@code RewardContract}).
+     */
+    static String tradeText(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_PAYMENT
+                    && !contract.getReceiveText().isEmpty()) return contract.getReceiveText();
         }
-        return null;
+        return rewardText(contracts);
     }
 
-    private static int balance(Habbo habbo, int currencyType) {
-        return (currencyType < 0)
-                ? habbo.getHabboInfo().getCredits()
-                : habbo.getHabboInfo().getCurrencyAmount(currencyType);
+    /** The reward popup's text: the first reward contract's. */
+    static String rewardText(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_REWARD
+                    && !contract.getRewardText().isEmpty()) return contract.getRewardText();
+        }
+        return "";
     }
 
-    private static void debit(Habbo habbo, int currencyType, int amount) {
-        if (currencyType < 0) {
-            habbo.giveCredits(-amount);
-        } else {
-            habbo.givePoints(currencyType, -amount);
+    /** Whether the reward popup opens by itself: any reward contract asks for it. */
+    static boolean showRewardDialog(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_REWARD && contract.isShowDialog()) return true;
         }
+        return false;
     }
 
-    private static void credit(Habbo habbo, int currencyType, int amount) {
-        if (currencyType < 0) {
-            habbo.giveCredits(amount);
-        } else {
-            habbo.givePoints(currencyType, amount);
+    /** The trade window's artwork: the first payment contract's layout. */
+    static String layoutType(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_PAYMENT) return contract.getLayoutType();
         }
+        return LAYOUT_GENERIC;
     }
 
     private void fire(WiredContext ctx, Room room, WiredEvent.Type eventType) {

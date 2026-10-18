@@ -16,4 +16,17 @@ class ModToolBanExpiryTest {
     void aPermanentBanStaysInTheFutureInsteadOfWrappingNegative() {
         assertEquals(Integer.MAX_VALUE, ModToolManager.banExpiry(NOW, Integer.MAX_VALUE));
     }
+
+    @Test
+    void sanctionHoursAreSecondsAndALongLengthDoesNotWrapNegative() {
+        assertEquals(18 * 3600, ModToolManager.hoursToSeconds(18));
+        assertEquals(Integer.MAX_VALUE, ModToolManager.hoursToSeconds(876000L * 10));
+        assertEquals(0, ModToolManager.hoursToSeconds(-5));
+    }
+
+    @Test
+    void sanctionDaysAreSecondsAndAHundredYearsStaysPositive() {
+        assertEquals(7 * 86400, ModToolManager.daysToSeconds(7));
+        assertEquals(Integer.MAX_VALUE, ModToolManager.daysToSeconds(36500));
+    }
 }

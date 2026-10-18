@@ -9,7 +9,8 @@ import com.eu.habbo.messages.outgoing.camera.CameraCompetitionStatusComposer;
 /**
  * Submits the photo in the camera checkout to the hotel's photo competition. The packet carries
  * nothing: the photo is the one the sender just rendered, which the hotel is already holding for the
- * publish flow, so a checkout without a photo is refused the same way publishing would refuse it.
+ * publish flow, so a checkout without a photo is refused the same way publishing would refuse it,
+ * and so is a photo from a room the sender has since left.
  *
  * <p>The three answers the client knows are a plain yes, {@code too-many-submits} when the day's
  * allowance is spent, and anything else as a generic failure. The verified-email refusal the client
@@ -36,6 +37,11 @@ public class PhotoCompetitionEvent extends MessageHandler {
         String photo = info.getPhotoJSON();
 
         if (timestamp == 0 || photo == null || photo.isEmpty() || !photo.contains(Integer.toString(timestamp))) {
+            this.client.sendResponse(new CameraCompetitionStatusComposer(false, FAILED));
+            return;
+        }
+
+        if (!CameraPurchaseEvent.isInPhotoRoom(info)) {
             this.client.sendResponse(new CameraCompetitionStatusComposer(false, FAILED));
             return;
         }

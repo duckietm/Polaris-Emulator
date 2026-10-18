@@ -1,21 +1,29 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * Base for Phase-2 wired storage chests (config-based v1). A chest is a config-holder furni (it opens
@@ -35,6 +43,9 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     public static final int APPEARANCE_ALWAYS_CLOSED = 2;
 
     protected ChestStorage contents = new ChestStorage();
+
+    /** Whether {@link #contents} was read from the chest's store yet. */
+    private volatile boolean loaded;
 
     /**
      * Who currently has this chest's window open.
@@ -62,17 +73,225 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         return false;
     }
 
+    /**
+     * Nothing: a chest keeps its state in {@code wired_chests} and its furni in
+     * {@code wired_chest_items} (AIR model), so the generic wired payload stays empty. Writing it
+     * empty also clears any pre-migration JSON the first time the furni is saved.
+     */
     @Override
     public String getWiredData() {
-        return this.contents.toJson();
+        return "";
     }
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.contents = ChestStorage.fromJson(set.getString("wired_data"));
-        resolveLegacySpriteIds(this.contents);
+        this.loadFromStore();
+    }
 
-        if (this.isStarterChest()) this.contents.applyStarterCeiling();
+    /** The chest's kind: {@link ChestStorage#KIND_CURRENCY} for a coin chest, else furni. */
+    public int chestKind() {
+        return this instanceof InteractionWiredChestFurni ? ChestStorage.KIND_FURNI : ChestStorage.KIND_CURRENCY;
+    }
+
+    /**
+     * Read the chest from its store, creating its row on first use. A chest that was never placed
+     * before simply starts empty and unupgraded.
+     */
+    public synchronized void loadFromStore() {
+        ChestStore store = ChestStores.current();
+        ChestStore.ChestRow row = store.loadChest(this.getId());
+        boolean starter = this.isStarterChest();
+
+        if (row == null) {
+            ChestStorage fresh = ChestStorage.fromStore(null, 0, 0, List.of(), this.chestKind(), starter);
+            store.createChest(this.getId(), this.chestKind(), 0, 0, fresh.toSettingsJson());
+            this.contents = fresh;
+            this.loaded = true;
+            return;
+        }
+
+        List<ChestFurniStoredItem> furni = new ArrayList<>();
+        for (ChestStore.StoredRow stored : store.loadItems(this.getId())) {
+            furni.add(ChestFurniStoredItem.fromStoredRow(stored, baseItem(stored.baseItemId())));
+        }
+        this.contents = ChestStorage.fromStore(
+                row.settings(), row.coins(), row.capacityLevel(), furni, this.chestKind(), starter);
+        this.loaded = true;
+    }
+
+    /**
+     * The chest's contents went back to its owner because the item is being deleted ({@link
+     * ChestRelease}): it holds nothing any more and must not create its row again.
+     */
+    synchronized void markReleased() {
+        this.contents = ChestStorage.fromStore(null, 0, 0, List.of(), this.chestKind(), this.isStarterChest());
+        this.loaded = true;
+        this.viewers.clear();
+    }
+
+    private static Item baseItem(int baseItemId) {
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+        if (environment == null || environment.getItemManager() == null) return null;
+        return environment.getItemManager().getItem(baseItemId);
+    }
+
+    // --- moving coins and furni (AIR model) ------------------------------------------------------
+
+    private static final AtomicLong SEQUENCE = new AtomicLong();
+
+    /** Orders deposits: oldest first is ascending. */
+    static long nextSequence() {
+        long now = System.currentTimeMillis() * 1000L;
+        return SEQUENCE.updateAndGet(previous -> Math.max(previous + 1, now));
+    }
+
+    /** Whether an inventory item may go into a chest: tradeable furni that is no chest or contract. */
+    public static boolean canStore(HabboItem item) {
+        if (item == null || item.getBaseItem() == null) return false;
+        if (item instanceof InteractionWiredChest
+                || item instanceof com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract) {
+            return false;
+        }
+        if (com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership.isWebApiItem(item))
+            return false;
+        return item.getBaseItem().allowTrade();
+    }
+
+    /**
+     * Put items a player has already handed over (taken out of their inventory) into this furni
+     * chest. As many as fit go in, in order; the caller gives the rest back.
+     *
+     * @return the items now in the chest
+     */
+    public List<HabboItem> depositFurni(int fromUserId, List<HabboItem> items) {
+        List<HabboItem> accepted = new ArrayList<>();
+        if (items == null || items.isEmpty() || this.chestKind() != ChestStorage.KIND_FURNI) return accepted;
+
+        ChestStorage storage = this.getContents();
+        synchronized (storage) {
+            int room = storage.getCapacity() - storage.furniItemCount();
+            List<HabboItem> fitting = new ArrayList<>();
+            for (HabboItem item : items) {
+                if (fitting.size() >= room) break;
+                if (!canStore(item)) continue;
+                // A pending state change must reach the row before the row moves.
+                if (item.needsUpdate()) item.run();
+                fitting.add(item);
+            }
+            if (fitting.isEmpty()) return accepted;
+
+            long sequence = nextSequence();
+            Set<Integer> moved = new HashSet<>(ChestStores.current()
+                    .depositItems(
+                            this.getId(),
+                            fromUserId,
+                            fitting.stream().map(HabboItem::getId).toList(),
+                            sequence));
+            for (HabboItem item : fitting) {
+                if (!moved.contains(item.getId())) continue;
+
+                ChestFurniStoredItem row = ChestFurniStoredItem.fromHabboItem(item, item.getId());
+                row.transactionId = sequence;
+                storage.addFurniItem(row);
+                item.needsUpdate(false);
+                accepted.add(item);
+            }
+        }
+        return accepted;
+    }
+
+    /**
+     * Take furni out of this chest for a player. {@code picker} chooses the rows while the chest is
+     * held, so nobody else can pick the same ones.
+     *
+     * @return every row that left the chest, mapped to the id the item has in the inventory now
+     */
+    public Map<ChestFurniStoredItem, Integer> withdrawFurni(
+            int toUserId, Function<ChestStorage, List<ChestFurniStoredItem>> picker) {
+        Map<ChestFurniStoredItem, Integer> delivered = new LinkedHashMap<>();
+        ChestStorage storage = this.getContents();
+        synchronized (storage) {
+            List<ChestFurniStoredItem> picked = picker.apply(storage);
+            if (picked == null || picked.isEmpty()) return delivered;
+
+            Map<Integer, Integer> moved = ChestStores.current()
+                    .withdrawItems(
+                            this.getId(),
+                            toUserId,
+                            picked.stream().map(row -> row.inventoryId).toList());
+            if (moved.isEmpty()) {
+                // Nothing left: the database refused, so the rows stay where they were.
+                storage.restoreFurniItems(picked);
+                return delivered;
+            }
+            for (ChestFurniStoredItem row : picked) {
+                Integer newId = moved.get(row.inventoryId);
+                if (newId != null) delivered.put(row, newId);
+            }
+        }
+        return delivered;
+    }
+
+    /**
+     * Add coins to this coin chest, as many as fit.
+     *
+     * @return the coins accepted
+     */
+    public int addCoins(int amount) {
+        if (amount <= 0 || this.chestKind() != ChestStorage.KIND_CURRENCY) return 0;
+
+        ChestStorage storage = this.getContents();
+        synchronized (storage) {
+            int accepted = Math.min(amount, storage.getCapacity() - storage.getCoins());
+            if (accepted <= 0 || !ChestStores.current().addCoins(this.getId(), accepted)) return 0;
+
+            storage.add(ChestStorage.KIND_CURRENCY, ChestStorage.COINS_TYPE, accepted);
+            return accepted;
+        }
+    }
+
+    /**
+     * Take up to {@code amount} coins out of this coin chest; a negative amount takes them all.
+     *
+     * @return the coins taken
+     */
+    public int takeCoins(int amount) {
+        ChestStorage storage = this.getContents();
+        synchronized (storage) {
+            int held = storage.getCoins();
+            int taken = amount < 0 ? held : Math.min(amount, held);
+            if (taken <= 0 || !ChestStores.current().addCoins(this.getId(), -taken)) return 0;
+
+            return storage.take(ChestStorage.KIND_CURRENCY, ChestStorage.COINS_TYPE, taken);
+        }
+    }
+
+    /**
+     * Redeem credit furni a player handed over into this coin chest. All of them go in, or none
+     * (the caller gives them back then).
+     *
+     * @param coins their combined value
+     * @return true when they were redeemed
+     */
+    public boolean redeemCreditFurni(int fromUserId, List<HabboItem> creditFurni, int coins) {
+        if (creditFurni == null || creditFurni.isEmpty() || coins <= 0) return false;
+        if (this.chestKind() != ChestStorage.KIND_CURRENCY) return false;
+
+        ChestStorage storage = this.getContents();
+        synchronized (storage) {
+            if (storage.getCoins() + (long) coins > storage.getCapacity()) return false;
+            if (!ChestStores.current()
+                    .redeemCreditFurni(
+                            this.getId(),
+                            fromUserId,
+                            creditFurni.stream().map(HabboItem::getId).toList(),
+                            coins)) {
+                return false;
+            }
+            storage.add(ChestStorage.KIND_CURRENCY, ChestStorage.COINS_TYPE, coins);
+            for (HabboItem item : creditFurni) item.needsUpdate(false);
+            return true;
+        }
     }
 
     /**
@@ -83,7 +302,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      */
     /** Whether wired may reach this chest. Off until its owner upgrades it, and then permanent. */
     public boolean answersWired() {
-        return this.contents.isWiredEnabled();
+        return this.getContents().isWiredEnabled();
     }
 
     public boolean isStarterChest() {
@@ -123,7 +342,8 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
 
     @Override
     public void onPickUp() {
-        this.contents = new ChestStorage();
+        // The chest keeps what it holds when it is picked up: its coins and furni stay in its store
+        // and come back with it when it is placed again (they used to be wiped here).
         this.viewers.clear();
     }
 
@@ -148,7 +368,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * yes, which is why the answer lives here and the drawing lives in the subclasses.
      */
     protected boolean showsOpen() {
-        return switch (this.contents.getAppearanceState()) {
+        return switch (this.getContents().getAppearanceState()) {
             case APPEARANCE_ALWAYS_OPEN -> true;
             case APPEARANCE_ALWAYS_CLOSED -> false;
             default -> this.isBeingLookedInto();
@@ -208,21 +428,27 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     public void serializeExtradata(ServerMessage serverMessage) {
         Map<String, String> data = new LinkedHashMap<>();
         data.put("state", Integer.toString(this.visualState()));
-        data.put("chest_name", this.contents.getName());
-        data.put("chest_desc", this.contents.getDescription());
-        data.put("locked", this.contents.isLocked() ? "1" : "0");
-        data.put("auto_lock", this.contents.isAutoLock() ? "1" : "0");
-        data.put("capacity", Integer.toString(this.contents.getCapacity()));
+        data.put("chest_name", this.getContents().getName());
+        data.put("chest_desc", this.getContents().getDescription());
+        data.put("locked", this.getContents().isLocked() ? "1" : "0");
+        data.put("auto_lock", this.getContents().isAutoLock() ? "1" : "0");
+        data.put("capacity", Integer.toString(this.getContents().getCapacity()));
         data.put("contents_count", Integer.toString(this.storedCount()));
         data.put("capacity_level", Integer.toString(this.capacityLevel()));
-        data.put("everyone_can_open", this.contents.isAccessOpen() ? "1" : "0");
-        data.put("everyone_can_donate", this.contents.isAccessDonate() ? "1" : "0");
-        data.put("state_control_mode", Integer.toString(this.contents.getAppearanceState()));
-        data.put("notify_mode", Integer.toString(this.contents.getNotifyMode()));
+        data.put("everyone_can_open", this.getContents().isAccessOpen() ? "1" : "0");
+        data.put("everyone_can_donate", this.getContents().isAccessDonate() ? "1" : "0");
+        data.put("state_control_mode", Integer.toString(this.getContents().getAppearanceState()));
+        data.put("notify_mode", Integer.toString(this.getContents().getNotifyMode()));
+        // AIR ChestNotificationSettingsUI reads the switches from the furni too.
+        data.put("notification_chest_full", this.getContents().isNotifyFull() ? "1" : "0");
+        data.put("notification_donation", this.getContents().isNotifyDonation() ? "1" : "0");
+        data.put("notification_someone_withdraws", this.getContents().isNotifyWithdraw() ? "1" : "0");
+        data.put("notification_chest_empty", this.getContents().isNotifyEmpty() ? "1" : "0");
+        data.put("notification_wired_transaction", this.getContents().isNotifyWired() ? "1" : "0");
 
-        data.put("is_wired_enabled", this.contents.isWiredEnabled() ? "1" : "0");
-        data.put("preview_mode", Integer.toString(this.contents.getPreviewMode()));
-        data.put("preview_amount", Integer.toString(this.contents.getPreviewAmount()));
+        data.put("is_wired_enabled", this.getContents().isWiredEnabled() ? "1" : "0");
+        data.put("preview_mode", Integer.toString(this.getContents().getPreviewMode()));
+        data.put("preview_amount", Integer.toString(this.getContents().getPreviewAmount()));
         data.put("visuals", this.previewItems());
 
         serverMessage.appendInt(MAP_DATA_FORMAT + (this.isLimited() ? 256 : 0));
@@ -251,13 +477,13 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * four different things.
      */
     private String previewItems() {
-        if (this.contents.getPreviewMode() <= 0) return "";
+        if (this.getContents().getPreviewMode() <= 0) return "";
 
         StringBuilder visuals = new StringBuilder();
         Set<Integer> seen = new LinkedHashSet<>();
 
-        for (ChestFurniStoredItem stored : this.contents.furniItems()) {
-            if (seen.size() >= this.contents.getPreviewAmount()) break;
+        for (ChestFurniStoredItem stored : this.getContents().furniItems()) {
+            if (seen.size() >= this.getContents().getPreviewAmount()) break;
             if (!seen.add(stored.wireTypeId())) continue;
 
             if (visuals.length() > 0) visuals.append(';');
@@ -269,8 +495,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
 
     /** How many upgrades have been bought, which is what the official calls the capacity level. */
     protected int capacityLevel() {
-        int bought = this.contents.getCapacityMax() - ChestStorage.DEFAULT_CAPACITY;
-        return bought <= 0 ? 0 : bought / ChestStorage.CAPACITY_STEP;
+        return this.getContents().getCapacityLevel();
     }
 
     /** How full the chest is, in whatever unit its kind counts. */
@@ -303,7 +528,13 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         return true;
     }
 
+    /** The chest's state, read from its store the first time it is needed. */
     public ChestStorage getContents() {
+        if (!this.loaded) {
+            synchronized (this) {
+                if (!this.loaded) this.loadFromStore();
+            }
+        }
         return this.contents;
     }
 
@@ -316,14 +547,35 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * to leave on. Everyone else is refused in both directions until it comes off.
      */
     public boolean isLockedFor(Habbo habbo) {
-        if (!this.contents.isLocked()) return false;
+        if (!this.getContents().isLocked()) return false;
 
         return habbo == null || habbo.getHabboInfo().getId() != this.getUserId();
     }
 
-    /** Schedule a save of the (mutated) contents to items.wired_data via {@code InteractionWired.run()}. */
+    /** Set while a settings save is queued, so a burst of changes is written once. */
+    private final AtomicBoolean settingsSaveQueued = new AtomicBoolean(false);
+
+    /**
+     * Schedule a save of the chest's settings (and rolling log) to {@code wired_chests}. Coins and
+     * furni are not part of it: they are stored the moment they move.
+     *
+     * <p>Coalesced: the queued save serialises the chest as it is when the save runs, so however many
+     * changes pile up before then, the last state is the one written.
+     */
     public void persistContents() {
-        this.needsUpdate(true);
+        if (!this.settingsSaveQueued.compareAndSet(false, true)) return;
+
+        Runnable save = () -> {
+            this.settingsSaveQueued.set(false);
+            ChestStorage storage = this.getContents();
+            ChestStores.current().saveSettings(this.getId(), storage.getCapacityLevel(), storage.toSettingsJson());
+        };
+        com.eu.habbo.threading.ThreadPooling threading = WiredPlatform.threading();
+        if (threading == null) {
+            save.run();
+        } else {
+            threading.runPersistence(save);
+        }
     }
 
     /**
@@ -357,5 +609,45 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         // time and slam the lid shut whatever the chest was actually doing. The full item update
         // re-serializes the furni data, state included.
         room.sendComposer(new FloorItemUpdateComposer(this).compose());
+    }
+
+    /**
+     * Push the chest's furni data to the room whether or not its look changed: the official client
+     * reads a chest's settings, lock and capacity from the furni (AIR model), so a settings change
+     * has to reach everyone who might open it.
+     */
+    public void publishSettings(Room room) {
+        if (room == null) return;
+
+        this.pruneViewers(room);
+        this.publishedAppearance = this.visualState() + "|" + this.previewItems();
+        room.sendComposer(new FloorItemUpdateComposer(this).compose());
+    }
+
+    /** The players looking inside right now. */
+    public Set<Integer> viewerIds() {
+        return Set.copyOf(this.viewers);
+    }
+
+    /**
+     * Tell everyone looking inside what changed (AIR {@code ChestCoins} with {@code isUpdate} for a
+     * coin chest, {@code ChestFurniUpdate} for a furni chest).
+     */
+    public void notifyViewers(Room room, List<Integer> removedIds, List<ChestFurniStoredItem> added) {
+        if (room == null) return;
+
+        this.pruneViewers(room);
+        for (int viewerId : this.viewerIds()) {
+            Habbo viewer = room.getHabbo(viewerId);
+            if (viewer == null || viewer.getClient() == null) continue;
+
+            if (this.chestKind() == ChestStorage.KIND_CURRENCY) {
+                viewer.getClient()
+                        .sendResponse(new com.eu.habbo.messages.outgoing.rooms.items.ChestCoinsComposer(
+                                this.getId(), this.getContents().getCoins(), true));
+            } else {
+                ChestFurniPackets.sendDelta(viewer.getClient(), this.getId(), removedIds, added);
+            }
+        }
     }
 }

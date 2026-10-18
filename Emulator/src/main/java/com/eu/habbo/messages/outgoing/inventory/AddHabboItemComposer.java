@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.inventory;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -67,13 +68,13 @@ public class AddHabboItemComposer extends MessageComposer {
             this.response.appendInt(1);
             this.response.appendInt(this.itemsList.size());
             for (HabboItem habboItem : this.itemsList) {
-                this.response.appendInt(habboItem.getId());
+                this.response.appendInt(BuildersClubItemIds.toWire(habboItem.getId()));
             }
         } else {
             this.response.appendInt(1);
             this.response.appendInt(1);
             this.response.appendInt(1);
-            this.response.appendInt(this.item.getId());
+            this.response.appendInt(BuildersClubItemIds.toWire(this.item.getId()));
         }
 
         return this.response;

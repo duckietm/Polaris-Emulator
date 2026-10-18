@@ -5,6 +5,12 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionEffectGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGuildGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionHabboClubGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionOneWayGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -13,6 +19,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -22,11 +29,15 @@ import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The official "place furni" action (AIR code 55, furni {@code wf_act_place_furni}): puts temporary
@@ -48,6 +59,12 @@ import java.util.List;
  * param, as our other variable boxes send them: {@code "spawnVariableId\tvalueVariableId"}.
  */
 public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect implements WiredOfficialSources {
+    private static final String PLACEMENT_FAILURE_TYPE = "wired.error";
+    private static final String PLACEMENT_FAILURE_IMAGE = "${image.library.url}album1584/WIRD2.png";
+    private static final String PLACEMENT_FAILURE_MESSAGE = "${room.error.wired.placement_failure}";
+    private static final long PLACEMENT_FAILURE_INTERVAL_MS = 5000L;
+    private static final ConcurrentHashMap<Integer, Long> PLACEMENT_FAILURE_SHOWN = new ConcurrentHashMap<>();
+
     public static final WiredEffectType type = WiredEffectType.PLACE_FURNI;
 
     static final int LOCATION_SOURCE = 0;
@@ -61,6 +78,10 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
     static final int MAX_SNAPSHOT = 20;
 
     private static final double HEIGHT_EPSILON = 0.001;
+    /** Copies above this altitude are skipped, as in Habbo. */
+    static final double MAX_COPY_ALTITUDE = 35.0;
+
+    static final String FURNI_CAN_NOT_BE_CLONED = "wiredfurni.error.furni_can_not_be_cloned";
 
     private List<Snapshot> snapshot = new ArrayList<>();
     private boolean targetIsUser = false;
@@ -144,11 +165,13 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         List<Snapshot> next = new ArrayList<>();
         for (int id : picks) {
             HabboItem item = room.getHabboItem(id);
-            // Wired boxes are not copied: a copy would save its settings to a row it does not have.
-            if (item == null
-                    || item instanceof InteractionWired
-                    || item.getBaseItem().getType() != FurnitureType.FLOOR) {
+            if (item == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
                 continue;
+            }
+            // A Wired box cannot be a template, as in Habbo (a copy would save its settings to a row it does not
+            // have). Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.
+            if (item instanceof InteractionWired) {
+                throw new WiredSaveException(FURNI_CAN_NOT_BE_CLONED);
             }
             next.add(new Snapshot(
                     item.getId(),
@@ -189,8 +212,13 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         ConfigurationManager config = WiredPlatform.configuration();
         int ceiling = (config == null) ? 2500 : config.getInt("hotel.rooms.max.furniture", 2500);
 
+        boolean failed = false;
+
         for (Snapshot source : this.snapshot) {
-            if (room.getFloorItems().size() >= ceiling) break;
+            if (room.getFloorItems().size() >= ceiling) {
+                failed = true;
+                break;
+            }
 
             Item base = WiredPlatform.gameEnvironment() == null
                     ? null
@@ -200,11 +228,38 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             RoomTile tile = room.getLayout().getTile((short) (source.x + dx), (short) (source.y + dy));
             if (tile == null) continue;
 
-            HabboItem copy =
-                    WiredPlatform.gameEnvironment().getItemManager().createTemporaryItem(base, source.extradata);
-            if (copy == null) continue;
+            // No copy goes onto a gate, a one-way gate or a roller: a placement failure, as in Habbo.
+            if (blocksCopies(room.getTopItemAt(tile.x, tile.y))) {
+                failed = true;
+                continue;
+            }
 
-            if (room.placeFloorFurniAt(copy, tile, source.rotation, null) != FurnitureMovementError.NONE) continue;
+            // A copy that would stand above altitude 35 is skipped without a notice.
+            double expectedZ =
+                    switch (this.altitude) {
+                        case ALTITUDE_SOURCE -> source.z;
+                        case ALTITUDE_CUSTOM -> target[2];
+                        default -> room.getStackHeight(tile.x, tile.y, false);
+                    };
+            if (expectedZ + altitudeOffset > MAX_COPY_ALTITUDE) continue;
+
+            int copyId = room.getWiredRuntime().nextTemporaryItemId();
+            HabboItem copy = copyId < 0
+                    ? null
+                    : WiredPlatform.gameEnvironment()
+                            .getItemManager()
+                            .createTemporaryItem(copyId, base, source.extradata);
+            if (copy == null) {
+                failed = true;
+                continue;
+            }
+
+            copy.markTemporary(this.getUserId());
+
+            if (room.placeFloorFurniAt(copy, tile, source.rotation, null) != FurnitureMovementError.NONE) {
+                failed = true;
+                continue;
+            }
 
             double z =
                     switch (this.altitude) {
@@ -221,6 +276,50 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             if (this.spawnWithVariable) {
                 room.getFurniVariableManager().assignVariable(copy, this.spawnVariableId, spawnValue, true);
             }
+        }
+
+        if (failed) {
+            notifyPlacementFailure(room);
+            WiredManager.notePlacementFailure(
+                    room.getId(), "Place Furni could not place every copy", "place_furni", this.getId());
+        }
+    }
+
+    /** Gates, one-way gates and rollers take no copies on top. */
+    static boolean blocksCopies(HabboItem top) {
+        return top instanceof InteractionGate
+                || top instanceof InteractionOneWayGate
+                || top instanceof InteractionRoller
+                || top instanceof InteractionGuildGate
+                || top instanceof InteractionHabboClubGate
+                || top instanceof InteractionEffectGate;
+    }
+
+    /**
+     * Habbo shows everybody in the room, visitors too, a "placement failed" notice when Place Furni
+     * could not place its copies, at most once per user every 5 seconds. The rest of the stack runs on.
+     */
+    private static void notifyPlacementFailure(Room room) {
+        long now = System.currentTimeMillis();
+        Map<String, String> keys = new HashMap<>();
+        keys.put("image", PLACEMENT_FAILURE_IMAGE);
+        keys.put("message", PLACEMENT_FAILURE_MESSAGE);
+
+        for (Habbo habbo : room.getHabbos()) {
+            if (habbo == null || habbo.getClient() == null) continue;
+
+            int habboId = habbo.getHabboInfo().getId();
+            Long shown = PLACEMENT_FAILURE_SHOWN.get(habboId);
+
+            if (shown != null && (now - shown) < PLACEMENT_FAILURE_INTERVAL_MS) continue;
+
+            PLACEMENT_FAILURE_SHOWN.put(habboId, now);
+            habbo.getClient().sendResponse(new BubbleAlertComposer(PLACEMENT_FAILURE_TYPE, keys));
+        }
+
+        // Old entries are only worth a few seconds; drop them now and then.
+        if (PLACEMENT_FAILURE_SHOWN.size() > 1000) {
+            PLACEMENT_FAILURE_SHOWN.values().removeIf(shown -> (now - shown) >= PLACEMENT_FAILURE_INTERVAL_MS);
         }
     }
 

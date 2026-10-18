@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.items.FurnitureDirectionCatalog;
+import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -168,6 +170,50 @@ class WiredExtraProjectileTest {
         box.saveData(settings(params, new int[0], room), null);
 
         assertEquals(WiredProjectileDirections.WEST, box.resolveRotation(0, 0, 3, 3, 2));
+    }
+
+    @Test
+    void aDiagonalHeadingKeepsTheFurnisRotation() {
+        // The fresh box turns with the move; a diagonal move cannot be a floor furni's heading.
+        assertEquals(2, box().resolveRotation(0, 0, 3, 3, 2));
+        assertEquals(0, box().resolveRotation(4, 4, 3, 3, 0));
+    }
+
+    @Test
+    void aProjectileTurnsOnlyToADirectionItsBundleLists() {
+        java.nio.file.Path furniture = java.nio.file.Path.of("../../Furniture");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                java.nio.file.Files.isDirectory(furniture), "no Furniture folder in this checkout");
+        FurnitureDirectionsRuntime.install(
+                new FurnitureDirectionCatalog(
+                        new FurnitureDirectionCatalog.Settings(true, furniture, 16, 5000, 64L * 1024 * 1024)),
+                name -> name.equals("bling_bed") ? 4 : -1);
+        try {
+            // bling_bed faces 2 or 4 (logic directions 90, 180); its furnidata defaultdir is 4 here.
+            HabboItem bed = named("bling_bed");
+            assertEquals(WiredProjectileDirections.EAST, box().resolveRotation(bed, 2, 2, 6, 2, 4));
+            assertEquals(4, box().resolveRotation(bed, 2, 2, 2, 0, 2));
+            assertEquals(4, box().resolveRotation(bed, 0, 0, 3, 3, 2));
+            // Without a defaultdir it can face, the furni keeps its rotation.
+            HabboItem polyfon = named("bed_polyfon");
+            assertEquals(2, box().resolveRotation(polyfon, 2, 2, 2, 6, 2));
+            assertEquals(0, box().resolveRotation(polyfon, 2, 2, 2, 0, 2));
+            // A furni without bundle data keeps the old rule: even headings, diagonals keep the rotation.
+            HabboItem unknown = named("no_such_bundle");
+            assertEquals(WiredProjectileDirections.WEST, box().resolveRotation(unknown, 6, 2, 2, 2, 4));
+            assertEquals(4, box().resolveRotation(unknown, 0, 0, 3, 3, 4));
+        } finally {
+            FurnitureDirectionsRuntime.uninstall();
+        }
+    }
+
+    private static HabboItem named(String name) {
+        Item base = mock(Item.class);
+        when(base.getType()).thenReturn(FurnitureType.FLOOR);
+        when(base.getName()).thenReturn(name);
+        HabboItem item = mock(HabboItem.class);
+        when(item.getBaseItem()).thenReturn(base);
+        return item;
     }
 
     @Test

@@ -20,6 +20,7 @@ import com.eu.habbo.habbohotel.hotelview.HotelViewManager;
 import com.eu.habbo.habbohotel.hotlooks.HotLooksManager;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
 import com.eu.habbo.habbohotel.items.ItemManager;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
 import com.eu.habbo.habbohotel.mentions.MentionManager;
 import com.eu.habbo.habbohotel.modtool.ModToolManager;
@@ -129,6 +130,7 @@ public class GameEnvironment {
                 this.services.create("treasure hunt manager", TreasureHuntManager::new, TreasureHuntManager::dispose);
         this.itemManager = this.services.create("item manager", ItemManager::new, ItemManager::dispose);
         this.itemManager.load();
+        sweepOrphanedChests();
         this.furnitureTextProvider = this.services.create("furniture text provider", FurnitureTextProvider::new);
         this.furnitureTextProvider.init();
         this.botManager = this.services.create("bot manager", BotManager::new, BotManager::dispose);
@@ -218,6 +220,18 @@ public class GameEnvironment {
         Emulator.getThreading().run(this.subscriptionScheduler);
 
         LOGGER.info("GameEnvironment -> Loaded!");
+    }
+
+    /**
+     * Give back what wired chests hold whose item was deleted without releasing them. Runs before any
+     * player is online; a failure here never stops the hotel from starting.
+     */
+    private static void sweepOrphanedChests() {
+        try {
+            ChestRelease.sweepOrphans();
+        } catch (RuntimeException e) {
+            LOGGER.error("Could not sweep wired chests whose furni no longer exists", e);
+        }
     }
 
     public void dispose() {

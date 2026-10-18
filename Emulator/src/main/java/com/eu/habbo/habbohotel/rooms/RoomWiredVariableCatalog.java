@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,6 +57,8 @@ public final class RoomWiredVariableCatalog {
         private final boolean textConnected;
         private final boolean readOnly;
         private final Map<Integer, String> textConnector;
+        private final String textConnectorFallback;
+        private final boolean requiresExecutionContext;
 
         public Variable(
                 String variableId,
@@ -88,6 +91,36 @@ public final class RoomWiredVariableCatalog {
                 boolean textConnected,
                 boolean readOnly,
                 Map<Integer, String> textConnector) {
+            this(
+                    variableId,
+                    variableType,
+                    variableName,
+                    availabilityType,
+                    variableTarget,
+                    hasValue,
+                    textConnected,
+                    readOnly,
+                    textConnector,
+                    null,
+                    false);
+        }
+
+        /**
+         * With the text connector's fallback text (null for none) and {@code requiresExecutionContext}:
+         * the variable only exists while a stack runs (a pointer), as the official {@code WiredVariable}.
+         */
+        public Variable(
+                String variableId,
+                int variableType,
+                String variableName,
+                int availabilityType,
+                int variableTarget,
+                boolean hasValue,
+                boolean textConnected,
+                boolean readOnly,
+                Map<Integer, String> textConnector,
+                String textConnectorFallback,
+                boolean requiresExecutionContext) {
             this.variableId = variableId;
             this.variableType = variableType;
             this.variableName = variableName;
@@ -99,6 +132,18 @@ public final class RoomWiredVariableCatalog {
             this.textConnector = (textConnector != null)
                     ? Collections.unmodifiableMap(new LinkedHashMap<>(textConnector))
                     : Collections.emptyMap();
+            this.textConnectorFallback = textConnectorFallback;
+            this.requiresExecutionContext = requiresExecutionContext;
+        }
+
+        /** The text a value the connector does not name reads as, or null. */
+        public String getTextConnectorFallback() {
+            return this.textConnectorFallback;
+        }
+
+        /** True for a pointer: it only exists while a stack runs, so the menu cannot list holders of it. */
+        public boolean requiresExecutionContext() {
+            return this.requiresExecutionContext;
         }
 
         public String getVariableId() {
@@ -151,6 +196,8 @@ public final class RoomWiredVariableCatalog {
             result = (31 * result) + (this.hasValue ? 1 : 0);
             result = (31 * result) + (this.textConnected ? 2 : 0);
             result = (31 * result) + (this.readOnly ? 4 : 0);
+            result = (31 * result) + (this.requiresExecutionContext ? 8 : 0);
+            result = (31 * result) + (this.textConnectorFallback != null ? this.textConnectorFallback.hashCode() : 0);
             // The table is part of what the client caches, so a renamed value has to re-sync too.
             for (Map.Entry<Integer, String> mapping : this.textConnector.entrySet()) {
                 result = (31 * result) + mapping.getKey();
@@ -241,7 +288,9 @@ public final class RoomWiredVariableCatalog {
                     definition.hasValue(),
                     definition.isTextConnected(),
                     definition.isReadOnly(),
-                    textConnector(room, definition.getItemId())));
+                    textConnector(room, definition.getItemId()),
+                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
+                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
         }
 
         RoomFurniVariableManager.Snapshot furniSnapshot =
@@ -256,7 +305,9 @@ public final class RoomWiredVariableCatalog {
                     definition.hasValue(),
                     definition.isTextConnected(),
                     definition.isReadOnly(),
-                    textConnector(room, definition.getItemId())));
+                    textConnector(room, definition.getItemId()),
+                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
+                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
         }
 
         RoomVariableManager.Snapshot roomSnapshot =
@@ -271,7 +322,9 @@ public final class RoomWiredVariableCatalog {
                     definition.hasValue(),
                     definition.isTextConnected(),
                     definition.isReadOnly(),
-                    textConnector(room, definition.getItemId())));
+                    textConnector(room, definition.getItemId()),
+                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
+                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
         }
 
         for (WiredVariableDefinitionInfo definition : WiredContextVariableSupport.createDefinitionInfos(room)) {
@@ -288,7 +341,9 @@ public final class RoomWiredVariableCatalog {
                     definition.hasValue(),
                     definition.isTextConnected(),
                     true,
-                    textConnector(room, definition.getItemId())));
+                    textConnector(room, definition.getItemId()),
+                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
+                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
         }
 
         variables.sort(Comparator.comparingInt(Variable::getVariableTarget)

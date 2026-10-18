@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -25,9 +26,13 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,34 +84,27 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
             return;
         }
 
+        List<WiredMatchFurniSetting> spots = dealSpots(this.settings, targets.size(), ThreadLocalRandom.current());
+        int index = 0;
         for (HabboItem item : targets) {
             if (item == null) continue;
-
-            WiredMatchFurniSetting setting = this.resolveSettingForTarget(room, item);
-            if (setting == null) continue;
-
-            this.applySetting(room, item, setting, ctx);
+            this.applySetting(room, item, spots.get(index++), ctx);
         }
     }
 
-    private WiredMatchFurniSetting resolveSettingForTarget(Room room, HabboItem target) {
-        WiredMatchFurniSetting fallback = null;
+    /**
+     * The snapshot spots for {@code targets} furni that were not picked: the saved entries in random order, dealt out
+     * one per furni whatever its type, and reused from the start when there are more furni than entries. A one-furni
+     * snapshot so gives its entry to every target.
+     */
+    static List<WiredMatchFurniSetting> dealSpots(
+            Collection<WiredMatchFurniSetting> settings, int targets, Random random) {
+        List<WiredMatchFurniSetting> shuffled = new ArrayList<>(settings);
+        Collections.shuffle(shuffled, random);
 
-        for (WiredMatchFurniSetting setting : this.settings) {
-            HabboItem sourceItem = room.getHabboItem(setting.item_id);
-            if (sourceItem == null) continue;
-            if (sourceItem.getBaseItem().getId() != target.getBaseItem().getId()) continue;
-
-            if (setting.state.equals(target.getExtradata())) {
-                return setting;
-            }
-
-            if (fallback == null) {
-                fallback = setting;
-            }
-        }
-
-        return fallback;
+        List<WiredMatchFurniSetting> dealt = new ArrayList<>(targets);
+        for (int i = 0; i < targets; i++) dealt.add(shuffled.get(i % shuffled.size()));
+        return dealt;
     }
 
     void applySetting(Room room, HabboItem item, WiredMatchFurniSetting setting, WiredContext ctx) {
@@ -122,24 +120,25 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
         RoomTile oldLocation = room.getLayout().getTile(item.getX(), item.getY());
         if (oldLocation == null) return;
 
+        int targetRotation = FurnitureDirections.of(item).match(item.getRotation(), setting.rotation);
+
         // Altitude first: with direction also on, this branch restores both. Checking direction first
         // turned the furni and never gave it its height back.
         if (this.altitude && !this.position) {
-            int newRotation = this.direction ? setting.rotation : item.getRotation();
+            int newRotation = this.direction ? targetRotation : item.getRotation();
             if (BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0
                     || newRotation != item.getRotation()) {
                 WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, newRotation, setting.z, null, true, ctx);
             }
         } else if (this.direction && !this.position) {
-            if (item.getRotation() != setting.rotation
-                    && room.furnitureFitsAt(oldLocation, item, setting.rotation, false)
-                            == FurnitureMovementError.NONE) {
-                WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, setting.rotation, null, true, ctx);
+            if (item.getRotation() != targetRotation
+                    && room.furnitureFitsAt(oldLocation, item, targetRotation, false) == FurnitureMovementError.NONE) {
+                WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, targetRotation, null, true, ctx);
             }
         } else if (this.position) {
-            boolean slideAnimation = !this.direction || item.getRotation() == setting.rotation;
+            boolean slideAnimation = !this.direction || item.getRotation() == targetRotation;
             RoomTile newLocation = room.getLayout().getTile((short) setting.x, (short) setting.y);
-            int newRotation = this.direction ? setting.rotation : item.getRotation();
+            int newRotation = this.direction ? targetRotation : item.getRotation();
             double newZ = this.altitude ? setting.z : item.getZ();
 
             if (newLocation != null

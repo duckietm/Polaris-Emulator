@@ -52,10 +52,12 @@ final class RoomItemOperations {
             return;
         }
 
-        if (!item.isLimited()) {
-            this.room.sendComposer(new ItemStateComposer(item).compose());
-        } else {
-            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
+        // Inside a wired firing the state goes out with the firing's other states, ahead of its movements.
+        if (!WiredFurniStateBatch.defer(this.room, item)) {
+            this.room.sendComposer(
+                    item.isLimited()
+                            ? new FloorItemUpdateComposer(item).compose()
+                            : new ItemStateComposer(item).compose());
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
@@ -85,6 +87,10 @@ final class RoomItemOperations {
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomHanditemBlockSupport.isControllerItem(item)) {
             RoomHanditemBlockSupport.sendState(this.room);
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomChooserDisableSupport.isControllerItem(item)) {
+            RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {

@@ -45,6 +45,7 @@ public final class WiredAddonCodes {
             Map.entry(2000, 2000), // global placeholder
             Map.entry(151, 2001), // achievement enabler
             Map.entry(128, 2002), // variables web api
+            Map.entry(2003, 2003), // link speaker
             // Ours.
             Map.entry(0, 3000), // wf_label
             Map.entry(100, 3002), // currency chest
@@ -63,7 +64,8 @@ public final class WiredAddonCodes {
             108, 5, // quest
             109, 6, // quest chain
             83, 7, // echo
-            2008, 8); // daily task
+            2008, 8, // daily task
+            2009, 9); // pointer
 
     private WiredAddonCodes() {}
 

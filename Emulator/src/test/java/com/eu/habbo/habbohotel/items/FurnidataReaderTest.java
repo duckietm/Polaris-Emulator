@@ -43,6 +43,32 @@ class FurnidataReaderTest {
     }
 
     @Test
+    void collectsTheFloorFurniDefaultDirections(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json");
+        Files.writeString(file, """
+            { "roomitemtypes": { "furnitype": [
+                { "id": 1, "classname": "wf_antenna2", "defaultdir": 2 },
+                { "id": 2, "classname": "Bed_Polyfon*3", "defaultdir": 4 },
+                { "id": 3, "classname": "odd_dir", "defaultdir": 9 },
+                { "id": 4, "classname": "no_dir" }
+              ]},
+              "wallitemtypes": { "furnitype": [ { "id": 5, "classname": "poster", "defaultdir": 2 } ]} }
+            """);
+
+        FurnidataReader reader = new FurnidataReader(file, 64 * 1024 * 1024);
+        reader.read();
+
+        assertEquals(java.util.Map.of("wf_antenna2", 2, "bed_polyfon", 4), reader.defaultDirections());
+
+        FurnitureTextProvider provider = new FurnitureTextProvider(true);
+        provider.indexDefaultDirections(reader.defaultDirections());
+        assertEquals(2, provider.getDefaultDirection("wf_antenna2"));
+        assertEquals(4, provider.getDefaultDirection("bed_polyfon*1"));
+        assertEquals(-1, provider.getDefaultDirection("no_dir"));
+        assertEquals(-1, provider.getDefaultDirection(null));
+    }
+
+    @Test
     void rejectsFileOverSizeCap(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("FurnitureData.json");
         Files.writeString(file, SINGLE);

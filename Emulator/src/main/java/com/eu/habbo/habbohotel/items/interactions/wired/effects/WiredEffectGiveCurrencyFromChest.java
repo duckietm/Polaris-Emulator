@@ -4,14 +4,13 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWithdrawals;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -45,6 +44,9 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
     private final WiredChestReward reward = new WiredChestReward();
     private int earningsCategory = EARNINGS_GAMES;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int chestSource = WiredChestTargets.DEFAULT_CHEST_SOURCE;
+    private int secondFurniSource = WiredChestTargets.DEFAULT_SECOND_FURNI_SOURCE;
+    private int secondUserSource = WiredChestTargets.DEFAULT_SECOND_USER_SOURCE;
 
     public WiredEffectGiveCurrencyFromChest(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -61,61 +63,36 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         if (room == null) return;
         Integer resolved = this.reward.resolveAmount(ctx, room, 1);
         if (resolved == null || resolved <= 0) return;
-        int perUser = resolved;
+        boolean everything = this.reward.mode == WiredChestReward.MODE_EVERYTHING;
 
-        InteractionWiredChest chest = this.resolveChest(room);
-        if (chest == null) return;
+        // Only upgraded, unlocked chests are used; with none the triggering user is told why.
+        List<InteractionWiredChestCurrency> chests = WiredChestTargets.resolveAll(
+                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestCurrency.class);
+        if (chests.isEmpty()) {
+            WiredChestTargets.answerNoUsableChest(ctx, room);
+            return;
+        }
 
-        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+        List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        // AIR: "everything" cannot be split between several users.
+        if (everything && units.size() > 1) return;
+
+        for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
 
-            ChestStorage contents = chest.getContents();
+            // Taken from the chests in order until the amount is reached or they are empty.
+            int remaining = everything ? Integer.MAX_VALUE : resolved;
             int total = 0;
-            // Take from the first currency entry that still has stock; "everything" empties them all.
-            for (ChestStorage.Entry entry : new ArrayList<>(contents.entries())) {
-                if (entry.kind != ChestStorage.KIND_CURRENCY) continue;
-
-                int given = contents.take(ChestStorage.KIND_CURRENCY, entry.type, perUser);
-                if (given > 0) {
-                    grant(habbo, entry.type, given);
-                    ChestTransactionLog.record(
-                            room.getId(),
-                            chest.getId(),
-                            ChestStorage.KIND_CURRENCY,
-                            ChestTransactionLog.TYPE_WITHDRAW,
-                            ChestTransactionLog.SOURCE_WIRED,
-                            habbo,
-                            entry.type,
-                            given,
-                            0,
-                            null);
-                    chest.persistContents(room);
-                    ChestNotifications.wired(chest, room, given);
-                    total += given;
-                }
-                if (this.reward.mode != WiredChestReward.MODE_EVERYTHING) break;
+            for (InteractionWiredChestCurrency chest : chests) {
+                if (remaining <= 0) break;
+                int taken = ChestWithdrawals.coins(
+                                habbo, chest, room, everything ? -1 : remaining, ChestTransactionLog.SOURCE_WIRED)
+                        .coins();
+                total += taken;
+                remaining -= taken;
             }
-            this.reward.showPopup(habbo, total);
-        }
-    }
-
-    private InteractionWiredChest resolveChest(Room room) {
-        for (Integer id : this.chestIds) {
-            HabboItem item = room.getHabboItem(id);
-            // Wired only reaches a chest whose owner upgraded it to answer wired.
-            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
-                return chest;
-            }
-        }
-        return null;
-    }
-
-    private static void grant(Habbo habbo, int currencyType, int amount) {
-        if (currencyType < 0) {
-            habbo.giveCredits(amount);
-        } else {
-            habbo.givePoints(currencyType, amount);
+            if (total > 0) this.reward.announce(habbo, ChestAirWire.givenRule(total, List.of()));
         }
     }
 
@@ -127,8 +104,19 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        // Refused before anything changes: the picks must all be upgraded chests of this kind.
+        WiredChestTargets.validatePicks(
+                this.getRoom(),
+                settings.getFurniIds(),
+                InteractionWiredChestCurrency.class,
+                WiredChestTargets.REQUIRE_COIN_CHESTS);
+
         this.earningsCategory = normalizeCategory(this.reward.read(settings, 1, EARNINGS_GAMES));
         this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.chestSource =
+                WiredChestTargets.normalizeChestSource(settings.furniSource(0, WiredChestTargets.DEFAULT_CHEST_SOURCE));
+        this.secondFurniSource = settings.furniSource(1, WiredChestTargets.DEFAULT_SECOND_FURNI_SOURCE);
+        this.secondUserSource = settings.userSource(1, WiredChestTargets.DEFAULT_SECOND_USER_SOURCE);
 
         this.chestIds.clear();
         if (settings.getFurniIds() != null) {
@@ -150,6 +138,9 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
     public String getWiredData() {
         JsonData data = new JsonData(this.reward.amount, this.userSource, this.getDelay(), this.chestIds);
         this.reward.writeTo(data);
+        data.furniSource = this.chestSource;
+        data.furniSource2 = this.secondFurniSource;
+        data.userSource2 = this.secondUserSource;
         data.earningsCategory = this.earningsCategory;
         return WiredManager.getGson().toJson(data);
     }
@@ -169,6 +160,10 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         this.reward.readFrom(data);
         this.earningsCategory = normalizeCategory(data.earningsCategory);
         this.userSource = data.userSource;
+        // A row saved before the sources were stored always used its picked chests.
+        if (data.furniSource != null) this.chestSource = WiredChestTargets.normalizeChestSource(data.furniSource);
+        if (data.furniSource2 != null) this.secondFurniSource = data.furniSource2;
+        if (data.userSource2 != null) this.secondUserSource = data.userSource2;
         this.setDelay(data.delay);
         if (data.chestIds != null) {
             this.chestIds.addAll(data.chestIds);
@@ -201,6 +196,9 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         this.reward.reset(1);
         this.earningsCategory = EARNINGS_GAMES;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.chestSource = WiredChestTargets.DEFAULT_CHEST_SOURCE;
+        this.secondFurniSource = WiredChestTargets.DEFAULT_SECOND_FURNI_SOURCE;
+        this.secondUserSource = WiredChestTargets.DEFAULT_SECOND_USER_SOURCE;
         this.setDelay(0);
     }
 
@@ -211,12 +209,12 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
 
     @Override
     public int[] officialFurniSources() {
-        return new int[] {WiredSourceUtil.SOURCE_SELECTED};
+        return new int[] {this.chestSource, this.secondFurniSource};
     }
 
     @Override
     public int[] officialUserSources() {
-        return new int[] {this.userSource};
+        return new int[] {this.userSource, this.secondUserSource};
     }
 
     @Override
@@ -234,6 +232,9 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         int userSource;
         int delay;
         List<Integer> chestIds;
+        Integer furniSource;
+        Integer furniSource2;
+        Integer userSource2;
 
         public JsonData(int amount, int userSource, int delay, List<Integer> chestIds) {
             this.amount = amount;

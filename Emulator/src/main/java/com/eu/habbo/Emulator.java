@@ -440,6 +440,41 @@ public final class Emulator {
         return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("gui.autostart.enabled", false);
     }
 
+    private static void registerCameraRenderDefaults(ConfigurationManager configuration) {
+        configuration.register(
+                "camera.render.mode",
+                "server",
+                "RenderRoom/thumbnail packets: upload (client PNG only), server (official-client scene JSON only), "
+                        + "auto (both, by payload; JSON only when camera.render.assets.* is configured).");
+        configuration.register("camera.render.workers", "2", "Camera render worker threads.");
+        configuration.register("camera.render.queue", "16", "Camera renders waiting at most; more are refused.");
+        configuration.register("camera.render.timeout_ms", "5000", "A camera render is abandoned after this long.");
+        configuration.register("camera.render.verify_checksum", "1", "Check the official client's scene checksum.");
+        configuration.register("camera.render.assets.furniture_dir", "", "Folder of furniture .nitro bundles.");
+        configuration.register("camera.render.assets.figure_dir", "", "Folder of figure .nitro bundles.");
+        configuration.register("camera.render.assets.figuremap", "", "Path of the hotel's FigureMap.json.");
+        configuration.register("camera.render.assets.effect_dir", "", "Folder of avatar effect .nitro bundles.");
+        configuration.register("camera.render.assets.effectmap", "", "Path of the hotel's EffectMap.json.");
+        configuration.register("camera.render.assets.pet_dir", "", "Folder of pet .nitro bundles.");
+        configuration.register(
+                "camera.render.assets.room_library", "", "room.nitro, or the client's room asset folder.");
+        configuration.register("camera.render.assets.effects_dir", "", "Folder of camera effect/frame <name>.png.");
+        configuration.register("camera.render.assets.sprites_dir", "", "Optional folder of loose <asset>.png.");
+        configuration.register("camera.render.cache_mb", "128", "Memory for decoded camera assets.");
+        configuration.register(
+                "furni.directions.enabled",
+                "1",
+                "1: furni turn only to the directions their furniture bundle lists (as the client does).");
+        configuration.register(
+                "furni.directions.assets_dir",
+                "",
+                "Folder of furniture .nitro/.hab bundles for furni directions; empty uses "
+                        + "camera.render.assets.furniture_dir.");
+        configuration.register("furni.directions.cache_size", "8192", "Furni types whose directions stay cached.");
+        configuration.register(
+                "furni.directions.wait_ms", "50", "Longest wait for a bundle read before the default rotations apply.");
+    }
+
     private static void registerStartupConfigDefaults() {
         ConfigurationManager configuration = Emulator.config;
         configuration.register(
@@ -456,6 +491,7 @@ public final class Emulator {
         Emulator.config.register("camera.price.points", "0");
         Emulator.config.register("camera.price.points.type", "5");
         Emulator.config.register("camera.render.delay", "5");
+        registerCameraRenderDefaults(configuration);
         Emulator.config.register(
                 "hotel.timezone", java.time.ZoneId.systemDefault().getId());
         Emulator.config.register(

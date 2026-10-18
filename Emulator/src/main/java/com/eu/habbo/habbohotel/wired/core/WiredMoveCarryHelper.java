@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.habbohotel.rooms.WiredFurniStateBatch;
 import com.eu.habbo.habbohotel.rooms.WiredProjectileFlights;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -563,6 +564,8 @@ public final class WiredMoveCarryHelper {
         FURNI_FIRINGS.remove();
         ORIGINAL_ROTATIONS.remove();
         WiredMoveStyleHelper.discardCollection();
+        WiredFurniStateBatch.clearForCurrentThread();
+        WiredBoxFlashes.clearForCurrentThread();
     }
 
     public static void registerUserFollower(

@@ -311,7 +311,13 @@ public class RoomTrade {
         this.sendMessageToUsers(new TradeCloseWindowComposer());
     }
 
-    public void stopTrade(Habbo habbo) {
+    public synchronized void stopTrade(Habbo habbo) {
+        // Same lock and guard as confirm(): a cancel that lands while the trade is being completed must not
+        // hand the offered items back after they have changed owner.
+        if (this.completed) return;
+
+        this.completed = true;
+
         this.removeStatusses();
         this.clearAccepted();
         this.returnItems();

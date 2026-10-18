@@ -1,6 +1,5 @@
 package com.eu.habbo.messages.incoming.rooms.users;
 
-import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
@@ -15,12 +14,8 @@ public class UnIgnoreRoomUserEvent extends MessageHandler {
 
         if (userId <= 0 || self == null) return;
 
-        Room room = this.currentRoom();
-        Habbo target = room != null ? room.getHabbo(userId) : null;
-
-        // A user muted in this room stays silent; the mute is not lifted through the ignore list.
-        if (target != null && !target.getHabboStats().allowTalk()) return;
-
+        // A mute is not an ignore (it never reaches the ignore list), so unignoring a muted user
+        // only ends the ignore and leaves the mute in place.
         self.getHabboStats().unignoreUser(userId);
         this.client.sendResponse(new RoomUserIgnoredComposer(userId, RoomUserIgnoredComposer.UNIGNORED));
     }

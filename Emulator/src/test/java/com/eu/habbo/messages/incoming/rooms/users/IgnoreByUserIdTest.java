@@ -46,7 +46,7 @@ class IgnoreByUserIdTest {
     }
 
     @Test
-    void aUserMutedInTheRoomStaysIgnored() throws Exception {
+    void aMutedUserCanStillBeUnignoredAsAMuteIsNotAnIgnore() throws Exception {
         HabboStats stats = mock(HabboStats.class);
         Room room = mock(Room.class);
         Habbo muted = mock(Habbo.class);
@@ -58,7 +58,8 @@ class IgnoreByUserIdTest {
 
         run(new UnIgnoreRoomUserEvent(), client, Unpooled.buffer().writeInt(42));
 
-        verify(stats, never()).unignoreUser(42);
+        verify(stats).unignoreUser(42);
+        verify(room, never()).unmuteHabbo(muted);
     }
 
     @Test

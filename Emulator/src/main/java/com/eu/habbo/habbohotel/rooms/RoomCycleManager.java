@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -238,8 +237,9 @@ public class RoomCycleManager {
 
     private void processHabboMute(Habbo habbo) {
         if (habbo.getHabboStats().mutedBubbleTracker && habbo.getHabboStats().allowTalk()) {
+            // The client counts the RemainingMutePeriod down itself; the room was never told of the
+            // mute, so it is not told of its end either (an IgnoreResult 3 would unignore the user).
             habbo.getHabboStats().mutedBubbleTracker = false;
-            this.room.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
         }
     }
 

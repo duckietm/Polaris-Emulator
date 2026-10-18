@@ -1050,7 +1050,6 @@ public class RoomManager {
             int remainingMuteTime = habbo.getHabboStats().remainingMuteTime();
             habbo.getClient().sendResponse(new FloodCounterComposer(remainingMuteTime));
             habbo.getClient().sendResponse(new MutedWhisperComposer(remainingMuteTime));
-            room.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.MUTED).compose());
         } else if (habbo.getHabboStats().mutedBubbleTracker) {
             habbo.getHabboStats().mutedBubbleTracker = false;
         }
@@ -1080,11 +1079,8 @@ public class RoomManager {
                             .sendResponse(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.IGNORED));
                 }
 
-                if (!roomHabbo.getHabboStats().allowTalk()) {
-                    habbo.getClient()
-                            .sendResponse(new RoomUserIgnoredComposer(roomHabbo, RoomUserIgnoredComposer.MUTED));
-                } else if (habbo.getHabboStats()
-                        .userIgnored(roomHabbo.getHabboInfo().getId())) {
+                // Only the entering user's own ignores; another user's mute is not theirs to see.
+                if (habbo.getHabboStats().userIgnored(roomHabbo.getHabboInfo().getId())) {
                     habbo.getClient()
                             .sendResponse(new RoomUserIgnoredComposer(roomHabbo, RoomUserIgnoredComposer.IGNORED));
                 }

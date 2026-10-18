@@ -185,6 +185,12 @@ public class RoomChatManager {
         synchronized (this.mutedHabbos) {
             this.mutedHabbos.put(habbo.getHabboInfo().getId(), (int) Math.min(unmuteAt, Integer.MAX_VALUE));
         }
+
+        // AIR tells the muted user alone, with RemainingMutePeriod. The room is not told: an
+        // IgnoreResult would put the user on everybody else's own ignore list.
+        if (this.isMuted(habbo) && habbo.getClient() != null) {
+            habbo.getClient().sendResponse(new MutedWhisperComposer(this.getMuteTimeRemaining(habbo)));
+        }
     }
 
     /**

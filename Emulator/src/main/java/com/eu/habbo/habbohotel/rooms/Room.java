@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.HideDoorbellComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.rooms.RoomUnloadedEvent;
 import com.eu.habbo.plugin.events.rooms.RoomUnloadingEvent;
@@ -1668,12 +1667,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void muteHabbo(Habbo habbo, int minutes) {
         this.chatManager.muteHabbo(habbo, minutes);
-        this.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.MUTED).compose());
     }
 
     public void unmuteHabbo(Habbo habbo) {
         this.chatManager.unmuteHabbo(habbo);
-        this.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
     }
 
     public boolean isMuted(Habbo habbo) {

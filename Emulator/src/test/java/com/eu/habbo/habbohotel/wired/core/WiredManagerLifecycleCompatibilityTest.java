@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.eu.habbo.habbohotel.rooms.WiredFurniStateBatch;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
@@ -70,6 +71,7 @@ class WiredManagerLifecycleCompatibilityTest {
         assertNull(threadLocalValue(WiredInternalVariableSupport.class, "USER_MOVE_BATCH_DEPTH"));
         assertNull(threadLocalValue(WiredMoveCarryHelper.class, "COLLECTED_MOVEMENTS"));
         assertNull(threadLocalValue(WiredMoveCarryHelper.class, "MOVEMENT_COLLECTION_DEPTH"));
+        assertFalse(WiredFurniStateBatch.isOpen());
         assertNull(threadLocalValue(WiredUserMovementHelper.class, "SUPPRESSED_STATUS_ROOM_UNIT_IDS"));
         assertEquals(0, threadLocalValue(WiredSelectionFilterSupport.class, "FILTER_DEPTH"));
         assertNull(threadLocalValue(WiredExecutionScope.class, "CURRENT"));

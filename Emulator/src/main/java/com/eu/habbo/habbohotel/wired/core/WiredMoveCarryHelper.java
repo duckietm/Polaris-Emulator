@@ -559,6 +559,7 @@ public final class WiredMoveCarryHelper {
         FURNI_FIRINGS.remove();
         ORIGINAL_ROTATIONS.remove();
         WiredMoveStyleHelper.discardCollection();
+        WiredFurniStateBatch.clearForCurrentThread();
     }
 
     public static void registerUserFollower(

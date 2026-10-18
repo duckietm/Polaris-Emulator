@@ -103,8 +103,12 @@ public class RoomCycleManager {
                 if (!updatedUnit.isEmpty()) {
                     ServerMessage statusComposer = new RoomUserStatusComposer(updatedUnit, true).compose();
                     WiredMoveCarryHelper.beginMovementCollection();
-                    WiredMoveCarryHelper.processUserFollowers(this.room, updatedUnit);
-                    ServerMessage wiredMovementsComposer = WiredMoveCarryHelper.finishMovementCollection();
+                    ServerMessage wiredMovementsComposer;
+                    try {
+                        WiredMoveCarryHelper.processUserFollowers(this.room, updatedUnit);
+                    } finally {
+                        wiredMovementsComposer = WiredMoveCarryHelper.finishMovementCollection();
+                    }
 
                     if (wiredMovementsComposer != null) {
                         ArrayList<ServerMessage> batchedMessages = new ArrayList<>(2);

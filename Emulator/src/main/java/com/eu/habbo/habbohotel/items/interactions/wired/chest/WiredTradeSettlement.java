@@ -93,34 +93,29 @@ public final class WiredTradeSettlement {
     public static void apply(Habbo habbo, Plan plan, InteractionWiredChest chest, ItemRelease release) {
         if (habbo == null || plan == null) return;
 
+        // AIR model: coins only ever live in a coin chest's store. A legacy wallet payment goes in
+        // only when the chest takes all of it; whatever it refuses goes straight back.
         for (Term term : plan.currencyToTake()) {
-            ChestWiredCurrencyUtil.take(habbo, term.currencyType, term.amount);
-            if (chest != null) {
-                chest.getContents().add(ChestStorage.KIND_CURRENCY, term.currencyType, term.amount);
-            }
+            if (chest == null || !ChestWiredCurrencyUtil.take(habbo, term.currencyType, term.amount)) continue;
+            int stored = chest.addCoins(term.amount);
+            if (stored < term.amount) ChestWiredCurrencyUtil.give(habbo, term.currencyType, term.amount - stored);
         }
 
         for (Integer itemId : plan.itemsToTake()) {
             if (release != null) release.release(itemId, chest);
         }
 
+        // A reward comes out of the chest or not at all: nothing is created when there is none.
         for (Term term : plan.rewardToGive()) {
-            if (term.amount <= 0) continue;
+            if (term.amount <= 0 || chest == null) continue;
 
             if (term.isCurrency()) {
-                if (chest != null) {
-                    chest.getContents().take(ChestStorage.KIND_CURRENCY, term.currencyType, term.amount);
-                }
-                ChestWiredCurrencyUtil.give(habbo, term.currencyType, term.amount);
+                int taken = chest.takeCoins(term.amount);
+                if (taken > 0) habbo.giveCredits(taken);
                 continue;
             }
-
-            if (chest != null) {
-                ChestWiredFurniUtil.giveFromChestByType(
-                        habbo, chest, term.wallItem, term.baseItemId, term.posterId(), term.amount);
-            } else {
-                ChestWiredFurniUtil.mintToInventory(habbo, term.wallItem, term.baseItemId, term.amount);
-            }
+            ChestWiredFurniUtil.giveFromChestByType(
+                    habbo, chest, term.wallItem, term.baseItemId, term.posterId(), term.amount);
         }
 
         if (chest != null) chest.persistContents();

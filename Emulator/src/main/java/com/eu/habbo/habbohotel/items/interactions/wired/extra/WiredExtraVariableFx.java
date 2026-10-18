@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
@@ -8,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxConfig;
@@ -418,6 +420,8 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
                 : OVERRIDE_TARGET_HOLDER;
         this.audienceValue = param(params, 14, 0);
         this.categoryExtra = param(params, 15, 0);
+        this.rejectPointers(
+                customItemId(token(tokens, 0)), customItemId(token(tokens, 1)), customItemId(token(tokens, 2)));
         this.overrideMinItemId = customItemId(token(tokens, 0));
         this.overrideMaxItemId = customItemId(token(tokens, 1));
         this.audienceItemId = customItemId(token(tokens, 2));
@@ -437,6 +441,13 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         if (this.usesValueRange() && nextDefaultMax <= nextDefaultMin) {
             throw new WiredSaveException("wiredfurni.params.variablefx.validation.range");
         }
+        boolean officialTokens = !token(tokens, 0).isEmpty()
+                || !token(tokens, 1).isEmpty()
+                || !token(tokens, 2).isEmpty();
+        this.rejectPointers(
+                officialTokens ? customItemId(token(tokens, 0)) : officialId(variableIds, 0),
+                officialTokens ? customItemId(token(tokens, 1)) : officialId(variableIds, 1),
+                officialTokens ? customItemId(token(tokens, 2)) : officialId(variableIds, 2));
 
         this.source = (holder == WiredVariableTargets.OFFICIAL_FURNI) ? SOURCE_FURNI : SOURCE_USER;
         this.visibility =
@@ -475,6 +486,16 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         this.audienceItemId = hasTokens ? customItemId(token(tokens, 2)) : officialId(variableIds, 2);
         this.icon = normalizeIcon(token(tokens, 3));
         return true;
+    }
+
+    /** AIR's override and audience pickers leave out pointers: an fx is drawn without a running stack. */
+    private void rejectPointers(int... itemIds) throws WiredSaveException {
+        Room room = WiredPlatform.isReady()
+                ? WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId())
+                : null;
+        if (room != null && WiredPointerVariableSupport.anyPointer(room, itemIds)) {
+            throw new WiredSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
+        }
     }
 
     private static int officialId(String[] variableIds, int index) {

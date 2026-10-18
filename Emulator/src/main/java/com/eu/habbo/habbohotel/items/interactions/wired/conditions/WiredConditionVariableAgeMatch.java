@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -184,12 +185,15 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
             amount = normalizeDurationAmount(read);
         }
         long thresholdMs = durationToMillis(amount, this.durationUnit);
+        // A pointer is checked as the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0) return false;
 
         return switch (this.targetType) {
-            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, thresholdMs);
-            case TARGET_ROOM -> this.evaluateRoomTarget(room, thresholdMs);
-            case TARGET_CONTEXT -> this.evaluateContextTarget(ctx, room, thresholdMs);
-            default -> this.evaluateUserTargets(ctx, room, thresholdMs);
+            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, thresholdMs, variableId);
+            case TARGET_ROOM -> this.evaluateRoomTarget(room, thresholdMs, variableId);
+            case TARGET_CONTEXT -> this.evaluateContextTarget(ctx, room, thresholdMs, variableId);
+            default -> this.evaluateUserTargets(ctx, room, thresholdMs, variableId);
         };
     }
 
@@ -287,26 +291,26 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         this.durationUnit = DURATION_UNIT_SECONDS;
     }
 
-    private boolean evaluateUserTargets(WiredContext ctx, Room room, long thresholdMs) {
+    private boolean evaluateUserTargets(WiredContext ctx, Room room, long thresholdMs, int variableId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return false;
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (RoomUnit roomUnit : targets) {
-                if (this.matchesAge(this.readUserAgeMs(room, roomUnit), thresholdMs)) return true;
+                if (this.matchesAge(this.readUserAgeMs(room, roomUnit, variableId), thresholdMs)) return true;
             }
 
             return false;
         }
 
         for (RoomUnit roomUnit : targets) {
-            if (!this.matchesAge(this.readUserAgeMs(room, roomUnit), thresholdMs)) return false;
+            if (!this.matchesAge(this.readUserAgeMs(room, roomUnit, variableId), thresholdMs)) return false;
         }
 
         return true;
     }
 
-    private boolean evaluateFurniTargets(WiredContext ctx, Room room, long thresholdMs) {
+    private boolean evaluateFurniTargets(WiredContext ctx, Room room, long thresholdMs, int variableId) {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
@@ -314,67 +318,65 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (HabboItem item : targets) {
-                if (this.matchesAge(this.readFurniAgeMs(room, item), thresholdMs)) return true;
+                if (this.matchesAge(this.readFurniAgeMs(room, item, variableId), thresholdMs)) return true;
             }
 
             return false;
         }
 
         for (HabboItem item : targets) {
-            if (!this.matchesAge(this.readFurniAgeMs(room, item), thresholdMs)) return false;
+            if (!this.matchesAge(this.readFurniAgeMs(room, item, variableId), thresholdMs)) return false;
         }
 
         return true;
     }
 
-    private boolean evaluateRoomTarget(Room room, long thresholdMs) {
-        return this.matchesAge(this.readRoomAgeMs(room), thresholdMs);
+    private boolean evaluateRoomTarget(Room room, long thresholdMs, int variableId) {
+        return this.matchesAge(this.readRoomAgeMs(room, variableId), thresholdMs);
     }
 
-    private boolean evaluateContextTarget(WiredContext ctx, Room room, long thresholdMs) {
-        return this.matchesAge(this.readContextAgeMs(ctx, room), thresholdMs);
+    private boolean evaluateContextTarget(WiredContext ctx, Room room, long thresholdMs, int variableId) {
+        return this.matchesAge(this.readContextAgeMs(ctx, room, variableId), thresholdMs);
     }
 
-    private Long readUserAgeMs(Room room, RoomUnit roomUnit) {
+    private Long readUserAgeMs(Room room, RoomUnit roomUnit, int variableId) {
         if (room == null || roomUnit == null) return null;
 
         int holder = UserVariableHolders.of(room, roomUnit);
-        if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, this.variableItemId)) return null;
+        if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, variableId)) return null;
 
         int timestamp = (this.compareValue == COMPARE_VALUE_UPDATED)
-                ? room.getUserVariableManager().getUpdatedAt(holder, this.variableItemId)
-                : room.getUserVariableManager().getCreatedAt(holder, this.variableItemId);
+                ? room.getUserVariableManager().getUpdatedAt(holder, variableId)
+                : room.getUserVariableManager().getCreatedAt(holder, variableId);
 
         return timestampToAgeMs(timestamp);
     }
 
-    private Long readFurniAgeMs(Room room, HabboItem item) {
-        if (room == null
-                || item == null
-                || !room.getFurniVariableManager().hasVariable(item.getId(), this.variableItemId)) return null;
-
-        int timestamp = (this.compareValue == COMPARE_VALUE_UPDATED)
-                ? room.getFurniVariableManager().getUpdatedAt(item.getId(), this.variableItemId)
-                : room.getFurniVariableManager().getCreatedAt(item.getId(), this.variableItemId);
-
-        return timestampToAgeMs(timestamp);
-    }
-
-    private Long readRoomAgeMs(Room room) {
-        if (room == null) return null;
-        if (this.compareValue == COMPARE_VALUE_CREATED) return null;
-
-        int timestamp = room.getRoomVariableManager().getUpdatedAt(this.variableItemId);
-        return timestampToAgeMs(timestamp);
-    }
-
-    private Long readContextAgeMs(WiredContext ctx, Room room) {
-        if (ctx == null || room == null || !WiredContextVariableSupport.hasVariable(ctx, this.variableItemId))
+    private Long readFurniAgeMs(Room room, HabboItem item, int variableId) {
+        if (room == null || item == null || !room.getFurniVariableManager().hasVariable(item.getId(), variableId))
             return null;
 
         int timestamp = (this.compareValue == COMPARE_VALUE_UPDATED)
-                ? WiredContextVariableSupport.getUpdatedAt(ctx, this.variableItemId)
-                : WiredContextVariableSupport.getCreatedAt(ctx, this.variableItemId);
+                ? room.getFurniVariableManager().getUpdatedAt(item.getId(), variableId)
+                : room.getFurniVariableManager().getCreatedAt(item.getId(), variableId);
+
+        return timestampToAgeMs(timestamp);
+    }
+
+    private Long readRoomAgeMs(Room room, int variableId) {
+        if (room == null) return null;
+        if (this.compareValue == COMPARE_VALUE_CREATED) return null;
+
+        int timestamp = room.getRoomVariableManager().getUpdatedAt(variableId);
+        return timestampToAgeMs(timestamp);
+    }
+
+    private Long readContextAgeMs(WiredContext ctx, Room room, int variableId) {
+        if (ctx == null || room == null || !WiredContextVariableSupport.hasVariable(ctx, variableId)) return null;
+
+        int timestamp = (this.compareValue == COMPARE_VALUE_UPDATED)
+                ? WiredContextVariableSupport.getUpdatedAt(ctx, variableId)
+                : WiredContextVariableSupport.getCreatedAt(ctx, variableId);
 
         return timestampToAgeMs(timestamp);
     }

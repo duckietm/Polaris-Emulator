@@ -21,8 +21,7 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
-import java.lang.reflect.Field;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionFailComposer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -116,10 +115,8 @@ class ChestOfficialRulesTest {
 
         ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
         verify(habbo.getClient()).sendResponse(sent.capture());
-        assertTrue(sent.getValue() instanceof WiredTradeCancelledComposer);
-        Field field = WiredTradeCancelledComposer.class.getDeclaredField("failureId");
-        field.setAccessible(true);
-        assertEquals(12, field.getInt(sent.getValue()));
+        assertTrue(sent.getValue() instanceof WiredTransactionFailComposer, "AIR WiredTransactionFail");
+        assertEquals(12, ((WiredTransactionFailComposer) sent.getValue()).getReason());
 
         Habbo quiet = habbo(OWNER);
         ChestTransactionFailures.send(quiet, ChestTransactionFailures.NONE);

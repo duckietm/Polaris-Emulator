@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -15,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -25,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 public class WiredConditionMatchStatePosition extends InteractionWiredCondition
-        implements InteractionWiredMatchFurniSettings {
+        implements InteractionWiredMatchFurniSettings, WiredOfficialQuantifier {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
 
@@ -110,9 +112,16 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
             int itemId = settings.getFurniIds()[i];
             HabboItem item = room.getHabboItem(itemId);
 
-            if (item != null)
+            if (item == null) continue;
+
+            // Wall items are snapshotted by state, wall position and altitude, as in Habbo (dba6fcd8).
+            if (isWallItem(item)) {
+                this.settings.add(new WiredMatchFurniSetting(
+                        item.getId(), item.getExtradata(), 0, 0, 0, item.getZ(), item.getWallPosition()));
+            } else {
                 this.settings.add(new WiredMatchFurniSetting(
                         item.getId(), item.getExtradata(), item.getRotation(), item.getX(), item.getY(), item.getZ()));
+            }
         }
 
         this.furniSource =
@@ -237,12 +246,22 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
     private boolean matchesSetting(HabboItem item, WiredMatchFurniSetting setting) {
         if (this.state && !item.getExtradata().equals(setting.state)) return false;
 
+        // A wall item compares its wall tile, offset and side, and has no direction.
+        if (isWallItem(item)) {
+            if (this.position && !java.util.Objects.equals(setting.wallPosition, item.getWallPosition())) return false;
+            return !this.altitude || BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) == 0;
+        }
+
         if (this.position && !(setting.x == item.getX() && setting.y == item.getY())) return false;
 
         if (this.altitude && BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0)
             return false;
 
         return !this.direction || setting.rotation == item.getRotation();
+    }
+
+    private static boolean isWallItem(HabboItem item) {
+        return item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL;
     }
 
     @Deprecated
@@ -487,5 +506,10 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
             this.furniSource = furniSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
     }
 }

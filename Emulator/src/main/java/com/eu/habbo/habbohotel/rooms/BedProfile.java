@@ -106,6 +106,16 @@ public class BedProfile {
         }
     }
 
+    /** Whether nobody can lie on {@code pillow}: furni blocks it, or another user, bot or pet is on it. */
+    public static boolean isPillowTaken(Room room, RoomTile pillow, RoomUnit walker) {
+        if (!room.canLayAt(pillow.x, pillow.y)) return true;
+
+        for (RoomUnit unit : room.getRoomUnitsAt(pillow)) {
+            if (unit != null && unit != walker) return true;
+        }
+        return false;
+    }
+
     public RoomTile snapToLay(Room room, HabboItem bed, short unitX, short unitY) {
         if (isLengthAlongY()) {
             return room.getLayout().getTile(unitX, bed.getY());
@@ -120,10 +130,12 @@ public class BedProfile {
         short otherX = currentPillow.x;
         short otherY = currentPillow.y;
 
+        // The lane next to the pillow's own lane, inside the bed: from the first lane the second, otherwise the one
+        // before.
         if (isLengthAlongY()) {
-            otherX = (short) (bed.getX() + (currentPillow.x == bed.getX() ? 1 : -1));
+            otherX = (short) (currentPillow.x == bed.getX() ? bed.getX() + 1 : currentPillow.x - 1);
         } else {
-            otherY = (short) (bed.getY() + (currentPillow.y == bed.getY() ? 1 : -1));
+            otherY = (short) (currentPillow.y == bed.getY() ? bed.getY() + 1 : currentPillow.y - 1);
         }
 
         RoomTile otherTile = room.getLayout().getTile(otherX, otherY);

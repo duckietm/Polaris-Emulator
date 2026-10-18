@@ -111,6 +111,7 @@ final class CameraDoorwayRenderer {
             // planes or wide avatar parts that spilled over the wall get covered again.
             this.planeRenderer.renderSinglePlane(graphics, plane);
             fillDoorwayMask(render, doorwayMask, renderBackgroundColor);
+            renderLandscapeThroughDoorway(graphics, plane, doorwayMask);
             renderForegroundPlanesOverDoorway(graphics, planeIndex, doorwayMask, true);
             renderDoorwayAvatarReveals(graphics, planeIndex, doorwayMask);
             renderForegroundPlanesOverDoorway(graphics, planeIndex, doorwayMask, false);
@@ -247,6 +248,17 @@ final class CameraDoorwayRenderer {
         }
     }
 
+    /**
+     * The window view: the landscape layers behind this wall show through the holes its masks cut
+     * (windows), as in the room, where the landscape plane lies just behind the wall.
+     */
+    private void renderLandscapeThroughDoorway(Graphics2D graphics, CameraPlane wall, DoorwayMask doorwayMask) {
+        for (CameraPlane landscape : this.planeRenderer.getLandscapeLayersBehind(wall)) {
+            this.planeRenderer.renderSinglePlaneClippedToMask(
+                    graphics, landscape, doorwayMask.alpha, doorwayMask.bounds, this.width, this.height);
+        }
+    }
+
     private void renderForegroundPlanesOverDoorway(
             Graphics2D graphics, int maskedWallPlaneIndex, DoorwayMask doorwayMask, boolean floorPlanes) {
         if (this.data.getPlanes() == null) {
@@ -261,7 +273,7 @@ final class CameraDoorwayRenderer {
         CameraPlane backgroundPlane = this.planeRenderer.getBackgroundPlane();
         for (int planeIndex = maskedWallPlaneIndex + 1; planeIndex < this.data.getPlanes().length; planeIndex++) {
             CameraPlane plane = this.data.getPlanes()[planeIndex];
-            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapePlane(plane)) {
+            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapeLayer(plane)) {
                 continue;
             }
 
@@ -286,7 +298,7 @@ final class CameraDoorwayRenderer {
         int order = 0;
 
         for (CameraPlane plane : this.data.getPlanes()) {
-            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapePlane(plane)) {
+            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapeLayer(plane)) {
                 continue;
             }
 
@@ -458,7 +470,7 @@ final class CameraDoorwayRenderer {
         CameraPlane backgroundPlane = this.planeRenderer.getBackgroundPlane();
         for (int planeIndex = maskedWallPlaneIndex + 1; planeIndex < this.data.getPlanes().length; planeIndex++) {
             CameraPlane plane = this.data.getPlanes()[planeIndex];
-            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapePlane(plane)) {
+            if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapeLayer(plane)) {
                 continue;
             }
 

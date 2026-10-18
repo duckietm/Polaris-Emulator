@@ -19,6 +19,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -386,6 +387,11 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
             return;
         }
 
+        if (this.needsDelete) {
+            // A wired chest gives what it holds back to its owner before its row goes.
+            ChestRelease.releaseToOwner(this);
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             if (this.needsDelete) {
                 this.needsUpdate = false;
@@ -454,6 +460,16 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     }
 
     public abstract boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects);
+
+    /**
+     * "State changed" for a furni whose state a user changed outside the plain toggle (a dice roll, a vending
+     * machine, a random-state furni), as in Habbo. Behaviour observed in plus-emulator/PlusEMU 54c5c942 and 72f46ba0,
+     * reimplemented.
+     */
+    protected static void notifyStateChanged(Room room, RoomUnit unit, HabboItem item) {
+        WiredManager.triggerFurniStateChanged(room, unit, item);
+        WiredManager.triggerFurniStateUpdated(room, unit, item, false);
+    }
 
     public abstract boolean isWalkable();
 

@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -276,8 +277,10 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect
             this.validateItems(items);
         }
 
+        // Wall furni save as picks but take no part in the move, as in Habbo (dba6fcd8).
         return WiredSourceUtil.resolveItems(ctx, source, items).stream()
                 .filter(item -> item != null && ctx.room().getHabboItem(item.getId()) != null)
+                .filter(item -> item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.WALL)
                 .collect(Collectors.toList());
     }
 

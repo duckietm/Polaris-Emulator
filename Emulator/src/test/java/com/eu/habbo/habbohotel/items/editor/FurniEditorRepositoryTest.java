@@ -62,4 +62,38 @@ class FurniEditorRepositoryTest {
                 () -> assertEquals(3, result.referenceCount()));
         verify(connection, never()).prepareStatement("DELETE FROM items_base WHERE id = ?");
     }
+
+    @Test
+    void deletionStopsWhenTheFurniOnlyLivesInAWiredChest() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement exists = mock(PreparedStatement.class);
+        PreparedStatement items = mock(PreparedStatement.class);
+        PreparedStatement chests = mock(PreparedStatement.class);
+        ResultSet existsResult = mock(ResultSet.class);
+        ResultSet itemsResult = mock(ResultSet.class);
+        ResultSet chestsResult = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement("SELECT id FROM items_base WHERE id = ?"))
+                .thenReturn(exists);
+        when(connection.prepareStatement("SELECT COUNT(*) FROM items WHERE item_id = ?"))
+                .thenReturn(items);
+        when(connection.prepareStatement("SELECT COUNT(*) FROM wired_chest_items WHERE item_id = ?"))
+                .thenReturn(chests);
+        when(exists.executeQuery()).thenReturn(existsResult);
+        when(items.executeQuery()).thenReturn(itemsResult);
+        when(chests.executeQuery()).thenReturn(chestsResult);
+        when(existsResult.next()).thenReturn(true);
+        when(itemsResult.next()).thenReturn(true);
+        when(itemsResult.getInt(1)).thenReturn(0);
+        when(chestsResult.next()).thenReturn(true);
+        when(chestsResult.getInt(1)).thenReturn(2);
+
+        var result = new FurniEditorRepository(dataSource).deleteItem(12);
+
+        assertAll(
+                () -> assertEquals(FurniEditorRepository.DeleteStatus.IN_USE, result.status()),
+                () -> assertEquals(2, result.referenceCount()));
+        verify(connection, never()).prepareStatement("DELETE FROM items_base WHERE id = ?");
+    }
 }

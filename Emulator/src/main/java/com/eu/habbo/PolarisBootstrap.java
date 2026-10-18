@@ -239,9 +239,10 @@ final class PolarisBootstrap {
         gameServer.getGameClientManager().CFKeepAlive();
         rconServer.initializePipeline();
         rconServer.connect();
-        runtime.installBadgeImager(new BadgeImager());
+        BadgeImager badgeImager = new BadgeImager();
+        runtime.installBadgeImager(badgeImager);
         Emulator.synchronizeLegacyFacade(runtime);
-        CameraRenderRuntime.start(configuration);
+        CameraRenderRuntime.start(configuration, badgeImager::compose);
         return true;
     }
 }

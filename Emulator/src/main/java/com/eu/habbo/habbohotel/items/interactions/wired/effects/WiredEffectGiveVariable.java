@@ -28,8 +28,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableDefinitionFlash;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -54,8 +56,13 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
     public static final int TARGET_CONTEXT = 2;
+    /** A global destination: Habbo saves it and the box changes nothing when it runs (5e96a57d). */
+    static final int TARGET_GLOBAL = 3;
 
     private int variableItemId = 0;
+    /** A presence flag Habbo lets this box give to and remove from floor furni, for the room's lifetime. */
+    private static final String FREE_MOVE_KEY = "@can_move_freely";
+
     private String internalVariableKey = "";
     private int targetType = TARGET_USER;
     private boolean overrideExisting = false;
@@ -87,6 +94,11 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             return;
         }
 
+        // A global destination or no variable yet: the box runs (and flashes) but gives nothing.
+        if (this.targetType == TARGET_GLOBAL || (this.variableItemId <= 0 && this.internalVariableKey.isEmpty())) {
+            return;
+        }
+
         Integer shared = null;
         if (this.fromVariable && !this.sameHolder) {
             shared = WiredValueVariable.read(
@@ -98,6 +110,15 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                     this.selectedFurni,
                     this.userSource);
             if (shared == null) return;
+        }
+
+        if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
+            if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
+                for (HabboItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
+                    room.getWiredRuntime().setMovesFreely(item, true);
+                }
+            }
+            return;
         }
 
         if (!this.internalVariableKey.isEmpty()) {
@@ -126,24 +147,26 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             return;
         }
 
-        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room);
+        // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0) return;
+
+        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room, variableId);
         if (arrayDefinition != null && arrayDefinition.isArray()) {
             this.giveArray(ctx, room, arrayDefinition);
             return;
         }
 
-        switch (this.targetType) {
-            case TARGET_USER:
-                this.executeUserVariables(ctx, room, shared);
-                return;
-            case TARGET_FURNI:
-                this.executeFurniVariables(ctx, room, shared);
-                return;
-            case TARGET_CONTEXT:
-                this.executeContextVariables(ctx, room, shared);
-                return;
-            default:
-                return;
+        boolean given =
+                switch (this.targetType) {
+                    case TARGET_USER -> this.executeUserVariables(ctx, room, shared, variableId);
+                    case TARGET_FURNI -> this.executeFurniVariables(ctx, room, shared, variableId);
+                    case TARGET_CONTEXT -> this.executeContextVariables(ctx, room, shared, variableId);
+                    default -> false;
+                };
+        // A give that gave something also flashes the variable's definition box; one that gave nothing does not.
+        if (given) {
+            WiredVariableDefinitionFlash.flash(room, variableId, WiredVariableDefinitionFlash.KIND_GIVEN);
         }
     }
 
@@ -155,7 +178,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         if (!this.fromVariable) return this.initialValue;
         if (!this.sameHolder) return shared;
 
-        int id = this.referenceVariableId;
+        int id = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableId);
         return switch (this.targetType) {
             case TARGET_FURNI ->
                 room.getFurniVariableManager().hasVariable(holderId, id)
@@ -172,23 +195,22 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         };
     }
 
-    private void executeContextVariables(WiredContext ctx, Room room, Integer shared) {
-        WiredVariableDefinitionInfo definitionInfo =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
+    private boolean executeContextVariables(WiredContext ctx, Room room, Integer shared, int variableId) {
+        WiredVariableDefinitionInfo definitionInfo = WiredContextVariableSupport.getDefinitionInfo(room, variableId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) {
-            return;
+            return false;
         }
 
-        boolean existed = WiredContextVariableSupport.hasVariable(ctx, this.variableItemId);
-        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, this.variableItemId);
+        boolean existed = WiredContextVariableSupport.hasVariable(ctx, variableId);
+        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, variableId);
         Integer value = definitionInfo.hasValue() ? this.valueFor(ctx, room, shared, 0) : null;
-        if (definitionInfo.hasValue() && value == null) return;
+        if (definitionInfo.hasValue() && value == null) return false;
 
-        if (WiredContextVariableSupport.assignVariable(ctx, room, this.variableItemId, value, this.overrideExisting)) {
+        if (WiredContextVariableSupport.assignVariable(ctx, room, variableId, value, this.overrideExisting)) {
             long oldValue = previous == null ? 0L : previous;
             long newValue = value == null ? 0L : value;
             // A give that kept the value fires nothing; any other give reports the variable as created.
-            if (existed && definitionInfo.hasValue() && newValue == oldValue) return;
+            if (existed && definitionInfo.hasValue() && newValue == oldValue) return true;
             WiredEvent.VariableChangeKind kind = !existed || !definitionInfo.hasValue()
                     ? WiredEvent.VariableChangeKind.NONE
                     : newValue == oldValue
@@ -197,8 +219,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                                     ? WiredEvent.VariableChangeKind.INCREASED
                                     : WiredEvent.VariableChangeKind.DECREASED;
             WiredContextVariableSupport.triggerVariableChanged(
-                    ctx, room, this.variableItemId, true, false, kind, oldValue, newValue);
+                    ctx, room, variableId, true, false, kind, oldValue, newValue);
+            return true;
         }
+        return false;
     }
 
     private void giveArray(WiredContext ctx, Room room, WiredArrayVariableDefinition definition) {
@@ -241,29 +265,26 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         }
     }
 
-    private WiredArrayVariableDefinition getArrayDefinition(Room room) {
+    private WiredArrayVariableDefinition getArrayDefinition(Room room, int variableId) {
         int variableType =
                 switch (this.targetType) {
                     case TARGET_FURNI -> WiredArrayVariableType.FURNI.code();
                     case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT.code();
                     default -> WiredArrayVariableType.USER.code();
                 };
-        return WiredArrayDefinitionSupport.resolve(room, variableType, this.variableItemId);
+        return WiredArrayDefinitionSupport.resolve(room, variableType, variableId);
     }
 
-    private void executeUserVariables(WiredContext ctx, Room room, Integer shared) {
+    private boolean executeUserVariables(WiredContext ctx, Room room, Integer shared, int variableId) {
         WiredVariableDefinitionInfo definitionInfo =
-                room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+                room.getUserVariableManager().getDefinitionInfo(variableId);
 
         if (definitionInfo == null || definitionInfo.isReadOnly()) {
-            return;
+            return false;
         }
 
         List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-
-        if (users.isEmpty()) {
-            return;
-        }
+        boolean given = false;
 
         for (RoomUnit roomUnit : users) {
             if (roomUnit == null) {
@@ -282,16 +303,17 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             }
 
             // A give always reports the value as created (see WiredVariableGiveScope).
-            WiredVariableGiveScope.give(() -> room.getUserVariableManager()
-                    .assignVariable(holder, this.variableItemId, value, this.overrideExisting));
+            given |= WiredVariableGiveScope.give(() ->
+                    room.getUserVariableManager().assignVariable(holder, variableId, value, this.overrideExisting));
         }
+        return given;
     }
 
-    private void executeFurniVariables(WiredContext ctx, Room room, Integer shared) {
-        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+    private boolean executeFurniVariables(WiredContext ctx, Room room, Integer shared, int variableId) {
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(variableId);
 
         if (definition == null || definition.isReadOnly()) {
-            return;
+            return false;
         }
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
@@ -299,10 +321,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         }
 
         List<HabboItem> furni = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni);
-
-        if (furni.isEmpty()) {
-            return;
-        }
+        boolean given = false;
 
         for (HabboItem item : furni) {
             if (item == null) {
@@ -314,9 +333,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 continue;
             }
 
-            WiredVariableGiveScope.give(() -> room.getFurniVariableManager()
-                    .assignVariable(item, this.variableItemId, value, this.overrideExisting));
+            given |= WiredVariableGiveScope.give(() ->
+                    room.getFurniVariableManager().assignVariable(item, variableId, value, this.overrideExisting));
         }
+        return given;
     }
 
     @Deprecated
@@ -353,7 +373,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 + "\t"
                 + this.referenceVariableId);
         message.appendInt(7);
-        message.appendInt(WiredValueVariable.officialOf(this.targetType));
+        message.appendInt(
+                this.targetType == TARGET_GLOBAL
+                        ? WiredValueVariable.TARGET_GLOBAL
+                        : WiredValueVariable.officialOf(this.targetType));
         message.appendInt(this.initialValue < 0 ? -1 : 0);
         message.appendInt(this.initialValue);
         message.appendInt(this.overrideExisting ? 1 : 0);
@@ -377,7 +400,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         int[] intParams = settings.getIntParams();
         int holder =
                 WiredValueVariable.holderOf((intParams.length > 0) ? intParams[0] : WiredValueVariable.TARGET_USER);
-        int nextTargetType = normalizeTargetType(holder < 0 ? TARGET_USER : holder);
+        boolean globalTarget = intParams.length > 0 && intParams[0] == WiredValueVariable.TARGET_GLOBAL;
+        int nextTargetType = globalTarget ? TARGET_GLOBAL : normalizeTargetType(holder < 0 ? TARGET_USER : holder);
         long initialLong = (intParams.length > 2) ? (((long) intParams[1]) << 32) | (intParams[2] & 0xFFFFFFFFL) : 0L;
         int nextInitialValue = (int) Math.clamp(initialLong, Integer.MIN_VALUE, Integer.MAX_VALUE);
         boolean nextOverrideExisting = (intParams.length > 3) && (intParams[3] == 1);
@@ -402,11 +426,11 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         int nextVariableItemId = parseVariableItemId(variableText);
         String nextInternalKey = normalizeInternalKey(variableText);
         boolean internal = variableText.trim().startsWith("internal:");
-        if (internal && (nextInternalKey.isEmpty() || nextTargetType != TARGET_USER)) {
+        if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
-        if (!internal) {
+        if (!internal && nextTargetType != TARGET_GLOBAL) {
 
             if (nextVariableItemId <= 0 && settings.getFurniIds() != null && settings.getFurniIds().length > 0) {
                 int legacyItemId = settings.getFurniIds()[0];
@@ -417,19 +441,20 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 }
             }
 
-            if (nextVariableItemId <= 0) {
-                throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
-            }
+            // No variable chosen yet: Habbo saves the box, and it does nothing until one is (5a3c7a05).
+            boolean chosen = nextVariableItemId > 0;
 
-            WiredVariableDefinitionInfo userDefinitionInfo = (nextTargetType == TARGET_USER)
+            WiredVariableDefinitionInfo userDefinitionInfo = (chosen && nextTargetType == TARGET_USER)
                     ? room.getUserVariableManager().getDefinitionInfo(nextVariableItemId)
                     : null;
 
-            if (nextTargetType == TARGET_USER && (userDefinitionInfo == null || userDefinitionInfo.isReadOnly())) {
+            if (chosen
+                    && nextTargetType == TARGET_USER
+                    && (userDefinitionInfo == null || userDefinitionInfo.isReadOnly())) {
                 throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
             }
 
-            if (nextTargetType == TARGET_FURNI) {
+            if (chosen && nextTargetType == TARGET_FURNI) {
                 WiredVariableDefinitionInfo furniDefinitionInfo =
                         room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
 
@@ -438,7 +463,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 }
             }
 
-            if (nextTargetType == TARGET_CONTEXT) {
+            if (chosen && nextTargetType == TARGET_CONTEXT) {
                 WiredVariableDefinitionInfo contextDefinitionInfo =
                         WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
 
@@ -528,9 +553,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             if (data != null) {
                 this.variableItemId = Math.max(0, data.variableItemId);
                 this.targetType = normalizeTargetType(data.targetType);
-                this.internalVariableKey = this.targetType == TARGET_USER
-                        ? normalizeInternalKey("internal:" + data.internalVariableKey)
-                        : "";
+                String loadedKey = normalizeInternalKey("internal:" + data.internalVariableKey);
+                this.internalVariableKey = this.targetType == internalTargetOf(loadedKey) ? loadedKey : "";
                 if (!this.internalVariableKey.isEmpty()) this.variableItemId = 0;
                 this.overrideExisting = data.overrideExisting;
                 this.initialValue = data.initialValue;
@@ -641,6 +665,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         switch (value) {
             case TARGET_FURNI:
             case TARGET_CONTEXT:
+            case TARGET_GLOBAL:
                 return value;
             default:
                 return TARGET_USER;
@@ -665,7 +690,15 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@handitem_id", "@effect_id", "@has_rights").contains(key) ? key : "";
+        return Set.of("@handitem_id", "@effect_id", "@has_rights", FREE_MOVE_KEY)
+                        .contains(key)
+                ? key
+                : "";
+    }
+
+    /** The holder an internal variable of this box lives on: {@code @can_move_freely} on floor furni, the rest on users. */
+    private static int internalTargetOf(String key) {
+        return FREE_MOVE_KEY.equals(key) ? TARGET_FURNI : TARGET_USER;
     }
 
     private static int parseVariableItemId(String value) {

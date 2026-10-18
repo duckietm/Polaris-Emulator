@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
@@ -55,7 +56,22 @@ public final class WiredMatchPositionInputGuard {
             return null;
         }
 
-        return sanitizeParts(setting.item_id, setting.state, setting.rotation, setting.x, setting.y, setting.z, room);
+        WiredMatchFurniSetting sanitized =
+                sanitizeParts(setting.item_id, setting.state, setting.rotation, setting.x, setting.y, setting.z, room);
+        if (sanitized == null && setting.wallPosition == null) {
+            return null;
+        }
+
+        // A wall item stands on no floor tile: its wall position, state and altitude are what the snapshot keeps.
+        HabboItem item = room.getHabboItem(setting.item_id);
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.WALL) {
+            return sanitized;
+        }
+        if (setting.wallPosition == null || setting.wallPosition.length() > MAX_STATE_LENGTH) {
+            return sanitized;
+        }
+        return new WiredMatchFurniSetting(
+                setting.item_id, normalizeState(setting.state), 0, 0, 0, setting.z, setting.wallPosition);
     }
 
     public static WiredMatchFurniSetting sanitizeParts(

@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.migrate.WiredEvents;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -152,12 +153,11 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
             if (movementError == FurnitureMovementError.TILE_HAS_HABBOS
                     || movementError == FurnitureMovementError.TILE_HAS_BOTS
                     || movementError == FurnitureMovementError.TILE_HAS_PETS) {
-                Emulator.getThreading().run(() -> {
-                    for (RoomUnit roomUnit : room.getRoomUnits(targetTile)) {
-                        WiredManager.triggerBotCollision(room, roomUnit, entry.getKey());
-                        break;
-                    }
-                });
+                // As in Habbo, the collision runs in the pass of this move.
+                for (RoomUnit roomUnit : room.getRoomUnits(targetTile)) {
+                    WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, roomUnit, entry.getKey()));
+                    break;
+                }
             }
 
             if (targetTile.state != RoomTileState.INVALID && movementError == FurnitureMovementError.NONE) {

@@ -33,4 +33,15 @@ class WiredConditionTimeDateOfficialTest {
         assertTrue(saved.contains("\"monthMask\":" + 0b1111111111110), saved);
         assertTrue(saved.contains("\"dayMode\":2") && saved.contains("\"yearMode\":0"), saved);
     }
+
+    @Test
+    void anInvertedYearRangeEndIsRaisedToItsStartButAnInvertedDayRangeIsKept() {
+        WiredConditionMatchDate date = new WiredConditionMatchDate(1, 1, null, "", 0, 0);
+        date.saveData(new WiredSettings(new int[] {1, 1, 0, 20, 10, 0, 9999, 1}, "", new int[0], 0));
+
+        String saved = date.getWiredData();
+        assertTrue(saved.contains("\"yearFrom\":9999") && saved.contains("\"yearTo\":9999"), saved);
+        assertTrue(saved.contains("\"yearMode\":1"), saved);
+        assertTrue(saved.contains("\"dayFrom\":20") && saved.contains("\"dayTo\":10"), saved);
+    }
 }

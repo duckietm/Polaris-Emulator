@@ -222,16 +222,13 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
         return occupiedTiles != null
                 && (habbos.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation()))
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit())))
                         || bots.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation()))
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit())))
                         || pets.stream()
                                 .anyMatch(character -> character.getRoomUnit() != null
-                                        && occupiedTiles.contains(
-                                                character.getRoomUnit().getCurrentLocation())));
+                                        && occupiedTiles.contains(wiredLocationOf(character.getRoomUnit()))));
     }
 
     private void refresh() {
@@ -266,5 +263,11 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
             this.furniSource = furniSource;
             this.all = all;
         }
+    }
+
+    /** Where the condition counts a unit: the tile of the step being announced, or its current tile. */
+    private static RoomTile wiredLocationOf(RoomUnit unit) {
+        RoomTile stepping = unit.getWiredLocation();
+        return stepping != null ? stepping : unit.getCurrentLocation();
     }
 }

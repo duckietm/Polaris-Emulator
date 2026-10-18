@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 
 final class RoomPostureService {
+    static final String FLOOR_SIT_STATUS = "0.55 1";
 
     private final Room room;
 
@@ -48,7 +49,9 @@ final class RoomPostureService {
         this.room.dance(habbo, DanceType.NONE);
         unit.cmdSit = true;
         this.alignBodyRotation(unit);
-        unit.setStatus(RoomUnitStatus.SIT, "0.5");
+        // Official floor sit: height 0.55 and the "can stand up" flag (AIR reads it for the Stand button).
+        // Behaviour observed in plus-emulator/PlusEMU a4ed8bbf, reimplemented.
+        unit.setStatus(RoomUnitStatus.SIT, FLOOR_SIT_STATUS);
         this.room.sendComposer(new RoomUserStatusComposer(unit).compose());
         WiredManager.triggerUserPerformsAction(this.room, unit, WiredUserActionType.SIT, -1);
     }

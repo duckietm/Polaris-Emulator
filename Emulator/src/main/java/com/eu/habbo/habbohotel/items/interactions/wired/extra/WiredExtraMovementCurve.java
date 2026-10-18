@@ -102,8 +102,8 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra implements Wi
         int[] furni = settings.getFurniSourceTypes();
         this.variableUserSource =
                 WiredVariableOperand.normalizeUserSource(users.length > 0 ? users[0] : WiredSourceUtil.SOURCE_TRIGGER);
-        this.variableFurniSource =
-                WiredVariableOperand.normalizeFurniSource(furni.length > 0 ? furni[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.variableFurniSource = WiredVariableOperand.normalizeFurniSource(
+                fromOfficialPicks(furni.length > 0 ? furni[0] : WiredSourceUtil.SOURCE_TRIGGER));
         this.variableToken = WiredVariableOperand.normalizeToken(settings.getStringParam());
 
         this.variableFurni.clear();
@@ -312,5 +312,10 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra implements Wi
             this.intensity = intensity;
             this.strength = strength;
         }
+    }
+
+    /** The official editor names this box's picks 100; the box keeps them as its secondary picks (101). */
+    private static int fromOfficialPicks(int source) {
+        return source == WiredSourceUtil.SOURCE_SELECTED ? 101 : source;
     }
 }

@@ -100,11 +100,52 @@ class NitroLibraryLoaderTest {
     }
 
     @Test
-    void aRotatedFrameIsNotGuessed() throws IOException {
-        String json = CHAIR_JSON.replace("\"rotated\":false,\"trimmed\":false", "\"rotated\":true,\"trimmed\":false");
+    void aRotatedFrameIsTurnedBackUpright() throws IOException {
+        // A 3x2 picture stored turned 90 degrees clockwise (TexturePacker, as Pixi reads it): it
+        // fills a 2x3 region of the sheet, and the frame's w/h still name the upright 3x2 size.
+        int[][] upright = {{RED, GREEN, BLUE}, {0xFF111111, 0xFF222222, 0xFF333333}};
+        BufferedImage sheet = new BufferedImage(4, 4, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < 2; y++) {
+            for (int x = 0; x < 3; x++) {
+                // Clockwise: upright (x, y) lands at region (height - 1 - y, x).
+                sheet.setRGB(1 + (2 - 1 - y), x, upright[y][x]);
+            }
+        }
+        String json = "{\"name\":\"lamp\",\"assets\":{\"lamp_64_a_0_0\":{\"x\":0,\"y\":0}},"
+                + "\"spritesheet\":{\"frames\":{\"lamp_lamp_64_a_0_0.png\":{"
+                + "\"frame\":{\"x\":1,\"y\":0,\"w\":3,\"h\":2},\"rotated\":true,\"trimmed\":true,"
+                + "\"spriteSourceSize\":{\"x\":1,\"y\":1,\"w\":3,\"h\":2},\"sourceSize\":{\"w\":5,\"h\":4}}}}}";
+        NitroLibrary library = LOADER.readBundle(CameraTestAssets.nitro("lamp", json, sheet), "lamp");
+
+        BufferedImage image = library.image("lamp_64_a_0_0");
+        assertNotNull(image);
+        assertEquals(5, image.getWidth());
+        assertEquals(4, image.getHeight());
+        for (int y = 0; y < 2; y++) {
+            for (int x = 0; x < 3; x++) {
+                assertEquals(upright[y][x], image.getRGB(1 + x, 1 + y), "pixel " + x + "," + y);
+            }
+        }
+        assertEquals(0, image.getRGB(0, 0) >>> 24, "trim padding stays transparent");
+    }
+
+    @Test
+    void aRotatedFrameReachingPastTheSheetIsRefused() throws IOException {
+        // chair_64_b_0_0 (3x2) moved to (6,2): turned it needs 2x3 sheet pixels, past the 4-row sheet.
+        String json = CHAIR_JSON.replace(
+                "\"x\":2,\"y\":0,\"w\":3,\"h\":2},\"rotated\":false",
+                "\"x\":6,\"y\":2,\"w\":3,\"h\":2},\"rotated\":true");
         NitroLibrary library = LOADER.readBundle(CameraTestAssets.nitro("chair", json, sheet()), "chair");
 
         assertNull(library.image("chair_64_b_0_0"));
+    }
+
+    @Test
+    void unrotateTurnsCounterClockwise() {
+        // Upright [a b] (2x1) is stored clockwise as a column: a over b (1x2).
+        assertArrayEquals(new int[] {1, 2}, NitroLibrary.unrotate(new int[] {1, 2}, 1, 2));
+        // Upright a over b (1x2) is stored clockwise as a row: [b a] (2x1).
+        assertArrayEquals(new int[] {1, 2}, NitroLibrary.unrotate(new int[] {2, 1}, 2, 1));
     }
 
     @Test

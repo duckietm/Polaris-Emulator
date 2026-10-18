@@ -69,6 +69,25 @@ public class CameraSprite implements Comparable<CameraSprite> {
         return this.name != null && this.name.contains("//");
     }
 
+    /** A group badge our client names by its code ({@code group_badge:<code>}), drawn by the server. */
+    public boolean isGroupBadge() {
+        return this.name != null && this.name.startsWith("group_badge:");
+    }
+
+    /** An image drawn at the {@code width}/{@code height} the client sent: a URL or a group badge. */
+    public boolean isExternalImage() {
+        return this.isFromUrl() || this.isGroupBadge();
+    }
+
+    /**
+     * True when {@code color} is the picture's average colour rather than a tint: the client (AIR
+     * RoomObjectCache.getSortableSpriteList) replaces the colour of skewed thumbnails and of small
+     * external images and badges with their average colour, for a server that draws them as a block.
+     */
+    public boolean colorIsAverage() {
+        return this.skew != 0 || this.isExternalImage();
+    }
+
     public double getSkew() {
         return this.skew;
     }

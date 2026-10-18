@@ -6,13 +6,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Validates and applies wired contract terms atomically for {@code WiredEffectInitTransaction}.
+ * The old instant settlement of wired contract terms (wallet payments, copied furni).
+ *
+ * <p>Refused under the AIR chest model: contract payments go through the wired trade and rewards
+ * come out of chests ({@link WiredTradingManager}, {@link WiredChestPayouts}). Kept for callers
+ * compiled against it; {@link #execute} always answers false and changes nothing.
  */
 public final class WiredTransactionExecutor {
+    /** The AIR model settles contracts through the wired trade only. */
+    static final boolean AIR_TRADES_ONLY = true;
+
     private WiredTransactionExecutor() {}
 
     public static boolean execute(Habbo habbo, Room room, List<InteractionWiredContract> contracts) {
-        if (habbo == null || room == null) {
+        if (AIR_TRADES_ONLY || habbo == null || room == null) {
             return false;
         }
         if (contracts == null || contracts.isEmpty()) {

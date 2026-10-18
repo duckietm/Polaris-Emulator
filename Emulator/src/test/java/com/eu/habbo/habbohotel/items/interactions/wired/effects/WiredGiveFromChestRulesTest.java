@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -18,12 +17,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStore;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStores;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InMemoryChestStore;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
@@ -33,9 +34,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
-import com.eu.habbo.threading.ThreadPooling;
-import java.lang.reflect.Field;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionFailComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
@@ -81,10 +81,24 @@ class WiredGiveFromChestRulesTest {
         }
     }
 
-    private static int failureId(MessageComposer composer) throws Exception {
-        Field field = WiredTradeCancelledComposer.class.getDeclaredField("failureId");
-        field.setAccessible(true);
-        return field.getInt(composer);
+    private static int failureId(MessageComposer composer) {
+        return ((WiredTransactionFailComposer) composer).getReason();
+    }
+
+    /** A real coin chest on a memory store, upgraded and unlocked, holding {@code coins}. */
+    private static InteractionWiredChestCurrency realCoinChest(int coins) {
+        com.eu.habbo.habbohotel.items.Item furni = base();
+        com.eu.habbo.habbohotel.items.ItemInteraction interaction =
+                mock(com.eu.habbo.habbohotel.items.ItemInteraction.class);
+        org.mockito.Mockito.doReturn(InteractionWiredChestCurrency.class)
+                .when(interaction)
+                .getType();
+        when(furni.getInteractionType()).thenReturn(interaction);
+        InteractionWiredChestCurrency chest = new InteractionWiredChestCurrency(CHEST_ID, 1, furni, "", 0, 0);
+        chest.getContents().enableWired();
+        chest.getContents().setLocked(false);
+        chest.addCoins(coins);
+        return chest;
     }
 
     // --- 1. saves refuse normal chests -----------------------------------------------------------
@@ -154,7 +168,7 @@ class WiredGiveFromChestRulesTest {
 
         ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
         verify(habbo.getClient()).sendResponse(sent.capture());
-        assertTrue(sent.getValue() instanceof WiredTradeCancelledComposer);
+        assertTrue(sent.getValue() instanceof WiredTransactionFailComposer);
         assertEquals(ChestTransactionFailures.NO_OR_LOCKED_CHESTS, failureId(sent.getValue()));
         assertEquals(50, chest.getContents().total(ChestStorage.KIND_CURRENCY), "nothing left the chest");
         verify(habbo, never()).giveCredits(anyInt());
@@ -173,24 +187,27 @@ class WiredGiveFromChestRulesTest {
     }
 
     @Test
-    void anUnlockedUpgradedChestGivesAndSendsNoFailure() throws Exception {
-        InteractionWiredChestCurrency chest = chest(InteractionWiredChestCurrency.class, true, false);
-        chest.getContents().depositCurrency(-1, 50);
-        Room room = roomWith(chest);
-        WiredEffectGiveCurrencyFromChest box = new WiredEffectGiveCurrencyFromChest(1, 1, base(), "", 0, 0);
-        save(box, room, settings(100, CHEST_ID));
+    void anUnlockedUpgradedChestGivesAndAnnouncesTheReward() throws Exception {
+        ChestStore previous = ChestStores.use(new InMemoryChestStore());
+        try {
+            InteractionWiredChestCurrency chest = realCoinChest(50);
+            Room room = roomWith(chest);
+            WiredEffectGiveCurrencyFromChest box = new WiredEffectGiveCurrencyFromChest(1, 1, base(), "", 0, 0);
+            save(box, room, settings(100, CHEST_ID));
 
-        Habbo habbo;
-        // The withdrawal is logged through the hotel's persistence pool.
-        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
-            ThreadPooling threading = mock(ThreadPooling.class);
-            emulator.when(Emulator::getThreading).thenReturn(threading);
-            habbo = fire(box, room);
+            Habbo habbo = fire(box, room);
+
+            verify(habbo).giveCredits(5);
+            ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
+            verify(habbo.getClient()).sendResponse(sent.capture());
+            assertTrue(sent.getValue() instanceof WiredTransactionSuccessComposer, "AIR success type 2, no failure");
+            assertEquals(
+                    WiredTransactionSuccessComposer.TYPE_REWARD,
+                    ((WiredTransactionSuccessComposer) sent.getValue()).getType());
+            assertEquals(45, chest.getContents().getCoins());
+        } finally {
+            ChestStores.use(previous);
         }
-
-        verify(habbo).giveCredits(5);
-        verify(habbo.getClient(), never()).sendResponse(any(MessageComposer.class));
-        assertEquals(45, chest.getContents().total(ChestStorage.KIND_CURRENCY));
     }
 
     // --- 3. the chests follow the saved furni source ---------------------------------------------

@@ -144,6 +144,8 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetTree;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemHead;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemLegs;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemPlanet;
+import com.eu.habbo.habbohotel.items.interactions.wired.InteractionWiredLink;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir;
@@ -319,6 +321,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectReset
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetTimers;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRollDice;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendLinkDataframe;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendLinkMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight;
@@ -348,11 +352,13 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUs
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUsersByVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLinkSpeaker;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraProjectile;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain;
@@ -425,6 +431,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOffFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOnFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerPressKeybind;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkDataframe;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong;
@@ -1199,6 +1207,16 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_room_initialized", WiredTriggerRoomInitialized.class));
         // Belongs beside wf_act_change_opacity, but sits last so no registered wired interaction moves.
         this.interactionsList.add(new ItemInteraction("wf_act_set_highlight", WiredEffectSetHighlight.class));
+        // Belongs beside wf_var_echo, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_var_pointer", WiredExtraPointerVariable.class));
+        // The WIRED Link furni and its boxes, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_link", InteractionWiredLink.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_send_message", WiredEffectSendLinkMessage.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_send_dataframe", WiredEffectSendLinkDataframe.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_receive_message", WiredTriggerReceiveLinkMessage.class));
+        this.interactionsList.add(
+                new ItemInteraction("wf_trg_receive_dataframe", WiredTriggerReceiveLinkDataframe.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_link_speaker", WiredExtraLinkSpeaker.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
@@ -1489,25 +1507,38 @@ public class ItemManager {
         return new ArrayList<>(this.newuserGifts.values());
     }
 
-    /** Ids of temporary furni: far above any database id, and never written to the database. */
-    private static final int FIRST_TEMPORARY_ITEM_ID = 2_050_000_000;
+    /**
+     * Ids of temporary furni: the band the official client treats as temporary (owner "Temp (Wired)", never the
+     * viewer's own furni). Far above any database id, and never written to the database. Behaviour observed in
+     * plus-emulator/PlusEMU 55f02174, reimplemented.
+     */
+    public static final int FIRST_TEMPORARY_ITEM_ID = 2_147_401_728;
+
+    public static final int LAST_TEMPORARY_ITEM_ID = 2_147_418_111;
 
     private static final java.util.concurrent.atomic.AtomicInteger NEXT_TEMPORARY_ITEM_ID =
             new java.util.concurrent.atomic.AtomicInteger(FIRST_TEMPORARY_ITEM_ID);
 
+    /** Whether {@code id} is in the temporary furni band. */
+    public static boolean isTemporaryItemId(int id) {
+        return id >= FIRST_TEMPORARY_ITEM_ID && id <= LAST_TEMPORARY_ITEM_ID;
+    }
+
     /**
      * A temporary furni of {@code item}'s type (the official "place furni" wired): it lives in memory
      * only, has no owner, and is never saved, picked up into an inventory or deleted from the database.
+     * The id comes from a hotel-wide counter in the band; Place Furni takes its ids from the room instead.
      */
-    public static boolean isTemporaryItemId(int id) {
-        return id >= FIRST_TEMPORARY_ITEM_ID;
+    public HabboItem createTemporaryItem(Item item, String extraData) {
+        int id = NEXT_TEMPORARY_ITEM_ID.getAndUpdate(
+                next -> next >= LAST_TEMPORARY_ITEM_ID ? FIRST_TEMPORARY_ITEM_ID : next + 1);
+        return this.createTemporaryItem(id, item, extraData);
     }
 
-    public HabboItem createTemporaryItem(Item item, String extraData) {
-        if (item == null) return null;
+    /** A temporary furni of {@code item}'s type with the given id from the temporary band. */
+    public HabboItem createTemporaryItem(int id, Item item, String extraData) {
+        if (item == null || !isTemporaryItemId(id)) return null;
 
-        int id = NEXT_TEMPORARY_ITEM_ID.getAndUpdate(
-                next -> next >= Integer.MAX_VALUE - 1 ? FIRST_TEMPORARY_ITEM_ID : next + 1);
         String data = ItemDataGuard.normalizeExtraData(extraData);
         HabboItem created;
         Class<? extends HabboItem> itemClass = item.getInteractionType().getType();
@@ -1528,6 +1559,9 @@ public class ItemManager {
             // A temporary furni has no rows to delete.
             return;
         }
+
+        // A wired chest gives what it holds back to its owner before its row goes.
+        ChestRelease.releaseToOwner(item);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(

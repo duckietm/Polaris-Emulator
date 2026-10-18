@@ -3,14 +3,6 @@ package com.eu.habbo.imaging.camera.render;
 import com.eu.habbo.imaging.camera.assets.CameraAssetSource;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
@@ -32,8 +24,18 @@ final class CameraImageLoader {
     private final Map<String, BufferedImage> urlImageCache = new HashMap<>();
 
     private final FetchBudget fetchBudget;
+    private final CameraUrlFetcher urlFetcher;
 
     CameraImageLoader(CameraAssetSource sprites, CameraAssetSource effects, CameraRenderOptions options) {
+        this(sprites, effects, options, CameraUrlFetcher.system());
+    }
+
+    CameraImageLoader(
+            CameraAssetSource sprites,
+            CameraAssetSource effects,
+            CameraRenderOptions options,
+            CameraUrlFetcher urlFetcher) {
+        this.urlFetcher = urlFetcher;
         this.sprites = sprites;
         this.effects = effects;
         this.options = options;
@@ -88,7 +90,7 @@ final class CameraImageLoader {
         }
 
         this.options.checkDeadline();
-        BufferedImage image = fetchUrlImage(name, this.options);
+        BufferedImage image = fetchUrlImage(name);
         this.urlImageCache.put(name, image);
         return image;
     }
@@ -101,36 +103,15 @@ final class CameraImageLoader {
         return sprite.isFromUrl() ? readUrlImage(sprite.getName()) : readSprite(sprite.getName());
     }
 
-    private static BufferedImage fetchUrlImage(String name, CameraRenderOptions options) {
+    private BufferedImage fetchUrlImage(String name) {
         String requestUrl = name.startsWith("//") ? "http:" + name : name;
         try {
-            URL url = URI.create(requestUrl).toURL();
-            if (!isAllowedSpriteUrlScheme(url.getProtocol())) {
-                LOGGER.debug("Rejecting non-http(s) camera sprite URL: {}", requestUrl);
+            byte[] bytes = this.urlFetcher.fetch(requestUrl, this.options);
+            if (bytes == null) {
+                LOGGER.debug("Camera sprite URL refused or not fetched: {}", requestUrl);
                 return null;
             }
-            if (!isAllowedSpriteUrlHost(url.getHost(), options.allowedHosts())) {
-                LOGGER.debug("Rejecting private/loopback camera sprite URL: {}", requestUrl);
-                return null;
-            }
-            URLConnection conn = url.openConnection();
-            if (conn instanceof HttpURLConnection httpConn) {
-                // Don't follow redirects â€” a 30x to an internal address would bypass the
-                // host check above. Caller treats null as "couldn't fetch".
-                httpConn.setInstanceFollowRedirects(false);
-            }
-            conn.setConnectTimeout(options.fetchConnectTimeoutMs());
-            conn.setReadTimeout(options.fetchReadTimeoutMs());
-            int maxBytes = options.fetchMaxBytes();
-            int maxPixels = options.fetchMaxPixels();
-            try (InputStream stream = conn.getInputStream()) {
-                byte[] bytes = readBounded(stream, maxBytes);
-                if (bytes == null) {
-                    LOGGER.debug("Camera sprite URL exceeded max bytes ({}): {}", maxBytes, requestUrl);
-                    return null;
-                }
-                return decodeBounded(bytes, maxPixels, requestUrl);
-            }
+            return decodeBounded(bytes, this.options.fetchMaxPixels(), requestUrl);
         } catch (Exception e) {
             LOGGER.debug("Failed to fetch camera sprite from URL: {}", requestUrl, e);
             return null;
@@ -161,52 +142,6 @@ final class CameraImageLoader {
             } finally {
                 reader.dispose();
             }
-        }
-    }
-
-    private static byte[] readBounded(InputStream stream, int maxBytes) throws java.io.IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(Math.min(maxBytes, 16384));
-        byte[] chunk = new byte[8192];
-        int total = 0;
-        int read;
-        while ((read = stream.read(chunk)) != -1) {
-            if (total + read > maxBytes) {
-                return null;
-            }
-            buffer.write(chunk, 0, read);
-            total += read;
-        }
-        return buffer.toByteArray();
-    }
-
-    private static boolean isAllowedSpriteUrlScheme(String scheme) {
-        return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
-    }
-
-    static boolean isAllowedSpriteUrlHost(String host, String allowedHosts) {
-        if (host == null || host.isEmpty()) {
-            return false;
-        }
-        if (isHostAllowlisted(host, allowedHosts)) {
-            return true;
-        }
-        try {
-            InetAddress[] addresses = InetAddress.getAllByName(host);
-            if (addresses.length == 0) {
-                return false;
-            }
-            for (InetAddress address : addresses) {
-                if (address.isAnyLocalAddress()
-                        || address.isLoopbackAddress()
-                        || address.isLinkLocalAddress()
-                        || address.isSiteLocalAddress()
-                        || address.isMulticastAddress()) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (UnknownHostException e) {
-            return false;
         }
     }
 

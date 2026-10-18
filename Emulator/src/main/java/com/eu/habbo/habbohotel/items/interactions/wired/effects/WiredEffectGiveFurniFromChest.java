@@ -4,12 +4,10 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredFurniUtil;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWithdrawals;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -68,40 +66,42 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
         if (room == null) return;
         Integer resolved = this.reward.resolveAmount(ctx, room, 1);
         if (resolved == null || resolved <= 0) return;
-        int perUser = resolved;
+        boolean everything = this.reward.mode == WiredChestReward.MODE_EVERYTHING;
 
-        // Only an upgraded, unlocked chest is used; with none the triggering user is told why.
-        InteractionWiredChest chest =
-                WiredChestTargets.resolve(ctx, room, this.chestSource, this.chestIds, InteractionWiredChestFurni.class);
-        if (chest == null) {
+        // Only upgraded, unlocked chests are used; with none the triggering user is told why.
+        List<InteractionWiredChestFurni> chests = WiredChestTargets.resolveAll(
+                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestFurni.class);
+        if (chests.isEmpty()) {
             WiredChestTargets.answerNoUsableChest(ctx, room);
             return;
         }
 
-        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+        List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        // AIR: "everything" cannot be split between several users.
+        if (everything && units.size() > 1) return;
+
+        for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
-            if (habbo == null || habbo.getClient() == null) continue;
+            if (habbo == null) continue;
 
-            // The stored rows themselves leave the chest (with their state), in the box's order.
-            List<ChestFurniStoredItem> removed =
-                    chest.getContents().removeFurniInOrder(this.iterationType, perUser, RANDOM);
-            if (removed.isEmpty()) break;
-
-            int given = ChestWiredFurniUtil.giveStoredItemsToInventory(habbo, removed);
-            ChestTransactionLog.record(
-                    room.getId(),
-                    chest.getId(),
-                    ChestStorage.KIND_FURNI,
-                    ChestTransactionLog.TYPE_WITHDRAW,
-                    ChestTransactionLog.SOURCE_WIRED,
-                    habbo,
-                    -1,
-                    given,
-                    0,
-                    removed);
-            chest.persistContents(room);
-            ChestNotifications.wired(chest, room, given);
-            this.reward.showPopup(habbo, given);
+            // The stored items themselves leave the chests, in the box's order, until the amount is
+            // reached or the chests are empty.
+            int remaining = everything ? Integer.MAX_VALUE : resolved;
+            List<ChestFurniStoredItem> given = new ArrayList<>();
+            for (InteractionWiredChestFurni chest : chests) {
+                if (remaining <= 0) break;
+                int want = remaining;
+                List<ChestFurniStoredItem> taken = ChestWithdrawals.furni(
+                                habbo,
+                                chest,
+                                room,
+                                storage -> storage.removeFurniInOrder(this.iterationType, want, RANDOM),
+                                ChestTransactionLog.SOURCE_WIRED)
+                        .furni();
+                given.addAll(taken);
+                remaining -= taken.size();
+            }
+            if (!given.isEmpty()) this.reward.announce(habbo, ChestAirWire.givenRule(0, given));
         }
     }
 

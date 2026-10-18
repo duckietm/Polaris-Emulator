@@ -6,12 +6,15 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotTalk;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotTalkToHabbo;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendLinkMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWhisper;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextInputVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputFurniName;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputUsername;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboSaysKeyword;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkDataframe;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkMessage;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -39,7 +42,8 @@ public final class WiredTextPlaceholderContext {
     static boolean appliesTo(Object box) {
         return box instanceof WiredEffectWhisper
                 || box instanceof WiredEffectBotTalk
-                || box instanceof WiredEffectBotTalkToHabbo;
+                || box instanceof WiredEffectBotTalkToHabbo
+                || box instanceof WiredEffectSendLinkMessage;
     }
 
     /** The placeholder and capturer names of the stack the box stands in, or null when it gets no context. */
@@ -55,9 +59,12 @@ public final class WiredTextPlaceholderContext {
         List<String> capturers = new ArrayList<>();
 
         for (InteractionWiredTrigger trigger : room.getRoomSpecialTypes().getTriggers(x, y)) {
-            if (trigger instanceof WiredTriggerHabboSaysKeyword) {
-                placeholders.add(TRIGGER_TEXT);
-                break;
+            if (trigger instanceof WiredTriggerHabboSaysKeyword || trigger instanceof WiredTriggerReceiveLinkMessage) {
+                if (!placeholders.contains(TRIGGER_TEXT)) placeholders.add(TRIGGER_TEXT);
+            } else if (trigger instanceof WiredTriggerReceiveLinkDataframe dataframe) {
+                for (String name : dataframe.placeholderNames()) {
+                    if (!placeholders.contains(name)) placeholders.add(name);
+                }
             }
         }
 

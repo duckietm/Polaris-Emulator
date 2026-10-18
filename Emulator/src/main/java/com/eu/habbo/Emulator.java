@@ -443,7 +443,7 @@ public final class Emulator {
     private static void registerCameraRenderDefaults(ConfigurationManager configuration) {
         configuration.register(
                 "camera.render.mode",
-                "auto",
+                "server",
                 "RenderRoom/thumbnail packets: upload (client PNG only), server (official-client scene JSON only), "
                         + "auto (both, by payload; JSON only when camera.render.assets.* is configured).");
         configuration.register("camera.render.workers", "2", "Camera render worker threads.");

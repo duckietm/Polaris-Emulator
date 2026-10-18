@@ -37,6 +37,54 @@ public class ChestFurniStoredItem {
 
     public ChestFurniStoredItem() {}
 
+    /**
+     * A row from {@code wired_chest_items}: the stored item itself, so its id is the inventory id the
+     * client sees and echoes back.
+     *
+     * @param base the furni definition, or null when the furni no longer exists (the row is still
+     *     shown, by its internal id, so nobody loses sight of it)
+     */
+    public static ChestFurniStoredItem fromStoredRow(ChestStore.StoredRow row, Item base) {
+        ChestFurniStoredItem stored = new ChestFurniStoredItem();
+        stored.inventoryId = row.itemId();
+        stored.transactionId = row.sequence();
+        stored.baseItemId = row.baseItemId();
+        stored.extradata = row.extraData() == null ? "" : row.extraData();
+        stored.stuffDataFormat = ChestFurniWireUtil.LEGACY_FORMAT;
+        if (base != null) {
+            stored.wallItem = base.getType() == FurnitureType.WALL;
+            stored.spriteId = base.getSpriteId();
+            stored.groupable = base.allowInventoryStack();
+        }
+        int[] limited = parseLimited(row.limitedData());
+        stored.limitedStack = limited[0];
+        stored.limitedSells = limited[1];
+        if (stored.wallItem) {
+            stored.legacyPosterId = base != null && "poster".equals(base.getName()) ? stored.extradata : "";
+        } else {
+            try {
+                stored.extra = Integer.parseInt(stored.extradata);
+            } catch (NumberFormatException ignored) {
+                stored.extra = 0;
+            }
+        }
+        return stored;
+    }
+
+    /** {@code items.limited_data} is {@code stack:sells}. */
+    static int[] parseLimited(String limitedData) {
+        int[] result = {0, 0};
+        if (limitedData == null) return result;
+        String[] parts = limitedData.split(":");
+        try {
+            if (parts.length > 0) result[0] = Integer.parseInt(parts[0].trim());
+            if (parts.length > 1) result[1] = Integer.parseInt(parts[1].trim());
+        } catch (NumberFormatException ignored) {
+            return new int[] {0, 0};
+        }
+        return result;
+    }
+
     public static ChestFurniStoredItem fromHabboItem(HabboItem item, int inventoryId) {
         ChestFurniStoredItem stored = new ChestFurniStoredItem();
         Item base = item.getBaseItem();

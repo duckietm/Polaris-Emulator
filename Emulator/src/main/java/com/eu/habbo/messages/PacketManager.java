@@ -371,10 +371,6 @@ import com.eu.habbo.messages.incoming.rooms.competition.SubmitRoomToCompetitionE
 import com.eu.habbo.messages.incoming.rooms.competition.VoteForRoomEvent;
 import com.eu.habbo.messages.incoming.rooms.items.AdvertisingSaveEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestCloseEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositInventoryItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestEnableWiredEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestOpenEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestRequestLogEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestSaveNotificationsEvent;
@@ -554,9 +550,16 @@ import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent;
+import com.eu.habbo.messages.incoming.wired.WiredGetVariablesForObjectEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkCreateNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkDeleteNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkGetConnectionsEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkRenameNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkRequestConfigEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkSaveSelectionEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredOpenEvent;
@@ -565,6 +568,8 @@ import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomStateActionEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent;
+import com.eu.habbo.messages.incoming.wired.WiredSetupExportEvent;
+import com.eu.habbo.messages.incoming.wired.WiredSetupImportEvent;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserInspectMoveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserSelectedEvent;
@@ -1089,19 +1094,18 @@ public class PacketManager {
         this.registerHandler(Incoming.ClickUserEvent, ClickUserEvent.class);
         this.registerHandler(Incoming.ToggleFloorItemEvent, ToggleFloorItemEvent.class);
         this.registerHandler(Incoming.ToggleWallItemEvent, ToggleWallItemEvent.class);
-        this.registerHandler(Incoming.ChestDepositEvent, ChestDepositEvent.class);
+        // AIR chest model: deposits only go through the wired trade (ChestStartDepositEvent), and the
+        // Wired upgrade is part of the settings save, so the wallet/inventory deposit messages and
+        // ChestEnableWiredEvent are no longer registered.
         this.registerHandler(Incoming.ChestWithdrawEvent, ChestWithdrawEvent.class);
         this.registerHandler(Incoming.ChestWithdrawFurniEvent, ChestWithdrawFurniEvent.class);
-        this.registerHandler(Incoming.ChestDepositFurniEvent, ChestDepositFurniEvent.class);
         this.registerHandler(Incoming.ChestStartDepositEvent, ChestStartDepositEvent.class);
-        this.registerHandler(Incoming.ChestDepositInventoryItemEvent, ChestDepositInventoryItemEvent.class);
         this.registerHandler(Incoming.ChestWithdrawAllFurniEvent, ChestWithdrawAllFurniEvent.class);
         this.registerHandler(Incoming.ChestOpenEvent, ChestOpenEvent.class);
         this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestSaveOptionsEvent, ChestSaveOptionsEvent.class);
         this.registerHandler(Incoming.ChestCloseEvent, ChestCloseEvent.class);
-        this.registerHandler(Incoming.ChestEnableWiredEvent, ChestEnableWiredEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
         this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
         this.registerHandler(Incoming.WiredChestRoomLogsEvent, WiredChestRoomLogsEvent.class);
@@ -1351,6 +1355,8 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredFeatureCapabilitiesEvent, WiredFeatureCapabilitiesEvent.class);
         this.registerHandler(Incoming.WiredArrayInspectionRequestEvent, WiredArrayInspectionRequestEvent.class);
         this.registerHandler(Incoming.WiredArrayInspectionUpdateEvent, WiredArrayInspectionUpdateEvent.class);
+        this.registerHandler(Incoming.WiredSetupExportEvent, WiredSetupExportEvent.class);
+        this.registerHandler(Incoming.WiredSetupImportEvent, WiredSetupImportEvent.class);
         this.registerHandler(Incoming.WiredOpenEvent, WiredOpenEvent.class);
         this.registerHandler(Incoming.WiredUserSelectedEvent, WiredUserSelectedEvent.class);
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
@@ -1358,11 +1364,18 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredLeaderboardSubscribeEvent, WiredLeaderboardSubscribeEvent.class);
+        this.registerHandler(Incoming.WiredLinkRequestConfigEvent, WiredLinkRequestConfigEvent.class);
+        this.registerHandler(Incoming.WiredLinkSaveSelectionEvent, WiredLinkSaveSelectionEvent.class);
+        this.registerHandler(Incoming.WiredLinkCreateNetworkEvent, WiredLinkCreateNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkRenameNetworkEvent, WiredLinkRenameNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkDeleteNetworkEvent, WiredLinkDeleteNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkGetConnectionsEvent, WiredLinkGetConnectionsEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveTextEvent, WiredLabelSaveTextEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveSettingsEvent, WiredLabelSaveSettingsEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersRequestEvent, WiredVariableHoldersRequestEvent.class);
         this.registerHandler(Incoming.WiredVariableHashesEvent, WiredVariableHashesEvent.class);
         this.registerHandler(Incoming.WiredAllVariablesRequestEvent, WiredAllVariablesRequestEvent.class);
+        this.registerHandler(Incoming.WiredGetVariablesForObjectEvent, WiredGetVariablesForObjectEvent.class);
     }
 
     void registerTranslation() throws Exception {

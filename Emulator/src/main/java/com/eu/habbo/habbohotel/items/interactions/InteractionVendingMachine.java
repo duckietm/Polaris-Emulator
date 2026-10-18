@@ -78,11 +78,8 @@ public class InteractionVendingMachine extends HabboItem {
         this.setExtradata("1");
         room.updateItem(this);
 
-        try {
-            super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
-        }
+        // Using a vending machine changes its state for everybody, not only for users with rights.
+        notifyStateChanged(room, unit, this);
 
         if (!unit.isWalking() && !unit.hasStatus(RoomUnitStatus.SIT) && !unit.hasStatus(RoomUnitStatus.LAY)) {
             this.rotateToMachine(room, unit);

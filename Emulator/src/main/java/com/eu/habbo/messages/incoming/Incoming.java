@@ -515,6 +515,8 @@ public class Incoming {
     public static final int WiredFeatureCapabilitiesEvent = 10029;
     public static final int WiredArrayInspectionRequestEvent = 10034;
     public static final int WiredArrayInspectionUpdateEvent = 10035;
+    public static final int WiredSetupExportEvent = 10096; // CUSTOM wired setup share
+    public static final int WiredSetupImportEvent = 10097; // CUSTOM wired setup import (preview / apply)
 
     public static final int WiredOpenEvent = 768;
     // AIR 13 wired leftovers, all on their official ids.
@@ -524,12 +526,21 @@ public class Incoming {
     public static final int WiredRoomLogsPageEvent = 3882;
     public static final int WiredVariableHoldersPageEvent = 975;
     public static final int WiredLeaderboardSubscribeEvent = 2833; // AIR (variable leaderboard)
+    public static final int WiredLinkRequestConfigEvent = 3208; // AIR (WIRED Link)
+    public static final int WiredLinkSaveSelectionEvent = 385; // AIR (WIRED Link)
+    public static final int WiredLinkCreateNetworkEvent = 2192; // AIR (WIRED Link)
+    public static final int WiredLinkRenameNetworkEvent = 2794; // AIR (WIRED Link)
+    public static final int WiredLinkDeleteNetworkEvent = 2731; // AIR (WIRED Link)
+    public static final int WiredLinkGetConnectionsEvent =
+            9494; // CUSTOM (WIRED Link; AIR 2300 is RequestRoomHeightmapEvent)
     public static final int WiredLabelSaveTextEvent = 2638; // AIR (furniture label text)
     public static final int WiredLabelSaveSettingsEvent = 2970; // AIR (furniture label settings)
     public static final int WiredVariableHoldersRequestEvent = 2973;
     public static final int WiredVariableHashesEvent = 1497;
     public static final int WiredGenerateWebApiKeyEvent = 2819;
     public static final int WiredAllVariablesRequestEvent = 1735;
+    // Official inspection tab read of one object (wiredmenu ?_-t1r?), header of our AIR build.
+    public static final int WiredGetVariablesForObjectEvent = 3661;
     public static final int TranslationLanguagesRequestEvent = 10032;
     public static final int TranslationTextRequestEvent = 10033;
     public static final int RequestInventoryPetDelete = 10030;

@@ -2,30 +2,27 @@ package com.eu.habbo.messages.incoming.rooms.users;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
-import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 
+/**
+ * Ignores a user by id (AIR {@code IgnoredUsersManager.ignoreUser}, composer {@code ?_-02R?/?_-Z2I?}). The ignore is
+ * stored by id, so the target may be anywhere; the answer names the id so the client can update its list.
+ */
 public class IgnoreRoomUserEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        int userId = this.packet.readInt();
 
-        if (room != null) {
-            String username = this.packet.readString();
+        Habbo self = this.client.getHabbo();
 
-            Habbo habbo = room.getHabbo(username);
+        if (userId <= 0 || self == null || userId == self.getHabboInfo().getId()) return;
 
-            if (habbo != null) {
-                if (habbo == this.client.getHabbo())
-                    return;
-
-                if (this.client.getHabbo().getHabboStats().ignoreUser(this.client, habbo.getHabboInfo().getId())) {
-                    this.client.sendResponse(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.IGNORED));
-                    AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModIgnoreSeen"));
-                }
-            }
+        if (self.getHabboStats().ignoreUser(this.client, userId)) {
+            this.client.sendResponse(new RoomUserIgnoredComposer(userId, RoomUserIgnoredComposer.IGNORED));
+            AchievementManager.progressAchievement(
+                    self, Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModIgnoreSeen"));
         }
     }
 }

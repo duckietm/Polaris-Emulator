@@ -14,7 +14,8 @@ import java.util.Map;
  * together in one ObjectsDataUpdate per wired tick, ahead of that tick's movement packet, instead of one state packet
  * per furni. A furni written twice in the same firing goes out once, with its last state.
  *
- * <p>The batch belongs to the thread running the firing and nests: only the outermost {@link #close()} sends.
+ * <p>The batch belongs to the thread running the firing and nests: only the outermost {@link #close()} sends. The
+ * box flashes flipped on this thread so far ride along in the same packet, after the furni states.
  */
 public final class WiredFurniStateBatch {
     private static final ThreadLocal<Deque<Boolean>> DEPTH = ThreadLocal.withInitial(ArrayDeque::new);
@@ -36,16 +37,20 @@ public final class WiredFurniStateBatch {
         if (!depth.isEmpty()) return;
 
         Map<Room, Map<Integer, HabboItem>> pending = PENDING.get();
-        if (pending.isEmpty()) return;
-
-        Map<Room, Map<Integer, HabboItem>> rooms = new LinkedHashMap<>(pending);
-        pending.clear();
-        for (Map.Entry<Room, Map<Integer, HabboItem>> entry : rooms.entrySet()) {
-            entry.getKey()
-                    .sendComposer(new ItemsDataUpdateComposer(
-                                    new LinkedHashSet<>(entry.getValue().values()))
-                            .compose());
+        if (!pending.isEmpty()) {
+            Map<Room, Map<Integer, HabboItem>> rooms = new LinkedHashMap<>(pending);
+            pending.clear();
+            for (Map.Entry<Room, Map<Integer, HabboItem>> entry : rooms.entrySet()) {
+                // The furni states first, then the box flashes of the same firing, in one packet.
+                LinkedHashSet<HabboItem> items =
+                        new LinkedHashSet<>(entry.getValue().values());
+                items.addAll(WiredBoxFlashes.takeDirty(entry.getKey()));
+                entry.getKey().sendComposer(new ItemsDataUpdateComposer(items).compose());
+            }
         }
+
+        // Flashes of rooms without furni states still go out ahead of the firing's movements.
+        WiredBoxFlashes.flushDirty();
     }
 
     public static boolean isOpen() {

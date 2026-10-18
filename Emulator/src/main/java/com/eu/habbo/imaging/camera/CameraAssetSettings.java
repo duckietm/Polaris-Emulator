@@ -4,6 +4,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.imaging.camera.assets.BundleAssetSource;
 import com.eu.habbo.imaging.camera.assets.CameraAssetSource;
 import com.eu.habbo.imaging.camera.assets.CompositeAssetSource;
+import com.eu.habbo.imaging.camera.assets.GroupBadgeAssetSource;
 import com.eu.habbo.imaging.camera.assets.LooseImageDirectory;
 import com.eu.habbo.imaging.camera.assets.NitroLibraryLoader;
 import com.eu.habbo.imaging.camera.render.WallColorResolver;
@@ -65,6 +66,18 @@ public record CameraAssetSettings(
     private NitroLibraryLoader loader() {
         long maxBytes = (long) this.maxBundleMegabytes * 1024L * 1024L;
         return new NitroLibraryLoader(maxBytes, 64L * 1024 * 1024 / 4);
+    }
+
+    /**
+     * The sprite source with {@code group_badge:<code>} names drawn by {@code badges} (null leaves
+     * them out), then the loose PNG folder and the bundles.
+     */
+    public CameraAssetSource sprites(GroupBadgeAssetSource.BadgeComposer badges) {
+        CameraAssetSource sprites = this.sprites();
+        if (badges == null) {
+            return sprites;
+        }
+        return new CompositeAssetSource(List.of(new GroupBadgeAssetSource(badges, this.cacheBytes() / 32), sprites));
     }
 
     /** The sprite source: loose PNG folder first, then the bundles. */

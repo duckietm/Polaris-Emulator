@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 
 public class MuteCommand extends Command {
     // ":mute <user>" without a duration is a long mute; longer durations are capped.
@@ -90,14 +89,8 @@ public class MuteCommand extends Command {
                 return true;
             }
 
+            // Habbo.mute tells the muted user (RemainingMutePeriod); the room is not told.
             habbo.mute(duration, false);
-
-            if (habbo.getHabboInfo().getCurrentRoom() != null) {
-                habbo.getHabboInfo()
-                        .getCurrentRoom()
-                        .sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.MUTED)
-                                .compose()); // : RoomUserIgnoredComposer.UNIGNORED
-            }
 
             gameClient
                     .getHabbo()

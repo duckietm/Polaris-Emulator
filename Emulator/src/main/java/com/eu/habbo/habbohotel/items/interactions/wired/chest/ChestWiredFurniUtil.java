@@ -1,15 +1,9 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
-import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +15,10 @@ public final class ChestWiredFurniUtil {
         return giveFromChestByType(habbo, chest, false, 0, "", amount);
     }
 
+    /**
+     * Move up to {@code amount} stored items of one type from the chest into the player's inventory.
+     * The items themselves move (AIR model); nothing is copied.
+     */
     public static int giveFromChestByType(
             Habbo habbo,
             InteractionWiredChest chest,
@@ -28,60 +26,26 @@ public final class ChestWiredFurniUtil {
             int baseItemId,
             String legacyPosterId,
             int amount) {
-        if (habbo == null || chest == null || amount <= 0 || habbo.getClient() == null || baseItemId <= 0) {
-            return 0;
-        }
+        if (habbo == null || chest == null || amount <= 0 || baseItemId <= 0) return 0;
 
-        List<ChestFurniStoredItem> removed =
-                chest.getContents().removeFurniByType(wallItem, baseItemId, legacyPosterId, amount);
-        int given = giveStoredItemsToInventory(habbo, removed);
-        if (given > 0) {
-            ChestTransactionLog.record(
-                    chest.getRoomId(),
-                    chest.getId(),
-                    ChestStorage.KIND_FURNI,
-                    ChestTransactionLog.TYPE_WITHDRAW,
-                    ChestTransactionLog.SOURCE_WIRED,
-                    habbo,
-                    -1,
-                    given,
-                    0,
-                    removed);
-            chest.persistContents();
-        }
-        return given;
+        return ChestWithdrawals.furni(
+                        habbo,
+                        chest,
+                        null,
+                        storage -> storage.removeFurniByType(wallItem, baseItemId, legacyPosterId, amount),
+                        ChestTransactionLog.SOURCE_WIRED)
+                .furni()
+                .size();
     }
 
+    /**
+     * Refused: the AIR chest model never creates furni out of nothing. Kept for callers compiled
+     * against it.
+     *
+     * @return always 0
+     */
     public static int mintToInventory(Habbo habbo, boolean wallItem, int baseItemId, int amount) {
-        if (habbo == null || habbo.getClient() == null || baseItemId <= 0 || amount <= 0) {
-            return 0;
-        }
-
-        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(baseItemId);
-        if (baseItem == null) {
-            return 0;
-        }
-        if ((baseItem.getType() == FurnitureType.WALL) != wallItem) {
-            return 0;
-        }
-
-        int given = 0;
-        for (int i = 0; i < amount; i++) {
-            HabboItem created = Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "0");
-            if (created == null) {
-                continue;
-            }
-            habbo.getClient().sendResponse(new AddHabboItemComposer(created));
-            habbo.getInventory().getItemsComponent().addItem(created);
-            given++;
-        }
-
-        if (given > 0) {
-            habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        }
-        return given;
+        return 0;
     }
 
     public static int countInInventory(Habbo habbo, boolean wallItem, int baseItemId, String legacyPosterId) {
@@ -97,84 +61,37 @@ public final class ChestWiredFurniUtil {
         return count;
     }
 
+    /**
+     * Refused: items only go into a chest through {@link InteractionWiredChest#depositFurni}, which
+     * moves the items themselves. This used to delete the items and keep a copy that was never saved.
+     * Kept for callers compiled against it.
+     *
+     * @return always empty; nothing leaves the inventory
+     */
     public static List<ChestFurniStoredItem> takeFromInventory(
             Habbo habbo, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
-        List<ChestFurniStoredItem> taken = new ArrayList<>();
-        if (habbo == null || habbo.getClient() == null || baseItemId <= 0 || amount <= 0) {
-            return taken;
-        }
-
-        List<HabboItem> removedItems = new ArrayList<>();
-        for (HabboItem item : inventoryItems(habbo)) {
-            if (taken.size() >= amount) {
-                break;
-            }
-            if (!matchesFurniType(item, wallItem, baseItemId, legacyPosterId)
-                    || WiredWebApiOwnership.isWebApiItem(item)) {
-                continue;
-            }
-            HabboItem removed = habbo.getInventory().getItemsComponent().getHabboItem(item.getId());
-            if (removed == null) {
-                continue;
-            }
-            habbo.getInventory().getItemsComponent().removeHabboItem(removed);
-            removedItems.add(removed);
-            taken.add(ChestFurniStoredItem.fromHabboItem(removed, removed.getId()));
-        }
-
-        if (!removedItems.isEmpty()) {
-            for (HabboItem removed : removedItems) {
-                habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
-            }
-            habbo.getClient().sendResponse(new InventoryRefreshComposer());
-            Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(removedItems));
-        }
-
-        return taken;
+        return new ArrayList<>();
     }
 
+    /** Refused for the same reason as {@link #takeFromInventory}; kept for callers compiled against it. */
     public static void depositToChest(InteractionWiredChest chest, List<ChestFurniStoredItem> items) {
-        if (chest == null || items == null || items.isEmpty()) {
-            return;
-        }
-        ChestStorage contents = chest.getContents();
-        for (ChestFurniStoredItem item : items) {
-            if (item != null) {
-                contents.addFurniItem(item);
-            }
-        }
-        chest.persistContents();
+        // Intentionally nothing: rows that are not in the chest's store must not appear in it.
     }
 
+    /**
+     * Put stored rows that already left a chest (and so are the player's items in the database) into
+     * the player's live inventory. Nothing is created: a row that is not an item of theirs is skipped.
+     */
     public static int giveStoredItemsToInventory(Habbo habbo, List<ChestFurniStoredItem> removed) {
-        if (habbo == null || habbo.getClient() == null || removed == null || removed.isEmpty()) {
-            return 0;
-        }
-        int given = 0;
-        for (ChestFurniStoredItem stored : removed) {
-            Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(stored.baseItemId);
-            if (baseItem == null) {
-                continue;
+        if (habbo == null || removed == null || removed.isEmpty()) return 0;
+
+        List<Integer> ids = new ArrayList<>();
+        for (ChestFurniStoredItem row : removed) {
+            if (row != null && habbo.getInventory().getItemsComponent().getHabboItem(row.inventoryId) == null) {
+                ids.add(row.inventoryId);
             }
-            HabboItem created = Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .createItem(
-                            habbo.getHabboInfo().getId(),
-                            baseItem,
-                            stored.limitedStack,
-                            stored.limitedSells,
-                            stored.extradata);
-            if (created == null) {
-                continue;
-            }
-            habbo.getClient().sendResponse(new AddHabboItemComposer(created));
-            habbo.getInventory().getItemsComponent().addItem(created);
-            given++;
         }
-        if (given > 0) {
-            habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        }
-        return given;
+        return ChestWithdrawals.deliverOwned(habbo, ids);
     }
 
     private static Collection<HabboItem> inventoryItems(Habbo habbo) {

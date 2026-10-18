@@ -56,10 +56,15 @@ public class WiredEffectRemoveTemporaryFurni extends InteractionWiredEffect impl
             if (item != null) picked.add(item);
         }
 
+        // One ObjectRemoveMultiple for the whole removal, as in Habbo; an owner pick-up stays one ObjectRemove.
+        List<HabboItem> copies = new ArrayList<>();
         for (HabboItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, picked)) {
             if (item != null && item.isTemporary() && room.getHabboItem(item.getId()) == item) {
-                room.pickUpItem(item, null);
+                copies.add(item);
             }
+        }
+        if (!copies.isEmpty()) {
+            room.getItemManager().removeTemporaryItems(copies);
         }
     }
 

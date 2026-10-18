@@ -13,7 +13,16 @@ public class CatalogFeaturedPage implements ISerialize {
     private final String pageName;
     private final int pageId;
     private final String productName;
-    public CatalogFeaturedPage(int slotId, String caption, String image, Type type, int expireTimestamp, String pageName, int pageId, String productName) {
+
+    public CatalogFeaturedPage(
+            int slotId,
+            String caption,
+            String image,
+            Type type,
+            int expireTimestamp,
+            String pageName,
+            int pageId,
+            String productName) {
         this.slotId = slotId;
         this.caption = caption;
         this.image = image;
@@ -41,7 +50,12 @@ public class CatalogFeaturedPage implements ISerialize {
                 message.appendString(this.productName);
                 break;
         }
-        message.appendInt(Emulator.getIntUnixTimestamp() - this.expireTimestamp);
+        message.appendInt(secondsLeft(this.expireTimestamp, Emulator.getIntUnixTimestamp()));
+    }
+
+    /** The client reads the seconds until the slot expires; 0 means it does not expire. */
+    static int secondsLeft(int expireTimestamp, int now) {
+        return (expireTimestamp <= 0) ? 0 : Math.max(0, expireTimestamp - now);
     }
 
     public enum Type {

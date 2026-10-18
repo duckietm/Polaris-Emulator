@@ -144,6 +144,12 @@ public final class WiredInternalVariableSupport {
                     && room.getWiredRuntime().getProjectileFlights().holds(item, normalized);
         }
 
+        if ("@can_move_freely".equals(normalized)) {
+            return room != null
+                    && room.getWiredRuntime() != null
+                    && room.getWiredRuntime().movesFreely(item);
+        }
+
         return hasFurniValue(item, normalized);
     }
 
@@ -511,7 +517,8 @@ public final class WiredInternalVariableSupport {
             case "@timezone_server" -> HotelDateTimeUtil.now().getOffset().getTotalSeconds() / 60;
             case "@timezone_client" -> 0;
             case "@current_time" -> (int) now.toEpochSecond();
-            case "@current_time.millisecond_of_second" -> now.getNano() / 1_000_000;
+            case "@current_time.milliseconds_of_seconds", "@current_time.millisecond_of_second" ->
+                now.getNano() / 1_000_000;
             case "@current_time.seconds_of_minute" -> now.getSecond();
             case "@current_time.minute_of_hour" -> now.getMinute();
             case "@current_time.hour_of_day" -> now.getHour();

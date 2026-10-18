@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.PendingRoomEntry;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomForwardGlow;
 import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -24,6 +25,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
+import com.eu.habbo.threading.ThreadPooling;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -47,6 +49,8 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
 
     static final String ROOM_LINK_KEY = "internalLink";
     static final long FORWARD_INTERVAL_MS = 2000L;
+    static final long FORWARD_DELAY_MS = 950L;
+    static final long GLOW_END_IF_STAYED_MS = 3000L;
     static final int MAX_FORWARDS_PER_RUN = 50;
     static final int MAX_FURNI_CHECKED = 20;
     static final long PAIR_LOOKUP_INTERVAL_MS = 1000L;
@@ -214,6 +218,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             return;
         }
 
+        ThreadPooling threading = WiredPlatform.threading();
         for (Habbo habbo : candidates) {
             if (!mayForward(habbo, target)) {
                 continue;
@@ -221,9 +226,34 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             if (!habbo.getHabboInfo().tryAcquireRoomForward(now, FORWARD_INTERVAL_MS)) {
                 continue;
             }
-            habbo.getHabboInfo().setPendingRoomEntry(destination.entry(now));
-            habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getId()));
+
+            if (threading == null) {
+                forward(habbo, room, target, destination, now);
+                continue;
+            }
+
+            // As in Habbo: the user glows from the firing, is taken into the linked room about a
+            // second later, and arrives there still glowing. One the client did not take away gets
+            // their own effect back a little later.
+            RoomUnit unit = habbo.getRoomUnit();
+            RoomForwardGlow.show(room, unit);
+            threading.run(
+                    () -> {
+                        if (habbo.getClient() != null && habbo.getHabboInfo().getCurrentRoom() == room) {
+                            forward(habbo, room, target, destination, System.currentTimeMillis());
+                        }
+                    },
+                    FORWARD_DELAY_MS);
+            threading.run(() -> RoomForwardGlow.end(room, unit), GLOW_END_IF_STAYED_MS);
         }
+    }
+
+    private static void forward(Habbo habbo, Room room, Room target, Destination destination, long now) {
+        habbo.getHabboInfo().setPendingRoomEntry(destination.entry(now));
+        if (room != null && habbo.getRoomUnit() != null) {
+            habbo.getHabboInfo().setRoomForwardGlow(target.getId(), now + PendingRoomEntry.LIFETIME_MS);
+        }
+        habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getId()));
     }
 
     Destination resolveDestination(WiredContext ctx, Room room, GameEnvironment environment, long now) {

@@ -15,10 +15,12 @@ import static org.mockito.Mockito.when;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
+import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -123,5 +125,76 @@ class WiredEffectGiveVariableOfficialTest {
         HabboItem item = mock(HabboItem.class);
         when(item.getId()).thenReturn(id);
         return item;
+    }
+
+    @Test
+    void withoutAVariableItSavesAndGivesNothing() throws Exception {
+        WiredEffectGiveVariable box = saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 5, 0, 0, -10, 0}, "");
+
+        fire(box);
+        verify(furniVariables, never()).assignVariable(any(HabboItem.class), anyInt(), any(), Mockito.anyBoolean());
+    }
+
+    @Test
+    void aGlobalDestinationSavesAndChangesNothing() throws Exception {
+        WiredEffectGiveVariable box = saved(new int[] {WiredValueVariable.TARGET_GLOBAL, 0, 5, 0, 0, -10, 0}, "40");
+
+        fire(box);
+        verify(furniVariables, never()).assignVariable(any(HabboItem.class), anyInt(), any(), Mockito.anyBoolean());
+    }
+
+    @Test
+    void aGiveThatGaveSomethingFlashesTheDefinitionBox() throws Exception {
+        RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
+        InteractionWiredExtra definition = mock(InteractionWiredExtra.class);
+        InteractionWiredExtra timeUtilities = mock(InteractionWiredExtra.class);
+        when(room.getRoomSpecialTypes()).thenReturn(specialTypes);
+        when(specialTypes.getExtra(VARIABLE)).thenReturn(definition);
+        when(specialTypes.getExtras(anyInt(), anyInt()))
+                .thenReturn(new java.util.LinkedHashSet<>(List.of(definition, timeUtilities)));
+        when(furniVariables.assignVariable(any(HabboItem.class), eq(VARIABLE), any(), Mockito.anyBoolean()))
+                .thenReturn(true);
+        WiredEffectGiveVariable box = saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 5, 0, 0, -10, 0}, "40");
+
+        com.eu.habbo.habbohotel.rooms.RoomWiredRuntime runtime =
+                mock(com.eu.habbo.habbohotel.rooms.RoomWiredRuntime.class);
+        com.eu.habbo.habbohotel.rooms.WiredBoxFlashes flashes =
+                mock(com.eu.habbo.habbohotel.rooms.WiredBoxFlashes.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        when(runtime.getBoxFlashes()).thenReturn(flashes);
+
+        fire(box);
+        // The definition shows the give state (6); the add-on on its tile flashes.
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<java.util.function.UnaryOperator<String>> next =
+                org.mockito.ArgumentCaptor.forClass(java.util.function.UnaryOperator.class);
+        verify(flashes).flip(eq(definition), next.capture());
+        assertEquals("6", next.getValue().apply("0"));
+        verify(timeUtilities).flashBox(room);
+    }
+
+    @Test
+    void aGiveThatGaveNothingDoesNotFlash() throws Exception {
+        RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
+        InteractionWiredExtra definition = mock(InteractionWiredExtra.class);
+        when(room.getRoomSpecialTypes()).thenReturn(specialTypes);
+        when(specialTypes.getExtra(VARIABLE)).thenReturn(definition);
+        WiredEffectGiveVariable box = saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 5, 0, 0, -10, 0}, "40");
+
+        fire(box);
+        verify(definition, never()).flashBox(any());
+    }
+
+    @Test
+    void canMoveFreelyIsGivenToTheFurni() throws Exception {
+        com.eu.habbo.habbohotel.rooms.RoomWiredRuntime runtime =
+                mock(com.eu.habbo.habbohotel.rooms.RoomWiredRuntime.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        WiredEffectGiveVariable box =
+                saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 0, -10, 0}, "internal:@can_move_freely");
+
+        fire(box);
+        verify(runtime).setMovesFreely(this.first, true);
+        verify(runtime).setMovesFreely(this.second, true);
     }
 }

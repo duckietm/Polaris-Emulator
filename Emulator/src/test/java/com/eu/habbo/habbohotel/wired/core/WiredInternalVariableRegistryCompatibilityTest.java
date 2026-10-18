@@ -129,7 +129,7 @@ class WiredInternalVariableRegistryCompatibilityTest {
                         "@timezone_server",
                         "@timezone_client",
                         "@current_time",
-                        "@current_time.millisecond_of_second",
+                        "@current_time.milliseconds_of_seconds",
                         "@current_time.seconds_of_minute",
                         "@current_time.minute_of_hour",
                         "@current_time.hour_of_day",
@@ -171,6 +171,7 @@ class WiredInternalVariableRegistryCompatibilityTest {
     void everyLegacyAliasRetainsExactCaseSensitiveNormalization() {
         assertEquals(
                 Map.ofEntries(
+                        Map.entry("@current_time.millisecond_of_second", "@current_time.milliseconds_of_seconds"),
                         Map.entry("@position.x", "@position_x"),
                         Map.entry("@position.y", "@position_y"),
                         Map.entry("@effect", "@effect_id"),

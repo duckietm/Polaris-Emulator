@@ -42,6 +42,9 @@ public final class WiredValueVariable {
             java.util.Collection<HabboItem> picked,
             int userSource) {
         if (room == null || variableId <= 0) return null;
+        // A pointer is read as the variable it stands for in this stack.
+        variableId = WiredPointerVariableSupport.resolve(ctx, room, variableId);
+        if (variableId <= 0) return null;
 
         switch (target) {
             case TARGET_USER -> {

@@ -144,7 +144,11 @@ public enum WiredEffectType {
     GIVE_HAND_ITEM(157),
     // Habbo's "set furni highlight": a style, strength, colour and animation on furni and avatars,
     // drawn by the client. Its dialog is its own, so it takes the next free code.
-    SET_HIGHLIGHT(158);
+    SET_HIGHLIGHT(158),
+    // Habbo's WIRED Link actions: send a message / a dataframe through the picked Links. They sit at
+    // 170 so the seats right after 158 stay free for the other official boxes.
+    SEND_LINK_MESSAGE(170),
+    SEND_LINK_DATAFRAME(171);
 
     public final int code;
 

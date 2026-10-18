@@ -70,7 +70,52 @@ public final class NitroLibraryLoader {
             throw new IOException(
                     "Bundle " + path.getFileName() + " is " + size + " bytes, over the limit of " + this.maxFileBytes);
         }
-        return this.readBundle(Files.readAllBytes(path), fallbackName(path));
+        return this.read(Files.readAllBytes(path), fallbackName(path));
+    }
+
+    /** Reads a {@code .nitro} or a {@code .hab} bundle, told apart by the {@code HAB\0} magic. */
+    public NitroLibrary read(byte[] bundle, String fallbackName) throws IOException {
+        return HabBundle.isHab(bundle) ? this.readHab(bundle, fallbackName) : this.readBundle(bundle, fallbackName);
+    }
+
+    /**
+     * Reads a {@code .hab} bundle that holds what a {@code .nitro} holds: the asset library json and
+     * one sheet image, as the client's OctaneBundle does. Habbo's flash-style libraries (xml and
+     * loose images) are refused, as the client refuses them: they go through the converter first.
+     */
+    public NitroLibrary readHab(byte[] bundle, String fallbackName) throws IOException {
+        int maxEntry = (int) Math.min(Integer.MAX_VALUE, this.maxFileBytes);
+        HabBundle hab = HabBundle.read(bundle, maxEntry);
+        HabBundle.Entry jsonEntry = null;
+        HabBundle.Entry imageEntry = null;
+        int images = 0;
+        for (HabBundle.Entry entry : hab.entries()) {
+            if (entry.isImage()) {
+                images++;
+                if (imageEntry == null) {
+                    imageEntry = entry;
+                }
+            } else if (jsonEntry == null && entry.isJson()) {
+                jsonEntry = entry;
+            }
+        }
+        if (jsonEntry == null || images > 1) {
+            throw new IOException("HAB bundle '" + hab.name()
+                    + "' is a flash-style library (xml and loose images); convert it to a sheet bundle first");
+        }
+        JsonObject json = parseJson(new String(jsonEntry.bytes(), StandardCharsets.UTF_8));
+        // Habbo's clothes and effect bundles name the library only in documentClass and the index.
+        String name = string(json, "name");
+        if (name == null || name.isEmpty()) {
+            String documentClass = string(json, "documentClass");
+            if (documentClass != null && !documentClass.isEmpty()) {
+                json.addProperty("name", documentClass);
+            } else if (!hab.name().isEmpty()) {
+                json.addProperty("name", hab.name());
+            }
+        }
+        BufferedImage sheet = imageEntry == null ? null : this.decode(new ByteArrayInputStream(imageEntry.bytes()));
+        return build(json, fallbackName, sheet, null);
     }
 
     public NitroLibrary readBundle(byte[] bundle, String fallbackName) throws IOException {

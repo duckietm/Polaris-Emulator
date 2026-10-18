@@ -580,6 +580,11 @@ public class RoomItemManager {
     /**
      * Ejects all furniture belonging to a user.
      */
+    /** Removes Place Furni's temporary copies in one batched removal (picker -1). */
+    public void removeTemporaryItems(java.util.Collection<HabboItem> items) {
+        this.ownership.removeTemporaryItems(items);
+    }
+
     public void ejectUserFurni(int userId) {
         this.ownership.ejectUserFurniture(userId);
     }
@@ -603,6 +608,20 @@ public class RoomItemManager {
      */
     public void ejectAll(Habbo habbo) {
         this.ownership.ejectAll(habbo);
+    }
+
+    /**
+     * Ejects all items from the room except the Builders Club furni, which only {@code :pickallbc} removes.
+     */
+    public void ejectAllExceptBuildersClub() {
+        this.ownership.ejectAllExceptBuildersClub();
+    }
+
+    /**
+     * Removes every Builders Club furni from the room.
+     */
+    public void removeBuildersClubItems(Habbo picker) {
+        this.ownership.removeBuildersClubItems(picker);
     }
 
     // ==================== LOCKED TILES ====================

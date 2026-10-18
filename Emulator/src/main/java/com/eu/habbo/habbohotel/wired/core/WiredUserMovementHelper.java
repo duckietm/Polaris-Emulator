@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.items.interactions.interfaces.ConditionalGate;
+import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -227,6 +228,39 @@ public final class WiredUserMovementHelper {
                 resolvedHeadRotation.getValue(),
                 animationDuration));
         suppressStatusComposer(roomUnit, animationDuration);
+
+        // A rider and its horse move together, in the same movement packet (the horse one lower).
+        // Behaviour observed in plus-emulator/PlusEMU 03a32a5d, reimplemented.
+        RidingPartner partner = ridingPartner(room, roomUnit);
+        if (partner != null) {
+            RoomUnit partnerUnit = partner.unit();
+            RoomTile partnerFrom =
+                    partnerUnit.getCurrentLocation() != null ? partnerUnit.getCurrentLocation() : oldLocation;
+            double partnerOldZ = partnerUnit.getZ();
+            double partnerZ = roomUnit.getZ() + partner.zOffset();
+            runWithSuppressedStatusUpdates(Collections.singletonList(partnerUnit), () -> {
+                partnerUnit.removeStatus(RoomUnitStatus.MOVE);
+                partnerUnit.setZ(partnerZ);
+                partnerUnit.setLocation(targetTile);
+                partnerUnit.setPath(new LinkedList<>());
+                partnerUnit.setBodyRotation(resolvedBodyRotation);
+                partnerUnit.setHeadRotation(resolvedHeadRotation);
+                partnerUnit.statusUpdate(false);
+            });
+            movements.add(WiredMovementsComposer.userSlideMovement(
+                    partnerUnit.getId(),
+                    partnerFrom.x,
+                    partnerFrom.y,
+                    targetTile.x,
+                    targetTile.y,
+                    partnerOldZ,
+                    partnerZ,
+                    resolvedBodyRotation.getValue(),
+                    resolvedHeadRotation.getValue(),
+                    animationDuration));
+            suppressStatusComposer(partnerUnit, animationDuration);
+        }
+
         if (jumpStrength != 0) {
             WiredMoveStyleHelper.sendUnitsNow(
                     room, List.of(roomUnit.getId()), WiredMoveStyleHelper.STYLE_JUMP, jumpStrength);
@@ -301,7 +335,43 @@ public final class WiredUserMovementHelper {
         processTileCallbacks(room, roomUnit, oldLocation, targetTile, oldTopItem, newTopItem);
         clearStatusComposerSuppression(roomUnit);
         room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
+
+        // The rider's horse (or the horse's rider) goes along.
+        RidingPartner partner = ridingPartner(room, roomUnit);
+        if (partner != null) {
+            RoomUnit partnerUnit = partner.unit();
+            partnerUnit.removeStatus(RoomUnitStatus.MOVE);
+            partnerUnit.setPath(new LinkedList<>());
+            partnerUnit.setBodyRotation(bodyRotation);
+            partnerUnit.setHeadRotation(headRotation);
+            partnerUnit.setPreviousLocation(partnerUnit.getCurrentLocation());
+            partnerUnit.setCurrentLocation(targetTile);
+            partnerUnit.setGoalLocation(targetTile);
+            partnerUnit.setZ(targetZ + partner.zOffset());
+            room.sendComposer(new RoomUserStatusComposer(partnerUnit).compose());
+        }
         return true;
+    }
+
+    /** The unit that moves along with {@code roomUnit}: a rider's horse (z - 1) or a horse's rider (z + 1). */
+    record RidingPartner(RoomUnit unit, double zOffset) {}
+
+    static RidingPartner ridingPartner(Room room, RoomUnit roomUnit) {
+        if (room == null || roomUnit == null) return null;
+
+        Habbo habbo = room.getHabbo(roomUnit);
+        if (habbo != null
+                && habbo.getHabboInfo() != null
+                && habbo.getHabboInfo().getRiding() != null) {
+            RoomUnit horse = habbo.getHabboInfo().getRiding().getRoomUnit();
+            return horse != null && horse != roomUnit ? new RidingPartner(horse, -1.0D) : null;
+        }
+
+        if (room.getPet(roomUnit) instanceof RideablePet horse && horse.getRider() != null) {
+            RoomUnit rider = horse.getRider().getRoomUnit();
+            return rider != null && rider != roomUnit ? new RidingPartner(rider, 1.0D) : null;
+        }
+        return null;
     }
 
     /**

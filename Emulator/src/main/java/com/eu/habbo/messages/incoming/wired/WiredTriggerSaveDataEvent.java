@@ -51,7 +51,10 @@ public class WiredTriggerSaveDataEvent extends MessageHandler {
                             this.client.sendResponse(
                                     new UpdateFailedComposer("There was an error while saving that trigger"));
                         }
-                    } catch (WiredTriggerSaveException | WiredSaveRefusedException e) {
+                    } catch (WiredSaveRefusedException refused) {
+                        this.client.sendResponse(
+                                new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));
+                    } catch (WiredTriggerSaveException e) {
                         this.client.sendResponse(new UpdateFailedComposer(e.getMessage()));
                     }
                 }

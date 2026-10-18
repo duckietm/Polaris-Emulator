@@ -93,7 +93,7 @@ class WiredDefinitionWireCoverageTest {
         for (WiredDefinitionWire.Holder holder : WiredDefinitionWire.Holder.values()) {
             assertTrue(counts.getOrDefault(holder, 0) > 0, "no box uses " + holder + ": " + counts);
         }
-        assertEquals(9, counts.get(WiredDefinitionWire.Holder.VARIABLE), counts.toString());
+        assertEquals(10, counts.get(WiredDefinitionWire.Holder.VARIABLE), counts.toString());
     }
 
     @Test
@@ -183,7 +183,7 @@ class WiredDefinitionWireCoverageTest {
         }
 
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(9, variables);
+        assertEquals(10, variables);
     }
 
     @Test

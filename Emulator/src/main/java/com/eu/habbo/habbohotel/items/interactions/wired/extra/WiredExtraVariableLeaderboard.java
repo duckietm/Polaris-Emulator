@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig;
@@ -117,7 +118,7 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         int shownChoices = Math.min(candidates.size(), MAX_CONTEXT_CHOICES);
         message.appendInt(1);
         message.appendInt(CONTEXT_TYPE);
-        message.appendInt(this.stored != null ? this.getId() : 0);
+        message.appendInt(WiredLeaderboardSupport.overlayIdOf(room, this));
         message.appendInt(this.getX());
         message.appendInt(this.getY());
         message.appendInt(candidates.size());
@@ -148,6 +149,15 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         if (!decoded.valid()) {
             throw new WiredSaveException(errorKey(decoded.error()));
         }
+        // AIR's leaderboard picker leaves out pointers: a leaderboard is read without a running stack.
+        Room savedRoom = settings.getRoom();
+        if (savedRoom != null) {
+            for (String variableId : wire.variableIds()) {
+                if (WiredPointerVariableSupport.isPointer(savedRoom, trailingId(variableId))) {
+                    throw new WiredSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
+                }
+            }
+        }
         this.stored = WiredLeaderboardCodec.encode(decoded.config());
 
         Room room = (gameClient != null && gameClient.getHabbo() != null)
@@ -157,6 +167,17 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
             WiredLeaderboardSupport.ensure(room);
         }
         return true;
+    }
+
+    /** The item id at the end of a variable id ({@code 12}, {@code custom:12}, {@code user:12}), or 0. */
+    static int trailingId(String variableId) {
+        if (variableId == null) return 0;
+        String text = variableId.substring(variableId.lastIndexOf(':') + 1).trim();
+        try {
+            return Math.max(0, Integer.parseInt(text));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     @Override

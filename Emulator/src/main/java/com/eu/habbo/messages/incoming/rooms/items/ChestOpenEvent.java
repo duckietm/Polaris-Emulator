@@ -29,6 +29,6 @@ public class ChestOpenEvent extends MessageHandler {
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
 
-        ChestOpenHelper.open(this.client, chest, room);
+        ChestOpenHelper.sendContents(this.client, chest, room);
     }
 }

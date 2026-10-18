@@ -51,7 +51,7 @@ final class CameraSpriteRenderer {
     BufferedImage getSpriteImage(CameraSprite sprite) {
         BufferedImage image = this.imageLoader.getSpriteImage(sprite);
         if (image != null
-                && sprite.isFromUrl()
+                && sprite.isExternalImage()
                 && sprite.getWidth() > 0
                 && sprite.getHeight() > 0
                 && sprite.getWidth() <= 1024
@@ -177,15 +177,21 @@ final class CameraSpriteRenderer {
         int alpha = rawAlpha == null ? 255 : Math.max(0, Math.min(255, rawAlpha));
 
         BufferedImage spriteImage = getSpriteImage(sprite);
+        boolean averageColor = sprite.colorIsAverage();
         if (spriteImage == null) {
-            return;
+            // The picture could not be had (fetching off, refused, missing badge part): draw the
+            // block of average colour the client sent for it, at the size it drew it.
+            spriteImage = averageColorBlock(sprite);
+            if (spriteImage == null) {
+                return;
+            }
         }
 
         if (sprite.isFlipH()) {
             spriteImage = CameraUtils.flipHorizontal(spriteImage);
         }
 
-        if (!sprite.getPaletteSourceName().isEmpty() && !sprite.isFromUrl()) {
+        if (!sprite.getPaletteSourceName().isEmpty() && !sprite.isExternalImage()) {
             int[] palette = this.imageLoader.readPalette(sprite.getName(), sprite.getPaletteSourceName());
 
             if (palette != null) {
@@ -194,14 +200,16 @@ final class CameraSpriteRenderer {
             }
         }
 
-        if (sprite.getColor() != 16777215 && sprite.getColor() != -1) {
+        // An average colour is not a tint: the picture itself is drawn as it is.
+        if (!averageColor && sprite.getColor() != 16777215 && sprite.getColor() != -1) {
             spriteImage = copyBufferedImage(spriteImage);
             CameraUtils.recolor(spriteImage, new Color((0xFF << 24) | sprite.getColor()));
         }
 
         Composite previousComposite = target.getComposite();
-        if (sprite.getBlendMode().equalsIgnoreCase("add")) {
-            target.setComposite(new AdditiveComposite());
+        BlendComposite.Mode blendMode = BlendComposite.Mode.fromName(sprite.getBlendMode());
+        if (blendMode != null) {
+            target.setComposite(new BlendComposite(blendMode, alpha / 255.0f));
         } else {
             target.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255.0f));
         }
@@ -218,6 +226,24 @@ final class CameraSpriteRenderer {
         }
 
         target.setComposite(previousComposite);
+    }
+
+    /** A {@code width} x {@code height} block of the sprite's average colour, or null when it has none. */
+    static BufferedImage averageColorBlock(CameraSprite sprite) {
+        if (!sprite.colorIsAverage()
+                || sprite.getColor() == -1
+                || sprite.getWidth() <= 0
+                || sprite.getHeight() <= 0
+                || sprite.getWidth() > 1024
+                || sprite.getHeight() > 1024) {
+            return null;
+        }
+        BufferedImage block = new BufferedImage(sprite.getWidth(), sprite.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = block.createGraphics();
+        graphics.setColor(new Color(sprite.getColor() & 0xFFFFFF));
+        graphics.fillRect(0, 0, sprite.getWidth(), sprite.getHeight());
+        graphics.dispose();
+        return block;
     }
 
     private BufferedImage copyBufferedImage(BufferedImage source) {

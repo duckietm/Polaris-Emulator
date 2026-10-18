@@ -328,7 +328,7 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
         this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
-        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5)) return false;
+        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 20)) return false;
 
         if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;

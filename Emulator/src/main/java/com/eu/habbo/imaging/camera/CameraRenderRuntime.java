@@ -1,6 +1,7 @@
 package com.eu.habbo.imaging.camera;
 
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.imaging.camera.assets.GroupBadgeAssetSource;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +33,23 @@ public final class CameraRenderRuntime {
         install(null);
     }
 
-    /** Builds the service from {@code emulator_settings} and installs it. */
+    /** Builds the service from {@code emulator_settings} and installs it, without group badges. */
     public static CameraRenderService start(ConfigurationManager config) {
+        return start(config, null);
+    }
+
+    /**
+     * Builds the service from {@code emulator_settings} and installs it; {@code groupBadges} draws
+     * the {@code group_badge:<code>} sprites (the badge imager's composition), or null.
+     */
+    public static CameraRenderService start(
+            ConfigurationManager config, GroupBadgeAssetSource.BadgeComposer groupBadges) {
         CameraAssetSettings assets = CameraAssetSettings.from(config);
         int workers = config.getInt(CameraRenderSettings.WORKERS, CameraRenderSettings.DEFAULT_WORKERS);
         int queue = config.getInt(CameraRenderSettings.QUEUE, CameraRenderSettings.DEFAULT_QUEUE);
         CameraRenderService service = new CameraRenderService(
                 () -> CameraRenderSettings.from(config),
-                assets.sprites(),
+                assets.sprites(groupBadges),
                 assets.effects(),
                 assets.wallColorResolver(),
                 workers,

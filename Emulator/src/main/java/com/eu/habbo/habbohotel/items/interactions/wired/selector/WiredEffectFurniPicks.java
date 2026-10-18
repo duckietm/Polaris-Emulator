@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.selector;
 
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -46,11 +45,11 @@ public class WiredEffectFurniPicks extends InteractionWiredEffect implements Wir
             return;
         }
 
-        boolean includeWiredItems = this.includeWiredTargets(ctx);
-
+        // A picked Wired box stays selected: the builder picked it on purpose (Call Stacks through picks runs
+        // that stack). Behaviour observed in plus-emulator/PlusEMU 9fa6a5cb, reimplemented.
         Set<HabboItem> result = this.pickedFurniIds.stream()
                 .map(room::getHabboItem)
-                .filter(item -> item != null && (includeWiredItems || !(item instanceof InteractionWired)))
+                .filter(item -> item != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         result = this.applySelectorModifiers(

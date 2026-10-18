@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_TALK_TO_AVATAR;
@@ -106,13 +105,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements
 
         if (mode != 0 && mode != 1) throw new WiredSaveException("Mode is invalid");
 
-        String dataString = settings.getStringParam();
-        String splitBy = "\t";
-        if (!dataString.contains(splitBy)) throw new WiredSaveException("Malformed data string");
-
-        String[] data = dataString.split(Pattern.quote(splitBy));
-
-        if (data.length != 2) throw new WiredSaveException("Malformed data string. Invalid data length");
+        String[] data = WiredEffectBotTalk.splitTalkText(settings.getStringParam());
 
         int delay = settings.getDelay();
 

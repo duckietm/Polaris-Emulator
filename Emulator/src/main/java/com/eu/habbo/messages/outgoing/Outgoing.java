@@ -19,6 +19,12 @@ public class Outgoing {
     public static final int WiredTradeCompletedComposer = 9334;
     public static final int ChestUpgradeResultComposer = 9335;
     public static final int ChestNotificationComposer = 9336;
+    // AIR wired chest model (WIN63-202610131318); ids from our custom range, never the rotated table.
+    public static final int ChestCoinsComposer = 9337;
+    public static final int ChestSettingsUpdatedComposer = 9338;
+    public static final int WiredTransactionSuccessComposer = 9339;
+    public static final int WiredTransactionFailComposer = 9346;
+    public static final int WiredTradeErrorComposer = 9347;
     public static final int FavoriteRoomsCountComposer = 151;
     public static final int UserCurrencyComposer = 2018;
     public static final int RedeemVoucherOKComposer = 3336;
@@ -166,6 +172,8 @@ public class Outgoing {
     public static final int WiredRoomLogPageComposer = 918;
     public static final int WiredAllVariablesHashComposer = 1646;
     public static final int WiredAllVariablesDiffComposer = 2498;
+    // Official WiredObjectInspectionData reply, header of our AIR build.
+    public static final int WiredVariablesForObjectComposer = 238;
     public static final int WiredClickUserResponseComposer = 9460; // CUSTOM
     public static final int WiredVariableHoldersPageComposer = 9461; // CUSTOM
     public static final int WiredVariableHoldersComposer = 9462; // CUSTOM
@@ -177,6 +185,11 @@ public class Outgoing {
     public static final int WiredVariableFxStatusRemovedComposer = 9476; // CUSTOM
     public static final int WiredLeaderboardSnapshotComposer = 1494; // AIR (variable leaderboard)
     public static final int WiredLeaderboardChunkComposer = 3979; // AIR (variable leaderboard)
+    public static final int WiredLinkOpenComposer = 9493; // CUSTOM (WIRED Link; AIR 1715 is BaseJumpUnloadGameComposer)
+    public static final int WiredLinkConfigurationComposer = 3405; // AIR (WIRED Link)
+    public static final int WiredLinkOperationResultComposer = 3961; // AIR (WIRED Link)
+    public static final int WiredLinkConnectionsComposer = 3962; // AIR (WIRED Link)
+    public static final int WiredLinkNetworkInvalidatedComposer = 999; // AIR (WIRED Link)
     public static final int WiredLabelsComposer = 2237; // AIR (furniture labels and regions)
     public static final int WiredLabelsUpdateComposer = 796; // AIR (furniture labels and regions update)
     public static final int RecolorFurniUpdateComposer = 181; // AIR (recolourable furni colour update)
@@ -261,6 +274,8 @@ public class Outgoing {
     public static final int FloorPlanEditorDoorSettingsComposer = 1664; // PRODUCTION-201611291003-338511768
     public static final int FloorPlanEditorBlockedTilesComposer = 3990; // PRODUCTION-201611291003-338511768
     public static final int BuildersClubExpiredComposer = 1452; // PRODUCTION-201611291003-338511768
+    // AIR 13 BuildersClubPlacementWarning: free on our outgoing table.
+    public static final int BuildersClubPlacementWarningComposer = 2075;
     public static final int RoomSettingsSavedComposer = 948; // PRODUCTION-201611291003-338511768
     public static final int MessengerInitComposer = 1605; // PRODUCTION-201611291003-338511768
     public static final int UserClothesComposer = 1450; // PRODUCTION-201611291003-338511768
@@ -728,6 +743,8 @@ public class Outgoing {
     public static final int CatalogAdminOfferDetailsComposer = 10062;
     public static final int CatalogAdminPageDetailsComposer = 10063;
     public static final int CatalogStudioSessionComposer = 10067;
+    public static final int WiredSetupExportComposer = 10096; // CUSTOM wired setup share code
+    public static final int WiredSetupImportResultComposer = 10097; // CUSTOM wired setup import report
     public static final int CatalogStudioHistoryComposer = 10071;
     public static final int CatalogStudioUndoComposer = 10072;
     public static final int CatalogStudioValidationComposer = 10073;

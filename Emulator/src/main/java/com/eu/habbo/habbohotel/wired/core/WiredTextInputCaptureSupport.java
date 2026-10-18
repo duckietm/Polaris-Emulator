@@ -94,6 +94,7 @@ public final class WiredTextInputCaptureSupport {
         }
 
         LinkedHashMap<Integer, Integer> capturedValues = new LinkedHashMap<>();
+        List<WiredExtraTextInputVariable> capturing = new ArrayList<>();
         for (Map.Entry<String, String> capture : matchResult.captures.entrySet()) {
             WiredExtraTextInputVariable capturer = capturersByName.get(capture.getKey());
             if (capturer == null) {
@@ -115,6 +116,7 @@ public final class WiredTextInputCaptureSupport {
             }
 
             capturedValues.put(capturer.getVariableItemId(), resolvedValue);
+            capturing.add(capturer);
         }
 
         if (WiredManager.isDebugEnabled()) {
@@ -126,7 +128,7 @@ public final class WiredTextInputCaptureSupport {
                     (text != null ? text.length() : 0));
         }
 
-        return CaptureResult.matched(capturedValues);
+        return CaptureResult.matched(capturedValues, capturing);
     }
 
     private static List<WiredExtraTextInputVariable> getCapturers(Room room, WiredTriggerHabboSaysKeyword trigger) {
@@ -312,15 +314,38 @@ public final class WiredTextInputCaptureSupport {
                 WiredContextVariableSupport.assignVariable(ctx, room, entry.getKey(), entry.getValue(), false);
             }
         }
+
+        // As in Habbo, a capture flashes its capturer box and gives its variable: the definition box shows
+        // a give and the add-ons on its tile flash, with the say.
+        for (WiredExtraTextInputVariable capturer : captureResult.capturers) {
+            if (capturer == null || !captureResult.capturedValues.containsKey(capturer.getVariableItemId())) continue;
+            capturer.flashBox(room);
+            WiredVariableDefinitionFlash.flash(
+                    room, capturer.getVariableItemId(), WiredVariableDefinitionFlash.KIND_GIVEN);
+        }
     }
 
     public static final class CaptureResult {
         private final boolean matches;
         private final LinkedHashMap<Integer, Integer> capturedValues;
+        private final List<WiredExtraTextInputVariable> capturers;
 
         private CaptureResult(boolean matches, LinkedHashMap<Integer, Integer> capturedValues) {
+            this(matches, capturedValues, List.of());
+        }
+
+        private CaptureResult(
+                boolean matches,
+                LinkedHashMap<Integer, Integer> capturedValues,
+                List<WiredExtraTextInputVariable> capturers) {
             this.matches = matches;
             this.capturedValues = capturedValues;
+            this.capturers = capturers;
+        }
+
+        static CaptureResult matched(
+                LinkedHashMap<Integer, Integer> capturedValues, List<WiredExtraTextInputVariable> capturers) {
+            return new CaptureResult(true, capturedValues, List.copyOf(capturers));
         }
 
         public boolean matches() {

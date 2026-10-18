@@ -1,10 +1,15 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Room-owned WIRED runtime state. */
@@ -15,18 +20,40 @@ public final class RoomWiredRuntime {
     private final WiredVisualizationService visualization;
     private final WiredTradingManager trading;
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
-    private final WiredBoxFlashes boxFlashes = new WiredBoxFlashes();
+    private final WiredBoxFlashes boxFlashes;
+    private final WiredMessageBudget messageBudget = new WiredMessageBudget();
+    private final Set<Integer> movesFreely = ConcurrentHashMap.newKeySet();
+    private final AtomicInteger nextTemporaryItemId = new AtomicInteger(ItemManager.FIRST_TEMPORARY_ITEM_ID);
 
     RoomWiredRuntime(Room room) {
         this.gravity = new WiredGravityService(room);
         this.opacity = new WiredOpacityService(room);
         this.visualization = new WiredVisualizationService(room);
         this.trading = new WiredTradingManager(room);
+        this.boxFlashes = new WiredBoxFlashes(room);
     }
 
-    /** The wired boxes that flipped since the last room cycle, sent together by the cycle. */
+    /** The room's Show Message budget. */
+    public WiredMessageBudget getMessageBudget() {
+        return this.messageBudget;
+    }
+
+    /** The room's wired box flashes, sent in the pass that flipped them (the room cycle sends what is left). */
     public WiredBoxFlashes getBoxFlashes() {
         return this.boxFlashes;
+    }
+
+    /**
+     * The id for the next temporary (Place Furni) copy of this room: the lowest id of the official band not used
+     * since the room loaded, as in Habbo. Ids are not reused while the room stays loaded and start again at the
+     * bottom of the band after an unload.
+     *
+     * @return the id, or -1 when the band is used up
+     */
+    public int nextTemporaryItemId() {
+        int id = this.nextTemporaryItemId.getAndUpdate(
+                next -> next > ItemManager.LAST_TEMPORARY_ITEM_ID ? next : next + 1);
+        return id > ItemManager.LAST_TEMPORARY_ITEM_ID ? -1 : id;
     }
 
     /** The room's open wired contract negotiations, one per player. */
@@ -122,6 +149,31 @@ public final class RoomWiredRuntime {
         }
     }
 
+    /**
+     * Gives or removes the {@code @can_move_freely} flag of a floor furni. As in Habbo it is a presence flag kept
+     * for the room's lifetime only, which Has Variable sees; it does not change how wired moves the furni.
+     *
+     * @return whether the flag changed
+     */
+    public boolean setMovesFreely(HabboItem item, boolean movesFreely) {
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
+            return false;
+        }
+
+        return movesFreely ? this.movesFreely.add(item.getId()) : this.movesFreely.remove(item.getId());
+    }
+
+    /** Whether a floor furni holds the {@code @can_move_freely} flag. */
+    public boolean movesFreely(HabboItem item) {
+        return item != null && this.movesFreely.contains(item.getId());
+    }
+
+    void forgetMovesFreely(HabboItem item) {
+        if (item != null) {
+            this.movesFreely.remove(item.getId());
+        }
+    }
+
     /** The room's highlights and avatar transparency, applied and sent by {@link WiredVisualizationBroadcaster}. */
     WiredVisualizationService visualization() {
         return this.visualization;
@@ -145,6 +197,8 @@ public final class RoomWiredRuntime {
         this.opacity.dispose();
         this.visualization.dispose();
         this.projectiles.clear();
+        this.movesFreely.clear();
+        this.nextTemporaryItemId.set(ItemManager.FIRST_TEMPORARY_ITEM_ID);
         // Every open negotiation is holding somebody's furniture out of their inventory. Letting the
         // room go without handing it back would lose it.
         this.trading.dispose();

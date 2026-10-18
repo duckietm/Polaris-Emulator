@@ -52,6 +52,8 @@ public class WiredEffectKickHabbo extends InteractionWiredEffect {
                 ctx.targets().users().size(),
                 ctx.targets().isUsersModifiedBySelector());
 
+        // Kick exceptions are whispered in the Wired bubble (34), as in Habbo.
+        // Behaviour observed in plus-emulator/PlusEMU 382666b3, reimplemented.
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             LOGGER.debug(
@@ -62,12 +64,15 @@ public class WiredEffectKickHabbo extends InteractionWiredEffect {
             if (habbo == null) continue;
 
             if (habbo.hasPermission(Permission.ACC_UNKICKABLE)) {
-                habbo.whisper(Emulator.getTexts().getValue("hotel.wired.kickexception.unkickable"));
+                habbo.whisper(
+                        Emulator.getTexts().getValue("hotel.wired.kickexception.unkickable"),
+                        RoomChatMessageBubbles.WIRED);
                 continue;
             }
 
             if (habbo.getHabboInfo().getId() == room.getOwnerId()) {
-                habbo.whisper(Emulator.getTexts().getValue("hotel.wired.kickexception.owner"));
+                habbo.whisper(
+                        Emulator.getTexts().getValue("hotel.wired.kickexception.owner"), RoomChatMessageBubbles.WIRED);
                 continue;
             }
 

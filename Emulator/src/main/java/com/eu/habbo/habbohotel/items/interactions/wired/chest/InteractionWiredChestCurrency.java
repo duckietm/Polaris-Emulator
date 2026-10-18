@@ -49,7 +49,7 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         if (client == null || room == null) return;
         // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
-        if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
+        if (!this.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
     }
 
@@ -67,27 +67,20 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
 
         // Three fuller sprites share the ceiling between them, so a chest filled to the brim shows
         // the fullest one rather than stopping a step short.
-        int ceiling = Math.max(1, this.contents.getCapacity());
+        int ceiling = Math.max(1, this.getContents().getCapacity());
         int level = OPEN_EMPTY + 1 + (int) ((long) (stored - 1) * 3 / ceiling);
         return Math.min(level, OPEN_FULLEST);
     }
 
     @Override
     protected int storedCount() {
-        return this.contents.total(ChestStorage.KIND_CURRENCY);
+        return this.getContents().total(ChestStorage.KIND_CURRENCY);
     }
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int[] params = settings.getIntParams();
-        int currencyType = (params.length > 0) ? params[0] : CURRENCY_CREDITS;
-        int amount = (params.length > 1) ? Math.max(0, params[1]) : 0;
-
-        // Re-configuring the chest replaces its pool.
-        this.contents = new ChestStorage();
-        if (amount > 0) {
-            this.contents.add(ChestStorage.KIND_CURRENCY, currencyType, amount);
-        }
+        // A chest is filled by deposits only (AIR model). The wired editor used to be able to set its
+        // contents outright, which created coins and furni out of nothing; it no longer touches them.
         return true;
     }
 
@@ -95,7 +88,7 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     public void serializeWiredData(ServerMessage message, Room room) {
         int currencyType = CURRENCY_CREDITS;
         int amount = 0;
-        for (ChestStorage.Entry e : this.contents.entries()) {
+        for (ChestStorage.Entry e : this.getContents().entries()) {
             if (e.kind == ChestStorage.KIND_CURRENCY) {
                 currencyType = e.type;
                 amount = e.quantity;

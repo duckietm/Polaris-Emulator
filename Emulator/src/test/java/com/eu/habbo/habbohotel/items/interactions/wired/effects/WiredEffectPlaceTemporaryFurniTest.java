@@ -17,6 +17,9 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.ItemInteraction;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionOneWayGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
@@ -44,20 +47,18 @@ class WiredEffectPlaceTemporaryFurniTest {
 
         assertTrue(item.isTemporary());
         assertEquals(0, item.getUserId());
-        assertTrue(item.getId() >= 2_050_000_000, "far above database ids: " + item.getId());
+        assertTrue(ItemManager.isTemporaryItemId(item.getId()), "in the official temporary band: " + item.getId());
         item.needsUpdate(true);
         item.run(); // must not reach the database
         assertFalse(item.needsUpdate());
     }
 
     @Test
-    void itSnapshotsThePicksButNotWiredBoxes() throws Exception {
+    void itSnapshotsThePicks() throws Exception {
         Room room = mock(Room.class);
         HabboItem chair = floorItem(11, 501, 3, 4, 1.5, 2, "1");
-        HabboItem wiredBox = mock(WiredEffectPlaceTemporaryFurni.class);
         when(room.getHabboItem(anyInt())).thenReturn(null);
         when(room.getHabboItem(11)).thenReturn(chair);
-        when(room.getHabboItem(12)).thenReturn(wiredBox);
 
         WiredEffectPlaceTemporaryFurni box = new WiredEffectPlaceTemporaryFurni(1, 1, mock(Item.class), "", 0, 0);
         box.setRoomId(7);
@@ -75,7 +76,6 @@ class WiredEffectPlaceTemporaryFurniTest {
 
         String saved = box.getWiredData();
         assertTrue(saved.contains("\"baseItemId\":501"), saved);
-        assertFalse(saved.contains("\"itemId\":12"), "wired boxes are not copied: " + saved);
         assertTrue(saved.contains("\"offsetAltitude\":150"), saved);
         assertArrayEquals(
                 new int[] {
@@ -128,8 +128,43 @@ class WiredEffectPlaceTemporaryFurniTest {
 
     @Test
     void temporaryFurniIdsAreKnownWithoutTheItem() {
-        assertTrue(ItemManager.isTemporaryItemId(2_050_000_123));
+        assertTrue(ItemManager.isTemporaryItemId(2_147_401_728));
+        assertTrue(ItemManager.isTemporaryItemId(2_147_418_111));
+        assertFalse(ItemManager.isTemporaryItemId(2_147_418_112));
+        assertFalse(ItemManager.isTemporaryItemId(2_050_000_123));
         assertFalse(ItemManager.isTemporaryItemId(123));
+    }
+
+    @Test
+    void aWiredBoxAsTemplateIsRefused() {
+        Room room = mock(Room.class);
+        HabboItem wiredBox = mock(WiredEffectPlaceTemporaryFurni.class);
+        Item boxBase = mock(Item.class);
+        when(boxBase.getType()).thenReturn(FurnitureType.FLOOR);
+        when(wiredBox.getBaseItem()).thenReturn(boxBase);
+        when(room.getHabboItem(12)).thenReturn(wiredBox);
+
+        WiredEffectPlaceTemporaryFurni box = new WiredEffectPlaceTemporaryFurni(1, 1, mock(Item.class), "", 0, 0);
+        box.setRoomId(7);
+        GameEnvironment environment = mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS);
+        when(environment.getRoomManager().getRoom(7)).thenReturn(room);
+
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class)) {
+            platform.when(WiredPlatform::gameEnvironment).thenReturn(environment);
+            WiredSaveException refused = assertThrows(
+                    WiredSaveException.class,
+                    () -> box.saveData(new WiredSettings(new int[10], "", new int[] {12}, -1), null));
+            assertEquals("wiredfurni.error.furni_can_not_be_cloned", refused.getMessage());
+        }
+    }
+
+    @Test
+    void gatesAndRollersTakeNoCopies() {
+        assertTrue(WiredEffectPlaceTemporaryFurni.blocksCopies(mock(InteractionGate.class)));
+        assertTrue(WiredEffectPlaceTemporaryFurni.blocksCopies(mock(InteractionOneWayGate.class)));
+        assertTrue(WiredEffectPlaceTemporaryFurni.blocksCopies(mock(InteractionRoller.class)));
+        assertFalse(WiredEffectPlaceTemporaryFurni.blocksCopies(mock(InteractionDefault.class)));
+        assertFalse(WiredEffectPlaceTemporaryFurni.blocksCopies(null));
     }
 
     @Test

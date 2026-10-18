@@ -1,6 +1,10 @@
 package com.eu.habbo.habbohotel.games.wired;
 
-import com.eu.habbo.habbohotel.games.*;
+import com.eu.habbo.habbohotel.games.Game;
+import com.eu.habbo.habbohotel.games.GamePlayer;
+import com.eu.habbo.habbohotel.games.GameState;
+import com.eu.habbo.habbohotel.games.GameTeam;
+import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -53,6 +57,11 @@ public class WiredGame extends Game {
     }
 
     private int getEffectId(GameTeamColors teamColor) {
+        return teamEffectId(teamColor);
+    }
+
+    /** The effect a member of a Wired team wears: 223 red, 224 blue, 225 yellow, 226 green. */
+    public static int teamEffectId(GameTeamColors teamColor) {
         switch (teamColor) {
             case RED:
                 return RED_EFFECT_ID;

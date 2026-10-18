@@ -268,6 +268,11 @@ final class CatalogPurchaseApplicationService {
                                 ? Subscription.BUILDERS_CLUB
                                 : Subscription.HABBO_CLUB;
 
+                        if (item.isBuildersClubSubscription()) {
+                            // Raised before the subscription so its made/extended notice shows the new limit.
+                            BuildersClubRoomSupport.raisePackageFurniLimit(this.client.getHabbo(), item.getDays());
+                        }
+
                         if (this.client
                                         .getHabbo()
                                         .getHabboStats()

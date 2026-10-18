@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.users.inventory;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -189,6 +190,10 @@ public class ItemsComponent {
     public void dispose() {
         synchronized (this.items) {
             if (!this.items.isEmpty()) {
+                // Wired chests give what they hold back to their owner before their rows go.
+                ChestRelease.releaseAll(this.items.values().stream()
+                        .filter(HabboItem::needsDelete)
+                        .toList());
                 try (Connection connection =
                         Emulator.getDatabase().getDataSource().getConnection()) {
                     try (PreparedStatement updateStmt = connection.prepareStatement(

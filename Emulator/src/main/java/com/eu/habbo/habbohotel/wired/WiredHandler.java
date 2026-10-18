@@ -20,7 +20,7 @@ import java.util.Collection;
 public class WiredHandler {
 
     // Configuration fields retained exactly for released plugin binary compatibility.
-    public static int MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5);
+    public static int MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 20);
     public static int TELEPORT_DELAY = Emulator.getConfig().getInt("wired.effect.teleport.delay", 500);
 
     public WiredHandler() {}

@@ -150,7 +150,8 @@ class WiredExtraTimeUtilitiesTest {
         assertEquals(19_792, box.derive(WiredExtraTimeUtilities.SUB_DAYS, INSTANT, 0, 0, AMSTERDAM));
         assertEquals(2_827, box.derive(WiredExtraTimeUtilities.SUB_WEEKS, INSTANT, 0, 0, AMSTERDAM));
         assertEquals(650, box.derive(WiredExtraTimeUtilities.SUB_MONTHS, INSTANT, 0, 0, AMSTERDAM));
-        assertEquals(0, box.derive(WiredExtraTimeUtilities.SUB_DAYS, -5, 0, 0, AMSTERDAM));
+        // Before 1970 is no longer clamped: five seconds before is in day -1.
+        assertEquals(-1, box.derive(WiredExtraTimeUtilities.SUB_DAYS, -5, 0, 0, AMSTERDAM));
     }
 
     @Test
@@ -174,12 +175,117 @@ class WiredExtraTimeUtilitiesTest {
     }
 
     @Test
-    void subVariableNames() {
+    void subVariableNamesAreTheOfficialModeAndPartKeys() {
         WiredExtraTimeUtilities box = box();
-        assertEquals("millisecond_of_second", box.subvariableKey(1));
-        assertEquals("week_of_year", box.subvariableKey(8));
-        assertEquals("year", box.subvariableKey(10));
-        assertEquals("millisecond", box.subvariableKey(20));
-        assertEquals("month", box.subvariableKey(26));
+        assertEquals("value.milliseconds_of_seconds", box.subvariableKey(1));
+        assertEquals("value.week_of_year", box.subvariableKey(8));
+        assertEquals("value.year", box.subvariableKey(10));
+        assertEquals("value.millisecond", box.subvariableKey(20));
+        assertEquals("value.month", box.subvariableKey(26));
+        assertEquals(
+                "creation_time.year",
+                box(bits(10), WiredExtraTimeUtilities.MODE_CREATION_TIME).subvariableKey(10));
+        assertEquals(
+                "last_update_time.hour_of_day",
+                box(bits(4), WiredExtraTimeUtilities.MODE_LAST_UPDATE_TIME).subvariableKey(4));
+    }
+
+    @Test
+    void valuesBefore1970ReadLikeAnyOther() {
+        WiredExtraTimeUtilities box = box(bits(10) | bits(21) | bits(26), WiredExtraTimeUtilities.MODE_VALUE);
+        assertEquals(1969, box.derive(10, -1, 0, 0, java.time.ZoneOffset.UTC));
+        assertEquals(-1, box.derive(21, -1, 0, 0, java.time.ZoneOffset.UTC));
+        // Whole months count towards zero: one second before 1970 is not yet a month back.
+        assertEquals(0, box.derive(26, -1, 0, 0, java.time.ZoneOffset.UTC));
+        assertEquals(-1, box.derive(26, -40 * 86_400, 0, 0, java.time.ZoneOffset.UTC));
+    }
+
+    private static int utc(int year, int month, int day, int hour, int minute, int second) {
+        return (int) ZonedDateTime.of(year, month, day, hour, minute, second, 0, ZoneOffset.UTC)
+                .toEpochSecond();
+    }
+
+    private static Integer writeUtc(WiredExtraTimeUtilities box, int part, int value, int partValue) {
+        return box.write(part, value, partValue, ZoneOffset.UTC);
+    }
+
+    @Test
+    void writingAValuePartMovesTheVariableByThatPart() {
+        WiredExtraTimeUtilities box = box(-1, WiredExtraTimeUtilities.MODE_VALUE);
+        int instant = utc(2024, 3, 10, 23, 30, 15);
+
+        assertEquals(utc(2024, 3, 10, 5, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_HOUR_OF_DAY, instant, 5));
+        // Out of range carries over: hour 25 is 1 o'clock the next day.
+        assertEquals(utc(2024, 3, 11, 1, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_HOUR_OF_DAY, instant, 25));
+        assertEquals(
+                utc(2024, 3, 10, 23, 0, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_MINUTE_OF_HOUR, instant, 0));
+        assertEquals(
+                utc(2024, 3, 10, 23, 30, 59),
+                writeUtc(box, WiredExtraTimeUtilities.SUB_SECONDS_OF_MINUTE, instant, 59));
+        assertEquals(utc(2024, 3, 1, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_DAY_OF_MONTH, instant, 1));
+        // Sunday (7) to Monday (1) of the same ISO week.
+        assertEquals(utc(2024, 3, 4, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_DAY_OF_WEEK, instant, 1));
+        assertEquals(utc(2024, 1, 1, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_DAY_OF_YEAR, instant, 1));
+        assertEquals(
+                utc(2024, 3, 17, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_WEEK_OF_YEAR, instant, 11));
+        assertEquals(
+                utc(2024, 12, 10, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_MONTH_OF_YEAR, instant, 12));
+        assertEquals(utc(2030, 3, 10, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_YEAR, instant, 2030));
+        assertEquals(utc(1969, 3, 10, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_YEAR, instant, 1969));
+    }
+
+    @Test
+    void calendarWritesUseTheRoomZone() {
+        WiredExtraTimeUtilities box = box(-1, WiredExtraTimeUtilities.MODE_VALUE);
+        // 00:30:15 on Monday in Amsterdam; 9 o'clock there is 08:30:15 UTC.
+        assertEquals(
+                utc(2024, 3, 11, 8, 30, 15), box.write(WiredExtraTimeUtilities.SUB_HOUR_OF_DAY, INSTANT, 9, AMSTERDAM));
+    }
+
+    @Test
+    void writingAUnitKeepsTheRemainder() {
+        WiredExtraTimeUtilities box = box(-1, WiredExtraTimeUtilities.MODE_VALUE);
+        int instant = utc(2024, 3, 10, 23, 30, 15);
+
+        assertEquals(1234, writeUtc(box, WiredExtraTimeUtilities.SUB_SECONDS, instant, 1234));
+        assertEquals(86_400 + 23 * 3600 + 30 * 60 + 15, writeUtc(box, WiredExtraTimeUtilities.SUB_DAYS, instant, 1));
+        assertEquals(30 * 60 + 15, writeUtc(box, WiredExtraTimeUtilities.SUB_HOURS, instant, 0));
+        assertEquals(utc(1970, 2, 10, 23, 30, 15), writeUtc(box, WiredExtraTimeUtilities.SUB_MONTHS, instant, 1));
+        assertEquals(-2, writeUtc(box, WiredExtraTimeUtilities.SUB_MILLISECONDS, instant, -1500));
+        // Our variables hold seconds: a whole second moves, the rest is dropped.
+        assertEquals(instant + 1, writeUtc(box, WiredExtraTimeUtilities.SUB_MILLISECOND_OF_SECOND, instant, 1500));
+    }
+
+    @Test
+    void writesThatDoNotFitOrAreNotValuePartsAreRefused() {
+        WiredExtraTimeUtilities value = box(bits(4, 10), WiredExtraTimeUtilities.MODE_VALUE);
+        assertTrue(value.isWritable(4));
+        assertFalse(value.isWritable(5));
+        assertNull(writeUtc(value, 5, INSTANT, 1));
+        assertNull(writeUtc(value, 10, INSTANT, 3000));
+
+        WiredExtraTimeUtilities created = box(bits(4), WiredExtraTimeUtilities.MODE_CREATION_TIME);
+        assertFalse(created.isWritable(4));
+        assertFalse(created.isWritable(WiredExtraTimeUtilities.SUB_TIMESTAMP));
+        assertNull(writeUtc(created, 4, INSTANT, 1));
+    }
+
+    @Test
+    void timestampModesAlsoListTheTimestampItself() {
+        WiredExtraTimeUtilities value = box(bits(4), WiredExtraTimeUtilities.MODE_VALUE);
+        assertEquals(List.of(4), value.getListedSubvariables());
+        assertFalse(value.listsSubvariable(WiredExtraTimeUtilities.SUB_TIMESTAMP));
+        assertNull(value.derive(WiredExtraTimeUtilities.SUB_TIMESTAMP, INSTANT, 5, 6, AMSTERDAM));
+
+        WiredExtraTimeUtilities created = box(bits(4), WiredExtraTimeUtilities.MODE_CREATION_TIME);
+        assertEquals(List.of(4, WiredExtraTimeUtilities.SUB_TIMESTAMP), created.getListedSubvariables());
+        assertEquals("creation_time", created.subvariableKey(WiredExtraTimeUtilities.SUB_TIMESTAMP));
+        assertEquals(INSTANT, created.derive(WiredExtraTimeUtilities.SUB_TIMESTAMP, 0, INSTANT, 9, AMSTERDAM));
+
+        WiredExtraTimeUtilities updated = box(0, WiredExtraTimeUtilities.MODE_LAST_UPDATE_TIME);
+        assertEquals(List.of(WiredExtraTimeUtilities.SUB_TIMESTAMP), updated.getListedSubvariables());
+        assertEquals("last_update_time", updated.subvariableKey(WiredExtraTimeUtilities.SUB_TIMESTAMP));
+        assertEquals(INSTANT, updated.derive(WiredExtraTimeUtilities.SUB_TIMESTAMP, 0, 9, INSTANT, AMSTERDAM));
+        assertNull(updated.derive(WiredExtraTimeUtilities.SUB_TIMESTAMP, 0, 9, 0, AMSTERDAM));
     }
 }

@@ -10,12 +10,13 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-public class WiredConditionNotInGroup extends InteractionWiredCondition {
+public class WiredConditionNotInGroup extends InteractionWiredCondition implements WiredOfficialQuantifier {
     private static final int GROUP_CURRENT_ROOM = 0;
     private static final int GROUP_SELECTED = 1;
     private static final int QUANTIFIER_ALL = 0;
@@ -205,5 +206,10 @@ public class WiredConditionNotInGroup extends InteractionWiredCondition {
             this.selectedGroupId = selectedGroupId;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

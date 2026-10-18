@@ -129,7 +129,7 @@ final class RoomItemMovementService {
                 item.getRotation());
 
         if (!pluginHelper) {
-            FurnitureMovementError fits = this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits);
+            FurnitureMovementError fits = this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits, actor);
             if (fits != FurnitureMovementError.NONE) {
                 return fits;
             }
@@ -470,7 +470,7 @@ final class RoomItemMovementService {
                                     && !item.getBaseItem().allowSit()
                                     && !item.getBaseItem().allowLay())) {
                         if (checkForUnits) {
-                            if (!magicTile && this.room.hasHabbosAt(t.x, t.y)) {
+                            if (!magicTile && RoomItemPlacementService.hasOtherHabbosAt(this.room, t.x, t.y, actor)) {
                                 return FurnitureMovementError.TILE_HAS_HABBOS;
                             }
                             if (!magicTile && this.room.hasBotsAt(t.x, t.y)) {

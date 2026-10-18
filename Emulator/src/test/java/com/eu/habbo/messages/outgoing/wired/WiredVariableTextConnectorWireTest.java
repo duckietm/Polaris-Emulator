@@ -44,7 +44,7 @@ class WiredVariableTextConnectorWireTest {
         assertEquals("Weapon", reader.readString());
         assertEquals(0, reader.readInt());
         assertEquals(1, reader.readInt());
-        for (int flag = 0; flag < 8; flag++) {
+        for (int flag = 0; flag < 9; flag++) {
             reader.readBoolean();
         }
         assertTrue(reader.readBoolean(), "hasTextConnector");
@@ -53,7 +53,64 @@ class WiredVariableTextConnectorWireTest {
         assertEquals("Sword", reader.readString());
         assertEquals(2, reader.readInt());
         assertEquals("Shield", reader.readString());
+        assertFalse(reader.readBoolean(), "hasTextConnectorFallback");
         assertEquals(0, reader.remaining());
+    }
+
+    @Test
+    void theDiffWritesTheFallbackTextAfterTheTable() {
+        RoomWiredVariableCatalog.Variable variable = new RoomWiredVariableCatalog.Variable(
+                "user:42", 1, "Weapon", 0, 1, true, true, false, swordAndShield(), "Fists", false);
+        WireReader reader = compose(new WiredAllVariablesDiffComposer(7, true, List.of(), List.of(variable)));
+
+        skipToFlags(reader);
+        for (int flag = 0; flag < 9; flag++) {
+            reader.readBoolean();
+        }
+        assertTrue(reader.readBoolean(), "hasTextConnector");
+        assertEquals(2, reader.readInt());
+        reader.readInt();
+        reader.readString();
+        reader.readInt();
+        reader.readString();
+        assertTrue(reader.readBoolean(), "hasTextConnectorFallback");
+        assertEquals("Fists", reader.readString());
+        assertEquals(0, reader.remaining());
+    }
+
+    @Test
+    void aPointerIsSentAsRequiringAnExecutionContext() {
+        RoomWiredVariableCatalog.Variable pointer = new RoomWiredVariableCatalog.Variable(
+                "furni:9", 2, "target", 0, 2, true, false, false, Map.of(), null, true);
+        WireReader reader = compose(new WiredAllVariablesDiffComposer(7, true, List.of(), List.of(pointer)));
+
+        skipToFlags(reader);
+        boolean[] flags = new boolean[9];
+        for (int flag = 0; flag < 9; flag++) {
+            flags[flag] = reader.readBoolean();
+        }
+        assertFalse(flags[5], "isInvisible");
+        assertTrue(flags[6], "requiresExecutionContext");
+        assertFalse(reader.readBoolean(), "hasTextConnector");
+        assertEquals(0, reader.remaining());
+        assertNotEquals(
+                pointer.hash(),
+                new RoomWiredVariableCatalog.Variable("furni:9", 2, "target", 0, 2, true, false, false, Map.of())
+                        .hash());
+    }
+
+    /** Reads the diff header and the variable's id, type, name, availability and target. */
+    private static void skipToFlags(WireReader reader) {
+        reader.readInt();
+        reader.readBoolean();
+        reader.readInt();
+        reader.readInt();
+        reader.readInt();
+        reader.readString();
+        reader.readInt();
+        reader.readString();
+        reader.readInt();
+        reader.readInt();
     }
 
     @Test
@@ -70,7 +127,7 @@ class WiredVariableTextConnectorWireTest {
         reader.readString();
         reader.readInt();
         reader.readInt();
-        for (int flag = 0; flag < 8; flag++) {
+        for (int flag = 0; flag < 9; flag++) {
             reader.readBoolean();
         }
         assertFalse(reader.readBoolean(), "hasTextConnector");

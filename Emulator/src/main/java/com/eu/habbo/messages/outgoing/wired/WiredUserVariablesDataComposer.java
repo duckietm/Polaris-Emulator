@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.wired;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
@@ -9,7 +10,9 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -109,6 +112,53 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
         public List<TextConnectorEntry> getTextConnector() {
             return Collections.unmodifiableList(this.textConnector);
         }
+    }
+
+    /**
+     * One trailing-metadata entry for a pointer: listed as a variable of its source type, but it only
+     * exists while a stack runs ({@code requiresExecutionContext}), so editors without one leave it out.
+     */
+    public static final class PointerMetadata {
+        private final int itemId;
+        private final int variableType;
+        private final boolean requiresExecutionContext;
+
+        public PointerMetadata(int itemId, int variableType) {
+            this.itemId = itemId;
+            this.variableType = variableType;
+            this.requiresExecutionContext = true;
+        }
+
+        public int getItemId() {
+            return this.itemId;
+        }
+
+        public int getVariableType() {
+            return this.variableType;
+        }
+
+        public boolean requiresExecutionContext() {
+            return this.requiresExecutionContext;
+        }
+    }
+
+    /** The metadata entries of the room's named pointers. */
+    public static List<PointerMetadata> resolvePointers(Room room) {
+        List<PointerMetadata> result = new ArrayList<>();
+        if (room == null) return result;
+
+        int[][] targets = {
+            {WiredVariableTargets.OFFICIAL_FURNI, METADATA_TYPE_FURNI},
+            {WiredVariableTargets.OFFICIAL_GLOBAL, METADATA_TYPE_ROOM},
+            {WiredVariableTargets.OFFICIAL_USER, METADATA_TYPE_USER},
+            {WiredVariableTargets.OFFICIAL_CONTEXT, METADATA_TYPE_CONTEXT}
+        };
+        for (int[] target : targets) {
+            for (WiredExtraPointerVariable pointer : WiredPointerVariableSupport.pointers(room, target[0])) {
+                result.add(new PointerMetadata(pointer.getId(), target[1]));
+            }
+        }
+        return result;
     }
 
     public static final class TextConnectorEntry {
@@ -322,6 +372,7 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
         List<Object> metadata = new ArrayList<>(this.textConnectors);
 
         metadata.addAll(WiredArrayDefinitionSupport.collect(this.room));
+        metadata.addAll(resolvePointers(this.room));
 
         if (!metadata.isEmpty()) {
             this.response.appendString(WiredManager.getGson().toJson(metadata));

@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.rooms.items.WiredChestLockStateComposer;
 
 /**
  * Locks or unlocks the room's wired chests from the chests tab. Reads {@code bool lock, bool all}.
@@ -43,20 +42,20 @@ public class WiredChestLockEvent extends MessageHandler {
         }
 
         int ownerId = habbo.getHabboInfo().getId();
-        int affected = 0;
 
         // Enumerated over the floor items rather than RoomSpecialTypes: that index matches on the
         // exact class, and every chest here is one of the concrete subclasses.
         for (HabboItem item : room.getFloorItems()) {
             if (!(item instanceof InteractionWiredChest chest)) continue;
             if (!all && chest.getUserId() != ownerId) continue;
+            // Others may lock a chest, but only its owner ever unlocks it.
+            if (!lock && chest.getUserId() != ownerId) continue;
             if (chest.getContents().isLocked() == lock) continue;
 
             chest.getContents().setLocked(lock);
-            chest.persistContents(room);
-            affected++;
+            chest.persistContents();
+            chest.publishSettings(room);
         }
-
-        this.client.sendResponse(new WiredChestLockStateComposer(lock, all, affected));
+        // AIR expects no reply: every chest's new state reaches the room with its furni.
     }
 }

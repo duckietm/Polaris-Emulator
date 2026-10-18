@@ -732,7 +732,7 @@ public class RoomManager {
         }
 
         habbo.getHabboInfo().setRoomQueueId(0);
-        habbo.getClient().sendResponse(new HideDoorbellComposer(""));
+        habbo.getClient().sendResponse(new HideDoorbellComposer(room.getId(), ""));
 
         if (habbo.getRoomUnit() != null) {
             RoomUnit existingRoom = habbo.getRoomUnit();
@@ -965,6 +965,8 @@ public class RoomManager {
             room.giveEffect(habbo.getRoomUnit(), effect, -1);
         }
 
+        RoomForwardGlow.onEnter(room, habbo);
+
         habbo.getClient()
                 .sendResponse(new RoomUsersComposer(room.getCurrentBots().values(), true));
         if (!room.getCurrentBots().isEmpty()) {
@@ -1048,7 +1050,6 @@ public class RoomManager {
             int remainingMuteTime = habbo.getHabboStats().remainingMuteTime();
             habbo.getClient().sendResponse(new FloodCounterComposer(remainingMuteTime));
             habbo.getClient().sendResponse(new MutedWhisperComposer(remainingMuteTime));
-            room.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.MUTED).compose());
         } else if (habbo.getHabboStats().mutedBubbleTracker) {
             habbo.getHabboStats().mutedBubbleTracker = false;
         }
@@ -1078,11 +1079,8 @@ public class RoomManager {
                             .sendResponse(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.IGNORED));
                 }
 
-                if (!roomHabbo.getHabboStats().allowTalk()) {
-                    habbo.getClient()
-                            .sendResponse(new RoomUserIgnoredComposer(roomHabbo, RoomUserIgnoredComposer.MUTED));
-                } else if (habbo.getHabboStats()
-                        .userIgnored(roomHabbo.getHabboInfo().getId())) {
+                // Only the entering user's own ignores; another user's mute is not theirs to see.
+                if (habbo.getHabboStats().userIgnored(roomHabbo.getHabboInfo().getId())) {
                     habbo.getClient()
                             .sendResponse(new RoomUserIgnoredComposer(roomHabbo, RoomUserIgnoredComposer.IGNORED));
                 }

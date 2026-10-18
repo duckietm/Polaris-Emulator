@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionGuildGate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -45,6 +46,9 @@ final class RoomItemPersistence {
         if (items.isEmpty()) {
             return;
         }
+
+        // Wired chests give what they hold back to their owner before their rows go.
+        ChestRelease.releaseAll(items);
 
         try (PreparedStatement statement = connection.prepareStatement(DELETE_ITEM_SQL)) {
             for (HabboItem item : items) {

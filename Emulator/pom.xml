@@ -22,14 +22,14 @@
         <maven.compiler.release>25</maven.compiler.release>
         <maven.build.java.version>[25,27)</maven.build.java.version>
 
-        <netty.version>4.2.18.Final</netty.version>
+        <netty.version>4.2.19.Final</netty.version>
         <gson.version>2.14.0</gson.version>
         <mariadb.version>3.5.10</mariadb.version>
         <hikaricp.version>7.1.0</hikaricp.version>
         <dropwizard-metrics.version>4.2.40</dropwizard-metrics.version>
-        <caffeine.version>3.3.0</caffeine.version>
+        <caffeine.version>3.3.1</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
-        <hibernate-validator.version>9.1.4.Final</hibernate-validator.version>
+        <hibernate-validator.version>9.1.5.Final</hibernate-validator.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.23.2</jsoup.version>
@@ -59,14 +59,14 @@
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-site-plugin.version>3.22.0</maven-site-plugin.version>
         <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
-        <versions-maven-plugin.version>2.22.0</versions-maven-plugin.version>
+        <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
-        <japicmp.version>0.26.2</japicmp.version>
-        <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
+        <japicmp.version>0.26.5</japicmp.version>
+        <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
-        <spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.10.5.0</spotbugs-maven-plugin.version>
         <spotless.ratchetFrom>HEAD^</spotless.ratchetFrom>
         <!-- Surefire/Failsafe read this late (@{argLine}) so the coverage profile can
              prepend the JaCoCo agent without losing the flags below. -->

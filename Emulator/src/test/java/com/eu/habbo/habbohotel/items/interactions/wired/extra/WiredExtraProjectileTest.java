@@ -183,7 +183,8 @@ class WiredExtraProjectileTest {
     void aProjectileTurnsOnlyToADirectionItsBundleLists() {
         java.nio.file.Path furniture = java.nio.file.Path.of("../../Furniture");
         org.junit.jupiter.api.Assumptions.assumeTrue(
-                java.nio.file.Files.isDirectory(furniture), "no Furniture folder in this checkout");
+                java.nio.file.Files.isRegularFile(furniture.resolve("bling_bed.hab")),
+                "no bling_bed bundle in this checkout");
         FurnitureDirectionsRuntime.install(
                 new FurnitureDirectionCatalog(
                         new FurnitureDirectionCatalog.Settings(true, furniture, 16, 5000, 64L * 1024 * 1024)),

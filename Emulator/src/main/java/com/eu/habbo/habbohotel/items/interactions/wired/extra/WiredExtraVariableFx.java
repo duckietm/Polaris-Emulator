@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.IntUnaryOperator;
 
 /**
  * A variable fx addon: it draws the variable box it shares a tile with over every avatar or furni
@@ -223,11 +224,26 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
             int holderId,
             long value,
             String teamColor) {
+        return this.resolveStatus(room, variableBox, key, holderId, value, teamColor, IntUnaryOperator.identity());
+    }
+
+    /**
+     * The same, with the override variables' ids read through {@code variableIds}: an fx imported from
+     * another room names that room's variables, which the importing room knows by its references' ids.
+     */
+    public WiredVariableFxStatus resolveStatus(
+            Room room,
+            InteractionWiredExtra variableBox,
+            WiredVariableFxStatus.Key key,
+            int holderId,
+            long value,
+            String teamColor,
+            IntUnaryOperator variableIds) {
         Map<String, String> extra = new LinkedHashMap<>();
 
         this.addColorExtra(extra, teamColor);
 
-        long[] range = this.resolveOverriddenRange(room, holderId);
+        long[] range = this.resolveOverriddenRange(room, holderId, variableIds);
 
         return new WiredVariableFxStatus(
                 key, false, value, (range != null) ? range[0] : null, (range != null) ? range[1] : null, extra);
@@ -269,18 +285,31 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
      * The holder's own range when a variable replaces either end of it, null when neither does.
      * The client takes the two ends as a pair, so the end without a variable repeats the default.
      */
-    private long[] resolveOverriddenRange(Room room, int holderId) {
+    private long[] resolveOverriddenRange(Room room, int holderId, IntUnaryOperator variableIds) {
         if (!this.usesValueRange()) return null;
 
         Long min = this.readOverride(
-                room, this.overrideMinEnabled, this.overrideMinTarget, this.overrideMinItemId, holderId);
+                room,
+                this.overrideMinEnabled,
+                this.overrideMinTarget,
+                localId(this.overrideMinItemId, variableIds),
+                holderId);
         Long max = this.readOverride(
-                room, this.overrideMaxEnabled, this.overrideMaxTarget, this.overrideMaxItemId, holderId);
+                room,
+                this.overrideMaxEnabled,
+                this.overrideMaxTarget,
+                localId(this.overrideMaxItemId, variableIds),
+                holderId);
 
         if (min == null && max == null) return null;
 
         long[] defaults = this.getDefaultRange();
         return new long[] {(min != null) ? min : defaults[0], (max != null) ? max : defaults[1]};
+    }
+
+    /** The id the drawing room knows a chosen variable by; nothing chosen stays nothing. */
+    private static int localId(int itemId, IntUnaryOperator variableIds) {
+        return itemId > 0 ? variableIds.applyAsInt(itemId) : itemId;
     }
 
     /**

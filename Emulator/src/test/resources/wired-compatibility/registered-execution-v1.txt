@@ -197,6 +197,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWhisper | EF
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAchievementEnabler | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraDailyTask | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecuteInOrder | EXTRA | configured=true | execute=false
@@ -250,7 +251,6 @@ com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniPicks 
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniSignal | EFFECT | type=FURNI_SIGNAL_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniWithVariable | EFFECT | type=FURNI_WITH_VAR_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectRemoteSelector | EFFECT | type=REMOTE_SELECTOR | actor=false | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectScanChestFurniByType | EFFECT | type=SCAN_CHEST_FURNI_BY_TYPE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea | EFFECT | type=USERS_AREA_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction | EFFECT | type=USERS_BY_ACTION_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByName | EFFECT | type=USERS_BY_NAME_SELECTOR | actor=false | execute=OK

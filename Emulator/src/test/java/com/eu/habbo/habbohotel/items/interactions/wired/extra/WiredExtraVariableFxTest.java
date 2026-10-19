@@ -277,6 +277,31 @@ class WiredExtraVariableFxTest {
     }
 
     @Test
+    void anImportedFxReadsItsOverridesThroughTheImportingRoomsIds() throws Exception {
+        Room room = room();
+        RoomUserVariableManager variables = mock(RoomUserVariableManager.class);
+        when(room.getUserVariableManager()).thenReturn(variables);
+        // The source room's variable 300 is reference 950 here.
+        when(variables.hasVariable(42, 950)).thenReturn(true);
+        when(variables.getCurrentValue(42, 950)).thenReturn(150);
+
+        WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
+        WiredVariableFxStatus.Key key = new WiredVariableFxStatus.Key(7, "user:9", true, 3);
+        box.saveData(
+                new WiredSettings(
+                        new int[] {0, 2, 0, 3000, 0, -1, 2, 0, 0, 100, 0, 1, 0, 0, 0, 0},
+                        "\tcustom:300\t\t",
+                        new int[0],
+                        0),
+                null);
+
+        assertFalse(box.resolveStatus(room, null, key, 42, 60, null).hasOverrides(), "300 does not exist here");
+        WiredVariableFxStatus mapped = box.resolveStatus(room, null, key, 42, 60, null, id -> id == 300 ? 950 : id);
+        assertTrue(mapped.hasOverrides());
+        assertEquals(150L, mapped.overrideMaxValue());
+    }
+
+    @Test
     void theTeamColourOnlyTravelsWhenTheColourOptionAsksForIt() throws Exception {
         Room room = room();
         WiredExtraVariableFxHealthPoints box = new WiredExtraVariableFxHealthPoints(7, 1, base(), "", 0, 0);

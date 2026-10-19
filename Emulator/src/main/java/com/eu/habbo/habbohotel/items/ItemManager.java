@@ -343,6 +343,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAchievementEnabler;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraDailyTask;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecuteInOrder;
@@ -397,7 +398,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurn
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniWithVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectRemoteSelector;
-import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectScanChestFurniByType;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByName;
@@ -888,7 +888,7 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("wf_cnd_chest_has_item_type", WiredConditionChestHasItemType.class));
         this.interactionsList.add(
-                new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredEffectScanChestFurniByType.class));
+                new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredExtraChestItemTypeScanner.class));
         this.interactionsList.add(new ItemInteraction("wf_act_init_transaction", WiredEffectInitTransaction.class));
         this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
         this.interactionsList.add(

@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore;
@@ -14,7 +14,8 @@ import java.util.Map;
 
 /**
  * The rows of one leaderboard chunk, read from the room's user variables: the users in the room
- * live, everybody else from their saved rows. Ranks are the position in the sort order, starting at
+ * live, everybody else from their saved rows (a reference's are the source room's rows of the shared
+ * variable). Ranks are the position in the sort order, starting at
  * one; ties keep the store's order (by user id).
  */
 public final class WiredLeaderboardQuery {
@@ -31,8 +32,8 @@ public final class WiredLeaderboardQuery {
         if (room == null || definitionItemId <= 0 || chunkIndex < 0 || room.getRoomSpecialTypes() == null) {
             return new WiredLeaderboardChunk(chunkIndex, 0, List.of());
         }
-        InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(definitionItemId);
-        if (!(extra instanceof WiredExtraUserVariable definition)) {
+        InteractionWiredExtra definition = room.getRoomSpecialTypes().getExtra(definitionItemId);
+        if (definition == null || !WiredExtraVariableLeaderboard.isRankable(definition)) {
             return new WiredLeaderboardChunk(chunkIndex, 0, List.of());
         }
 
@@ -119,7 +120,7 @@ public final class WiredLeaderboardQuery {
     static List<WiredLeaderboardRow> rows(
             Room room,
             WiredLeaderboardConfig config,
-            WiredExtraUserVariable definition,
+            InteractionWiredExtra definition,
             List<RoomUserVariableStore.Holder> holders,
             long offset) {
         if (holders.isEmpty()) {

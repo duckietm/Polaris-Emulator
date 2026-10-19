@@ -17,8 +17,10 @@ import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxSupport;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,8 +34,9 @@ import java.util.Set;
  *   <li>{@link #VARIABLE_FX}: the user variable fx (1200..1205), drawn by the referencing room's fx service.
  * </ul>
  *
- * <p>Only a loaded source room of the same owner is read. Its boxes are read live from its concurrent wired index,
- * never under its locks, so two rooms reading each other cannot deadlock; work for other rooms goes to the pool.
+ * <p>Only a source room of the same owner is read. A loaded one is read live from its concurrent wired index, never
+ * under its locks, so two rooms reading each other cannot deadlock; one that is not loaded is read from its saved furni
+ * once and cached ({@link WiredUnloadedAddonSources}). Work for other rooms goes to the pool.
  */
 public final class WiredVariableAddonSharing {
     public static final int TEXT_CONNECTORS = 0;
@@ -45,8 +48,29 @@ public final class WiredVariableAddonSharing {
 
     private WiredVariableAddonSharing() {}
 
-    /** An fx box of another room drawn here, over the reference that imports it. */
-    public record ImportedFx(WiredExtraVariableFx box, WiredExtraVariableReference reference) {}
+    /**
+     * An fx box of another room drawn here, over the reference that imports it. {@code variableIds} maps the source
+     * room's variable ids this room references (the box's range overrides and audience name those) to the ids of
+     * this room's references.
+     */
+    public record ImportedFx(
+            WiredExtraVariableFx box, WiredExtraVariableReference reference, Map<Integer, Integer> variableIds) {
+        public ImportedFx {
+            variableIds = Map.copyOf(variableIds);
+        }
+
+        public ImportedFx(WiredExtraVariableFx box, WiredExtraVariableReference reference) {
+            this(box, reference, Map.of());
+        }
+
+        /** This room's id of a source room variable; the source id itself when this room does not reference it. */
+        public int localId(int sourceItemId) {
+            return this.variableIds.getOrDefault(sourceItemId, sourceItemId);
+        }
+    }
+
+    /** A shared variable box and the boxes on its tile, in execution order. */
+    record SourceStack(InteractionWiredExtra source, List<InteractionWiredExtra> tile) {}
 
     /**
      * The add-ons of {@code category} that {@code definition}, a variable reference in {@code room}, takes over from
@@ -58,7 +82,7 @@ public final class WiredVariableAddonSharing {
             return Collections.emptyList();
         }
 
-        return sharedAddons(loadedSourceRoom(room, reference), reference, category);
+        return sharedAddons(sourceStack(room, reference), category);
     }
 
     /** The first imported add-on of {@code category} that is a {@code type}, or null. */
@@ -86,14 +110,24 @@ public final class WiredVariableAddonSharing {
      */
     static List<InteractionWiredExtra> sharedAddons(
             Room sourceRoom, WiredExtraVariableReference reference, int category) {
-        InteractionWiredExtra source = sourceDefinition(sourceRoom, reference);
-        if (source == null || !shares(sourceRoom, source, category)) {
-            return Collections.emptyList();
+        return sharedAddons(liveStack(sourceRoom, reference), category);
+    }
+
+    /** The add-ons of {@code category} in a source stack, when a Share box in it ticks the category. */
+    static List<InteractionWiredExtra> sharedAddons(SourceStack stack, int category) {
+        if (stack == null) return Collections.emptyList();
+
+        boolean shared = false;
+        for (InteractionWiredExtra extra : stack.tile()) {
+            if (extra instanceof WiredExtraVariableAddonShare share && share.allows(category)) {
+                shared = true;
+                break;
+            }
         }
+        if (!shared) return Collections.emptyList();
 
         List<InteractionWiredExtra> addons = new ArrayList<>();
-        for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(
-                sourceRoom.getRoomSpecialTypes().getExtras(source.getX(), source.getY()))) {
+        for (InteractionWiredExtra extra : stack.tile()) {
             if (inCategory(extra, category)) addons.add(extra);
         }
         return addons;
@@ -103,7 +137,11 @@ public final class WiredVariableAddonSharing {
     static InteractionWiredExtra sourceDefinition(Room sourceRoom, WiredExtraVariableReference reference) {
         if (sourceRoom == null || reference == null || sourceRoom.getRoomSpecialTypes() == null) return null;
 
-        InteractionWiredExtra extra = sourceRoom.getRoomSpecialTypes().getExtra(reference.getSourceVariableItemId());
+        return sharedSource(sourceRoom.getRoomSpecialTypes().getExtra(reference.getSourceVariableItemId()), reference);
+    }
+
+    /** {@code extra} when it is the shared user or room variable the reference expects, else null. */
+    static InteractionWiredExtra sharedSource(InteractionWiredExtra extra, WiredExtraVariableReference reference) {
         if (reference.isUserReference() && extra instanceof WiredExtraUserVariable variable) {
             return variable.isSharedAvailability() ? variable : null;
         }
@@ -111,6 +149,37 @@ public final class WiredVariableAddonSharing {
             return variable.isSharedAvailability() ? variable : null;
         }
         return null;
+    }
+
+    /**
+     * The reference's source stack: live from a loaded source room, else from the source room's saved furni. Null
+     * when there is none, the variable is no longer shared or the source room has another owner.
+     */
+    static SourceStack sourceStack(Room room, WiredExtraVariableReference reference) {
+        if (room == null || reference.getSourceRoomId() <= 0 || reference.getSourceRoomId() == room.getId()) {
+            return null;
+        }
+
+        Room source = loadedRoom(reference.getSourceRoomId());
+        if (source != null) {
+            return source.getOwnerId() == room.getOwnerId() ? liveStack(source, reference) : null;
+        }
+
+        WiredUnloadedAddonSources.Saved saved =
+                WiredUnloadedAddonSources.get(reference.getSourceRoomId(), reference.getSourceVariableItemId());
+        if (saved.ownerId() != room.getOwnerId()) return null;
+
+        InteractionWiredExtra definition = sharedSource(saved.source(), reference);
+        return definition != null ? new SourceStack(definition, saved.tile()) : null;
+    }
+
+    private static SourceStack liveStack(Room sourceRoom, WiredExtraVariableReference reference) {
+        InteractionWiredExtra source = sourceDefinition(sourceRoom, reference);
+        if (source == null) return null;
+
+        return new SourceStack(
+                source,
+                WiredExecutionOrderUtil.sort(sourceRoom.getRoomSpecialTypes().getExtras(source.getX(), source.getY())));
     }
 
     /**
@@ -122,6 +191,7 @@ public final class WiredVariableAddonSharing {
         if (room == null || room.getRoomSpecialTypes() == null || limit <= 0) return result;
 
         Set<Integer> seen = new HashSet<>();
+        Map<Integer, Map<Integer, Integer>> idsBySourceRoom = new HashMap<>();
         for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
             if (!(extra instanceof WiredExtraVariableReference reference)
                     || !reference.isUserReference()
@@ -129,21 +199,47 @@ public final class WiredVariableAddonSharing {
                 continue;
             }
 
-            Room sourceRoom = loadedSourceRoom(room, reference);
-            InteractionWiredExtra source = sourceDefinition(sourceRoom, reference);
-            for (InteractionWiredExtra addon : sharedAddons(sourceRoom, reference, VARIABLE_FX)) {
-                if (!(addon instanceof WiredExtraVariableFx box)
-                        || !box.isUserFx()
-                        || box.getShownVariableBox(sourceRoom) != source
-                        || !seen.add(box.getId())) {
+            SourceStack stack = sourceStack(room, reference);
+            if (stack == null || shownUserVariable(stack) != stack.source()) continue;
+
+            for (InteractionWiredExtra addon : sharedAddons(stack, VARIABLE_FX)) {
+                if (!(addon instanceof WiredExtraVariableFx box) || !box.isUserFx() || !seen.add(box.getId())) {
                     continue;
                 }
 
-                result.add(new ImportedFx(box, reference));
+                Map<Integer, Integer> variableIds = idsBySourceRoom.computeIfAbsent(
+                        reference.getSourceRoomId(), sourceRoomId -> referencedIds(room, sourceRoomId));
+                result.add(new ImportedFx(box, reference, variableIds));
                 if (result.size() >= limit) return result;
             }
         }
         return result;
+    }
+
+    /** The variable a user fx in the stack shows: the first user variable on the tile, as the fx box picks it. */
+    private static InteractionWiredExtra shownUserVariable(SourceStack stack) {
+        for (InteractionWiredExtra extra : stack.tile()) {
+            if (extra instanceof WiredExtraUserVariable) return extra;
+        }
+        return null;
+    }
+
+    /**
+     * The variables of {@code sourceRoomId} this room references, source id to reference id (the lowest reference
+     * id when several point at one variable).
+     */
+    static Map<Integer, Integer> referencedIds(Room room, int sourceRoomId) {
+        Map<Integer, Integer> ids = new HashMap<>();
+        if (room == null || room.getRoomSpecialTypes() == null) return ids;
+
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+            if (extra instanceof WiredExtraVariableReference reference
+                    && reference.getSourceRoomId() == sourceRoomId
+                    && reference.getSourceVariableItemId() > 0) {
+                ids.merge(reference.getSourceVariableItemId(), reference.getId(), Math::min);
+            }
+        }
+        return ids;
     }
 
     /** Whether a reference in the room imports fx, so the room's fx service has to keep watching. */
@@ -236,17 +332,14 @@ public final class WiredVariableAddonSharing {
         };
     }
 
-    private static Room loadedSourceRoom(Room room, WiredExtraVariableReference reference) {
-        if (room == null
-                || reference.getSourceRoomId() <= 0
-                || reference.getSourceRoomId() == room.getId()
-                || WiredPlatform.gameEnvironment() == null
+    private static Room loadedRoom(int roomId) {
+        if (WiredPlatform.gameEnvironment() == null
                 || WiredPlatform.gameEnvironment().getRoomManager() == null) {
             return null;
         }
 
-        Room source = WiredPlatform.gameEnvironment().getRoomManager().getRoom(reference.getSourceRoomId());
-        return source != null && source.isLoaded() && source.getOwnerId() == room.getOwnerId() ? source : null;
+        Room room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(roomId);
+        return room != null && room.isLoaded() ? room : null;
     }
 
     private static List<Room> loadedRooms() {

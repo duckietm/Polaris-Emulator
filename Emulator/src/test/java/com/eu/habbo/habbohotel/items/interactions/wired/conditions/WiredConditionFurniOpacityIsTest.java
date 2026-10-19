@@ -19,7 +19,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomWiredRuntime;
 import com.eu.habbo.habbohotel.rooms.WiredOpacityState;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -36,13 +35,13 @@ class WiredConditionFurniOpacityIsTest {
                 List.of(new WiredOpacityState(501, false, 40, false), new WiredOpacityState(502, false, 60, false)));
         WiredConditionFurniOpacityIs box = new WiredConditionFurniOpacityIs(1, 1, boxBase(), "", 0, 0);
 
-        box.saveData(settings(new int[] {30, WiredComparison.GREATER, WiredSourceUtil.SOURCE_SELECTED}, 501, 502));
+        box.saveData(settings(new int[] {30, WiredComparison.GREATER}, 501, 502));
         assertTrue(box.evaluate(context(room, user(room, 10, 1))));
 
-        box.saveData(settings(new int[] {50, WiredComparison.GREATER, WiredSourceUtil.SOURCE_SELECTED}, 501, 502));
+        box.saveData(settings(new int[] {50, WiredComparison.GREATER}, 501, 502));
         assertFalse(box.evaluate(context(room, user(room, 10, 1))));
 
-        box.saveData(settings(new int[] {40, WiredComparison.EQUAL, WiredSourceUtil.SOURCE_SELECTED}, 501));
+        box.saveData(settings(new int[] {40, WiredComparison.EQUAL}, 501));
         assertTrue(box.evaluate(context(room, user(room, 10, 1))));
     }
 
@@ -53,10 +52,10 @@ class WiredConditionFurniOpacityIsTest {
         opacity(room, List.of(new WiredOpacityState(501, false, 100, false)));
         WiredConditionNotFurniOpacityIs box = new WiredConditionNotFurniOpacityIs(1, 1, boxBase(), "", 0, 0);
 
-        box.saveData(settings(new int[] {100, WiredComparison.EQUAL, WiredSourceUtil.SOURCE_SELECTED}, 501));
+        box.saveData(settings(new int[] {100, WiredComparison.EQUAL}, 501));
         assertFalse(box.evaluate(context(room, null)));
 
-        box.saveData(settings(new int[] {50, WiredComparison.LESS, WiredSourceUtil.SOURCE_SELECTED}, 501));
+        box.saveData(settings(new int[] {50, WiredComparison.LESS}, 501));
         assertTrue(box.evaluate(context(room, null)));
     }
 
@@ -65,7 +64,7 @@ class WiredConditionFurniOpacityIsTest {
         Room room = room(1);
         opacity(room, List.of());
         WiredConditionFurniOpacityIs box = new WiredConditionFurniOpacityIs(1, 1, boxBase(), "", 0, 0);
-        box.saveData(settings(new int[] {50, WiredComparison.LESS, WiredSourceUtil.SOURCE_SELECTED}));
+        box.saveData(settings(new int[] {50, WiredComparison.LESS}));
 
         assertFalse(box.evaluate(context(room, null)));
     }

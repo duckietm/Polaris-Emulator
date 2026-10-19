@@ -33,9 +33,10 @@ import java.util.Map;
  * Official set furni transparency (61). Int params, official: {@code [audience (1 everyone), visibility
  * (0 visible, 100 invisible), click through, easing, target users]}; ours follows: {@code transition
  * seconds}. The visibility is the transparency: in-between values are ours. Furni source slot 0 is
- * the target furni; user slot 0 the audience, slot 1 the target users, whose avatars get the same
- * transparency through the official avatar packet when target users is on. Internally the box keeps
- * its opacity (100 = fully visible).
+ * the target furni; user slot 0 the audience, slot 1 the target users. AIR's merged target picker
+ * chooses furni or users, never both: with target users on, the picked avatars get the transparency
+ * through the official avatar packet and no furni are touched. Internally the box keeps its opacity
+ * (100 = fully visible).
  */
 public class WiredEffectChangeOpacity extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.CHANGE_OPACITY;
@@ -80,6 +81,7 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect implements 
         Room room = context.room();
         if (this.targetUsers) {
             applyToUsers(room, context);
+            return;
         }
         List<HabboItem> targets =
                 currentTargets(room, WiredSourceUtil.resolveItems(context, this.furniSource, this.items));
@@ -249,7 +251,8 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect implements 
 
     @Override
     public boolean requiresTriggeringUser() {
-        return this.visibility == VISIBILITY_SOURCE_USERS && this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
+        return (this.visibility == VISIBILITY_SOURCE_USERS && this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
+                || (this.targetUsers && this.targetUserSource == WiredSourceUtil.SOURCE_TRIGGER);
     }
 
     @Deprecated

@@ -82,6 +82,23 @@ class WiredEffectChangeOpacityTest {
     }
 
     @Test
+    void targetUsersMakesTheAvatarsTransparentAndLeavesTheFurniAlone() throws Exception {
+        Room room = mock(Room.class);
+        RoomWiredRuntime runtime = runtime(room);
+        when(room.getId()).thenReturn(53);
+        HabboItem target = item(5301, 53);
+        when(room.getHabboItem(5301)).thenReturn(target);
+        RoomUnit actor = mock(RoomUnit.class);
+        WiredEffectChangeOpacity effect = effect(target, room, 1, 0, 0, 0, 100, 0, false, true);
+
+        assertTrue(effect.requiresTriggeringUser());
+        effect.execute(context(room, actor, effect));
+
+        verify(runtime, never()).applyGlobalOpacity(any(), anyInt(), anyBoolean());
+        verify(runtime, never()).applyUserOpacity(anyInt(), any(), anyInt(), anyBoolean());
+    }
+
+    @Test
     void defaultDurationResolvesTo400msAndExplicitDurationStaysExact() throws Exception {
         assertEquals(400, animatedDurationMs(0));
         assertEquals(400, animatedDurationMs(-5));
@@ -153,6 +170,22 @@ class WiredEffectChangeOpacityTest {
             int userSource,
             boolean clickThrough)
             throws Exception {
+        return effect(
+                target, room, visibility, opacity, easing, duration, furniSource, userSource, clickThrough, false);
+    }
+
+    private static WiredEffectChangeOpacity effect(
+            HabboItem target,
+            Room room,
+            int visibility,
+            int opacity,
+            int easing,
+            int duration,
+            int furniSource,
+            int userSource,
+            boolean clickThrough,
+            boolean targetUsers)
+            throws Exception {
         Item boxBase = mock(Item.class);
         when(boxBase.getType()).thenReturn(FurnitureType.FLOOR);
         WiredEffectChangeOpacity effect = new WiredEffectChangeOpacity(5999, 1, boxBase, "0", 0, 0);
@@ -163,7 +196,8 @@ class WiredEffectChangeOpacityTest {
                 .thenReturn("{\"visibility\":" + visibility + ",\"opacity\":" + opacity
                         + ",\"easing\":" + easing + ",\"durationSeconds\":" + duration
                         + ",\"furniSource\":" + furniSource + ",\"userSource\":" + userSource
-                        + ",\"clickThrough\":" + clickThrough + ",\"delay\":0,\"itemIds\":["
+                        + ",\"clickThrough\":" + clickThrough + ",\"targetUsers\":" + targetUsers
+                        + ",\"targetUserSource\":0,\"delay\":0,\"itemIds\":["
                         + targetId + "]}");
         effect.loadWiredData(set, room);
         return effect;

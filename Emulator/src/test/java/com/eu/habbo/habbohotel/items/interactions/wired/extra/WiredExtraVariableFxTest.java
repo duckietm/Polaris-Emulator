@@ -152,9 +152,12 @@ class WiredExtraVariableFxTest {
         WiredExtraVariableFxProgressBar loaded = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
         loaded.loadWiredData(row(saved.getWiredData()), room());
 
-        // A save in the old 16-int layout still reads, and goes back out in the official one.
+        // A save in the old 16-int layout still reads, and goes back out in the official one; it
+        // shows on any real change, as "show when changes" did before the mask.
         Body body = body(loaded, room());
-        assertArrayEquals(OFFICIAL_PARAMS, body.params());
+        int[] expected = OFFICIAL_PARAMS.clone();
+        expected[3] = WiredExtraVariableFx.UPDATE_MASK_DEFAULT;
+        assertArrayEquals(expected, body.params());
         assertEquals("custom:300\t\tcustom:400\tmisc_heart", body.text());
         assertEquals(400, loaded.getAudienceItemId());
         assertEquals("misc_heart", loaded.getIcon());
@@ -171,7 +174,7 @@ class WiredExtraVariableFxTest {
             1,
             WiredExtraVariableFx.VISIBILITY_HAS_VARIABLE_WITH_VALUE,
             WiredExtraVariableFx.SHOW_NEVER,
-            0,
+            WiredExtraVariableFx.UPDATE_MASK_DEFAULT,
             0,
             WiredExtraVariableFx.SHOW_DURATION_MIN_MS,
             WiredVariableFxStyles.styleCount(WiredVariableFxStyles.CATEGORY_PROGRESS_BAR) - 1,
@@ -241,6 +244,52 @@ class WiredExtraVariableFxTest {
     }
 
     @Test
+    void theConfigCarriesTheOfficialVisibilityRendererAndStackOrder() throws Exception {
+        WiredExtraVariableFxStatusBar box = new WiredExtraVariableFxStatusBar(7, 1, base(), "", 0, 0);
+        int[] params = OFFICIAL_PARAMS.clone();
+        params[3] = WiredExtraVariableFx.UPDATE_INCREASED | WiredExtraVariableFx.UPDATE_UNCHANGED;
+        params[4] = 1;
+        params[6] = 0;
+        params[9] = WiredVariableFxStyles.RENDERER_ARROW;
+        params[20] = 0;
+        params[22] = -3;
+        box.saveData(new WiredSettings(params, "", new int[0], 0), null);
+
+        WiredVariableFxConfig config = box.buildConfig();
+        assertEquals(
+                WiredExtraVariableFx.UPDATE_INCREASED | WiredExtraVariableFx.UPDATE_UNCHANGED, config.updateMask());
+        assertTrue(config.showOnMouseHover());
+        assertEquals(WiredVariableFxStyles.RENDERER_ARROW, config.rendererId());
+        assertEquals("-3", config.extra().get(WiredExtraVariableFx.EXTRA_STACK_ORDER));
+
+        // A renderer the style does not offer falls back to its default; stack order 0 is not sent.
+        params[9] = WiredVariableFxStyles.RENDERER_BOSS;
+        params[22] = 0;
+        box.saveData(new WiredSettings(params, "", new int[0], 0), null);
+        assertEquals(WiredVariableFxStyles.RENDERER_BLOCK, box.buildConfig().rendererId());
+        assertNull(box.buildConfig().extra().get(WiredExtraVariableFx.EXTRA_STACK_ORDER));
+    }
+
+    @Test
+    void neverIsAirsVisibleOnHover() throws Exception {
+        WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
+        int[] params = OFFICIAL_PARAMS.clone();
+        params[2] = WiredExtraVariableFx.SHOW_NEVER;
+        params[4] = 0;
+        box.saveData(new WiredSettings(params, "", new int[0], 0), null);
+
+        assertTrue(box.buildConfig().showOnMouseHover());
+    }
+
+    @Test
+    void aRowFromBeforeTheMaskShowsOnAnyRealChange() throws Exception {
+        WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
+        box.loadWiredData(row("{\"showMode\":1,\"showDurationMs\":3000,\"defaultMax\":100}"), room());
+
+        assertEquals(WiredExtraVariableFx.UPDATE_MASK_DEFAULT, box.buildConfig().updateMask());
+    }
+
+    @Test
     void aStatusOnlyCarriesARangeWhenAVariableOverridesOneEnd() throws Exception {
         Room room = room();
         RoomUserVariableManager variables = mock(RoomUserVariableManager.class);
@@ -274,6 +323,31 @@ class WiredExtraVariableFxTest {
 
         // A holder without the variable gets no override at all.
         assertFalse(box.resolveStatus(room, null, key, 43, 60, null).hasOverrides());
+    }
+
+    @Test
+    void anImportedFxReadsItsOverridesThroughTheImportingRoomsIds() throws Exception {
+        Room room = room();
+        RoomUserVariableManager variables = mock(RoomUserVariableManager.class);
+        when(room.getUserVariableManager()).thenReturn(variables);
+        // The source room's variable 300 is reference 950 here.
+        when(variables.hasVariable(42, 950)).thenReturn(true);
+        when(variables.getCurrentValue(42, 950)).thenReturn(150);
+
+        WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
+        WiredVariableFxStatus.Key key = new WiredVariableFxStatus.Key(7, "user:9", true, 3);
+        box.saveData(
+                new WiredSettings(
+                        new int[] {0, 2, 0, 3000, 0, -1, 2, 0, 0, 100, 0, 1, 0, 0, 0, 0},
+                        "\tcustom:300\t\t",
+                        new int[0],
+                        0),
+                null);
+
+        assertFalse(box.resolveStatus(room, null, key, 42, 60, null).hasOverrides(), "300 does not exist here");
+        WiredVariableFxStatus mapped = box.resolveStatus(room, null, key, 42, 60, null, id -> id == 300 ? 950 : id);
+        assertTrue(mapped.hasOverrides());
+        assertEquals(150L, mapped.overrideMaxValue());
     }
 
     @Test

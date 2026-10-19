@@ -1103,6 +1103,8 @@ public final class WiredManager {
         // Evict this room's shared-variable assignment cache (previously a dead
         // hook, so entries leaked). The cache is also LRU-bounded as a backstop.
         WiredVariableReferenceSupport.invalidateRoom(room.getId());
+        // Its saved add-on boxes, as other rooms read them while it was not loaded.
+        WiredUnloadedAddonSources.invalidate(room.getId());
 
         if (debugEnabled) {
             LOGGER.info("[Wired] Cache invalidated for room {}", room.getId());

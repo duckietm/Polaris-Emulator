@@ -477,20 +477,31 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * four different things.
      */
     private String previewItems() {
-        if (this.getContents().getPreviewMode() <= 0) return "";
-
         StringBuilder visuals = new StringBuilder();
-        Set<Integer> seen = new LinkedHashSet<>();
-
-        for (ChestFurniStoredItem stored : this.getContents().furniItems()) {
-            if (seen.size() >= this.getContents().getPreviewAmount()) break;
-            if (!seen.add(stored.wireTypeId())) continue;
-
+        for (ChestFurniStoredItem stored : this.displayedFurni()) {
             if (visuals.length() > 0) visuals.append(';');
             visuals.append("false,").append(stored.wireTypeId());
         }
 
         return visuals.toString();
+    }
+
+    /**
+     * The stored furni the chest shows above its lid: none while the preview is off, otherwise the first
+     * item of each type, up to the preview amount. The chest item type scanner reads these as the
+     * "displayed" items.
+     */
+    public List<ChestFurniStoredItem> displayedFurni() {
+        List<ChestFurniStoredItem> displayed = new ArrayList<>();
+        if (this.getContents().getPreviewMode() <= 0) return displayed;
+
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (ChestFurniStoredItem stored : this.getContents().furniItems()) {
+            if (seen.size() >= this.getContents().getPreviewAmount()) break;
+            if (seen.add(stored.wireTypeId())) displayed.add(stored);
+        }
+
+        return displayed;
     }
 
     /** How many upgrades have been bought, which is what the official calls the capacity level. */

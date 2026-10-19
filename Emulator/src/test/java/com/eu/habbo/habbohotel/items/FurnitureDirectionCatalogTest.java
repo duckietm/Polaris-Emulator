@@ -40,8 +40,18 @@ class FurnitureDirectionCatalogTest {
                 new FurnitureDirectionCatalog.Settings(true, dir, 64, waitMillis, 64L * 1024 * 1024));
     }
 
+    /** The checkout may carry the Furniture folder with only the furnidata in it. */
+    static boolean hasBundles(Path dir) {
+        if (!Files.isDirectory(dir)) return false;
+        try (var files = Files.list(dir)) {
+            return files.anyMatch(file -> file.getFileName().toString().endsWith(".hab"));
+        } catch (java.io.IOException e) {
+            return false;
+        }
+    }
+
     private static FurnitureDirectionCatalog beds() {
-        assumeTrue(Files.isDirectory(FURNITURE), "no Furniture folder in this checkout");
+        assumeTrue(hasBundles(FURNITURE), "no furni bundles in this checkout");
         return catalog(FURNITURE, 5000);
     }
 
@@ -87,7 +97,7 @@ class FurnitureDirectionCatalogTest {
 
     @Test
     void theRuntimeAnswersARoomItemWithItsDirectionsAndDefaultDirection() {
-        assumeTrue(Files.isDirectory(FURNITURE), "no Furniture folder in this checkout");
+        assumeTrue(hasBundles(FURNITURE), "no furni bundles in this checkout");
         FurnitureDirectionsRuntime.install(catalog(FURNITURE, 5000), name -> name.startsWith("bling_bed") ? 4 : -1);
 
         FurnitureDirections bling = FurnitureDirections.of(floorItem("bling_bed*2"));

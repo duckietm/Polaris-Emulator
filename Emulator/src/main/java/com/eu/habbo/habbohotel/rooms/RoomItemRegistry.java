@@ -46,6 +46,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonImport;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFx;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
@@ -84,7 +85,8 @@ final class RoomItemRegistry {
             }
 
             // A variable fx box placed or loaded: the room's fx service starts telling players what to draw.
-            if (item instanceof WiredExtraVariableFx) {
+            // An add-on import box may bring fx from another room, which the same service draws.
+            if (item instanceof WiredExtraVariableFx || item instanceof WiredExtraVariableAddonImport) {
                 WiredVariableFxSupport.ensure(this.room);
             }
 

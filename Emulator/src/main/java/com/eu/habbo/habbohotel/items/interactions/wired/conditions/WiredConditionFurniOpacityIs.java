@@ -23,8 +23,8 @@ import java.util.Set;
 
 /**
  * "Furni opacity is" ({@code wf_cnd_furni_opacity_is}): the opacity the room currently shows for
- * the resolved furni (0 invisible, 100 solid), compared to a value. Three ints: opacity, comparison
- * ({@link WiredComparison} codes), furni source; plus the furni selection. Every resolved furni has
+ * the resolved furni (0 invisible, 100 solid), compared to a value. Two ints: opacity, comparison
+ * ({@link WiredComparison} codes); the furni in the official source slot, plus the furni selection. Every resolved furni has
  * to compare as asked. The opacity read is the one the triggering user sees, since a box can give
  * one user a private opacity. The negative box is {@link WiredConditionNotFurniOpacityIs}.
  */
@@ -109,7 +109,10 @@ public class WiredConditionFurniOpacityIs extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
         this.opacity = normalizeOpacity(param(params, 0, MAX_OPACITY));
         this.comparison = WiredComparison.normalize(param(params, 1, WiredComparison.EQUAL));
-        this.furniSource = param(params, 2, WiredSourceUtil.SOURCE_SELECTED);
+        // The furni come from the official source slot; the ints keep only the opacity and comparison.
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? settings.getFurniSourceTypes()[0]
+                : WiredSourceUtil.SOURCE_SELECTED;
         this.furniIds.clear();
         if (settings.getFurniIds() != null) {
             for (int id : settings.getFurniIds()) this.furniIds.add(id);
@@ -134,10 +137,9 @@ public class WiredConditionFurniOpacityIs extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.opacity);
         message.appendInt(this.comparison);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);

@@ -20,8 +20,14 @@ import java.util.List;
 /**
  * Official give effect (52, {@code wf_act_give_effect}). Int params {@code [effect id (0..10000, 13 for
  * a new box), priority (0..2, 2 for a new box), type (0 or 1)]}; the user source is the official slot.
- * The priority and type are kept as the box sent them: the effect itself is given as before, for as
- * long as the user stays.
+ * The effect stays until the user leaves the room or something else changes it.
+ *
+ * <p>AIR only names the two fields, and the texts are not in the official set, so their meaning is
+ * ours. Priority: a box does nothing to a user who wears an effect a box with a higher priority gave
+ * them; equal or higher replaces it. An effect the user got elsewhere (their own, a tile, a game)
+ * has no wired priority. Type 0 gives the effect whatever the user wears; type 1 leaves a user alone
+ * who wears an effect that did not come from a give effect box, so their own effect wins. Effect id
+ * 0 takes the effect off under the same rules.
  *
  * <p>Before the official layout the box borrowed the show-message editor and kept the effect id as
  * text; those rows still load.
@@ -31,10 +37,12 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
     public static final int MAX_EFFECT_ID = 10_000;
     static final int DEFAULT_EFFECT_ID = 13;
     static final int DEFAULT_PRIORITY = 2;
+    static final int TYPE_REPLACE = 0;
+    static final int TYPE_KEEP_OWN = 1;
 
     private int effectId = DEFAULT_EFFECT_ID;
     private int priority = DEFAULT_PRIORITY;
-    private int effectType = 0;
+    private int effectType = TYPE_REPLACE;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectGiveEffect(ResultSet set, Item baseItem) throws SQLException {
@@ -51,8 +59,23 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
         if (room == null || this.effectId < 0) return;
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+            if (!this.appliesTo(roomUnit)) continue;
+
             room.giveEffect(roomUnit, this.effectId, Integer.MAX_VALUE);
+            // Effects off in the room, or a rider: the effect did not change, so no priority is kept.
+            if (roomUnit.getEffectId() == this.effectId) {
+                roomUnit.setWiredEffect(this.effectId, this.priority);
+            }
         }
+    }
+
+    boolean appliesTo(RoomUnit roomUnit) {
+        if (roomUnit == null) return false;
+
+        int activePriority = roomUnit.getWiredEffectPriority();
+        if (activePriority > this.priority) return false;
+
+        return this.effectType != TYPE_KEEP_OWN || activePriority >= 0 || roomUnit.getEffectId() == 0;
     }
 
     @Deprecated
@@ -68,7 +91,7 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
 
         this.effectId = clamp(params[0], 0, MAX_EFFECT_ID);
         this.priority = clamp(params.length > 1 ? params[1] : DEFAULT_PRIORITY, 0, 2);
-        this.effectType = (params.length > 2 && params[2] == 1) ? 1 : 0;
+        this.effectType = (params.length > 2 && params[2] == TYPE_KEEP_OWN) ? TYPE_KEEP_OWN : TYPE_REPLACE;
         this.userSource = WiredUtilityPayloadGuard.userSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
         this.setDelay(settings.getDelay());
         return true;
@@ -107,7 +130,7 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
         // A row from the show-message editor keeps its effect id as text.
         this.effectId = data.effectId != null ? clamp(data.effectId, 0, MAX_EFFECT_ID) : parseEffect(data.message);
         this.priority = data.priority != null ? clamp(data.priority, 0, 2) : DEFAULT_PRIORITY;
-        this.effectType = (data.effectType != null && data.effectType == 1) ? 1 : 0;
+        this.effectType = (data.effectType != null && data.effectType == TYPE_KEEP_OWN) ? TYPE_KEEP_OWN : TYPE_REPLACE;
     }
 
     @Override
@@ -144,7 +167,7 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
     public void onPickUp() {
         this.effectId = DEFAULT_EFFECT_ID;
         this.priority = DEFAULT_PRIORITY;
-        this.effectType = 0;
+        this.effectType = TYPE_REPLACE;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(0);
     }

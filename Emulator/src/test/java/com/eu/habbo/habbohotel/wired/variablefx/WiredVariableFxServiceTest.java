@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -231,6 +232,48 @@ class WiredVariableFxServiceTest {
         assertEquals(1, mate.sentOf(WiredVariableFxStatusComposer.class).size());
         assertTrue(rival.sentOf(WiredVariableFxStatusComposer.class).isEmpty());
         assertTrue(spectator.sentOf(WiredVariableFxStatusComposer.class).isEmpty());
+    }
+
+    @Test
+    void anImportedHasVariableAudienceIsReadThroughTheImportingRoomsReference() throws Exception {
+        Fixture fixture = new Fixture(WiredExtraVariableFx.VISIBILITY_EVERYONE);
+        Player member = fixture.join(1, 100, null, 60);
+        fixture.join(2, 101, null, 60);
+        WiredExtraVariableFxHealthPoints imported = new WiredExtraVariableFxHealthPoints(8, 1, base(), "", 0, 0);
+        imported.saveData(
+                new WiredSettings(
+                        new int[] {
+                            WiredExtraVariableFx.SOURCE_USER,
+                            WiredExtraVariableFx.VISIBILITY_HAS_VARIABLE,
+                            0,
+                            3000,
+                            0,
+                            -1,
+                            2,
+                            0,
+                            0,
+                            100,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        },
+                        "\t\tcustom:300\t",
+                        new int[0],
+                        0),
+                null);
+        // The source room's audience variable 300 is reference 950 here; only the member holds it.
+        when(fixture.userVariables.hasVariable(1, 950)).thenReturn(true);
+
+        assertEquals(
+                Set.of(),
+                WiredVariableFxService.audienceOf(fixture.room, imported, IntUnaryOperator.identity(), fixture.habbos),
+                "the source room's id names nothing here");
+        assertEquals(
+                Set.of(member.userId),
+                WiredVariableFxService.audienceOf(fixture.room, imported, id -> id == 300 ? 950 : id, fixture.habbos));
     }
 
     @Test

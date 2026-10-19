@@ -22,6 +22,7 @@ org.flywaydb.core.internal.proprietaryStubs.DryRunSupportStub
 org.flywaydb.core.internal.proprietaryStubs.ErrorOverrideInitializerStub
 org.flywaydb.core.internal.proprietaryStubs.ErrorOverridesSupportStub
 org.flywaydb.core.internal.proprietaryStubs.GenerateCommandExtensionStub
+org.flywaydb.core.internal.proprietaryStubs.InitCommandExtensionStub
 org.flywaydb.core.internal.proprietaryStubs.LicenseSupportStub
 org.flywaydb.core.internal.proprietaryStubs.LicensingConfigurationExtensionStub
 org.flywaydb.core.internal.proprietaryStubs.ModelCommandExtensionStub

@@ -373,6 +373,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutp
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTimeUtilities;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonImport;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonShare;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxBossBar;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxHealthPoints;
@@ -1219,6 +1221,9 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("wf_trg_receive_dataframe", WiredTriggerReceiveLinkDataframe.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_link_speaker", WiredExtraLinkSpeaker.class));
+        // The variable add-on share and import boxes, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_xtra_var_share", WiredExtraVariableAddonShare.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_var_import", WiredExtraVariableAddonImport.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {

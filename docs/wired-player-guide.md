@@ -26,7 +26,7 @@ One stack can hold several triggers, conditions, selectors, effects and add-ons.
 4. The effects run. Without an add-on they all run at the same moment. With **Execute in order** they run one after the other.
 5. Effects with a delay wait first. Delays count in steps of 0.5 seconds, or 0.05 seconds with the precise delay option.
 
-![How a stack runs: trigger, selectors, conditions, then effects or on-fail effects](images/how-a-stack-runs.png)
+![How a stack runs: trigger, selectors, conditions, then effects or on-fail effects](wired/images/how-a-stack-runs.png)
 
 When the conditions pass the effects run; when they fail, only the on-fail effects run. Add-ons change how each step behaves.
 

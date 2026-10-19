@@ -414,6 +414,8 @@ INTERACTION 408 wf_act_send_dataframe=WiredEffectSendLinkDataframe
 INTERACTION 409 wf_trg_receive_message=WiredTriggerReceiveLinkMessage
 INTERACTION 410 wf_trg_receive_dataframe=WiredTriggerReceiveLinkDataframe
 INTERACTION 411 wf_xtra_link_speaker=WiredExtraLinkSpeaker
+INTERACTION 412 wf_xtra_var_share=WiredExtraVariableAddonShare
+INTERACTION 413 wf_xtra_var_import=WiredExtraVariableAddonImport
 
 LAYOUT EFFECT 000 TOGGLE_STATE=0
 LAYOUT EFFECT 001 RESET_TIMERS=1

@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableAddonSharing;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.messages.outgoing.wired.WiredVariableFxConfigsComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredVariableFxConfigsRemovedComposer;
@@ -52,6 +53,11 @@ public final class WiredVariableFxService implements WiredTickable {
     private final int roomId;
     private final Map<Integer, String> configSignatures = new HashMap<>();
     private final Map<Integer, WiredVariableFxViewer> viewers = new HashMap<>();
+    /** Set from any thread by a Share box's Synchronize; the next flush starts every viewer over. */
+    private volatile boolean resyncRequested;
+
+    /** An fx box and the variable box it shows: its own tile's, or the reference importing it. */
+    record Shown(WiredExtraVariableFx box, InteractionWiredExtra variableBox) {}
 
     public WiredVariableFxService(int roomId) {
         this.roomId = roomId;
@@ -82,17 +88,28 @@ public final class WiredVariableFxService implements WiredTickable {
         return this.roomId;
     }
 
+    /** Every viewer gets the configs and a full status sync again on the next flush. */
+    void requestResync() {
+        this.resyncRequested = true;
+    }
+
     /** One pass: the configs, then the statuses, then the diffs to every viewer. */
     void flush(Room room) {
         if (room == null) return;
 
-        List<WiredExtraVariableFx> boxes = fxBoxes(room);
+        if (this.resyncRequested) {
+            this.resyncRequested = false;
+            this.configSignatures.clear();
+            this.viewers.clear();
+        }
+
+        List<Shown> boxes = fxBoxes(room);
         List<Habbo> players = new ArrayList<>();
         for (Habbo habbo : room.getHabbos()) {
             if (habbo != null && habbo.getClient() != null && habbo.getRoomUnit() != null) players.add(habbo);
         }
 
-        if (boxes.isEmpty() && this.viewers.isEmpty()) {
+        if (boxes.isEmpty() && this.viewers.isEmpty() && !WiredVariableAddonSharing.importsFx(room)) {
             WiredVariableFxSupport.release(room, this);
             return;
         }
@@ -101,10 +118,10 @@ public final class WiredVariableFxService implements WiredTickable {
         this.syncStatuses(room, boxes, players);
     }
 
-    private void syncConfigs(List<WiredExtraVariableFx> boxes, List<Habbo> players) {
+    private void syncConfigs(List<Shown> boxes, List<Habbo> players) {
         Map<Integer, WiredVariableFxConfig> configs = new LinkedHashMap<>();
-        for (WiredExtraVariableFx box : boxes) {
-            configs.put(box.getId(), box.buildConfig());
+        for (Shown shown : boxes) {
+            configs.put(shown.box().getId(), shown.box().buildConfig());
         }
 
         List<Integer> removed = new ArrayList<>();
@@ -141,14 +158,14 @@ public final class WiredVariableFxService implements WiredTickable {
         this.viewers.keySet().removeIf(userId -> !present.contains(userId));
     }
 
-    private void syncStatuses(Room room, List<WiredExtraVariableFx> boxes, List<Habbo> players) {
+    private void syncStatuses(Room room, List<Shown> boxes, List<Habbo> players) {
         Map<Integer, Map<WiredVariableFxStatus.Key, WiredVariableFxStatus>> wanted = new HashMap<>();
         for (Habbo habbo : players) wanted.put(habbo.getHabboInfo().getId(), new LinkedHashMap<>());
 
         int cap = maxStatusesPerViewer();
 
-        for (WiredExtraVariableFx box : boxes) {
-            this.collect(room, box, players, wanted, cap);
+        for (Shown shown : boxes) {
+            this.collect(room, shown.box(), shown.variableBox(), players, wanted, cap);
         }
 
         for (Habbo habbo : players) {
@@ -170,10 +187,10 @@ public final class WiredVariableFxService implements WiredTickable {
     private void collect(
             Room room,
             WiredExtraVariableFx box,
+            InteractionWiredExtra variableBox,
             List<Habbo> players,
             Map<Integer, Map<WiredVariableFxStatus.Key, WiredVariableFxStatus>> wanted,
             int cap) {
-        InteractionWiredExtra variableBox = box.getShownVariableBox(room);
         if (variableBox == null) return;
 
         int definitionId = variableBox.getId();
@@ -342,16 +359,24 @@ public final class WiredVariableFxService implements WiredTickable {
         return (player != null) ? WiredVariableFxStyles.teamColor(player.getTeamColor()) : null;
     }
 
-    static List<WiredExtraVariableFx> fxBoxes(Room room) {
-        List<WiredExtraVariableFx> boxes = new ArrayList<>();
+    /**
+     * The room's own fx boxes, then the fx its references import from other rooms (an imported box draws the
+     * reference's values), together at most {@link #maxBoxes()}.
+     */
+    static List<Shown> fxBoxes(Room room) {
+        List<Shown> boxes = new ArrayList<>();
         if (room.getRoomSpecialTypes() == null) return boxes;
 
         int max = maxBoxes();
         for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
             if (extra instanceof WiredExtraVariableFx box) {
-                boxes.add(box);
-                if (boxes.size() >= max) break;
+                boxes.add(new Shown(box, box.getShownVariableBox(room)));
+                if (boxes.size() >= max) return boxes;
             }
+        }
+        for (WiredVariableAddonSharing.ImportedFx imported :
+                WiredVariableAddonSharing.importedFx(room, max - boxes.size())) {
+            boxes.add(new Shown(imported.box(), imported.reference()));
         }
         return boxes;
     }

@@ -227,6 +227,8 @@ com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputVaria
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTimeUtilities | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonImport | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonShare | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxBossBar | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxHealthPoints | EXTRA | configured=true | execute=false

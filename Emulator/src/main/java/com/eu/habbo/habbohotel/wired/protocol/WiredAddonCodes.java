@@ -35,6 +35,8 @@ public final class WiredAddonCodes {
             Map.entry(79, 1000), // variable text converter
             Map.entry(82, 1001), // variable level up
             Map.entry(98, 1002), // variable time util
+            Map.entry(1003, 1003), // variable add-on share
+            Map.entry(1004, 1004), // variable add-on import
             Map.entry(1005, 1005), // variable leaderboard
             Map.entry(130, 1200), // variable fx: health points
             Map.entry(131, 1201), // progress bar

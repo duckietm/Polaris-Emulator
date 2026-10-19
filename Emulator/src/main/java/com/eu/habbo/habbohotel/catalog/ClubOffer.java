@@ -163,9 +163,8 @@ public class ClubOffer implements ISerialize {
 
         long secondsTotal = seconds;
 
-        int totalYears = (int) Math.floor(seconds / (86400.0 * 31 * 12));
-        seconds -= totalYears * (86400 * 31 * 12);
-
+        // The offer only carries months and days, so a year counts as 12 months: a 600-day
+        // Builders Club add-on must reach the client as 19 months and 11 days (+600 furni).
         int totalMonths = (int) Math.floor(seconds / (86400.0 * 31));
         seconds -= totalMonths * (86400 * 31);
 

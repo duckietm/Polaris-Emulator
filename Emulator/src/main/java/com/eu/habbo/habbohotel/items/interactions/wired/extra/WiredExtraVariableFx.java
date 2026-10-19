@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.IntUnaryOperator;
 
 /**
  * A variable fx addon: it draws the variable box it shares a tile with over every avatar or furni
@@ -62,10 +63,21 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
     public static final int SHOW_DURATION_MIN_MS = 1500;
     public static final int SHOW_DURATION_MAX_MS = 20000;
     public static final int SHOW_DURATION_DEFAULT_MS = 3000;
+    /** Show-when-changes refreshers, as AIR's client counts them: created, increased, decreased, unchanged. */
+    static final int UPDATE_CREATED = 1;
+
+    static final int UPDATE_INCREASED = 2;
+    static final int UPDATE_DECREASED = 4;
+    static final int UPDATE_UNCHANGED = 8;
+    /** Any real change: what "show when changes" meant before boxes had a mask. */
+    static final int UPDATE_MASK_DEFAULT = UPDATE_CREATED | UPDATE_INCREASED | UPDATE_DECREASED;
+
     public static final int SEGMENTS_MAX = 100;
     public static final int DEFAULT_MAX_VALUE = 100;
     public static final int PARAM_COUNT = 16;
 
+    // The fx's place in its holder's stack; AIR's client reads it from the config extra.
+    static final String EXTRA_STACK_ORDER = "stack_order";
     protected static final String STATUS_CURRENT_LEVEL = "current_level";
     protected static final String STATUS_MAX_LEVEL = "max_level";
     protected static final String STATUS_IS_MAXED = "is_maxed";
@@ -95,8 +107,8 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
     private int overrideMaxItemId = 0;
     private int audienceItemId = 0;
     private String icon = "";
-    // Official only, kept as they came: refresh mask, show on hover, renderer, fx stack order.
-    private int updateMask = 0;
+    // Official only: refresh mask, show on hover, renderer, fx stack order.
+    private int updateMask = UPDATE_MASK_DEFAULT;
     private boolean showOnHover = false;
     private int rendererParam = 0;
     private int stackOrder = 0;
@@ -181,10 +193,15 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         return null;
     }
 
-    /** How the fx looks. Everything in it has been checked against what the client can draw. */
+    /**
+     * How the fx looks. Everything in it has been checked against what the client can draw: the
+     * renderer is the picked one when the style offers it (status bars offer three), the style's
+     * default otherwise. "Never" is AIR's "visible on cursor hover", so it always shows on hover; a
+     * non-zero stack order rides in the extra, where AIR's client reads it.
+     */
     public WiredVariableFxConfig buildConfig() {
         WiredVariableFxStyles.Style style = WiredVariableFxStyles.get(this.getCategory(), this.styleId);
-        int rendererId = style.defaultRendererId();
+        int rendererId = style.resolveRenderer(this.rendererParam);
         Map<String, String> extra = new LinkedHashMap<>(style.extra());
 
         this.addCategoryExtra(extra, style, rendererId);
@@ -193,14 +210,18 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
             extra.put(WiredVariableFxStyles.EXTRA_SEGMENTS, Integer.toString(this.segments));
         }
 
+        if (this.stackOrder != 0) {
+            extra.put(EXTRA_STACK_ORDER, Integer.toString(this.stackOrder));
+        }
+
         long[] range = this.getDefaultRange();
 
         return new WiredVariableFxConfig(
                 this.getId(),
                 this.isUserFx(),
                 this.showMode,
-                0,
-                false,
+                this.updateMask,
+                this.showOnHover || this.showMode == SHOW_NEVER,
                 this.showDurationMs,
                 this.getCategory(),
                 style.styleId(),
@@ -223,11 +244,26 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
             int holderId,
             long value,
             String teamColor) {
+        return this.resolveStatus(room, variableBox, key, holderId, value, teamColor, IntUnaryOperator.identity());
+    }
+
+    /**
+     * The same, with the override variables' ids read through {@code variableIds}: an fx imported from
+     * another room names that room's variables, which the importing room knows by its references' ids.
+     */
+    public WiredVariableFxStatus resolveStatus(
+            Room room,
+            InteractionWiredExtra variableBox,
+            WiredVariableFxStatus.Key key,
+            int holderId,
+            long value,
+            String teamColor,
+            IntUnaryOperator variableIds) {
         Map<String, String> extra = new LinkedHashMap<>();
 
         this.addColorExtra(extra, teamColor);
 
-        long[] range = this.resolveOverriddenRange(room, holderId);
+        long[] range = this.resolveOverriddenRange(room, holderId, variableIds);
 
         return new WiredVariableFxStatus(
                 key, false, value, (range != null) ? range[0] : null, (range != null) ? range[1] : null, extra);
@@ -269,18 +305,31 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
      * The holder's own range when a variable replaces either end of it, null when neither does.
      * The client takes the two ends as a pair, so the end without a variable repeats the default.
      */
-    private long[] resolveOverriddenRange(Room room, int holderId) {
+    private long[] resolveOverriddenRange(Room room, int holderId, IntUnaryOperator variableIds) {
         if (!this.usesValueRange()) return null;
 
         Long min = this.readOverride(
-                room, this.overrideMinEnabled, this.overrideMinTarget, this.overrideMinItemId, holderId);
+                room,
+                this.overrideMinEnabled,
+                this.overrideMinTarget,
+                localId(this.overrideMinItemId, variableIds),
+                holderId);
         Long max = this.readOverride(
-                room, this.overrideMaxEnabled, this.overrideMaxTarget, this.overrideMaxItemId, holderId);
+                room,
+                this.overrideMaxEnabled,
+                this.overrideMaxTarget,
+                localId(this.overrideMaxItemId, variableIds),
+                holderId);
 
         if (min == null && max == null) return null;
 
         long[] defaults = this.getDefaultRange();
         return new long[] {(min != null) ? min : defaults[0], (max != null) ? max : defaults[1]};
+    }
+
+    /** The id the drawing room knows a chosen variable by; nothing chosen stays nothing. */
+    private static int localId(int itemId, IntUnaryOperator variableIds) {
+        return itemId > 0 ? variableIds.applyAsInt(itemId) : itemId;
     }
 
     /**
@@ -420,6 +469,7 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
                 : OVERRIDE_TARGET_HOLDER;
         this.audienceValue = param(params, 14, 0);
         this.categoryExtra = param(params, 15, 0);
+        this.updateMask = UPDATE_MASK_DEFAULT;
         this.rejectPointers(
                 customItemId(token(tokens, 0)), customItemId(token(tokens, 1)), customItemId(token(tokens, 2)));
         this.overrideMinItemId = customItemId(token(tokens, 0));
@@ -565,7 +615,7 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         this.overrideMaxItemId = Math.max(0, data.overrideMaxItemId);
         this.audienceItemId = Math.max(0, data.audienceItemId);
         this.icon = normalizeIcon(data.icon);
-        this.updateMask = clamp(data.updateMask, 0, 15);
+        this.updateMask = (data.updateMask != null) ? clamp(data.updateMask, 0, 15) : UPDATE_MASK_DEFAULT;
         this.showOnHover = data.showOnHover;
         this.rendererParam = clamp(data.rendererParam, -1, 201);
         this.stackOrder = data.stackOrder;
@@ -595,7 +645,7 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         this.overrideMaxItemId = 0;
         this.audienceItemId = 0;
         this.icon = "";
-        this.updateMask = 0;
+        this.updateMask = UPDATE_MASK_DEFAULT;
         this.showOnHover = false;
         this.rendererParam = 0;
         this.stackOrder = 0;
@@ -677,8 +727,8 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
         int overrideMaxItemId;
         int audienceItemId;
         String icon;
-        // Official only, set after construction.
-        int updateMask;
+        // Official only, set after construction; rows from before them have no update mask.
+        Integer updateMask;
         boolean showOnHover;
         int rendererParam;
         int stackOrder;

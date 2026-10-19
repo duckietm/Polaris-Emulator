@@ -542,6 +542,7 @@ import com.eu.habbo.messages.incoming.users.UserWearBadgeEvent;
 import com.eu.habbo.messages.incoming.wired.GetWiredContractContentsEvent;
 import com.eu.habbo.messages.incoming.wired.UpdateWiredContractEvent;
 import com.eu.habbo.messages.incoming.wired.WiredAddonSaveDataEvent;
+import com.eu.habbo.messages.incoming.wired.WiredAddonShareSynchronizeEvent;
 import com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredApplySetConditionsEvent;
 import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionRequestEvent;
@@ -1372,6 +1373,7 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredLinkRenameNetworkEvent, WiredLinkRenameNetworkEvent.class);
         this.registerHandler(Incoming.WiredLinkDeleteNetworkEvent, WiredLinkDeleteNetworkEvent.class);
         this.registerHandler(Incoming.WiredLinkGetConnectionsEvent, WiredLinkGetConnectionsEvent.class);
+        this.registerHandler(Incoming.WiredAddonShareSynchronizeEvent, WiredAddonShareSynchronizeEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveTextEvent, WiredLabelSaveTextEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveSettingsEvent, WiredLabelSaveSettingsEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersRequestEvent, WiredVariableHoldersRequestEvent.class);

@@ -71,12 +71,11 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(6);
+        message.appendInt(5);
         message.appendInt(this.state ? 1 : 0);
         message.appendInt(this.direction ? 1 : 0);
         message.appendInt(this.position ? 1 : 0);
         message.appendInt(this.altitude ? 1 : 0);
-        message.appendInt(this.furniSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -92,12 +91,12 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
         this.direction = params[1] == 1;
         this.position = params[2] == 1;
         this.altitude = (params.length > 3) && (params[3] == 1);
-        this.furniSource = (params.length > 4)
-                ? WiredMatchPositionInputGuard.normalizeFurniSource(params[4], false)
-                : ((params.length > 3 && params[3] > 1)
-                        ? WiredMatchPositionInputGuard.normalizeFurniSource(params[3], false)
-                        : WiredSourceUtil.SOURCE_TRIGGER);
-        this.quantifier = (params.length > 5) ? this.normalizeQuantifier(params[5]) : QUANTIFIER_ALL;
+        // Official layout: [state, direction, position, altitude], the furni in the official source slot;
+        // our quantifier (0 all, 1 any) follows as param 4.
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? WiredMatchPositionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0], false)
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = (params.length > 4) ? this.normalizeQuantifier(params[4]) : QUANTIFIER_ALL;
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 

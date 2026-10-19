@@ -42,7 +42,10 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
             // Executing Habbo should be able to edit wireds
             if (room.canModifyWired(this.client.getHabbo())) {
 
+                // Official: the snapshot boxes are the match-to-snapshot condition and action, the
+                // "furni state is changed" trigger and place furni.
                 List<HabboItem> wireds = new ArrayList<>();
+                wireds.addAll(room.getRoomSpecialTypes().getTriggers());
                 wireds.addAll(room.getRoomSpecialTypes().getConditions());
                 wireds.addAll(room.getRoomSpecialTypes().getEffects());
 

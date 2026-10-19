@@ -535,6 +535,8 @@ public class Incoming {
     public static final int WiredLinkDeleteNetworkEvent = 2731; // AIR (WIRED Link)
     public static final int WiredLinkGetConnectionsEvent =
             9494; // CUSTOM (WIRED Link; AIR 2300 is RequestRoomHeightmapEvent)
+    public static final int WiredAddonShareSynchronizeEvent =
+            9495; // CUSTOM (variable add-on share; AIR 2144 is TriggerColorWheelEvent)
     public static final int WiredLabelSaveTextEvent = 2638; // AIR (furniture label text)
     public static final int WiredLabelSaveSettingsEvent = 2970; // AIR (furniture label settings)
     public static final int WiredVariableHoldersRequestEvent = 2973;

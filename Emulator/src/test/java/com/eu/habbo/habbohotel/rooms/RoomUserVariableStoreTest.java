@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore.Holder;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore.Order;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore.Write;
@@ -43,6 +44,7 @@ class RoomUserVariableStoreTest {
     private static final int OTHER_ROOM = 45;
     private static final int POINTS = 10;
     private static final int TEMPORARY = 11;
+    private static final int REFERENCE = 30;
 
     private final MemoryUserVariableRepository database = new MemoryUserVariableRepository();
     private final Map<Integer, Habbo> present = new ConcurrentHashMap<>();
@@ -65,6 +67,14 @@ class RoomUserVariableStoreTest {
         when(special.getExtras(0, 0)).thenReturn(extras);
         when(special.getExtra(POINTS)).thenReturn(points);
         when(special.getExtra(TEMPORARY)).thenReturn(temporary);
+        WiredExtraVariableReference reference = mock(WiredExtraVariableReference.class);
+        when(reference.getId()).thenReturn(REFERENCE);
+        when(reference.getVariableName()).thenReturn("shared");
+        when(reference.isUserReference()).thenReturn(true);
+        when(reference.hasValue()).thenReturn(true);
+        when(reference.getSourceRoomId()).thenReturn(OTHER_ROOM);
+        when(reference.getSourceVariableItemId()).thenReturn(POINTS);
+        when(special.getExtra(REFERENCE)).thenReturn(reference);
         when(room.getArrayVariableManager()).thenReturn(mock(RoomArrayVariableManager.class));
         when(room.getHabbo(anyInt())).thenAnswer(call -> this.present.get(call.<Integer>getArgument(0)));
         when(room.getHabbo(anyString()))
@@ -115,6 +125,25 @@ class RoomUserVariableStoreTest {
 
         assertEquals(9, this.database.row(OTHER_ROOM, 8, POINTS).value(), "other rooms are never touched");
         assertFalse(this.manager.hasVariable(7, POINTS), "nothing is left in the live store");
+    }
+
+    @Test
+    void aUserReferencePagesTheSourceRoomsSavedRowsOfTheSharedVariable() {
+        this.database.save(OTHER_ROOM, 7, POINTS, 5, 100, 200);
+        this.database.save(OTHER_ROOM, 8, POINTS, 9, 100, 300);
+        this.database.save(ROOM, 9, POINTS, 50, 100, 200);
+        this.database.usernames.put(7, "dave");
+        this.database.usernames.put(8, "erin");
+
+        assertEquals(new RoomUserVariableStore.SavedRows(OTHER_ROOM, POINTS), this.store.savedRows(REFERENCE));
+        assertEquals(new RoomUserVariableStore.SavedRows(ROOM, POINTS), this.store.savedRows(POINTS));
+        assertNull(this.store.savedRows(TEMPORARY));
+
+        assertEquals(2, this.store.count(REFERENCE), "this room's own rows of its variable are not the shared ones");
+        List<Holder> page = this.store.page(REFERENCE, Order.VALUE, true, 0, 10);
+        assertEquals(List.of(8, 7), page.stream().map(Holder::userId).toList());
+        assertEquals("erin", page.get(0).name());
+        assertEquals(9, page.get(0).value());
     }
 
     @Test

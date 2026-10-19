@@ -2503,10 +2503,10 @@ Conventions used in the entries below:
 
 ### `wf_xtra_scan_chest_furni_by_type`
 
-- **Class:** `WiredEffectScanChestFurniByType`
-- **Behavior:** a read-only selector despite its `wf_xtra` key. It picks every room floor furni whose base type is stored in the picked wired chest(s).
-- **Main settings:** int params `[filterExisting, invert]` plus up to 20 picked chests.
-- **Notes:** follows the section 5 selector rules. Chests whose owner has not enabled wired access (`answersWired`) are ignored.
+- **Class:** `WiredExtraChestItemTypeScanner`
+- **Behavior:** the official chest item type scanner add-on (code 18). Before the stack's conditions it counts the stored furni whose base type is one of the item-type furni, in the chests, and writes the count into the chosen context variable for that run. Mode 0 counts everything in the chests; mode 1 only the items a chest shows on its lid (none while its preview is off, otherwise the first item of each type up to the preview amount).
+- **Main settings:** int params `[mode]`; the context variable as the first variable id (a user-made context variable with a value); furni slot 0 the item types (first picks, default source 100), slot 1 the chests (second picks, default source 101). Chest picks must be furni chests (`wiredfurni.error.require_furni_chests`).
+- **Notes:** chests whose owner has not enabled wired access (`answersWired`) are not read. Rows saved by the old selector keep their chests as the chest picks and open on the defaults otherwise.
 
 ### `wf_xtra_custom_contract`
 

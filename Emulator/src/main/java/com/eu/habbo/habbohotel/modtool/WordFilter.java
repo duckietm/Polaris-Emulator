@@ -25,6 +25,11 @@ public class WordFilter {
 
     private static final Pattern DIACRITICS_AND_FRIENDS =
             Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
+    private static final Pattern PUNCTUATION = Pattern.compile("[,.;:'\"]");
+    private static final Pattern NON_ASCII = Pattern.compile("[^\\p{ASCII}*$]");
+    private static final Pattern MARKS = Pattern.compile("\\p{M}");
+    private static final Pattern ONLY_MARKS = Pattern.compile("^\\p{M}*$]");
+    private static final Pattern ONE_OR_BAR = Pattern.compile("[1|]");
     public static volatile boolean ENABLED_FRIENDCHAT = true;
     public static volatile String DEFAULT_REPLACEMENT = "bobba";
     protected volatile Set<WordFilterWord> autoReportWords = ConcurrentHashMap.newKeySet();
@@ -84,15 +89,15 @@ public class WordFilter {
     }
 
     public String normalise(String message) {
+        String text = Normalizer.normalize(StringUtils.stripAccents(message), Normalizer.Form.NFKD);
+        text = PUNCTUATION.matcher(text).replaceAll(" ").replace("I", "l");
+        text = NON_ASCII.matcher(text).replaceAll("");
+        text = MARKS.matcher(text).replaceAll(" ");
+        text = ONLY_MARKS.matcher(text).replaceAll("");
+        text = ONE_OR_BAR.matcher(text).replaceAll("i");
+
         return DIACRITICS_AND_FRIENDS
-                .matcher(Normalizer.normalize(StringUtils.stripAccents(message), Normalizer.Form.NFKD)
-                        .replaceAll("[,.;:'\"]", " ")
-                        .replace("I", "l")
-                        .replaceAll("[^\\p{ASCII}*$]", "")
-                        .replaceAll("\\p{M}", " ")
-                        .replaceAll("^\\p{M}*$]", "")
-                        .replaceAll("[1|]", "i")
-                        .replace("2", "z")
+                .matcher(text.replace("2", "z")
                         .replace("3", "e")
                         .replace("4", "a")
                         .replace("5", "s")

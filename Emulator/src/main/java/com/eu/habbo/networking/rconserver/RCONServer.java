@@ -49,6 +49,7 @@ import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -189,7 +190,18 @@ public class RCONServer extends Server {
             return "unknown";
         }
 
-        SocketAddress address = ctx.channel().remoteAddress();
+        return rateLimitKey(ctx.channel().remoteAddress());
+    }
+
+    /**
+     * The key of a caller's rate limiter: its IP address alone. The textual form of a socket address carries the
+     * source port, which is new on every connection, so keying on it gave each request a fresh limiter.
+     */
+    static String rateLimitKey(SocketAddress address) {
+        if (address instanceof InetSocketAddress inet && inet.getAddress() != null) {
+            return inet.getAddress().getHostAddress();
+        }
+
         return address == null ? "unknown" : address.toString();
     }
 }

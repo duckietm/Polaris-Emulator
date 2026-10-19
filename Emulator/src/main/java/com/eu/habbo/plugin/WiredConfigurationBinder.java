@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.core.WiredEngine;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 
 final class WiredConfigurationBinder extends ConfigurationBinder {
 
@@ -76,6 +77,18 @@ final class WiredConfigurationBinder extends ConfigurationBinder {
                 "wired.monitor.heavy.delayed.percent",
                 () -> WiredEngine.MONITOR_HEAVY_DELAYED_PERCENT =
                         this.configuration.getInt("wired.monitor.heavy.delayed.percent", 60));
+        this.apply(
+                "wired.monitor.permanent.variables.limit",
+                () -> WiredRoomStats.configureLimits(
+                        this.configuration.getInt(
+                                "wired.monitor.permanent.furni.variables.limit",
+                                WiredRoomStats.DEFAULT_MAX_PERMANENT_FURNI_VARIABLES),
+                        this.configuration.getInt(
+                                "wired.monitor.permanent.user.variables.limit",
+                                WiredRoomStats.DEFAULT_MAX_PERMANENT_USER_VARIABLES),
+                        this.configuration.getInt(
+                                "wired.monitor.permanent.global.variables.limit",
+                                WiredRoomStats.DEFAULT_MAX_PERMANENT_GLOBAL_VARIABLES)));
         this.apply(
                 "hotel.wired.arrays",
                 () -> WiredArraySettings.configure(

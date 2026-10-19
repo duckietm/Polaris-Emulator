@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -67,6 +68,11 @@ public class WiredExtraUserVariable extends InteractionWiredExtra
 
         WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
         int nextAvailability = normalizeAvailability((intParams.length > 1) ? intParams[1] : AVAILABILITY_ROOM);
+
+        if ((nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED)
+                && !WiredRoomStats.canBecomePermanent(room, this)) {
+            throw new WiredSaveException(WiredRoomStats.PERMANENT_LIMIT_ERROR);
+        }
 
         WiredArrayDefinition nextArrayDefinition;
         try {

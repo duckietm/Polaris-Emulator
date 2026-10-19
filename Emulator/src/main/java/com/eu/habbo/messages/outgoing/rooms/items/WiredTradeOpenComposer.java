@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractMultiplier;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.messages.ServerMessage;
@@ -19,7 +20,8 @@ import java.util.List;
  *   bool showRequirementsImmediate, bool overridePreviousTrade, int timeoutSeconds
  * </pre>
  *
- * A plain deposit asks for any coins or any furni, by the chest's kind; a contract shows its rules.
+ * A plain deposit asks for any coins or any furni, by the chest's kind; a contract shows its rules
+ * once, with the multiplier (1) or the auto multiplier's limit (2) after them.
  */
 public class WiredTradeOpenComposer extends MessageComposer {
     public static final int REQUIREMENT_ANY_COINS = 0;
@@ -27,7 +29,9 @@ public class WiredTradeOpenComposer extends MessageComposer {
     public static final int REQUIREMENT_ANYTHING = 2;
     public static final int REQUIREMENT_RULES = 4;
 
-    public static final int RULES_NORMAL = 0;
+    public static final int RULES_NORMAL = ContractMultiplier.MODE_NORMAL;
+    public static final int RULES_MULTIPLIER = ContractMultiplier.MODE_FIXED;
+    public static final int RULES_AUTO = ContractMultiplier.MODE_AUTO;
 
     private final int requirementType;
     private final String rewardText;
@@ -36,6 +40,7 @@ public class WiredTradeOpenComposer extends MessageComposer {
     private final boolean overridePreviousTrade;
     private final int timeoutSeconds;
     private final ContractRules rules;
+    private final ContractMultiplier multiplier;
 
     /**
      * Kept for callers compiled against it: a chest deposit ({@code contractType} 3) asks for
@@ -69,6 +74,27 @@ public class WiredTradeOpenComposer extends MessageComposer {
             int timeoutSeconds,
             ContractRules rules,
             boolean airRequirement) {
+        this(
+                requirementType,
+                rewardText,
+                layoutType,
+                showRequirementsImmediate,
+                overridePreviousTrade,
+                timeoutSeconds,
+                rules,
+                ContractMultiplier.NONE);
+    }
+
+    /** A contract trade that runs {@code multiplier} times; {@code rules} is the contract once. */
+    public WiredTradeOpenComposer(
+            int requirementType,
+            String rewardText,
+            String layoutType,
+            boolean showRequirementsImmediate,
+            boolean overridePreviousTrade,
+            int timeoutSeconds,
+            ContractRules rules,
+            ContractMultiplier multiplier) {
         this.requirementType = requirementType;
         this.rewardText = rewardText == null ? "" : rewardText;
         this.layoutType = layoutType == null ? "" : layoutType;
@@ -76,6 +102,7 @@ public class WiredTradeOpenComposer extends MessageComposer {
         this.overridePreviousTrade = overridePreviousTrade;
         this.timeoutSeconds = timeoutSeconds;
         this.rules = rules;
+        this.multiplier = multiplier == null ? ContractMultiplier.NONE : multiplier;
     }
 
     @Override
@@ -97,7 +124,8 @@ public class WiredTradeOpenComposer extends MessageComposer {
             boolean hasGet = this.rules != null && !this.rules.givesNothing();
             this.response.appendBoolean(hasGet);
             if (hasGet) ChestAirWire.appendRule(this.response, this.rules.getRule());
-            this.response.appendInt(RULES_NORMAL);
+            this.response.appendInt(this.multiplier.mode());
+            if (this.multiplier.mode() != RULES_NORMAL) this.response.appendInt(this.multiplier.value());
         }
         this.response.appendBoolean(this.showRequirementsImmediate);
         this.response.appendBoolean(this.overridePreviousTrade);

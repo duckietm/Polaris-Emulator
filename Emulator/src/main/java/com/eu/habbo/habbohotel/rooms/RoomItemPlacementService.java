@@ -235,6 +235,11 @@ final class RoomItemPlacementService {
             return FurnitureMovementError.NO_RIGHTS;
         }
 
+        // Habbo's own wall furni cap; a room already over it keeps its furni.
+        if (!RoomWallItemLimit.hasRoomFor(this.room.getWallItems().size())) {
+            return FurnitureMovementError.MAX_ITEMS;
+        }
+
         if (Emulator.getPluginManager().isRegistered(FurniturePlacedEvent.class, true)) {
             Event furniturePlacedEvent = new FurniturePlacedEvent(item, owner, null);
             Emulator.getPluginManager().fireEvent(furniturePlacedEvent);

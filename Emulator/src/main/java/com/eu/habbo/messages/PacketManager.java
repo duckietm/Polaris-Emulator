@@ -569,6 +569,7 @@ import com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomStateActionEvent;
+import com.eu.habbo.messages.incoming.wired.WiredRoomStatsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSetupExportEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSetupImportEvent;
@@ -1363,6 +1364,7 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
         this.registerHandler(Incoming.WiredRoomStateActionEvent, WiredRoomStateActionEvent.class);
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
+        this.registerHandler(Incoming.WiredRoomStatsRequestEvent, WiredRoomStatsRequestEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredLeaderboardSubscribeEvent, WiredLeaderboardSubscribeEvent.class);
         this.registerHandler(Incoming.WiredLinkRequestConfigEvent, WiredLinkRequestConfigEvent.class);

@@ -206,6 +206,7 @@
     "users_subscriptions": ["active", "duration", "id", "subscription_type", "timestamp_start", "user_id"],
     "users_target_offer_purchases": ["amount", "last_purchase", "offer_id", "state", "user_id"],
     "users_wardrobe": ["gender", "id", "look", "slot_id", "user_id"],
+    "users_wired_earnings": ["category", "credits", "updated_at", "user_id"],
     "users_wordfilter": ["user_id", "word"],
     "voucher_history": ["id", "timestamp", "user_id", "voucher_id"],
     "vouchers": ["amount", "catalog_item_id", "code", "credits", "id", "limit", "points", "points_type"],

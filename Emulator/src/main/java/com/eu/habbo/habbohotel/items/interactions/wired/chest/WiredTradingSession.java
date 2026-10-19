@@ -64,6 +64,7 @@ public class WiredTradingSession {
     }
 
     private final ContractRules rules;
+    private final ContractMultiplier multiplier;
     private final ItemVault vault;
     private final IntUnaryOperator walletBalance;
     private final int timeoutSeconds;
@@ -75,6 +76,7 @@ public class WiredTradingSession {
     private int state = STATE_READY;
     private long acceptedAtMillis = 0L;
     private boolean closed = false;
+    private int settledTimes = 0;
 
     public WiredTradingSession(
             ContractRules rules,
@@ -82,10 +84,26 @@ public class WiredTradingSession {
             IntUnaryOperator walletBalance,
             int timeoutSeconds,
             long openedAtMillis) {
+        this(rules, ContractMultiplier.NONE, vault, walletBalance, Math.max(1, timeoutSeconds), openedAtMillis);
+    }
+
+    /**
+     * @param multiplier how many times the contract runs; {@code rules} is the contract once
+     * @param timeoutSeconds how long the offer stays open; zero or less never lapses (AIR: no
+     *     countdown when the window gets no timeout)
+     */
+    public WiredTradingSession(
+            ContractRules rules,
+            ContractMultiplier multiplier,
+            ItemVault vault,
+            IntUnaryOperator walletBalance,
+            int timeoutSeconds,
+            long openedAtMillis) {
         this.rules = rules;
+        this.multiplier = multiplier == null ? ContractMultiplier.NONE : multiplier;
         this.vault = vault;
         this.walletBalance = walletBalance;
-        this.timeoutSeconds = Math.max(1, timeoutSeconds);
+        this.timeoutSeconds = Math.max(0, timeoutSeconds);
         this.openedAtMillis = openedAtMillis;
         this.state = STATE_ADDING_ITEMS;
     }
@@ -98,8 +116,62 @@ public class WiredTradingSession {
         return this.closed;
     }
 
+    /** The contract once, as the window shows it. */
     public ContractRules getRules() {
         return this.rules;
+    }
+
+    public ContractMultiplier getMultiplier() {
+        return this.multiplier;
+    }
+
+    /** True when the offer lapses at all. */
+    public boolean hasTimeout() {
+        return this.timeoutSeconds > 0;
+    }
+
+    /**
+     * How many times over the current offer pays the contract, up to the multiplier's limit; zero
+     * when it does not pay it once. This is the window's "met N times" count.
+     */
+    public int timesMet() {
+        int limit = this.multiplier.limit();
+        if (!matches(1)) return 0;
+
+        // Paying k times implies paying k - 1 times, so the count can be searched for.
+        int low = 1;
+        int high = limit;
+        while (low < high) {
+            int middle = (low + high + 1) >>> 1;
+            if (matches(middle)) low = middle;
+            else high = middle - 1;
+        }
+        return low;
+    }
+
+    /** How many times the contract runs when the player confirms now: fixed, or what the offer covers. */
+    public int timesToSettle() {
+        return switch (this.multiplier.mode()) {
+            case ContractMultiplier.MODE_FIXED -> this.multiplier.value();
+            case ContractMultiplier.MODE_AUTO -> Math.max(1, timesMet());
+            default -> 1;
+        };
+    }
+
+    /** The contract scaled to {@link #timesToSettle()}: what the player pays and gets right now. */
+    public ContractRules effectiveRules() {
+        return this.rules.times(timesToSettle());
+    }
+
+    /** How many times the confirmed settlement runs the contract; zero before a confirmation. */
+    public int settledTimes() {
+        return this.settledTimes;
+    }
+
+    private boolean matches(int times) {
+        return ContractRequirementEvaluator.firstSatisfied(
+                        this.rules.times(times), this.walletBalance, getOfferedItems())
+                .satisfied();
     }
 
     /** The items on the table, in the order the player put them there. */
@@ -107,8 +179,12 @@ public class WiredTradingSession {
         return List.copyOf(this.offered.values());
     }
 
-    /** Seconds before the offer lapses. Never negative; zero means it has lapsed. */
+    /**
+     * Seconds before the offer lapses. Never negative; zero means it has lapsed, int max that it never
+     * does.
+     */
     public int secondsLeft(long nowMillis) {
+        if (!hasTimeout()) return Integer.MAX_VALUE;
         long elapsed = (nowMillis - this.openedAtMillis) / 1000L;
         return (int) Math.max(0L, this.timeoutSeconds - elapsed);
     }
@@ -117,9 +193,12 @@ public class WiredTradingSession {
         return secondsLeft(nowMillis) <= 0;
     }
 
-    /** Which alternative the current offer pays for, and what is still short. */
+    /**
+     * Which alternative the current offer pays for, and what is still short, against the contract
+     * scaled to {@link #timesToSettle()}; a match's rule index is the same in the unscaled rules.
+     */
     public Match evaluate() {
-        return ContractRequirementEvaluator.firstSatisfied(this.rules, this.walletBalance, getOfferedItems());
+        return ContractRequirementEvaluator.firstSatisfied(effectiveRules(), this.walletBalance, getOfferedItems());
     }
 
     /** True when the player may press accept: the offer covers one of the alternatives. */
@@ -207,9 +286,12 @@ public class WiredTradingSession {
         if (this.state != STATE_CONFIRMING) return Confirmation.refused(FAILURE_SILENT);
         if (hasExpired(nowMillis)) return Confirmation.refused(FAILURE_TIMEOUT);
 
-        Match match = evaluate();
+        int times = timesToSettle();
+        Match match = ContractRequirementEvaluator.firstSatisfied(
+                this.rules.times(times), this.walletBalance, getOfferedItems());
         if (!match.satisfied()) return Confirmation.refused(FAILURE_REQUIREMENTS);
 
+        this.settledTimes = times;
         this.state = STATE_CONFIRMED;
         return Confirmation.settle(match);
     }

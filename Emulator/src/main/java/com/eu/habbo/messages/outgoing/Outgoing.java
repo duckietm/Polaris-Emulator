@@ -166,6 +166,7 @@ public class Outgoing {
     public static final int HallOfFameComposer = 3005; // PRODUCTION-201611291003-338511768
     public static final int WiredSavedComposer = 1155; // PRODUCTION-201611291003-338511768
     public static final int WiredMonitorDataComposer = 5101; // CUSTOM
+    public static final int WiredRoomStatsComposer = 1891; // AIR (wired menu monitor room stats)
     public static final int WiredRoomSettingsDataComposer = 5102; // CUSTOM
     public static final int WiredUserVariablesDataComposer = 5103; // CUSTOM
     public static final int WiredArrayInspectionDataComposer = 5111; // CUSTOM

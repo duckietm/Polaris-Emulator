@@ -5,8 +5,10 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectInitTransaction;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -197,15 +199,44 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        ContractFurniCatalog catalog = ContractFurniCatalog.live();
+        // Chests picked on the contract itself (our older editor) move to the Initiate Transaction boxes that use it,
+        // where AIR keeps them, when that changes nothing at runtime; then the official editor can show the contract.
         if (client != null
                 && room != null
-                && room.canInspectWired(client.getHabbo())
-                && opensNativeEditor(ContractFurniCatalog.live())) {
+                && !this.chestIds.isEmpty()
+                && room.canModifyWired(client.getHabbo())
+                && this.editableOnceChestsMove(catalog)) {
+            WiredEffectInitTransaction.adoptContractChests(room, this);
+        }
+
+        if (client != null && room != null && room.canInspectWired(client.getHabbo()) && opensNativeEditor(catalog)) {
             client.sendResponse(new WiredContractOpenComposer(this.getId()));
             this.activateBox(room);
             return;
         }
         super.onClick(client, room, objects);
+    }
+
+    /** Whether the official editor could show this contract once the chests picked on it moved to its boxes. */
+    protected boolean editableOnceChestsMove(ContractFurniCatalog catalog) {
+        return this.supportsNativeEditor() && toNative(0, catalog) != null;
+    }
+
+    /** Called when the chests picked on this contract moved to its Initiate Transaction boxes, before it is saved. */
+    public void onChestsAdopted() {}
+
+    /**
+     * The alternatives a player may pay this run. The fixed contracts always ask the same; the custom contract can
+     * read a variable or a selector. Null when the contract cannot be resolved this run, which fails the transaction.
+     */
+    public List<List<Term>> giveRulesFor(WiredContext ctx, Room room) {
+        return this.giveRules;
+    }
+
+    /** What the contract hands back this run; null when it cannot be resolved (see {@link #giveRulesFor}). */
+    public List<Term> getRuleFor(WiredContext ctx, Room room) {
+        return this.getRule;
     }
 
     /** This contract as the official editor shows it, or null when it cannot show all of it. */
@@ -251,21 +282,70 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
                 this.rewardText);
     }
 
+    /**
+     * One rule as the official editor shows it, or null when it cannot: more nodes than AIR allows, a currency other
+     * than credits (AIR's coin node is credits only), an amount outside AIR's caps, or furni a contract may not hold.
+     * Nodes of the same coins or the same furni are shown as one: a rule is settled on its totals, so "5 coins and 5
+     * coins" and "10 coins" cost the same, and a native save then stores the shorter form.
+     */
     private static List<WiredNativeContract.Node> toNativeRule(List<Term> rule, ContractFurniCatalog catalog) {
-        if (rule.size() > WiredNativeContract.MAX_NODES) return null;
+        List<Term> merged = mergeSameNodes(rule);
+        if (merged.size() > WiredNativeContract.MAX_NODES) return null;
 
         List<WiredNativeContract.Node> nodes = new ArrayList<>();
-        for (Term term : rule) {
+        for (Term term : merged) {
             if (term.isFurni()) {
+                if (term.amount < 1 || term.amount > WiredNativeContract.MAX_FURNI) return null;
+                if (catalog != null && !catalog.allowedInContract(term.baseItemId)) return null;
                 int typeId = catalog == null ? 0 : catalog.typeIdOf(term.baseItemId);
                 nodes.add(WiredNativeContract.Node.furni(
                         term.amount, term.wallItem, typeId > 0 ? typeId : term.baseItemId, term.posterId()));
             } else {
                 if (term.currencyType != CURRENCY_CREDITS) return null;
+                if (term.amount < 1 || term.amount > WiredNativeContract.MAX_COINS) return null;
                 nodes.add(WiredNativeContract.Node.coins(term.amount));
             }
         }
         return nodes;
+    }
+
+    /**
+     * The rule with the terms for the same thing added up, in the order each first appears: one per currency, one
+     * per furni type (wall or floor, base item, poster). The evaluator claims offered furni term by term and settles
+     * currency on the rule's total, so the merged rule asks for exactly the same.
+     */
+    static List<Term> mergeSameNodes(List<Term> rule) {
+        List<Term> merged = new ArrayList<>();
+        if (rule == null) return merged;
+
+        for (Term term : rule) {
+            if (term == null || term.amount <= 0) continue;
+            Term same = null;
+            for (Term existing : merged) {
+                if (sameThing(existing, term)) {
+                    same = existing;
+                    break;
+                }
+            }
+            if (same == null) {
+                merged.add(
+                        term.isFurni()
+                                ? Term.furni(
+                                        term.direction, term.wallItem, term.baseItemId, term.posterId(), term.amount)
+                                : Term.currency(term.direction, term.currencyType, term.amount));
+            } else {
+                same.amount = (int) Math.min(Integer.MAX_VALUE, (long) same.amount + term.amount);
+            }
+        }
+        return merged;
+    }
+
+    private static boolean sameThing(Term left, Term right) {
+        if (left.isFurni() != right.isFurni()) return false;
+        if (!left.isFurni()) return left.currencyType == right.currencyType;
+        return left.wallItem == right.wallItem
+                && left.baseItemId == right.baseItemId
+                && left.posterId().equals(right.posterId());
     }
 
     /**

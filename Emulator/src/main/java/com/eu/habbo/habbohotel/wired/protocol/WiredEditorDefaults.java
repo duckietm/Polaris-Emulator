@@ -65,6 +65,11 @@ public final class WiredEditorDefaults {
         defaults(new int[] {0, 0, 0, 0}, "wf_cnd_counter_time_matches");
         defaults(new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0}, "wf_cnd_match_time");
         defaults(new int[] {0, 0, 127, 1, 1, 4095, 0, 0}, "wf_cnd_match_date");
+        // AIR class_4135: normal mode, multiplier 1, timeout off at 300 s; class_4137: specific contract.
+        defaults(new int[] {0, 1, 0, -10, 0, 300}, "wf_act_init_transaction");
+        defaults(new int[] {0}, "wf_act_cancel_transaction");
+        // AIR class_4234: payment and reward off, coins, a fixed amount of 1 on the room.
+        defaults(new int[] {0, 0, 0, 1, -10, 0, 0, 0, 1, -10}, "wf_xtra_custom_contract");
 
         quantifier(
                 QUANTIFIER_FURNI,

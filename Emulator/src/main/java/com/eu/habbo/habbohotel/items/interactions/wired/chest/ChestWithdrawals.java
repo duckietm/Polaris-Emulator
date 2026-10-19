@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.earnings.WiredEarnings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -68,16 +69,27 @@ public final class ChestWithdrawals {
     }
 
     /**
-     * Coins out of a coin chest into a player's wallet as credits. A negative amount takes them all.
+     * Coins out of a coin chest into a player's wallet as credits. A negative amount takes them all. Coins wired
+     * hands out go to the games row of the earnings window ({@link WiredEarnings}).
      */
     public static Result coins(Habbo habbo, InteractionWiredChest chest, Room room, int amount, int source) {
+        return coins(habbo, chest, room, amount, source, WiredEarnings.CATEGORY_GAMES);
+    }
+
+    /**
+     * Coins out of a coin chest. A player's own withdrawal goes into their wallet; coins wired hands out go to the
+     * earnings window row of {@code earningsCategory} (AIR 11 games, 13 agency) when the hotel runs it.
+     */
+    public static Result coins(
+            Habbo habbo, InteractionWiredChest chest, Room room, int amount, int source, int earningsCategory) {
         if (habbo == null || chest == null || chest.chestKind() != ChestStorage.KIND_CURRENCY) return Result.NOTHING;
 
         int storedBefore = chest.getContents().getCoins();
         int taken = chest.takeCoins(amount);
         if (taken <= 0) return Result.NOTHING;
 
-        habbo.giveCredits(taken);
+        if (source == ChestTransactionLog.SOURCE_WIRED) WiredEarnings.get().pay(habbo, taken, earningsCategory);
+        else habbo.giveCredits(taken);
         record(chest, room, habbo, source, taken, List.of());
 
         chest.notifyViewers(room, List.of(), List.of());

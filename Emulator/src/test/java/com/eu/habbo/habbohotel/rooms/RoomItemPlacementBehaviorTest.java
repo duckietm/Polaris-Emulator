@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -53,6 +54,24 @@ class RoomItemPlacementBehaviorTest {
             assertEquals(
                     FurnitureMovementError.NO_RIGHTS,
                     new RoomItemManager(room).placeWallFurniAt(mock(HabboItem.class), ":w=1,2 l=3,4", owner));
+        }
+    }
+
+    @Test
+    void wallPlacementAtTheWallCapIsRejectedBeforePluginEvents() {
+        Room room = mock(Room.class);
+        Habbo owner = mock(Habbo.class);
+        when(room.hasRights(owner)).thenReturn(true);
+        when(room.getWallItems()).thenReturn(Set.of(mock(HabboItem.class), mock(HabboItem.class)));
+
+        try {
+            RoomWallItemLimit.configure(2);
+
+            assertEquals(
+                    FurnitureMovementError.MAX_ITEMS,
+                    new RoomItemManager(room).placeWallFurniAt(mock(HabboItem.class), ":w=1,2 l=3,4", owner));
+        } finally {
+            RoomWallItemLimit.configure(RoomWallItemLimit.DEFAULT_MAX_WALL_ITEMS);
         }
     }
 }

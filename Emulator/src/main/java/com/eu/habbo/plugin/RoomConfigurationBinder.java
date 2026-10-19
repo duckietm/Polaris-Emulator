@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
+import com.eu.habbo.habbohotel.rooms.RoomWallItemLimit;
 import com.eu.habbo.habbohotel.rooms.TraxManager;
 import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.clothingvalidation.ClothingValidationManager;
@@ -119,6 +120,10 @@ final class RoomConfigurationBinder extends ConfigurationBinder {
         this.apply(
                 "hotel.room.furni.max",
                 () -> Room.MAXIMUM_FURNI = this.configuration.getInt("hotel.room.furni.max", 2500));
+        this.apply(
+                "hotel.room.wallfurni.max",
+                () -> RoomWallItemLimit.configure(this.configuration.getInt(
+                        "hotel.room.wallfurni.max", RoomWallItemLimit.DEFAULT_MAX_WALL_ITEMS)));
         this.apply(
                 "hotel.room.stickies.max",
                 () -> Room.MAXIMUM_POSTITNOTES = this.configuration.getInt("hotel.room.stickies.max", 200));

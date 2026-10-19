@@ -65,6 +65,8 @@ public enum WiredEffectType {
     // Phase-2 chest/storage + transactions + place/remove-furni (action/selector codes).
     GIVE_CURRENCY_FROM_CHEST(99),
     GIVE_FURNI_FROM_CHEST(102),
+    /** @deprecated the custom chest scanner selector, replaced by the official add-on (addon code 18). */
+    @Deprecated
     SCAN_CHEST_FURNI_BY_TYPE(103),
     INIT_TRANSACTION(104),
     CANCEL_TRANSACTION(105),

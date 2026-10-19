@@ -88,6 +88,46 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         return candidates;
     }
 
+    /**
+     * What a leaderboard on this tile ranks, in execution order: the plain user variable boxes it is stacked with
+     * and the plain user variable references, which rank the shared variable's holders. AIR's editor offers what the
+     * server lists here and filters only on target, persistence and pointers, so a reference (shared, so persisted)
+     * is offered like a permanent variable.
+     */
+    public List<InteractionWiredExtra> getRankedVariables(Room room) {
+        List<InteractionWiredExtra> ranked = new ArrayList<>();
+        if (room == null || room.getRoomSpecialTypes() == null) {
+            return ranked;
+        }
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(this.getX(), this.getY());
+        if (extras == null || extras.isEmpty()) {
+            return ranked;
+        }
+        for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
+            if (isRankable(extra)) {
+                ranked.add(extra);
+            }
+        }
+        return ranked;
+    }
+
+    /** A plain (not array) user variable box, or a plain user variable reference. */
+    public static boolean isRankable(InteractionWiredExtra extra) {
+        if (extra instanceof WiredExtraUserVariable variable) {
+            return !variable.isArray();
+        }
+        return extra instanceof WiredExtraVariableReference reference
+                && reference.isUserReference()
+                && !reference.isArrayDeclared();
+    }
+
+    /** The name a ranked variable box goes by in this room. */
+    public static String nameOf(InteractionWiredExtra extra) {
+        if (extra instanceof WiredExtraUserVariable variable) return variable.getVariableName();
+        if (extra instanceof WiredExtraVariableReference reference) return reference.getVariableName();
+        return "";
+    }
+
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
         return false;
@@ -114,7 +154,7 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         message.appendInt(0);
         message.appendInt(0);
 
-        List<WiredExtraUserVariable> candidates = this.getCandidates(room);
+        List<InteractionWiredExtra> candidates = this.getRankedVariables(room);
         int shownChoices = Math.min(candidates.size(), MAX_CONTEXT_CHOICES);
         message.appendInt(1);
         message.appendInt(CONTEXT_TYPE);
@@ -124,11 +164,15 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         message.appendInt(candidates.size());
         message.appendInt(shownChoices);
         for (int i = 0; i < shownChoices; i++) {
-            WiredExtraUserVariable variable = candidates.get(i);
+            InteractionWiredExtra variable = candidates.get(i);
             message.appendString(Integer.toString(variable.getId()));
-            message.appendString(variable.getVariableName());
-            message.appendBoolean(variable.isPermanentAvailability());
-            message.appendBoolean(variable.hasValue());
+            message.appendString(nameOf(variable));
+            // A reference names a shared variable, whose holders are saved like a permanent one's.
+            message.appendBoolean(!(variable instanceof WiredExtraUserVariable user) || user.isPermanentAvailability());
+            message.appendBoolean(
+                    variable instanceof WiredExtraUserVariable user
+                            ? user.hasValue()
+                            : ((WiredExtraVariableReference) variable).hasValue());
             message.appendInt(WiredVariableLevelSystemSupport.getLevelSystem(room, variable) != null ? 1 : 0);
         }
     }

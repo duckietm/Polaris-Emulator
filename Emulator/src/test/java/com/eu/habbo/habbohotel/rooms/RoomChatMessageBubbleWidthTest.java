@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -9,9 +11,9 @@ import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.Test;
 
 /**
- * A wired message may ask for a bubble width of its own. The client reads it as an optional int at
- * the very end of the chat packet, so a message without one must end exactly where it ended before
- * plus a -1, and old clients that stop reading earlier lose nothing.
+ * A wired message may ask for a bubble width of its own, and a wired bot may hide its name. The client
+ * reads both as an optional tail of the chat packet (the width int, then the hide-name boolean), so a
+ * plain message ends with -1 and false, and old clients that stop reading earlier lose nothing.
  */
 class RoomChatMessageBubbleWidthTest {
 
@@ -26,6 +28,29 @@ class RoomChatMessageBubbleWidthTest {
         message.setBubbleWidthOverride(2);
 
         assertEquals(2, trailingInt(message));
+    }
+
+    @Test
+    void aPlainMessageKeepsTheName() {
+        assertFalse(trailingBoolean(message()));
+    }
+
+    @Test
+    void theHiddenNameTravelsAfterTheWidth() {
+        RoomChatMessage message = message();
+        message.setBubbleWidthOverride(1);
+        message.setHideUsername(true);
+
+        assertEquals(1, trailingInt(message));
+        assertTrue(trailingBoolean(message));
+    }
+
+    @Test
+    void theCopyKeepsTheHiddenName() {
+        RoomChatMessage message = message();
+        message.setHideUsername(true);
+
+        assertTrue(new RoomChatMessage(message).isHideUsername());
     }
 
     @Test
@@ -53,7 +78,16 @@ class RoomChatMessageBubbleWidthTest {
     private static int trailingInt(RoomChatMessage message) {
         ByteBuf packet = new RoomUserTalkComposer(message).compose().get();
         try {
-            return packet.getInt(packet.writerIndex() - 4);
+            return packet.getInt(packet.writerIndex() - 5);
+        } finally {
+            packet.release();
+        }
+    }
+
+    private static boolean trailingBoolean(RoomChatMessage message) {
+        ByteBuf packet = new RoomUserTalkComposer(message).compose().get();
+        try {
+            return packet.getByte(packet.writerIndex() - 1) == 1;
         } finally {
             packet.release();
         }

@@ -121,8 +121,12 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
 
         this.level = normalizeLevel(param(intParams, 0, MIN_LEVEL));
         this.comparison = normalizeComparison(param(intParams, 1, COMPARISON_GREATER_THAN_OR_EQUAL));
-        this.userSource = param(intParams, 2, WiredSourceUtil.SOURCE_TRIGGER);
-        this.quantifier = param(intParams, 3, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+        // Official layout: [level, comparison], the users in the official source slot; our quantifier
+        // (0 all, 1 any) follows as param 2.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? settings.getUserSourceTypes()[0]
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = param(intParams, 2, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
         this.variableToken = normalizeToken(settings.getStringParam());
         this.variableItemId = tokenItemId(this.variableToken);
 
@@ -151,10 +155,9 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.variableToken);
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.level);
         message.appendInt(this.comparison);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);

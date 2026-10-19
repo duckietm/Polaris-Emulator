@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -194,12 +193,15 @@ public final class WiredLeaderboardService implements WiredTickable {
             int overlayId = next.size() + 1;
             WiredLeaderboardConfig config = box.getConfig();
             List<WiredLeaderboardDescriptor.Choice> choices = new ArrayList<>();
-            for (WiredExtraUserVariable variable : box.getCandidates(room)) {
+            for (InteractionWiredExtra variable : box.getRankedVariables(room)) {
                 if (choices.size() >= MAX_CHOICES) break;
                 String id = Integer.toString(variable.getId());
                 String name = config.displayOverrides().get(id);
                 choices.add(new WiredLeaderboardDescriptor.Choice(
-                        id, name != null ? name : WiredLeaderboardCodec.suggest(variable.getVariableName())));
+                        id,
+                        name != null
+                                ? name
+                                : WiredLeaderboardCodec.suggest(WiredExtraVariableLeaderboard.nameOf(variable))));
             }
             String defaultVariableId = choices.isEmpty()
                     ? WiredLeaderboardCodec.NULL_VARIABLE_ID

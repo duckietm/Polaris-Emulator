@@ -1,14 +1,17 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
@@ -41,7 +44,7 @@ class WiredLeaderboardServiceTest {
         when(box.getId()).thenReturn(id);
         when(box.isPublished()).thenReturn(true);
         when(box.getConfig()).thenReturn(WiredLeaderboardCodec.defaults(1, 1));
-        when(box.getCandidates(any())).thenReturn(List.of(coins));
+        when(box.getRankedVariables(any())).thenReturn(List.of(coins));
         this.extras.add(box);
         return box;
     }
@@ -70,6 +73,46 @@ class WiredLeaderboardServiceTest {
         assertEquals(1, second.size());
         assertEquals(1, second.get(0).overlayId());
         assertEquals(3, second.get(0).revision());
+    }
+
+    @Test
+    void aUserVariableReferenceIsRankedWithTheStackedVariables() {
+        WiredExtraVariableReference shared = mock(WiredExtraVariableReference.class);
+        when(shared.getId()).thenReturn(901);
+        when(shared.isUserReference()).thenReturn(true);
+        when(shared.getVariableName()).thenReturn("shared");
+        WiredExtraVariableReference global = mock(WiredExtraVariableReference.class);
+        when(global.getId()).thenReturn(902);
+        when(global.isRoomReference()).thenReturn(true);
+        WiredExtraVariableReference sharedArray = mock(WiredExtraVariableReference.class);
+        when(sharedArray.getId()).thenReturn(903);
+        when(sharedArray.isUserReference()).thenReturn(true);
+        when(sharedArray.isArrayDeclared()).thenReturn(true);
+        Item item = mock(Item.class);
+        WiredExtraVariableLeaderboard box = new WiredExtraVariableLeaderboard(5, 1, item, "", 0, 0);
+        when(specialTypes.getExtras(0, 0))
+                .thenReturn(new LinkedHashSet<>(List.of(shared, global, sharedArray, coins, box)));
+
+        assertEquals(List.of(coins, shared), box.getRankedVariables(room));
+        assertEquals("shared", WiredExtraVariableLeaderboard.nameOf(shared));
+        assertFalse(WiredExtraVariableLeaderboard.isRankable(global), "room references have no holders to rank");
+
+        // The rows are the store's holders of the reference, which reads the shared variable's saved rows.
+        RoomUserVariableStore store = mock(RoomUserVariableStore.class);
+        when(userVariables.getStore()).thenReturn(store);
+        when(specialTypes.getExtra(901)).thenReturn(shared);
+        when(store.count(901)).thenReturn(1);
+        when(store.page(901, RoomUserVariableStore.Order.VALUE, true, 0, WiredLeaderboardChunk.SIZE))
+                .thenReturn(List.of(new RoomUserVariableStore.Holder(5, "ann", 42, 100, 200)));
+        when(store.figures(any())).thenReturn(Map.of());
+
+        WiredLeaderboardChunk chunk = WiredLeaderboardQuery.chunk(room, WiredLeaderboardCodec.defaults(1, 1), "901", 0);
+        assertEquals(1, chunk.totalCount());
+        assertEquals("42", chunk.rows().get(0).rawValue());
+        assertEquals(
+                0,
+                WiredLeaderboardQuery.chunk(room, WiredLeaderboardCodec.defaults(1, 1), "902", 0)
+                        .totalCount());
     }
 
     @Test

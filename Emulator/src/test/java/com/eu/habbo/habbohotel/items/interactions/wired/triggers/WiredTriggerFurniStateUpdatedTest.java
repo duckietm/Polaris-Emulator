@@ -13,8 +13,11 @@ import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -84,6 +87,23 @@ class WiredTriggerFurniStateUpdatedTest {
 
         assertTrue(
                 savedState.matches(savedState, stateEvent(WiredEvent.Type.FURNI_STATE_UPDATED, room, watched, true)));
+    }
+
+    @Test
+    void applyingTheSnapshotSetsOnlyTheSavedStates() throws Exception {
+        HabboItem item = furni(500, "1");
+        Room room = roomWith(item);
+        WiredTriggerFurniStateUpdated box = new WiredTriggerFurniStateUpdated(1, 1, boxBase(), "", 0, 0);
+        box.loadWiredData(
+                row("{\"triggerMode\":0,\"furniSource\":100,\"snapshots\":[{\"itemId\":500,\"state\":\"0\"}]}"), room);
+
+        List<WiredMatchFurniSetting> settings = new ArrayList<>(box.getMatchFurniSettings());
+
+        assertEquals(1, settings.size());
+        assertEquals(500, settings.get(0).item_id);
+        assertEquals("0", settings.get(0).state);
+        assertTrue(box.shouldMatchState());
+        assertFalse(box.shouldMatchPosition() || box.shouldMatchRotation() || box.shouldMatchAltitude());
     }
 
     @Test

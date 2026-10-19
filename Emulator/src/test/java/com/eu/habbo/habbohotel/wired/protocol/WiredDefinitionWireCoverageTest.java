@@ -131,7 +131,7 @@ class WiredDefinitionWireCoverageTest {
                 in.release();
 
                 boolean official019 = code >= 0 && code <= 19;
-                if (!official019 && code < WiredSelectorCodes.SCAN_CHEST_FURNI_BY_TYPE) {
+                if (!official019) {
                     failures.add(type.getSimpleName() + " sends selector code " + code);
                 }
                 String previous = seen.put(code, type.getSimpleName());

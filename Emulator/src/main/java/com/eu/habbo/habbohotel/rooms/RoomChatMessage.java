@@ -49,6 +49,8 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
     private String RoomChatColour; // Added Chatcolor
     /** -1 follows the room setting; 0 wide, 1 normal, 2 thin as the room chat settings name them. */
     private int bubbleWidthOverride = NO_BUBBLE_WIDTH_OVERRIDE;
+    /** The bubble shows the message without the speaker's name, as a wired bot may ask. */
+    private boolean hideUsername = false;
 
     public RoomChatMessage(MessageHandler message) {
         if (message.packet.getMessageId() == Incoming.RoomUserWhisperEvent) {
@@ -142,6 +144,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         this.roomUnitId = chatMessage.roomUnitId;
         this.emotion = (byte) chatMessage.getEmotion();
         this.bubbleWidthOverride = chatMessage.bubbleWidthOverride;
+        this.hideUsername = chatMessage.hideUsername;
     }
 
     public RoomChatMessage(String message, RoomUnit roomUnit, RoomChatMessageBubbles bubble) {
@@ -285,6 +288,8 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             message.appendString(customizationData.displayOrder);
             // Optional tail: an old client stops reading before it, a new one reads -1 as "room setting".
             message.appendInt(this.bubbleWidthOverride);
+            // Optional tail after the width: an old client stops reading before it.
+            message.appendBoolean(this.hideUsername);
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
@@ -296,6 +301,14 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
 
     public void setBubbleWidthOverride(int bubbleWidthOverride) {
         this.bubbleWidthOverride = normalizeBubbleWidthOverride(bubbleWidthOverride);
+    }
+
+    public boolean isHideUsername() {
+        return this.hideUsername;
+    }
+
+    public void setHideUsername(boolean hideUsername) {
+        this.hideUsername = hideUsername;
     }
 
     /** Anything that is not one of the three widths means "no override". */

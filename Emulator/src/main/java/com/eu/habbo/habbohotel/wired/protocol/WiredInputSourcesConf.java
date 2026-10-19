@@ -186,6 +186,13 @@ public final class WiredInputSourcesConf {
                 "wf_act_give_currency",
                 "wf_act_give_furni");
 
+        // Chest item type scanner: the item types on the first picks, the chests on the second; types may be wall
+        // furni.
+        put(
+                "wf_xtra_scan_chest_furni_by_type",
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI, ALL_FURNI}, new int[0][], new int[] {100, 101}, new int[0], true));
+
         // Their reference picks are 100 in the official editor; stored 101 rows still load as the same picks.
         put(
                 new WiredInputSourcesConf(

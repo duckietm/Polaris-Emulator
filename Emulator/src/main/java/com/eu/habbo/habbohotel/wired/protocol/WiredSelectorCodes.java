@@ -6,12 +6,9 @@ import java.util.Map;
 /**
  * Official selector codes (AIR {@code SelectorCodes}, build WIN63-202610131318). Our selectors are effect
  * boxes typed by {@link WiredEffectType}, whose codes share the action space; the selector definition
- * packet carries the official code instead. Our own selectors start at 1000.
+ * packet carries the official code instead.
  */
 public final class WiredSelectorCodes {
-    /** Officially the chest item type scanner addon; still a selector here. */
-    public static final int SCAN_CHEST_FURNI_BY_TYPE = 1000;
-
     private static final Map<Integer, Integer> OFFICIAL = Map.ofEntries(
             Map.entry(WiredEffectType.FURNI_BYTYPE_SELECTOR.code, 0),
             Map.entry(WiredEffectType.FURNI_PICKS_SELECTOR.code, 1),
@@ -32,8 +29,7 @@ public final class WiredSelectorCodes {
             Map.entry(WiredEffectType.FURNI_ALTITUDE_SELECTOR.code, 16),
             Map.entry(WiredEffectType.FURNI_WITH_VAR_SELECTOR.code, 17),
             Map.entry(WiredEffectType.USERS_WITH_VAR_SELECTOR.code, 18),
-            Map.entry(WiredEffectType.REMOTE_SELECTOR.code, 19),
-            Map.entry(WiredEffectType.SCAN_CHEST_FURNI_BY_TYPE.code, SCAN_CHEST_FURNI_BY_TYPE));
+            Map.entry(WiredEffectType.REMOTE_SELECTOR.code, 19));
 
     private WiredSelectorCodes() {}
 

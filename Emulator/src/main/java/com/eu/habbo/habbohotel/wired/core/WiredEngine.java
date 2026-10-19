@@ -5,6 +5,7 @@ import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecutionLimit;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRandom;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
@@ -839,7 +840,10 @@ public final class WiredEngine {
         LOGGER.debug("[WiredEngine][Room {}] {}", room.getId(), message);
     }
 
-    /** Publishes array captures before conditions so every consumer observes one immutable run scope. */
+    /**
+     * Publishes chest scans and array captures before conditions so every consumer observes one immutable run
+     * scope.
+     */
     private void captureArrayEntries(Room room, WiredStack stack, WiredContext ctx) {
         if (room == null
                 || stack == null
@@ -850,10 +854,24 @@ public final class WiredEngine {
         }
 
         List<WiredExtraArrayCaptureVariable> capturers = new ArrayList<>();
+        List<WiredExtraChestItemTypeScanner> scanners = new ArrayList<>();
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(room.getRoomSpecialTypes()
                 .getExtras(stack.triggerItem().getX(), stack.triggerItem().getY()))) {
             if (extra instanceof WiredExtraArrayCaptureVariable capturer) {
                 capturers.add(capturer);
+            } else if (extra instanceof WiredExtraChestItemTypeScanner scanner) {
+                scanners.add(scanner);
+            }
+        }
+
+        for (WiredExtraChestItemTypeScanner scanner : scanners) {
+            ctx.state().step();
+            try {
+                scanner.scan(ctx);
+            } catch (WiredLimitException exception) {
+                throw exception;
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Error scanning chests for item {}", scanner.getId(), exception);
             }
         }
         if (capturers.isEmpty()) {

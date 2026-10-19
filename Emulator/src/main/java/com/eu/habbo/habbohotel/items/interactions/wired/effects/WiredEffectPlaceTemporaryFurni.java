@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.interfaces.InteractionWiredMatchFurniSettings;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -22,6 +23,7 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
@@ -35,8 +37,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -58,7 +62,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * furni slot), user (the second user slot), global or context. The variables travel in the string
  * param, as our other variable boxes send them: {@code "spawnVariableId\tvalueVariableId"}.
  */
-public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect implements WiredOfficialSources {
+public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
+        implements WiredOfficialSources, InteractionWiredMatchFurniSettings {
     private static final String PLACEMENT_FAILURE_TYPE = "wired.error";
     private static final String PLACEMENT_FAILURE_IMAGE = "${image.library.url}album1584/WIRD2.png";
     private static final String PLACEMENT_FAILURE_MESSAGE = "${room.error.wired.placement_failure}";
@@ -365,6 +370,41 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
     @Override
     public WiredEffectType getType() {
         return type;
+    }
+
+    /**
+     * Official "apply snapshot" header button: puts the picked furni that are still in the room back where, and how,
+     * the snapshot saw them (state, tile, altitude and rotation).
+     */
+    @Override
+    public Set<WiredMatchFurniSetting> getMatchFurniSettings() {
+        Set<WiredMatchFurniSetting> settings = new LinkedHashSet<>();
+        for (Snapshot source : this.snapshot) {
+            String state = (source.extradata == null || source.extradata.isEmpty()) ? " " : source.extradata;
+            settings.add(
+                    new WiredMatchFurniSetting(source.itemId, state, source.rotation, source.x, source.y, source.z));
+        }
+        return settings;
+    }
+
+    @Override
+    public boolean shouldMatchState() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldMatchRotation() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldMatchPosition() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldMatchAltitude() {
+        return true;
     }
 
     @Deprecated

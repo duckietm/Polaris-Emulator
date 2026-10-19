@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Chest Furni-of-Type scanner (furni classname {@code wf_xtra_scan_chest_furni_by_type}). A read-only
- * selector that picks the room furni whose base-type matches a type stored in a selected
- * {@link InteractionWiredChest}. (The config-based chest holds virtual contents, not real instances —
- * so "scan chest furni by type" resolves to room furni of the chest's stored types. When an authentic
- * drag-to-fill chest exists, this can be upgraded to scan real deposited furni.)
+ * The custom selector {@code wf_xtra_scan_chest_furni_by_type} used to load as: it picked the room furni whose
+ * base-type matches a type stored in a selected {@link InteractionWiredChest}.
+ *
+ * @deprecated no longer registered; the classname loads the official chest item type scanner add-on,
+ *     {@link com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner}. Kept so
+ *     plugins compiled against it still link.
  */
+@Deprecated
 public class WiredEffectScanChestFurniByType extends InteractionWiredEffect implements WiredOfficialSelector {
     public static final WiredEffectType type = WiredEffectType.SCAN_CHEST_FURNI_BY_TYPE;
     private static final int MAX_PICKED_FURNI = 20;

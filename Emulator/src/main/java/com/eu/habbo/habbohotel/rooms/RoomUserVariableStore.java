@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredDailyTaskSupport;
 import java.sql.SQLException;
@@ -241,7 +242,8 @@ public final class RoomUserVariableStore {
 
     /**
      * One page of the users holding a variable: the users in the room from the live store, merged with
-     * the saved rows of everybody else, in one order. Only the rows the page can need are read.
+     * the saved rows of everybody else, in one order. Only the rows the page can need are read. For a
+     * user variable reference the saved rows are the source room's rows of the shared variable.
      */
     public List<Holder> page(int definitionItemId, Order order, boolean descending, int offset, int limit) {
         WiredVariableDefinitionInfo info = this.live.getDefinitionInfo(definitionItemId);
@@ -258,9 +260,17 @@ public final class RoomUserVariableStore {
         int savedOffset = Math.max(0, offset - present.size());
         int wanted = (int) Math.min(Integer.MAX_VALUE, (long) offset + limit - savedOffset);
         List<Holder> saved = List.of();
-        if (this.isSaved(definitionItemId)) {
+        SavedRows rows = this.savedRows(definitionItemId);
+        if (rows != null) {
             saved = this.savedHolders(
-                    definitionItemId, effectiveOrder, descending, liveUsers, savedOffset, wanted, info.hasValue());
+                    definitionItemId,
+                    rows,
+                    effectiveOrder,
+                    descending,
+                    liveUsers,
+                    savedOffset,
+                    wanted,
+                    info.hasValue());
         }
         return merge(present, saved, savedOffset, saved.size() >= wanted, comparator, offset, limit);
     }
@@ -282,11 +292,12 @@ public final class RoomUserVariableStore {
     }
 
     private int countSaved(int definitionItemId, Set<Integer> liveUsers) {
-        if (!this.isSaved(definitionItemId)) {
+        SavedRows rows = this.savedRows(definitionItemId);
+        if (rows == null) {
             return 0;
         }
         try {
-            return this.repository.countUsers(this.room.getId(), definitionItemId, liveUsers);
+            return this.repository.countUsers(rows.roomId(), rows.definitionItemId(), liveUsers);
         } catch (SQLException e) {
             throw failure(e);
         }
@@ -310,6 +321,7 @@ public final class RoomUserVariableStore {
 
     private List<Holder> savedHolders(
             int definitionItemId,
+            SavedRows savedRows,
             Order order,
             boolean descending,
             Set<Integer> liveUsers,
@@ -324,7 +336,14 @@ public final class RoomUserVariableStore {
         List<RoomUserVariableRepository.SavedUser> rows;
         try {
             rows = this.repository.pageUsers(
-                    this.room.getId(), definitionItemId, order, descending, dayStart, liveUsers, offset, limit);
+                    savedRows.roomId(),
+                    savedRows.definitionItemId(),
+                    order,
+                    descending,
+                    dayStart,
+                    liveUsers,
+                    offset,
+                    limit);
         } catch (SQLException e) {
             throw failure(e);
         }
@@ -411,6 +430,28 @@ public final class RoomUserVariableStore {
     /** Whether users who leave keep the variable: a permanent plain custom variable. */
     boolean isSaved(int definitionItemId) {
         return this.savedDefinition(definitionItemId) != null;
+    }
+
+    /** Where the saved rows of a variable's holders are: a room and the variable's id there. */
+    record SavedRows(int roomId, int definitionItemId) {}
+
+    /**
+     * The saved rows a page of holders reads: this room's of a permanent plain custom variable, or the
+     * source room's of the shared variable a plain user reference points at (shared means permanent);
+     * null when users who leave keep nothing.
+     */
+    SavedRows savedRows(int definitionItemId) {
+        if (this.isSaved(definitionItemId)) {
+            return new SavedRows(this.room.getId(), definitionItemId);
+        }
+        if (this.live.definitionExtraOf(definitionItemId) instanceof WiredExtraVariableReference reference
+                && reference.isUserReference()
+                && !reference.isArrayDeclared()
+                && reference.getSourceRoomId() > 0
+                && reference.getSourceVariableItemId() > 0) {
+            return new SavedRows(reference.getSourceRoomId(), reference.getSourceVariableItemId());
+        }
+        return null;
     }
 
     private WiredExtraUserVariable savedDefinition(int definitionItemId) {

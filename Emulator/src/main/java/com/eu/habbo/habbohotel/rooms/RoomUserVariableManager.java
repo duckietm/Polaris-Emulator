@@ -1066,7 +1066,7 @@ public class RoomUserVariableManager {
                     reference.getVariableName(),
                     reference.hasValue(),
                     reference.getAvailability(),
-                    false,
+                    WiredVariableTextConnectorSupport.isTextConnected(this.room, reference),
                     reference.isReadOnly()));
         }
 
@@ -1126,7 +1126,7 @@ public class RoomUserVariableManager {
                     reference.getVariableName(),
                     reference.hasValue(),
                     reference.getAvailability(),
-                    false,
+                    WiredVariableTextConnectorSupport.isTextConnected(this.room, reference),
                     reference.isReadOnly());
         }
 

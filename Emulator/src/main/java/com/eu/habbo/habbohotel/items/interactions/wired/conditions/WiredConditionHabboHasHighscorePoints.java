@@ -22,8 +22,9 @@ import java.util.function.IntFunction;
 
 /**
  * "User has X points on the scoreboard" ({@code wf_cnd_x_points_leaderboard}): the best score the
- * resolved users hold on the selected highscore boards, compared to a number. Four ints: points,
- * comparison ({@link WiredComparison} codes), user source, quantifier; plus the boards. A user with
+ * resolved users hold on the selected highscore boards, compared to a number. Three ints: points,
+ * comparison ({@link WiredComparison} codes), quantifier; the users in the official source slot, plus
+ * the boards. A user with
  * no entry has zero points; a box with no board selected never passes. The negative box is
  * {@link WiredConditionNotHabboHasHighscorePoints}.
  */
@@ -119,8 +120,10 @@ public class WiredConditionHabboHasHighscorePoints extends InteractionWiredCondi
         int[] params = settings.getIntParams();
         this.points = Math.max(0, param(params, 0, 0));
         this.comparison = WiredComparison.normalize(param(params, 1, WiredComparison.GREATER_EQUAL));
-        this.userSource = param(params, 2, WiredSourceUtil.SOURCE_TRIGGER);
-        this.quantifier = param(params, 3, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? settings.getUserSourceTypes()[0]
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = param(params, 2, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
         this.boardIds.clear();
         if (settings.getFurniIds() != null) {
             for (int id : settings.getFurniIds()) this.boardIds.add(id);
@@ -150,10 +153,9 @@ public class WiredConditionHabboHasHighscorePoints extends InteractionWiredCondi
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.points);
         message.appendInt(this.comparison);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);

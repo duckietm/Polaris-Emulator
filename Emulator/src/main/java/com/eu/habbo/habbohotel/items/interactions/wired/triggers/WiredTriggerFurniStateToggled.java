@@ -4,9 +4,11 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.interfaces.InteractionWiredMatchFurniSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -21,7 +23,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
+public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger
+        implements InteractionWiredMatchFurniSettings {
     private static final WiredTriggerType type = WiredTriggerType.STATE_CHANGED;
     private static final int MODE_ALL_STATES = 0;
     private static final int MODE_SAVED_STATE = 1;
@@ -215,6 +218,40 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         }
 
         return true;
+    }
+
+    /**
+     * Official "apply snapshot" header button (on "furni state is changed", code 20): puts the picks back in the
+     * states saved with the box. An empty saved state is left alone, as the match-to-snapshot boxes do.
+     */
+    @Override
+    public Set<WiredMatchFurniSetting> getMatchFurniSettings() {
+        Set<WiredMatchFurniSetting> settings = new LinkedHashSet<>();
+        for (StateSnapshot snapshot : this.snapshots) {
+            settings.add(new WiredMatchFurniSetting(
+                    snapshot.itemId, snapshot.state.isEmpty() ? " " : snapshot.state, 0, 0, 0));
+        }
+        return settings;
+    }
+
+    @Override
+    public boolean shouldMatchState() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldMatchRotation() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldMatchPosition() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldMatchAltitude() {
+        return false;
     }
 
     @Override

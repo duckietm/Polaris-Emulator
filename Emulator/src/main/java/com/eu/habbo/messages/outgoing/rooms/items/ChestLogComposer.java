@@ -2,10 +2,10 @@ package com.eu.habbo.messages.outgoing.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 /**
@@ -22,7 +22,7 @@ public class ChestLogComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.ChestLogComposer);
-        this.response.appendInt(this.chest.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.chest.getId()));
 
         List<ChestStorage.LogEntry> log = this.chest.getContents().getLog();
         this.response.appendInt(log.size());

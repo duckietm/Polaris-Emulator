@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -31,7 +32,7 @@ public class ChestEnableWiredEvent extends MessageHandler {
         Room room = habbo.getHabboInfo().getCurrentRoom();
         if (room == null) return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        HabboItem item = room.getHabboItem(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
         if (!(item instanceof InteractionWiredChest chest)) return;
         if (habbo.getHabboInfo().getId() != chest.getUserId()) return;
 

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.crafting.CraftingAltar;
 import com.eu.habbo.habbohotel.crafting.CraftingRecipe;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -26,7 +27,7 @@ public class CraftingCraftSecretEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int altarId = this.packet.readInt();
+        int altarId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         int count = this.packet.readInt();
 
         if (count <= 0
@@ -52,7 +53,7 @@ public class CraftingCraftSecretEvent extends MessageHandler {
                 Map<Item, Integer> items = new HashMap<>();
 
                 for (int i = 0; i < count; i++) {
-                    int itemId = this.packet.readInt();
+                    int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
                     HabboItem habboItem = this.client
                             .getHabbo()
                             .getInventory()

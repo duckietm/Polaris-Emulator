@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items.rentable;
 
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -11,7 +12,7 @@ public class ExtendRentOrBuyoutFurniEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         boolean isWallItem = this.packet.readBoolean();
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         boolean buyout = this.packet.readBoolean();
 
         if (!RoomItemInputGuard.isPositiveId(itemId)) return;

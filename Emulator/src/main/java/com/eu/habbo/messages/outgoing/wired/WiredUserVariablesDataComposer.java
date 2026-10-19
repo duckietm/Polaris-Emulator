@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing.wired;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
@@ -310,7 +311,7 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
 
         if (this.furniSnapshot != null) {
             for (RoomFurniVariableManager.FurniAssignmentsEntry furni : this.furniSnapshot.getFurnis()) {
-                this.response.appendInt(furni.getFurniId());
+                this.response.appendInt(BuildersClubItemIds.toWire(furni.getFurniId()));
                 this.response.appendInt(furni.getAssignments().size());
 
                 for (RoomFurniVariableManager.AssignmentEntry assignment : furni.getAssignments()) {

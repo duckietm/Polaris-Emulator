@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -30,7 +31,7 @@ public class RecolorFurniUpdateComposer extends MessageComposer {
         for (Update update : this.updates) {
             this.response.appendInt(update.furniIds().size());
             for (int furniId : update.furniIds()) {
-                this.response.appendInt(furniId);
+                this.response.appendInt(BuildersClubItemIds.toWire(furniId));
             }
             this.response.appendShort((update.rgb() >> 16) & 0xFF);
             this.response.appendShort((update.rgb() >> 8) & 0xFF);

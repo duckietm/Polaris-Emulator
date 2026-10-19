@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.unknown;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -17,7 +18,7 @@ public class UnknownFurniModelComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.UnknownFurniModelComposer);
-        this.response.appendInt(this.item.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.item.getId()));
         this.response.appendInt(this.unknownInt);
         return this.response;
     }

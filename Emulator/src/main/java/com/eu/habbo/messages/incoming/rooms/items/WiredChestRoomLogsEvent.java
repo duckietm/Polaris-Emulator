@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -33,7 +34,9 @@ public class WiredChestRoomLogsEvent extends MessageHandler {
         int filter = this.packet.readInt();
 
         // Appended, so a client that only knows how to ask about the whole room still can.
-        int chestId = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : 0;
+        int chestId = this.packet.bytesAvailable() >= 4
+                ? BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt())
+                : 0;
 
         this.client.sendResponse(
                 new WiredChestRoomLogsComposer(ChestTransactionLog.page(room.getId(), filter, amount, page, chestId)));

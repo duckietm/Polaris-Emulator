@@ -65,9 +65,13 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         if (room == null || room.getLayout() == null) return;
 
         List<InteractionWiredContract> contracts = new ArrayList<>();
+        // AIR picks the chests a transaction pays into and out of on this box, next to the contracts; a contract's
+        // own chest picks (our older editor) still count as well.
+        List<HabboItem> linked = new ArrayList<>();
         for (Integer id : this.contractIds) {
             HabboItem item = room.getHabboItem(id);
             if (item instanceof InteractionWiredContract contract) contracts.add(contract);
+            else if (item instanceof InteractionWiredChest) linked.add(item);
         }
 
         // No contracts → v1 signal behaviour (fire COMPLETE unconditionally).
@@ -84,14 +88,22 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         }
 
         // AIR: a contract only works with the chests that answer wired and are not locked.
-        List<HabboItem> linked = new ArrayList<>();
         for (InteractionWiredContract contract : contracts) {
             for (Integer chestId : contract.getChestIds()) {
                 HabboItem item = room.getHabboItem(chestId);
-                if (item != null) linked.add(item);
+                if (item != null && !linked.contains(item)) linked.add(item);
             }
         }
         List<InteractionWiredChest> chests = WiredChestPayouts.usable(linked);
+
+        // A payment contract in the official donation mode takes whatever the player offers.
+        if (isDonation(contracts)) {
+            room.getWiredRuntime()
+                    .getTradingManager()
+                    .openDonation(
+                            actor, tradeText(contracts), layoutType(contracts), NEGOTIATION_TIMEOUT_SECONDS, chests);
+            return;
+        }
 
         // A contract that asks the player for something is negotiated in the wired trade window: they
         // put credit furni and furni on the table and confirm.
@@ -103,8 +115,8 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
                             actor,
                             rules,
                             contracts.get(0).contractType(),
-                            "",
-                            LAYOUT_GENERIC,
+                            tradeText(contracts),
+                            layoutType(contracts),
                             NEGOTIATION_TIMEOUT_SECONDS,
                             chests);
             return;
@@ -121,7 +133,9 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
 
             List<InteractionWiredContract.Term> given = WiredChestPayouts.give(actor, room, chests, reward);
             if (!given.isEmpty() && actor.getClient() != null) {
-                actor.getClient().sendResponse(WiredTransactionSuccessComposer.reward(given, "", false));
+                actor.getClient()
+                        .sendResponse(WiredTransactionSuccessComposer.reward(
+                                given, rewardText(contracts), showRewardDialog(contracts)));
             }
             return ChestTransactionFailures.NONE;
         });
@@ -132,6 +146,52 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
             return;
         }
         this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
+    }
+
+    /** Every selected contract is a payment contract in donation mode. */
+    static boolean isDonation(List<InteractionWiredContract> contracts) {
+        if (contracts.isEmpty()) return false;
+        for (InteractionWiredContract contract : contracts) {
+            if (!contract.isDonation()) return false;
+        }
+        return true;
+    }
+
+    /**
+     * What the trade window tells the player they get: a payment contract's receive text, else a reward contract's
+     * reward text (AIR {@code PaymentContract} / {@code RewardContract}).
+     */
+    static String tradeText(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_PAYMENT
+                    && !contract.getReceiveText().isEmpty()) return contract.getReceiveText();
+        }
+        return rewardText(contracts);
+    }
+
+    /** The reward popup's text: the first reward contract's. */
+    static String rewardText(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_REWARD
+                    && !contract.getRewardText().isEmpty()) return contract.getRewardText();
+        }
+        return "";
+    }
+
+    /** Whether the reward popup opens by itself: any reward contract asks for it. */
+    static boolean showRewardDialog(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_REWARD && contract.isShowDialog()) return true;
+        }
+        return false;
+    }
+
+    /** The trade window's artwork: the first payment contract's layout. */
+    static String layoutType(List<InteractionWiredContract> contracts) {
+        for (InteractionWiredContract contract : contracts) {
+            if (contract.contractType() == InteractionWiredContract.TYPE_PAYMENT) return contract.getLayoutType();
+        }
+        return LAYOUT_GENERIC;
     }
 
     private void fire(WiredContext ctx, Room room, WiredEvent.Type eventType) {

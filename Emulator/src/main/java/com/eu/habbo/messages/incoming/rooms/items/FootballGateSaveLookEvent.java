@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.games.football.InteractionFootballGate;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -19,7 +20,7 @@ public class FootballGateSaveLookEvent extends MessageHandler {
         // anyone with rights in the room (controller level 1+), which is what Room.hasRights covers.
         if (room == null || !room.hasRights(this.client.getHabbo())) return;
 
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         HabboItem item = room.getHabboItem(itemId);

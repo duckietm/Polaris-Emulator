@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing.rooms;
 
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChooserDisableSupport;
 import com.eu.habbo.habbohotel.rooms.RoomConfInvisSupport;
 import com.eu.habbo.habbohotel.rooms.RoomHanditemBlockSupport;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -19,16 +20,17 @@ import com.eu.habbo.messages.outgoing.Outgoing;
  * <ul>
  *   <li>{@code isHanditemControlBlocked} - the room handitem-block controller
  *       ({@link RoomHanditemBlockSupport}),
- *   <li>{@code chooserDisabled} - whether the viewer may not open the furni /
- *       user choosers, i.e. has no room rights and no {@code acc_anyroomowner},
+ *   <li>{@code chooserDisabled} - a switched-on {@code :chooser} disabler
+ *       ({@link RoomChooserDisableSupport}); the client then keeps the user
+ *       chooser closed for visitors below rights,
  *   <li>{@code freeFurniMovementsEnabled} - the viewer's {@code acc_moverotate}
  *       permission, which is what lets them move furni freely here,
  *   <li>{@code invisibleFurni} - an active {@code conf_invis} controller
  *       ({@link RoomConfInvisSupport}).
  * </ul>
  *
- * <p>Two of the flags are per viewer, so this is sent per client and never
- * broadcast to the room.
+ * <p>{@code freeFurniMovementsEnabled} is per viewer, so this is sent per
+ * client and never broadcast to the room.
  */
 public class ConfigurationItemStatesComposer extends MessageComposer {
 
@@ -40,11 +42,7 @@ public class ConfigurationItemStatesComposer extends MessageComposer {
     public ConfigurationItemStatesComposer(Room room, Habbo habbo) {
         this.handitemControlBlocked = RoomHanditemBlockSupport.isHanditemBlocked(room);
         this.invisibleFurni = RoomConfInvisSupport.hasActiveController(room);
-
-        boolean mayUseChoosers = room != null
-                && habbo != null
-                && (room.hasRights(habbo) || habbo.hasPermission(Permission.ACC_ANYROOMOWNER));
-        this.chooserDisabled = !mayUseChoosers;
+        this.chooserDisabled = RoomChooserDisableSupport.isChooserDisabled(room);
         this.freeFurniMovementsEnabled = habbo != null && habbo.hasPermission(Permission.ACC_MOVEROTATE);
     }
 

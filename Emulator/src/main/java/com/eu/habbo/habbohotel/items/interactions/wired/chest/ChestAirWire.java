@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import java.util.ArrayList;
@@ -74,9 +75,9 @@ public final class ChestAirWire {
     /** A trade item, as the room trade window reads it. */
     public static void appendTradeItem(ServerMessage message, HabboItem item) {
         boolean wall = item.getBaseItem().getType() == FurnitureType.WALL;
-        message.appendInt(item.getId());
+        message.appendInt(BuildersClubItemIds.toWire(item.getId()));
         message.appendString(item.getBaseItem().getType().code);
-        message.appendInt(item.getId());
+        message.appendInt(BuildersClubItemIds.toWire(item.getId()));
         message.appendInt(item.getBaseItem().getSpriteId());
         message.appendInt(0);
         message.appendBoolean(item.getBaseItem().allowInventoryStack() && !item.isLimited());

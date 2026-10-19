@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
@@ -19,7 +20,7 @@ import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
 public class WiredEffectSaveDataEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -39,7 +40,8 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                                 effect instanceof WiredLargePayload || extra instanceof WiredLargePayload
                                         ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
                                         : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
-                        settings = InteractionWired.readSettings(this.packet, this.saveKind(), maximumStringLength);
+                        settings = BuildersClubItemIds.fromWire(
+                                InteractionWired.readSettings(this.packet, this.saveKind(), maximumStringLength), room);
                         settings.setRoom(room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));

@@ -27,13 +27,23 @@ public class FurnidataReader {
 
     private final Path source;
     private final long maxBytes;
+    private final java.util.Map<String, Integer> defaultDirections = new java.util.HashMap<>();
 
     public FurnidataReader(Path source, long maxBytes) {
         this.source = source;
         this.maxBytes = maxBytes;
     }
 
+    /**
+     * The floor furni {@code defaultdir} values seen by the last {@link #read()}, keyed by the
+     * lowercased base classname (the {@code *N} colour suffix stripped).
+     */
+    public java.util.Map<String, Integer> defaultDirections() {
+        return java.util.Collections.unmodifiableMap(this.defaultDirections);
+    }
+
     public List<FurnidataEntry> read() {
+        this.defaultDirections.clear();
         List<FurnidataEntry> out = new ArrayList<>();
         try {
             if (this.source == null || !Files.exists(this.source)) return out;
@@ -111,6 +121,9 @@ public class FurnidataReader {
                         || o.get("id").isJsonNull()
                         || !o.has("classname")
                         || o.get("classname").isJsonNull()) continue;
+                if (type == FurnitureType.FLOOR) {
+                    this.recordDefaultDirection(o);
+                }
                 out.add(new FurnidataEntry(
                         o.get("id").getAsInt(),
                         o.get("classname").getAsString(),
@@ -122,6 +135,24 @@ public class FurnidataReader {
                                 ? o.get("description").getAsString()
                                 : ""));
             }
+        }
+    }
+
+    private void recordDefaultDirection(JsonObject o) {
+        JsonElement value = o.get("defaultdir");
+        if (value == null || !value.isJsonPrimitive()) return;
+        try {
+            int direction = value.getAsInt();
+            String classname = o.get("classname").getAsString();
+            int star = classname.indexOf('*');
+            String key = (star >= 0 ? classname.substring(0, star) : classname)
+                    .trim()
+                    .toLowerCase(java.util.Locale.ROOT);
+            if (!key.isEmpty() && direction >= 0 && direction <= 7) {
+                this.defaultDirections.put(key, direction);
+            }
+        } catch (RuntimeException ignored) {
+            // a defaultdir that is not a number is left out
         }
     }
 

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredIt
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractWireUtil;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -102,9 +103,9 @@ public class WiredTradeItemsComposer extends MessageComposer {
     }
 
     private void appendLegacy(OfferedItem item) {
-        this.response.appendInt(item.itemId());
+        this.response.appendInt(BuildersClubItemIds.toWire(item.itemId()));
         this.response.appendString(item.wallItem() ? FurnitureType.WALL.code : FurnitureType.FLOOR.code);
-        this.response.appendInt(item.itemId());
+        this.response.appendInt(BuildersClubItemIds.toWire(item.itemId()));
         this.response.appendInt(ContractWireUtil.spriteIdOf(item.baseItemId()));
         this.response.appendInt(0);
         this.response.appendBoolean(true);

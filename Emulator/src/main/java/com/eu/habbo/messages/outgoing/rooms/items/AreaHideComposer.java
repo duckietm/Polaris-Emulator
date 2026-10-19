@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.RoomAreaHideSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
@@ -16,7 +17,7 @@ public class AreaHideComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.AreaHideComposer);
-        this.response.appendInt(this.item.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.item.getId()));
         this.response.appendBoolean(RoomAreaHideSupport.isControllerActive(this.item));
         this.response.appendInt(RoomAreaHideSupport.getRootX(this.item));
         this.response.appendInt(RoomAreaHideSupport.getRootY(this.item));

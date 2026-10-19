@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.ItemManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -40,7 +41,8 @@ public class RecycleEvent extends MessageHandler {
                     this.client.getHabbo().getInventory().getItemsComponent();
 
             for (int i = 0; i < count; i++) {
-                HabboItem item = itemsComponent.getHabboItem(this.packet.readInt());
+                HabboItem item = itemsComponent.getHabboItem(
+                        BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
 
                 if (item == null) return;
 

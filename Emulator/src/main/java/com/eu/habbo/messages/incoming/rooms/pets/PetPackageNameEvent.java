@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.rooms.pets;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -19,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 public class PetPackageNameEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         String name = this.packet.readString();
 
         if (!RoomItemInputGuard.isPositiveId(itemId)) {

@@ -206,19 +206,13 @@ public class RoomUserWalkEvent extends MessageHandler {
                 return false;
             }
 
-            // The pillow in the clicked lane; the other side only when that one is taken.
-            if (BedProfile.isPillowTaken(room, pillow, roomUnit)) {
-                RoomTile other = profile.getOtherSide(room, bed, pillow);
+            // The pillow in the clicked lane; the nearest free lane only when that one is taken.
+            pillow = profile.findFreePillow(room, bed, pillow, roomUnit);
 
-                // Both sides taken: nobody else's pillow is walked onto.
-                if (other == null || BedProfile.isPillowTaken(room, other, roomUnit)) {
-                    return true;
-                }
-
-                pillow = other;
+            // Every pillow taken: nobody else's pillow is walked onto.
+            if (pillow != null) {
+                roomUnit.setGoalLocation(pillow);
             }
-
-            roomUnit.setGoalLocation(pillow);
             return true;
         }
         return false;

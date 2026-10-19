@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.crafting.CraftingAltar;
 import com.eu.habbo.habbohotel.crafting.CraftingRecipe;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -20,7 +21,7 @@ import java.util.Map;
 public class CraftingCraftItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int craftingTable = this.packet.readInt();
+        int craftingTable = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null) {
             this.client.sendResponse(new CraftingResultComposer(null));

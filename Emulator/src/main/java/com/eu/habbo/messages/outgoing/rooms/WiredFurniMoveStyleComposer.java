@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -55,7 +56,7 @@ public class WiredFurniMoveStyleComposer extends MessageComposer {
             if (written++ >= count) {
                 break;
             }
-            this.response.appendInt(itemId);
+            this.response.appendInt(BuildersClubItemIds.toWire(itemId));
         }
         this.response.appendInt(this.style);
         this.response.appendInt(this.intensity);

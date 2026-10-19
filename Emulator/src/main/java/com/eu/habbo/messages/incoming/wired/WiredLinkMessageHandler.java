@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.InteractionWiredLink;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -19,7 +20,7 @@ public abstract class WiredLinkMessageHandler extends MessageHandler {
 
     @Override
     public final void handle() throws Exception {
-        int furniId = this.packet.readInt();
+        int furniId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         Room room = currentRoom();
         if (room == null || this.client.getHabbo() == null) {
             return;

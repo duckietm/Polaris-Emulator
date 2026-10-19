@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.wired.link.WiredLinkService;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -22,7 +23,7 @@ public class WiredLinkOperationResultComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.WiredLinkOperationResultComposer);
         this.response.appendInt(this.result.roomId());
-        this.response.appendInt(this.result.furniId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.result.furniId()));
         this.response.appendInt(this.result.operation());
         this.response.appendInt(this.result.resultCode());
         this.response.appendBoolean(this.result.hasConfiguration());

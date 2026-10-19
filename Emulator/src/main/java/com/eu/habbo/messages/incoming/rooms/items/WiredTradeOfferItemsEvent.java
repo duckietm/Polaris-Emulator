@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -36,7 +37,8 @@ public class WiredTradeOfferItemsEvent extends MessageHandler {
         int count = Math.min(Math.max(0, this.packet.readInt()), MAX_BATCH);
 
         List<Integer> itemIds = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) itemIds.add(this.packet.readInt());
+        for (int i = 0; i < count; i++)
+            itemIds.add(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
         if (itemIds.isEmpty()) return;
 
         WiredTradingManager manager = room.getWiredRuntime().getTradingManager();

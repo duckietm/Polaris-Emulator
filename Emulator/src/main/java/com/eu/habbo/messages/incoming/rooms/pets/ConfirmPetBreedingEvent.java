@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.pets;
 
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetBreedingNest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -9,7 +10,7 @@ public class ConfirmPetBreedingEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         String name = this.packet.readString();
         int petOneId = this.packet.readInt();
         int petTwoId = this.packet.readInt();

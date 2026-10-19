@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -214,7 +215,7 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
-        message.appendInt(this.getId());
+        message.appendInt(BuildersClubItemIds.toWire(this.getId()));
         message.appendString(read + FIELD_SEPARATOR + write);
         message.appendInt(1);
         message.appendInt(bulk ? 1 : 0);

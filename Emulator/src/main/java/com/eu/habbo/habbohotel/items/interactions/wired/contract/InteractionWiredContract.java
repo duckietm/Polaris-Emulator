@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.wired.WiredContractOpenComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -58,6 +59,18 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
     protected final List<Term> getRule = new ArrayList<>();
     protected final List<Term> terms = new ArrayList<>();
     protected final List<Integer> chestIds = new ArrayList<>();
+
+    /** The credits currency type; the official editor's coin node is credits and nothing else. */
+    public static final int CURRENCY_CREDITS = -1;
+
+    // The official contract editor's options (AIR PaymentContract / RewardContract). Stored only when they differ
+    // from these defaults, so a contract nobody opened in the new editor keeps its payload byte for byte.
+    private int paymentMode = WiredNativeContract.PAYMENT_MODE_SPECIFIC;
+    private String receiveText = "";
+    private String layoutType = WiredNativeContract.LAYOUT_GENERIC;
+    private int rewardCategory = WiredNativeContract.EARNINGS_CATEGORY_DEFAULT;
+    private boolean showDialog = false;
+    private String rewardText = "";
 
     protected InteractionWiredContract(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -123,6 +136,236 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
 
     public List<Integer> getChestIds() {
         return this.chestIds;
+    }
+
+    /** AIR payment mode: {@link WiredNativeContract#PAYMENT_MODE_DONATION} or {@code PAYMENT_MODE_SPECIFIC}. */
+    public int getPaymentMode() {
+        return this.paymentMode;
+    }
+
+    /** A payment contract that takes whatever the player offers instead of its rules. */
+    public boolean isDonation() {
+        return this.contractType() == TYPE_PAYMENT
+                && this.supportsNativeEditor()
+                && this.paymentMode == WiredNativeContract.PAYMENT_MODE_DONATION;
+    }
+
+    /** What the payment window tells the player they get (AIR "receive text"). */
+    public String getReceiveText() {
+        return this.receiveText;
+    }
+
+    /** The payment window's artwork: {@code generic} or {@code games}. */
+    public String getLayoutType() {
+        return this.layoutType;
+    }
+
+    /** The credit earnings category a reward's credits count towards (11 or 13). */
+    public int getRewardCategory() {
+        return this.rewardCategory;
+    }
+
+    /** Whether the reward popup opens by itself. */
+    public boolean isShowDialog() {
+        return this.showDialog;
+    }
+
+    /** The reward popup's text. */
+    public String getRewardText() {
+        return this.rewardText;
+    }
+
+    /**
+     * Payment, trade and reward contracts have the official contract editor; the custom contract is a stack add-on
+     * in the official client too and keeps the wired editor.
+     */
+    public boolean supportsNativeEditor() {
+        int code = contractCode();
+        return code == InteractionWiredContractPayment.CODE
+                || code == InteractionWiredContractTrade.CODE
+                || code == InteractionWiredContractReward.CODE;
+    }
+
+    /**
+     * Whether a click opens the official contract editor. A contract that holds something the official editor cannot
+     * show -- linked chests, a currency other than credits, more options or nodes than it allows -- keeps opening the
+     * wired editor, so nothing it holds is hidden or lost on a save.
+     */
+    public boolean opensNativeEditor(ContractFurniCatalog catalog) {
+        return supportsNativeEditor() && this.chestIds.isEmpty() && toNative(0, catalog) != null;
+    }
+
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (client != null
+                && room != null
+                && room.canInspectWired(client.getHabbo())
+                && opensNativeEditor(ContractFurniCatalog.live())) {
+            client.sendResponse(new WiredContractOpenComposer(this.getId()));
+            this.activateBox(room);
+            return;
+        }
+        super.onClick(client, room, objects);
+    }
+
+    /** This contract as the official editor shows it, or null when it cannot show all of it. */
+    public WiredNativeContract toNative(int contractId, ContractFurniCatalog catalog) {
+        if (!supportsNativeEditor()) return null;
+
+        int type = contractType();
+        List<List<WiredNativeContract.Node>> give = null;
+        List<WiredNativeContract.Node> get = null;
+
+        if (type != TYPE_REWARD) {
+            give = new ArrayList<>();
+            for (List<Term> rule : this.giveRules) {
+                if (rule.isEmpty()) continue;
+                List<WiredNativeContract.Node> nodes = toNativeRule(rule, catalog);
+                if (nodes == null) return null;
+                give.add(nodes);
+            }
+            if (give.size() > WiredNativeContract.MAX_PAYMENT_RULES) return null;
+        } else {
+            for (List<Term> rule : this.giveRules) {
+                if (!rule.isEmpty()) return null;
+            }
+        }
+
+        if (type != TYPE_PAYMENT) {
+            get = toNativeRule(this.getRule, catalog);
+            if (get == null) return null;
+        } else if (!this.getRule.isEmpty()) {
+            return null;
+        }
+
+        return new WiredNativeContract(
+                contractId,
+                type,
+                give,
+                get,
+                this.paymentMode,
+                this.receiveText,
+                this.layoutType,
+                this.rewardCategory,
+                this.showDialog,
+                this.rewardText);
+    }
+
+    private static List<WiredNativeContract.Node> toNativeRule(List<Term> rule, ContractFurniCatalog catalog) {
+        if (rule.size() > WiredNativeContract.MAX_NODES) return null;
+
+        List<WiredNativeContract.Node> nodes = new ArrayList<>();
+        for (Term term : rule) {
+            if (term.isFurni()) {
+                int typeId = catalog == null ? 0 : catalog.typeIdOf(term.baseItemId);
+                nodes.add(WiredNativeContract.Node.furni(
+                        term.amount, term.wallItem, typeId > 0 ? typeId : term.baseItemId, term.posterId()));
+            } else {
+                if (term.currencyType != CURRENCY_CREDITS) return null;
+                nodes.add(WiredNativeContract.Node.coins(term.amount));
+            }
+        }
+        return nodes;
+    }
+
+    /**
+     * Take what the official editor saved (AIR {@code WiredContractController.saveContract}). Everything is checked
+     * before anything changes, with the official editor's limits; linked chests are left as they are.
+     *
+     * @return false when the contract was refused (the editor shows {@code wiredcontracts.error.invalid_rules})
+     */
+    public boolean applyNative(WiredNativeContract contract, ContractFurniCatalog catalog) {
+        if (contract == null || catalog == null || !supportsNativeEditor()) return false;
+
+        int type = contractType();
+        if (contract.contractType() != type || !validOptions(contract, type)) return false;
+
+        List<List<Term>> give = new ArrayList<>();
+        if (contract.give() != null) {
+            if (contract.give().size() > WiredNativeContract.MAX_PAYMENT_RULES) return false;
+            for (List<WiredNativeContract.Node> rule : contract.give()) {
+                List<Term> terms = fromNativeRule(rule, DIR_PAY, catalog);
+                if (terms == null) return false;
+                give.add(terms);
+            }
+        }
+        List<Term> get = List.of();
+        if (contract.get() != null) {
+            get = fromNativeRule(contract.get(), DIR_RECEIVE, catalog);
+            if (get == null) return false;
+        }
+
+        this.giveRules.clear();
+        this.giveRules.addAll(give);
+        if (this.giveRules.isEmpty()) this.giveRules.add(new ArrayList<>());
+        this.getRule.clear();
+        this.getRule.addAll(get);
+        rebuildFlatTerms();
+
+        if (type == TYPE_PAYMENT) {
+            this.paymentMode = contract.paymentMode();
+            this.receiveText = contract.receiveText();
+            this.layoutType = contract.layoutType();
+        }
+        if (type == TYPE_REWARD) {
+            this.rewardCategory = contract.rewardCategory();
+            this.showDialog = contract.showDialog();
+            this.rewardText = contract.rewardText();
+        }
+        return true;
+    }
+
+    /** Which rules a type carries and the type's own options, as the official editor allows them. */
+    private static boolean validOptions(WiredNativeContract contract, int type) {
+        return switch (type) {
+            case TYPE_PAYMENT ->
+                contract.give() != null
+                        && contract.get() == null
+                        && (contract.paymentMode() == WiredNativeContract.PAYMENT_MODE_DONATION
+                                || (contract.paymentMode() == WiredNativeContract.PAYMENT_MODE_SPECIFIC
+                                        && !contract.give().isEmpty()))
+                        && (WiredNativeContract.LAYOUT_GENERIC.equals(contract.layoutType())
+                                || WiredNativeContract.LAYOUT_GAMES.equals(contract.layoutType()))
+                        && contract.receiveText().length() <= WiredNativeContract.MAX_RECEIVE_TEXT;
+            case TYPE_TRADE -> contract.give() != null && !contract.give().isEmpty() && contract.get() != null;
+            default ->
+                contract.give() == null
+                        && contract.get() != null
+                        && (contract.rewardCategory() == WiredNativeContract.EARNINGS_CATEGORY_DEFAULT
+                                || contract.rewardCategory() == WiredNativeContract.EARNINGS_CATEGORY_ALTERNATIVE)
+                        && contract.rewardText().length() <= WiredNativeContract.MAX_REWARD_TEXT;
+        };
+    }
+
+    /** One rule from the editor, or null when it breaks the editor's limits or names furni a contract may not hold. */
+    private List<Term> fromNativeRule(
+            List<WiredNativeContract.Node> rule, int direction, ContractFurniCatalog catalog) {
+        if (rule == null || rule.isEmpty() || rule.size() > WiredNativeContract.MAX_NODES) return null;
+
+        List<Term> out = new ArrayList<>();
+        for (WiredNativeContract.Node node : rule) {
+            if (node.isFurni()) {
+                if (node.amount() < 1 || node.amount() > WiredNativeContract.MAX_FURNI) return null;
+                int baseItemId = catalog.baseItemIdOf(node.wall(), node.typeId(), preferredBaseItem(node, catalog));
+                if (baseItemId <= 0 || !catalog.allowedInContract(baseItemId)) return null;
+                out.add(Term.furni(
+                        direction, node.wall(), baseItemId, node.wall() ? node.posterId() : "", node.amount()));
+            } else {
+                if (node.amount() < 1 || node.amount() > WiredNativeContract.MAX_COINS) return null;
+                out.add(Term.currency(direction, CURRENCY_CREDITS, node.amount()));
+            }
+        }
+        return out;
+    }
+
+    /** The base item this contract already uses for a furni type, so a re-save does not swap it for a twin. */
+    private int preferredBaseItem(WiredNativeContract.Node node, ContractFurniCatalog catalog) {
+        for (Term term : this.terms) {
+            if (term.isFurni() && term.wallItem == node.wall() && catalog.typeIdOf(term.baseItemId) == node.typeId()) {
+                return term.baseItemId;
+            }
+        }
+        return 0;
     }
 
     @Override
@@ -295,7 +538,15 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.terms, this.chestIds, this.giveRules, this.getRule));
+        JsonData data = new JsonData(this.terms, this.chestIds, this.giveRules, this.getRule);
+        if (this.paymentMode != WiredNativeContract.PAYMENT_MODE_SPECIFIC) data.paymentMode = this.paymentMode;
+        if (!this.receiveText.isEmpty()) data.receiveText = this.receiveText;
+        if (!WiredNativeContract.LAYOUT_GENERIC.equals(this.layoutType)) data.layoutType = this.layoutType;
+        if (this.rewardCategory != WiredNativeContract.EARNINGS_CATEGORY_DEFAULT)
+            data.rewardCategory = this.rewardCategory;
+        if (this.showDialog) data.showDialog = true;
+        if (!this.rewardText.isEmpty()) data.rewardText = this.rewardText;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -338,6 +589,20 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         rebuildFlatTerms();
 
         if (data.chestIds != null) this.chestIds.addAll(data.chestIds);
+
+        if (data.paymentMode != null && data.paymentMode == WiredNativeContract.PAYMENT_MODE_DONATION)
+            this.paymentMode = WiredNativeContract.PAYMENT_MODE_DONATION;
+        if (data.receiveText != null) this.receiveText = clip(data.receiveText, WiredNativeContract.MAX_RECEIVE_TEXT);
+        if (WiredNativeContract.LAYOUT_GAMES.equals(data.layoutType))
+            this.layoutType = WiredNativeContract.LAYOUT_GAMES;
+        if (data.rewardCategory != null && data.rewardCategory == WiredNativeContract.EARNINGS_CATEGORY_ALTERNATIVE)
+            this.rewardCategory = WiredNativeContract.EARNINGS_CATEGORY_ALTERNATIVE;
+        if (data.showDialog != null) this.showDialog = data.showDialog;
+        if (data.rewardText != null) this.rewardText = clip(data.rewardText, WiredNativeContract.MAX_REWARD_TEXT);
+    }
+
+    private static String clip(String text, int length) {
+        return text.length() > length ? text.substring(0, length) : text;
     }
 
     @Override
@@ -369,6 +634,12 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         this.getRule.clear();
         this.terms.clear();
         this.chestIds.clear();
+        this.paymentMode = WiredNativeContract.PAYMENT_MODE_SPECIFIC;
+        this.receiveText = "";
+        this.layoutType = WiredNativeContract.LAYOUT_GENERIC;
+        this.rewardCategory = WiredNativeContract.EARNINGS_CATEGORY_DEFAULT;
+        this.showDialog = false;
+        this.rewardText = "";
     }
 
     /** Drop anything that would not survive its own accessors: nulls and zero-amount terms. */
@@ -446,6 +717,14 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         List<Integer> chestIds;
         List<List<Term>> giveRules;
         List<Term> getRule;
+
+        // The official contract editor's options; absent while at their defaults.
+        Integer paymentMode;
+        String receiveText;
+        String layoutType;
+        Integer rewardCategory;
+        Boolean showDialog;
+        String rewardText;
 
         JsonData() {}
 

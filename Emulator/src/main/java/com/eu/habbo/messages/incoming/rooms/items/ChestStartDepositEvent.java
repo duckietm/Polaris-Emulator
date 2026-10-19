@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -28,7 +29,7 @@ public class ChestStartDepositEvent extends MessageHandler {
         Room room = habbo.getHabboInfo().getCurrentRoom();
         if (room == null) return;
 
-        int chestItemId = this.packet.readInt();
+        int chestItemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         HabboItem item = room.getHabboItem(chestItemId);
 
         int refusal = ChestTransactionFailures.depositRefusal(item, habbo, room.hasRights(habbo));

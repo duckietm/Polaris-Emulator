@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -22,7 +23,7 @@ public class PresentItemOpenedComposer extends MessageComposer {
         this.response.appendString(this.item.getBaseItem().getType().code.toLowerCase());
         this.response.appendInt(this.item.getBaseItem().getSpriteId());
         this.response.appendString(this.item.getBaseItem().getName());
-        this.response.appendInt(this.item.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.item.getId()));
         this.response.appendString(this.item.getBaseItem().getType().code.toLowerCase());
         this.response.appendBoolean(this.unknown);
         this.response.appendString(this.text);

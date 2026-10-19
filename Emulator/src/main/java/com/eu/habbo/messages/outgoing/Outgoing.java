@@ -25,6 +25,10 @@ public class Outgoing {
     public static final int WiredTransactionSuccessComposer = 9339;
     public static final int WiredTransactionFailComposer = 9346;
     public static final int WiredTradeErrorComposer = 9347;
+    // Official contract editor (AIR WiredContractController).
+    public static final int WiredContractOpenComposer = 9348;
+    public static final int WiredContractContentsComposer = 9349;
+    public static final int WiredContractUpdateResultComposer = 9352;
     public static final int FavoriteRoomsCountComposer = 151;
     public static final int UserCurrencyComposer = 2018;
     public static final int RedeemVoucherOKComposer = 3336;
@@ -796,7 +800,6 @@ public class Outgoing {
     public static final int SoundboardCatalogResultComposer = 9442;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
-    public static final int MentionsPageComposer = 4803;
     public static final int MessengerConversationsComposer = 4900;
     public static final int MessengerHistoryComposer = 4901;
     public static final int MessengerMessageAckComposer = 4902;

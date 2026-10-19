@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.label.WiredLabelSupport;
@@ -10,7 +11,7 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 public class WiredLabelSaveTextEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int furniId = this.packet.readInt();
+        int furniId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         String text = this.packet.readString();
         Room room = currentRoom();
 

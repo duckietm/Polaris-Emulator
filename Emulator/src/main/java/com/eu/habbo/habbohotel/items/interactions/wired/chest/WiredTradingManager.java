@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.Match;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -51,6 +52,10 @@ public class WiredTradingManager {
      * <p>{@code depositOnly} separates the two reasons a table opens. A contract judges the offer
      * against its rules and moves only what the satisfied rule claims. A deposit judges nothing: the
      * player is filling a chest, so everything they put down goes in.
+     *
+     * <p>{@code donation} is a payment contract in the official "something (donation)" mode: like a deposit it
+     * takes whatever is offered, but it is a contract, so it settles into every chest it may use and fires the
+     * transaction triggers.
      */
     private record Negotiation(
             WiredTradingSession session,
@@ -58,7 +63,8 @@ public class WiredTradingManager {
             InventoryVault vault,
             boolean depositOnly,
             int contractType,
-            String rewardText) {}
+            String rewardText,
+            boolean donation) {}
 
     public WiredTradingManager(Room room) {
         this.room = room;
@@ -117,7 +123,36 @@ public class WiredTradingManager {
                 timeoutSeconds,
                 usable,
                 false,
+                false,
                 WiredTradeOpenComposer.REQUIREMENT_RULES);
+    }
+
+    /**
+     * Open the table for a payment contract in donation mode (AIR {@code PaymentContract} mode 0): the player may
+     * offer anything, and everything offered goes into the chests.
+     */
+    public WiredTradingSession openDonation(
+            Habbo habbo,
+            String receiveText,
+            String layoutType,
+            int timeoutSeconds,
+            List<InteractionWiredChest> chests) {
+        List<InteractionWiredChest> usable = WiredChestPayouts.usable(chests);
+        if (usable.isEmpty()) {
+            ChestTransactionFailures.send(habbo, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
+            return null;
+        }
+        return this.start(
+                habbo,
+                ContractRules.of(List.of(List.of()), List.of()),
+                InteractionWiredContract.TYPE_PAYMENT,
+                receiveText,
+                layoutType,
+                timeoutSeconds,
+                usable,
+                false,
+                true,
+                WiredTradeOpenComposer.REQUIREMENT_ANYTHING);
     }
 
     /**
@@ -139,6 +174,7 @@ public class WiredTradingManager {
                 timeoutSeconds,
                 List.of(chest),
                 true,
+                false,
                 requirement);
     }
 
@@ -151,6 +187,7 @@ public class WiredTradingManager {
             int timeoutSeconds,
             List<InteractionWiredChest> chests,
             boolean depositOnly,
+            boolean donation,
             int requirementType) {
         if (habbo == null || habbo.getClient() == null || rules == null) return null;
 
@@ -166,7 +203,8 @@ public class WiredTradingManager {
                     rules, vault, type -> vault.heldCredits(), timeoutSeconds, System.currentTimeMillis());
             this.sessions.put(
                     habbo.getHabboInfo().getId(),
-                    new Negotiation(session, List.copyOf(chests), vault, depositOnly, contractType, rewardText));
+                    new Negotiation(
+                            session, List.copyOf(chests), vault, depositOnly, contractType, rewardText, donation));
         }
 
         habbo.getClient()
@@ -174,7 +212,7 @@ public class WiredTradingManager {
                         requirementType,
                         rewardText,
                         layoutType,
-                        rules.asksForNothing() && !depositOnly,
+                        rules.asksForNothing() && !depositOnly && !donation,
                         replaced,
                         timeoutSeconds,
                         rules,
@@ -256,7 +294,7 @@ public class WiredTradingManager {
         List<ChestFurniStoredItem> rewardFurni = negotiation == null || negotiation.depositOnly()
                 ? List.of()
                 : WiredChestPayouts.preview(negotiation.chests(), reward);
-        boolean canAccept = negotiation != null && negotiation.depositOnly()
+        boolean canAccept = negotiation != null && (negotiation.depositOnly() || negotiation.donation())
                 ? !session.getOfferedItems().isEmpty()
                 : session.canAccept();
 
@@ -334,6 +372,14 @@ public class WiredTradingManager {
                 return false;
             }
             return settleDeposit(habbo, negotiation);
+        }
+
+        if (negotiation.donation()) {
+            if (!confirmation.settled()) {
+                cancel(habbo, confirmation.failureId());
+                return false;
+            }
+            return settleDonation(habbo, negotiation);
         }
 
         if (!confirmation.settled()) {
@@ -514,6 +560,42 @@ public class WiredTradingManager {
 
         negotiation.session().consume(consumed);
         complete(habbo, WiredTransactionSuccessComposer.TYPE_DEPOSIT);
+        return true;
+    }
+
+    /**
+     * Move everything on a donation's table into its chests: furni into the furni chests, credit furni into a coin
+     * chest as coins. Unlike a deposit nothing is handed back: when the chests cannot take all of it, nothing moves
+     * and the player is told why.
+     */
+    private boolean settleDonation(Habbo habbo, Negotiation negotiation) {
+        List<HabboItem> offered = negotiation.vault().heldItems();
+        if (offered.isEmpty()) {
+            cancelWithReason(habbo, ChestTransactionFailures.EMPTY);
+            return false;
+        }
+
+        List<HabboItem> credits = new ArrayList<>();
+        List<HabboItem> furni = new ArrayList<>();
+        for (HabboItem item : offered) (ChestAirWire.creditValue(item) > 0 ? credits : furni).add(item);
+
+        List<InteractionWiredChest> chests = WiredChestPayouts.usable(negotiation.chests());
+        int failure = WiredChestPayouts.holding(chests, () -> {
+            if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
+
+            int room = storeFailure(chests, furni, credits);
+            if (room != ChestTransactionFailures.NONE) return room;
+
+            negotiation.session().consume(pay(habbo, negotiation, chests, furni, credits));
+            return ChestTransactionFailures.NONE;
+        });
+
+        if (failure != ChestTransactionFailures.NONE) {
+            cancelWithReason(habbo, failure);
+            return false;
+        }
+
+        complete(habbo, WiredTransactionSuccessComposer.TYPE_PAYMENT);
         return true;
     }
 

@@ -3,9 +3,11 @@ package com.eu.habbo.habbohotel.wired.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.habbohotel.rooms.WiredFurniStateBatch;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import java.lang.reflect.Field;
@@ -52,6 +54,7 @@ class WiredManagerLifecycleCompatibilityTest {
         WiredInternalVariableSupport.beginUserMoveInstantOverride(true);
         WiredInternalVariableSupport.beginUserMoveBatch();
         WiredMoveCarryHelper.beginMovementCollection();
+        WiredBoxFlashes.openPass();
         setThreadLocal(WiredUserMovementHelper.class, "SUPPRESSED_STATUS_ROOM_UNIT_IDS", java.util.Set.of(88));
         setThreadLocal(WiredSelectionFilterSupport.class, "FILTER_DEPTH", 2);
         setThreadLocal(WiredExecutionScope.class, "CURRENT", mock(WiredContext.class));
@@ -71,10 +74,12 @@ class WiredManagerLifecycleCompatibilityTest {
         assertNull(threadLocalValue(WiredInternalVariableSupport.class, "USER_MOVE_BATCH_DEPTH"));
         assertNull(threadLocalValue(WiredMoveCarryHelper.class, "COLLECTED_MOVEMENTS"));
         assertNull(threadLocalValue(WiredMoveCarryHelper.class, "MOVEMENT_COLLECTION_DEPTH"));
-        assertFalse(WiredFurniStateBatch.isOpen());
         assertNull(threadLocalValue(WiredUserMovementHelper.class, "SUPPRESSED_STATUS_ROOM_UNIT_IDS"));
         assertEquals(0, threadLocalValue(WiredSelectionFilterSupport.class, "FILTER_DEPTH"));
         assertNull(threadLocalValue(WiredExecutionScope.class, "CURRENT"));
+        // A firing left open would hold back every later furni state and box flash on this thread.
+        assertFalse(WiredFurniStateBatch.isOpen());
+        assertTrue(((java.util.Deque<?>) threadLocalValue(WiredBoxFlashes.class, "PASS_DEPTH")).isEmpty());
         verify(tickService).stop();
         verify(engine).shutdownScheduledWork();
         verify(stackIndex).clearAll();

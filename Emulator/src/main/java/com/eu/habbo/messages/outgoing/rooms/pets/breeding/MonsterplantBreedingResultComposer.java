@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.pets.breeding;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -26,7 +27,8 @@ public class MonsterplantBreedingResultComposer extends MessageComposer {
     }
 
     private void append(Seed seed) {
-        this.response.appendInt(seed.item() == null ? 0 : seed.item().getId());
+        this.response.appendInt(
+                seed.item() == null ? 0 : BuildersClubItemIds.toWire(seed.item().getId()));
         this.response.appendInt(
                 seed.item() == null ? 0 : seed.item().getBaseItem().getSpriteId());
         this.response.appendString(

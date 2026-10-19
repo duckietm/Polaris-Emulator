@@ -34,7 +34,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int botSource = WiredBotSourceUtil.SOURCE_BOT_NAME;
     private int bubbleWidthOverride = RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE;
-    /** Official "hide the bot name": kept with the box; drawing it needs the client chat bubble. */
+    /** Official "hide the bot name": the bubble shows the message without the bot's name. */
     private boolean hideBotName = false;
 
     public WiredEffectBotTalkToHabbo(ResultSet set, Item baseItem) throws SQLException {
@@ -169,9 +169,12 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements
 
                 if (!WiredManager.triggerUserSays(room, bot.getRoomUnit(), botMessage)) {
                     if (this.mode == 1) {
-                        bot.whisper(botMessage, habbo, this.bubbleWidthOverride);
+                        bot.whisper(botMessage, habbo, this.bubbleWidthOverride, this.hideBotName);
                     } else {
-                        bot.talk(habbo.getHabboInfo().getUsername() + ": " + botMessage, this.bubbleWidthOverride);
+                        bot.talk(
+                                habbo.getHabboInfo().getUsername() + ": " + botMessage,
+                                this.bubbleWidthOverride,
+                                this.hideBotName);
                     }
                 }
             }
@@ -186,6 +189,10 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements
 
     public int getBubbleWidthOverride() {
         return this.bubbleWidthOverride;
+    }
+
+    boolean isHideBotName() {
+        return this.hideBotName;
     }
 
     @Override

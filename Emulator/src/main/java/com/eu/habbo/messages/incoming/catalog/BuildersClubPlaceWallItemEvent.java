@@ -98,16 +98,18 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
 
         item.setVirtualUserId(BuildersClubRoomSupport.VIRTUAL_OWNER_ID);
 
+        // Tracked before it enters the room, so the room hands it a Builders Club band id before announcing it.
+        BuildersClubRoomSupport.trackPlacedItem(item.getId(), placementUserId, room.getId());
         FurnitureMovementError error = room.placeWallFurniAt(item, wallPosition, this.client.getHabbo());
 
         if (!error.equals(FurnitureMovementError.NONE)) {
+            BuildersClubRoomSupport.deleteTrackedItem(item.getId());
             Emulator.getGameEnvironment().getItemManager().deleteItem(item);
             this.client.sendResponse(
                     new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             return;
         }
 
-        BuildersClubRoomSupport.trackPlacedItem(item.getId(), placementUserId, room.getId());
         com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                 this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_BUILDERS_CLUB_FURNI, 1);
 

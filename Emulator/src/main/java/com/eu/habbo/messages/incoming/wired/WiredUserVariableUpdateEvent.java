@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableWrites;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -34,7 +35,8 @@ public class WiredUserVariableUpdateEvent extends MessageHandler {
             }
 
             int targetType = this.packet.readInt();
-            int targetId = this.packet.readInt();
+            int targetId = BuildersClubItemIds.fromWire(
+                    room, this.packet.readInt(), targetType == WiredEffectGiveVariable.TARGET_FURNI);
             int definitionItemId = this.packet.readInt();
             int value = this.packet.readInt();
             String variableToken = "";

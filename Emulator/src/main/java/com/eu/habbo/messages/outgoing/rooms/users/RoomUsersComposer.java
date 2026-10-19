@@ -3,6 +3,7 @@ package com.eu.habbo.messages.outgoing.rooms.users;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.habbohotel.users.inventory.BadgeRanks;
@@ -79,7 +80,8 @@ public class RoomUsersComposer extends MessageComposer {
             // Official badgesRank: place on the total-badges leaderboard, -1 if unknown.
             this.response.appendInt(BadgeRanks.rankOf(this.habbo.getHabboInfo().getId()));
             this.response.appendString(this.habbo.getHabboInfo().getRoomEntryMethod());
-            this.response.appendInt(this.habbo.getHabboInfo().getRoomEntryTeleportId());
+            this.response.appendInt(
+                    BuildersClubItemIds.toWire(this.habbo.getHabboInfo().getRoomEntryTeleportId()));
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandBorder());
         } else if (this.habbos != null) {
             this.response.appendInt(this.habbos.size());
@@ -126,7 +128,8 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendInt(
                             BadgeRanks.rankOf(habbo.getHabboInfo().getId()));
                     this.response.appendString(habbo.getHabboInfo().getRoomEntryMethod());
-                    this.response.appendInt(habbo.getHabboInfo().getRoomEntryTeleportId());
+                    this.response.appendInt(
+                            BuildersClubItemIds.toWire(habbo.getHabboInfo().getRoomEntryTeleportId()));
                     this.response.appendInt(habbo.getHabboInfo().getInfostandBorder());
                 }
             }

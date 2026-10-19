@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredObjectInspection;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -20,7 +21,8 @@ public class WiredGetVariablesForObjectEvent extends MessageHandler {
         }
 
         int type = this.packet.readInt();
-        int objectId = this.packet.readInt();
+        int objectId =
+                BuildersClubItemIds.fromWire(room, this.packet.readInt(), type == WiredObjectInspection.TYPE_FURNI);
         WiredObjectInspection inspection = WiredObjectInspection.inspect(room, type, objectId);
 
         if (inspection != null) {

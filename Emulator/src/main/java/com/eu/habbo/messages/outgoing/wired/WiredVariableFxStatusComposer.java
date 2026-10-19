@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStatus;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -28,7 +29,8 @@ public class WiredVariableFxStatusComposer extends MessageComposer {
             this.response.appendString(status.key().configAndVariable());
             this.response.appendBoolean(status.initialize());
             this.response.appendBoolean(status.key().userEntity());
-            this.response.appendInt(status.key().entityId());
+            this.response.appendInt(BuildersClubItemIds.toWire(
+                    status.key().entityId(), !status.key().userEntity()));
             WiredVariableHoldersPageComposer.appendLong(this.response, status.value());
             // The client reads the two bounds as a pair or not at all.
             this.response.appendBoolean(status.hasOverrides());

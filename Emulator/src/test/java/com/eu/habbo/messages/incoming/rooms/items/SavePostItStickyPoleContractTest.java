@@ -1,16 +1,20 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class SavePostItStickyPoleContractTest {
 
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/SavePostItStickyPoleEvent.java"));
+        // Line wrapping (formatter) does not change the code these contracts look for.
+        return Files.readString(Path.of(
+                        "src/main/java/com/eu/habbo/messages/incoming/rooms/items/SavePostItStickyPoleEvent.java"))
+                .replaceAll("\\(\\s+", "(")
+                .replaceAll("\\s*\\n\\s*\\.", ".")
+                .replaceAll(",\\s*\\n\\s*", ", ");
     }
 
     @Test
@@ -38,7 +42,8 @@ class SavePostItStickyPoleContractTest {
     void stickyPoleNormalizesCustomOrYellowColors() throws Exception {
         String source = source();
 
-        assertTrue(source.contains("PostItColor.isCustomColor(color) || color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)"));
+        assertTrue(source.contains(
+                "PostItColor.isCustomColor(color) || color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)"));
         assertTrue(source.contains("PostItColor.randomColorNotYellow().hexColor"));
     }
 }

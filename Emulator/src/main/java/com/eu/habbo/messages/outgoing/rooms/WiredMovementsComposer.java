@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -393,12 +394,12 @@ public class WiredMovementsComposer extends MessageComposer {
             response.appendInt(this.toY);
             response.appendString(Double.toString(this.fromZ));
             response.appendString(Double.toString(this.toZ));
-            response.appendInt(this.id);
+            response.appendInt(BuildersClubItemIds.toWire(this.id));
             response.appendInt(this.rotation);
             response.appendInt(this.duration);
             response.appendInt(this.elapsed);
             response.appendInt(this.anchorType);
-            response.appendInt(this.anchorId);
+            response.appendInt(BuildersClubItemIds.toWire(this.anchorId, this.anchorType == FURNI_ANCHOR_FURNI));
         }
     }
 
@@ -436,7 +437,7 @@ public class WiredMovementsComposer extends MessageComposer {
 
         @Override
         public void append(ServerMessage response) {
-            response.appendInt(this.id);
+            response.appendInt(BuildersClubItemIds.toWire(this.id));
             response.appendBoolean(this.enabled);
 
             for (int index = 0; index < 9; index++) {

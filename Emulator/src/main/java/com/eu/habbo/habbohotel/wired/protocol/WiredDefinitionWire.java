@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.protocol;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
@@ -105,6 +106,10 @@ public final class WiredDefinitionWire {
                         definition.inputSources.defaultUsers(),
                         definition.userSources);
             }
+            // The box and its picks go out by the ids the client knows them by (Builders Club band ids).
+            definition.id = BuildersClubItemIds.toWire(definition.id);
+            definition.stuffIds = BuildersClubItemIds.toWire(definition.stuffIds);
+            definition.stuffIds2 = BuildersClubItemIds.toWire(definition.stuffIds2);
             writeOfficial(definition, holder, target);
         } finally {
             body.release();

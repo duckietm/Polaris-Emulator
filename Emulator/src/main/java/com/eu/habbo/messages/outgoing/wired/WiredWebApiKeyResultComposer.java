@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -20,7 +21,7 @@ public class WiredWebApiKeyResultComposer extends MessageComposer implements Sec
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.WiredWebApiKeyResultComposer);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
         this.response.appendBoolean(this.isReadKey);
         this.response.appendString(this.key);
         return this.response;

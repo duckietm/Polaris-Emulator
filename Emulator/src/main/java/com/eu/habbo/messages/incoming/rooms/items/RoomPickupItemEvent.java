@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVari
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -21,7 +22,7 @@ public class RoomPickupItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         this.packet.readInt(); // 10 = floorItem and 20 = wallItem
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         // Official: the pick-up sent again after the "delete this variable" confirmation carries true.
         boolean confirmed = this.packet.bytesAvailable() > 0 && this.packet.readBoolean();
 

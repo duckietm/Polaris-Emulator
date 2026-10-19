@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.events.resolution;
 
 import com.eu.habbo.habbohotel.achievements.resolution.AchievementResolutionCandidate;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -34,7 +35,7 @@ public class NewYearResolutionComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.NewYearResolutionComposer);
-        this.response.appendInt(this.stuffId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.stuffId));
         this.response.appendInt(this.candidates.size());
 
         for (AchievementResolutionCandidate candidate : this.candidates) {

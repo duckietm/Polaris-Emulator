@@ -89,6 +89,10 @@ final class RoomItemOperations {
             RoomHanditemBlockSupport.sendState(this.room);
         }
 
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomChooserDisableSupport.isControllerItem(item)) {
+            RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
+        }
+
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
             this.room.onFurnitureTopologyChanged(item, false);
         }

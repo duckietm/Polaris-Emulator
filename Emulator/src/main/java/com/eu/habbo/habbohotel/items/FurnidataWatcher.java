@@ -133,7 +133,9 @@ public class FurnidataWatcher {
         try {
             Path source = this.provider.getSource();
             if (source == null) return;
-            delta = this.provider.reindex(new FurnidataReader(source, this.maxBytes).read());
+            FurnidataReader reader = new FurnidataReader(source, this.maxBytes);
+            delta = this.provider.reindex(reader.read());
+            this.provider.indexDefaultDirections(reader.defaultDirections());
         } finally {
             FurnidataLock.LOCK.unlock();
         }

@@ -53,18 +53,14 @@ public final class WiredFurniStateBatch {
         WiredBoxFlashes.flushDirty();
     }
 
-    public static boolean isOpen() {
-        return !DEPTH.get().isEmpty();
-    }
-
-    /**
-     * Drops the batch of the calling thread without sending what it collected. A thread whose wired work is torn down
-     * (a shutdown, a pool thread being recycled) must not keep a batch open, or every furni state it writes afterwards
-     * is held back instead of sent.
-     */
+    /** Drops this thread's open batches and their queued states, unsent (wired shutdown and cleanup). */
     public static void clearForCurrentThread() {
         DEPTH.remove();
         PENDING.remove();
+    }
+
+    public static boolean isOpen() {
+        return !DEPTH.get().isEmpty();
     }
 
     /**

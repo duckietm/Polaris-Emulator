@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.rooms.items.youtube;
 
 import com.eu.habbo.habbohotel.items.YoutubeManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -21,7 +22,7 @@ public class YoutubeVideoComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.YoutubeMessageComposer2);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
         this.response.appendString(this.video.getId());
         this.response.appendInt(this.startTime);
         this.response.appendInt(this.video.getDuration());

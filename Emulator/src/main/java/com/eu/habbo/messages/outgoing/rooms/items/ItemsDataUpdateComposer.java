@@ -1,10 +1,10 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Set;
 
 public class ItemsDataUpdateComposer extends MessageComposer {
@@ -20,7 +20,7 @@ public class ItemsDataUpdateComposer extends MessageComposer {
         this.response.appendInt(this.items.size());
 
         for (HabboItem item : this.items) {
-            this.response.appendInt(item.getId());
+            this.response.appendInt(BuildersClubItemIds.toWire(item.getId()));
             item.serializeExtradata(this.response);
         }
 

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
@@ -15,7 +16,7 @@ import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
 public class WiredTriggerSaveDataEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -26,7 +27,8 @@ public class WiredTriggerSaveDataEvent extends MessageHandler {
                 if (trigger != null) {
                     WiredSettings settings;
                     try {
-                        settings = InteractionWired.readSettings(this.packet, false);
+                        settings =
+                                BuildersClubItemIds.fromWire(InteractionWired.readSettings(this.packet, false), room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired trigger settings"));
                         return;

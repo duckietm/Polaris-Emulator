@@ -8,42 +8,29 @@ import java.util.List;
 
 public class MentionsListComposer extends MessageComposer {
     private final List<HabboMention> mentions;
-    private final boolean hasMore;
 
     public MentionsListComposer(List<HabboMention> mentions) {
-        this(mentions, false);
-    }
-
-    public MentionsListComposer(List<HabboMention> mentions, boolean hasMore) {
         this.mentions = mentions;
-        this.hasMore = hasMore;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.MentionsListComposer);
-        appendMentions(this.response, this.mentions, this.hasMore);
+        this.response.appendInt(this.mentions.size());
 
-        return this.response;
-    }
-
-    /** Count, the mentions, then whether older ones remain: the body shared with the paging packet. */
-    static void appendMentions(ServerMessage response, List<HabboMention> mentions, boolean hasMore) {
-        response.appendInt(mentions.size());
-
-        for (HabboMention mention : mentions) {
-            response.appendInt(mention.getId());
-            response.appendInt(mention.getSenderUserId());
-            response.appendString(mention.getSenderUsername());
-            response.appendString(mention.getSenderFigure());
-            response.appendInt(mention.getRoomId());
-            response.appendString(mention.getRoomName());
-            response.appendString(mention.getMessage());
-            response.appendInt(mention.getMentionType());
-            response.appendInt(mention.getTimestamp());
-            response.appendBoolean(mention.isRead());
+        for (HabboMention mention : this.mentions) {
+            this.response.appendInt(mention.getId());
+            this.response.appendInt(mention.getSenderUserId());
+            this.response.appendString(mention.getSenderUsername());
+            this.response.appendString(mention.getSenderFigure());
+            this.response.appendInt(mention.getRoomId());
+            this.response.appendString(mention.getRoomName());
+            this.response.appendString(mention.getMessage());
+            this.response.appendInt(mention.getMentionType());
+            this.response.appendInt(mention.getTimestamp());
+            this.response.appendBoolean(mention.isRead());
         }
 
-        response.appendBoolean(hasMore);
+        return this.response;
     }
 }

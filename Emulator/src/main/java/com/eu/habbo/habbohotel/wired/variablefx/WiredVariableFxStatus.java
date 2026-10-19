@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.variablefx;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
@@ -23,9 +24,10 @@ public record WiredVariableFxStatus(
             return this.configId + "|" + this.variableId;
         }
 
-        /** The removal key: config, variable, "u" or "f", entity. */
+        /** The removal key: config, variable, "u" or "f", entity (a furni by the id the client knows it by). */
         public String wireKey() {
-            return this.configId + "|" + this.variableId + "|" + (this.userEntity ? "u" : "f") + "|" + this.entityId;
+            return this.configId + "|" + this.variableId + "|" + (this.userEntity ? "u" : "f") + "|"
+                    + BuildersClubItemIds.toWire(this.entityId, !this.userEntity);
         }
     }
 

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionBadgeDisplay;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBlackHole;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
 import com.eu.habbo.habbohotel.items.interactions.InteractionCannon;
+import com.eu.habbo.habbohotel.items.interactions.InteractionChooserDisableControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionClothing;
 import com.eu.habbo.habbohotel.items.interactions.InteractionColorPlate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionColorWheel;
@@ -342,6 +343,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAchievementEnabler;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraDailyTask;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecuteInOrder;
@@ -372,6 +374,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutp
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTimeUtilities;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonImport;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableAddonShare;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxBossBar;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxHealthPoints;
@@ -394,7 +398,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurn
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniWithVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectRemoteSelector;
-import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectScanChestFurniByType;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByName;
@@ -604,6 +607,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_conf_hidewired", InteractionHideWiredControl.class));
         this.interactionsList.add(new ItemInteraction("conf_dice_disable", InteractionDiceDisableControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_chooser_disable", InteractionChooserDisableControl.class));
         this.interactionsList.add(
                 new ItemInteraction("conf_doorkick_disable", InteractionDoorkickDisableControl.class));
         this.interactionsList.add(
@@ -884,7 +888,7 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("wf_cnd_chest_has_item_type", WiredConditionChestHasItemType.class));
         this.interactionsList.add(
-                new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredEffectScanChestFurniByType.class));
+                new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredExtraChestItemTypeScanner.class));
         this.interactionsList.add(new ItemInteraction("wf_act_init_transaction", WiredEffectInitTransaction.class));
         this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
         this.interactionsList.add(
@@ -1217,6 +1221,9 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("wf_trg_receive_dataframe", WiredTriggerReceiveLinkDataframe.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_link_speaker", WiredExtraLinkSpeaker.class));
+        // The variable add-on share and import boxes, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_xtra_var_share", WiredExtraVariableAddonShare.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_var_import", WiredExtraVariableAddonImport.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {

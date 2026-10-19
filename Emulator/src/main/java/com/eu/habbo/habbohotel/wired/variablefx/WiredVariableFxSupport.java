@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.wired.variablefx;
 
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableAddonSharing;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +32,21 @@ public final class WiredVariableFxSupport {
         if (room == null || service == null) return;
 
         if (SERVICES.remove(room.getId(), service)) WiredManager.unregisterTickable(room, service);
+    }
+
+    /**
+     * The room's viewers get every fx config and status again on the next flush (a Share box's Synchronize); a
+     * room without a running service starts one when it imports fx.
+     */
+    public static void resync(Room room) {
+        if (room == null) return;
+
+        WiredVariableFxService service = SERVICES.get(room.getId());
+        if (service != null) {
+            service.requestResync();
+        } else if (WiredVariableAddonSharing.importsFx(room)) {
+            ensure(room);
+        }
     }
 
     /** The room is being unloaded. */

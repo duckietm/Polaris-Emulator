@@ -31,7 +31,7 @@ public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredO
     private String message = "";
     private int botSource = WiredBotSourceUtil.SOURCE_BOT_NAME;
     private int bubbleWidthOverride = RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE;
-    /** Official "hide the bot name": kept with the box; drawing it needs the client chat bubble. */
+    /** Official "hide the bot name": the bubble shows the message without the bot's name. */
     private boolean hideBotName = false;
 
     public WiredEffectBotTalk(ResultSet set, Item baseItem) throws SQLException {
@@ -150,9 +150,9 @@ public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredO
 
             if (!WiredManager.triggerUserSays(room, bot.getRoomUnit(), botMessage)) {
                 if (this.mode == 1) {
-                    bot.shout(botMessage, this.bubbleWidthOverride);
+                    bot.shout(botMessage, this.bubbleWidthOverride, this.hideBotName);
                 } else {
-                    bot.talk(botMessage, this.bubbleWidthOverride);
+                    bot.talk(botMessage, this.bubbleWidthOverride, this.hideBotName);
                 }
             }
         }
@@ -166,6 +166,10 @@ public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredO
 
     public int getBubbleWidthOverride() {
         return this.bubbleWidthOverride;
+    }
+
+    boolean isHideBotName() {
+        return this.hideBotName;
     }
 
     @Override

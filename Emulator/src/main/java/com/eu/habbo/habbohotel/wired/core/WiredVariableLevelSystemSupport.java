@@ -56,7 +56,14 @@ public final class WiredVariableLevelSystemSupport {
             }
         }
 
-        return null;
+        return importedAddon(room, definition, WiredExtraVariableLevelUpSystem.class);
+    }
+
+    /** A subvariable creator a variable reference imports from its source, when it has none of its own. */
+    private static <T extends InteractionWiredExtra> T importedAddon(
+            Room room, InteractionWiredExtra definition, Class<T> type) {
+        return WiredVariableAddonSharing.importedAddon(
+                room, definition, WiredVariableAddonSharing.SUBVARIABLE_CREATORS, type);
     }
 
     /**
@@ -84,7 +91,7 @@ public final class WiredVariableLevelSystemSupport {
             }
         }
 
-        return null;
+        return importedAddon(room, definition, WiredExtraVariableLevelUpSystem.class);
     }
 
     /** The time-utilities box on a variable definition's tile, which can sit beside a level-up or quest box. */
@@ -105,7 +112,7 @@ public final class WiredVariableLevelSystemSupport {
             }
         }
 
-        return null;
+        return importedAddon(room, definition, WiredExtraTimeUtilities.class);
     }
 
     private static List<Integer> boxSubvariables(InteractionWiredExtra box) {
@@ -435,7 +442,7 @@ public final class WiredVariableLevelSystemSupport {
                         reference.getVariableName(),
                         reference.hasValue(),
                         reference.getAvailability(),
-                        false,
+                        WiredVariableTextConnectorSupport.isTextConnected(room, reference),
                         reference.isReadOnly());
             }
         }
@@ -460,7 +467,7 @@ public final class WiredVariableLevelSystemSupport {
                         reference.getVariableName(),
                         reference.hasValue(),
                         reference.getAvailability(),
-                        false,
+                        WiredVariableTextConnectorSupport.isTextConnected(room, reference),
                         reference.isReadOnly());
             }
         }

@@ -62,6 +62,12 @@ public final class WiredVariableTextConnectorSupport {
             }
         }
 
+        // A reference's imported connectors come after its own, so a local connector names a value first.
+        for (InteractionWiredExtra extra :
+                WiredVariableAddonSharing.importedAddons(room, definition, WiredVariableAddonSharing.TEXT_CONNECTORS)) {
+            connectors.add((WiredExtraVariableTextConnector) extra);
+        }
+
         return connectors;
     }
 

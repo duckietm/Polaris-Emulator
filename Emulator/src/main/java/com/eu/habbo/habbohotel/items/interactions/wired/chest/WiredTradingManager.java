@@ -522,6 +522,19 @@ public class WiredTradingManager {
                         extra));
     }
 
+    /**
+     * The player left the room: whatever they had on a wired table goes back to them and the window closes ("trade
+     * cancelled"); a contract's transaction failed triggers fire. Without this a negotiation without a timeout (the
+     * Initiate Transaction default) held the offer until the room unloaded.
+     */
+    public void leftRoom(Habbo habbo) {
+        if (habbo == null) return;
+        synchronized (this) {
+            this.pendingCancels.remove(habbo.getHabboInfo().getId());
+        }
+        cancel(habbo, WiredTradingSession.FAILURE_LEFT_ROOM);
+    }
+
     /** End a negotiation, hand back what it held, and tell the player why (AIR reason). */
     public void cancel(Habbo habbo, int failureId) {
         Negotiation negotiation;
@@ -1032,10 +1045,9 @@ public class WiredTradingManager {
                 item = this.habbo.getInventory().getItemsComponent().getHabboItem(itemId);
             if (item == null || item.getBaseItem() == null) return null;
 
-            return new OfferedItem(
-                    itemId,
-                    item.getBaseItem().getType() == FurnitureType.WALL,
-                    item.getBaseItem().getId());
+            boolean wall = item.getBaseItem().getType() == FurnitureType.WALL;
+            String poster = wall && "poster".equals(item.getBaseItem().getName()) ? item.getExtradata() : "";
+            return new OfferedItem(itemId, wall, item.getBaseItem().getId(), poster);
         }
 
         /** Look at a held item without taking it out of the vault's hands. */

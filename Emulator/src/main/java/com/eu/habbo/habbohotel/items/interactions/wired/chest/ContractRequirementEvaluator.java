@@ -26,8 +26,19 @@ import java.util.function.IntUnaryOperator;
 public final class ContractRequirementEvaluator {
     private ContractRequirementEvaluator() {}
 
-    /** One item a player has put on the table. */
-    public record OfferedItem(int itemId, boolean wallItem, int baseItemId) {}
+    /**
+     * One item a player has put on the table. {@code posterId} is a poster's poster id (its extradata), empty for
+     * anything else: posters share one base item, so a term naming a poster is paid only by that poster.
+     */
+    public record OfferedItem(int itemId, boolean wallItem, int baseItemId, String posterId) {
+        public OfferedItem {
+            posterId = posterId == null ? "" : posterId;
+        }
+
+        public OfferedItem(int itemId, boolean wallItem, int baseItemId) {
+            this(itemId, wallItem, baseItemId, "");
+        }
+    }
 
     /**
      * Which alternative was satisfied and exactly which offered items pay for it.
@@ -92,7 +103,7 @@ public final class ContractRequirementEvaluator {
                 if (claimed[i]) continue;
 
                 OfferedItem item = offered.get(i);
-                if (item == null || item.wallItem() != term.wallItem || item.baseItemId() != term.baseItemId) continue;
+                if (item == null || !pays(item, term)) continue;
 
                 claimed[i] = true;
                 consumed.add(item.itemId());
@@ -107,6 +118,16 @@ public final class ContractRequirementEvaluator {
         return missing.isEmpty()
                 ? new Match(ruleIndex, List.copyOf(consumed), List.of())
                 : new Match(-1, List.of(), List.copyOf(missing));
+    }
+
+    /**
+     * Whether an offered item is the furni a term asks for: the same placement and base item and, when the term names
+     * a poster, that poster. A term without a poster id (saved before they were kept) takes any of its base item.
+     */
+    static boolean pays(OfferedItem item, Term term) {
+        if (item.wallItem() != term.wallItem || item.baseItemId() != term.baseItemId) return false;
+        String poster = term.wallItem ? term.posterId() : "";
+        return poster.isEmpty() || poster.equals(item.posterId());
     }
 
     private static List<Term> totalCurrencyShortfall(List<Term> rule, IntUnaryOperator walletBalance) {

@@ -105,6 +105,19 @@ final class WiredChestTargets {
         });
     }
 
+    /**
+     * A box set to give everything resolved several users: nothing is given (it cannot be split), the triggering user
+     * hears why (16) and the monitor counts it, since it is the box's setup.
+     */
+    static void answerCannotGiveAllToMany(WiredContext ctx, Room room, String sourceLabel, int boxId) {
+        if (ctx == null || room == null) return;
+        ctx.actor()
+                .ifPresent(unit -> ChestTransactionFailures.send(
+                        room.getHabbo(unit), ChestTransactionFailures.CANNOT_GIVE_ALL_TO_MANY));
+        ChestTransactionFailures.noteOnMonitor(
+                room, ChestTransactionFailures.CANNOT_GIVE_ALL_TO_MANY, sourceLabel, boxId);
+    }
+
     /** An official furni source a chest slot may hold; anything else falls back to the default. */
     static int normalizeChestSource(int source) {
         return switch (source) {

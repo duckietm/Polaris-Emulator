@@ -120,6 +120,54 @@ class ContractRequirementEvaluatorTest {
     }
 
     @Test
+    void aPosterTermIsPaidOnlyByThatPoster() {
+        // Every poster is the one wall base item "poster"; the poster id tells them apart, as the chest payout does.
+        Term poster = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "501", 1);
+        ContractRules rules = ContractRules.of(List.of(List.of(poster)), List.of());
+
+        assertFalse(ContractRequirementEvaluator.firstSatisfied(
+                        rules, wallet(Map.of()), List.of(new OfferedItem(101, true, 4001, "7")))
+                .satisfied());
+
+        Match match = ContractRequirementEvaluator.firstSatisfied(
+                rules,
+                wallet(Map.of()),
+                List.of(new OfferedItem(101, true, 4001, "7"), new OfferedItem(102, true, 4001, "501")));
+        assertTrue(match.satisfied());
+        assertEquals(List.of(102), match.consumedItemIds());
+    }
+
+    @Test
+    void twoPosterTermsNeedTheirOwnPosters() {
+        Term first = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "501", 1);
+        Term second = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "502", 1);
+        ContractRules rules = ContractRules.of(List.of(List.of(first, second)), List.of());
+
+        assertFalse(ContractRequirementEvaluator.firstSatisfied(
+                        rules,
+                        wallet(Map.of()),
+                        List.of(new OfferedItem(101, true, 4001, "501"), new OfferedItem(102, true, 4001, "501")))
+                .satisfied());
+        assertTrue(ContractRequirementEvaluator.firstSatisfied(
+                        rules,
+                        wallet(Map.of()),
+                        List.of(new OfferedItem(101, true, 4001, "502"), new OfferedItem(102, true, 4001, "501")))
+                .satisfied());
+    }
+
+    @Test
+    void aWallTermWithoutAPosterIdTakesAnyOfItsBaseItem() {
+        // Contracts saved before poster ids were kept keep working.
+        Term wall = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "", 1);
+        ContractRules rules = ContractRules.of(List.of(List.of(wall)), List.of());
+
+        assertTrue(ContractRequirementEvaluator.firstSatisfied(
+                        rules, wallet(Map.of()), List.of(new OfferedItem(101, true, 4001, "7")))
+                .satisfied());
+        assertEquals("", new OfferedItem(1, true, 4001).posterId());
+    }
+
+    @Test
     void aContractThatAsksForNothingIsSatisfiedByAnEmptyTable() {
         ContractRules rules = ContractRules.of(List.of(), List.of());
 

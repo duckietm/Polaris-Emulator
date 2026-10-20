@@ -339,6 +339,35 @@ class WiredTradingManagerAirTest {
                 this.sent(WiredTransactionFailComposer.class).get(0).getReason());
     }
 
+    private HabboItem givePoster(int id, String posterId) {
+        HabboItem item = give(id, "poster", 4001);
+        when(item.getBaseItem().getType()).thenReturn(FurnitureType.WALL);
+        when(item.getExtradata()).thenReturn(posterId);
+        return item;
+    }
+
+    @Test
+    void aPosterPaymentIsPaidOnlyByThatPoster() {
+        InteractionWiredChestFurni chest =
+                wiredChest(new InteractionWiredChestFurni(20, OWNER, chestFurni(), "", 0, 0));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        givePoster(601, "7");
+        givePoster(602, "501");
+        ContractRules rules = ContractRules.of(
+                List.of(List.of(Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "501", 1))), List.of());
+
+        assertNotNull(manager.open(this.habbo, rules, 1, "", "generic", 60, List.of(chest)));
+        manager.offer(this.habbo, List.of(601), false);
+        assertFalse(manager.getSession(this.habbo).canAccept(), "poster 7 is not poster 501");
+
+        manager.offer(this.habbo, List.of(602), false);
+        assertTrue(this.acceptAndConfirm(manager));
+
+        assertEquals(1, chest.getContents().furniItemCount());
+        assertEquals("501", chest.getContents().furniItems().get(0).legacyPosterId);
+        assertTrue(this.inventory.containsKey(601), "the other poster went back");
+    }
+
     @Test
     void notEnoughCoinsOnTheTableCannotBeAccepted() {
         InteractionWiredChestCurrency coins =
@@ -500,6 +529,48 @@ class WiredTradingManagerAirTest {
         manager.openDonation(this.habbo, "", "generic", 0, List.of(coins), List.of(5));
         assertTrue(manager.cancelRunning(this.habbo, null));
         assertNull(manager.getSession(this.habbo));
+    }
+
+    @Test
+    void leavingTheRoomEndsANegotiationWithoutATimeoutAndHandsTheOfferBack() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(1);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_10", 1);
+
+        // Timeout off (0): before, nothing ended this negotiation until the room unloaded.
+        manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                ContractMultiplier.NONE,
+                1,
+                "",
+                "generic",
+                0,
+                List.of(coins, trophies),
+                List.of(5));
+        manager.offer(this.habbo, List.of(301), false);
+        assertFalse(this.inventory.containsKey(301), "on the table");
+
+        manager.leftRoom(this.habbo);
+
+        assertNull(manager.getSession(this.habbo));
+        assertTrue(this.inventory.containsKey(301), "the credit furni went back");
+        assertEquals(
+                ChestTransactionFailures.TRADE_CANCELLED,
+                failureId(this.sent(WiredTradeCancelledComposer.class).get(0)));
+        ArgumentCaptor<com.eu.habbo.habbohotel.wired.core.WiredEvent> events =
+                ArgumentCaptor.forClass(com.eu.habbo.habbohotel.wired.core.WiredEvent.class);
+        this.wired.verify(() -> WiredManager.dispatchEffectTriggeredEvent(events.capture()), atLeastOnce());
+        com.eu.habbo.habbohotel.wired.core.WiredEvent failed =
+                events.getAllValues().get(events.getAllValues().size() - 1);
+        assertEquals(com.eu.habbo.habbohotel.wired.core.WiredEvent.Type.TRANSACTION_FAIL, failed.getType());
+        assertEquals(ChestTransactionFailures.TRADE_CANCELLED, failed.getTransactionFailureReason());
+
+        manager.openDeposit(this.habbo, trophies, 300);
+        manager.leftRoom(this.habbo);
+        assertNull(manager.getSession(this.habbo), "a plain deposit ends too");
     }
 
     @Test

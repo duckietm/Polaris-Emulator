@@ -235,6 +235,11 @@ public class RoomUnitManager {
             trade.stopTrade(habbo);
         }
 
+        // So does a wired trade (a chest deposit or a contract): the offer goes back and the window closes.
+        if (wiredRuntime != null) {
+            wiredRuntime.getTradingManager().leftRoom(habbo);
+        }
+
         if (habbo.getHabboInfo().getId() != this.room.getOwnerId()) {
             this.pickupPetsForHabbo(habbo);
         }

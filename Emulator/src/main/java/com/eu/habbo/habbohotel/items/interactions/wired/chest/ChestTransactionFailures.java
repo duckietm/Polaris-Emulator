@@ -38,6 +38,9 @@ public final class ChestTransactionFailures {
     /** No chest that can be used: none there, all of them locked, or no rights to use them. */
     public static final int NO_OR_LOCKED_CHESTS = 15;
 
+    /** A give-from-chest box set to give everything resolved more than one user (AIR "cannot give all to many"). */
+    public static final int CANNOT_GIVE_ALL_TO_MANY = 16;
+
     public static final int TOO_MANY_OFFERS = 17;
     public static final int EXCEEDS_CAPACITY = 19;
 
@@ -137,6 +140,7 @@ public final class ChestTransactionFailures {
             case NOT_A_WIRED_CHEST -> "not a wired chest (" + reason + ")";
             case CHEST_NOT_IN_ROOM -> "the chest is not in the room (" + reason + ")";
             case NO_OR_LOCKED_CHESTS -> "no usable chest (" + reason + ")";
+            case CANNOT_GIVE_ALL_TO_MANY -> "everything cannot go to several users (" + reason + ")";
             case EXCEEDS_CAPACITY -> "over the chest capacity (" + reason + ")";
             case MISCONFIG_TOO_MANY_OR_NO_CONTRACTS -> "not exactly one contract (" + reason + ")";
             case INTERNAL_ERROR -> "internal error (" + reason + ")";

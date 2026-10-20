@@ -188,9 +188,21 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
             List<InteractionWiredChest> chests,
             ContractMultiplier runs,
             int timeout) {
+        // A negotiation needs a chest to pay into: without one the player is told (15) and, as for a reward the chests
+        // cannot pay, the transaction failed stack runs.
+        boolean negotiated = isDonation(contracts);
+        ContractRules rules = negotiated ? null : ContractRules.from(contracts, ctx, room);
+        if ((negotiated || (rules != null && !rules.asksForNothing())) && chests.isEmpty()) {
+            ChestTransactionFailures.send(actor, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
+            ChestTransactionFailures.noteOnMonitor(
+                    room, ChestTransactionFailures.NO_OR_LOCKED_CHESTS, MONITOR_SOURCE, this.getId());
+            this.fail(ctx, room, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
+            return;
+        }
+
         // A payment contract in the official donation mode takes whatever the player offers; it has no
         // amounts for a multiplier to scale.
-        if (isDonation(contracts)) {
+        if (negotiated) {
             room.getWiredRuntime()
                     .getTradingManager()
                     .openDonation(actor, tradeText(contracts), layoutType(contracts), timeout, chests, started);
@@ -200,7 +212,6 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         // A contract that asks the player for something is negotiated in the wired trade window: they
         // put credit furni and furni on the table and confirm. The window shows the contract once and the
         // session scales it.
-        ContractRules rules = ContractRules.from(contracts, ctx, room);
         if (rules == null) {
             // A custom contract whose furni or variable amount cannot be resolved this run.
             ChestTransactionFailures.noteOnMonitor(

@@ -210,6 +210,41 @@ class WiredGiveFromChestRulesTest {
         }
     }
 
+    @Test
+    void givingEverythingToSeveralUsersGivesNothingAndAnswersFailure16() throws Exception {
+        ChestStore previous = ChestStores.use(new InMemoryChestStore());
+        try {
+            InteractionWiredChestCurrency chest = realCoinChest(50);
+            Room room = roomWith(chest);
+            WiredEffectGiveCurrencyFromChest box = new WiredEffectGiveCurrencyFromChest(1, 1, base(), "", 0, 0);
+            WiredSettings everything = new WiredSettings(new int[] {1, 5, 0, -10, 0, 11}, "", new int[] {CHEST_ID}, 0);
+            everything.setVariableIds(new String[0]);
+            everything.setFurniSourceTypes(new int[] {100});
+            everything.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+            save(box, room, everything);
+
+            RoomUnit actor = mock(RoomUnit.class);
+            RoomUnit other = mock(RoomUnit.class);
+            Habbo habbo = habbo("Tester", actor);
+            Habbo second = habbo("Other", other);
+            when(room.getHabbo(actor)).thenReturn(habbo);
+            when(room.getHabbo(other)).thenReturn(second);
+            com.eu.habbo.habbohotel.wired.core.WiredContext ctx = context(room, actor);
+            ctx.targets().setUsers(java.util.List.of(actor, other));
+
+            box.execute(ctx);
+
+            ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
+            verify(habbo.getClient()).sendResponse(sent.capture());
+            assertEquals(ChestTransactionFailures.CANNOT_GIVE_ALL_TO_MANY, failureId(sent.getValue()));
+            assertEquals(50, chest.getContents().getCoins(), "nothing left the chest");
+            verify(habbo, never()).giveCredits(anyInt());
+            verify(second, never()).giveCredits(anyInt());
+        } finally {
+            ChestStores.use(previous);
+        }
+    }
+
     // --- 3. the chests follow the saved furni source ---------------------------------------------
 
     @Test

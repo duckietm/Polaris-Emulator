@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubPlacementWarningComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
@@ -27,6 +28,13 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
         String extraData = this.packet.readString();
         String wallPosition = this.packet.readString();
         boolean confirmed = this.packet.readBoolean();
+
+        // The same check as for a wall furni placed from the inventory: the position is stored and sent to the room.
+        if (!RoomItemInputGuard.isValidWallPosition(wallPosition)) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            return;
+        }
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());

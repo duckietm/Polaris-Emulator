@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
@@ -30,6 +31,13 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         short y = this.packet.readInt().shortValue();
         int rotation = this.packet.readInt();
         boolean confirmed = this.packet.readBoolean();
+
+        // A rotation is one of the eight directions; anything else would give the furni no footprint to collide with.
+        if (rotation < 0 || rotation > 7) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            return;
+        }
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());
@@ -116,6 +124,9 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         }
 
         item.setVirtualUserId(BuildersClubRoomSupport.VIRTUAL_OWNER_ID);
+
+        // The direction the furni stores, as for a furni placed from the inventory.
+        rotation = FurnitureDirections.of(item).place(rotation);
 
         FurnitureMovementError error = room.canPlaceFurnitureAt(item, this.client.getHabbo(), tile, rotation);
 

@@ -323,10 +323,10 @@ class QuestEngineTest {
         assertEquals(10, progress.getPoints());
 
         assertEquals(RewardTrackManager.RESULT_OK, manager.claim(habbo, "season_1", "p1"));
-        assertEquals(RewardTrackManager.RESULT_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
-        assertEquals(RewardTrackManager.RESULT_PREMIUM_REQUIRED, manager.claim(habbo, "season_1", "p1_premium"));
-        assertEquals(RewardTrackManager.RESULT_NOT_ENOUGH_POINTS, manager.claim(habbo, "season_1", "p2"));
-        assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.claim(habbo, "season_1", "nope"));
+        assertEquals(RewardTrackManager.CLAIM_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
+        assertEquals(RewardTrackManager.CLAIM_PREMIUM_REQUIRED, manager.claim(habbo, "season_1", "p1_premium"));
+        assertEquals(RewardTrackManager.CLAIM_NOT_ENOUGH_POINTS, manager.claim(habbo, "season_1", "p2"));
+        assertEquals(RewardTrackManager.CLAIM_REWARD_NOT_FOUND, manager.claim(habbo, "season_1", "nope"));
         verify(habbo)
                 .givePoints(eq(Quest.REWARD_DUCKETS), eq(50), anyString(), eq("reward_track:7:season_1:p1"), eq(7));
 
@@ -337,7 +337,7 @@ class QuestEngineTest {
         assertFalse(wire.complete());
 
         assertEquals(RewardTrackManager.RESULT_OK, manager.purchasePremium(habbo, "season_1"));
-        assertEquals(RewardTrackManager.RESULT_ALREADY_PREMIUM, manager.purchasePremium(habbo, "season_1"));
+        assertEquals(RewardTrackManager.PREMIUM_ALREADY_OWNED, manager.purchasePremium(habbo, "season_1"));
         assertEquals(1, payments.size(), "the diamonds are paid through the ledger once");
         assertEquals(QuestRewards.DIAMONDS_POINT_TYPE, payments.get(0).currencyType());
         assertEquals(-25, payments.get(0).delta());

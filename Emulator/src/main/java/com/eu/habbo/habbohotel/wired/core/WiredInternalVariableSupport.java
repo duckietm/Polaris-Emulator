@@ -132,6 +132,10 @@ public final class WiredInternalVariableSupport {
             case "@bot_id" -> bot != null;
             case "@pet_id" -> pet != null;
             case "@pet_owner_id" -> pet != null && pet.getUserId() > 0;
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.has(room, roomUnit);
+            case String transaction
+            when WiredTransactionVariables.isUserKey(transaction) ->
+                WiredTransactionVariables.has(room, habbo, transaction);
             case String smart when WiredSmartVariables.isUserKey(smart) -> WiredSmartVariables.hasUserValue(pet, smart);
             default -> false;
         };
@@ -268,6 +272,10 @@ public final class WiredInternalVariableSupport {
             case "@bot_id" -> (bot != null) ? bot.getId() : null;
             case "@pet_id" -> (pet != null) ? pet.getId() : null;
             case "@pet_owner_id" -> (pet != null) ? pet.getUserId() : null;
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.read(room, roomUnit);
+            case String transaction
+            when WiredTransactionVariables.isUserKey(transaction) ->
+                WiredTransactionVariables.read(room, habbo, transaction);
             case String smart
             when WiredSmartVariables.isUserKey(smart) -> WiredSmartVariables.readUserValue(pet, smart);
             default -> null;
@@ -329,6 +337,7 @@ public final class WiredInternalVariableSupport {
                 room.giveEffect(roomUnit, value, Integer.MAX_VALUE);
                 yield true;
             }
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.write(room, roomUnit, value);
             case "@handitem_id" -> {
                 Habbo habbo = room.getHabbo(roomUnit);
                 if (value < 0) yield false;
@@ -507,6 +516,7 @@ public final class WiredInternalVariableSupport {
             case "@occupation" -> writeFurniOccupation(room, item, value);
             case "@rotation" -> writeFurniRotation(room, item, value);
             case "@altitude" -> moveFurniTo(room, item, item.getX(), item.getY(), item.getRotation(), value / 100.0);
+            case WiredSmartVariables.CLOCK_PULSE_COUNT -> WiredSmartVariables.writeClockPulses(room, item, value);
             // Builders Club furni only, into the nearest colour of its palette.
             case BuildersClubPalette.RGB,
                     BuildersClubPalette.RED,
@@ -593,6 +603,10 @@ public final class WiredInternalVariableSupport {
                 ctx.event().getType() == WiredEvent.Type.TRANSACTION_FAIL
                         ? ctx.event().getTransactionFailureReason()
                         : null;
+            case WiredHabbiconVariables.EVENT_HABBICON -> WiredHabbiconVariables.readEvent(ctx);
+            case String complete
+            when WiredTransactionVariables.COMPLETE_KEYS.contains(complete) ->
+                WiredTransactionVariables.readComplete(ctx, complete);
             default -> null;
         };
     }
@@ -674,6 +688,8 @@ public final class WiredInternalVariableSupport {
                 .internalVariableKey(key)
                 .variableChangeKind(kind)
                 .variableValues(previousValue, currentValue)
+                // A habbicon change is about the habbicon now shown (AIR @event.habbicon).
+                .habbiconId(WiredHabbiconVariables.HABBICON.equals(normalizeKey(key)) ? currentValue : 0)
                 .triggeredByEffect(true)
                 .build());
     }

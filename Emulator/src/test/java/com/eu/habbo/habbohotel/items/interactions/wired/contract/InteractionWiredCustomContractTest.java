@@ -78,14 +78,14 @@ class InteractionWiredCustomContractTest {
 
         assertTrue(contract.isOfficialForm());
         assertArrayEquals(new int[] {1, 1, 0, 3, -10, 1, 0, 1, 1, -20}, contract.officialParams());
-        assertArrayEquals(new String[] {"", "77"}, contract.officialVariableIds());
+        assertArrayEquals(new String[] {"n", "ctx:77"}, contract.officialVariableIds());
         assertArrayEquals(new int[] {100, 101}, contract.officialFurniSources());
 
         InteractionWiredCustomContract reloaded = contract();
         reloaded.applyWiredData(contract.getWiredData());
         assertTrue(reloaded.isOfficialForm());
         assertArrayEquals(contract.officialParams(), reloaded.officialParams());
-        assertArrayEquals(new String[] {"", "77"}, reloaded.officialVariableIds());
+        assertArrayEquals(new String[] {"n", "ctx:77"}, reloaded.officialVariableIds());
     }
 
     @Test

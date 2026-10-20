@@ -715,7 +715,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@handitem_id", "@effect_id", "@has_rights", FREE_MOVE_KEY)
+        return Set.of("@handitem_id", "@effect_id", "@has_rights", "@habbicon", FREE_MOVE_KEY)
                         .contains(key)
                 ? key
                 : "";

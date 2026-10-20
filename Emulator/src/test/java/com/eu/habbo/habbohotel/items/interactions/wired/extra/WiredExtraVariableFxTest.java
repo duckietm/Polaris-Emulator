@@ -422,7 +422,11 @@ class WiredExtraVariableFxTest {
         assertEquals(-1, body.params()[10]);
         assertEquals(-5, body.params()[11]);
         assertEquals("custom:300\t\tcustom:400\t", body.text());
-        assertArrayEquals(new String[] {"300", "0", "400"}, box.officialVariableIds());
+        // Sent back as the variable list's ids; a save in that form reads the same boxes.
+        assertArrayEquals(new String[] {"room:300", "n", "user:400"}, box.officialVariableIds());
+        settings.setVariableIds(box.officialVariableIds());
+        box.saveData(settings, null);
+        assertEquals("custom:300\t\tcustom:400\t", body(box, room()).text());
     }
 
     @Test

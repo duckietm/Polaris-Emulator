@@ -1,17 +1,10 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureUsagePolicy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
-import com.eu.habbo.habbohotel.items.interactions.InteractionInformationTerminal;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
-import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
-import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
-import com.eu.habbo.habbohotel.items.interactions.InteractionSwitch;
-import com.eu.habbo.habbohotel.items.interactions.InteractionSwitchRemoteControl;
-import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
-import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredRoomLinker;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -56,16 +49,7 @@ public class RoomFloorItemsComposer extends MessageComposer {
                                                     : 1))));
             item.serializeExtradata(this.response);
             this.response.appendInt(item.getSecondsToExpiration());
-            this.response.appendInt(
-                    (item instanceof InteractionTeleport && !(item instanceof InteractionWiredRoomLinker))
-                                    || item instanceof InteractionSwitch
-                                    || item instanceof InteractionSwitchRemoteControl
-                                    || item instanceof InteractionVendingMachine
-                                    || item instanceof InteractionInformationTerminal
-                                    || item instanceof InteractionPostIt
-                                    || item instanceof InteractionPuzzleBox
-                            ? 2
-                            : item.isUsable() ? 1 : 0);
+            this.response.appendInt(FurnitureUsagePolicy.of(item));
             this.response.appendInt(item.getUserId());
             this.response.appendInt(item.getBaseItem().allowStack() ? 1 : 0);
             this.response.appendInt(item.getBaseItem().allowSit() ? 1 : 0);

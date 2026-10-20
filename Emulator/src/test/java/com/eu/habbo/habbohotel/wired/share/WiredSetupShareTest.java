@@ -10,7 +10,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import java.io.ByteArrayOutputStream;
@@ -190,6 +193,44 @@ class WiredSetupShareTest {
                 importer.remapVariables(List.of("furni:#4", "user:#0", "-125")));
         // Item ids never come from a code: only box references and furni found in this room.
         assertArrayEquals(new int[] {9001}, importer.remapPicks(List.of("b0", "b1", "b0", "123", "f0"), 0, 0));
+    }
+
+    @Test
+    void aLeaderboardKeepsItsVariablesThroughAShareCode() throws Exception {
+        // Sort highest, username column, filter on, two display names; the filter variable is not exported.
+        int[] ints = {0, 1, 0, -1, -1, -1, 1, 0, 0, 2, 1, 1, 0, 0, 3, 0, 0, 0, 0};
+        String text =
+                String.join("\t", "Top", "", "Player", "", "", "", "", "Gold", "Wins", "", "", "", "", "", "", "", "");
+        WiredExtraVariableLeaderboard board = new WiredExtraVariableLeaderboard(50, 1, mock(Item.class), "", 0, 0);
+        WiredSettings saved = new WiredSettings(ints, text, new int[0], 0);
+        saved.setVariableIds(new String[] {"user:77", "n", "user:1200", "user:900"});
+        assertTrue(board.saveData(saved, null));
+
+        WiredSetupExporter exporter = new WiredSetupExporter(mock(Room.class));
+        exporter.boxIndexes.put(900, 0);
+        exporter.boxIndexes.put(1200, 1);
+        List<String> exported = exporter.exportVariables(board.officialVariableIds());
+        assertEquals(List.of("user:77", "n", "user:#1", "user:#0", "n", "n", "n", "n", "n", "n", "n", "n"), exported);
+
+        GameClient client = mock(GameClient.class);
+        when(client.getHabbo()).thenReturn(mock(Habbo.class));
+        WiredSetupImporter importer = new WiredSetupImporter(mock(Room.class), client, new WiredSetupDocument());
+        InteractionWired coins = mock(InteractionWired.class);
+        when(coins.getId()).thenReturn(4900);
+        InteractionWired wins = mock(InteractionWired.class);
+        when(wins.getId()).thenReturn(5200);
+        importer.resolved.put(0, coins);
+        importer.resolved.put(1, wins);
+
+        WiredExtraVariableLeaderboard copy = new WiredExtraVariableLeaderboard(51, 1, mock(Item.class), "", 0, 0);
+        WiredSettings imported = new WiredSettings(ints, text, new int[0], 0);
+        imported.setVariableIds(importer.remapVariables(exported));
+        assertTrue(copy.saveData(imported, null));
+        assertArrayEquals(
+                new String[] {"user:77", "0", "user:4900", "user:5200", "0", "0", "0", "0", "0", "0", "0", "0"},
+                copy.officialVariableIds());
+        assertEquals("Gold", copy.getConfig().displayOverrides().get("user:5200"));
+        assertEquals("Wins", copy.getConfig().displayOverrides().get("user:4900"));
     }
 
     private static void assertStatus(int status, String code) {

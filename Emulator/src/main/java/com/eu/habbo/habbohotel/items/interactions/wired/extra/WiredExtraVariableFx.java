@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxConfig;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStatus;
@@ -418,11 +419,20 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
 
     @Override
     public String[] officialVariableIds() {
-        return new String[] {
-            String.valueOf(this.overrideMinItemId),
-            String.valueOf(this.overrideMaxItemId),
-            String.valueOf(this.audienceItemId)
-        };
+        int holder =
+                this.source == SOURCE_FURNI ? WiredVariableTargets.OFFICIAL_FURNI : WiredVariableTargets.OFFICIAL_USER;
+        return WiredVariableIds.list(
+                WiredVariableIds.toWire(
+                        this.overrideMinTarget == OVERRIDE_TARGET_GLOBAL
+                                ? WiredVariableTargets.OFFICIAL_GLOBAL
+                                : holder,
+                        this.overrideMinItemId),
+                WiredVariableIds.toWire(
+                        this.overrideMaxTarget == OVERRIDE_TARGET_GLOBAL
+                                ? WiredVariableTargets.OFFICIAL_GLOBAL
+                                : holder,
+                        this.overrideMaxItemId),
+                WiredVariableIds.toWire(WiredVariableTargets.OFFICIAL_USER, this.audienceItemId));
     }
 
     private static int hiWord(int value) {
@@ -549,8 +559,9 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
     }
 
     private static int officialId(String[] variableIds, int index) {
+        // The variable list's id (user:12); a bare box id from an older client still reads.
         if (variableIds == null || index >= variableIds.length) return 0;
-        return customItemId(CUSTOM_TOKEN_PREFIX + (variableIds[index] == null ? "" : variableIds[index].trim()));
+        return WiredVariableIds.boxIdOf(variableIds[index]);
     }
 
     @Override

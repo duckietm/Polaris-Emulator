@@ -89,6 +89,16 @@ public final class UserPreferencePackets {
         }
     }
 
+    /** The playtest switch of stored wired menu preferences ({@link WiredMenuPreferences#encode}); off when unset. */
+    public static boolean isPlayTestModeStored(String encoded) {
+        if (encoded == null || encoded.isEmpty()) {
+            return false;
+        }
+
+        String[] parts = encoded.split(",", -1);
+        return parts.length > 2 && "1".equals(parts[2]);
+    }
+
     /** Reads the whole official wired menu preferences packet; the style is kept to a short name. */
     public static WiredMenuPreferences parseWiredMenuPreferences(ClientMessage packet) {
         boolean menuButton = packet.readBoolean();

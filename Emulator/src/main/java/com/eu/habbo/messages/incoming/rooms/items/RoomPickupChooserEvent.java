@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnersh
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
@@ -20,6 +21,9 @@ public class RoomPickupChooserEvent extends MessageHandler {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null) return;
+
+        // AIR playtest mode: nothing is picked up or ejected, the user's own furni included.
+        if (RoomPlayTestSupport.isRestricted(this.client.getHabbo())) return;
 
         for (int i = 0; i < count; i++) {
             int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());

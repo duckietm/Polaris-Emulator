@@ -2856,7 +2856,7 @@ Variable names are 1-40 characters of `A-Z a-z 0-9 _`, with whitespace turned in
 
 ## 9. Special Wired Items
 
-These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*` controller is a switch: it is on while its state is `1`. Rights holders (or renters of the space) toggle it, and so does the wired toggle-state effect. One active controller applies to the whole room.
+These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*` controller is a switch: it is on while its state is `1`, and a click flips 0/1 whatever `interaction_modes_count` says. Rights holders (or renters of the space) toggle it, and so does the wired toggle-state effect. One active controller applies to the whole room. Picking up a controller that is on ends its effect for the room. See `docs/wired/air-parity/room_configuration.md` and `Database/Optional/room_configuration_furni.sql`.
 
 ### `wf_conf_invis_control`
 
@@ -2874,7 +2874,7 @@ These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*`
 ### `wf_conf_handitem_block`
 
 - **Class:** `InteractionHanditemBlockControl`
-- **Behavior:** while on, users cannot give hand items to other users or to pets.
+- **Behavior:** while on, users cannot give hand items to other users or to pets, nor drop them.
 - **Main settings:** none; on/off.
 
 ### `wf_conf_queue_speed`
@@ -2882,7 +2882,7 @@ These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*`
 - **Class:** `InteractionQueueSpeedControl`
 - **Behavior:** overrides the room's roller speed. Clicking cycles four modes (states 0/3/6/9 map to roller speed 0-3), with an interval of `(speed + 1) * 500` ms. The furni animates at that speed.
 - **Main settings:** none; only the mode state.
-- **Notes:** the first controller found applies whether or not it is "on". A click from a user without rights is passed on as a normal use.
+- **Notes:** the first controller found applies whether or not it is "on". A click from a user without rights is passed on as a normal use. The wired toggle-state effect steps one whole mode. Its states run 0-11 (each mode plus two animation frames), so `interaction_modes_count` is 12.
 
 ### `wf_conf_wired_disable`
 

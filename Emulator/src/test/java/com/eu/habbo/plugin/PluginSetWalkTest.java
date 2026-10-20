@@ -36,11 +36,16 @@ class PluginSetWalkTest {
         manager.getPlugins().add(new StubPlugin("two"));
 
         assertDoesNotThrow(() -> {
-            int added = 0;
+            boolean changed = false;
 
             for (HabboPlugin ignored : manager.getPlugins()) {
-                if (added < 3) {
-                    manager.getPlugins().add(new StubPlugin("added-" + added++));
+                // The reload lands in the middle of the walk. Which of the new plugins the walk still sees is not
+                // defined (the set is weakly consistent), so the test only asks that it does not throw.
+                if (!changed) {
+                    changed = true;
+                    manager.getPlugins().add(new StubPlugin("added-0"));
+                    manager.getPlugins().add(new StubPlugin("added-1"));
+                    manager.getPlugins().add(new StubPlugin("added-2"));
                 }
             }
         });

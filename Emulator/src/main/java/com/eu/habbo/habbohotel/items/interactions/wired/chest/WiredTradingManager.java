@@ -48,6 +48,9 @@ public class WiredTradingManager {
 
     private static final String LAYOUT_GENERIC = "generic";
 
+    /** The source label of a failed contract trade on the wired monitor. */
+    static final String MONITOR_SOURCE = "contract";
+
     /** How long a negotiation Cancel Transaction ended waits for its replacement before the window is told. */
     static final long REPLACEMENT_GRACE_MS = 1000L;
 
@@ -153,6 +156,8 @@ public class WiredTradingManager {
         List<InteractionWiredChest> usable = WiredChestPayouts.usable(chests);
         if (usable.isEmpty()) {
             ChestTransactionFailures.send(habbo, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
+            ChestTransactionFailures.noteOnMonitor(
+                    this.room, ChestTransactionFailures.NO_OR_LOCKED_CHESTS, MONITOR_SOURCE, firstOf(contractIds));
             return null;
         }
         return this.start(
@@ -197,6 +202,8 @@ public class WiredTradingManager {
         List<InteractionWiredChest> usable = WiredChestPayouts.usable(chests);
         if (usable.isEmpty()) {
             ChestTransactionFailures.send(habbo, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
+            ChestTransactionFailures.noteOnMonitor(
+                    this.room, ChestTransactionFailures.NO_OR_LOCKED_CHESTS, MONITOR_SOURCE, firstOf(contractIds));
             return null;
         }
         return this.start(
@@ -361,7 +368,7 @@ public class WiredTradingManager {
         }
 
         returnHeldItems(habbo, negotiation.session());
-        raise(habbo, WiredEvent.Type.TRANSACTION_FAIL);
+        raiseFailure(habbo, ChestTransactionFailures.TRADE_CANCELLED);
 
         ThreadPooling threading = WiredPlatform.threading();
         if (threading != null) threading.run(() -> this.flushReplacement(habbo), REPLACEMENT_GRACE_MS);
@@ -508,7 +515,14 @@ public class WiredTradingManager {
                     .sendResponse(new WiredTradeCancelledComposer(ChestTransactionFailures.fromSession(failureId)));
         }
 
-        if (!negotiation.depositOnly()) raise(habbo, WiredEvent.Type.TRANSACTION_FAIL);
+        if (!negotiation.depositOnly()) {
+            ChestTransactionFailures.noteOnMonitor(
+                    this.room,
+                    ChestTransactionFailures.fromSession(failureId),
+                    MONITOR_SOURCE,
+                    firstOf(negotiation.contractIds()));
+            raiseFailure(habbo, ChestTransactionFailures.fromSession(failureId));
+        }
     }
 
     /** End a negotiation that settled. The items it consumed are gone by then, by design. */
@@ -860,7 +874,20 @@ public class WiredTradingManager {
         if (habbo != null && habbo.getClient() != null) {
             habbo.getClient().sendResponse(new WiredTradeCancelledComposer(airReason));
         }
-        if (!negotiation.depositOnly()) raise(habbo, WiredEvent.Type.TRANSACTION_FAIL);
+        if (!negotiation.depositOnly()) {
+            ChestTransactionFailures.noteOnMonitor(
+                    this.room, airReason, MONITOR_SOURCE, firstOf(negotiation.contractIds()));
+            raiseFailure(habbo, airReason);
+        }
+    }
+
+    /** The first contract a negotiation started from, for the monitor's detail line; 0 without one. */
+    private static int firstOf(Collection<Integer> contractIds) {
+        if (contractIds == null) return 0;
+        for (Integer id : contractIds) {
+            if (id != null) return id;
+        }
+        return 0;
     }
 
     private synchronized Negotiation getNegotiation(Habbo habbo) {
@@ -872,9 +899,18 @@ public class WiredTradingManager {
      * not settle until the player confirms or walks away, so the triggers fire from here.
      */
     private void raise(Habbo habbo, WiredEvent.Type type) {
+        this.raise(habbo, type, ChestTransactionFailures.NONE);
+    }
+
+    /** TRANSACTION_FAIL with its reason, for {@code @event.transaction_failed.reason}. */
+    private void raiseFailure(Habbo habbo, int reason) {
+        this.raise(habbo, WiredEvent.Type.TRANSACTION_FAIL, reason);
+    }
+
+    private void raise(Habbo habbo, WiredEvent.Type type, int failureReason) {
         if (this.room == null || habbo == null) return;
 
-        WiredEvent.Builder builder = WiredEvent.builder(type, this.room);
+        WiredEvent.Builder builder = WiredEvent.builder(type, this.room).transactionFailureReason(failureReason);
         if (habbo.getRoomUnit() != null) builder.actor(habbo.getRoomUnit());
 
         WiredManager.dispatchEffectTriggeredEvent(builder.build());

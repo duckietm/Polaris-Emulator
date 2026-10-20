@@ -6,6 +6,12 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
+/**
+ * Our wired monitor packet (5101): the diagnostics thresholds and counters AIR has no packet for, the detail of the
+ * latest occurrence of each diagnostic type ({@code type, reason, source label, source id}) and the history. The
+ * official lines come in AIR's own packets: the room stats (1891, {@link WiredRoomStatsComposer}) and the error list
+ * (15, {@link WiredErrorLogsComposer}).
+ */
 public class WiredMonitorDataComposer extends MessageComposer {
     private final WiredRoomDiagnostics.Snapshot snapshot;
 
@@ -59,11 +65,10 @@ public class WiredMonitorDataComposer extends MessageComposer {
         this.response.appendInt(this.snapshot.getHeavyDelayedThresholdPercent());
         this.response.appendInt(this.snapshot.getLogs().size());
 
+        // The type, category, count and latest time of each error are AIR's error list (1132 asks, 15 answers,
+        // WiredErrorLogsComposer); what is left here is the detail behind the latest occurrence of each type.
         for (WiredRoomDiagnostics.LogEntry log : this.snapshot.getLogs()) {
             this.response.appendString(log.getType().name());
-            this.response.appendString(log.getSeverity().name());
-            this.response.appendInt(log.getCount());
-            this.response.appendInt((int) (log.getLastOccurredAtMs() / 1000L));
             this.response.appendString(log.getLatestReason());
             this.response.appendString(log.getLatestSourceLabel());
             this.response.appendInt(BuildersClubItemIds.toWire(log.getLatestSourceId()));

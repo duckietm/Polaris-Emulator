@@ -33,15 +33,16 @@ class WiredInputGuardTest {
     }
 
     @Test
-    void filtersNonPositiveFurniIds() {
+    void keepsWallPicksAsNegativeIdsAndDropsNoId() {
         ByteBuf buffer = Unpooled.buffer();
-        buffer.writeInt(4);
+        buffer.writeInt(5);
         buffer.writeInt(1);
         buffer.writeInt(0);
         buffer.writeInt(-1);
+        buffer.writeInt(Integer.MIN_VALUE);
         buffer.writeInt(2);
 
-        assertArrayEquals(new int[] {1, 2}, WiredInputGuard.readFurniIds(new ClientMessage(1, buffer)));
+        assertArrayEquals(new int[] {1, -1, 2}, WiredInputGuard.readFurniIds(new ClientMessage(1, buffer)));
     }
 
     @Test

@@ -29,6 +29,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
@@ -59,11 +61,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Spawning with a variable gives every copy a furni variable. Its value is the number in the box, or
  * another variable's, read once per firing on the first holder of the value target: furni (the third
- * furni slot), user (the second user slot), global or context. The variables travel in the string
- * param, as our other variable boxes send them: {@code "spawnVariableId\tvalueVariableId"}.
+ * furni slot), user (the second user slot), global or context. The variables are AIR's variable ids
+ * {@code [spawn variable, value variable]}, no string (older clients sent {@code "spawnVariableId\tvalueVariableId"}
+ * as the string; still read).
  */
 public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
-        implements WiredOfficialSources, InteractionWiredMatchFurniSettings {
+        implements WiredOfficialSources, WiredOfficialVariableIds, InteractionWiredMatchFurniSettings {
     private static final String PLACEMENT_FAILURE_TYPE = "wired.error";
     private static final String PLACEMENT_FAILURE_IMAGE = "${image.library.url}album1584/WIRD2.png";
     private static final String PLACEMENT_FAILURE_MESSAGE = "${room.error.wired.placement_failure}";
@@ -135,11 +138,17 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
         this.value = param(p, 8, 0);
         this.valueTarget = WiredValueVariable.normalizeTarget(param(p, 9, WiredValueVariable.TARGET_FURNI));
 
-        String[] variables = settings.getStringParam() == null
-                ? new String[0]
-                : settings.getStringParam().split("\t", -1);
-        this.spawnVariableId = variables.length > 0 ? WiredValueVariable.parseId(variables[0]) : 0;
-        this.valueVariableId = variables.length > 1 ? WiredValueVariable.parseId(variables[1]) : 0;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            String[] ids = settings.getVariableIds();
+            this.spawnVariableId = WiredVariableIds.boxIdOf(ids[0]);
+            this.valueVariableId = ids.length > 1 ? WiredVariableIds.boxIdOf(ids[1]) : 0;
+        } else {
+            String[] variables = settings.getStringParam() == null
+                    ? new String[0]
+                    : settings.getStringParam().split("\t", -1);
+            this.spawnVariableId = variables.length > 0 ? WiredValueVariable.parseId(variables[0]) : 0;
+            this.valueVariableId = variables.length > 1 ? WiredValueVariable.parseId(variables[1]) : 0;
+        }
         if (this.spawnWithVariable) {
             WiredVariableDefinitionInfo spawn = room.getFurniVariableManager().getDefinitionInfo(this.spawnVariableId);
             if (spawn == null || spawn.isReadOnly()) {
@@ -421,7 +430,7 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
         for (Snapshot source : this.snapshot) message.appendInt(source.itemId);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.spawnVariableId + "\t" + this.valueVariableId);
+        message.appendString("");
         message.appendInt(10);
         message.appendInt(this.targetIsUser ? 1 : 0);
         message.appendInt(this.location);
@@ -501,6 +510,14 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
         this.targetUserSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.valueUserSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(0);
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        if (!this.spawnWithVariable) return new String[0];
+        return WiredVariableIds.list(
+                WiredVariableIds.toWire(WiredValueVariable.TARGET_FURNI, this.spawnVariableId),
+                this.valueIsVariable ? WiredVariableIds.toWire(this.valueTarget, this.valueVariableId) : "");
     }
 
     private static int param(int[] params, int index, int fallback) {

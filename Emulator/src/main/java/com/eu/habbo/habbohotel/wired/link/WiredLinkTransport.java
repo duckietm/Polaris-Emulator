@@ -119,13 +119,19 @@ public final class WiredLinkTransport {
         List<WiredLinkEndpoint> targets =
                 receivers.size() > MAX_RECEIVERS ? new ArrayList<>(receivers.subList(0, MAX_RECEIVERS)) : receivers;
         for (WiredLinkEndpoint target : targets) {
-            this.executor.execute(() -> this.deliver(target, payload, next));
+            int sourceRoomId = room.getId();
+            this.executor.execute(() -> this.deliver(target, payload, next, sourceRoomId));
         }
         return targets.size();
     }
 
     /** Delivers to one Link: it must still be there, still its owner's, in a room the owner controls. */
     void deliver(WiredLinkEndpoint target, WiredLinkPayload payload, int hops) {
+        this.deliver(target, payload, hops, 0);
+    }
+
+    /** As {@link #deliver(WiredLinkEndpoint, WiredLinkPayload, int)}, from the room the payload was sent in. */
+    void deliver(WiredLinkEndpoint target, WiredLinkPayload payload, int hops, int sourceRoomId) {
         try {
             Room room = this.rooms.apply(target.roomId());
             if (room == null || room.getRoomSpecialTypes() == null) {
@@ -152,7 +158,7 @@ public final class WiredLinkTransport {
                 if (trigger instanceof WiredLinkReceiver receiver
                         && receiver.linkKind() == payload.kind()
                         && receiver.listensTo(link)) {
-                    WiredEvent event = receiver.receiveEvent(room, link, payload, hops);
+                    WiredEvent event = receiver.receiveEvent(room, link, payload, hops, sourceRoomId);
                     if (event != null) {
                         this.dispatcher.dispatch(room, trigger, event);
                     }

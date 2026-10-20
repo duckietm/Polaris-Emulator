@@ -10,9 +10,15 @@ import static org.mockito.Mockito.when;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.ItemInteraction;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniInRange;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHasTag;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionLessTimeElapsed;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasTag;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInTeam;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamMember;
+import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionVariableValueMatch;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
@@ -39,7 +45,9 @@ class WiredEditorDefaultsTest {
     @Test
     void aUserConditionReportsItsQuantifierAndTheNegativeLabels() {
         WiredConditionTeamMember team = new WiredConditionTeamMember(1, 1, base("wf_cnd_actor_in_team"), "", 0, 0);
-        team.saveData(new WiredSettings(new int[] {1, 1}, "", new int[0], 0));
+        WiredSettings anyUser = new WiredSettings(new int[] {1}, "", new int[0], 0);
+        anyUser.setQuantifierCode(1);
+        team.saveData(anyUser);
         WiredConditionNotInTeam notInTeam = new WiredConditionNotInTeam(2, 1, base("wf_cnd_not_in_team"), "", 0, 0);
 
         assertEquals(WiredEditorDefaults.QUANTIFIER_USERS, WiredEditorDefaults.quantifierType(team));
@@ -48,6 +56,32 @@ class WiredEditorDefaultsTest {
         assertEquals(WiredEditorDefaults.QUANTIFIER_USERS, WiredEditorDefaults.quantifierType(notInTeam));
         assertEquals(0, WiredEditorDefaults.quantifierCode(notInTeam));
         assertTrue(WiredEditorDefaults.quantifierInvert(notInTeam));
+    }
+
+    @Test
+    void everyQuantifiedConditionGetsTheFooterOfItsFamily() {
+        WiredConditionVariableValueMatch value =
+                new WiredConditionVariableValueMatch(1, 1, base("wf_cnd_var_val_match"), "", 0, 0);
+        WiredConditionNotHasVariable notHasVariable =
+                new WiredConditionNotHasVariable(2, 1, base("wf_cnd_neg_has_var"), "", 0, 0);
+        WiredConditionHasTag tag = new WiredConditionHasTag(3, 1, base("wf_cnd_has_tag"), "", 0, 0);
+        WiredConditionNotHasTag notTag = new WiredConditionNotHasTag(4, 1, base("wf_cnd_not_has_tag"), "", 0, 0);
+        WiredConditionFurniInRange range =
+                new WiredConditionFurniInRange(5, 1, base("wf_cnd_furni_in_range"), "", 0, 0);
+        WiredConditionHabboNotHasRights noRights =
+                new WiredConditionHabboNotHasRights(6, 1, base("wf_cnd_not_habbo_has_rights"), "", 0, 0);
+
+        assertEquals(WiredEditorDefaults.QUANTIFIER_VARIABLES, WiredEditorDefaults.quantifierType(value));
+        assertFalse(WiredEditorDefaults.quantifierInvert(value));
+        // AIR's not-has-variable reads its quantifier as the negative labels.
+        assertEquals(WiredEditorDefaults.QUANTIFIER_VARIABLES, WiredEditorDefaults.quantifierType(notHasVariable));
+        assertTrue(WiredEditorDefaults.quantifierInvert(notHasVariable));
+        assertEquals(WiredEditorDefaults.QUANTIFIER_USERS, WiredEditorDefaults.quantifierType(tag));
+        assertTrue(WiredEditorDefaults.quantifierInvert(notTag));
+        assertEquals(WiredEditorDefaults.QUANTIFIER_FURNI, WiredEditorDefaults.quantifierType(range));
+        // "Lacks rights" quantifies over the users that lack them, so it keeps the plain labels.
+        assertEquals(WiredEditorDefaults.QUANTIFIER_USERS, WiredEditorDefaults.quantifierType(noRights));
+        assertFalse(WiredEditorDefaults.quantifierInvert(noRights));
     }
 
     @Test
@@ -152,16 +186,18 @@ class WiredEditorDefaultsTest {
         box.markEditorSaved();
         assertArrayEquals(new int[] {7}, officialIntParams(box));
 
-        // A saved box that holds 0 keeps 0: only boxes that were never saved get the defaults.
-        box.saveData(new WiredSettings(new int[] {0}, "", new int[0], 0));
-        assertArrayEquals(new int[] {0}, officialIntParams(box));
+        // A saved box at the slider's lowest value keeps it: only boxes that were never saved get the
+        // defaults. AIR's param is the slider value plus one, so 0 half-seconds is 1 on the wire.
+        box.saveData(new WiredSettings(new int[] {1}, "", new int[0], 0));
+        assertArrayEquals(new int[] {1}, officialIntParams(box));
     }
 
     @Test
     void aFreshBoxWithoutDefaultsKeepsItsOwnIntParams() {
         WiredConditionLessTimeElapsed box =
                 new WiredConditionLessTimeElapsed(6, 1, base("wf_cnd_unlisted_box"), "", 0, 0);
-        assertArrayEquals(new int[] {0}, officialIntParams(box));
+        // Its own 0 half-seconds, sent as AIR's slider value plus one.
+        assertArrayEquals(new int[] {1}, officialIntParams(box));
     }
 
     private static void skipInts(ByteBuf in) {

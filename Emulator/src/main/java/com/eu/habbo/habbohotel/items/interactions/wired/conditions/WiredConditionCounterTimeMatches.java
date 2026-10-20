@@ -12,7 +12,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredConditionCounterTimeMatches extends InteractionWiredCondition {
+public class WiredConditionCounterTimeMatches extends InteractionWiredCondition implements WiredOfficialQuantifier {
     private static final int COMPARISON_LESS = 0;
     private static final int COMPARISON_EQUAL = 1;
     private static final int COMPARISON_GREATER = 2;
@@ -62,7 +64,7 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (targets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
         }
 
         int targetTimeInMs = this.getTargetTimeInMs();
@@ -186,13 +188,12 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         message.appendInt(this.getId());
         message.appendString("");
         // Official layout: [seconds (0-59), minutes (0-99), half second (0-1), comparison (0 less, 1 equal,
-        // 2 more)], the counters in the official source slot; our quantifier (0 all, 1 any) follows.
-        message.appendInt(5);
+        // 2 more)], the counters in the official source slot, the quantifier (0 all, 1 any) in its slot.
+        message.appendInt(4);
         message.appendInt(this.halfSecondSteps / 2);
         message.appendInt(this.minutes);
         message.appendInt(this.halfSecondSteps % 2);
         message.appendInt(this.comparison);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -209,8 +210,8 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         int half = (params.length > 2) ? Math.clamp(params[2], 0, 1) : 0;
         this.halfSecondSteps = this.normalizeHalfSecondSteps(seconds * 2 + half);
         this.comparison = (params.length > 3) ? this.normalizeComparison(params[3]) : COMPARISON_EQUAL;
-        // Officially one counter is enough.
-        this.quantifier = (params.length > 4) ? this.normalizeQuantifier(params[4]) : QUANTIFIER_ANY;
+        // A fresh box opens on "any": officially one counter is enough.
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
@@ -351,5 +352,10 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
             this.quantifier = quantifier;
             this.itemIds = itemIds;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,7 +35,7 @@ public class WiredConditionNotTriggerOnFurni extends WiredConditionTriggerOnFurn
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (userTargets.isEmpty()) return false;
+        if (userTargets.isEmpty()) return WiredQuantifier.overEmptyNegated(this.getQuantifier() != QUANTIFIER_ANY);
 
         List<HabboItem> itemTargets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (itemTargets.isEmpty()) return true;

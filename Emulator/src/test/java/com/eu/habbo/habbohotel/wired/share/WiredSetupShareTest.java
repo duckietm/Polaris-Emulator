@@ -144,9 +144,32 @@ class WiredSetupShareTest {
         exporter.boxIndexes.put(777, 3);
 
         assertEquals("a\tcustom:#0\tcustom:0\tcustom:#3", exporter.exportText("a\tcustom:501\tcustom:9\tcustom:777"));
+        // Slot by slot: an id of a box that is not exported, or an empty slot, is "none".
         assertEquals(
-                List.of("#0", "custom:#3", "@internal"),
+                List.of("#0", "custom:#3", "n", "@internal", "n"),
                 exporter.exportVariables(new String[] {"501", "custom:777", "12", "@internal", ""}));
+        // The variable list's ids of exported boxes keep their target.
+        assertEquals(
+                List.of("user:#0", "room:#3", "-125", "n", "user:41"),
+                exporter.exportVariables(new String[] {"user:501", "room:777", "-125", "n", "user:41"}));
+        // An echo's built-in source names its target; a reference names the shared variable of another room.
+        assertEquals(
+                List.of("ctx:@chat_type", "furni:@position_x", "user:9"),
+                exporter.exportVariables(new String[] {"ctx:@chat_type", "furni:@position_x", "user:9"}));
+    }
+
+    @Test
+    void echoAndReferenceSourcesSurviveTheImport() {
+        GameClient client = mock(GameClient.class);
+        when(client.getHabbo()).thenReturn(mock(Habbo.class));
+        WiredSetupImporter importer = new WiredSetupImporter(mock(Room.class), client, new WiredSetupDocument());
+        InteractionWired echoed = mock(InteractionWired.class);
+        when(echoed.getId()).thenReturn(4242);
+        importer.resolved.put(2, echoed);
+
+        assertArrayEquals(
+                new String[] {"4242", "ctx:@chat_type", "room:11"},
+                importer.remapVariables(List.of("#2", "ctx:@chat_type", "room:11")));
     }
 
     @Test
@@ -160,8 +183,11 @@ class WiredSetupShareTest {
 
         assertEquals("custom:9001|custom:0", importer.remapText("custom:#0|custom:#5"));
         assertArrayEquals(
-                new String[] {"9001", "custom:9001", "@built_in"},
+                new String[] {"9001", "custom:9001", "n", "n", "n", "@built_in"},
                 importer.remapVariables(List.of("#0", "custom:#0", "#4", "123", "custom:55", "@built_in")));
+        assertArrayEquals(
+                new String[] {"n", "user:9001", "-125"},
+                importer.remapVariables(List.of("furni:#4", "user:#0", "-125")));
         // Item ids never come from a code: only box references and furni found in this room.
         assertArrayEquals(new int[] {9001}, importer.remapPicks(List.of("b0", "b1", "b0", "123", "f0"), 0, 0));
     }

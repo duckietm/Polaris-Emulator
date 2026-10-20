@@ -14,4 +14,12 @@ public interface WiredLinkReceiver {
 
     /** The event this trigger's stack runs with for the payload that reached the Link. */
     WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops);
+
+    /**
+     * As {@link #receiveEvent(Room, HabboItem, WiredLinkPayload, int)}, knowing the room the payload was sent from
+     * (AIR {@code @event.link.source_room_id}). Receivers that do not read it answer the four-argument event.
+     */
+    default WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops, int sourceRoomId) {
+        return this.receiveEvent(room, link, payload, hops);
+    }
 }

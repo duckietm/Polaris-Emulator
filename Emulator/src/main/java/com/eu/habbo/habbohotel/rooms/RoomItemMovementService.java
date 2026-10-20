@@ -152,7 +152,7 @@ final class RoomItemMovementService {
         }
 
         // Height sanity checks
-        if (z > Room.MAXIMUM_FURNI_HEIGHT) {
+        if (z > RoomFurniHeightLimit.current()) {
             return FurnitureMovementError.CANT_STACK;
         }
 
@@ -185,8 +185,8 @@ final class RoomItemMovementService {
             item.setZ(this.placement.resolveStackWalkHelperHeight(item, tile, occupiedTiles));
         }
 
-        if (item.getZ() > Room.MAXIMUM_FURNI_HEIGHT) {
-            item.setZ(Room.MAXIMUM_FURNI_HEIGHT);
+        if (item.getZ() > RoomFurniHeightLimit.current()) {
+            item.setZ(RoomFurniHeightLimit.current());
         }
 
         // Update wired spatial index + invalidate cache
@@ -323,7 +323,7 @@ final class RoomItemMovementService {
             }
         }
 
-        if (z > Room.MAXIMUM_FURNI_HEIGHT) {
+        if (z > RoomFurniHeightLimit.current()) {
             return FurnitureMovementError.CANT_STACK;
         }
 
@@ -352,8 +352,8 @@ final class RoomItemMovementService {
             item.setZ(this.placement.resolveStackWalkHelperHeight(item, tile, occupiedTiles));
         }
 
-        if (item.getZ() > Room.MAXIMUM_FURNI_HEIGHT) {
-            item.setZ(Room.MAXIMUM_FURNI_HEIGHT);
+        if (item.getZ() > RoomFurniHeightLimit.current()) {
+            item.setZ(RoomFurniHeightLimit.current());
         }
 
         if (oldLocation != null) {

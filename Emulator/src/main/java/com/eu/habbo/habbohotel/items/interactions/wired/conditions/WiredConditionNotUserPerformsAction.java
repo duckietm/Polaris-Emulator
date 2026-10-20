@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,7 +26,7 @@ public class WiredConditionNotUserPerformsAction extends WiredConditionUserPerfo
     public boolean evaluate(WiredContext ctx) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.getUserSource());
         if (targets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmptyNegated(this.getQuantifier() != QUANTIFIER_ANY);
         }
 
         // The positive box's answer with the same quantifier, turned around: "any" is "not any

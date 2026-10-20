@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,14 +22,36 @@ import java.util.Map;
  */
 public final class RoomWiredVariableCatalog {
 
-    /** Holder kinds, mirroring the official {@code entityType} of a variable page element. */
-    public static final int TARGET_ROOM = 0;
+    /** Official variable targets ({@code WiredVariable.variableTarget}): furni 0, user 1, global -10, context -20. */
+    public static final int TARGET_FURNI = 0;
 
     public static final int TARGET_USER = 1;
 
-    public static final int TARGET_FURNI = 2;
+    public static final int TARGET_GLOBAL = -10;
 
-    public static final int TARGET_CONTEXT = 3;
+    public static final int TARGET_CONTEXT = -20;
+
+    /** Our name for the global target. */
+    public static final int TARGET_ROOM = TARGET_GLOBAL;
+
+    /**
+     * Official variable types ({@code WiredVariable.variableType}): made with a variable box, internal ({@code @}),
+     * a sub-variable of a box (level-up, quest and Time Utilities parts) and smart ({@code ~}).
+     */
+    public static final int TYPE_CREATED = 0;
+
+    public static final int TYPE_INTERNAL = 1;
+
+    public static final int TYPE_SUB = 2;
+
+    public static final int TYPE_SMART = 3;
+
+    /** Holder kinds of a variable page element ({@code entityType}); unchanged on the wire. */
+    public static final int HOLDER_ROOM = 0;
+
+    public static final int HOLDER_USER = 1;
+
+    public static final int HOLDER_FURNI = 2;
 
     /** Official {@code userTypeFilter} values of the variable overview. */
     public static final int USER_FILTER_ALL = 0;
@@ -53,12 +76,19 @@ public final class RoomWiredVariableCatalog {
         private final String variableName;
         private final int availabilityType;
         private final int variableTarget;
+        private final boolean alwaysAvailable;
+        private final boolean canCreateAndDelete;
         private final boolean hasValue;
+        private final boolean canWriteValue;
+        private final boolean canInterceptChanges;
+        private final boolean invisible;
+        private final boolean requiresExecutionContext;
+        private final boolean canReadCreationTime;
+        private final boolean canReadLastUpdateTime;
         private final boolean textConnected;
         private final boolean readOnly;
         private final Map<Integer, String> textConnector;
         private final String textConnectorFallback;
-        private final boolean requiresExecutionContext;
 
         public Variable(
                 String variableId,
@@ -106,8 +136,11 @@ public final class RoomWiredVariableCatalog {
         }
 
         /**
-         * With the text connector's fallback text (null for none) and {@code requiresExecutionContext}:
-         * the variable only exists while a stack runs (a pointer), as the official {@code WiredVariable}.
+         * A variable of a box, with the text connector's fallback text (null for none) and {@code
+         * requiresExecutionContext}: the variable only exists while a stack runs (a pointer), as the official {@code
+         * WiredVariable}. The other flags follow from what such a variable can do: a global one always exists and is
+         * never given or removed, a read-only one (a reference, an echo) cannot be written, given or removed, a
+         * sub-variable is computed from its box, and only stored values carry their times.
          */
         public Variable(
                 String variableId,
@@ -121,19 +154,75 @@ public final class RoomWiredVariableCatalog {
                 Map<Integer, String> textConnector,
                 String textConnectorFallback,
                 boolean requiresExecutionContext) {
+            this(
+                    variableId,
+                    variableType,
+                    variableName,
+                    availabilityType,
+                    variableTarget,
+                    variableTarget == TARGET_GLOBAL,
+                    !readOnly && variableTarget != TARGET_GLOBAL && variableType != TYPE_SUB,
+                    hasValue,
+                    !readOnly && hasValue,
+                    !requiresExecutionContext,
+                    false,
+                    requiresExecutionContext,
+                    timestamped(variableType, variableTarget, requiresExecutionContext),
+                    timestamped(variableType, variableTarget, requiresExecutionContext),
+                    textConnected,
+                    readOnly,
+                    textConnector,
+                    textConnectorFallback);
+        }
+
+        /** Every flag of the official {@code WiredVariable} given explicitly. */
+        public Variable(
+                String variableId,
+                int variableType,
+                String variableName,
+                int availabilityType,
+                int variableTarget,
+                boolean alwaysAvailable,
+                boolean canCreateAndDelete,
+                boolean hasValue,
+                boolean canWriteValue,
+                boolean canInterceptChanges,
+                boolean invisible,
+                boolean requiresExecutionContext,
+                boolean canReadCreationTime,
+                boolean canReadLastUpdateTime,
+                boolean textConnected,
+                boolean readOnly,
+                Map<Integer, String> textConnector,
+                String textConnectorFallback) {
             this.variableId = variableId;
             this.variableType = variableType;
             this.variableName = variableName;
             this.availabilityType = availabilityType;
             this.variableTarget = variableTarget;
+            this.alwaysAvailable = alwaysAvailable;
+            this.canCreateAndDelete = canCreateAndDelete;
             this.hasValue = hasValue;
+            this.canWriteValue = canWriteValue;
+            this.canInterceptChanges = canInterceptChanges;
+            this.invisible = invisible;
+            this.requiresExecutionContext = requiresExecutionContext;
+            this.canReadCreationTime = canReadCreationTime;
+            this.canReadLastUpdateTime = canReadLastUpdateTime;
             this.textConnected = textConnected;
             this.readOnly = readOnly;
             this.textConnector = (textConnector != null)
                     ? Collections.unmodifiableMap(new LinkedHashMap<>(textConnector))
                     : Collections.emptyMap();
             this.textConnectorFallback = textConnectorFallback;
-            this.requiresExecutionContext = requiresExecutionContext;
+        }
+
+        /**
+         * Stored values carry when they were created and last changed: the user, furni and global variables of a box.
+         * A context variable lives for one stack, a pointer only while a stack runs, and a sub-variable is computed.
+         */
+        private static boolean timestamped(int variableType, int variableTarget, boolean requiresExecutionContext) {
+            return variableType == TYPE_CREATED && variableTarget != TARGET_CONTEXT && !requiresExecutionContext;
         }
 
         /** The text a value the connector does not name reads as, or null. */
@@ -150,6 +239,7 @@ public final class RoomWiredVariableCatalog {
             return this.variableId;
         }
 
+        /** The official variable type: {@link #TYPE_CREATED}, {@link #TYPE_INTERNAL}, {@link #TYPE_SUB} or smart. */
         public int getVariableType() {
             return this.variableType;
         }
@@ -162,12 +252,45 @@ public final class RoomWiredVariableCatalog {
             return this.availabilityType;
         }
 
+        /** The official target: {@link #TARGET_FURNI}, {@link #TARGET_USER}, {@link #TARGET_GLOBAL} or context. */
         public int getVariableTarget() {
             return this.variableTarget;
         }
 
+        /** Every holder has the variable without a box giving it ({@code @id}, a global variable). */
+        public boolean isAlwaysAvailable() {
+            return this.alwaysAvailable;
+        }
+
+        /** Give Variable and Remove Variable can hand the variable out and take it away. */
+        public boolean canCreateAndDelete() {
+            return this.canCreateAndDelete;
+        }
+
         public boolean hasValue() {
             return this.hasValue;
+        }
+
+        public boolean canWriteValue() {
+            return this.canWriteValue;
+        }
+
+        /** Variable Changed can watch the variable. */
+        public boolean canInterceptChanges() {
+            return this.canInterceptChanges;
+        }
+
+        /** Hidden from the pickers: a smart variable while nothing in the room is of its kind. */
+        public boolean isInvisible() {
+            return this.invisible;
+        }
+
+        public boolean canReadCreationTime() {
+            return this.canReadCreationTime;
+        }
+
+        public boolean canReadLastUpdateTime() {
+            return this.canReadLastUpdateTime;
         }
 
         public boolean isTextConnected() {
@@ -180,10 +303,20 @@ public final class RoomWiredVariableCatalog {
 
         /**
          * The value-to-text table a text connector addon gives this variable; the official client
-         * shows the text beside the number. Empty when the variable is not text connected.
+         * shows the text beside the number. Empty when the variable is not text connected, and empty
+         * for a packed built-in value ({@code @position}), which the client unpacks itself.
          */
         public Map<Integer, String> getTextConnector() {
             return this.textConnector;
+        }
+
+        /**
+         * Whether the block carries a text connector: a box's variable when a connector addon names its values, and a
+         * packed built-in ({@code @position}) with an empty table, which the client unpacks as "x: 14, y: 22".
+         */
+        public boolean hasTextConnector() {
+            return !this.textConnector.isEmpty()
+                    || (this.textConnected && (this.variableType == TYPE_INTERNAL || this.variableType == TYPE_SMART));
         }
 
         /** Stable per-variable hash; the client only compares it, it never interprets it. */
@@ -193,10 +326,18 @@ public final class RoomWiredVariableCatalog {
             result = (31 * result) + this.variableType;
             result = (31 * result) + this.availabilityType;
             result = (31 * result) + this.variableTarget;
-            result = (31 * result) + (this.hasValue ? 1 : 0);
-            result = (31 * result) + (this.textConnected ? 2 : 0);
-            result = (31 * result) + (this.readOnly ? 4 : 0);
-            result = (31 * result) + (this.requiresExecutionContext ? 8 : 0);
+            int flags = (this.hasValue ? 1 : 0)
+                    | (this.textConnected ? 2 : 0)
+                    | (this.readOnly ? 4 : 0)
+                    | (this.requiresExecutionContext ? 8 : 0)
+                    | (this.alwaysAvailable ? 16 : 0)
+                    | (this.canCreateAndDelete ? 32 : 0)
+                    | (this.canWriteValue ? 64 : 0)
+                    | (this.canInterceptChanges ? 128 : 0)
+                    | (this.invisible ? 256 : 0)
+                    | (this.canReadCreationTime ? 512 : 0)
+                    | (this.canReadLastUpdateTime ? 1024 : 0);
+            result = (31 * result) + flags;
             result = (31 * result) + (this.textConnectorFallback != null ? this.textConnectorFallback.hashCode() : 0);
             // The table is part of what the client caches, so a renamed value has to re-sync too.
             for (Map.Entry<Integer, String> mapping : this.textConnector.entrySet()) {
@@ -268,7 +409,10 @@ public final class RoomWiredVariableCatalog {
         }
     }
 
-    /** Every wired variable definition of the room, ordered by target and then by name. */
+    /**
+     * Every wired variable of the room: the variables of its boxes, ordered by target and then by name, followed by
+     * the built-in ones under Habbo's fixed ids ({@link RoomWiredInternalVariables}).
+     */
     public static List<Variable> variables(Room room) {
         List<Variable> variables = new ArrayList<>();
 
@@ -279,52 +423,43 @@ public final class RoomWiredVariableCatalog {
         RoomUserVariableManager.Snapshot userSnapshot =
                 room.getUserVariableManager().createSnapshot();
         for (RoomUserVariableManager.DefinitionEntry definition : userSnapshot.getDefinitions()) {
-            variables.add(new Variable(
-                    variableId(TARGET_USER, definition.getItemId()),
+            variables.add(boxVariable(
+                    room,
                     TARGET_USER,
+                    definition.getItemId(),
                     definition.getName(),
                     definition.getAvailability(),
-                    TARGET_USER,
                     definition.hasValue(),
                     definition.isTextConnected(),
-                    definition.isReadOnly(),
-                    textConnector(room, definition.getItemId()),
-                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
-                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
+                    definition.isReadOnly()));
         }
 
         RoomFurniVariableManager.Snapshot furniSnapshot =
                 room.getFurniVariableManager().createSnapshot();
         for (RoomFurniVariableManager.DefinitionEntry definition : furniSnapshot.getDefinitions()) {
-            variables.add(new Variable(
-                    variableId(TARGET_FURNI, definition.getItemId()),
+            variables.add(boxVariable(
+                    room,
                     TARGET_FURNI,
+                    definition.getItemId(),
                     definition.getName(),
                     definition.getAvailability(),
-                    TARGET_FURNI,
                     definition.hasValue(),
                     definition.isTextConnected(),
-                    definition.isReadOnly(),
-                    textConnector(room, definition.getItemId()),
-                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
-                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
+                    definition.isReadOnly()));
         }
 
         RoomVariableManager.Snapshot roomSnapshot =
                 room.getRoomVariableManager().createSnapshot();
         for (RoomVariableManager.DefinitionEntry definition : roomSnapshot.getDefinitions()) {
-            variables.add(new Variable(
-                    variableId(TARGET_ROOM, definition.getItemId()),
-                    TARGET_ROOM,
+            variables.add(boxVariable(
+                    room,
+                    TARGET_GLOBAL,
+                    definition.getItemId(),
                     definition.getName(),
                     definition.getAvailability(),
-                    TARGET_ROOM,
                     definition.hasValue(),
                     definition.isTextConnected(),
-                    definition.isReadOnly(),
-                    textConnector(room, definition.getItemId()),
-                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
-                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
+                    definition.isReadOnly()));
         }
 
         for (WiredVariableDefinitionInfo definition : WiredContextVariableSupport.createDefinitionInfos(room)) {
@@ -332,24 +467,62 @@ public final class RoomWiredVariableCatalog {
                 continue;
             }
 
-            variables.add(new Variable(
-                    variableId(TARGET_CONTEXT, definition.getItemId()),
+            variables.add(boxVariable(
+                    room,
                     TARGET_CONTEXT,
+                    definition.getItemId(),
                     definition.getName(),
                     definition.getAvailability(),
-                    TARGET_CONTEXT,
                     definition.hasValue(),
                     definition.isTextConnected(),
-                    true,
-                    textConnector(room, definition.getItemId()),
-                    WiredVariableTextConnectorSupport.fallbackText(room, definition.getItemId()),
-                    WiredPointerVariableSupport.isPointer(room, definition.getItemId())));
+                    definition.isReadOnly()));
         }
 
         variables.sort(Comparator.comparingInt(Variable::getVariableTarget)
                 .thenComparing(Variable::getVariableName, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(Variable::getVariableId));
+        variables.addAll(RoomWiredInternalVariables.catalogEntries(room));
         return variables;
+    }
+
+    /**
+     * The catalog entry of a box's variable: a level-up, quest or Time Utilities part is a sub-variable (type 2), and
+     * a pointer requires an execution context.
+     */
+    private static Variable boxVariable(
+            Room room,
+            int target,
+            int definitionItemId,
+            String name,
+            int availability,
+            boolean hasValue,
+            boolean textConnected,
+            boolean readOnly) {
+        return new Variable(
+                variableId(target, definitionItemId),
+                isSubVariable(room, target, definitionItemId) ? TYPE_SUB : TYPE_CREATED,
+                name,
+                availability,
+                target,
+                hasValue,
+                textConnected,
+                readOnly,
+                textConnector(room, definitionItemId),
+                WiredVariableTextConnectorSupport.fallbackText(room, definitionItemId),
+                WiredPointerVariableSupport.isPointer(room, definitionItemId));
+    }
+
+    private static boolean isSubVariable(Room room, int target, int definitionItemId) {
+        int levelTarget =
+                switch (target) {
+                    case TARGET_USER -> WiredVariableLevelSystemSupport.TARGET_USER;
+                    case TARGET_FURNI -> WiredVariableLevelSystemSupport.TARGET_FURNI;
+                    case TARGET_GLOBAL -> WiredVariableLevelSystemSupport.TARGET_ROOM;
+                    default -> -1;
+                };
+        return levelTarget >= 0
+                && WiredVariableLevelSystemSupport.resolveDerivedDefinition(room, levelTarget, definitionItemId)
+                        != null;
     }
 
     /** The text-connector table of a definition, empty unless a connector addon names its values. */
@@ -413,7 +586,7 @@ public final class RoomWiredVariableCatalog {
                     }
 
                     holders.add(new Holder(
-                            TARGET_USER,
+                            HOLDER_USER,
                             user.getUserId(),
                             userName(room, user.getUserId()),
                             assignment.hasValue() ? assignment.getValue() : 0,
@@ -433,7 +606,7 @@ public final class RoomWiredVariableCatalog {
                     }
 
                     holders.add(new Holder(
-                            TARGET_FURNI,
+                            HOLDER_FURNI,
                             furni.getFurniId(),
                             furniName(room, furni.getFurniId()),
                             assignment.hasValue() ? assignment.getValue() : 0,
@@ -451,7 +624,7 @@ public final class RoomWiredVariableCatalog {
                 }
 
                 holders.add(new Holder(
-                        TARGET_ROOM,
+                        HOLDER_ROOM,
                         room.getId(),
                         room.getName(),
                         assignment.getValue(),
@@ -469,7 +642,7 @@ public final class RoomWiredVariableCatalog {
 
         for (Holder holder : holders) {
             if (userTypeFilter == USER_FILTER_IN_ROOM
-                    && holder.getEntityType() == TARGET_USER
+                    && holder.getEntityType() == HOLDER_USER
                     && !UserVariableHolders.isInRoom(room, holder.getEntityId())) {
                 continue;
             }

@@ -41,9 +41,12 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
-        message.appendInt(this.startDate);
-        message.appendInt(this.endDate);
+        // Official layout: [] with no start, [start] with no end, otherwise [start, end] (Unix seconds).
+        int[] params = officialParams(this.startDate, this.endDate);
+        message.appendInt(params.length);
+        for (int param : params) {
+            message.appendInt(param);
+        }
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.startDate);
@@ -52,9 +55,17 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if (settings.getIntParams().length < 2) return false;
-        this.applyRange(settings.getIntParams()[0], settings.getIntParams()[1]);
+        // AIR sends [] when the start does not parse, [start] when the end does not, else [start, end].
+        int[] params = settings.getIntParams();
+        this.applyRange(params.length > 0 ? params[0] : 0, params.length > 1 ? params[1] : 0);
         return true;
+    }
+
+    /** The official param list of a stored range: empty without a start, the start alone without an end. */
+    static int[] officialParams(int startDate, int endDate) {
+        if (startDate <= 0 && endDate <= 0) return new int[0];
+        if (endDate <= 0) return new int[] {startDate};
+        return new int[] {startDate, endDate};
     }
 
     @Override

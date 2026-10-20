@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredOpacityState;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredErrorLogs;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxConfig;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStatus;
@@ -81,6 +82,7 @@ class WiredPacketGoldenCompatibilityTest {
         lines.add(packet(
                 "room-stats-counters",
                 new WiredRoomStatsComposer(null, new WiredRoomStats(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))));
+        lines.add(packet("error-logs-empty", new WiredErrorLogsComposer(WiredErrorLogs.rows(null, 0L))));
         lines.add(packet("room-settings-empty", new WiredRoomSettingsDataComposer(null, null)));
         lines.add(packet("room-settings-capabilities", roomSettingsComposer()));
         lines.add(packet("variables-empty", new WiredUserVariablesDataComposer(null, null, null, List.of())));

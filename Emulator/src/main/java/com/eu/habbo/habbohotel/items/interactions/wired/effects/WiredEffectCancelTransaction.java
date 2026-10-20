@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -80,7 +81,9 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect impleme
 
         RoomTile tile = room.getLayout().getTile(this.getX(), this.getY());
         WiredEvent.Builder builder =
-                WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room).sourceItem(this);
+                WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room)
+                        .sourceItem(this)
+                        .transactionFailureReason(ChestTransactionFailures.TRADE_CANCELLED);
         if (tile != null) builder.tile(tile);
         ctx.actor().ifPresent(builder::actor);
 

@@ -13,12 +13,18 @@ import java.util.Locale;
  * Official AIR 13 room-wide wired log page (3882) with the level, source and text filters of
  * {@code WiredRoomLogListView}.
  *
- * <p>The rows come from the room's wired diagnostics history: the severity's log level (Habbo's debug,
- * info, warning, error) is the level and the diagnostic type is the log source, so the client's two
- * dropdowns map straight onto them. A "write to logs" box's line reads as just its message.
+ * <p>The rows come from the room's wired diagnostics history, newest first (the room keeps the latest
+ * 200). The level is AIR's number (0 info, 1 warn, 2 error, 3 debug) and the source is one of AIR's two
+ * ({@code wiredmenu.logs_overview.log_source.N}): a "write to logs" box's line is source 1 "Wired" at
+ * the level the box was set to and reads as just its message; the engine's own notes are source 0
+ * "System". The requested page size is echoed, since the client drops a page of any other size.
  */
 public class WiredRoomLogsPageEvent extends MessageHandler {
     private static final int MAX_PAGE_SIZE = 200;
+    /** {@code wiredmenu.logs_overview.log_source.0}: the engine's own notes. */
+    public static final int LOG_SOURCE_SYSTEM = 0;
+    /** {@code wiredmenu.logs_overview.log_source.1}: a line a "write to logs" box wrote. */
+    public static final int LOG_SOURCE_WIRED = 1;
 
     @Override
     public void handle() throws Exception {
@@ -47,7 +53,7 @@ public class WiredRoomLogsPageEvent extends MessageHandler {
         this.client.sendResponse(new WiredRoomLogPageComposer(
                 totalEntries,
                 safePage,
-                safePageSize,
+                pageSize,
                 new ArrayList<>(matches.subList(firstIndex, lastIndex)),
                 logLevelFilter,
                 logSourceFilter,
@@ -67,8 +73,8 @@ public class WiredRoomLogsPageEvent extends MessageHandler {
 
         // The history is already newest first, like the official log list.
         for (WiredRoomDiagnostics.HistoryEntry entry : history) {
-            int level = entry.getSeverity().getLogLevel();
-            int source = entry.getType().ordinal();
+            int level = level(entry);
+            int source = source(entry);
 
             if (logLevelFilter >= 0 && level != logLevelFilter) {
                 continue;
@@ -89,6 +95,15 @@ public class WiredRoomLogsPageEvent extends MessageHandler {
         }
 
         return entries;
+    }
+
+    static int source(WiredRoomDiagnostics.HistoryEntry entry) {
+        return (entry.getType() == WiredRoomDiagnostics.Type.WIRED_LOG) ? LOG_SOURCE_WIRED : LOG_SOURCE_SYSTEM;
+    }
+
+    static int level(WiredRoomDiagnostics.HistoryEntry entry) {
+        WiredRoomDiagnostics.Severity severity = entry.getSeverity();
+        return (severity != null) ? severity.getLogLevel() : WiredRoomDiagnostics.Severity.INFO.getLogLevel();
     }
 
     private static String describe(WiredRoomDiagnostics.HistoryEntry entry) {

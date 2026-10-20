@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -46,29 +47,31 @@ class WiredConditionOfficialSourceSlotsTest {
     }
 
     @Test
-    void userRankAndHighscorePointsSendTheirParamsAndQuantifierWithTheUsersInTheSlot() {
+    void userRankAndHighscorePointsSendTheirParamsWithTheUsersAndTheQuantifierInTheSlots() {
         WiredConditionHabboHasRank rank = new WiredConditionHabboHasRank(1, 1, mock(Item.class), "", 0, 0);
-        save(rank, new int[] {5, WiredComparison.EQUAL, 1}, NONE, new int[] {WiredSourceUtil.SOURCE_SIGNAL});
-        assertDefinition(
-                rank, new int[] {5, WiredComparison.EQUAL, 1}, NONE, new int[] {WiredSourceUtil.SOURCE_SIGNAL});
+        save(rank, new int[] {5, WiredComparison.EQUAL}, 1, NONE, new int[] {WiredSourceUtil.SOURCE_SIGNAL});
+        assertDefinition(rank, new int[] {5, WiredComparison.EQUAL}, NONE, new int[] {WiredSourceUtil.SOURCE_SIGNAL});
+        assertQuantifier(rank, 1);
 
         WiredConditionHabboHasHighscorePoints points =
                 new WiredConditionHabboHasHighscorePoints(1, 1, mock(Item.class), "", 0, 0);
-        save(points, new int[] {30, WiredComparison.LESS, 0}, NONE, new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+        save(points, new int[] {30, WiredComparison.LESS}, 0, NONE, new int[] {WiredSourceUtil.SOURCE_SELECTOR});
         assertDefinition(
-                points, new int[] {30, WiredComparison.LESS, 0}, NONE, new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+                points, new int[] {30, WiredComparison.LESS}, NONE, new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+        assertQuantifier(points, 0);
     }
 
     @Test
-    void userLevelSendsTheOfficialLevelAndComparisonThenTheQuantifier() {
+    void userLevelSendsTheOfficialLevelAndComparisonWithTheQuantifierInItsSlot() {
         WiredConditionUserLevel level = new WiredConditionUserLevel(1, 1, mock(Item.class), "", 0, 0);
-        save(level, new int[] {12, WiredConditionUserLevel.COMPARISON_EQUAL, 1}, NONE, new int[] {
+        save(level, new int[] {12, WiredConditionUserLevel.OFFICIAL_EQUAL}, 1, NONE, new int[] {
             WiredSourceUtil.SOURCE_SELECTOR
         });
 
-        assertDefinition(level, new int[] {12, WiredConditionUserLevel.COMPARISON_EQUAL, 1}, NONE, new int[] {
+        assertDefinition(level, new int[] {12, WiredConditionUserLevel.OFFICIAL_EQUAL}, NONE, new int[] {
             WiredSourceUtil.SOURCE_SELECTOR
         });
+        assertQuantifier(level, 1);
     }
 
     @Test
@@ -93,25 +96,36 @@ class WiredConditionOfficialSourceSlotsTest {
 
             WiredConditionMatchStatePosition snapshot =
                     new WiredConditionMatchStatePosition(1, 1, mock(Item.class), "", 0, 0);
-            save(snapshot, new int[] {1, 0, 1, 1, 1}, new int[] {WiredSourceUtil.SOURCE_SELECTOR}, NONE);
-            assertDefinition(snapshot, new int[] {1, 0, 1, 1, 1}, new int[] {WiredSourceUtil.SOURCE_SELECTOR}, NONE);
+            save(snapshot, new int[] {1, 0, 1, 1}, 1, new int[] {WiredSourceUtil.SOURCE_SELECTOR}, NONE);
+            assertDefinition(snapshot, new int[] {1, 0, 1, 1}, new int[] {WiredSourceUtil.SOURCE_SELECTOR}, NONE);
+            assertQuantifier(snapshot, 1);
 
             WiredConditionUserOnFurniWithState onFurni =
                     new WiredConditionUserOnFurniWithState(1, 1, mock(Item.class), "", 0, 0);
-            save(onFurni, new int[] {1}, new int[] {WiredSourceUtil.SOURCE_SIGNAL}, new int[] {
-                WiredSourceUtil.SOURCE_SELECTOR
+            save(onFurni, NONE, 1, new int[] {WiredSourceUtil.SOURCE_SIGNAL}, new int[] {WiredSourceUtil.SOURCE_SELECTOR
             });
-            assertDefinition(onFurni, new int[] {1}, new int[] {WiredSourceUtil.SOURCE_SIGNAL}, new int[] {
-                WiredSourceUtil.SOURCE_SELECTOR
-            });
+            assertDefinition(
+                    onFurni, NONE, new int[] {WiredSourceUtil.SOURCE_SIGNAL}, new int[] {WiredSourceUtil.SOURCE_SELECTOR
+                    });
+            assertQuantifier(onFurni, 1);
         }
     }
 
     private static void save(InteractionWiredCondition box, int[] ints, int[] furniSources, int[] userSources) {
+        save(box, ints, 0, furniSources, userSources);
+    }
+
+    private static void save(
+            InteractionWiredCondition box, int[] ints, int quantifier, int[] furniSources, int[] userSources) {
         WiredSettings settings = new WiredSettings(ints, "", new int[0], -1);
+        settings.setQuantifierCode(quantifier);
         settings.setFurniSourceTypes(furniSources);
         settings.setUserSourceTypes(userSources);
         box.saveData(settings);
+    }
+
+    private static void assertQuantifier(InteractionWiredCondition box, int quantifier) {
+        assertEquals(quantifier, ((WiredOfficialQuantifier) box).officialQuantifierCode(), "quantifier");
     }
 
     private static void assertDefinition(

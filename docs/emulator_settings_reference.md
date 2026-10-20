@@ -462,12 +462,14 @@ Core hotel gameplay, economy, room, catalog and moderation settings.
 | `hotel.rollers.speed.maximum` | `100` | `integer` | Maximum roller delay or speed value accepted by roller furniture. |
 | `hotel.room.enter.logs` | `1` | `boolean` | Enable room-entry logs. |
 | `hotel.room.floorplan.check.enabled` | `1` | `boolean` | Validate custom floorplans before rooms are saved. |
-| `hotel.room.furni.max` | `2500` | `integer` | Maximum amount of furniture allowed in one room. |
+| `hotel.room.floorfurni.max` | `4000` | `integer` | Maximum amount of floor furniture allowed in one room (Habbo: 4000). A new floor furni, a wired box included, is refused once a room holds this many, however it is placed (inventory, Builders Club, a shared wired setup, Place Furni). Rooms already over it keep their furni. |
+| `hotel.room.furni.max` | `8000` | `integer` | Maximum amount of furniture (floor and wall) allowed in one room: Habbo's 4000 floor + 4000 wall. Still checked when a floor furni is placed or moved by hand, next to `hotel.room.floorfurni.max`: the lower of the two refuses first, and the wired monitor's floor line shows the lower one. Also sent to the client as the room item limit. Migration `V20261020110000` raises a hotel still on the old default 2500 to 8000. |
 | `hotel.room.nooblobby` | `3` | `integer` | Room ID used as the newbie lobby. |
 | `hotel.room.public.doortile.kick` | `0` | `boolean` | Kick users who stand on public room door tiles. |
 | `hotel.room.rollers.norules` | `0` | `boolean` | Allow rollers to ignore normal placement rules. |
 | `hotel.room.rollers.roll_avatars.max` | `1` | `boolean` | Maximum number of avatars that rollers can move at once. |
 | `hotel.room.stickies.max` | `200` | `integer` | Maximum number of sticky notes allowed in one room. |
+| `hotel.room.wallfurni.max` | `4000` | `integer` | Maximum amount of wall furniture allowed in one room (Habbo: 4000). Rooms already over it keep their furni. |
 | `hotel.room.stickypole.prefix` | `%timestamp%, %username%:\\r` | `template` | Prefix template written by sticky pole furniture. |
 | `hotel.room.tags.staff` | `staff;official;habbo` | `list` | Semicolon-separated staff room tags. |
 | `hotel.rooms.auto.idle` | `1` | `boolean` | Allow empty rooms to switch into the idle state automatically. |

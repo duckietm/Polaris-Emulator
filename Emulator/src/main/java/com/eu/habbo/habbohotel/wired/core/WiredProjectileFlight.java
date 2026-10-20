@@ -13,14 +13,25 @@ public final class WiredProjectileFlight {
     public static final String POSITION_X = "@projectile.animation.position.x";
     public static final String POSITION_Y = "@projectile.animation.position.y";
     public static final String POSITION_ALTITUDE = "@projectile.animation.position.altitude";
-    public static final String IS_TRAVELING = "@projectile.animation.is_traveling";
-    public static final String TILES_TRAVELED = "@projectile.animation.tiles_traveled";
+    /** AIR's spelling; our earlier {@code is_traveling} stays readable as an alias. */
+    public static final String IS_TRAVELING = "@projectile.animation.is_travelling";
+    /** AIR's spelling; our earlier {@code tiles_traveled} stays readable as an alias. */
+    public static final String TILES_TRAVELED = "@projectile.animation.tiles_travelled";
+
     public static final String FURNI_COLLISIONS = "@projectile.animation.furni_collisions";
     public static final String USER_COLLISIONS = "@projectile.animation.user_collisions";
 
-    /** In the order of the add-on's internal variables mask, bit 0 first. */
+    /** Our names before AIR's spelling. */
+    static final String LEGACY_IS_TRAVELING = "@projectile.animation.is_traveling";
+
+    static final String LEGACY_TILES_TRAVELED = "@projectile.animation.tiles_traveled";
+
+    /**
+     * In the order of the add-on's internal variables mask, bit 0 first: AIR's sub-variable ids (0 tiles
+     * travelled, 1 user collisions, 2 furni collisions, 3 x, 4 y, 5 altitude, 6 is travelling).
+     */
     public static final List<String> KEYS = List.of(
-            POSITION_X, POSITION_Y, POSITION_ALTITUDE, IS_TRAVELING, TILES_TRAVELED, FURNI_COLLISIONS, USER_COLLISIONS);
+            TILES_TRAVELED, USER_COLLISIONS, FURNI_COLLISIONS, POSITION_X, POSITION_Y, POSITION_ALTITUDE, IS_TRAVELING);
 
     public static final int ALL_VARIABLES = (1 << KEYS.size()) - 1;
 

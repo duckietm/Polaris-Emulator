@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVar
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomFloorItemLimit;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.RoomWallItemLimit;
 import java.util.Collection;
@@ -15,10 +16,12 @@ import java.util.concurrent.atomic.AtomicReference;
  * The room counters of the wired menu monitor, in the order of Habbo's room stats block: floor furni,
  * wall furni and the permanent furni, user and global variables, each with its limit.
  *
- * <p>Floor and wall furni count every item of the room. Floor furni stand against the room item cap, wall
- * furni against the wall cap ({@link RoomWallItemLimit}). A permanent variable is a furni, user or global
+ * <p>Floor and wall furni count every item of the room. Floor furni stand against the floor cap, bounded by the
+ * room item cap ({@link RoomFloorItemLimit#effectiveMaxFloorItems()}), wall furni against the wall cap
+ * ({@link RoomWallItemLimit}). A permanent variable is a furni, user or global
  * variable box set to permanent (or permanent and shared); its limits default to the caps seen on Habbo and
- * are enforced when a box is saved as permanent ({@link #canBecomePermanent}).
+ * are enforced when a box is saved as permanent ({@link #canBecomePermanent}) and when a box that already is permanent
+ * is placed ({@link #hasPermanentSlotFor}).
  */
 public final class WiredRoomStats {
 
@@ -78,7 +81,7 @@ public final class WiredRoomStats {
 
         return from(
                 room.getFloorItems().size(),
-                Room.MAXIMUM_FURNI,
+                RoomFloorItemLimit.effectiveMaxFloorItems(),
                 room.getWallItems().size(),
                 RoomWallItemLimit.maxWallItems(),
                 extrasOf(room));
@@ -142,6 +145,32 @@ public final class WiredRoomStats {
         VariableKind kind = variableKind(box);
 
         if (kind == VariableKind.NONE || permanentKind(box) != VariableKind.NONE) {
+            return true;
+        }
+
+        int permanent = 0;
+
+        if (extras != null) {
+            for (InteractionWiredExtra extra : extras) {
+                if (extra != box && permanentKind(extra) == kind) {
+                    permanent++;
+                }
+            }
+        }
+
+        return permanent < limitOf(kind);
+    }
+
+    /**
+     * Whether {@code box}, placed into a room holding {@code extras}, finds a free permanent slot of its kind. Unlike
+     * {@link #canBecomePermanent} a permanent box is not given its slot here: it is new to the room, so it needs one.
+     * A box that is not permanent always fits.
+     */
+    public static boolean hasPermanentSlotFor(
+            Collection<? extends InteractionWiredExtra> extras, InteractionWiredExtra box) {
+        VariableKind kind = permanentKind(box);
+
+        if (kind == VariableKind.NONE) {
             return true;
         }
 

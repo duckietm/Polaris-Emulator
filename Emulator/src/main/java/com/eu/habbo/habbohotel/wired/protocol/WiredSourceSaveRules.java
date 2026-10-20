@@ -13,6 +13,8 @@ import java.util.Set;
  * The source rules the official server applies to a wired save, before the box reads its settings.
  *
  * <ul>
+ *   <li>A wall furni pick arrives as its negative id and is resolved to the wall item ({@link WiredWallPicks}); a box
+ *       that does not allow wall furni drops it.
  *   <li>A box with an input sources conf gets its missing furni and user slots filled with the defaults.
  *   <li>A furni source outside its slot's allowed list is refused with {@link #INVALID_FURNI_SOURCE}, unless the box
  *       already holds it in that slot.
@@ -42,6 +44,9 @@ public final class WiredSourceSaveRules {
      */
     public static String apply(Object box, WiredSettings settings, Room room) {
         if (settings == null) return null;
+
+        // AIR picks wall furni as negative ids; the box stores the wall items' own ids.
+        WiredWallPicks.fromWire(box, settings, room);
 
         // A temporary (Place Furni) copy cannot be picked in a box, as in Habbo; selectors still deliver copies.
         // Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.

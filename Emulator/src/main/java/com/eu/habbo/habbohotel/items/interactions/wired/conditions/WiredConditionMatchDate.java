@@ -32,6 +32,8 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
     private int yearMode = MODE_SKIP;
     private int yearFrom = HotelDateTimeUtil.localDateNow().getYear();
     private int yearTo = HotelDateTimeUtil.localDateNow().getYear();
+    /** AIR's timezone dropdown (the string param): a zone id, or empty for the room's wired timezone. */
+    private String timezone = "";
 
     public WiredConditionMatchDate(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -54,7 +56,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
+        message.appendString(this.timezone);
         // Official layout: [useDay, useYear, weekday mask (bit 0 Monday), dayMin, dayMax, month mask (bit 0
         // January), yearMin, yearMax]; an empty mask is every weekday or month, an exact value a range of one.
         message.appendInt(8);
@@ -88,13 +90,15 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         this.yearTo = Math.max(this.yearFrom, (params.length > 7) ? this.normalizeYear(params[7]) : this.yearFrom);
         this.dayMode = WiredConditionMatchTime.mode(params.length > 0 && params[0] == 1, this.dayFrom, this.dayTo);
         this.yearMode = WiredConditionMatchTime.mode(params.length > 1 && params[1] == 1, this.yearFrom, this.yearTo);
+        this.timezone = WiredRoomTime.normalizeTimezone(settings.getStringParam());
 
         return true;
     }
 
     @Override
     public boolean evaluate(WiredContext ctx) {
-        LocalDate now = WiredRoomTime.now((ctx != null) ? ctx.room() : null).toLocalDate();
+        LocalDate now = WiredRoomTime.now((ctx != null) ? ctx.room() : null, this.timezone)
+                .toLocalDate();
 
         return this.matchesMask(now.getDayOfWeek().getValue(), this.weekdayMask)
                 && this.matchesMask(now.getMonthValue(), this.monthMask)
@@ -119,7 +123,8 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
                         this.monthMask,
                         this.yearMode,
                         this.yearFrom,
-                        this.yearTo));
+                        this.yearTo,
+                        this.timezone.isEmpty() ? null : this.timezone));
     }
 
     @Override
@@ -152,6 +157,8 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
             this.yearMode = this.normalizeMode(data.yearMode);
             this.yearFrom = this.normalizeYear(data.yearFrom);
             this.yearTo = this.normalizeYear(data.yearTo);
+            // Boxes saved before the timezone dropdown follow the room's wired timezone.
+            this.timezone = WiredRoomTime.normalizeTimezone(data.timezone);
             return;
         }
 
@@ -190,6 +197,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         this.yearMode = MODE_SKIP;
         this.yearFrom = currentYear;
         this.yearTo = currentYear;
+        this.timezone = "";
     }
 
     private boolean matchesMask(int value, int mask) {
@@ -252,6 +260,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         int yearMode;
         int yearFrom;
         int yearTo;
+        String timezone;
 
         public JsonData(
                 int weekdayMask,
@@ -261,7 +270,8 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
                 int monthMask,
                 int yearMode,
                 int yearFrom,
-                int yearTo) {
+                int yearTo,
+                String timezone) {
             this.weekdayMask = weekdayMask;
             this.dayMode = dayMode;
             this.dayFrom = dayFrom;
@@ -270,6 +280,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
             this.yearMode = yearMode;
             this.yearFrom = yearFrom;
             this.yearTo = yearTo;
+            this.timezone = timezone;
         }
     }
 }

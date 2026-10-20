@@ -61,7 +61,22 @@ class WiredEffectRewardTrackBoxesTest {
                 box.saveData(settings("season_1\tgames", 1, 1, 5, -10), author(true)), "a value variable needs its id");
         assertFalse(
                 box.saveData(settings("season:1\tgames", 1, 5, 0), author(true)), "':' is the allow-list separator");
-        assertFalse(box.saveData(settings("x".repeat(65) + "\tgames", 1, 5, 0), author(true)));
+        assertFalse(box.saveData(settings("x".repeat(101) + "\tgames", 1, 5, 0), author(true)), "AIR: at most 100");
+        assertFalse(box.saveData(settings("season.1\tgames", 1, 5, 0), author(true)), "AIR: [a-zA-Z0-9_] only");
+        assertFalse(box.saveData(settings("season-1\tgames", 1, 5, 0), author(true)));
+        assertFalse(box.saveData(settings("s\u00e9ason\tgames", 1, 5, 0), author(true)), "ASCII letters only");
+        assertTrue(box.saveData(settings("x".repeat(100) + "\t" + "y".repeat(100), 1, 5, 0), author(true)));
+        assertEquals("x".repeat(100), box.getTrackId());
+    }
+
+    @Test
+    void progressBoxesSavedUnderTheOlderIdRulesKeepTheirTrack() throws Exception {
+        WiredEffectProgressRewardTrack loaded = progressBox();
+        loaded.loadWiredData(
+                row("{\"trackId\":\"season.1\",\"taskId\":\"games-2\",\"amount\":3,\"delay\":0,\"userSource\":0}"),
+                null);
+        assertEquals("season.1", loaded.getTrackId());
+        assertEquals("games-2", loaded.getTaskId());
     }
 
     @Test
@@ -85,7 +100,9 @@ class WiredEffectRewardTrackBoxesTest {
 
         box.saveData(settings("season_1\tgames\t12", 0, 1, 5, -10), author(true));
         body = WiredEffectProgressAchievementTest.body(box);
-        assertEquals("season_1\tgames\t12", body.text());
+        // AIR: the ids as the string, the amount's variable as the variable id.
+        assertEquals("season_1\tgames", body.text());
+        assertArrayEquals(new String[] {"room:12"}, box.officialVariableIds());
         assertArrayEquals(new int[] {0, 1, 5, -10}, body.params());
         assertEquals(WiredActionCodes.official(WiredEffectType.PROGRESS_REWARD_TRACK.code), body.code());
     }
@@ -118,8 +135,15 @@ class WiredEffectRewardTrackBoxesTest {
     void theResetBoxTakesOneTrackAndItsUserSource() throws Exception {
         WiredEffectResetRewardTrack box = resetBox();
 
-        assertFalse(box.saveData(settings("", 0), author(true)));
-        assertFalse(box.saveData(settings("season 1", 0), author(true)));
+        assertFalse(box.saveData(settings("season\t1", 0), author(true)), "AIR: anything but a tab");
+        assertFalse(box.saveData(settings("x".repeat(101), 0), author(true)), "AIR: at most 100");
+        assertTrue(box.saveData(settings("", 0), author(true)), "AIR does not ask for a filled-in id");
+        assertEquals("", box.getTrackId());
+        assertTrue(box.saveData(settings("season 1.b-c", 0), author(true)));
+        assertEquals("season 1.b-c", box.getTrackId());
+        WiredEffectResetRewardTrack reloaded = resetBox();
+        reloaded.loadWiredData(row(box.getWiredData()), null);
+        assertEquals("season 1.b-c", reloaded.getTrackId());
         WiredSettings settings = settings("season_1");
         settings.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
         assertTrue(box.saveData(settings, author(true)));

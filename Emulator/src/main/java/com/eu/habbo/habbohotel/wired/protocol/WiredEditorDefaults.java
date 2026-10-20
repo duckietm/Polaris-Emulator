@@ -13,8 +13,8 @@ import java.util.Set;
  * editor's "reset to default" restores ({@code defaultIntParams}) and, on conditions, the quantifier footer (furni,
  * users or variables, and whether its labels read as the negative form).
  *
- * <p>The values are the ones seen in Habbo's own definitions (AIR WIN63-202610131318). A box that is not listed sends
- * no default params and no quantifier, as before. Behaviour observed in plus-emulator/PlusEMU 672c338f, 7e4083da and
+ * <p>The values are the ones seen in Habbo's own definitions (AIR WIN63-202610131318); our own quantified boxes are
+ * listed with the family they quantify over. A box that is not listed sends no default params and no quantifier. Behaviour observed in plus-emulator/PlusEMU 672c338f, 7e4083da and
  * 1f18e4b6, reimplemented.
  */
 public final class WiredEditorDefaults {
@@ -28,17 +28,30 @@ public final class WiredEditorDefaults {
     private static final int[] NONE = new int[0];
     private static final Map<String, int[]> DEFAULT_INT_PARAMS = new HashMap<>();
     private static final Map<String, Integer> QUANTIFIER_TYPES = new HashMap<>();
+    /**
+     * The "not" twins whose result is the positive box's answer for the same quantifier, turned around, so the
+     * {@code .neg} labels ("at least one does not match" / "none match") say what they do. Ours add the twins of
+     * our own boxes that work the same way and always drew the negative labels.
+     */
     private static final Set<String> NEGATIVE_CONDITIONS = Set.of(
             "wf_cnd_not_match_snap",
             "wf_cnd_not_stuff_is",
             "wf_cnd_not_in_team",
             "wf_cnd_not_in_group",
+            "wf_cnd_not_habbo_in_group",
             "wf_cnd_not_has_handitem",
             "wf_cnd_not_wearing_fx",
             "wf_cnd_not_wearing_b",
             "wf_cnd_not_user_performs_action",
+            "wf_cnd_not_bot_is_dancing",
             "wf_cnd_not_triggerer_match",
-            "wf_cnd_not_trggrer_on");
+            "wf_cnd_not_trg_by_user",
+            "wf_cnd_not_trggrer_on",
+            "wf_cnd_neg_has_var",
+            // Ours.
+            "wf_cnd_not_freeze",
+            "wf_cnd_not_has_tag",
+            "wf_cnd_not_habbo_owns_badge");
 
     static {
         defaults(new int[] {0, 0, 0, 0}, "wf_act_match_to_sshot", "wf_cnd_match_snapshot", "wf_cnd_not_match_snap");
@@ -100,8 +113,56 @@ public final class WiredEditorDefaults {
                 "wf_cnd_not_trggrer_on",
                 "wf_cnd_team_has_rank",
                 "wf_cnd_team_has_score",
-                "wf_cnd_user_level");
-        quantifier(QUANTIFIER_VARIABLES, "wf_cnd_has_var", "wf_cnd_neg_has_var");
+                "wf_cnd_user_level",
+                // The other names our server registers for the same boxes.
+                "wf_cnd_habbo_in_group",
+                "wf_cnd_not_habbo_in_group",
+                "wf_cnd_not_bot_is_dancing",
+                "wf_cnd_trg_by_user",
+                "wf_cnd_not_trg_by_user");
+        quantifier(
+                QUANTIFIER_VARIABLES,
+                "wf_cnd_has_var",
+                "wf_cnd_neg_has_var",
+                "wf_cnd_var_val_match",
+                "wf_cnd_var_age_match");
+
+        // Our own quantified boxes take the footer of the family they quantify over.
+        quantifier(
+                QUANTIFIER_FURNI,
+                "wf_cnd_furni_in_range",
+                "wf_cnd_furni_not_in_range",
+                "wf_cnd_has_same_height",
+                "wf_cnd_not_has_same_height",
+                "wf_cnd_habbo_owns_furni",
+                "wf_cnd_habbo_not_owns_furni");
+        quantifier(
+                QUANTIFIER_USERS,
+                "wf_cnd_freeze",
+                "wf_cnd_not_freeze",
+                "wf_cnd_has_tag",
+                "wf_cnd_not_has_tag",
+                "wf_cnd_motto_contains",
+                "wf_cnd_habbo_has_rights",
+                "wf_cnd_not_habbo_has_rights",
+                "wf_cnd_habbo_is_male",
+                "wf_cnd_habbo_is_female",
+                "wf_cnd_habbo_owns_badge",
+                "wf_cnd_not_habbo_owns_badge",
+                "wf_cnd_habbo_has_credits",
+                "wf_cnd_habbo_has_duckets",
+                "wf_cnd_habbo_has_at_least_x_items",
+                "wf_cnd_not_habbo_has_credits",
+                "wf_cnd_not_habbo_has_diamonds",
+                "wf_cnd_not_habbo_has_duckets",
+                "wf_cnd_user_in_range",
+                "wf_cnd_user_not_in_range",
+                "wf_cnd_user_on_furni_with_state",
+                "wf_cnd_x_points_leaderboard",
+                "wf_cnd_not_x_points_leaderboard",
+                "wf_cnd_habbo_has_rank",
+                "wf_cnd_not_habbo_has_rank");
+        quantifier(QUANTIFIER_VARIABLES, "wf_cnd_check_array");
     }
 
     private WiredEditorDefaults() {}

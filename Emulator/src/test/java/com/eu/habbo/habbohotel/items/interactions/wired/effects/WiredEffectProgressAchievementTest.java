@@ -122,12 +122,15 @@ class WiredEffectProgressAchievementTest {
 
         assertTrue(box.saveData(settings(" ACH_Game ", 7, Integer.MAX_VALUE, 999), author(true)));
         assertEquals(WiredHotelProgress.MODE_ADD, box.getMode());
-        assertEquals(WiredHotelProgress.MAX_AMOUNT, box.getAmount());
+        assertEquals(Integer.MAX_VALUE, box.getAmount(), "AIR: 0..int max");
         assertEquals(WiredSourceUtil.SOURCE_TRIGGER, box.getUserSource(), "an unknown user source falls back");
 
         assertTrue(box.saveData(settings("ACH_Game", 0, -3), author(true)));
         assertEquals(WiredHotelProgress.MODE_RAISE_TO, box.getMode());
-        assertEquals(1, box.getAmount());
+        assertEquals(0, box.getAmount());
+
+        assertTrue(box.saveData(settings("ACH_Game", 1, 0), author(true)), "0 is a valid amount");
+        assertEquals(0, box.getAmount());
     }
 
     @Test
@@ -136,13 +139,21 @@ class WiredEffectProgressAchievementTest {
         WiredSettings fromVariable =
                 new WiredSettings(new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, "ACH_Game\t42", new int[0], 0);
         assertTrue(box.saveData(fromVariable, author(true)));
-        assertEquals("ACH_Game\t42", body(box).text());
+        // AIR: the name as the string, the variable as the variable id (an older client's "name\tid" still saves).
+        assertEquals("ACH_Game", body(box).text());
+        assertArrayEquals(new String[] {"room:42"}, box.officialVariableIds());
         assertArrayEquals(
-                new int[] {1, 1, 1, WiredValueVariable.TARGET_GLOBAL}, body(box).params());
+                new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, body(box).params());
 
         WiredSettings noVariable =
                 new WiredSettings(new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, "ACH_Game", new int[0], 0);
         assertFalse(box.saveData(noVariable, author(true)), "a variable amount needs its variable");
+
+        WiredSettings fromIds =
+                new WiredSettings(new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, "ACH_Game", new int[0], 0);
+        fromIds.setVariableIds(new String[] {"room:43"});
+        assertTrue(box.saveData(fromIds, author(true)));
+        assertArrayEquals(new String[] {"room:43"}, box.officialVariableIds());
     }
 
     @Test
@@ -151,7 +162,8 @@ class WiredEffectProgressAchievementTest {
         box.saveData(settings("ACH_Game", 0, 25, WiredSourceUtil.SOURCE_SELECTOR), author(true));
 
         Body body = body(box);
-        assertEquals("ACH_Game\t0", body.text(), "the name, then the value variable's id");
+        assertEquals("ACH_Game", body.text(), "the name; the value variable goes in the variable ids");
+        assertArrayEquals(new String[0], box.officialVariableIds());
         assertArrayEquals(new int[] {0, 0, 25, 0}, body.params());
         assertArrayEquals(
                 new int[] {WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_TRIGGER}, box.officialUserSources());
@@ -174,7 +186,7 @@ class WiredEffectProgressAchievementTest {
         tampered.loadWiredData(
                 row("{\"achievement\":\"a b\",\"mode\":5,\"amount\":99999999,\"delay\":0,\"userSource\":77}"), null);
         assertEquals("", tampered.getAchievement());
-        assertEquals(WiredHotelProgress.MAX_AMOUNT, tampered.getAmount());
+        assertEquals(99_999_999, tampered.getAmount(), "a stored amount is kept up to int max");
         assertEquals(WiredSourceUtil.SOURCE_TRIGGER, tampered.getUserSource());
 
         WiredEffectProgressAchievement broken = box();

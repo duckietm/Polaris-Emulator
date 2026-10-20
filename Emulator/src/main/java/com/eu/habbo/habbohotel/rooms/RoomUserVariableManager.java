@@ -12,6 +12,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredDailyTaskSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredSharedVariableChanges;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableHolderLimit;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -66,6 +68,12 @@ public class RoomUserVariableManager {
         this.currentTimestamp = currentTimestamp;
         this.activeAssignmentsByUserId = new ConcurrentHashMap<>();
         this.store = new RoomUserVariableStore(room, this, repository, currentTimestamp);
+    }
+
+    /** "user", "pet" or "bot", for the monitor line of a holder key. */
+    private static String holderKindName(int holderKey) {
+        UserVariableHolders.Kind kind = UserVariableHolders.kindOf(holderKey);
+        return kind == null ? "user" : kind.name().toLowerCase(java.util.Locale.ROOT);
     }
 
     /** The values of users in this room and the saved rows of users who are not. */
@@ -317,6 +325,17 @@ public class RoomUserVariableManager {
         VariableAssignment existingAssignment = assignments.get(definitionItemId);
 
         if (existingAssignment != null && !overrideExisting) {
+            return false;
+        }
+
+        // Habbo's cap on different variables per holder (monitor error 6); a value it already holds still changes.
+        if (existingAssignment == null && !WiredVariableHolderLimit.hasRoomFor(assignments.size())) {
+            WiredVariableHolderLimit.noteRefused(
+                    this.room.getId(),
+                    holderKindName(userId),
+                    UserVariableHolders.idOf(userId),
+                    definitionInfo.getName(),
+                    definitionItemId);
             return false;
         }
 
@@ -1316,6 +1335,19 @@ public class RoomUserVariableManager {
                 previousValue,
                 existsAfter,
                 currentValue);
+        // A shared variable (or a reference to one) is heard in the other rooms too, as "another room".
+        if (!WiredVariableGiveScope.suppresses(existedBefore, previousValue, existsAfter, currentValue)) {
+            WiredSharedVariableChanges.userVariableChanged(
+                    this.room,
+                    definitionExtra,
+                    userId,
+                    WiredVariableGiveScope.created(existedBefore, existsAfter),
+                    existedBefore && !existsAfter,
+                    resolveVariableChangeKind(
+                            definitionInfo.hasValue(), existedBefore, previousValue, existsAfter, currentValue),
+                    previousValue == null ? 0L : previousValue,
+                    currentValue == null ? 0L : currentValue);
+        }
 
         VariableAssignment stamps = null;
         boolean stampsRead = false;

@@ -64,7 +64,8 @@ public final class WiredInputGuard {
         int accepted = 0;
         for (int i = 0; i < count; i++) {
             int itemId = packet.readInt();
-            if (itemId > 0) {
+            // A wall furni pick is its negative id, as AIR sends it; the save rules resolve it to the wall item.
+            if (itemId != 0 && itemId != Integer.MIN_VALUE) {
                 values[accepted++] = itemId;
             }
         }

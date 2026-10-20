@@ -47,6 +47,29 @@ public final class WiredRoomTime {
         return ZonedDateTime.now(zoneFor(room));
     }
 
+    /** The time in {@code timezone} (a box's own zone), or in the room's zone when it is blank or unknown. */
+    public static ZonedDateTime now(Room room, String timezone) {
+        return ZonedDateTime.now(zoneFor(room, timezone));
+    }
+
+    /** A box's own zone, or the room's wired zone when the box names none or one that does not exist. */
+    public static ZoneId zoneFor(Room room, String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return zoneFor(room);
+        }
+        Optional<ZoneId> zone = cached(timezone);
+        return zone.isPresent() ? zone.get() : zoneFor(room);
+    }
+
+    /** The timezone text a box may store: a known zone id, trimmed, or empty for the room's zone. */
+    public static String normalizeTimezone(String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return "";
+        }
+        String trimmed = timezone.trim();
+        return cached(trimmed).isPresent() ? trimmed : "";
+    }
+
     public static ZoneId zoneFor(Room room) {
         String timezone = (room != null) ? room.getWiredTimezone() : null;
 
@@ -54,6 +77,10 @@ public final class WiredRoomTime {
             return HotelDateTimeUtil.getZoneId();
         }
 
+        return cached(timezone).orElseGet(HotelDateTimeUtil::getZoneId);
+    }
+
+    private static Optional<ZoneId> cached(String timezone) {
         Optional<ZoneId> zone = ZONES.get(timezone);
         if (zone == null) {
             zone = parse(timezone);
@@ -62,7 +89,7 @@ public final class WiredRoomTime {
             }
             ZONES.put(timezone, zone);
         }
-        return zone.orElseGet(HotelDateTimeUtil::getZoneId);
+        return zone;
     }
 
     private static Optional<ZoneId> parse(String timezone) {

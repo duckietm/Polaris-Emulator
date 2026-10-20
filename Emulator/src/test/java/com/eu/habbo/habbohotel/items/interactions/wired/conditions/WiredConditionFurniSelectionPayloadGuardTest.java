@@ -45,8 +45,8 @@ class WiredConditionFurniSelectionPayloadGuardTest {
 
             WiredConditionTriggerOnFurni onFurni = new WiredConditionTriggerOnFurni(1, 1, null, "", 0, 0);
             com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings any =
-                    new com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings(
-                            new int[] {1}, "", new int[0], -1);
+                    new com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings(new int[0], "", new int[0], -1);
+            any.setQuantifierCode(1);
             any.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SIGNAL});
             any.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
             onFurni.saveData(any);

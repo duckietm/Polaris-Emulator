@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionOperator;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -54,7 +55,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition impl
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (userTargets.isEmpty()) return false;
+        if (userTargets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         List<HabboItem> itemTargets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (itemTargets.isEmpty()) return false;
@@ -174,8 +175,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition impl
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(1);
-        message.appendInt(this.quantifier);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -189,14 +189,14 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition impl
 
         int[] params = settings.getIntParams();
         // Official layout: no int params of its own, the furni and users in the official source slots;
-        // our quantifier (0 all, 1 any) follows as param 0.
+        // the quantifier (0 all, 1 any) in its slot.
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? WiredFurniConditionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? WiredFurniConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
 

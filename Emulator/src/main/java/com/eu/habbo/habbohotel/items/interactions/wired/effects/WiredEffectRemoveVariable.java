@@ -27,6 +27,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableDefinitionFlash;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -38,10 +40,12 @@ import java.util.Set;
 
 /**
  * The official "remove variable" (AIR code 40). Int params {@code [target]}, an official variable
- * target (1 user, 0 furni, -20 context); string param the variable (an id, or {@code internal:<key>});
- * furni slot 0 and user slot 0 are the holders it is removed from.
+ * target (1 user, 0 furni, -20 context); variable ids {@code [variable]}, no string (older clients sent the variable,
+ * an id or {@code internal:<key>}, as the string; still read); furni slot 0 and user slot 0 are the holders it is
+ * removed from.
  */
-public class WiredEffectRemoveVariable extends InteractionWiredEffect implements WiredOfficialSources {
+public class WiredEffectRemoveVariable extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final WiredEffectType type = WiredEffectType.REMOVE_VAR;
 
     public static final int TARGET_USER = 0;
@@ -276,10 +280,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(
-                this.internalVariableKey.isEmpty()
-                        ? String.valueOf(this.variableItemId)
-                        : "internal:" + this.internalVariableKey);
+        message.appendString("");
         message.appendInt(1);
         message.appendInt(
                 this.targetType == TARGET_GLOBAL
@@ -310,10 +311,17 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                 normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         int nextFurniSource =
                 normalizeFurniSource(furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
-        int nextVariableItemId = parseVariableItemId(settings.getStringParam());
-        String nextInternalKey = normalizeInternalKey(settings.getStringParam());
-        boolean internal = settings.getStringParam() != null
-                && settings.getStringParam().trim().startsWith("internal:");
+        String variableText = settings.getStringParam();
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            // AIR: the variable is the first variable id; older clients sent it as the string.
+            String token = WiredVariableIds.tokenAt(settings.getVariableIds(), 0);
+            variableText = token.startsWith(WiredVariableIds.CUSTOM_TOKEN_PREFIX)
+                    ? token.substring(WiredVariableIds.CUSTOM_TOKEN_PREFIX.length())
+                    : token;
+        }
+        int nextVariableItemId = parseVariableItemId(variableText);
+        String nextInternalKey = normalizeInternalKey(variableText);
+        boolean internal = variableText != null && variableText.trim().startsWith("internal:");
         if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
@@ -468,6 +476,14 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.selectedFurni.clear();
         this.setDelay(0);
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        String token = this.internalVariableKey.isEmpty()
+                ? (this.variableItemId > 0 ? WiredVariableIds.CUSTOM_TOKEN_PREFIX + this.variableItemId : "")
+                : WiredVariableIds.INTERNAL_TOKEN_PREFIX + this.internalVariableKey;
+        return WiredVariableIds.list(WiredVariableIds.toWireForHolder(this.targetType, token));
     }
 
     @Override

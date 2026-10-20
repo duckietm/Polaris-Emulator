@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class WiredVariableLevelSystemSupport {
     public static final int TARGET_USER = 0;
@@ -130,6 +132,49 @@ public final class WiredVariableLevelSystemSupport {
     private static String boxSubvariableKey(InteractionWiredExtra box, int subType) {
         if (box instanceof WiredDerivedVariableBox derived) return derived.subvariableKey(subType);
         return getSubvariableKey(subType);
+    }
+
+    /** A derived part (sub-variable) whose value moved with its base variable; null where it does not exist. */
+    public record DerivedChange(int syntheticItemId, Integer previousValue, Integer currentValue) {}
+
+    /**
+     * The level-up / derived parts of a base variable that change when its value goes from {@code previousValue} to
+     * {@code currentValue}, so AIR's Variable Changed also fires for a sub-variable (a level up moves {@code
+     * current_level}). Time-utilities parts follow the clock rather than the value and are left out.
+     */
+    public static List<DerivedChange> derivedChanges(
+            Room room,
+            int targetType,
+            int baseDefinitionItemId,
+            boolean created,
+            boolean deleted,
+            long previousValue,
+            long currentValue) {
+        if (room == null || baseDefinitionItemId <= 0) {
+            return Collections.emptyList();
+        }
+        HabboItem item = room.getHabboItem(baseDefinitionItemId);
+        if (!(item instanceof InteractionWiredExtra definition)) {
+            return Collections.emptyList();
+        }
+        InteractionWiredExtra box = getDerivedBox(room, definition);
+        if (box == null) {
+            return Collections.emptyList();
+        }
+
+        Integer before = created ? null : clamp(previousValue);
+        Integer after = deleted ? null : clamp(currentValue);
+        List<DerivedChange> changes = new ArrayList<>();
+        for (int subvariableType : boxSubvariables(box)) {
+            Integer previous = getDerivedValue(box, subvariableType, before);
+            Integer current = getDerivedValue(box, subvariableType, after);
+            if (Objects.equals(previous, current)) {
+                continue;
+            }
+            changes.add(new DerivedChange(
+                    createSyntheticItemId(targetType, baseDefinitionItemId, subvariableType), previous, current));
+        }
+        return changes;
     }
 
     public static List<WiredVariableDefinitionInfo> getDerivedDefinitions(

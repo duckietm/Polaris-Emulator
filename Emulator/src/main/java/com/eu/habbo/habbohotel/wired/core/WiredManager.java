@@ -313,6 +313,33 @@ public final class WiredManager {
         engine.notePlacementFailure(roomId, reason, sourceLabel, sourceId);
     }
 
+    /** A holder could not be given one more variable. Silent when the engine is not up. */
+    public static void noteTooManyVariables(int roomId, String reason, String sourceLabel, int sourceId) {
+        if (engine == null) {
+            return;
+        }
+
+        engine.noteTooManyVariables(roomId, reason, sourceLabel, sourceId);
+    }
+
+    /** A wired transaction failed on the room's or the server's side. Silent when the engine is not up. */
+    public static void noteTransactionFailure(int roomId, String reason, String sourceLabel, int sourceId) {
+        if (engine == null) {
+            return;
+        }
+
+        engine.noteTransactionFailure(roomId, reason, sourceLabel, sourceId);
+    }
+
+    /** The room holds more variable fx boxes than are drawn. Silent when the engine is not up. */
+    public static void noteVariableFxLimit(int roomId, String reason, String sourceLabel, int sourceId) {
+        if (engine == null) {
+            return;
+        }
+
+        engine.noteVariableFxLimit(roomId, reason, sourceLabel, sourceId);
+    }
+
     /** A line a "write to logs" box wrote. Silent when the engine is not up. */
     public static void noteWiredLog(
             int roomId, WiredRoomDiagnostics.Severity severity, String message, String sourceLabel, int sourceId) {
@@ -733,7 +760,38 @@ public final class WiredManager {
         RoomUnit roomUnit = com.eu.habbo.habbohotel.rooms.UserVariableHolders.unitOf(room, userId);
         WiredEvent event = WiredEvents.userVariableChanged(
                 room, roomUnit, definitionItemId, created, deleted, changeKind, previousValue, currentValue);
-        return handleEvent(event);
+        boolean handled = handleEvent(event);
+        for (WiredVariableLevelSystemSupport.DerivedChange change : WiredVariableLevelSystemSupport.derivedChanges(
+                room,
+                WiredVariableLevelSystemSupport.TARGET_USER,
+                definitionItemId,
+                created,
+                deleted,
+                previousValue,
+                currentValue)) {
+            handled |= handleEvent(WiredEvents.userVariableChanged(
+                    room,
+                    roomUnit,
+                    change.syntheticItemId(),
+                    change.previousValue() == null,
+                    change.currentValue() == null,
+                    derivedKind(change),
+                    valueOf(change.previousValue()),
+                    valueOf(change.currentValue())));
+        }
+        return handled;
+    }
+
+    /** How a sub-variable moved: only parts whose value changed are reported. */
+    private static WiredEvent.VariableChangeKind derivedKind(WiredVariableLevelSystemSupport.DerivedChange change) {
+        long previous = valueOf(change.previousValue());
+        long current = valueOf(change.currentValue());
+        if (current == previous) return WiredEvent.VariableChangeKind.UNCHANGED;
+        return current > previous ? WiredEvent.VariableChangeKind.INCREASED : WiredEvent.VariableChangeKind.DECREASED;
+    }
+
+    private static long valueOf(Integer value) {
+        return value == null ? 0L : value;
     }
 
     public static boolean triggerFurniVariableChanged(
@@ -762,7 +820,26 @@ public final class WiredManager {
         HabboItem item = room.getHabboItem(furniId);
         WiredEvent event = WiredEvents.furniVariableChanged(
                 room, item, definitionItemId, created, deleted, changeKind, previousValue, currentValue);
-        return handleEvent(event);
+        boolean handled = handleEvent(event);
+        for (WiredVariableLevelSystemSupport.DerivedChange change : WiredVariableLevelSystemSupport.derivedChanges(
+                room,
+                WiredVariableLevelSystemSupport.TARGET_FURNI,
+                definitionItemId,
+                created,
+                deleted,
+                previousValue,
+                currentValue)) {
+            handled |= handleEvent(WiredEvents.furniVariableChanged(
+                    room,
+                    item,
+                    change.syntheticItemId(),
+                    change.previousValue() == null,
+                    change.currentValue() == null,
+                    derivedKind(change),
+                    valueOf(change.previousValue()),
+                    valueOf(change.currentValue())));
+        }
+        return handled;
     }
 
     public static boolean triggerRoomVariableChanged(
@@ -782,7 +859,23 @@ public final class WiredManager {
 
         WiredEvent event =
                 WiredEvents.roomVariableChanged(room, definitionItemId, changeKind, previousValue, currentValue);
-        return handleEvent(event);
+        boolean handled = handleEvent(event);
+        for (WiredVariableLevelSystemSupport.DerivedChange change : WiredVariableLevelSystemSupport.derivedChanges(
+                room,
+                WiredVariableLevelSystemSupport.TARGET_ROOM,
+                definitionItemId,
+                false,
+                false,
+                previousValue,
+                currentValue)) {
+            handled |= handleEvent(WiredEvents.roomVariableChanged(
+                    room,
+                    change.syntheticItemId(),
+                    derivedKind(change),
+                    valueOf(change.previousValue()),
+                    valueOf(change.currentValue())));
+        }
+        return handled;
     }
 
     /**
@@ -1384,6 +1477,25 @@ public final class WiredManager {
             RoomTile callerTile,
             int callStackDepth,
             boolean negative) {
+        return callStacksAtTiles(
+                tiles, room, actor, users, items, callerTile, callStackDepth, negative, null, java.util.Map.of());
+    }
+
+    /**
+     * Calls the stacks at {@code tiles}. They work in a scope inside the caller's context variables and
+     * read the caller's placeholders after their own, as a signalled stack does.
+     */
+    public static boolean callStacksAtTiles(
+            Collection<RoomTile> tiles,
+            Room room,
+            RoomUnit actor,
+            Collection<RoomUnit> users,
+            Collection<HabboItem> items,
+            RoomTile callerTile,
+            int callStackDepth,
+            boolean negative,
+            WiredContextVariableScope callerContextVariables,
+            java.util.Map<String, String> callerPlaceholders) {
         if (tiles == null || tiles.isEmpty() || room == null || engine == null || stackIndex == null) {
             return false;
         }
@@ -1394,6 +1506,8 @@ public final class WiredManager {
                 .forwardedUsers(users)
                 .forwardedItems(items)
                 .stackCall(true)
+                .contextVariableScope(callerContextVariables)
+                .carriedPlaceholders(callerPlaceholders)
                 .triggeredByEffect(true)
                 .build();
 

@@ -25,6 +25,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -41,10 +43,12 @@ import java.util.Set;
  * The official "with variable" selectors (AIR codes 17 and 18). Int params {@code [comparison,
  * reference (0 none, 1 a value, 2 a variable), value high, value low, reference target, same holder]}
  * with the official comparison and target numbers; the reference is read on the furni and user source
- * slots, filter and invert are the official selector fields. String param: the variable, then a tab and
- * the reference variable. Stored boxes keep our own numbering.
+ * slots, filter and invert are the official selector fields. Variable ids {@code [variable, reference variable or
+ * none]}, no string (older clients sent the variable, a tab and the reference variable as the string; still read).
+ * Stored boxes keep our own numbering.
  */
-public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEffect implements WiredOfficialSelector {
+public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEffect
+        implements WiredOfficialSelector, WiredOfficialVariableIds {
     protected static final int TARGET_USER = 0;
     protected static final int TARGET_FURNI = 1;
     protected static final int TARGET_CONTEXT = 2;
@@ -64,7 +68,6 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
-    private static final String DELIM = "\t";
 
     protected boolean selectByValue = false;
     protected int comparison = COMPARISON_EQUAL;
@@ -170,9 +173,17 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
                         : WiredSourceUtil.SOURCE_TRIGGER);
         boolean nextFilterExisting = settings.isSelectorFilter();
         boolean nextInvert = settings.isSelectorInvert();
-        String nextVariableToken =
-                normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : settings.getStringParam());
-        String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
+        String nextVariableToken;
+        String nextReferenceVariableToken;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            // AIR: [variable, reference variable].
+            nextVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 0);
+            nextReferenceVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 1);
+        } else {
+            nextVariableToken =
+                    normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : settings.getStringParam());
+            nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
+        }
 
         if (!this.isValidMainVariable(room, nextVariableToken, nextSelectByValue)) return false;
         if (nextSelectByValue
@@ -327,7 +338,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeStringData());
+        message.appendString("");
         message.appendInt(6);
         message.appendInt(WiredVariableTargets.comparisonToOfficial(this.comparison));
         message.appendInt(!this.selectByValue ? 0 : (this.referenceMode == REFERENCE_VARIABLE ? 2 : 1));
@@ -785,10 +796,13 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         this.referenceSelectedItems.removeAll(staleItems);
     }
 
-    private String serializeStringData() {
-        return (this.variableToken == null ? "" : this.variableToken)
-                + DELIM
-                + (this.referenceVariableToken == null ? "" : this.referenceVariableToken);
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWireForHolder(this.getVariableTargetType(), this.variableToken),
+                this.selectByValue && this.referenceMode == REFERENCE_VARIABLE
+                        ? WiredVariableIds.toWireForHolder(this.referenceTargetType, this.referenceVariableToken)
+                        : "");
     }
 
     private void setVariableToken(String token) {

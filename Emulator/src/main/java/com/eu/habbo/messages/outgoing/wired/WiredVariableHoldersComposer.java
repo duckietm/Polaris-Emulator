@@ -33,7 +33,7 @@ public class WiredVariableHoldersComposer extends MessageComposer {
         this.response.appendInt(this.holders.size());
         for (RoomWiredVariableCatalog.Holder holder : this.holders) {
             this.response.appendInt(BuildersClubItemIds.toWire(
-                    holder.getEntityId(), holder.getEntityType() == RoomWiredVariableCatalog.TARGET_FURNI));
+                    holder.getEntityId(), holder.getEntityType() == RoomWiredVariableCatalog.HOLDER_FURNI));
             this.response.appendInt(holder.getValue());
         }
 

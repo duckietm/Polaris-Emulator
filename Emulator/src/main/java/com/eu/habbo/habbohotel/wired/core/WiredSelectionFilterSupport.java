@@ -19,6 +19,12 @@ final class WiredSelectionFilterSupport {
 
     private WiredSelectionFilterSupport() {}
 
+    /**
+     * Applies the stack's filter add-ons to what its selectors picked, as in Habbo: a filter narrows the
+     * selection, and with no selector of its kind it starts from nothing, so the kind ends up empty
+     * instead of keeping the triggering user or furni. Other sources (the triggering user, users in the
+     * room, ...) are never filtered.
+     */
     static void applySelectorFilters(Room room, HabboItem triggerItem, WiredContext ctx) {
         if (ctx == null) {
             return;
@@ -27,12 +33,54 @@ final class WiredSelectionFilterSupport {
         if (ctx.targets().isItemsModifiedBySelector()) {
             ctx.targets()
                     .setItems(filterItems(room, triggerItem, ctx, ctx.targets().items()));
+        } else if (hasFurniFilter(room, triggerItem, ctx)) {
+            ctx.targets().setItems(List.of());
         }
 
         if (ctx.targets().isUsersModifiedBySelector()) {
             ctx.targets()
                     .setUsers(filterUsers(room, triggerItem, ctx, ctx.targets().users()));
+        } else if (hasUserFilter(room, triggerItem, ctx)) {
+            ctx.targets().setUsers(List.of());
         }
+    }
+
+    /** Whether the stack has a furni filter that would narrow a selection (a configured amount, or by variable). */
+    static boolean hasFurniFilter(Room room, HabboItem triggerItem, WiredContext ctx) {
+        if (shouldBypass(room, triggerItem, ctx)) {
+            return false;
+        }
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null) {
+            return false;
+        }
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterFurniByVariable
+                    || (extra instanceof WiredExtraFilterFurni furni && furni.resolveAmount(ctx) > 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the stack has a user filter that would narrow a selection (a configured amount, or by variable). */
+    static boolean hasUserFilter(Room room, HabboItem triggerItem, WiredContext ctx) {
+        if (shouldBypass(room, triggerItem, ctx)) {
+            return false;
+        }
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null) {
+            return false;
+        }
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterUsersByVariable
+                    || (extra instanceof WiredExtraFilterUser user && user.resolveAmount(ctx) > 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static List<HabboItem> filterItems(Room room, HabboItem triggerItem, WiredContext ctx, Iterable<HabboItem> values) {

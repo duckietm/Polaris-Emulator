@@ -35,6 +35,8 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
     private int secondMode = MODE_SKIP;
     private int secondFrom = 0;
     private int secondTo = 0;
+    /** AIR's timezone dropdown (the string param): a zone id, or empty for the room's wired timezone. */
+    private String timezone = "";
 
     public WiredConditionMatchTime(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -57,7 +59,7 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
+        message.appendString(this.timezone);
         // Official layout: [useSeconds, useMinutes, useHours, secondMin, secondMax, minuteMin, minuteMax,
         // hourMin, hourMax]; an exact value is a range of one.
         message.appendInt(9);
@@ -89,13 +91,15 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         this.secondMode = mode(params.length > 0 && params[0] == 1, this.secondFrom, this.secondTo);
         this.minuteMode = mode(params.length > 1 && params[1] == 1, this.minuteFrom, this.minuteTo);
         this.hourMode = mode(params.length > 2 && params[2] == 1, this.hourFrom, this.hourTo);
+        this.timezone = WiredRoomTime.normalizeTimezone(settings.getStringParam());
 
         return true;
     }
 
     @Override
     public boolean evaluate(WiredContext ctx) {
-        LocalTime now = WiredRoomTime.now((ctx != null) ? ctx.room() : null).toLocalTime();
+        LocalTime now = WiredRoomTime.now((ctx != null) ? ctx.room() : null, this.timezone)
+                .toLocalTime();
 
         return this.matchesTimePart(now.getHour(), this.hourMode, this.hourFrom, this.hourTo)
                 && this.matchesTimePart(now.getMinute(), this.minuteMode, this.minuteFrom, this.minuteTo)
@@ -120,7 +124,8 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
                         this.minuteTo,
                         this.secondMode,
                         this.secondFrom,
-                        this.secondTo));
+                        this.secondTo,
+                        this.timezone.isEmpty() ? null : this.timezone));
     }
 
     @Override
@@ -154,6 +159,8 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
             this.secondMode = this.normalizeMode(data.secondMode);
             this.secondFrom = this.normalizeMinuteOrSecond(data.secondFrom);
             this.secondTo = this.normalizeMinuteOrSecond(data.secondTo);
+            // Boxes saved before the timezone dropdown follow the room's wired timezone.
+            this.timezone = WiredRoomTime.normalizeTimezone(data.timezone);
             return;
         }
 
@@ -192,6 +199,7 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         this.secondMode = MODE_SKIP;
         this.secondFrom = 0;
         this.secondTo = 0;
+        this.timezone = "";
     }
 
     private boolean matchesTimePart(int currentValue, int mode, int fromValue, int toValue) {
@@ -235,6 +243,7 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         int secondMode;
         int secondFrom;
         int secondTo;
+        String timezone;
 
         public JsonData(
                 int hourMode,
@@ -245,7 +254,8 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
                 int minuteTo,
                 int secondMode,
                 int secondFrom,
-                int secondTo) {
+                int secondTo,
+                String timezone) {
             this.hourMode = hourMode;
             this.hourFrom = hourFrom;
             this.hourTo = hourTo;
@@ -255,6 +265,7 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
             this.secondMode = secondMode;
             this.secondFrom = secondFrom;
             this.secondTo = secondTo;
+            this.timezone = timezone;
         }
     }
 }

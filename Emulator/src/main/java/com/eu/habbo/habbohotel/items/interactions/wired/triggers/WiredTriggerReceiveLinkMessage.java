@@ -40,11 +40,17 @@ public class WiredTriggerReceiveLinkMessage extends WiredTriggerReceiveLinkBase 
 
     @Override
     public WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops) {
+        return this.receiveEvent(room, link, payload, hops, 0);
+    }
+
+    @Override
+    public WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops, int sourceRoomId) {
         return WiredEvent.builder(WiredEvent.Type.LINK_MESSAGE_RECEIVED, room)
                 .sourceItem(link)
                 .tile(room.getLayout() != null ? room.getLayout().getTile(link.getX(), link.getY()) : null)
                 .text(payload.message())
                 .linkHops(hops)
+                .linkSourceRoomId(sourceRoomId)
                 .triggeredByEffect(true)
                 .build();
     }

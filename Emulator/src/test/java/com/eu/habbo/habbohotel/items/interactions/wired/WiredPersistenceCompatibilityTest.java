@@ -95,14 +95,14 @@ class WiredPersistenceCompatibilityTest {
                 Map.of(
                         "blank", 15,
                         "json-empty", 20,
-                        "json-malformed", 99,
+                        "json-malformed", 97,
                         "legacy-zero", 10,
                         "legacy-tab", 16),
                 byPayload,
                 "Review every change against the production-loader boundary and real legacy corpus");
         assertEquals(
                 Map.of(
-                        "java.io.EOFException", 91,
+                        "java.io.EOFException", 89,
                         "java.lang.NullPointerException", 58,
                         "java.lang.NumberFormatException", 11),
                 byException,

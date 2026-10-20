@@ -22,7 +22,11 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
@@ -35,7 +39,14 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WiredConditionHasVariable extends InteractionWiredCondition {
+/**
+ * The official "has variable" (AIR code 35, and its not twin). Int params {@code [target]} (furni 0, user 1, context
+ * -20); variable ids {@code [variable]}; the furni and users in the official source slots, the quantifier in its slot.
+ * AIR sends no string; ours carries an array variable's existence check as JSON. Older clients sent the variable token
+ * as the string, followed by a tab and that JSON; still read.
+ */
+public class WiredConditionHasVariable extends InteractionWiredCondition
+        implements WiredOfficialQuantifier, WiredOfficialVariableIds {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredConditionHasVariable.class);
 
     protected static final int TARGET_USER = 0;
@@ -94,12 +105,11 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeStringData());
-        // Official layout: [variable target (furni 0, user 1, global -10, context -20)], the furni and
-        // users in the official source slots; our quantifier (0 all, 1 any) follows.
-        message.appendInt(2);
+        message.appendString(this.serializeStringData(room));
+        // Official layout: [variable target (furni 0, user 1, global -10, context -20)], the variable as the
+        // variable id, the furni and users in the official source slots, the quantifier (0 all, 1 any) in its slot.
+        message.appendInt(1);
         message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -119,10 +129,19 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? normalizeQuantifier(params[1]) : QUANTIFIER_ALL;
-        String[] stringParts = splitStringData(settings.getStringParam());
-        this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
-        ArrayData arrayData = parseArrayData(stringParts.length > 1 ? stringParts[1] : null);
+        this.quantifier = normalizeQuantifier(settings.getQuantifierCode());
+        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+        String arrayText;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            this.setVariableToken(WiredVariableIds.tokenAt(settings.getVariableIds(), 0));
+            int tab = text.indexOf('\t');
+            arrayText = tab >= 0 ? text.substring(tab + 1) : text;
+        } else {
+            String[] stringParts = splitStringData(text);
+            this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
+            arrayText = stringParts.length > 1 ? stringParts[1] : null;
+        }
+        ArrayData arrayData = parseArrayData(arrayText);
         this.arrayExistenceMode = arrayData.existenceMode == ARRAY_ENTRY_EXISTS ? ARRAY_ENTRY_EXISTS : ARRAY_EXISTS;
         this.arrayAddress = arrayData.address;
 
@@ -193,7 +212,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
 
     private boolean evaluateUserTargets(WiredContext ctx, Room room, boolean negative, int variableId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) {
+            boolean overEmpty = WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+            return negative ? !overEmpty : overEmpty;
+        }
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
                 ? this.matchesAnyUser(room, targets, variableId)
@@ -206,7 +228,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) {
+            boolean overEmpty = WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+            return negative ? !overEmpty : overEmpty;
+        }
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
                 ? this.matchesAnyFurni(room, targets, variableId)
@@ -304,7 +329,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
                 definition.getArrayVariableType() == WiredArrayVariableType.FURNI ? this.furniSource : this.userSource;
         List<WiredArrayRuntimeSupport.Owner> owners =
                 WiredArrayRuntimeSupport.resolveOwners(ctx, this.selectedItems, definition, source);
-        if (owners.isEmpty()) return false;
+        if (owners.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         boolean any = this.quantifier == QUANTIFIER_ANY;
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
@@ -516,10 +541,15 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         this.variableItemId = getCustomItemId(this.variableToken);
     }
 
-    private String serializeStringData() {
-        return (this.variableToken == null ? "" : this.variableToken)
-                + "\t"
-                + WiredManager.getGson().toJson(new ArrayData(this.arrayExistenceMode, this.arrayAddress));
+    /** AIR sends no string; ours carries an array variable's existence check as JSON. */
+    private String serializeStringData(Room room) {
+        if (this.resolveArrayDefinition(room, this.variableItemId) == null) return "";
+        return WiredManager.getGson().toJson(new ArrayData(this.arrayExistenceMode, this.arrayAddress));
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(WiredVariableIds.toWireForHolder(this.targetType, this.variableToken));
     }
 
     private static String[] splitStringData(String value) {
@@ -696,5 +726,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
             this.colorId = colorId;
             this.typeId = typeId;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

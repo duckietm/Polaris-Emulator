@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -48,9 +49,8 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition im
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.handItem);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -61,12 +61,11 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition im
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
         this.handItem = WiredUserConditionInputGuard.normalizeHandItemId(settings.getIntParams()[0]);
-        int[] params = settings.getIntParams();
-        // Official layout: [hand item (0 any)], the users in the official source slot; our quantifier follows.
+        // Official layout: [hand item (0 any)], the users in the official source slot, the quantifier in its slot.
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         return true;
     }
@@ -74,7 +73,7 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition im
     @Override
     public boolean evaluate(WiredContext ctx) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             return this.matchesAnyTarget(targets);

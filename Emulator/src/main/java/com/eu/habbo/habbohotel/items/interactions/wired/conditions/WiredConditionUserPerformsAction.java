@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredUserActionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -50,7 +51,7 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
     public boolean evaluate(WiredContext ctx) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
         }
 
         if (this.quantifier == QUANTIFIER_ANY) {
@@ -132,9 +133,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         message.appendInt(this.getId());
         message.appendString(WiredUserActionType.extraString(
                 this.selectedAction, this.signFilterEnabled, this.signId, this.danceFilterEnabled, this.danceId));
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.selectedAction);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -149,7 +149,7 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
 
         if (intParams.length > 0) this.selectedAction = normalizeAction(intParams[0]);
         // Official: [action], the sign or dance extra in the string param, the users in the official
-        // source slot; our quantifier (0 all, 1 any) follows as param 1.
+        // source slot, the quantifier (0 all, 1 any) in its slot.
         int extra = WiredUserActionType.extraCode(this.selectedAction, settings.getStringParam());
         if (this.selectedAction == WiredUserActionType.SIGN && extra >= 0) {
             this.signFilterEnabled = true;
@@ -161,7 +161,7 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         }
         if (settings.getUserSourceTypes().length > 0)
             this.userSource = this.normalizeUserSource(settings.getUserSourceTypes()[0]);
-        if (intParams.length > 1) this.quantifier = normalizeQuantifier(intParams[1]);
+        this.quantifier = normalizeQuantifier(settings.getQuantifierCode());
 
         return true;
     }

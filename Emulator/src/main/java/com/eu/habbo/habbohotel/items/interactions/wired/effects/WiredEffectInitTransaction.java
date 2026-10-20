@@ -44,9 +44,10 @@ import java.util.List;
  * precondition it raises {@link WiredEvent.Type#TRANSACTION_FAIL} and commits nothing.
  *
  * <p>Atomicity is achieved synchronously on the room's single-threaded wired tick (compute all
- * preconditions first, mutate last). With NO contracts selected it degrades to the v1 signal model
- * (fires COMPLETE) for backward compatibility. Currency-only v1 (credits/points); the asset source/sink
- * is the existing config-based wired chest ({@link InteractionWiredChest}).</p>
+ * preconditions first, mutate last). AIR runs exactly one contract: with none, or with more than one, the
+ * transaction fails with reason 21 ({@link ChestTransactionFailures#MISCONFIG_TOO_MANY_OR_NO_CONTRACTS}). Boxes
+ * saved before that rule, which ran without a contract (COMPLETE) or pooled several, now fail with 21 until
+ * their builder picks one contract. The asset source/sink is the wired chest ({@link InteractionWiredChest}).</p>
  *
  * <p>Official layout (47, AIR {@code chests/class_4135}): ints {@code [mode, multiplier, multiplier from
  * a variable, variable target (global or context), timeout on, timeout seconds]}, the variable as the
@@ -72,6 +73,9 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
 
     /** The artwork the window frames the reward with; the richer layouts come from the dialog later. */
     private static final String LAYOUT_GENERIC = "generic";
+
+    /** The source label of a failed transaction on the wired monitor. */
+    static final String MONITOR_SOURCE = "init_transaction";
 
     public static final WiredEffectType type = WiredEffectType.INIT_TRANSACTION;
 
@@ -134,20 +138,27 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
             } else if (item instanceof InteractionWiredChest && !linked.contains(item)) linked.add(item);
         }
 
-        // No contracts → v1 signal behaviour (fire COMPLETE unconditionally).
-        if (contracts.isEmpty()) {
-            this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
-            return;
-        }
-
-        // Contracts require a user to charge/reward.
         List<Habbo> traders = new ArrayList<>();
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo != null && !traders.contains(habbo)) traders.add(habbo);
         }
+
+        // AIR: exactly one contract, else the transaction fails as misconfigured (21).
+        int contractRefusal = contractCountRefusal(contracts.size());
+        if (contractRefusal != ChestTransactionFailures.NONE) {
+            for (Habbo trader : traders) ChestTransactionFailures.send(trader, contractRefusal);
+            ChestTransactionFailures.noteOnMonitor(room, contractRefusal, MONITOR_SOURCE, this.getId());
+            this.fail(ctx, room, contractRefusal);
+            return;
+        }
+
+        // The contract needs a user to charge/reward.
         if (traders.isEmpty()) {
-            this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
+            // Nobody to trade with: the box runs from something without a user, which is the setup's doing.
+            ChestTransactionFailures.noteOnMonitor(
+                    room, ChestTransactionFailures.MISCONFIGURED, MONITOR_SOURCE, this.getId());
+            this.fail(ctx, room, ChestTransactionFailures.MISCONFIGURED);
             return;
         }
 
@@ -192,7 +203,9 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         ContractRules rules = ContractRules.from(contracts, ctx, room);
         if (rules == null) {
             // A custom contract whose furni or variable amount cannot be resolved this run.
-            this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
+            ChestTransactionFailures.noteOnMonitor(
+                    room, ChestTransactionFailures.MISCONFIGURED, MONITOR_SOURCE, this.getId());
+            this.fail(ctx, room, ChestTransactionFailures.MISCONFIGURED);
             return;
         }
         if (!rules.asksForNothing()) {
@@ -233,7 +246,8 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
 
         if (failure != ChestTransactionFailures.NONE) {
             ChestTransactionFailures.send(actor, failure);
-            this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
+            ChestTransactionFailures.noteOnMonitor(room, failure, MONITOR_SOURCE, this.getId());
+            this.fail(ctx, room, failure);
             return;
         }
         this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
@@ -412,12 +426,38 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         return LAYOUT_GENERIC;
     }
 
+    /**
+     * Why the box refuses to run with {@code contracts} resolved contracts: AIR runs exactly one, so none or more
+     * than one is {@link ChestTransactionFailures#MISCONFIG_TOO_MANY_OR_NO_CONTRACTS}.
+     */
+    static int contractCountRefusal(int contracts) {
+        return contracts == 1
+                ? ChestTransactionFailures.NONE
+                : ChestTransactionFailures.MISCONFIG_TOO_MANY_OR_NO_CONTRACTS;
+    }
+
     private void fire(WiredContext ctx, Room room, WiredEvent.Type eventType) {
+        this.dispatch(this.event(ctx, room, eventType).build());
+    }
+
+    /** Raises TRANSACTION_FAIL carrying the reason, which the stack reads as {@code @event.transaction_failed.reason}. */
+    private void fail(WiredContext ctx, Room room, int reason) {
+        this.dispatch(this.event(ctx, room, WiredEvent.Type.TRANSACTION_FAIL)
+                .transactionFailureReason(reason)
+                .build());
+    }
+
+    private WiredEvent.Builder event(WiredContext ctx, Room room, WiredEvent.Type eventType) {
         RoomTile tile = (room.getLayout() != null) ? room.getLayout().getTile(this.getX(), this.getY()) : null;
         WiredEvent.Builder builder = WiredEvent.builder(eventType, room).sourceItem(this);
         if (tile != null) builder.tile(tile);
         ctx.actor().ifPresent(builder::actor);
-        WiredManager.dispatchEffectTriggeredEvent(builder.build());
+        return builder;
+    }
+
+    /** Hands the box's event to the wired engine. */
+    void dispatch(WiredEvent event) {
+        WiredManager.dispatchEffectTriggeredEvent(event);
     }
 
     @Deprecated

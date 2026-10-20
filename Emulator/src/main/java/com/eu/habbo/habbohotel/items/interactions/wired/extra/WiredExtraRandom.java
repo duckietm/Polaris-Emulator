@@ -27,15 +27,15 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     public static final int CODE = 63;
     private static final int DEFAULT_PICK_AMOUNT = 1;
     private static final int DEFAULT_SKIP_EXECUTIONS = 0;
-    private static final int MAX_PICK_AMOUNT = 1000;
-    private static final int MAX_SKIP_EXECUTIONS = 1000;
+    /** AIR's sliders: picks 1..100, skips 0..100. */
+    private static final int MAX_PICK_AMOUNT = 100;
+
+    private static final int MAX_SKIP_EXECUTIONS = 100;
 
     private final Deque<List<Integer>> recentExecutionEffectIds = new ArrayDeque<>();
 
     private int pickAmount = DEFAULT_PICK_AMOUNT;
     private int skipExecutions = DEFAULT_SKIP_EXECUTIONS;
-    /** Official: how many actions at the top of the stack are left out of the pick. */
-    private int skipTop = 0;
 
     public WiredExtraRandom(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -52,12 +52,10 @@ public class WiredExtraRandom extends InteractionWiredExtra {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        // Official layout: [skip top N actions, pick count]; ours follows: [avoid what the last N
-        // firings picked].
+        // AIR layout: [skips (leave out what the last N firings picked), picks].
         int[] params = settings.getIntParams();
-        this.skipTop = (params.length > 0) ? Math.clamp(params[0], 0, MAX_SKIP_EXECUTIONS) : 0;
+        int resolvedSkipExecutions = (params.length > 0) ? params[0] : DEFAULT_SKIP_EXECUTIONS;
         int resolvedPickAmount = (params.length > 1) ? params[1] : DEFAULT_PICK_AMOUNT;
-        int resolvedSkipExecutions = (params.length > 2) ? params[2] : DEFAULT_SKIP_EXECUTIONS;
 
         this.pickAmount = normalizePickAmount(resolvedPickAmount);
         this.skipExecutions = normalizeSkipExecutions(resolvedSkipExecutions);
@@ -68,7 +66,6 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     @Override
     public String getWiredData() {
         JsonData data = new JsonData(this.pickAmount, this.skipExecutions);
-        data.skipTop = this.skipTop;
         return WiredManager.getGson().toJson(data);
     }
 
@@ -80,10 +77,9 @@ public class WiredExtraRandom extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
-        message.appendInt(this.skipTop);
-        message.appendInt(this.pickAmount);
+        message.appendInt(2);
         message.appendInt(this.skipExecutions);
+        message.appendInt(this.pickAmount);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -99,13 +95,13 @@ public class WiredExtraRandom extends InteractionWiredExtra {
             return;
         }
 
+        // A box saved before AIR's layout may hold up to 1000 and a "skip top" count AIR does not
+        // have: its amounts are clamped to AIR's 100 and the old count is ignored.
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.pickAmount = normalizePickAmount((data != null) ? data.pickAmount : DEFAULT_PICK_AMOUNT);
             this.skipExecutions =
                     normalizeSkipExecutions((data != null) ? data.skipExecutions : DEFAULT_SKIP_EXECUTIONS);
-            this.skipTop = (data != null) ? Math.clamp(data.skipTop, 0, MAX_SKIP_EXECUTIONS) : 0;
-            return;
         }
     }
 
@@ -113,7 +109,6 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     public void onPickUp() {
         this.pickAmount = DEFAULT_PICK_AMOUNT;
         this.skipExecutions = DEFAULT_SKIP_EXECUTIONS;
-        this.skipTop = 0;
         this.clearRecentExecutions();
     }
 
@@ -161,12 +156,7 @@ public class WiredExtraRandom extends InteractionWiredExtra {
             return Collections.emptyList();
         }
 
-        // The actions at the top of the stack that are skipped take no part in the pick.
-        int skip = Math.min(this.skipTop, effects.size());
-        List<T> shuffledEffects = new ArrayList<>(effects.subList(skip, effects.size()));
-        if (shuffledEffects.isEmpty()) {
-            return Collections.emptyList();
-        }
+        List<T> shuffledEffects = new ArrayList<>(effects);
         Collections.shuffle(shuffledEffects, Emulator.getRandom());
 
         int desiredAmount = Math.min(this.pickAmount, shuffledEffects.size());
@@ -239,7 +229,6 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     }
 
     static class JsonData {
-        int skipTop;
         int pickAmount;
         int skipExecutions;
 

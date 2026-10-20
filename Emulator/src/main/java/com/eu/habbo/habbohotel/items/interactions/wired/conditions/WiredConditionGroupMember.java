@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -44,7 +45,7 @@ public class WiredConditionGroupMember extends InteractionWiredCondition impleme
         if (targetGroupId == 0) return false;
 
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (RoomUnit roomUnit : targets) {
@@ -125,13 +126,12 @@ public class WiredConditionGroupMember extends InteractionWiredCondition impleme
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         // Official layout: the group id in the string (empty: the room's group), no int params, the
-        // users in the official source slot; our quantifier follows as param 0.
+        // users in the official source slot, the quantifier in its slot.
         message.appendString(
                 this.groupType == GROUP_SELECTED && this.selectedGroupId > 0
                         ? String.valueOf(this.selectedGroupId)
                         : "");
-        message.appendInt(1);
-        message.appendInt(this.quantifier);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -140,7 +140,6 @@ public class WiredConditionGroupMember extends InteractionWiredCondition impleme
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        int[] params = settings.getIntParams();
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? this.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
@@ -155,7 +154,7 @@ public class WiredConditionGroupMember extends InteractionWiredCondition impleme
         }
         this.selectedGroupId = this.normalizeSelectedGroupId(groupId);
         this.groupType = this.selectedGroupId > 0 ? GROUP_SELECTED : GROUP_CURRENT_ROOM;
-        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
         return true;
     }
 

@@ -23,6 +23,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire;
 import com.eu.habbo.habbohotel.wired.protocol.WiredHolders;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.threading.ThreadPooling;
@@ -64,7 +65,7 @@ final class WiredSetupImporter {
 
     private static final int MAX_REASON_LENGTH = 200;
     private static final Pattern CUSTOM_REFERENCE = Pattern.compile("custom:#(\\d{1,4})");
-    private static final Pattern VARIABLE_REFERENCE = Pattern.compile("(custom:)?#(\\d{1,4})");
+    private static final Pattern VARIABLE_REFERENCE = Pattern.compile("(custom:|user:|furni:|room:|ctx:)?#(\\d{1,4})");
 
     /** Variables first (others reference them), then addons, then the stacks. */
     private static final List<WiredDefinitionWire.Holder> SAVE_ORDER = List.of(
@@ -391,15 +392,24 @@ final class WiredSetupImporter {
     String[] remapVariables(List<String> variables) {
         List<String> out = new ArrayList<>();
         if (variables == null) return new String[0];
+        // Slot by slot: a variable that cannot be resolved here stays as "none", so the slots after it keep their
+        // place.
         for (String variable : variables) {
-            if (variable == null || variable.isEmpty()) continue;
-            Matcher matcher = VARIABLE_REFERENCE.matcher(variable);
-            if (matcher.matches()) {
-                InteractionWired target = this.resolved.get(WiredSetupExporter.parseId(matcher.group(2)));
-                if (target != null) out.add((matcher.group(1) != null ? "custom:" : "") + target.getId());
-            } else if (!WiredSetupExporter.isDigits(variable) && !variable.startsWith("custom:")) {
-                // Built-in and internal variables only; a raw item id from a code is never trusted.
-                out.add(variable);
+            if (variable == null || variable.isEmpty()) {
+                out.add(WiredVariableIds.NONE);
+            } else {
+                Matcher matcher = VARIABLE_REFERENCE.matcher(variable);
+                if (matcher.matches()) {
+                    InteractionWired target = this.resolved.get(WiredSetupExporter.parseId(matcher.group(2)));
+                    String prefix = matcher.group(1) == null ? "" : matcher.group(1);
+                    out.add(target != null ? prefix + target.getId() : WiredVariableIds.NONE);
+                } else if (!WiredSetupExporter.isDigits(variable) && !variable.startsWith("custom:")) {
+                    // Built-in variables, and ids of other rooms' shared variables; a raw item id from a code is
+                    // never trusted.
+                    out.add(variable);
+                } else {
+                    out.add(WiredVariableIds.NONE);
+                }
             }
             if (out.size() >= WiredInputGuard.MAX_VARIABLE_IDS) break;
         }

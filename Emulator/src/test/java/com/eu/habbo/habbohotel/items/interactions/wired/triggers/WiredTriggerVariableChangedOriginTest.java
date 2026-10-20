@@ -25,7 +25,8 @@ class WiredTriggerVariableChangedOriginTest {
         assertEquals(0b1000, WiredTriggerVariableChanged.toOfficialOrigins(webApi));
         assertEquals(0b0100, WiredTriggerVariableChanged.toOfficialOrigins(tools));
         assertEquals(wired | tools, WiredTriggerVariableChanged.fromOfficialOrigins(0b0101));
-        // "Another room" never happens here.
-        assertEquals(0, WiredTriggerVariableChanged.fromOfficialOrigins(0b0010));
+        // "Another room": a shared variable changed in another room.
+        assertEquals(
+                1 << WiredVariableChangeOrigin.OTHER_ROOM, WiredTriggerVariableChanged.fromOfficialOrigins(0b0010));
     }
 }

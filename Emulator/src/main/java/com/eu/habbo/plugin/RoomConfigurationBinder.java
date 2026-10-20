@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.navigation.NavigatorManager;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
+import com.eu.habbo.habbohotel.rooms.RoomFloorItemLimit;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
@@ -119,7 +120,11 @@ final class RoomConfigurationBinder extends ConfigurationBinder {
         this.apply("hotel.pets.max.room", () -> Room.MAXIMUM_PETS = this.configuration.getInt("hotel.pets.max.room"));
         this.apply(
                 "hotel.room.furni.max",
-                () -> Room.MAXIMUM_FURNI = this.configuration.getInt("hotel.room.furni.max", 2500));
+                () -> Room.MAXIMUM_FURNI = this.configuration.getInt("hotel.room.furni.max", 8000));
+        this.apply(
+                "hotel.room.floorfurni.max",
+                () -> RoomFloorItemLimit.configure(this.configuration.getInt(
+                        "hotel.room.floorfurni.max", RoomFloorItemLimit.DEFAULT_MAX_FLOOR_ITEMS)));
         this.apply(
                 "hotel.room.wallfurni.max",
                 () -> RoomWallItemLimit.configure(this.configuration.getInt(

@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionFailComposer;
 
 /**
@@ -38,6 +40,13 @@ public final class ChestTransactionFailures {
 
     public static final int TOO_MANY_OFFERS = 17;
     public static final int EXCEEDS_CAPACITY = 19;
+
+    /**
+     * Initiate Transaction resolved no contract or more than one (turbo "Misconfig Too Many Or No Contracts"): AIR
+     * runs exactly one. A setup error, so it counts on the monitor.
+     */
+    public static final int MISCONFIG_TOO_MANY_OR_NO_CONTRACTS = 21;
+
     public static final int INTERNAL_ERROR = 1000;
     public static final int DATABASE_ERROR = 1001;
 
@@ -80,6 +89,59 @@ public final class ChestTransactionFailures {
             case WiredTradingSession.FAILURE_CONTRACT_GONE -> MISCONFIGURED;
             case WiredTradingSession.FAILURE_REWARD_UNAVAILABLE -> FUNDS_GONE;
             default -> sessionFailure;
+        };
+    }
+
+    /**
+     * Whether a failed wired transaction counts on the wired monitor (Habbo's TRANSACTION_FAILURE, error 7). The
+     * monitor lists what the room's builder or the hotel has to look at, so it counts the failures behind which stand
+     * the room's setup or stock (a misconfigured contract, no usable chest, a chest that ran out of the reward or is
+     * full) and the server's own errors. What the player does is part of playing and is left to the Transaction Failed
+     * trigger: walking away, letting it time out, a cancelled trade, an empty or invalid offer, too many offers, not
+     * enough to pay.
+     */
+    public static boolean countsOnMonitor(int reason) {
+        return switch (reason) {
+            case USER_CANCELLED,
+                    INVALID,
+                    TIMEOUT,
+                    TRADE_CANCELLED,
+                    ALREADY_TRADING,
+                    INSUFFICIENT_FUNDS,
+                    EMPTY,
+                    TOO_MANY_OFFERS -> false;
+            default -> true;
+        };
+    }
+
+    /**
+     * Counts a failed wired transaction in the room's wired diagnostics when {@link #countsOnMonitor} says it is one
+     * for the monitor.
+     *
+     * @param sourceLabel what ran the transaction, for the detail line
+     * @param sourceId the furni behind it, or 0
+     */
+    public static void noteOnMonitor(Room room, int reason, String sourceLabel, int sourceId) {
+        if (room == null || !countsOnMonitor(reason)) return;
+
+        WiredManager.noteTransactionFailure(
+                room.getId(), "Transaction failed: " + describe(reason), sourceLabel, sourceId);
+    }
+
+    /** A short name of a failure reason for the monitor's detail line. */
+    static String describe(int reason) {
+        return switch (reason) {
+            case MISCONFIGURED -> "misconfigured (" + reason + ")";
+            case FUNDS_GONE -> "the chests no longer hold the reward (" + reason + ")";
+            case CHEST_FULL -> "the chests are full (" + reason + ")";
+            case NOT_A_WIRED_CHEST -> "not a wired chest (" + reason + ")";
+            case CHEST_NOT_IN_ROOM -> "the chest is not in the room (" + reason + ")";
+            case NO_OR_LOCKED_CHESTS -> "no usable chest (" + reason + ")";
+            case EXCEEDS_CAPACITY -> "over the chest capacity (" + reason + ")";
+            case MISCONFIG_TOO_MANY_OR_NO_CONTRACTS -> "not exactly one contract (" + reason + ")";
+            case INTERNAL_ERROR -> "internal error (" + reason + ")";
+            case DATABASE_ERROR -> "database error (" + reason + ")";
+            default -> "reason " + reason;
         };
     }
 

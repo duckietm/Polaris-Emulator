@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableAddonSharing;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableFxLimit;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.messages.outgoing.wired.WiredVariableFxConfigsComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredVariableFxConfigsRemovedComposer;
@@ -46,14 +47,14 @@ public final class WiredVariableFxService implements WiredTickable {
     private static final int SERVICE_ID = -7_000_000;
     /** How often the diffs go out; a quarter second reads as live without flooding the room. */
     private static final int FLUSH_MS = 250;
-    /** Fx boxes per room beyond which the rest are ignored, and statuses per viewer likewise. */
-    private static final int MAX_BOXES = 25;
-
+    /** Statuses per viewer beyond which the rest are ignored; the fx box cap is {@link WiredVariableFxLimit}. */
     private static final int MAX_STATUSES_PER_VIEWER = 500;
 
     private final int roomId;
     private final Map<Integer, String> configSignatures = new HashMap<>();
     private final Map<Integer, WiredVariableFxViewer> viewers = new HashMap<>();
+    /** The room's own fx boxes past the cap at the last flush. */
+    private int leftOutBoxes;
     /** Set from any thread by a Share box's Synchronize; the next flush starts every viewer over. */
     private volatile boolean resyncRequested;
 
@@ -112,6 +113,8 @@ public final class WiredVariableFxService implements WiredTickable {
         }
 
         List<Shown> boxes = fxBoxes(room);
+        // Boxes past the cap are left out; the monitor counts it once per box over (VARIABLE_FX_LIMIT).
+        this.leftOutBoxes = boxes.size() < maxBoxes() ? 0 : WiredVariableFxLimit.noteLeftOut(room, this.leftOutBoxes);
         List<Habbo> players = new ArrayList<>();
         for (Habbo habbo : room.getHabbos()) {
             if (habbo != null && habbo.getClient() != null && habbo.getRoomUnit() != null) players.add(habbo);
@@ -401,7 +404,7 @@ public final class WiredVariableFxService implements WiredTickable {
     }
 
     static int maxBoxes() {
-        return MAX_BOXES;
+        return WiredVariableFxLimit.maxBoxes();
     }
 
     static int maxStatusesPerViewer() {

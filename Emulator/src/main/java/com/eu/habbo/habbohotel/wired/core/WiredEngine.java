@@ -483,6 +483,10 @@ public final class WiredEngine {
             toExecute = WiredObservedEffectOrder.apply(new ArrayList<>(effects));
         }
 
+        // Without Execute in Order, the variable changes of this execution fold into one per holder,
+        // applied when the execution ends (official set, power, multiply, divide, modulo, add, subtract).
+        WiredVariableChangeFold.Scope fold = WiredVariableChangeFold.begin();
+
         // Without Execute in Order, a furni this firing moves and brings back gets no entry.
         WiredMoveCarryHelper.beginMovementCollection(true);
 
@@ -525,7 +529,7 @@ public final class WiredEngine {
                     if (delayedBatch.size() == 1) {
                         scheduleDelayedEffect(effect, ctx, delay, currentTime);
                     } else {
-                        scheduleOrderedEffectBatch(delayedBatch, ctx, delay, currentTime);
+                        scheduleOrderedEffectBatch(delayedBatch, ctx, delay, currentTime, true);
                     }
                 } else {
                     // Execute immediately
@@ -547,9 +551,14 @@ public final class WiredEngine {
                 }
             }
         } finally {
-            ServerMessage movementComposer = WiredMoveCarryHelper.finishMovementCollection();
-            if (movementComposer != null) {
-                ctx.room().sendComposer(movementComposer);
+            try {
+                ServerMessage movementComposer = WiredMoveCarryHelper.finishMovementCollection();
+                if (movementComposer != null) {
+                    ctx.room().sendComposer(movementComposer);
+                }
+            } finally {
+                // After the movement went out: the folded changes may fire other stacks.
+                fold.close();
             }
         }
     }
@@ -632,10 +641,7 @@ public final class WiredEngine {
 
     private void applySelectionFilterExtras(
             WiredStack stack, WiredContext ctx, List<InteractionWiredEffect> executedSelectors) {
-        if (executedSelectors == null || executedSelectors.isEmpty()) {
-            return;
-        }
-
+        // Also without any selector: a filter add-on then starts from nothing (official).
         Room room = ctx.room();
         if (room == null || stack.triggerItem() == null || room.getRoomSpecialTypes() == null) {
             return;
@@ -700,9 +706,9 @@ public final class WiredEngine {
 
             if (WiredDelay.isDelayed(delay)) {
                 flashEffects(ctx.room(), batch);
-                scheduleOrderedEffectBatch(batch, ctx, delay, currentTime);
+                scheduleOrderedEffectBatch(batch, ctx, delay, currentTime, false);
             } else {
-                executeOrderedEffectBatch(batch, ctx, currentTime, false);
+                executeOrderedEffectBatch(batch, ctx, currentTime, false, false);
             }
         }
     }
@@ -754,7 +760,12 @@ public final class WiredEngine {
         return false;
     }
 
-    private void scheduleOrderedEffectBatch(List<IWiredEffect> batch, WiredContext ctx, int delay, long triggerTime) {
+    /**
+     * Schedules a delayed batch. {@code foldVariableChanges} is set for a stack without Execute In
+     * Order, whose variable changes in the batch fold into one per holder like its immediate ones.
+     */
+    private void scheduleOrderedEffectBatch(
+            List<IWiredEffect> batch, WiredContext ctx, int delay, long triggerTime, boolean foldVariableChanges) {
         WiredRoomDiagnostics diagnostics = getDiagnostics(ctx.room().getId());
         String sourceLabel = getMonitorSourceLabel(ctx.triggerItem(), ctx.event());
         int sourceId = getMonitorSourceId(ctx.triggerItem());
@@ -768,13 +779,19 @@ public final class WiredEngine {
                 sourceLabel,
                 sourceId,
                 resolved -> executeOrderedEffectBatch(
-                        resolved.effects(), resolved.context(), System.currentTimeMillis(), true));
+                        resolved.effects(), resolved.context(), System.currentTimeMillis(), true, foldVariableChanges));
     }
 
     private void executeOrderedEffectBatch(
-            List<IWiredEffect> batch, WiredContext ctx, long executionTime, boolean useExecutionTimeForCooldown) {
+            List<IWiredEffect> batch,
+            WiredContext ctx,
+            long executionTime,
+            boolean useExecutionTimeForCooldown,
+            boolean foldVariableChanges) {
         Room room = ctx.room();
         RoomUnit actor = ctx.actor().orElse(null);
+
+        WiredVariableChangeFold.Scope fold = foldVariableChanges ? WiredVariableChangeFold.begin() : null;
 
         WiredMoveCarryHelper.beginMovementCollection();
 
@@ -804,9 +821,15 @@ public final class WiredEngine {
                 }
             }
         } finally {
-            ServerMessage movementComposer = WiredMoveCarryHelper.finishMovementCollection();
-            if (movementComposer != null) {
-                room.sendComposer(movementComposer);
+            try {
+                ServerMessage movementComposer = WiredMoveCarryHelper.finishMovementCollection();
+                if (movementComposer != null) {
+                    room.sendComposer(movementComposer);
+                }
+            } finally {
+                if (fold != null) {
+                    fold.close();
+                }
             }
         }
     }
@@ -1139,6 +1162,27 @@ public final class WiredEngine {
         this.executionGuard
                 .diagnostics(roomId)
                 .recordPlacementFailure(System.currentTimeMillis(), reason, sourceLabel, sourceId);
+    }
+
+    /** A holder could not be given one more variable: counted in the room's wired diagnostics. */
+    public void noteTooManyVariables(int roomId, String reason, String sourceLabel, int sourceId) {
+        this.executionGuard
+                .diagnostics(roomId)
+                .recordTooManyVariables(System.currentTimeMillis(), reason, sourceLabel, sourceId);
+    }
+
+    /** A wired transaction failed on the room's or the server's side: counted in the room's wired diagnostics. */
+    public void noteTransactionFailure(int roomId, String reason, String sourceLabel, int sourceId) {
+        this.executionGuard
+                .diagnostics(roomId)
+                .recordTransactionFailure(System.currentTimeMillis(), reason, sourceLabel, sourceId);
+    }
+
+    /** The room holds more variable fx boxes than are drawn: counted in the room's wired diagnostics. */
+    public void noteVariableFxLimit(int roomId, String reason, String sourceLabel, int sourceId) {
+        this.executionGuard
+                .diagnostics(roomId)
+                .recordVariableFxLimit(System.currentTimeMillis(), reason, sourceLabel, sourceId);
     }
 
     /** A line a "write to logs" box wrote, into the room log at the box's level. */

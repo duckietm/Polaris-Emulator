@@ -66,8 +66,9 @@ public class WiredEffectResetRewardTrack extends InteractionWiredEffect {
             return false;
         }
 
-        String track = WiredHotelProgress.normalizeRewardTrackId(settings.getStringParam());
-        if (track.isEmpty()) {
+        // AIR: TextInputParam("", 100, null, -1, "^\t"), with no check that it is filled in.
+        String track = WiredHotelProgress.normalizeResetRewardTrackId(settings.getStringParam());
+        if (track == null) {
             return false;
         }
 
@@ -134,7 +135,7 @@ public class WiredEffectResetRewardTrack extends InteractionWiredEffect {
             return;
         }
 
-        this.trackId = WiredHotelProgress.normalizeRewardTrackId(data.trackId);
+        this.trackId = WiredHotelProgress.loadWiredRewardTrackId(data.trackId, true);
         this.userSource = WiredVariableOperand.normalizeUserSource(data.userSource);
         this.setDelay(data.delay);
     }

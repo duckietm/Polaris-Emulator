@@ -30,7 +30,11 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
@@ -42,7 +46,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class WiredConditionVariableValueMatch extends WiredConditionHasVariable {
+/**
+ * The official "variable value matches" (AIR code 36). Int params {@code [target, comparison, operandIsVariable,
+ * operandHigh, operandLow, operandTarget, sameHolder]}; variable ids {@code [variable, reference or none]}; sources slot
+ * 0 the compared holders and slot 1 the reference holders (AIR's merged selections), the reference picks as the second
+ * picks; the quantifier in its slot. The string carries only our array addresses (JSON). Boxes and older clients that
+ * sent the reference sources as ints 7 and 8 and the variables, reference picks and array data as the string are
+ * still read.
+ */
+public class WiredConditionVariableValueMatch extends WiredConditionHasVariable
+        implements WiredOfficialSources, WiredOfficialSecondaryPicks {
     public static final WiredConditionType type = WiredConditionType.VAR_VAL_MATCH;
 
     private static final int TARGET_CONTEXT = 2;
@@ -55,8 +68,6 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     private static final int COMPARISON_LESS_THAN_OR_EQUAL = 3;
     private static final int COMPARISON_LESS_THAN = 4;
     private static final int COMPARISON_NOT_EQUAL = 5;
-    private static final String DELIM = "\t";
-    private static final String FURNI_DELIM = ";";
     static final int MAX_ABS_REFERENCE_CONSTANT = 1_000_000_000;
 
     protected int comparison = COMPARISON_EQUAL;
@@ -108,11 +119,11 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeStringData());
+        message.appendString(this.serializeStringData(room));
         // Official layout: [target, comparison, operandIsVariable, operandHigh, operandLow, operandTarget,
-        // sameHolder], the furni and users in the official source slots; ours follow: the reference user
-        // and furni sources and the quantifier.
-        message.appendInt(10);
+        // sameHolder], the variables as variable ids, the compared and reference holders in source slots 0 and
+        // 1, the quantifier in its slot.
+        message.appendInt(7);
         message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(WiredVariableTargets.comparisonToOfficial(this.comparison));
         message.appendInt(this.referenceMode);
@@ -120,9 +131,6 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         message.appendInt(this.referenceConstantValue);
         message.appendInt(WiredVariableTargets.toOfficial(this.referenceTargetType));
         message.appendInt(this.sameHolder ? 1 : 0);
-        message.appendInt(this.referenceUserSource);
-        message.appendInt(this.referenceFurniSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -152,13 +160,35 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         int nextFurniSource = settings.getFurniSourceTypes().length > 0
                 ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        int nextReferenceUserSource = normalizeUserSource(param(params, 7, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 8, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextQuantifier = normalizeQuantifier(param(params, 9, QUANTIFIER_ALL));
-        String nextVariableToken =
-                normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : settings.getStringParam());
-        String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
-        ArrayData nextArrayData = parseArrayData(stringParts.length > 3 ? stringParts[3] : null);
+        // AIR: the reference holders in source slot 1; our earlier editors sent them as ints 7 and 8.
+        int nextReferenceUserSource = normalizeUserSource(
+                params.length > 7
+                        ? params[7]
+                        : settings.getUserSourceTypes().length > 1
+                                ? settings.getUserSourceTypes()[1]
+                                : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextReferenceFurniSource = normalizeReferenceFurniSource(
+                params.length > 8
+                        ? params[8]
+                        : settings.getFurniSourceTypes().length > 1
+                                ? settings.getFurniSourceTypes()[1]
+                                : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextQuantifier = normalizeQuantifier(settings.getQuantifierCode());
+        boolean fromVariableIds = WiredVariableIds.present(settings.getVariableIds());
+        String nextVariableToken;
+        String nextReferenceVariableToken;
+        ArrayData nextArrayData;
+        if (fromVariableIds) {
+            // AIR: [variable, reference]; the string carries only our array addresses.
+            nextVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 0);
+            nextReferenceVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 1);
+            nextArrayData = parseArrayData(settings.getStringParam());
+        } else {
+            nextVariableToken =
+                    normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : settings.getStringParam());
+            nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
+            nextArrayData = parseArrayData(stringParts.length > 3 ? stringParts[3] : null);
+        }
 
         if (!this.isValidSource(room, nextTargetType, nextVariableToken)) return false;
         if (nextReferenceMode == REFERENCE_VARIABLE
@@ -189,7 +219,9 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         List<HabboItem> nextReferenceItems = (nextReferenceMode == REFERENCE_VARIABLE
                         && nextReferenceTargetType == TARGET_FURNI
                         && nextReferenceFurniSource == SOURCE_SECONDARY_SELECTED)
-                ? this.parseItems((stringParts.length > 2) ? stringParts[2] : "", room)
+                ? (fromVariableIds
+                        ? this.parseItems(settings.getFurniIds2(), room)
+                        : this.parseItems((stringParts.length > 2) ? stringParts[2] : "", room))
                 : new ArrayList<>();
 
         if (nextSelectedItems.size() > selectionLimit || nextReferenceItems.size() > selectionLimit) return false;
@@ -352,7 +384,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
     private boolean evaluateUserTargets(WiredContext ctx, Room room, int variableId, int referenceId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room, variableId, referenceId);
 
@@ -385,7 +417,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room, variableId, referenceId);
 
@@ -435,7 +467,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 definition.getArrayVariableType() == WiredArrayVariableType.FURNI ? this.furniSource : this.userSource;
         List<WiredArrayRuntimeSupport.Owner> owners =
                 WiredArrayRuntimeSupport.resolveOwners(ctx, this.selectedItems, definition, source);
-        if (owners.isEmpty()) return false;
+        if (owners.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
         ReferenceSnapshot scalarReferences = this.referenceMode == REFERENCE_VARIABLE
                         && this.resolveArrayDefinition(ctx.room(), this.referenceTargetType, referenceId) == null
                 ? this.resolveReferences(ctx, ctx.room(), variableId, referenceId)
@@ -915,16 +947,46 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         this.referenceSelectedItems.removeAll(staleItems);
     }
 
-    private String serializeStringData() {
-        return (this.variableToken == null ? "" : this.variableToken)
-                + DELIM
-                + (this.referenceVariableToken == null ? "" : this.referenceVariableToken)
-                + DELIM
-                + this.serializeIds(this.referenceSelectedItems)
-                + DELIM
-                + WiredManager.getGson()
-                        .toJson(new ArrayData(
-                                this.arrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant));
+    /** AIR sends no string; ours carries the array addresses when the variable or the reference is an array. */
+    private String serializeStringData(Room room) {
+        boolean array = this.resolveArrayDefinition(room, this.targetType, this.variableItemId) != null
+                || (this.referenceMode == REFERENCE_VARIABLE
+                        && this.resolveArrayDefinition(room, this.referenceTargetType, this.referenceVariableItemId)
+                                != null);
+        if (!array) return "";
+        return WiredManager.getGson()
+                .toJson(new ArrayData(this.arrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant));
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWireForHolder(this.targetType, this.variableToken),
+                this.referenceMode == REFERENCE_VARIABLE
+                        ? WiredVariableIds.toWireForHolder(this.referenceTargetType, this.referenceVariableToken)
+                        : "");
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource, this.referenceFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource, this.referenceUserSource};
+    }
+
+    @Override
+    public int[] officialFurniIds2() {
+        if (this.referenceMode != REFERENCE_VARIABLE
+                || this.referenceTargetType != TARGET_FURNI
+                || this.referenceFurniSource != SOURCE_SECONDARY_SELECTED) {
+            return new int[0];
+        }
+        return this.toIds(this.referenceSelectedItems).stream()
+                .mapToInt(Integer::intValue)
+                .toArray();
     }
 
     private String[] parseStringData(String value) {
@@ -958,18 +1020,6 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             if (item != null) ids.add(item.getId());
         }
         return ids;
-    }
-
-    private String serializeIds(Set<HabboItem> items) {
-        StringBuilder builder = new StringBuilder();
-
-        for (HabboItem item : items) {
-            if (item == null) continue;
-            if (builder.length() > 0) builder.append(FURNI_DELIM);
-            builder.append(item.getId());
-        }
-
-        return builder.toString();
     }
 
     private void setReferenceVariableToken(String token) {

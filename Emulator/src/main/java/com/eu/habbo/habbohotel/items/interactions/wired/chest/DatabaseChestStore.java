@@ -33,22 +33,27 @@ public final class DatabaseChestStore implements ChestStore {
     private static final int LOOKUP_BATCH = 500;
 
     private static final String ITEM_COLUMNS =
-            "item_id, extra_data, wired_data, limited_data, guild_id, expires, allow_underpass";
+        "item_id, extra_data, wired_data, limited_data, guild_id, expires, allow_underpass";
+
+    // The same columns read from items, where older hotels allow NULL in the text columns; the chest table does
+    // not, so a NULL becomes the chest table's default.
+    private static final String ITEM_SOURCE_COLUMNS = "item_id, COALESCE(extra_data, ''), COALESCE(wired_data, ''), "
+        + "COALESCE(limited_data, '0:0'), COALESCE(guild_id, 0), COALESCE(expires, 0), COALESCE(allow_underpass, 0)";
 
     @Override
     public ChestRow loadChest(int chestId) {
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT kind, coins, capacity_level, settings FROM wired_chests WHERE item_id = ?")) {
+             PreparedStatement statement = connection.prepareStatement(
+                 "SELECT kind, coins, capacity_level, settings FROM wired_chests WHERE item_id = ?")) {
             statement.setInt(1, chestId);
             try (ResultSet set = statement.executeQuery()) {
                 if (!set.next()) return null;
                 return new ChestRow(
-                        chestId,
-                        set.getInt("kind"),
-                        set.getInt("coins"),
-                        set.getInt("capacity_level"),
-                        set.getString("settings"));
+                    chestId,
+                    set.getInt("kind"),
+                    set.getInt("coins"),
+                    set.getInt("capacity_level"),
+                    set.getString("settings"));
             }
         } catch (SQLException e) {
             LOGGER.error("Could not load wired chest {}", chestId, e);
@@ -59,9 +64,9 @@ public final class DatabaseChestStore implements ChestStore {
     @Override
     public void createChest(int chestId, int kind, int coins, int capacityLevel, String settings) {
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT IGNORE INTO wired_chests (item_id, kind, coins, capacity_level, settings, owner_id)"
-                                + " VALUES (?, ?, ?, ?, ?, COALESCE((SELECT i.user_id FROM items i WHERE i.id = ?), 0))")) {
+             PreparedStatement statement = connection.prepareStatement(
+                 "INSERT IGNORE INTO wired_chests (item_id, kind, coins, capacity_level, settings, owner_id)"
+                     + " VALUES (?, ?, ?, ?, ?, COALESCE((SELECT i.user_id FROM items i WHERE i.id = ?), 0))")) {
             statement.setInt(1, chestId);
             statement.setInt(2, kind);
             statement.setInt(3, Math.max(0, coins));
@@ -77,9 +82,9 @@ public final class DatabaseChestStore implements ChestStore {
     @Override
     public void saveSettings(int chestId, int capacityLevel, String settings) {
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE wired_chests SET capacity_level = ?, settings = ?, owner_id = COALESCE((SELECT i.user_id"
-                                + " FROM items i WHERE i.id = ? AND i.user_id > 0), owner_id) WHERE item_id = ?")) {
+             PreparedStatement statement = connection.prepareStatement(
+                 "UPDATE wired_chests SET capacity_level = ?, settings = ?, owner_id = COALESCE((SELECT i.user_id"
+                     + " FROM items i WHERE i.id = ? AND i.user_id > 0), owner_id) WHERE item_id = ?")) {
             // The owner is recorded on every save, so a chest whose item vanishes without being
             // released can still be handed back (see ChestRelease#sweepOrphans).
             statement.setInt(1, Math.max(0, capacityLevel));
@@ -97,8 +102,8 @@ public final class DatabaseChestStore implements ChestStore {
         if (delta == 0) return true;
 
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE wired_chests SET coins = coins + ? WHERE item_id = ? AND coins + ? >= 0")) {
+             PreparedStatement statement = connection.prepareStatement(
+                 "UPDATE wired_chests SET coins = coins + ? WHERE item_id = ? AND coins + ? >= 0")) {
             statement.setInt(1, delta);
             statement.setInt(2, chestId);
             statement.setInt(3, delta);
@@ -113,21 +118,21 @@ public final class DatabaseChestStore implements ChestStore {
     public List<StoredRow> loadItems(int chestId) {
         List<StoredRow> rows = new ArrayList<>();
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement("SELECT id, sequence, " + ITEM_COLUMNS
-                        + " FROM wired_chest_items WHERE chest_id = ? ORDER BY sequence, id")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT id, sequence, " + ITEM_COLUMNS
+                 + " FROM wired_chest_items WHERE chest_id = ? ORDER BY sequence, id")) {
             statement.setInt(1, chestId);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     rows.add(new StoredRow(
-                            set.getInt("id"),
-                            set.getInt("item_id"),
-                            set.getString("extra_data"),
-                            set.getString("wired_data"),
-                            set.getString("limited_data"),
-                            set.getInt("guild_id"),
-                            set.getInt("expires"),
-                            set.getInt("allow_underpass") == 1,
-                            set.getLong("sequence")));
+                        set.getInt("id"),
+                        set.getInt("item_id"),
+                        set.getString("extra_data"),
+                        set.getString("wired_data"),
+                        set.getString("limited_data"),
+                        set.getInt("guild_id"),
+                        set.getInt("expires"),
+                        set.getInt("allow_underpass") == 1,
+                        set.getLong("sequence")));
                 }
             }
         } catch (SQLException e) {
@@ -145,11 +150,11 @@ public final class DatabaseChestStore implements ChestStore {
             boolean autoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try (PreparedStatement copy =
-                            connection.prepareStatement("INSERT INTO wired_chest_items (id, chest_id, sequence, "
-                                    + ITEM_COLUMNS + ") SELECT id, ?, ?, " + ITEM_COLUMNS
-                                    + " FROM items WHERE id = ? AND user_id = ? AND room_id = 0");
-                    PreparedStatement delete = connection.prepareStatement(
-                            "DELETE FROM items WHERE id = ? AND user_id = ? AND room_id = 0")) {
+                     connection.prepareStatement("INSERT INTO wired_chest_items (id, chest_id, sequence, "
+                         + ITEM_COLUMNS + ") SELECT id, ?, ?, " + ITEM_SOURCE_COLUMNS
+                         + " FROM items WHERE id = ? AND user_id = ? AND room_id = 0");
+                 PreparedStatement delete = connection.prepareStatement(
+                     "DELETE FROM items WHERE id = ? AND user_id = ? AND room_id = 0")) {
                 for (int itemId : itemIds) {
                     copy.setInt(1, chestId);
                     copy.setLong(2, sequence);
@@ -212,9 +217,9 @@ public final class DatabaseChestStore implements ChestStore {
             boolean autoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try (PreparedStatement delete = connection.prepareStatement(
-                            "DELETE FROM items WHERE id = ? AND user_id = ? AND room_id = 0");
-                    PreparedStatement credit = connection.prepareStatement(
-                            "UPDATE wired_chests SET coins = coins + ? WHERE item_id = ?")) {
+                "DELETE FROM items WHERE id = ? AND user_id = ? AND room_id = 0");
+                 PreparedStatement credit = connection.prepareStatement(
+                     "UPDATE wired_chests SET coins = coins + ? WHERE item_id = ?")) {
                 for (int itemId : itemIds) {
                     delete.setInt(1, itemId);
                     delete.setInt(2, fromUserId);
@@ -245,17 +250,17 @@ public final class DatabaseChestStore implements ChestStore {
      * is claimed by deleting it from the chest, so only one caller can hand it out.
      */
     private static Map<Integer, Integer> moveOut(
-            Connection connection, int chestId, int toUserId, List<Integer> itemIds) throws SQLException {
+        Connection connection, int chestId, int toUserId, List<Integer> itemIds) throws SQLException {
         Map<Integer, Integer> moved = new LinkedHashMap<>();
         try (PreparedStatement restore = connection.prepareStatement(
-                        "INSERT INTO items (id, user_id, room_id, " + ITEM_COLUMNS + ") SELECT id, ?, 0, "
-                                + ITEM_COLUMNS + " FROM wired_chest_items WHERE id = ? AND chest_id = ?");
-                PreparedStatement restoreNewId = connection.prepareStatement(
-                        "INSERT INTO items (user_id, room_id, " + ITEM_COLUMNS + ") SELECT ?, 0, " + ITEM_COLUMNS
-                                + " FROM wired_chest_items WHERE id = ? AND chest_id = ?",
-                        Statement.RETURN_GENERATED_KEYS);
-                PreparedStatement delete =
-                        connection.prepareStatement("DELETE FROM wired_chest_items WHERE id = ? AND chest_id = ?")) {
+            "INSERT INTO items (id, user_id, room_id, " + ITEM_COLUMNS + ") SELECT id, ?, 0, "
+                + ITEM_COLUMNS + " FROM wired_chest_items WHERE id = ? AND chest_id = ?");
+             PreparedStatement restoreNewId = connection.prepareStatement(
+                 "INSERT INTO items (user_id, room_id, " + ITEM_COLUMNS + ") SELECT ?, 0, " + ITEM_COLUMNS
+                     + " FROM wired_chest_items WHERE id = ? AND chest_id = ?",
+                 Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement delete =
+                 connection.prepareStatement("DELETE FROM wired_chest_items WHERE id = ? AND chest_id = ?")) {
             for (int itemId : itemIds) {
                 // Claim the row first: only the caller whose delete removes it hands it out.
                 int newId = itemId;
@@ -321,7 +326,7 @@ public final class DatabaseChestStore implements ChestStore {
         int coins;
         int recordedOwner;
         try (PreparedStatement statement =
-                connection.prepareStatement("SELECT coins, owner_id FROM wired_chests WHERE item_id = ? FOR UPDATE")) {
+                 connection.prepareStatement("SELECT coins, owner_id FROM wired_chests WHERE item_id = ? FOR UPDATE")) {
             statement.setInt(1, chestId);
             try (ResultSet set = statement.executeQuery()) {
                 if (!set.next()) return Release.of(ReleaseStatus.NO_CHEST, chestId, ownerHint);
@@ -332,7 +337,7 @@ public final class DatabaseChestStore implements ChestStore {
 
         List<Integer> stored = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT id FROM wired_chest_items WHERE chest_id = ? ORDER BY sequence, id FOR UPDATE")) {
+            "SELECT id FROM wired_chest_items WHERE chest_id = ? ORDER BY sequence, id FOR UPDATE")) {
             statement.setInt(1, chestId);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) stored.add(set.getInt("id"));
@@ -347,24 +352,24 @@ public final class DatabaseChestStore implements ChestStore {
         int owner = resolveOwner(connection, chestId, ownerHint, recordedOwner);
         if (owner <= 0) {
             LOGGER.warn(
-                    "Wired chest {} holds {} furni and {} coins but has no known owner; its rows are kept",
-                    chestId,
-                    stored.size(),
-                    coins);
+                "Wired chest {} holds {} furni and {} coins but has no known owner; its rows are kept",
+                chestId,
+                stored.size(),
+                coins);
             return Release.of(ReleaseStatus.OWNER_UNKNOWN, chestId, 0);
         }
 
         Map<Integer, Integer> moved = moveOut(connection, chestId, owner, stored);
         if (moved.size() != stored.size()) {
             throw new SQLException("Only " + moved.size() + " of " + stored.size() + " furni left wired chest "
-                    + chestId + " for its owner");
+                + chestId + " for its owner");
         }
 
         int paid = 0;
         int creditsAfter = -1;
         if (coins > 0) {
             EconomyMutationResult refund =
-                    EconomyLedger.apply(connection, ChestRelease.refundOperation(chestId, owner, coins));
+                EconomyLedger.apply(connection, ChestRelease.refundOperation(chestId, owner, coins));
             paid = refund.applied() ? coins : 0;
             creditsAfter = refund.balanceAfter();
         }
@@ -385,7 +390,7 @@ public final class DatabaseChestStore implements ChestStore {
      * one that is a user that exists, or 0.
      */
     private static int resolveOwner(Connection connection, int chestId, int ownerHint, int recordedOwner)
-            throws SQLException {
+        throws SQLException {
         if (userExists(connection, ownerHint)) return ownerHint;
 
         try (PreparedStatement statement = connection.prepareStatement("SELECT user_id FROM items WHERE id = ?")) {
@@ -416,13 +421,13 @@ public final class DatabaseChestStore implements ChestStore {
         if (itemIds == null || itemIds.isEmpty()) return chests;
 
         List<Integer> ids =
-                itemIds.stream().filter(id -> id != null && id > 0).distinct().toList();
+            itemIds.stream().filter(id -> id != null && id > 0).distinct().toList();
         try (Connection connection = connection()) {
             for (int from = 0; from < ids.size(); from += LOOKUP_BATCH) {
                 List<Integer> batch = ids.subList(from, Math.min(from + LOOKUP_BATCH, ids.size()));
                 String placeholders = String.join(",", Collections.nCopies(batch.size(), "?"));
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "SELECT item_id FROM wired_chests WHERE item_id IN (" + placeholders + ")")) {
+                    "SELECT item_id FROM wired_chests WHERE item_id IN (" + placeholders + ")")) {
                     for (int i = 0; i < batch.size(); i++) statement.setInt(i + 1, batch.get(i));
                     try (ResultSet set = statement.executeQuery()) {
                         while (set.next()) chests.add(set.getInt("item_id"));
@@ -448,16 +453,16 @@ public final class DatabaseChestStore implements ChestStore {
         List<OrphanRow> orphans = new ArrayList<>();
         try (Connection connection = connection()) {
             try (PreparedStatement statement =
-                    connection.prepareStatement("UPDATE wired_chests c JOIN items i ON i.id = c.item_id"
-                            + " SET c.owner_id = i.user_id WHERE i.user_id > 0 AND c.owner_id <> i.user_id")) {
+                     connection.prepareStatement("UPDATE wired_chests c JOIN items i ON i.id = c.item_id"
+                         + " SET c.owner_id = i.user_id WHERE i.user_id > 0 AND c.owner_id <> i.user_id")) {
                 statement.executeUpdate();
             }
             // An item parked in wired_chest_items is not gone, so it is never taken for an orphan.
             try (PreparedStatement statement = connection.prepareStatement("SELECT c.item_id, c.owner_id"
-                            + " FROM wired_chests c LEFT JOIN items i ON i.id = c.item_id WHERE i.id IS NULL"
-                            + " AND NOT EXISTS (SELECT 1 FROM wired_chest_items s WHERE s.id = c.item_id)"
-                            + " ORDER BY c.item_id");
-                    ResultSet set = statement.executeQuery()) {
+                + " FROM wired_chests c LEFT JOIN items i ON i.id = c.item_id WHERE i.id IS NULL"
+                + " AND NOT EXISTS (SELECT 1 FROM wired_chest_items s WHERE s.id = c.item_id)"
+                + " ORDER BY c.item_id");
+                 ResultSet set = statement.executeQuery()) {
                 while (set.next()) orphans.add(new OrphanRow(set.getInt("item_id"), set.getInt("owner_id")));
             }
         } catch (SQLException e) {

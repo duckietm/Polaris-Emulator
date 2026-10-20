@@ -10,7 +10,9 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,7 +24,7 @@ import java.util.List;
  * quantifier (0 all, 1 any); the users in the official source slot. The negative box is
  * {@link WiredConditionNotHabboHasRank}.
  */
-public class WiredConditionHabboHasRank extends InteractionWiredCondition {
+public class WiredConditionHabboHasRank extends InteractionWiredCondition implements WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.USER_RANK;
     public static final int QUANTIFIER_ALL = 0;
     public static final int QUANTIFIER_ANY = 1;
@@ -60,7 +62,9 @@ public class WiredConditionHabboHasRank extends InteractionWiredCondition {
         if (room == null) return false;
 
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        // "All" holds over no users and "any" does not. The negative box turns the comparison around
+        // per user ("all lack the rank"), so it reads an empty selection the same way.
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
 
         boolean anyMatched = false;
         for (RoomUnit target : targets) {
@@ -97,7 +101,7 @@ public class WiredConditionHabboHasRank extends InteractionWiredCondition {
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? settings.getUserSourceTypes()[0]
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = param(params, 2, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+        this.quantifier = settings.getQuantifierCode() == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
         this.setExtradata("");
         this.needsUpdate(true);
         return true;
@@ -117,10 +121,9 @@ public class WiredConditionHabboHasRank extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.rank);
         message.appendInt(this.comparison);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -171,5 +174,10 @@ public class WiredConditionHabboHasRank extends InteractionWiredCondition {
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

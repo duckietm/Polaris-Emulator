@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.core.WiredEngine;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableFxLimit;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableHolderLimit;
 
 final class WiredConfigurationBinder extends ConfigurationBinder {
 
@@ -89,6 +91,14 @@ final class WiredConfigurationBinder extends ConfigurationBinder {
                         this.configuration.getInt(
                                 "wired.monitor.permanent.global.variables.limit",
                                 WiredRoomStats.DEFAULT_MAX_PERMANENT_GLOBAL_VARIABLES)));
+        this.apply(
+                "wired.variables.holder.max",
+                () -> WiredVariableHolderLimit.configure(this.configuration.getInt(
+                        "wired.variables.holder.max", WiredVariableHolderLimit.DEFAULT_MAX_VARIABLES_PER_HOLDER)));
+        this.apply(
+                "wired.variablefx.max.boxes",
+                () -> WiredVariableFxLimit.configure(this.configuration.getInt(
+                        "wired.variablefx.max.boxes", WiredVariableFxLimit.DEFAULT_MAX_BOXES)));
         this.apply(
                 "hotel.wired.arrays",
                 () -> WiredArraySettings.configure(

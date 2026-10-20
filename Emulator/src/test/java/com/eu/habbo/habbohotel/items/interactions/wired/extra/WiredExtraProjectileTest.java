@@ -267,6 +267,52 @@ class WiredExtraProjectileTest {
     }
 
     @Test
+    void anOldBoxsVariablesMaskIsMovedToAirsBitOrder() throws Exception {
+        // Old order: 0 x, 1 y, 2 altitude, 3 is traveling, 4 tiles traveled, 5 furni and 6 user collisions.
+        int oldMask = (1 << 0) | (1 << 3) | (1 << 4) | (1 << 6);
+        WiredExtraProjectile loaded = box();
+        loaded.loadWiredData(
+                row("{\"version\":2,\"params\":[1,0,1,0,500,0,0,0,0,0,0," + oldMask
+                        + ",0,0,0,0,0,0,0],\"itemIds\":[]}"),
+                room());
+
+        // AIR: 0 tiles travelled, 1 user collisions, 2 furni collisions, 3 x, 4 y, 5 altitude, 6 is travelling.
+        int airMask = (1 << 3) | (1 << 6) | (1 << 0) | (1 << 1);
+        assertEquals(airMask, loaded.getVariablesMask());
+
+        // Saved again it is stored in AIR's order and not moved a second time.
+        WiredExtraProjectile reloaded = box();
+        reloaded.loadWiredData(row(loaded.getWiredData()), room());
+        assertEquals(airMask, reloaded.getVariablesMask());
+
+        WiredExtraProjectile unversioned = box();
+        unversioned.loadWiredData(row("{\"params\":[1,0,1,0,500,0,0,0,0,0,0,127],\"itemIds\":[]}"), room());
+        assertEquals(127, unversioned.getVariablesMask());
+    }
+
+    @Test
+    void theMaskUsesAirsVariableNamesAndOrder() {
+        assertEquals(
+                java.util.List.of(
+                        "@projectile.animation.tiles_travelled",
+                        "@projectile.animation.user_collisions",
+                        "@projectile.animation.furni_collisions",
+                        "@projectile.animation.position.x",
+                        "@projectile.animation.position.y",
+                        "@projectile.animation.position.altitude",
+                        "@projectile.animation.is_travelling"),
+                com.eu.habbo.habbohotel.wired.core.WiredProjectileFlight.KEYS);
+        assertEquals(
+                "@projectile.animation.tiles_travelled",
+                com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport.normalizeKey(
+                        "@projectile.animation.tiles_traveled"));
+        assertEquals(
+                "@projectile.animation.is_travelling",
+                com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport.normalizeKey(
+                        "@projectile.animation.is_traveling"));
+    }
+
+    @Test
     void theVariableTokensAndSourcesSurviveTheDatabase() throws Exception {
         Room room = room();
         WiredExtraProjectile saved = configured(
@@ -283,7 +329,10 @@ class WiredExtraProjectileTest {
         loaded.loadWiredData(row(saved.getWiredData()), room);
 
         Body body = body(loaded, room);
-        assertEquals("custom:12\tinternal:@position_x", body.string());
+        // AIR: no string; the time variable (the only one in use) as the variable id.
+        assertEquals("", body.string());
+        assertEquals("custom:12\tinternal:@position_x", loaded.getStringParam());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(new String[] {"user:12"}, loaded.officialVariableIds());
         assertEquals(
                 WiredVariableOperand.SOURCE_SECONDARY_SELECTED,
                 body.params()[WiredExtraProjectile.PARAM_TIME_FURNI_SOURCE]);

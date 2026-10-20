@@ -298,11 +298,25 @@ class WiredDefinitionWireCoverageTest {
             ints(in);
         }
 
-        /** Only the variable leaderboard context (type 8) is sent so far. */
+        /** The contexts sent so far: global variable info and value (3), shared variables (4), leaderboard (8). */
         private static void contexts(ByteBuf in) {
             int count = in.readInt();
             for (int i = 0; i < count; i++) {
                 int type = in.readInt();
+                if (type == 3) {
+                    variable(in);
+                    in.readInt();
+                    continue;
+                }
+                if (type == 4) {
+                    int shared = in.readInt();
+                    for (int s = 0; s < shared; s++) {
+                        in.readInt();
+                        string(in);
+                        variable(in);
+                    }
+                    continue;
+                }
                 if (type != 8) throw new IllegalStateException("context type " + type);
                 in.readInt();
                 in.readInt();
@@ -316,6 +330,24 @@ class WiredDefinitionWireCoverageTest {
                     in.readBoolean();
                     in.readInt();
                 }
+            }
+        }
+
+        /** One official {@code WiredVariable} block. */
+        private static void variable(ByteBuf in) {
+            string(in);
+            in.readInt();
+            string(in);
+            in.readInt();
+            in.readInt();
+            in.skipBytes(9);
+            if (in.readBoolean()) {
+                int entries = in.readInt();
+                for (int e = 0; e < entries; e++) {
+                    in.readInt();
+                    string(in);
+                }
+                if (in.readBoolean()) string(in);
             }
         }
 

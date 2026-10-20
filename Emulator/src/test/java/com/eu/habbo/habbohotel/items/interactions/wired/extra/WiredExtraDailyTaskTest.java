@@ -47,9 +47,9 @@ class WiredExtraDailyTaskTest {
             for (int i = 0; i < 4; i++) buffer.readInt();
             byte[] text = new byte[buffer.readShort()];
             buffer.readBytes(text);
-            assertEquals("x".repeat(100), new String(text, StandardCharsets.UTF_8));
-            assertEquals(1, buffer.readInt());
-            assertEquals(12, buffer.readInt());
+            // AIR: name<TAB>task and no int params.
+            assertEquals("chores\t" + "x".repeat(100), new String(text, StandardCharsets.UTF_8));
+            assertEquals(0, buffer.readInt());
             buffer.readInt();
             assertEquals(WiredExtraDailyTask.CODE, buffer.readInt());
         } finally {

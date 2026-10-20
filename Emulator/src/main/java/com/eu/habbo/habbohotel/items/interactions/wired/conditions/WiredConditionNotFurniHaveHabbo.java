@@ -29,8 +29,15 @@ import java.util.stream.Collectors;
 public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.NOT_FURNI_HAVE_HABBO;
 
+    /** Official param 0: 1 (the first option) any picked furni is free, 0 every picked furni is free. */
+    static final int OFFICIAL_ANY_FREE = 1;
+
+    static final int OFFICIAL_ALL_FREE = 0;
+
     protected Set<HabboItem> items;
+    /** Every picked furni must be free of avatars (official 0); otherwise one free furni is enough (official 1). */
     protected boolean all;
+
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredConditionNotFurniHaveHabbo(ResultSet set, Item baseItem) throws SQLException {
@@ -153,7 +160,7 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
         message.appendInt(this.getId());
         message.appendString("");
         message.appendInt(1);
-        message.appendInt(this.all ? 1 : 0);
+        message.appendInt(this.all ? OFFICIAL_ALL_FREE : OFFICIAL_ANY_FREE);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -166,8 +173,10 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
 
         int[] params = settings.getIntParams();
-        this.all = (params.length > 0) && (params[0] == 1);
-        // Official layout: param 0 "all"; the furni in the official source slot.
+        // Official layout (AIR FurnisHaveNoAvatars): param 0 is 1 for the first option, "one of the picked
+        // furni has no avatar", and 0 for "none of them has one"; the furni in the official source slot.
+        // The stored flag keeps its meaning (every furni free), so saved boxes need no conversion.
+        this.all = (params.length > 0) && (params[0] == OFFICIAL_ALL_FREE);
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? WiredFurniConditionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;

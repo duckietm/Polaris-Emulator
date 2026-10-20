@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -167,7 +168,16 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
                 : ctx.sourceItem().map(List::of).orElse(List.of());
 
         WiredManager.callStacksAtTiles(
-                usedTiles, room, roomUnit, users, furni, ownTile, currentDepth + 1, this.isNegativeCall());
+                usedTiles,
+                room,
+                roomUnit,
+                users,
+                furni,
+                ownTile,
+                currentDepth + 1,
+                this.isNegativeCall(),
+                ctx.contextVariables(),
+                WiredTextPlaceholderUtil.carriedPlaceholders(ctx));
     }
 
     /** A negative call runs the called stacks as if their conditions had come out the other way. */

@@ -31,6 +31,7 @@ class WiredLinkTransportTest {
 
     private final Map<Integer, Room> rooms = new HashMap<>();
     private final List<String> delivered = new ArrayList<>();
+    private final List<Integer> sourceRooms = new ArrayList<>();
     private final AtomicLong clock = new AtomicLong(10_000);
     private WiredLinkService service;
     private WiredLinkTransport transport;
@@ -40,12 +41,10 @@ class WiredLinkTransportTest {
     void setUp() {
         this.service = new WiredLinkService(new MemoryWiredLinkRepository());
         this.transport = new WiredLinkTransport(
-                this.service,
-                this.rooms::get,
-                Runnable::run,
-                this.clock::get,
-                (room, trigger, event) ->
-                        this.delivered.add(room.getId() + ":" + trigger.getId() + ":" + event.getLinkHops()));
+                this.service, this.rooms::get, Runnable::run, this.clock::get, (room, trigger, event) -> {
+                    this.delivered.add(room.getId() + ":" + trigger.getId() + ":" + event.getLinkHops());
+                    this.sourceRooms.add(event.getLinkSourceRoomId());
+                });
         this.networkId =
                 this.service.create(OWNER, 1, 100, "Net").networks().get(0).id();
     }
@@ -69,9 +68,10 @@ class WiredLinkTransportTest {
         when(trigger.getId()).thenReturn(linkId + 1);
         when(trigger.linkKind()).thenReturn(WiredLinkPayload.Kind.MESSAGE);
         when(trigger.listensTo(any(HabboItem.class))).thenReturn(listening);
-        when(trigger.receiveEvent(any(), any(), any(), anyInt()))
+        when(trigger.receiveEvent(any(), any(), any(), anyInt(), anyInt()))
                 .thenAnswer(call -> WiredEvent.builder(WiredEvent.Type.LINK_MESSAGE_RECEIVED, room)
                         .linkHops(call.getArgument(3, Integer.class))
+                        .linkSourceRoomId(call.getArgument(4, Integer.class))
                         .build());
         RoomSpecialTypes types = mock(RoomSpecialTypes.class);
         Set<InteractionWiredTrigger> triggers = new LinkedHashSet<>(List.of(trigger));
@@ -93,6 +93,7 @@ class WiredLinkTransportTest {
         assertEquals(2, sent);
         assertEquals(
                 List.of("1:101:1", "2:201:1"), this.delivered.stream().sorted().toList());
+        assertEquals(List.of(1, 1), this.sourceRooms, "AIR @event.link.source_room_id: the sending room");
     }
 
     @Test

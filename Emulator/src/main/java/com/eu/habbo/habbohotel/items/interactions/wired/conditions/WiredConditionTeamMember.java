@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -40,7 +41,7 @@ public class WiredConditionTeamMember extends InteractionWiredCondition implemen
     public boolean evaluate(WiredContext ctx) {
         Room room = ctx.room();
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             return this.evaluateAnyTargetMatches(room, targets);
@@ -132,9 +133,8 @@ public class WiredConditionTeamMember extends InteractionWiredCondition implemen
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.teamColor.type);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -146,12 +146,12 @@ public class WiredConditionTeamMember extends InteractionWiredCondition implemen
         if (settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.teamColor = WiredConditionInputGuard.normalizeTeamColorType(params[0], GameTeamColors.RED);
-        // Official layout: [team (0 any team, 1-4)], the users in the official source slot; our
-        // quantifier (0 all, 1 any) follows as param 1.
+        // Official layout: [team (0 any team, 1-4)], the users in the official source slot, the
+        // quantifier (0 all, 1 any) in its slot.
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? WiredConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ALL) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode(), QUANTIFIER_ALL);
 
         return true;
     }

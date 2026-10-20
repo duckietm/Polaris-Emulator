@@ -15,7 +15,9 @@ import java.sql.SQLException;
  * timezone reads as 0, so each holder starts every day over. Exposes the quest sub-variables
  * {@code progress, target, is_complete, percent, remaining} against the configured target.
  *
- * <p>Int params {@code [targetValue]}; string param the task's name (up to 100 characters).</p>
+ * <p>Editor layout as in AIR ({@code DailyTaskVariable}): no int params and the string
+ * {@code variableName<TAB>taskName}, the task's code taking up to 100 characters. A box keeps the target
+ * it was saved with before; an editor that still sends {@code [targetValue]} sets it.</p>
  */
 public class WiredExtraDailyTask extends WiredExtraQuestBase {
     public static final int CODE = 2008;
@@ -73,14 +75,20 @@ public class WiredExtraDailyTask extends WiredExtraQuestBase {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        String previousName = this.variableName;
         super.saveData(settings, gameClient);
-        this.taskName = normalizeTaskName(settings.getStringParam());
+        String text = settings.getStringParam();
+        if (text == null || !text.contains(STRING_PARAM_SPLITTER)) {
+            // Our earlier editor sent the task alone.
+            this.variableName = previousName;
+        }
+        this.taskName = normalizeTaskName(text);
         return true;
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.targetValue, this.taskName));
+        return WiredManager.getGson().toJson(new JsonData(this.targetValue, this.taskName, this.variableName));
     }
 
     @Override
@@ -92,6 +100,7 @@ public class WiredExtraDailyTask extends WiredExtraQuestBase {
 
         this.targetValue = Math.max(0, data.targetValue);
         this.taskName = normalizeTaskName(data.taskName);
+        this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
     }
 
     @Override
@@ -101,9 +110,8 @@ public class WiredExtraDailyTask extends WiredExtraQuestBase {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.taskName);
-        message.appendInt(1);
-        message.appendInt(this.targetValue);
+        message.appendString(this.variableName + STRING_PARAM_SPLITTER + this.taskName);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -120,7 +128,7 @@ public class WiredExtraDailyTask extends WiredExtraQuestBase {
         return this.taskName;
     }
 
-    /** The upstream editor sends {@code variableName<TAB>taskName}; only the task name is kept. */
+    /** The task's code: what follows the name in {@code variableName<TAB>taskName}, or the whole string. */
     static String normalizeTaskName(String value) {
         if (value == null) return "";
 
@@ -136,10 +144,12 @@ public class WiredExtraDailyTask extends WiredExtraQuestBase {
     static class JsonData {
         int targetValue;
         String taskName;
+        String variableName;
 
-        JsonData(int targetValue, String taskName) {
+        JsonData(int targetValue, String taskName, String variableName) {
             this.targetValue = targetValue;
             this.taskName = taskName;
+            this.variableName = variableName;
         }
     }
 }

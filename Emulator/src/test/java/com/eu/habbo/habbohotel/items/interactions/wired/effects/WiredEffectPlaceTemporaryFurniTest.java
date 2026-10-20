@@ -144,6 +144,13 @@ class WiredEffectPlaceTemporaryFurniTest {
             assertTrue(saved.contains("\"spawnVariableId\":40"), saved);
             assertTrue(saved.contains("\"valueVariableId\":41"), saved);
             assertTrue(saved.contains("\"valueTarget\":-10"), saved);
+            // AIR: the two variables go out as the variable ids, the string stays empty.
+            assertArrayEquals(new String[] {"furni:40", "room:41"}, box.officialVariableIds());
+
+            WiredSettings fromIds = new WiredSettings(new int[] {0, 0, 0, 0, 0, 0, 1, 1, 0, -10}, "", new int[0], -1);
+            fromIds.setVariableIds(new String[] {"furni:40", "room:42"});
+            assertTrue(box.saveData(fromIds, null));
+            assertArrayEquals(new String[] {"furni:40", "room:42"}, box.officialVariableIds());
 
             // Not a furni variable of this room.
             assertThrows(

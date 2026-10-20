@@ -22,6 +22,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredProgressLimiter;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,11 +40,12 @@ import java.util.List;
  * allow-list, for users still in the room, within each user's allowance per window. Saving it needs
  * the value-granting wired permission.
  *
- * <p>String param: {@code track id \t task id}, ours follows: {@code \t variable id}. Int params,
+ * <p>String param: {@code track id \t task id}; variable ids {@code [amount variable]} (older clients sent its id as a
+ * third tab-separated field of the string; still read). Int params,
  * official: {@code [add to existing, amount from a variable, amount, variable target (global or
  * context)]}; the user source is the official source slot.
  */
-public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
+public class WiredEffectProgressRewardTrack extends InteractionWiredEffect implements WiredOfficialVariableIds {
     public static final WiredEffectType type = WiredEffectType.PROGRESS_REWARD_TRACK;
 
     private String trackId = "";
@@ -71,8 +74,7 @@ public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        String ids = this.trackId.isEmpty() && this.taskId.isEmpty() ? "" : this.trackId + "\t" + this.taskId;
-        message.appendString(this.amountFromVariable && !ids.isEmpty() ? ids + "\t" + this.amountVariableId : ids);
+        message.appendString(this.trackId.isEmpty() && this.taskId.isEmpty() ? "" : this.trackId + "\t" + this.taskId);
         message.appendInt(4);
         message.appendInt(this.addToExisting ? 1 : 0);
         message.appendInt(this.amountFromVariable ? 1 : 0);
@@ -96,8 +98,9 @@ public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
         if (ids.length != 2 && !(ids.length == 3 && ids[2].trim().matches("\\d{1,10}"))) {
             return false;
         }
-        String track = WiredHotelProgress.normalizeRewardTrackId(ids[0]);
-        String task = WiredHotelProgress.normalizeRewardTrackId(ids[1]);
+        // AIR: TextInputParam("", 100, null, -1, "a-zA-Z0-9_") for both ids.
+        String track = WiredHotelProgress.normalizeProgressRewardTrackId(ids[0]);
+        String task = WiredHotelProgress.normalizeProgressRewardTrackId(ids[1]);
         if (track.isEmpty() || task.isEmpty()) {
             return false;
         }
@@ -105,7 +108,9 @@ public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
         int[] params = settings.getIntParams();
         this.trackId = track;
         this.taskId = task;
-        int variableId = (ids.length > 2) ? WiredValueVariable.parseId(ids[2]) : 0;
+        int variableId = WiredVariableIds.present(settings.getVariableIds())
+                ? WiredVariableIds.boxIdOf(settings.getVariableIds()[0])
+                : (ids.length > 2) ? WiredValueVariable.parseId(ids[2]) : 0;
         boolean fromVariable = params.length > 1 && params[1] == 1;
         if (fromVariable && variableId <= 0) {
             return false;
@@ -121,6 +126,12 @@ public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
                 WiredVariableOperand.normalizeUserSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                this.amountFromVariable ? WiredVariableIds.toWire(this.amountTarget, this.amountVariableId) : "");
     }
 
     @Override
@@ -205,8 +216,8 @@ public class WiredEffectProgressRewardTrack extends InteractionWiredEffect {
             return;
         }
 
-        this.trackId = WiredHotelProgress.normalizeRewardTrackId(data.trackId);
-        this.taskId = WiredHotelProgress.normalizeRewardTrackId(data.taskId);
+        this.trackId = WiredHotelProgress.loadWiredRewardTrackId(data.trackId, false);
+        this.taskId = WiredHotelProgress.loadWiredRewardTrackId(data.taskId, false);
         this.addToExisting = data.addToExisting;
         this.amount = WiredHotelProgress.normalizeAmount(data.amount);
         this.userSource = WiredVariableOperand.normalizeUserSource(data.userSource);

@@ -581,4 +581,130 @@ class WiredTradingManagerAirTest {
                 failureId(this.sent(WiredTradeCancelledComposer.class).get(0)));
         assertFalse(manager.flushReplacement(this.habbo), "only once");
     }
+
+    private void verifyMonitorCount(String reason, int sourceId, int times) {
+        this.wired.verify(
+                () -> WiredManager.noteTransactionFailure(
+                        org.mockito.ArgumentMatchers.eq(0),
+                        org.mockito.ArgumentMatchers.contains(reason),
+                        org.mockito.ArgumentMatchers.eq(WiredTradingManager.MONITOR_SOURCE),
+                        org.mockito.ArgumentMatchers.eq(sourceId)),
+                org.mockito.Mockito.times(times));
+    }
+
+    private void verifyNothingCountedOnTheMonitor() {
+        this.wired.verify(
+                () -> WiredManager.noteTransactionFailure(
+                        anyInt(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        anyInt()),
+                org.mockito.Mockito.never());
+    }
+
+    @Test
+    void aRewardTheChestsRanOutOfCountsAsATransactionFailureOnTheMonitor() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(2);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_100", 1);
+
+        manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                new ContractMultiplier(ContractMultiplier.MODE_FIXED, 3),
+                1,
+                "",
+                "generic",
+                0,
+                List.of(coins, trophies),
+                List.of(77));
+        manager.offer(this.habbo, List.of(301), false);
+        assertFalse(this.acceptAndConfirm(manager));
+
+        this.verifyMonitorCount("(" + ChestTransactionFailures.FUNDS_GONE + ")", 77, 1);
+    }
+
+    @Test
+    void aContractWithoutAUsableChestCountsOnTheMonitor() {
+        InteractionWiredChestCurrency locked = new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0);
+        locked.getContents().enableWired();
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+
+        assertNull(manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                ContractMultiplier.NONE,
+                1,
+                "",
+                "generic",
+                0,
+                List.of(locked),
+                List.of(55)));
+
+        this.verifyMonitorCount("no usable chest", 55, 1);
+    }
+
+    @Test
+    void whatThePlayerDoesIsNotCountedOnTheMonitor() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(1);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+
+        // Walking away, a lapsed offer, a Cancel Transaction box, an empty donation, a plain deposit.
+        this.openTrophyTrade(manager, coins, trophies);
+        manager.cancel(this.habbo, WiredTradingSession.FAILURE_SILENT);
+        WiredTradingSession lapsing = manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                ContractMultiplier.NONE,
+                1,
+                "",
+                "generic",
+                30,
+                List.of(coins, trophies),
+                List.of(77));
+        assertTrue(manager.expire(this.habbo, lapsing, System.currentTimeMillis() + 31_000L));
+        this.openTrophyTrade(manager, coins, trophies);
+        assertTrue(manager.cancelRunning(this.habbo, List.of(77)));
+        manager.openDonation(this.habbo, "", "generic", 60, List.of(coins));
+        assertFalse(this.acceptAndConfirm(manager));
+        manager.openDeposit(this.habbo, new InteractionWiredChestFurni(20, OWNER, chestFurni(), "", 0, 0), 300);
+        manager.cancel(this.habbo, WiredTradingSession.FAILURE_REWARD_UNAVAILABLE);
+
+        this.verifyNothingCountedOnTheMonitor();
+    }
+
+    @Test
+    void onlyTheRoomsAndTheServersFailuresCountOnTheMonitor() {
+        for (int reason : List.of(
+                ChestTransactionFailures.MISCONFIGURED,
+                ChestTransactionFailures.FUNDS_GONE,
+                ChestTransactionFailures.CHEST_FULL,
+                ChestTransactionFailures.NOT_A_WIRED_CHEST,
+                ChestTransactionFailures.CHEST_NOT_IN_ROOM,
+                ChestTransactionFailures.NO_OR_LOCKED_CHESTS,
+                ChestTransactionFailures.EXCEEDS_CAPACITY,
+                ChestTransactionFailures.INTERNAL_ERROR,
+                ChestTransactionFailures.DATABASE_ERROR)) {
+            assertTrue(ChestTransactionFailures.countsOnMonitor(reason), "reason " + reason);
+        }
+        for (int reason : List.of(
+                ChestTransactionFailures.USER_CANCELLED,
+                ChestTransactionFailures.INVALID,
+                ChestTransactionFailures.TIMEOUT,
+                ChestTransactionFailures.TRADE_CANCELLED,
+                ChestTransactionFailures.ALREADY_TRADING,
+                ChestTransactionFailures.INSUFFICIENT_FUNDS,
+                ChestTransactionFailures.EMPTY,
+                ChestTransactionFailures.TOO_MANY_OFFERS)) {
+            assertFalse(ChestTransactionFailures.countsOnMonitor(reason), "reason " + reason);
+        }
+
+        ChestTransactionFailures.noteOnMonitor(null, ChestTransactionFailures.INTERNAL_ERROR, "x", 1);
+        ChestTransactionFailures.noteOnMonitor(this.room, ChestTransactionFailures.TIMEOUT, "x", 1);
+        this.verifyNothingCountedOnTheMonitor();
+    }
 }

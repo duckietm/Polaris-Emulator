@@ -21,11 +21,21 @@ import java.util.List;
  * computed from that counter against a configured {@code targetValue}. Completion is detected for free via
  * the existing {@code VARIABLE_CHANGED} event on the backing counter.
  *
+ * <p>Editor layout as in AIR ({@code QuestVariable} / {@code QuestChainVariable}): no int params and the
+ * string {@code variableName<TAB>questName}, the quest's code taking up to {@value #MAX_QUEST_NAME_LENGTH}
+ * characters. AIR's editor has no target, so a box keeps the target it was saved with before; an editor
+ * that still sends {@code [target]} sets it.</p>
+ *
  * <p>Subclasses define the dialog {@link #code()} and the derived sub-variable set + formulas. All
- * sub-variables are always exposed (no selection UI in v1). Config = a single {@code targetValue} int.</p>
+ * sub-variables are always exposed (no selection UI in v1).</p>
  */
 public abstract class WiredExtraQuestBase extends InteractionWiredExtra implements WiredDerivedVariableBox {
+    static final int MAX_QUEST_NAME_LENGTH = 500;
+    static final String STRING_PARAM_SPLITTER = "\t";
+
     protected int targetValue = 0;
+    protected String variableName = "";
+    private String questName = "";
 
     protected WiredExtraQuestBase(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -43,6 +53,16 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
 
     public int getTargetValue() {
         return this.targetValue;
+    }
+
+    /** The variable's name (AIR's VariableNameSection). */
+    public String getVariableName() {
+        return this.variableName;
+    }
+
+    /** The quest (resp. quest chain) code. */
+    public String getQuestName() {
+        return this.questName;
     }
 
     @Override
@@ -73,13 +93,18 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
-        this.targetValue = (params.length > 0) ? Math.max(0, params[0]) : 0;
+        if (params.length > 0) {
+            this.targetValue = Math.max(0, params[0]);
+        }
+        String[] parts = splitStringParam(settings.getStringParam());
+        this.variableName = WiredVariableNameValidator.normalizeLegacy(parts[0]);
+        this.questName = normalizeText(parts[1], MAX_QUEST_NAME_LENGTH);
         return true;
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.targetValue));
+        return WiredManager.getGson().toJson(new JsonData(this.targetValue, this.variableName, this.questName));
     }
 
     @Override
@@ -89,8 +114,12 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
         String wiredData = set.getString("wired_data");
         if (wiredData == null || !wiredData.startsWith("{")) return;
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-        if (data != null) this.targetValue = Math.max(0, data.targetValue);
+        JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (data == null) return;
+
+        this.targetValue = Math.max(0, data.targetValue);
+        this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
+        this.questName = normalizeText(data.questName, MAX_QUEST_NAME_LENGTH);
     }
 
     @Override
@@ -100,9 +129,8 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
-        message.appendInt(1);
-        message.appendInt(this.targetValue);
+        message.appendString(this.variableName + STRING_PARAM_SPLITTER + this.questName);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.code());
         message.appendInt(0);
@@ -112,15 +140,39 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
     @Override
     public void onPickUp() {
         this.targetValue = 0;
+        this.variableName = "";
+        this.questName = "";
+    }
+
+    /** {@code name<TAB>detail}; a string without a tab is the name alone. */
+    static String[] splitStringParam(String value) {
+        if (value == null) return new String[] {"", ""};
+
+        int split = value.indexOf(STRING_PARAM_SPLITTER);
+        return (split < 0)
+                ? new String[] {value, ""}
+                : new String[] {value.substring(0, split), value.substring(split + 1)};
+    }
+
+    static String normalizeText(String value, int maxLength) {
+        if (value == null) return "";
+
+        String normalized =
+                value.replace("\t", "").replace("\r", "").replace("\n", "").trim();
+        return (normalized.length() > maxLength) ? normalized.substring(0, maxLength) : normalized;
     }
 
     static class JsonData {
         int targetValue;
+        String variableName;
+        String questName;
 
         JsonData() {}
 
-        JsonData(int targetValue) {
+        JsonData(int targetValue, String variableName, String questName) {
             this.targetValue = targetValue;
+            this.variableName = variableName;
+            this.questName = questName;
         }
     }
 }

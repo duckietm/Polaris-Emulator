@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -71,12 +72,11 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(5);
+        message.appendInt(4);
         message.appendInt(this.state ? 1 : 0);
         message.appendInt(this.direction ? 1 : 0);
         message.appendInt(this.position ? 1 : 0);
         message.appendInt(this.altitude ? 1 : 0);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -92,11 +92,11 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
         this.position = params[2] == 1;
         this.altitude = (params.length > 3) && (params[3] == 1);
         // Official layout: [state, direction, position, altitude], the furni in the official source slot;
-        // our quantifier (0 all, 1 any) follows as param 4.
+        // the quantifier (0 all, 1 any) in its slot.
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? WiredMatchPositionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0], false)
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 4) ? this.normalizeQuantifier(params[4]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
@@ -156,7 +156,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition
 
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
             List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, null);
-            if (targets.isEmpty()) return false;
+            if (targets.isEmpty()) return WiredQuantifier.overEmpty(true);
 
             for (HabboItem item : targets) {
                 if (item == null) return false;

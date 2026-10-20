@@ -16,9 +16,11 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVar
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomFloorItemLimit;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.RoomWallItemLimit;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.messages.incoming.Incoming;
@@ -45,6 +47,7 @@ class WiredMonitorRoomStatsWireTest {
                 WiredRoomStats.DEFAULT_MAX_PERMANENT_USER_VARIABLES,
                 WiredRoomStats.DEFAULT_MAX_PERMANENT_GLOBAL_VARIABLES);
         RoomWallItemLimit.configure(RoomWallItemLimit.DEFAULT_MAX_WALL_ITEMS);
+        RoomFloorItemLimit.configure(RoomFloorItemLimit.DEFAULT_MAX_FLOOR_ITEMS);
     }
 
     @Test
@@ -88,6 +91,32 @@ class WiredMonitorRoomStatsWireTest {
     }
 
     @Test
+    void theFloorLineOfARoomUsesTheFloorCapBoundedByTheRoomFurniCap() {
+        Room room = room(9, Set.of());
+        when(room.getFloorItems()).thenReturn(Set.of(mock(HabboItem.class), mock(HabboItem.class)));
+        when(room.getWallItems()).thenReturn(Set.of(mock(HabboItem.class)));
+        int roomCap = Room.MAXIMUM_FURNI;
+
+        try {
+            Room.MAXIMUM_FURNI = 10000;
+            WiredRoomStats stats = WiredRoomStats.of(room);
+
+            assertEquals(2, stats.getFloorCount());
+            assertEquals(4000, stats.getFloorLimit());
+            assertEquals(1, stats.getWallCount());
+            assertEquals(4000, stats.getWallLimit());
+
+            RoomFloorItemLimit.configure(3000);
+            assertEquals(3000, WiredRoomStats.of(room).getFloorLimit());
+
+            Room.MAXIMUM_FURNI = 2500;
+            assertEquals(2500, WiredRoomStats.of(room).getFloorLimit(), "the room furni cap still refuses first");
+        } finally {
+            Room.MAXIMUM_FURNI = roomCap;
+        }
+    }
+
+    @Test
     void theConfiguredLimitsAreUsedAndNegativeOnesCountAsZero() {
         WiredRoomStats.configureLimits(12, -1, 37);
 
@@ -124,6 +153,26 @@ class WiredMonitorRoomStatsWireTest {
     }
 
     @Test
+    void aBoxPlacedAlreadyPermanentNeedsAFreeSlotOfItsKind() {
+        WiredRoomStats.configureLimits(1, 2, 1);
+        InteractionWiredExtra arriving = user(true);
+        List<InteractionWiredExtra> extras = new ArrayList<>(List.of(user(true), furni(true)));
+
+        assertTrue(WiredRoomStats.hasPermanentSlotFor(extras, arriving), "one user slot left");
+
+        extras.add(user(true));
+
+        assertFalse(WiredRoomStats.hasPermanentSlotFor(extras, arriving), "user cap reached");
+        assertTrue(
+                WiredRoomStats.canBecomePermanent(extras, arriving),
+                "saving keeps a permanent box's slot, placing does not give one");
+        assertTrue(WiredRoomStats.hasPermanentSlotFor(extras, user(false)), "a temporary box always fits");
+        assertTrue(WiredRoomStats.hasPermanentSlotFor(extras, global(true)), "the global cap is apart");
+        assertFalse(WiredRoomStats.hasPermanentSlotFor(extras, furni(true)), "furni cap reached");
+        assertTrue(WiredRoomStats.hasPermanentSlotFor(extras, mock(InteractionWiredExtra.class)));
+    }
+
+    @Test
     void savingANewPermanentUserVariableOverTheCapIsRefusedWithHabbosKey() {
         WiredRoomStats.configureLimits(23, 1, 70);
         WiredExtraUserVariable box = new WiredExtraUserVariable(501, 1, null, "", 0, 0);
@@ -142,7 +191,7 @@ class WiredMonitorRoomStatsWireTest {
                     WiredSaveException.class,
                     () -> box.saveData(
                             new WiredSettings(
-                                    new int[] {0, WiredExtraUserVariable.AVAILABILITY_SHARED}, "points", new int[0], 0),
+                                    new int[] {WiredExtraUserVariable.AVAILABILITY_SHARED, 0}, "points", new int[0], 0),
                             null));
 
             assertEquals("wiredfurni.error.variables.permanent_limit", refused.getMessage());

@@ -30,8 +30,17 @@ public final class WiredHotelProgress {
 
     public static final int MAX_AMOUNT = 1_000_000;
 
+    /**
+     * AIR's Progress Achievement takes 0..int max ({@code createValueOrVariableSection(..., 0, int max)}); the hotel's
+     * per-window allowance still bounds what a user is given.
+     */
+    public static final int MAX_ACHIEVEMENT_AMOUNT = Integer.MAX_VALUE;
+
     /** Reward track and task ids, as the staff editor stores them. */
     public static final int MAX_REWARD_TRACK_ID_LENGTH = 64;
+
+    /** AIR's reward track id inputs on the wired boxes ({@code TextInputParam("", 100, ...)}). */
+    public static final int MAX_WIRED_REWARD_TRACK_ID_LENGTH = 100;
 
     /** The track's allow-list entry for one of its tasks: {@code track:task}. */
     public static final char TASK_SEPARATOR = ':';
@@ -52,6 +61,11 @@ public final class WiredHotelProgress {
         return Math.clamp(amount, 1, MAX_AMOUNT);
     }
 
+    /** A Progress Achievement amount: 0..{@link #MAX_ACHIEVEMENT_AMOUNT}, as AIR. 0 progresses nothing. */
+    public static int normalizeAchievementAmount(int amount) {
+        return Math.max(0, amount);
+    }
+
     /** A reward track or task id as the staff editor accepts it (letters, digits, '_', '-', '.'), or empty. */
     public static String normalizeRewardTrackId(String value) {
         if (value == null) {
@@ -68,6 +82,51 @@ public final class WiredHotelProgress {
             }
         }
         return id;
+    }
+
+    /**
+     * A Progress Reward Track id as AIR's box takes it: 1..100 of {@code [a-zA-Z0-9_]}, else empty. The staff
+     * editor keeps its own rules ({@link #normalizeRewardTrackId}).
+     */
+    public static String normalizeProgressRewardTrackId(String value) {
+        // Surrounding blanks are not part of any id (AIR's input cannot type them); they are dropped, not refused.
+        String id = value == null ? "" : value.trim();
+        if (id.isEmpty() || id.length() > MAX_WIRED_REWARD_TRACK_ID_LENGTH) {
+            return "";
+        }
+        for (int i = 0; i < id.length(); i++) {
+            char c = id.charAt(i);
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_')) {
+                return "";
+            }
+        }
+        return id;
+    }
+
+    /**
+     * A Reset Reward Track id as AIR's box takes it: anything but a tab, at most 100, and it may be empty (the box then
+     * resets nothing). {@code null} when the text cannot be one.
+     */
+    public static String normalizeResetRewardTrackId(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.length() > MAX_WIRED_REWARD_TRACK_ID_LENGTH || value.indexOf('\t') >= 0) {
+            return null;
+        }
+        return value;
+    }
+
+    /**
+     * A stored reward track box id: what the box takes now, or failing that what it took before (the staff editor's
+     * characters, at most 64), so boxes saved under the older rules keep their track.
+     */
+    public static String loadWiredRewardTrackId(String value, boolean reset) {
+        String current = reset ? normalizeResetRewardTrackId(value) : normalizeProgressRewardTrackId(value);
+        if (current != null && !current.isEmpty()) {
+            return current;
+        }
+        return normalizeRewardTrackId(value);
     }
 
     /** The users behind the units who are still in the room, at most {@link WiredHotelProgressPolicy#MAX_USERS_PER_FIRING}. */
@@ -126,7 +185,7 @@ public final class WiredHotelProgress {
             return 0;
         }
 
-        int wanted = normalizeAmount(amount);
+        int wanted = normalizeAchievementAmount(amount);
         int given = 0;
         for (Habbo habbo : bounded(users)) {
             if (!isPresent(habbo, room)) {

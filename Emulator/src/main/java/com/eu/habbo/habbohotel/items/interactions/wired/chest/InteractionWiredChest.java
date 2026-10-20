@@ -512,6 +512,11 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     /** How full the chest is, in whatever unit its kind counts. */
     protected abstract int storedCount();
 
+    /** What the chest holds, in its kind's unit (AIR smart variable {@code ~chest.available_amount}). */
+    public int availableAmount() {
+        return this.storedCount();
+    }
+
     @Override
     public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 

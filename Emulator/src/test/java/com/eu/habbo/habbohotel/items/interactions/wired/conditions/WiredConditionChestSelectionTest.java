@@ -86,9 +86,9 @@ class WiredConditionChestSelectionTest {
         }
     }
 
-    /** Saves [type or amount 10, 5, more than or equal, 3] with these picks. */
+    /** Saves [10, 5, more than or equal, 3] with these chest picks (Chest Has Item Types' second picks). */
     private static boolean save(InteractionWiredCondition box, Room room, int... picks) {
-        WiredSettings settings = settings(new int[] {10, 5, WiredComparison.GREATER_EQUAL, 3}, picks);
+        WiredSettings settings = chestPicks(box, settings(new int[] {10, 5, WiredComparison.GREATER_EQUAL, 3}), picks);
         ConfigurationManager config = capOf(5);
         GameEnvironment environment = environmentWith(room);
 
@@ -104,7 +104,8 @@ class WiredConditionChestSelectionTest {
         Room room = room(1);
 
         for (InteractionWiredCondition box : boxes()) {
-            WiredSettings settings = settings(new int[] {10, 5, WiredComparison.GREATER_EQUAL, 3}, 1, 2, 3, 4, 5, 6);
+            WiredSettings settings =
+                    chestPicks(box, settings(new int[] {10, 5, WiredComparison.GREATER_EQUAL, 3}), 1, 2, 3, 4, 5, 6);
             ConfigurationManager config = capOf(5);
             GameEnvironment environment = environmentWith(room);
 
@@ -114,6 +115,16 @@ class WiredConditionChestSelectionTest {
                 assertFalse(box.saveData(settings), box.getClass().getSimpleName());
             }
         }
+    }
+
+    /** AIR picks the chests of Chest Has Item Types as its second furni selection, the item types as the first. */
+    private static WiredSettings chestPicks(InteractionWiredCondition box, WiredSettings settings, int... picks) {
+        if (box instanceof WiredConditionChestHasItemType) {
+            settings.setFurniIds2(picks);
+        } else {
+            settings.setFurniIds(picks);
+        }
+        return settings;
     }
 
     private static ConfigurationManager capOf(int cap) {

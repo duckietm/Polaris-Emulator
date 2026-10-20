@@ -17,17 +17,22 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.messages.ServerMessage;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Habbo's "write to logs" action ({@code wf_act_log}): writes its message into the room's wired log
- * at the level it was set to (0 debug, 1 info, 2 warning, 3 error), where the room log window lists
- * it. Username placeholders are filled in, and the users of its source are named after the line.
+ * at the level it was set to (AIR's 0 info, 1 warn, 2 error, 3 debug), where the room log window
+ * lists it under the "Wired" source. Username placeholders are filled in, and the users of its source
+ * are named after the line.
  *
  * <p>Int params: {@code [log level, user source]}. String param: the message, at most 400 characters.
  */
@@ -35,12 +40,14 @@ public class WiredEffectLog extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectLog.class);
     public static final WiredEffectType type = WiredEffectType.WRITE_TO_LOGS;
 
-    public static final int LEVEL_DEBUG = 0;
-    public static final int LEVEL_INFO = 1;
-    public static final int LEVEL_ERROR = 3;
+    public static final int LEVEL_INFO = 0;
+    public static final int LEVEL_WARN = 1;
+    public static final int LEVEL_ERROR = 2;
+    public static final int LEVEL_DEBUG = 3;
     public static final int MAX_MESSAGE_LENGTH = 400;
     private static final int MAX_NAMED_USERS = 10;
     private static final int MAX_LINE_LENGTH = 1000;
+    private static final Pattern STORED_LEVEL = Pattern.compile("([{,]\\s*)\"logLevel\"\\s*:\\s*(-?\\d+)");
 
     private String message = "";
     private int logLevel = LEVEL_INFO;
@@ -130,8 +137,59 @@ public class WiredEffectLog extends InteractionWiredEffect {
         return this.logLevel;
     }
 
+    /** One of AIR's four levels; anything else reads as info, the dropdown's first entry. */
     static int normalizeLevel(int level) {
-        return Math.clamp(level, LEVEL_DEBUG, LEVEL_ERROR);
+        return (level >= LEVEL_INFO && level <= LEVEL_DEBUG) ? level : LEVEL_INFO;
+    }
+
+    /**
+     * A level stored before the levels followed AIR (0 debug, 1 info, 2 warning, 3 error) as AIR's
+     * number (0 info, 1 warn, 2 error, 3 debug). Only the data migration uses it.
+     */
+    public static int legacyLevelToAir(int legacyLevel) {
+        return switch (legacyLevel) {
+            case 0 -> LEVEL_DEBUG;
+            case 2 -> LEVEL_WARN;
+            case 3 -> LEVEL_ERROR;
+            default -> LEVEL_INFO;
+        };
+    }
+
+    /**
+     * A stored box's {@code wired_data} with its level moved from the old numbers to AIR's, or
+     * {@code null} when nothing changes: the legacy tab format and a JSON box without a level both
+     * read as info already, and anything that is not this box's JSON is left alone. Only the level's
+     * digits are rewritten, so the message and every other field stay as they were stored.
+     */
+    public static String migrateLegacyLevel(String wiredData) {
+        if (wiredData == null || !wiredData.startsWith("{")) {
+            return null;
+        }
+
+        int stored;
+        try {
+            JsonElement level =
+                    JsonParser.parseString(wiredData).getAsJsonObject().get("logLevel");
+            if (level == null
+                    || !level.isJsonPrimitive()
+                    || !level.getAsJsonPrimitive().isNumber()) {
+                return null;
+            }
+            stored = level.getAsInt();
+        } catch (RuntimeException e) {
+            return null;
+        }
+
+        // A quote inside a string value is always escaped, so an unescaped {"logLevel": or
+        // ,"logLevel": can only be the key itself.
+        Matcher matcher = STORED_LEVEL.matcher(wiredData);
+        if (!matcher.find()) {
+            return null;
+        }
+
+        return wiredData.substring(0, matcher.start(2))
+                + legacyLevelToAir(stored)
+                + wiredData.substring(matcher.end(2));
     }
 
     /**

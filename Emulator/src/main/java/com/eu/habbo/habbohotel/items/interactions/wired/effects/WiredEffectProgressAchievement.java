@@ -24,6 +24,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,13 +41,14 @@ import java.util.Set;
  * enabler in the same room also names, for users still in the room, and within each user's
  * allowance per window. Saving it needs the value-granting wired permission.
  *
- * <p>Official layout (AIR code 51). String param: the achievement name, then, after a tab, the id of the
- * variable the amount may come from. Int params {@code [mode, valueIsVariable, value, valueTarget]}:
+ * <p>Official layout (AIR code 51). String param: the achievement name; variable ids {@code [the variable the amount
+ * may come from]} (older clients sent its id after a tab in the string; still read). Int params {@code [mode, valueIsVariable, value, valueTarget]}:
  * the amount is the number, or that variable read once on the first holder of its target (0 furni,
  * read on the furni slot; 1 user, read on the second user slot; -10 global; -20 context). User slot 0
  * is who is progressed.
  */
-public class WiredEffectProgressAchievement extends InteractionWiredEffect implements WiredOfficialSources {
+public class WiredEffectProgressAchievement extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final WiredEffectType type = WiredEffectType.PROGRESS_ACHIEVEMENT;
     public static final int MAX_NAME_LENGTH = WiredExtraAchievementEnabler.MAX_NAME_LENGTH;
 
@@ -75,7 +78,7 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.achievement + "\t" + this.valueVariableId);
+        message.appendString(this.achievement);
         message.appendInt(4);
         message.appendInt(this.mode);
         message.appendInt(this.valueIsVariable ? 1 : 0);
@@ -85,6 +88,12 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
         WiredEffectProgressRewardTrack.appendInvalidTriggers(this, message, room);
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                this.valueIsVariable ? WiredVariableIds.toWire(this.valueTarget, this.valueVariableId) : "");
     }
 
     @Override
@@ -102,7 +111,10 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
 
         int[] params = settings.getIntParams();
         boolean isVariable = params.length > 1 && params[1] == 1;
-        int variableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        // AIR: the amount's variable is the first variable id; older clients sent it after a tab in the string.
+        int variableId = WiredVariableIds.present(settings.getVariableIds())
+                ? WiredVariableIds.boxIdOf(settings.getVariableIds()[0])
+                : (tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1)));
         if (isVariable && variableId <= 0) {
             return false;
         }
@@ -112,7 +124,7 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
         this.achievement = name;
         this.mode = WiredHotelProgress.normalizeMode(params.length > 0 ? params[0] : WiredHotelProgress.MODE_ADD);
         this.valueIsVariable = isVariable;
-        this.amount = WiredHotelProgress.normalizeAmount(params.length > 2 ? params[2] : 1);
+        this.amount = WiredHotelProgress.normalizeAchievementAmount(params.length > 2 ? params[2] : 1);
         this.valueTarget = WiredValueVariable.normalizeTarget(params.length > 3 ? params[3] : 0);
         this.valueVariableId = variableId;
         this.userSource =
@@ -159,7 +171,7 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
             if (read == null || read <= 0) {
                 return;
             }
-            value = Math.min(read, WiredHotelProgress.MAX_AMOUNT);
+            value = read;
         }
         int amount = value;
         WiredProgressLimiter limiter = engine.progressLimiter();
@@ -199,7 +211,7 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
 
         this.achievement = normalizeName(data.achievement);
         this.mode = WiredHotelProgress.normalizeMode(data.mode);
-        this.amount = WiredHotelProgress.normalizeAmount(data.amount);
+        this.amount = data.amount == null ? 1 : WiredHotelProgress.normalizeAchievementAmount(data.amount);
         this.userSource = WiredVariableOperand.normalizeUserSource(data.userSource);
         this.valueIsVariable = data.valueIsVariable && data.valueVariableId > 0;
         this.valueVariableId = Math.max(0, data.valueVariableId);
@@ -269,7 +281,9 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect imple
     static class JsonData {
         String achievement;
         int mode;
-        int amount;
+        /** Boxed so a row without it (older JSON) keeps the old default of 1; a stored 0 stays 0. */
+        Integer amount;
+
         int delay;
         int userSource;
         boolean valueIsVariable;

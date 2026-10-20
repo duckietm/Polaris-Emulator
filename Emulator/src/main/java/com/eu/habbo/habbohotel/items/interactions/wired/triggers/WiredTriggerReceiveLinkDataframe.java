@@ -67,6 +67,11 @@ public class WiredTriggerReceiveLinkDataframe extends WiredTriggerReceiveLinkBas
      */
     @Override
     public WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops) {
+        return this.receiveEvent(room, link, payload, hops, 0);
+    }
+
+    @Override
+    public WiredEvent receiveEvent(Room room, HabboItem link, WiredLinkPayload payload, int hops, int sourceRoomId) {
         Map<String, String> placeholders = new LinkedHashMap<>();
         WiredContextVariableScope scope = new WiredContextVariableScope();
         for (RowConfig row : this.rows) {
@@ -84,6 +89,7 @@ public class WiredTriggerReceiveLinkDataframe extends WiredTriggerReceiveLinkBas
                 .linkValues(placeholders)
                 .contextVariableScope(scope)
                 .linkHops(hops)
+                .linkSourceRoomId(sourceRoomId)
                 .triggeredByEffect(true)
                 .build();
     }

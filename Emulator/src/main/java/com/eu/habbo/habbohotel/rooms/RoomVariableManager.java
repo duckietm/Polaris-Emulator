@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredSharedVariableChanges;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -793,6 +794,13 @@ public class RoomVariableManager {
 
         this.emitVariableChangedEvent(
                 definitionInfo.getItemId(), definitionInfo.hasValue(), previousValue, currentValue);
+        // A shared variable (or a reference to one) is heard in the other rooms too, as "another room".
+        WiredSharedVariableChanges.roomVariableChanged(
+                this.room,
+                definitionExtra,
+                resolveVariableChangeKind(definitionInfo.hasValue(), previousValue, currentValue),
+                previousValue == null ? 0L : previousValue,
+                currentValue == null ? 0L : currentValue);
 
         VariableAssignment stamps = null;
         boolean stampsRead = false;

@@ -9272,10 +9272,14 @@ METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardC
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#encode(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#fromSave(int[],java.lang.String,java.lang.String[]):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#fromWire(int[],java.lang.String):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#globalBoxIdOf(java.lang.String):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#globalVariableId(java.lang.String):java.lang.String throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#isValidWidth(int):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#pageSizes(-):int[] throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#suggest(java.lang.String):java.lang.String throws -
 METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#toWire(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored):java.lang.String throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#userBoxIdOf(java.lang.String):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#userVariableId(java.lang.String):java.lang.String throws -
 
 TYPE public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded extends java.lang.Record
 RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded config:com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig
@@ -9349,6 +9353,7 @@ RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor defa
 RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor pageSizeOption:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor(int,int,java.lang.String,java.lang.String,int,int,int,int,int,java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column>,java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice>,java.lang.String,int) throws -
 METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#altitude(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#choiceId(java.lang.String):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#choices(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice> throws -
 METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#columns(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column> throws -
 METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#defaultVariableId(-):java.lang.String throws -

@@ -17,6 +17,10 @@ public class BuildHeightAvailableComposer extends MessageComposer {
         this.available = available;
     }
 
+    public boolean isAvailable() {
+        return this.available;
+    }
+
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.BuildHeightAvailableComposer);

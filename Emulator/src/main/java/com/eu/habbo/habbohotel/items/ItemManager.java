@@ -603,6 +603,10 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_conf_handitem_block", InteractionHanditemBlockControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_queue_speed", InteractionQueueSpeedControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_wired_disable", InteractionWiredDisableControl.class));
+        // The bare classnames, as the other conf_* controllers already accept.
+        this.interactionsList.add(new ItemInteraction("conf_handitem_block", InteractionHanditemBlockControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_queue_speed", InteractionQueueSpeedControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_wired_disable", InteractionWiredDisableControl.class));
         this.interactionsList.add(new ItemInteraction("conf_hidewired", InteractionHideWiredControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_hidewired", InteractionHideWiredControl.class));
         this.interactionsList.add(new ItemInteraction("conf_dice_disable", InteractionDiceDisableControl.class));

@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -29,9 +30,12 @@ import java.util.List;
  * {@link com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService} sends the panels and
  * their rows to the players.
  *
- * <p>The editor packet carries the official int params and, in the string param, the 17 text fields
- * followed by the 12 variable ids. After the usual addon fields comes the official editor context of
- * type 8: the published overlay id, this tile and the variables a leaderboard here can rank.
+ * <p>The editor packet carries the official int params, the 17 text fields as the string param and
+ * the 12 variable ids as the definition's variable ids, under the variable list's ids
+ * ({@code user:<box id>}, {@code room:<box id>}, {@code "0"} for none). After the usual addon fields
+ * comes the official editor context of type 8: the published overlay id, this tile and the variables
+ * a leaderboard here can rank, under the same ids. A box stored with bare box ids reads as the same
+ * variables and is written with the list ids on its next save.
  */
 public class WiredExtraVariableLeaderboard extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int CODE = 1005;
@@ -165,7 +169,7 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         message.appendInt(shownChoices);
         for (int i = 0; i < shownChoices; i++) {
             InteractionWiredExtra variable = candidates.get(i);
-            message.appendString(Integer.toString(variable.getId()));
+            message.appendString(WiredLeaderboardCodec.userVariableId(Integer.toString(variable.getId())));
             message.appendString(nameOf(variable));
             // A reference names a shared variable, whose holders are saved like a permanent one's.
             message.appendBoolean(!(variable instanceof WiredExtraUserVariable user) || user.isPermanentAvailability());
@@ -197,7 +201,7 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         Room savedRoom = settings.getRoom();
         if (savedRoom != null) {
             for (String variableId : wire.variableIds()) {
-                if (WiredPointerVariableSupport.isPointer(savedRoom, trailingId(variableId))) {
+                if (WiredPointerVariableSupport.isPointer(savedRoom, WiredVariableIds.boxIdOf(variableId))) {
                     throw new WiredSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
                 }
             }
@@ -211,17 +215,6 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
             WiredLeaderboardSupport.ensure(room);
         }
         return true;
-    }
-
-    /** The item id at the end of a variable id ({@code 12}, {@code custom:12}, {@code user:12}), or 0. */
-    static int trailingId(String variableId) {
-        if (variableId == null) return 0;
-        String text = variableId.substring(variableId.lastIndexOf(':') + 1).trim();
-        try {
-            return Math.max(0, Integer.parseInt(text));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     @Override

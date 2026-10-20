@@ -14,6 +14,9 @@ import com.eu.habbo.habbohotel.users.HabboStats;
  * used. The room's free furni movements mode ({@code ConfigurationItemStates}) lifts the furni
  * checks, as in AIR.
  *
+ * <p>Beyond AIR, this hotel also refuses the building rights AIR's playtest check leaves alone (see
+ * {@link #isBuildingRefused}).
+ *
  * <p>Ownership, staff tools, room settings, kicking and banning and the wired menu (its own
  * permissions) stay as they are.
  */
@@ -41,6 +44,17 @@ public final class RoomPlayTestSupport {
     /** True when playtest refuses moving, rotating, picking up and rights-only use for this user. */
     public static boolean isRestricted(Habbo habbo) {
         return isPlayTestMode(habbo) && !hasFreeFurniMovementsMode(habbo);
+    }
+
+    /**
+     * The hotel's own addition beyond AIR: in playtest the user cannot build either. Placing furni,
+     * post-its, paint, pets and bots from the inventory (Builders Club too), the dimmer and the
+     * background toner settings, the stack helper height and the build height are refused with the
+     * room's usual no-rights answer. The free furni movements mode lifts it, as it lifts the furni
+     * checks.
+     */
+    public static boolean isBuildingRefused(Habbo habbo) {
+        return isRestricted(habbo);
     }
 
     /** AIR {@code useObject}: in playtest only furni with usage policy 2 (everybody) can be used. */

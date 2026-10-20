@@ -318,6 +318,10 @@ public class RoomRightsManager {
         // The build height widget is hidden until the hotel says it may be used here, so the answer
         // travels with the rights; losing rights also drops a height the user had picked.
         boolean mayBuild = !flatCtrl.equals(RoomRightLevels.NONE);
+        // Playtest hides it too (the hotel's own rule beyond AIR).
+        if (RoomPlayTestSupport.isBuildingRefused(habbo)) {
+            mayBuild = false;
+        }
         habbo.getClient().sendResponse(new BuildHeightAvailableComposer(mayBuild));
         if (!mayBuild) {
             habbo.getRoomUnit().setBuildHeight(false, 0.0D);

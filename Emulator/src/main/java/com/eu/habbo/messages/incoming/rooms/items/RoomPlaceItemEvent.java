@@ -20,6 +20,7 @@ import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -53,6 +54,13 @@ public class RoomPlaceItemEvent extends MessageHandler {
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null) {
+            return;
+        }
+
+        // Playtest (the hotel's own rule beyond AIR): nothing is placed from the inventory, the item stays there.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;
         }
 

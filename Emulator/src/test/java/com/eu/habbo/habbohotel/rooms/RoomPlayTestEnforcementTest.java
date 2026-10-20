@@ -13,32 +13,58 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
+import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
 import com.eu.habbo.habbohotel.items.interactions.InteractionSwitch;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboStats;
+import com.eu.habbo.habbohotel.users.inventory.BotsComponent;
+import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
+import com.eu.habbo.habbohotel.users.inventory.PetsComponent;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceRoomItemEvent;
+import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceWallItemEvent;
+import com.eu.habbo.messages.incoming.rooms.RoomBackgroundEvent;
+import com.eu.habbo.messages.incoming.rooms.RoomPlacePaintEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotPickupEvent;
+import com.eu.habbo.messages.incoming.rooms.bots.BotPlaceEvent;
+import com.eu.habbo.messages.incoming.rooms.items.MoodLightSaveSettingsEvent;
+import com.eu.habbo.messages.incoming.rooms.items.MoodLightTurnOnEvent;
 import com.eu.habbo.messages.incoming.rooms.items.MoveWallItemEvent;
+import com.eu.habbo.messages.incoming.rooms.items.PostItPlaceEvent;
 import com.eu.habbo.messages.incoming.rooms.items.RoomPickupChooserEvent;
 import com.eu.habbo.messages.incoming.rooms.items.RoomPickupItemEvent;
+import com.eu.habbo.messages.incoming.rooms.items.RoomPlaceItemEvent;
 import com.eu.habbo.messages.incoming.rooms.items.RotateMoveItemEvent;
+import com.eu.habbo.messages.incoming.rooms.items.SetBuildHeightEvent;
+import com.eu.habbo.messages.incoming.rooms.items.SetBuildUnderpassEvent;
+import com.eu.habbo.messages.incoming.rooms.items.SetStackHelperAdjacentHeightEvent;
+import com.eu.habbo.messages.incoming.rooms.items.SetStackHelperHeightEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ToggleFloorItemEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ToggleWallItemEvent;
 import com.eu.habbo.messages.incoming.rooms.items.UpdateFurniturePositionEvent;
 import com.eu.habbo.messages.incoming.rooms.pets.MovePetEvent;
 import com.eu.habbo.messages.incoming.rooms.pets.PetPickupEvent;
+import com.eu.habbo.messages.incoming.rooms.pets.PetPlaceEvent;
 import com.eu.habbo.messages.incoming.users.SaveWiredMenuSettingsEvent;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.BotErrorComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.PetErrorComposer;
+import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.messages.outgoing.rooms.BuildHeightAvailableComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomOwnerComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomRightsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
@@ -47,6 +73,7 @@ import com.eu.habbo.threading.ThreadPooling;
 import gnu.trove.map.hash.THashMap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -369,6 +396,266 @@ class RoomPlayTestEnforcementTest {
 
             actor.handle(new ToggleFloorItemEvent(), new Packet().integer(ITEM).integer(0));
         }
+    }
+
+    // --- building: the hotel's own rules beyond AIR ---
+
+    /** A room whose dimmer, toner and special furni lookups answer like an empty room's. */
+    private static Room buildRoom() {
+        Room room = room();
+        when(room.getRoomSpecialTypes()).thenReturn(mock(RoomSpecialTypes.class));
+        when(room.getGuildRightLevel(any(Habbo.class))).thenReturn(RoomRightLevels.NONE);
+        when(room.getMoodlightData()).thenReturn(new Int2ObjectOpenHashMap<>());
+        when(room.isAllowPets()).thenReturn(true);
+        return room;
+    }
+
+    /** The actor's inventory: empty, so a placement that gets past the playtest check stops right after. */
+    private static HabboInventory inventoryOf(Actor actor) {
+        HabboInventory inventory = mock(HabboInventory.class);
+        when(inventory.getItemsComponent()).thenReturn(mock(ItemsComponent.class));
+        when(inventory.getPetsComponent()).thenReturn(mock(PetsComponent.class));
+        when(inventory.getBotsComponent()).thenReturn(mock(BotsComponent.class));
+        when(actor.habbo.getInventory()).thenReturn(inventory);
+        when(actor.unit.isInRoom()).thenReturn(true);
+        return inventory;
+    }
+
+    private static int noRightsBubbles(Actor actor) {
+        ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
+        verify(actor.client, atLeastOnce()).sendResponse(sent.capture());
+        return (int) sent.getAllValues().stream()
+                .filter(BubbleAlertComposer.class::isInstance)
+                .map(composer -> ((BubbleAlertComposer) composer).getKeys().get("message"))
+                .filter(FurnitureMovementError.NO_RIGHTS.errorCode::equals)
+                .count();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void furniIsPlacedFromTheInventoryOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+        HabboInventory inventory = inventoryOf(actor);
+
+        actor.handle(new RoomPlaceItemEvent(), new Packet().string(ITEM + " 1 2 0"));
+
+        verify(inventory, mode.refused ? never() : times(1)).getItemsComponent();
+        verify(actor.client, mode.refused ? times(1) : never()).sendResponse(any(BubbleAlertComposer.class));
+        verify(actor.client, never()).sendResponse(any(RemoveHabboItemComposer.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void postItsArePlacedOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+        HabboInventory inventory = inventoryOf(actor);
+
+        actor.handle(new PostItPlaceEvent(), new Packet().integer(ITEM).string(":w=1,2 l=3,4 l"));
+
+        verify(inventory, mode.refused ? never() : times(1)).getItemsComponent();
+        verify(actor.client, mode.refused ? times(1) : never()).sendResponse(any(BubbleAlertComposer.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void paintIsAppliedOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+        HabboInventory inventory = inventoryOf(actor);
+
+        actor.handle(new RoomPlacePaintEvent(), new Packet().integer(ITEM));
+
+        verify(inventory, mode.refused ? never() : times(1)).getItemsComponent();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void buildersClubFurniIsPlacedOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor floor = new Actor(mode, room);
+        inventoryOf(floor);
+        Actor wall = new Actor(mode, room);
+        inventoryOf(wall);
+
+        try (MockedStatic<BuildersClubRoomSupport> support = mockStatic(BuildersClubRoomSupport.class)) {
+            floor.handle(
+                    new BuildersClubPlaceRoomItemEvent(),
+                    new Packet()
+                            .integer(1)
+                            .integer(2)
+                            .string("")
+                            .integer(1)
+                            .integer(2)
+                            .integer(0)
+                            .bool(false));
+            wall.handle(
+                    new BuildersClubPlaceWallItemEvent(),
+                    new Packet()
+                            .integer(1)
+                            .integer(2)
+                            .string("")
+                            .string(":w=1,2 l=3,4 l")
+                            .bool(false));
+
+            support.verify(
+                    () -> BuildersClubRoomSupport.canPlaceInCurrentRoom(any()), mode.refused ? never() : times(2));
+        }
+
+        for (Actor actor : List.of(floor, wall)) {
+            assertEquals(mode.refused ? 1 : 0, noRightsBubbles(actor));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void petsArePlacedFromTheInventoryOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+        HabboInventory inventory = inventoryOf(actor);
+
+        actor.handle(new PetPlaceEvent(), new Packet().integer(3).integer(1).integer(2));
+
+        verify(inventory, mode.refused ? never() : times(1)).getPetsComponent();
+        verify(actor.client, mode.refused ? times(1) : never()).sendResponse(any(PetErrorComposer.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void botsArePlacedFromTheInventoryOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+        HabboInventory inventory = inventoryOf(actor);
+
+        actor.handle(new BotPlaceEvent(), new Packet().integer(4).integer(1).integer(2));
+
+        verify(inventory, mode.refused ? never() : times(1)).getBotsComponent();
+        verify(actor.client, mode.refused ? times(1) : never()).sendResponse(any(BotErrorComposer.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theDimmerIsSetUpAndSwitchedOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getConfig).thenReturn(mock(ConfigurationManager.class));
+
+            actor.handle(
+                    new MoodLightSaveSettingsEvent(),
+                    new Packet()
+                            .integer(1)
+                            .integer(1)
+                            .string("#74F5F5")
+                            .integer(255)
+                            .bool(true));
+            actor.handle(new MoodLightTurnOnEvent(), new Packet());
+        }
+
+        verify(room, mode.refused ? never() : times(1)).setNeedsUpdate(true);
+        verify(room, mode.refused ? never() : times(2)).getRoomSpecialTypes();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theTonerIsSetUpOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+
+        actor.handle(
+                new RoomBackgroundEvent(),
+                new Packet().integer(ITEM).integer(1).integer(2).integer(3));
+
+        verify(room, mode.refused ? never() : times(1)).getHabboItem(ITEM);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theTonerAndTheDimmerAreSwitchedByUseOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        InteractionBackgroundToner toner = mock(InteractionBackgroundToner.class);
+        when(toner.isUsable()).thenReturn(true);
+        Item tonerBase = base();
+        when(toner.getBaseItem()).thenReturn(tonerBase);
+        when(room.getHabboItem(ITEM)).thenReturn(toner);
+        InteractionMoodLight dimmer = mock(InteractionMoodLight.class);
+        when(dimmer.isUsable()).thenReturn(true);
+        Item dimmerBase = base();
+        when(dimmer.getBaseItem()).thenReturn(dimmerBase);
+        when(room.getHabboItem(ITEM + 1)).thenReturn(dimmer);
+        Actor actor = new Actor(mode, room);
+
+        toggleFloor(actor);
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getPluginManager).thenReturn(mock(PluginManager.class));
+            emulator.when(Emulator::getThreading).thenReturn(mock(ThreadPooling.class));
+
+            actor.handle(
+                    new ToggleWallItemEvent(), new Packet().integer(ITEM + 1).integer(0));
+        }
+
+        verify(toner, mode.refused ? never() : times(1)).onClick(any(), any(), any());
+        verify(dimmer, mode.refused ? never() : times(1)).onClick(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theStackHelperHeightChangesOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+
+        actor.handle(new SetStackHelperHeightEvent(), new Packet().integer(ITEM).integer(150));
+        actor.handle(
+                new SetStackHelperAdjacentHeightEvent(),
+                new Packet().integer(ITEM).bool(false));
+
+        verify(room, mode.refused ? never() : times(2)).getHabboItem(ITEM);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theBuildHeightAndUnderpassAreSetOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+
+        actor.handle(new SetBuildHeightEvent(), new Packet().bool(true).integer(150));
+        actor.handle(new SetBuildUnderpassEvent(), new Packet().bool(true));
+
+        verify(actor.unit, mode.refused ? never() : times(1)).setBuildHeight(true, 1.5D);
+        verify(actor.unit, mode.refused ? never() : times(1)).setBuildUnderpass(true);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void switchingTheBuildToolsOffStaysAllowedInPlaytest(Mode mode) throws Exception {
+        Room room = buildRoom();
+        Actor actor = new Actor(mode, room);
+
+        actor.handle(new SetBuildHeightEvent(), new Packet().bool(false).integer(0));
+        actor.handle(new SetBuildUnderpassEvent(), new Packet().bool(false));
+
+        verify(actor.unit).setBuildHeight(false, 0.0D);
+        verify(actor.unit).setBuildUnderpass(false);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void theBuildHeightWidgetIsOfferedOnlyOutsidePlaytest(Mode mode) {
+        Room room = new Room(1, OWNER);
+        Actor owner = ownerOf(room, mode.playTest, mode.freeMovements);
+
+        room.refreshRightsForHabbo(owner.habbo);
+
+        ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
+        verify(owner.client, atLeastOnce()).sendResponse(sent.capture());
+        List<Boolean> offered = sent.getAllValues().stream()
+                .filter(BuildHeightAvailableComposer.class::isInstance)
+                .map(composer -> ((BuildHeightAvailableComposer) composer).isAvailable())
+                .toList();
+        assertEquals(List.of(!mode.refused), offered);
+        verify(owner.unit, mode.refused ? times(1) : never()).setBuildHeight(false, 0.0D);
     }
 
     // --- the controller level sent to the client ---

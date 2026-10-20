@@ -29,13 +29,13 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
 
     /**
      * Player-first: clicking the furni chest opens the player Scrigno UI (item grid + withdraw) instead of
-     * the wired-config dialog. Anyone can open if accessOpen; withdraw is gated to room rights server-side
-     * (see ChestWithdrawFurniEvent).
+     * the wired-config dialog. Who may look inside is {@link ChestOpenHelper#mayOpen} (AIR: everyone when
+     * the chest says so, else its owner and players with rights, so an owner without rights in the room
+     * still reaches their own chest); withdrawing is checked again server-side (see ChestWithdrawFurniEvent).
      */
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         if (client == null || room == null) return;
-        if (!this.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
     }
 

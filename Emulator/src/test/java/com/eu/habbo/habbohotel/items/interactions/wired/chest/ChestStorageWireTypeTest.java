@@ -1,10 +1,9 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  * The chest wire carries the client-facing sprite id (furnidata classId), not the emulator's
@@ -69,5 +68,29 @@ class ChestStorageWireTypeTest {
         assertEquals(0, storage.countFurniByWireType(true, 4001, "99"));
         assertEquals(1, storage.countFurniByWireType(true, 4001, "23"));
         assertEquals(1, storage.removeFurniByWireType(true, 4001, "23", 1).size());
+    }
+
+    @Test
+    void aDepositedPosterKeepsItsPosterIdLikeOneReadBackFromTheStore() {
+        com.eu.habbo.habbohotel.items.Item base = org.mockito.Mockito.mock(com.eu.habbo.habbohotel.items.Item.class);
+        org.mockito.Mockito.when(base.getName()).thenReturn("poster");
+        org.mockito.Mockito.when(base.getId()).thenReturn(500);
+        org.mockito.Mockito.when(base.getSpriteId()).thenReturn(4001);
+        org.mockito.Mockito.when(base.getType()).thenReturn(com.eu.habbo.habbohotel.items.FurnitureType.WALL);
+        com.eu.habbo.habbohotel.users.HabboItem item =
+                org.mockito.Mockito.mock(com.eu.habbo.habbohotel.users.HabboItem.class);
+        org.mockito.Mockito.when(item.getBaseItem()).thenReturn(base);
+        org.mockito.Mockito.when(item.getExtradata()).thenReturn("23");
+
+        ChestFurniStoredItem deposited = ChestFurniStoredItem.fromHabboItem(item, 77);
+        ChestFurniStoredItem reloaded = ChestFurniStoredItem.fromStoredRow(
+                new ChestStore.StoredRow(77, 500, "23", "", "0:0", 0, 0, false, 1L), base);
+
+        assertEquals("23", deposited.legacyPosterId, "a contract asking for poster 23 can pay it out");
+        assertEquals(reloaded.legacyPosterId, deposited.legacyPosterId);
+
+        ChestStorage storage = new ChestStorage();
+        storage.addFurniItem(deposited);
+        assertEquals(1, storage.removeFurniByType(true, 500, "23", 1).size());
     }
 }

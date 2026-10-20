@@ -26,9 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The room's open wired trades, one per player, after the official AIR model.
@@ -423,6 +425,8 @@ public class WiredTradingManager {
         List<Integer> allowed = new ArrayList<>();
         int error = -1;
         int already = session.getOfferedItems().size();
+        Set<String> kinds = new HashSet<>();
+        for (HabboItem held : negotiation.vault().heldItems()) kinds.add(tableKind(held));
         for (Integer itemId : itemIds) {
             if (itemId == null) continue;
             HabboItem item = habbo.getInventory().getItemsComponent().getHabboItem(itemId);
@@ -434,10 +438,16 @@ public class WiredTradingManager {
                 error = WiredTradeErrorComposer.TOO_MANY_ITEMS;
                 break;
             }
+            String kind = tableKind(item);
+            if (!kinds.contains(kind) && kinds.size() >= WiredTradingSession.MAX_OFFERED_TYPES) {
+                error = WiredTradeErrorComposer.TOO_MANY_DIFFERENT_ITEMS;
+                continue;
+            }
             if (negotiation.depositOnly() && exceedsDepositRoom(negotiation, already + allowed.size() + 1, item)) {
                 error = WiredTradeErrorComposer.EXCEEDS_CAPACITY;
                 break;
             }
+            kinds.add(kind);
             allowed.add(itemId);
         }
 
@@ -445,6 +455,19 @@ public class WiredTradingManager {
             habbo.getClient().sendResponse(new WiredTradeErrorComposer(error));
         }
         return allowed.isEmpty() ? 0 : session.offerItems(allowed);
+    }
+
+    /**
+     * The slot an item takes on the table, as the client groups them: one per furni type (a poster per
+     * poster), and one of its own for furni that does not stack or is limited.
+     */
+    static String tableKind(HabboItem item) {
+        if (item.getBaseItem() == null || !item.getBaseItem().allowInventoryStack() || item.isLimited()) {
+            return "item:" + item.getId();
+        }
+        boolean wall = item.getBaseItem().getType() == FurnitureType.WALL;
+        String kind = (wall ? "I" : "S") + item.getBaseItem().getId();
+        return wall && "poster".equals(item.getBaseItem().getName()) ? kind + ":" + item.getExtradata() : kind;
     }
 
     /** A coin chest takes credit furni only; furni chests and contracts take any storable furni. */

@@ -162,4 +162,26 @@ class ChestOfficialRulesTest {
         // It did open: the window was sent for both chests.
         verify(habbo.getClient(), org.mockito.Mockito.atLeast(2)).sendResponse(any(MessageComposer.class));
     }
+
+    @Test
+    void theOwnerOpensTheirOwnClosedChestWithoutRightsInTheRoom() throws Exception {
+        Habbo owner = habbo(OWNER);
+        Habbo visitor = habbo(9);
+        Room room = mock(Room.class);
+
+        InteractionWiredChest[] chests = {
+            currencyChest(), new InteractionWiredChestFurni(3, OWNER, mock(Item.class), "", 0, 0)
+        };
+        for (InteractionWiredChest chest : chests) {
+            // Closed to the room: only the owner and players with rights may look inside (AIR).
+            chest.getContents().setAccessOpen(false);
+            chest.onClick(owner.getClient(), room, new Object[] {0});
+            chest.onClick(visitor.getClient(), room, new Object[] {0});
+        }
+
+        verify(owner.getClient(), org.mockito.Mockito.times(2))
+                .sendResponse(org.mockito.ArgumentMatchers.isA(
+                        com.eu.habbo.messages.outgoing.rooms.items.ChestOpenComposer.class));
+        verify(visitor.getClient(), never()).sendResponse(any(MessageComposer.class));
+    }
 }

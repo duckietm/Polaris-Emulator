@@ -43,13 +43,12 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     /**
      * Player-first: clicking the chest opens the player Scrigno UI (balance + deposit/withdraw) instead
      * of the wired-config dialog. The contents stay a {@link ChestStorage} so contracts / give-from-chest
-     * keep working. Anyone can open; withdraw is gated to room rights server-side (see ChestWithdrawEvent).
+     * keep working. Who may look inside is {@link ChestOpenHelper#mayOpen}: everyone when the chest says
+     * so, else its owner and players with rights; withdrawing is checked again server-side.
      */
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         if (client == null || room == null) return;
-        // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
-        if (!this.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
     }
 

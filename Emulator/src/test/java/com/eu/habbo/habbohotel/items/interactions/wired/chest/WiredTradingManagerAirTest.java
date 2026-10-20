@@ -229,6 +229,35 @@ class WiredTradingManagerAirTest {
         assertNull(manager.getSession(this.habbo));
     }
 
+    @Test
+    void theTableTakesNineKindsOfFurniAndAnyNumberOfEach() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(20, OWNER, chestFurni(), "", 0, 0);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        List<Integer> kinds = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            HabboItem item = give(400 + i, "chair" + i, 40 + i);
+            when(item.getBaseItem().allowInventoryStack()).thenReturn(true);
+            kinds.add(400 + i);
+        }
+        List<Integer> chairs = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            HabboItem item = give(450 + i, "chair0", 40);
+            when(item.getBaseItem().allowInventoryStack()).thenReturn(true);
+            chairs.add(450 + i);
+        }
+
+        manager.openDeposit(this.habbo, chest, 300);
+        assertEquals(9, manager.offer(this.habbo, kinds, false), "AIR's offer grid has nine slots");
+        assertEquals(
+                WiredTradeErrorComposer.TOO_MANY_DIFFERENT_ITEMS,
+                this.sent(WiredTradeErrorComposer.class).get(0).getErrorId());
+        assertTrue(this.inventory.containsKey(409), "the tenth kind stays in the inventory");
+
+        assertEquals(12, manager.offer(this.habbo, chairs, false), "more of a kind already on the table fits");
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(21, chest.getContents().furniItemCount());
+    }
+
     private ContractRules thirtyCoinsForTrophies(int trophies) {
         return ContractRules.of(
                 List.of(List.of(Term.currency(InteractionWiredContract.DIR_PAY, -1, 30))),

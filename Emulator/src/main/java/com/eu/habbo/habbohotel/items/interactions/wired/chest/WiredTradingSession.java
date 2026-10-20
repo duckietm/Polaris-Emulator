@@ -34,6 +34,12 @@ public class WiredTradingSession {
     public static final int MAX_OFFERED_ITEMS = 100;
 
     /**
+     * Kinds of furni the table takes: AIR's offer grid has nine slots, one per kind with its count, and the
+     * official error 2 ("too many different items") refuses a tenth.
+     */
+    static final int MAX_OFFERED_TYPES = 9;
+
+    /**
      * The client counts three seconds between accepting and being allowed to confirm. The server does
      * not trust that clock, it only refuses a confirmation that arrives implausibly early.
      */

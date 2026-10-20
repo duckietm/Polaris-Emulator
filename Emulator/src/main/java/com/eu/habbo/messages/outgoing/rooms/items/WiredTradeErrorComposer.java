@@ -15,6 +15,9 @@ public class WiredTradeErrorComposer extends MessageComposer {
     /** More items than a trade takes. */
     public static final int TOO_MANY_ITEMS = 1;
 
+    /** More kinds of furni than the table has slots for. */
+    public static final int TOO_MANY_DIFFERENT_ITEMS = 2;
+
     /** More than the chests can hold. */
     public static final int EXCEEDS_CAPACITY = 9;
 

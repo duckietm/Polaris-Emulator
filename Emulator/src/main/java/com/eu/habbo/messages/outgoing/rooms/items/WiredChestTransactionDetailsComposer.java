@@ -18,7 +18,7 @@ import com.eu.habbo.messages.outgoing.Outgoing;
  *
  * The item list is empty for a currency transaction. {@code spriteId} is the furnidata class id, the
  * same identity {@link ChestDataComposer} sends, so the client can render an icon without a lookup
- * table of its own.
+ * table of its own; it is negated for a wall item, so the icon comes from the right furni list.
  */
 public class WiredChestTransactionDetailsComposer extends MessageComposer {
     private final ChestTransactionLog.Details details;

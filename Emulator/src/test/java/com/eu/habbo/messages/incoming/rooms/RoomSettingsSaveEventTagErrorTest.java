@@ -1,0 +1,21 @@
+package com.eu.habbo.messages.incoming.rooms;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class RoomSettingsSaveEventTagErrorTest {
+    @Test
+    void namesTheFirstTagThePredicateRejects() {
+        assertEquals(
+                "staffroom",
+                RoomSettingsSaveEvent.offendingTag(List.of("fun", "staffroom"), tag -> tag.contains("staff")));
+    }
+
+    @Test
+    void isEmptyWhenNoSingleTagIsRejected() {
+        assertEquals("", RoomSettingsSaveEvent.offendingTag(List.of("fun", "games"), tag -> tag.contains("staff")));
+        assertEquals("", RoomSettingsSaveEvent.offendingTag(List.of(), tag -> true));
+    }
+}

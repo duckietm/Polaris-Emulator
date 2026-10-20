@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
+import com.eu.habbo.habbohotel.items.interactions.NikoTrophy;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -46,7 +47,7 @@ public class RoomFloorItemsComposer extends MessageComposer {
                                             ? 2147483001
                                             : (item instanceof InteractionTileWalkMagic
                                                     ? StackHelperExtradata.multiWalkExtra(item.getExtradata())
-                                                    : 1))));
+                                                    : NikoTrophy.extraOr(item, 1)))));
             item.serializeExtradata(this.response);
             this.response.appendInt(item.getSecondsToExpiration());
             this.response.appendInt(FurnitureUsagePolicy.of(item));

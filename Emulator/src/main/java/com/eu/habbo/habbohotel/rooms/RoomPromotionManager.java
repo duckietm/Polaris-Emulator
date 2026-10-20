@@ -1,14 +1,13 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.IntSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages room promotions.
@@ -43,14 +42,12 @@ public class RoomPromotionManager {
         }
 
         try (PreparedStatement statement = connection.prepareStatement(
-            "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
+                "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
             statement.setInt(1, this.roomId.getAsInt());
             statement.setInt(2, Emulator.getIntUnixTimestamp());
 
             try (ResultSet promotionSet = statement.executeQuery()) {
-                RoomPromotion loadedPromotion = promotionSet.next()
-                        ? new RoomPromotion(this.room, promotionSet)
-                        : null;
+                RoomPromotion loadedPromotion = promotionSet.next() ? new RoomPromotion(this.room, promotionSet) : null;
                 this.promotion = loadedPromotion;
                 this.promoted = loadedPromotion != null;
             }
@@ -90,8 +87,13 @@ public class RoomPromotionManager {
         this.promoted = true;
 
         if (this.promotion == null) {
-            this.promotion = new RoomPromotion(this.room, title, description,
-                Emulator.getIntUnixTimestamp() + (120 * 60), Emulator.getIntUnixTimestamp(), category);
+            this.promotion = new RoomPromotion(
+                    this.room,
+                    title,
+                    description,
+                    Emulator.getIntUnixTimestamp() + (120 * 60),
+                    Emulator.getIntUnixTimestamp(),
+                    category);
         } else {
             this.promotion.setTitle(title);
             this.promotion.setDescription(description);
@@ -99,9 +101,9 @@ public class RoomPromotionManager {
             this.promotion.setCategory(category);
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource()
-            .getConnection(); PreparedStatement statement = connection.prepareStatement(
-            "INSERT INTO room_promotions (room_id, title, description, end_timestamp, start_timestamp, category) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, description = ?, end_timestamp = ?, category = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO room_promotions (room_id, title, description, end_timestamp, start_timestamp, category) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, description = ?, end_timestamp = ?, category = ?")) {
             statement.setInt(1, this.room.getId());
             statement.setString(2, title);
             statement.setString(3, description);
@@ -118,6 +120,32 @@ public class RoomPromotionManager {
         }
 
         this.room.setNeedsUpdate(true);
+    }
+
+    /**
+     * Ends the running promotion now (the owner cancelled the room event). The row keeps its
+     * text with an end time in the past, so it is no longer loaded and a new purchase starts fresh.
+     *
+     * @return whether a promotion was running
+     */
+    public boolean endPromotion(int now) {
+        RoomPromotion current = this.promotion;
+        boolean wasPromoted = current != null && current.getEndTimestamp() > now;
+
+        this.promoted = false;
+        this.promotion = null;
+
+        if (current != null) {
+            current.setEndTimestamp(Math.min(current.getEndTimestamp(), now));
+            current.needsUpdate = true;
+            current.save();
+        }
+
+        if (this.room != null) {
+            this.room.setNeedsUpdate(true);
+        }
+
+        return wasPromoted;
     }
 
     /**

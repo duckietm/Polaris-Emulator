@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
+import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomCategory;
 import com.eu.habbo.habbohotel.rooms.RoomState;
@@ -12,8 +13,9 @@ import com.eu.habbo.messages.outgoing.rooms.RoomSettingsSavedComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomSettingsUpdatedComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomThicknessComposer;
 import com.eu.habbo.messages.outgoing.unknown.RoomCategoryUpdateMessageComposer;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +96,7 @@ public class RoomSettingsSaveEvent extends MessageHandler {
 
                 int categoryId = this.packet.readInt();
                 StringBuilder tags = new StringBuilder();
-                Set<String> uniqueTags = new HashSet<>();
+                Set<String> uniqueTags = new LinkedHashSet<>();
                 int count = this.packet.readInt();
                 if (count < 0 || count > MAX_TAGS) {
                     return;
@@ -102,9 +104,10 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 for (int i = 0; i < count; i++) {
                     String tag = this.packet.readString();
 
+                    // The client marks the tag field whose text equals the info string (AIR RoomSettingsCtrl).
                     if (tag.length() > 15) {
                         this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                                room.getId(), RoomEditSettingsErrorComposer.TAGS_TOO_LONG, ""));
+                                room.getId(), RoomEditSettingsErrorComposer.TAGS_TOO_LONG, tag));
                         return;
                     }
                     if (!uniqueTags.contains(tag)) {
@@ -113,12 +116,15 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                     }
                 }
 
-                if (!Emulator.getGameEnvironment()
-                        .getWordFilter()
-                        .filter(tags.toString(), this.client.getHabbo())
-                        .contentEquals(tags)) {
+                WordFilter wordFilter = Emulator.getGameEnvironment().getWordFilter();
+                if (!wordFilter.filter(tags.toString(), this.client.getHabbo()).contentEquals(tags)) {
+                    String badTag = offendingTag(
+                            uniqueTags,
+                            tag -> !wordFilter
+                                    .filter(tag, this.client.getHabbo())
+                                    .equals(tag));
                     this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.ROOM_TAGS_BADWWORDS, ""));
+                            room.getId(), RoomEditSettingsErrorComposer.ROOM_TAGS_BADWWORDS, badTag));
                     return;
                 }
 
@@ -128,7 +134,9 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                             .split(";")) {
                         if (tags.toString().contains(s)) {
                             this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                                    room.getId(), RoomEditSettingsErrorComposer.RESTRICTED_TAGS, "1"));
+                                    room.getId(),
+                                    RoomEditSettingsErrorComposer.RESTRICTED_TAGS,
+                                    offendingTag(uniqueTags, tag -> tag.contains(s))));
                             return;
                         }
                     }
@@ -261,6 +269,16 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 // TODO Find packet for update room name.
             }
         }
+    }
+
+    /** First tag the predicate rejects, or "" when none does on its own. */
+    static String offendingTag(Iterable<String> tags, Predicate<String> offends) {
+        for (String tag : tags) {
+            if (offends.test(tag)) {
+                return tag;
+            }
+        }
+        return "";
     }
 
     private static boolean isInRange(int value, int min, int max) {

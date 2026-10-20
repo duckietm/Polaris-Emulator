@@ -4,18 +4,22 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionAreaHideControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
+import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
+import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameUpCounter;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.pets.MonsterplantPet;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.pets.RideablePet;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomAreaHideSupport;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.List;
 
 /**
- * AIR's smart variables ({@code ~}, variable type 3): read-only values computed from what a furni or a pet is. A key
+ * AIR's smart variables ({@code ~}, variable type 3): values computed from what a furni or a pet is, read only except
+ * {@code ~clock.pulse_count}. A key
  * only has a value on the kind it describes (a chest's {@code ~chest.*}, a horse's {@code ~horse.*}); elsewhere it is
  * absent, which AIR shows as an invisible variable. The recolorable colour and the teleport target stay in {@link
  * WiredInternalVariableSupport}, which already wrote them.
@@ -38,6 +42,18 @@ final class WiredSmartVariables {
     static final String CHEST_CAPACITY = "~chest.capacity";
     static final String CHEST_OPEN = "~chest.is_open";
     static final String CHEST_DONATABLE = "~chest.is_donatable";
+    static final String CLOCK_STATE = "~clock.state";
+    static final String CLOCK_PULSE_COUNT = "~clock.pulse_count";
+    static final String CLOCK_GAME_AWARE = "~clock.is_game_aware";
+
+    /** AIR's {@code ~clock.state}: 0 Initial (stopped), 1 Running, 2 Paused. */
+    static final int CLOCK_INITIAL = 0;
+
+    static final int CLOCK_RUNNING = 1;
+    static final int CLOCK_PAUSED = 2;
+
+    /** A pulse is half a second, the unit of AIR's clock and delay sliders. */
+    private static final int PULSE_MS = 500;
 
     static final String PET_LEVEL = "~pet.level";
     static final String PET_EXPERIENCE = "~pet.experience";
@@ -54,6 +70,9 @@ final class WiredSmartVariables {
     static final String HORSE_IS_RIDING = "~horse.is_riding";
     static final String HORSE_CONTROLLER = "~horse.controller_user_id";
     static final String PLANT_RARITY = "~plant.rarity_level";
+    static final String PLANT_SHAPE = "~plant.shape";
+    static final String PLANT_COLOR = "~plant.color";
+    static final String PLANT_CAN_HARVEST = "~plant.can_harvest";
     static final String PLANT_CAN_BREED = "~plant.can_breed";
     static final String PLANT_CAN_REVIVE = "~plant.can_revive";
     static final String PLANT_IS_DEAD = "~plant.is_dead";
@@ -84,7 +103,10 @@ final class WiredSmartVariables {
             CHEST_AUTO_LOCK,
             CHEST_CAPACITY,
             CHEST_OPEN,
-            CHEST_DONATABLE);
+            CHEST_DONATABLE,
+            CLOCK_STATE,
+            CLOCK_PULSE_COUNT,
+            CLOCK_GAME_AWARE);
 
     static final List<String> USER_KEYS = List.of(
             PET_LEVEL,
@@ -102,7 +124,10 @@ final class WiredSmartVariables {
             HORSE_IS_RIDING,
             HORSE_CONTROLLER,
             PLANT_RARITY,
+            PLANT_SHAPE,
+            PLANT_COLOR,
             PLANT_CAN_BREED,
+            PLANT_CAN_HARVEST,
             PLANT_CAN_REVIVE,
             PLANT_IS_DEAD,
             PLANT_IS_GROWING,
@@ -179,7 +204,48 @@ final class WiredSmartVariables {
             };
         }
 
+        if (key.startsWith("~clock.")) {
+            if (!(item instanceof InteractionGameTimer clock)) return null;
+            return switch (key) {
+                case CLOCK_STATE -> clock.isPaused() ? CLOCK_PAUSED : clock.isRunning() ? CLOCK_RUNNING : CLOCK_INITIAL;
+                case CLOCK_PULSE_COUNT -> clockPulses(clock);
+                // Both kinds start the room's games when they start and end them when they stop.
+                case CLOCK_GAME_AWARE -> 1;
+                default -> null;
+            };
+        }
+
         return null;
+    }
+
+    /**
+     * The time a counter or timer shows, in pulses (half seconds): what an up counter has counted, what a game timer
+     * has left.
+     */
+    static int clockPulses(InteractionGameTimer clock) {
+        if (clock instanceof InteractionGameUpCounter counter) return counter.getCurrentTimeInMs() / PULSE_MS;
+        return Math.max(0, clock.getTimeNow()) * 2;
+    }
+
+    /**
+     * Set the time a counter or timer shows to {@code pulses} half seconds (AIR {@code ~clock.pulse_count} is
+     * writable). An up counter is set as Adjust Clock's "set" does, so a "clock reaches" trigger for that time fires; a
+     * game timer keeps whole seconds and goes on from there when running.
+     */
+    static boolean writeClockPulses(Room room, HabboItem item, int pulses) {
+        if (room == null || !(item instanceof InteractionGameTimer clock)) return false;
+
+        int value = Math.max(0, pulses);
+        if (clock instanceof InteractionGameUpCounter counter) {
+            counter.adjustCounter(room, 2, 0, value);
+            return true;
+        }
+
+        clock.setTimeNow(value / 2);
+        clock.setExtradata(clock.getTimeNow() + "\t" + clock.getBaseTime());
+        room.updateItem(clock);
+        clock.needsUpdate(true);
+        return true;
     }
 
     static boolean hasUserValue(Pet pet, String key) {
@@ -194,7 +260,12 @@ final class WiredSmartVariables {
             if (!(pet instanceof MonsterplantPet plant)) return null;
             return switch (key) {
                 case PLANT_RARITY -> plant.getRarity();
+                // AIR's shape is 0..11; our plant types are 1..12 (bodyRarity).
+                case PLANT_SHAPE -> Math.max(0, plant.getType() - 1);
+                case PLANT_COLOR -> plant.getHue();
                 case PLANT_CAN_BREED -> flag(plant.canBreed());
+                // A grown plant that is alive (AIR's harvest button is never shown, so the flag has no client use).
+                case PLANT_CAN_HARVEST -> flag(plant.isFullyGrown() && !plant.isDead());
                 case PLANT_CAN_REVIVE, PLANT_IS_DEAD -> flag(plant.isDead());
                 case PLANT_IS_GROWING -> flag(!plant.isFullyGrown());
                 case PLANT_WELLBEING_LEFT -> plant.remainingTimeToLive();

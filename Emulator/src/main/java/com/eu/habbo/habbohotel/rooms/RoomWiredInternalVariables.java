@@ -22,7 +22,8 @@ import java.util.Set;
 public final class RoomWiredInternalVariables {
 
     /** Internal variables that Give Variable and Remove Variable can hand out and take away (a presence flag). */
-    private static final Set<String> CREATE_AND_DELETE_KEYS = Set.of("@handitem_id", "@has_rights", "@can_move_freely");
+    private static final Set<String> CREATE_AND_DELETE_KEYS =
+            Set.of("@handitem_id", "@has_rights", "@can_move_freely", "@habbicon");
 
     private static final List<Row> ROWS = rows();
 

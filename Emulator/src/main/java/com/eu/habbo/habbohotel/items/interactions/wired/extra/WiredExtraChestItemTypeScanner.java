@@ -19,6 +19,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -221,7 +223,9 @@ public class WiredExtraChestItemTypeScanner extends InteractionWiredExtra
 
     @Override
     public String[] officialVariableIds() {
-        return this.variableItemId > 0 ? new String[] {String.valueOf(this.variableItemId)} : new String[0];
+        return this.variableItemId > 0
+                ? new String[] {WiredVariableIds.toWire(WiredVariableTargets.OFFICIAL_CONTEXT, this.variableItemId)}
+                : new String[0];
     }
 
     @Override
@@ -297,14 +301,8 @@ public class WiredExtraChestItemTypeScanner extends InteractionWiredExtra
     }
 
     private static int parseVariableId(String text) {
-        if (text == null) return 0;
-        String value = text.trim();
-        if (value.startsWith("custom:")) value = value.substring("custom:".length());
-        try {
-            return Math.max(0, Integer.parseInt(value));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        // The variable list's id (ctx:12), or custom:12 / a bare box id from an older client.
+        return WiredVariableIds.boxIdOf(text);
     }
 
     static class JsonData {

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.inventory.AddPetComposer;
@@ -17,15 +18,31 @@ public class PetPickupEvent extends MessageHandler {
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
+
+        // AIR playtest mode: no pet is picked up, the user's own included.
+        if (RoomPlayTestSupport.isRestricted(this.client.getHabbo())) return;
 
         Pet pet = room.getPet(petId);
 
         if (pet != null) {
-            if (this.client.getHabbo().getHabboInfo().getId() == pet.getUserId() || room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
-                if (!this.client.getHabbo().hasPermission(Permission.ACC_UNLIMITED_PETS) && this.client.getHabbo().getInventory().getPetsComponent().getPets().size() >= PetManager.MAXIMUM_PET_INVENTORY_SIZE) {
-                    this.client.getHabbo().alert(Emulator.getTexts().getValue("error.pets.max.inventory").replace("%amount%", PetManager.MAXIMUM_PET_INVENTORY_SIZE + ""));
+            if (this.client.getHabbo().getHabboInfo().getId() == pet.getUserId()
+                    || room.getOwnerId()
+                            == this.client.getHabbo().getHabboInfo().getId()
+                    || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+                if (!this.client.getHabbo().hasPermission(Permission.ACC_UNLIMITED_PETS)
+                        && this.client
+                                        .getHabbo()
+                                        .getInventory()
+                                        .getPetsComponent()
+                                        .getPets()
+                                        .size()
+                                >= PetManager.MAXIMUM_PET_INVENTORY_SIZE) {
+                    this.client
+                            .getHabbo()
+                            .alert(Emulator.getTexts()
+                                    .getValue("error.pets.max.inventory")
+                                    .replace("%amount%", PetManager.MAXIMUM_PET_INVENTORY_SIZE + ""));
                     return;
                 }
 
@@ -37,13 +54,14 @@ public class PetPickupEvent extends MessageHandler {
                 }
 
                 pet.removeFromRoom();
-                pet.run();  // Run synchronously to ensure DB is updated before returning pet to inventory
+                pet.run(); // Run synchronously to ensure DB is updated before returning pet to inventory
 
                 if (this.client.getHabbo().getHabboInfo().getId() == pet.getUserId()) {
                     this.client.sendResponse(new AddPetComposer(pet));
                     this.client.getHabbo().getInventory().getPetsComponent().addPet(pet);
                 } else {
-                    Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(pet.getUserId());
+                    Habbo habbo =
+                            Emulator.getGameEnvironment().getHabboManager().getHabbo(pet.getUserId());
 
                     if (habbo != null) {
                         habbo.getClient().sendResponse(new AddPetComposer(pet));

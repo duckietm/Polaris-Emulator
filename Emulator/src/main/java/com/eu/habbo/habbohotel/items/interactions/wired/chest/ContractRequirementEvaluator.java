@@ -20,6 +20,12 @@ import java.util.function.IntUnaryOperator;
  * <p>Alternatives are tried in order and the first satisfied one wins, so the owner's ordering is the
  * priority: put the cheapest option first and that is the one a player pays.
  *
+ * <p>A negotiation is judged the way AIR's trade errors describe it ({@code
+ * wired_transactions.notification.trade_error.4} "you have already met the requirements", {@code .5} "exceeds the
+ * offering requirements"): the table may never hold more than an alternative asks, so the offer is "met" only when it
+ * is exactly one alternative, coins included ({@link #fits}, {@link #firstExact}). The older at-least check
+ * ({@link #firstSatisfied}) still counts how many runs an offer covers.
+ *
  * <p>Deliberately free of emulator types: it takes a wallet lookup and a flat list of offered items,
  * which keeps the whole decision unit-testable without a running hotel.
  */
@@ -28,15 +34,27 @@ public final class ContractRequirementEvaluator {
 
     /**
      * One item a player has put on the table. {@code posterId} is a poster's poster id (its extradata), empty for
-     * anything else: posters share one base item, so a term naming a poster is paid only by that poster.
+     * anything else: posters share one base item, so a term naming a poster is paid only by that poster. {@code
+     * creditValue} is what a credit furni is worth (0 for any other furni): those are the offer's coins, never one of
+     * its furni.
      */
-    public record OfferedItem(int itemId, boolean wallItem, int baseItemId, String posterId) {
+    public record OfferedItem(int itemId, boolean wallItem, int baseItemId, String posterId, int creditValue) {
         public OfferedItem {
             posterId = posterId == null ? "" : posterId;
+            creditValue = Math.max(0, creditValue);
+        }
+
+        public OfferedItem(int itemId, boolean wallItem, int baseItemId, String posterId) {
+            this(itemId, wallItem, baseItemId, posterId, 0);
         }
 
         public OfferedItem(int itemId, boolean wallItem, int baseItemId) {
-            this(itemId, wallItem, baseItemId, "");
+            this(itemId, wallItem, baseItemId, "", 0);
+        }
+
+        /** A credit furni: it pays coins, not a furni term. */
+        public boolean isCredit() {
+            return this.creditValue > 0;
         }
     }
 
@@ -118,6 +136,117 @@ public final class ContractRequirementEvaluator {
         return missing.isEmpty()
                 ? new Match(ruleIndex, List.copyOf(consumed), List.of())
                 : new Match(-1, List.of(), List.copyOf(missing));
+    }
+
+    /**
+     * Whether the offer stays within one alternative: every furni on the table is one the rule asks for, no type more
+     * often than it asks, and the coins ({@code credits}, the credit furni on the table) no more than its coins. An
+     * item that would break this is AIR's trade error 5 ("exceeds the offering requirements").
+     */
+    public static boolean fits(List<Term> rule, int credits, List<OfferedItem> offered) {
+        if (rule == null) return false;
+        Claim claim = claim(rule, offered);
+        return claim.unclaimed == 0 && Math.max(0, credits) <= coins(rule);
+    }
+
+    /** Whether the offer is exactly one alternative: everything it asks, nothing more, the coins to the credit. */
+    public static boolean matchesExactly(List<Term> rule, int credits, List<OfferedItem> offered) {
+        if (rule == null) return false;
+        Claim claim = claim(rule, offered);
+        return claim.unclaimed == 0 && claim.missing.isEmpty() && Math.max(0, credits) == coins(rule);
+    }
+
+    /** True when the offer stays within at least one of the contract's alternatives. */
+    public static boolean fitsAny(ContractRules rules, int credits, List<OfferedItem> offered) {
+        if (rules == null) return false;
+        for (List<Term> rule : rules.giveRules()) {
+            if (fits(rule, credits, offered)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The first alternative the offer is exactly, with the furni it claims (every non-credit item on the table; the
+     * credit furni pay its coins). When none is, the shortfall of the closest one fitting the offer, for the "not met"
+     * indicator.
+     */
+    public static Match firstExact(ContractRules rules, int credits, List<OfferedItem> offered) {
+        if (rules == null || rules.giveRules().isEmpty()) return NO_RULES;
+
+        List<List<Term>> alternatives = rules.giveRules();
+        Match closest = null;
+        for (int index = 0; index < alternatives.size(); index++) {
+            List<Term> rule = alternatives.get(index);
+            Claim claim = claim(rule, offered);
+            int coins = coins(rule);
+            int held = Math.max(0, credits);
+            if (claim.unclaimed == 0 && claim.missing.isEmpty() && held == coins) {
+                return new Match(index, List.copyOf(claim.consumed), List.of());
+            }
+
+            List<Term> missing = new ArrayList<>(claim.missing);
+            if (held < coins) {
+                missing.add(Term.currency(
+                        InteractionWiredContract.DIR_PAY, InteractionWiredContract.CURRENCY_CREDITS, coins - held));
+            }
+            Match attempt = new Match(-1, List.of(), List.copyOf(missing));
+            if (claim.unclaimed == 0
+                    && held <= coins
+                    && (closest == null || missing.size() < closest.missing().size())) {
+                closest = attempt;
+            }
+        }
+        return closest == null ? NO_RULES : closest;
+    }
+
+    /** Every coin the rule asks for, whatever the currency: coins are paid with credit furni. */
+    static int coins(List<Term> rule) {
+        long sum = 0;
+        for (Term term : rule) {
+            if (term != null && term.isCurrency() && term.amount > 0) sum += term.amount;
+        }
+        return (int) Math.min(sum, Integer.MAX_VALUE);
+    }
+
+    /** How the non-credit furni on the table spread over a rule's furni terms. */
+    private record Claim(List<Integer> consumed, List<Term> missing, int unclaimed) {}
+
+    /**
+     * Put every non-credit item on a furni term that pays it and still has room. A term naming a poster is filled
+     * before one that takes any poster of its base item, so a named poster never sits on a generic term another poster
+     * needed.
+     */
+    private static Claim claim(List<Term> rule, List<OfferedItem> offered) {
+        List<Term> terms = new ArrayList<>();
+        for (Term term : rule) {
+            if (term != null && !term.isCurrency() && term.amount > 0) terms.add(term);
+        }
+        terms.sort((left, right) ->
+                Boolean.compare(left.posterId().isEmpty(), right.posterId().isEmpty()));
+
+        int[] filled = new int[terms.size()];
+        List<Integer> consumed = new ArrayList<>();
+        int unclaimed = 0;
+        if (offered != null) {
+            for (OfferedItem item : offered) {
+                if (item == null || item.isCredit()) continue;
+                boolean placed = false;
+                for (int t = 0; t < terms.size() && !placed; t++) {
+                    if (filled[t] < terms.get(t).amount && pays(item, terms.get(t))) {
+                        filled[t]++;
+                        placed = true;
+                    }
+                }
+                if (placed) consumed.add(item.itemId());
+                else unclaimed++;
+            }
+        }
+
+        List<Term> missing = new ArrayList<>();
+        for (int t = 0; t < terms.size(); t++) {
+            if (filled[t] < terms.get(t).amount) missing.add(shortfall(terms.get(t), terms.get(t).amount - filled[t]));
+        }
+        return new Claim(consumed, missing, unclaimed);
     }
 
     /**

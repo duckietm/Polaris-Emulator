@@ -72,6 +72,19 @@ class UserPreferencePacketsTest {
         assertEquals("1,0,1,1,volterscript", preferences.encode());
     }
 
+    @Test
+    void readsThePlaytestSwitchBackFromTheStoredPreferences() {
+        assertTrue(UserPreferencePackets.isPlayTestModeStored("1,0,1,1,volter"));
+        assertFalse(UserPreferencePackets.isPlayTestModeStored("1,1,0,1,default"));
+        assertFalse(UserPreferencePackets.isPlayTestModeStored(""));
+        assertFalse(UserPreferencePackets.isPlayTestModeStored(null));
+        assertFalse(UserPreferencePackets.isPlayTestModeStored("1,1"));
+
+        UserPreferencePackets.WiredMenuPreferences preferences =
+                new UserPreferencePackets.WiredMenuPreferences(false, false, true, false, false, "");
+        assertTrue(UserPreferencePackets.isPlayTestModeStored(preferences.encode()));
+    }
+
     private static ClientMessage message(BufferBuilder builder) {
         return new ClientMessage(0, builder.value);
     }

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionMonsterPlantSe
 import com.eu.habbo.habbohotel.pets.MonsterplantPet;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -59,6 +60,10 @@ public class ToggleFloorItemEvent extends MessageHandler {
                 this.client.getHabbo().alert(FurniDataCommand.buildItemInfo(item, state));
                 return;
             }
+
+            // AIR playtest mode: only furni that everybody may use (usage policy 2) can be used, so a
+            // wired box does not open its editor either.
+            if (!RoomPlayTestSupport.mayUse(this.client.getHabbo(), item)) return;
 
             WiredManager.cancelPendingUserClicksFurni(
                     room, this.client.getHabbo().getRoomUnit(), item);

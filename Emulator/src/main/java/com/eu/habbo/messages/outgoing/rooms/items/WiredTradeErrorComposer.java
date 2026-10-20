@@ -18,6 +18,12 @@ public class WiredTradeErrorComposer extends MessageComposer {
     /** More kinds of furni than the table has slots for. */
     public static final int TOO_MANY_DIFFERENT_ITEMS = 2;
 
+    /** The table already meets every requirement ({@code trade_error.4}). */
+    public static final int ALREADY_MET = 4;
+
+    /** More than the contract asks: a furni it does not ask for, more of one, or more coins ({@code trade_error.5}). */
+    public static final int EXCEEDS_REQUIREMENTS = 5;
+
     /** More than the chests can hold. */
     public static final int EXCEEDS_CAPACITY = 9;
 

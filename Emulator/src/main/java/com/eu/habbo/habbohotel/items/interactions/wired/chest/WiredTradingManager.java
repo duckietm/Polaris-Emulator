@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredTransactionVariables;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
@@ -24,7 +25,6 @@ import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessCompose
 import com.eu.habbo.threading.ThreadPooling;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -95,6 +95,13 @@ public class WiredTradingManager {
         Negotiation negotiation =
                 habbo == null ? null : this.sessions.get(habbo.getHabboInfo().getId());
         return negotiation == null ? null : negotiation.session();
+    }
+
+    /** The first contract furni the player's negotiation was started from; 0 for none or no negotiation. */
+    public synchronized int contractId(Habbo habbo) {
+        Negotiation negotiation =
+                habbo == null ? null : this.sessions.get(habbo.getHabboInfo().getId());
+        return negotiation == null ? 0 : firstOf(negotiation.contractIds());
     }
 
     /** Open a contract trade against one chest. Kept for callers that pass a single chest. */
@@ -276,6 +283,8 @@ public class WiredTradingManager {
             // value of the credit furni on the table.
             session = new WiredTradingSession(
                     rules, multiplier, vault, type -> vault.heldCredits(), timeoutSeconds, System.currentTimeMillis());
+            // A deposit or a donation takes anything; a contract's table no more than the contract asks.
+            if (depositOnly || donation) session.openTable();
             this.sessions.put(
                     habbo.getHabboInfo().getId(),
                     new Negotiation(
@@ -411,7 +420,8 @@ public class WiredTradingManager {
 
     /**
      * Put items on the table or take them off. Items that may not be offered here are refused with
-     * the official trade error (0 not a valid item, 1 too many items, 9 more than the chest holds).
+     * the official trade error (0 not a valid item, 1 too many items, 2 too many kinds, 4 the requirements
+     * are already met, 5 more than the contract asks, 9 more than the chest holds).
      *
      * @return how many items moved
      */
@@ -423,6 +433,7 @@ public class WiredTradingManager {
         if (remove) return session.withdrawItems(itemIds);
 
         List<Integer> allowed = new ArrayList<>();
+        List<OfferedItem> pending = new ArrayList<>();
         int error = -1;
         int already = session.getOfferedItems().size();
         Set<String> kinds = new HashSet<>();
@@ -447,8 +458,19 @@ public class WiredTradingManager {
                 error = WiredTradeErrorComposer.EXCEEDS_CAPACITY;
                 break;
             }
+            OfferedItem described = negotiation.vault().describe(itemId);
+            int refusal = session.offerRefusal(pending, described);
+            if (refusal == WiredTradingSession.OFFER_ALREADY_MET) {
+                error = WiredTradeErrorComposer.ALREADY_MET;
+                break;
+            }
+            if (refusal == WiredTradingSession.OFFER_EXCEEDS) {
+                error = WiredTradeErrorComposer.EXCEEDS_REQUIREMENTS;
+                continue;
+            }
             kinds.add(kind);
             allowed.add(itemId);
+            pending.add(described);
         }
 
         if (error >= 0 && habbo.getClient() != null) {
@@ -563,10 +585,14 @@ public class WiredTradingManager {
 
     /** End a negotiation that settled. The items it consumed are gone by then, by design. */
     public void complete(Habbo habbo) {
-        complete(habbo, -1);
+        complete(habbo, -1, null);
     }
 
-    private void complete(Habbo habbo, int successType) {
+    /**
+     * {@code totals} is what the transaction moved, for {@code @event.transaction_complete.*}; null for a deposit, which
+     * fires nothing.
+     */
+    private void complete(Habbo habbo, int successType, WiredEvent.TransactionTotals totals) {
         Negotiation negotiation;
         synchronized (this) {
             negotiation = this.sessions.remove(
@@ -581,7 +607,9 @@ public class WiredTradingManager {
             if (successType >= 0) habbo.getClient().sendResponse(new WiredTransactionSuccessComposer(successType));
         }
 
-        if (!negotiation.depositOnly()) raise(habbo, WiredEvent.Type.TRANSACTION_COMPLETE);
+        if (!negotiation.depositOnly()) {
+            raise(habbo, WiredEvent.Type.TRANSACTION_COMPLETE, ChestTransactionFailures.NONE, totals);
+        }
     }
 
     /**
@@ -628,6 +656,7 @@ public class WiredTradingManager {
         List<Term> paidRule = settled.giveRules().get(match.ruleIndex());
         List<Term> reward = settled.getRule();
         List<InteractionWiredChest> chests = WiredChestPayouts.usable(negotiation.chests());
+        WiredEvent.TransactionTotals[] totals = {null};
 
         int failure = WiredChestPayouts.holding(chests, () -> {
             if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
@@ -641,8 +670,8 @@ public class WiredTradingManager {
                 HabboItem item = negotiation.vault().peek(itemId);
                 if (item != null) furniPayment.add(item);
             }
-            List<HabboItem> creditPayment =
-                    pickCredits(negotiation.vault(), match.consumedItemIds(), WiredChestPayouts.coins(paidRule));
+            List<HabboItem> creditPayment = pickCredits(
+                    negotiation.vault().heldItems(), match.consumedItemIds(), WiredChestPayouts.coins(paidRule));
             if (creditPayment == null) return ChestTransactionFailures.INSUFFICIENT_FUNDS;
 
             int room = storeFailure(chests, furniPayment, creditPayment);
@@ -657,6 +686,8 @@ public class WiredTradingManager {
                 habbo.getClient()
                         .sendResponse(WiredTransactionSuccessComposer.reward(given, negotiation.rewardText(), false));
             }
+            totals[0] = WiredTransactionVariables.totals(
+                    negotiation.session().settledTimes(), furniPayment.size(), coinsOf(creditPayment), given);
             return ChestTransactionFailures.NONE;
         });
 
@@ -669,7 +700,8 @@ public class WiredTradingManager {
                 habbo,
                 reward.isEmpty()
                         ? WiredTransactionSuccessComposer.TYPE_PAYMENT
-                        : WiredTransactionSuccessComposer.TYPE_TRADE);
+                        : WiredTransactionSuccessComposer.TYPE_TRADE,
+                totals[0]);
         return true;
     }
 
@@ -689,24 +721,22 @@ public class WiredTradingManager {
         return WiredEarnings.CATEGORY_GAMES;
     }
 
-    /** Credit furni from the table, worth at least {@code coins}, largest first; null when short. */
-    private static List<HabboItem> pickCredits(InventoryVault vault, List<Integer> exclude, int coins) {
-        List<HabboItem> picked = new ArrayList<>();
-        if (coins <= 0) return picked;
-
+    /**
+     * The credit furni on the table that pay {@code coins}: all of them, worth exactly that. The table never holds more
+     * than the contract asks (trade error 5) and only settles when it is the price exactly, so a 50 credit furni never
+     * pays a 30 coin price. Null when they are not worth exactly {@code coins}.
+     */
+    static List<HabboItem> pickCredits(List<HabboItem> held, List<Integer> exclude, int coins) {
         List<HabboItem> credits = new ArrayList<>();
-        for (HabboItem item : vault.heldItems()) {
-            if (!exclude.contains(item.getId()) && ChestAirWire.creditValue(item) > 0) credits.add(item);
+        long worth = 0;
+        for (HabboItem item : held) {
+            int value = ChestAirWire.creditValue(item);
+            if (!exclude.contains(item.getId()) && value > 0) {
+                credits.add(item);
+                worth += value;
+            }
         }
-        credits.sort(Comparator.comparingInt(ChestAirWire::creditValue).reversed());
-
-        int covered = 0;
-        for (HabboItem item : credits) {
-            if (covered >= coins) break;
-            picked.add(item);
-            covered += ChestAirWire.creditValue(item);
-        }
-        return covered >= coins ? picked : null;
+        return worth == Math.max(0, coins) ? credits : null;
     }
 
     /** Whether the chests have room for a payment; {@link ChestTransactionFailures#NONE} when they do. */
@@ -813,7 +843,7 @@ public class WiredTradingManager {
         }
 
         negotiation.session().consume(consumed);
-        complete(habbo, WiredTransactionSuccessComposer.TYPE_DEPOSIT);
+        complete(habbo, WiredTransactionSuccessComposer.TYPE_DEPOSIT, null);
         return true;
     }
 
@@ -849,8 +879,18 @@ public class WiredTradingManager {
             return false;
         }
 
-        complete(habbo, WiredTransactionSuccessComposer.TYPE_PAYMENT);
+        complete(
+                habbo,
+                WiredTransactionSuccessComposer.TYPE_PAYMENT,
+                WiredTransactionVariables.totals(1, furni.size(), coinsOf(credits), List.of()));
         return true;
+    }
+
+    /** The coins a set of credit furni is worth. */
+    private static int coinsOf(List<HabboItem> credits) {
+        long coins = 0;
+        for (HabboItem item : credits) coins += ChestAirWire.creditValue(item);
+        return (int) Math.min(coins, Integer.MAX_VALUE);
     }
 
     /** Logs, notifications, open windows and the furni's look after something went into a chest. */
@@ -930,23 +970,21 @@ public class WiredTradingManager {
         return habbo == null ? null : this.sessions.get(habbo.getHabboInfo().getId());
     }
 
+    /** TRANSACTION_FAIL with its reason, for {@code @event.transaction_failed.reason}. */
+    private void raiseFailure(Habbo habbo, int reason) {
+        this.raise(habbo, WiredEvent.Type.TRANSACTION_FAIL, reason, null);
+    }
+
     /**
      * Fire the room's transaction triggers for how a contract trade ended. A negotiated contract does
      * not settle until the player confirms or walks away, so the triggers fire from here.
      */
-    private void raise(Habbo habbo, WiredEvent.Type type) {
-        this.raise(habbo, type, ChestTransactionFailures.NONE);
-    }
-
-    /** TRANSACTION_FAIL with its reason, for {@code @event.transaction_failed.reason}. */
-    private void raiseFailure(Habbo habbo, int reason) {
-        this.raise(habbo, WiredEvent.Type.TRANSACTION_FAIL, reason);
-    }
-
-    private void raise(Habbo habbo, WiredEvent.Type type, int failureReason) {
+    private void raise(Habbo habbo, WiredEvent.Type type, int failureReason, WiredEvent.TransactionTotals totals) {
         if (this.room == null || habbo == null) return;
 
-        WiredEvent.Builder builder = WiredEvent.builder(type, this.room).transactionFailureReason(failureReason);
+        WiredEvent.Builder builder = WiredEvent.builder(type, this.room)
+                .transactionFailureReason(failureReason)
+                .transactionTotals(totals);
         if (habbo.getRoomUnit() != null) builder.actor(habbo.getRoomUnit());
 
         WiredManager.dispatchEffectTriggeredEvent(builder.build());
@@ -1047,7 +1085,7 @@ public class WiredTradingManager {
 
             boolean wall = item.getBaseItem().getType() == FurnitureType.WALL;
             String poster = wall && "poster".equals(item.getBaseItem().getName()) ? item.getExtradata() : "";
-            return new OfferedItem(itemId, wall, item.getBaseItem().getId(), poster);
+            return new OfferedItem(itemId, wall, item.getBaseItem().getId(), poster, ChestAirWire.creditValue(item));
         }
 
         /** Look at a held item without taking it out of the vault's hands. */

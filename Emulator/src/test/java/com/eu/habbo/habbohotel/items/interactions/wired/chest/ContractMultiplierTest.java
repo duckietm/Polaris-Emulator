@@ -103,14 +103,21 @@ class ContractMultiplierTest {
 
         assertFalse(session(upToFour, 1).canAccept(), "it must pay at least once");
 
-        WiredTradingSession seven = session(upToFour, 7);
-        assertEquals(3, seven.timesToSettle(), "seven chairs pay two chairs three times");
-        assertEquals(3, seven.effectiveRules().getRule().get(0).amount);
-        assertTrue(confirm(seven).settled());
-        assertEquals(3, seven.settledTimes());
+        WiredTradingSession six = session(upToFour, 6);
+        assertEquals(3, six.timesToSettle(), "six chairs pay two chairs three times");
+        assertEquals(3, six.effectiveRules().getRule().get(0).amount);
+        assertTrue(confirm(six).settled());
+        assertEquals(3, six.settledTimes());
 
+        // Seven chairs lie between three and four runs: AIR's "met" needs a whole number of runs.
+        WiredTradingSession seven = session(upToFour, 7);
+        assertEquals(0, seven.timesMet());
+        assertFalse(seven.canAccept());
+
+        // The table takes no more than the limit asks: eight of twenty chairs, four runs.
         WiredTradingSession plenty = session(upToFour, 20);
-        assertEquals(4, plenty.timesToSettle(), "never more than the limit");
+        assertEquals(8, plenty.getOfferedItems().size(), "never more than the limit");
+        assertEquals(4, plenty.timesToSettle());
     }
 
     @Test

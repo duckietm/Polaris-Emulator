@@ -22,11 +22,13 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredTransactionVariables;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer;
@@ -239,6 +241,7 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         // multiplier times over. When they cannot pay all of it, nothing is paid and the player is told why.
         List<InteractionWiredContract.Term> reward =
                 rules.times(rewardRuns(runs)).getRule();
+        List<List<InteractionWiredContract.Term>> paid = new ArrayList<>();
         int failure = WiredChestPayouts.holding(chests, () -> {
             int cover = chests.isEmpty()
                     ? ChestTransactionFailures.NO_OR_LOCKED_CHESTS
@@ -252,6 +255,7 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
                         .sendResponse(WiredTransactionSuccessComposer.reward(
                                 given, rewardText(contracts), showRewardDialog(contracts)));
             }
+            paid.add(given);
             return ChestTransactionFailures.NONE;
         });
 
@@ -261,7 +265,10 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
             this.fail(ctx, room, failure);
             return;
         }
-        this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
+        this.dispatch(this.event(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE)
+                .transactionTotals(WiredTransactionVariables.totals(
+                        rewardRuns(runs), 0, 0, paid.isEmpty() ? List.of() : paid.get(0)))
+                .build());
     }
 
     /**
@@ -447,10 +454,6 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
                 : ChestTransactionFailures.MISCONFIG_TOO_MANY_OR_NO_CONTRACTS;
     }
 
-    private void fire(WiredContext ctx, Room room, WiredEvent.Type eventType) {
-        this.dispatch(this.event(ctx, room, eventType).build());
-    }
-
     /** Raises TRANSACTION_FAIL carrying the reason, which the stack reads as {@code @event.transaction_failed.reason}. */
     private void fail(WiredContext ctx, Room room, int reason) {
         this.dispatch(this.event(ctx, room, WiredEvent.Type.TRANSACTION_FAIL)
@@ -486,7 +489,8 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
         String[] variableIds = settings.getVariableIds();
-        int variableId = variableIds.length > 0 ? WiredValueVariable.parseId(variableIds[0]) : 0;
+        // The variable list's id (room:12); a bare box id from an older client still reads.
+        int variableId = variableIds.length > 0 ? WiredVariableIds.boxIdOf(variableIds[0]) : 0;
 
         this.mode = ContractMultiplier.normalizeMode(params.length > 0 ? params[0] : ContractMultiplier.MODE_NORMAL);
         this.multiplier = ContractMultiplier.clamp(params.length > 1 ? params[1] : ContractMultiplier.MIN);
@@ -615,7 +619,9 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
 
     @Override
     public String[] officialVariableIds() {
-        return this.multiplierFromVariable ? new String[] {Integer.toString(this.multiplierVariableId)} : new String[0];
+        return this.multiplierFromVariable
+                ? new String[] {WiredVariableIds.toWire(this.multiplierTarget, this.multiplierVariableId)}
+                : new String[0];
     }
 
     @Override

@@ -329,6 +329,25 @@ class WiredTradingManagerAirTest {
     }
 
     @Test
+    void aChestPickedUpWhileADepositWindowIsOpenTakesNothingAndHandsTheOfferBack() {
+        when(this.room.getId()).thenReturn(5);
+        InteractionWiredChestCurrency chest = new InteractionWiredChestCurrency(10, OWNER, chestFurni(), "", 0, 0);
+        chest.setRoomId(5);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(101, "CF_50", 1);
+
+        assertNotNull(manager.openDeposit(this.habbo, chest, 300));
+        manager.offer(this.habbo, List.of(101), false);
+        // The owner picks the chest up: it is in an inventory now, not in this room.
+        chest.setRoomId(0);
+
+        assertFalse(this.acceptAndConfirm(manager));
+
+        assertEquals(0, chest.getContents().getCoins());
+        assertTrue(this.inventory.containsKey(101), "the credit furni went back");
+    }
+
+    @Test
     void aNegotiationEndedWhileItSettlesPaysNoRewardForWhatItHandedBack() {
         InteractionWiredChestFurni trophies = org.mockito.Mockito.spy(this.trophyChest(2));
         WiredTradingManager manager = new WiredTradingManager(this.room);

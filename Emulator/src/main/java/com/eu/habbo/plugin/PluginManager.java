@@ -57,7 +57,8 @@ public class PluginManager {
     // of building a parser per plugin-config load.
     private static final Gson PLUGIN_GSON = new GsonBuilder().create();
 
-    private final Set<HabboPlugin> plugins = new HashSet<>();
+    // Walked by every denied permission check on the network threads while a reload clears and refills it.
+    private final Set<HabboPlugin> plugins = ConcurrentHashMap.newKeySet();
     private final Set<Method> methods = new HashSet<>();
     private final BooleanSupplier honorPriority;
     private final Object dispatchStateLock = new Object();

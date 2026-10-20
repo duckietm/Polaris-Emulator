@@ -668,7 +668,9 @@ public class WiredTradingManager {
             List<HabboItem> furniPayment = new ArrayList<>();
             for (Integer itemId : match.consumedItemIds()) {
                 HabboItem item = negotiation.vault().peek(itemId);
-                if (item != null) furniPayment.add(item);
+                // The negotiation ended since the confirmation (timeout, cancel, leaving) and handed the table back.
+                if (item == null) return ChestTransactionFailures.TRADE_CANCELLED;
+                furniPayment.add(item);
             }
             List<HabboItem> creditPayment = pickCredits(
                     negotiation.vault().heldItems(), match.consumedItemIds(), WiredChestPayouts.coins(paidRule));

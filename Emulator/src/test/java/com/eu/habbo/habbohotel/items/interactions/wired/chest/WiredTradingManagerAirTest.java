@@ -328,6 +328,41 @@ class WiredTradingManagerAirTest {
         assertEquals(1, this.sent(WiredTradeCancelledComposer.class).size());
     }
 
+    @Test
+    void aNegotiationEndedWhileItSettlesPaysNoRewardForWhatItHandedBack() {
+        InteractionWiredChestFurni trophies = org.mockito.Mockito.spy(this.trophyChest(2));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "chair", 7);
+        ContractRules swap = ContractRules.of(
+                List.of(List.of(Term.furni(InteractionWiredContract.DIR_PAY, false, 7, "", 1))),
+                List.of(Term.furni(InteractionWiredContract.DIR_RECEIVE, false, TROPHY, "", 1)));
+
+        assertNotNull(manager.open(this.habbo, swap, 1, "", "generic", 60, List.of(trophies)));
+        manager.offer(this.habbo, List.of(301), false);
+        assertTrue(
+                manager.getSession(this.habbo).canAccept(), this.tradeErrors().toString());
+        assertTrue(manager.getSession(this.habbo).accept(0L));
+
+        // A timeout, a cancel or the player leaving lands once the confirmation has passed and the chests are read:
+        // the session closes and the furni on the table go back to the inventory.
+        boolean[] ended = {false};
+        doAnswer(call -> {
+                    if (!ended[0]) {
+                        ended[0] = true;
+                        manager.cancel(this.habbo, WiredTradingSession.FAILURE_TIMEOUT);
+                    }
+                    return call.callRealMethod();
+                })
+                .when(trophies)
+                .chestKind();
+
+        assertFalse(manager.settle(this.habbo, LATER));
+
+        assertEquals(2, trophies.getContents().furniItemCount(), "no reward left the chest");
+        assertTrue(this.inventory.containsKey(301), "the furni that was handed back is still the player's");
+        assertEquals(1, this.store.inventoryCount(PLAYER), "and nothing was added on top of it");
+    }
+
     private static Object field(Object composer, String name) {
         try {
             java.lang.reflect.Field field = composer.getClass().getDeclaredField(name);

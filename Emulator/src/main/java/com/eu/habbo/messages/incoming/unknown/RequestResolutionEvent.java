@@ -55,17 +55,23 @@ public class RequestResolutionEvent extends MessageHandler {
         }
 
         if (resolution == null) {
-            this.client.sendResponse(
-                    new NewYearResolutionComposer(itemId, manager.candidates(habbo), manager.durationSeconds()));
+            this.offerPicker(manager, habbo, itemId);
             return;
         }
 
         if (!resolution.completed() && manager.kept(habbo, resolution)) {
             manager.complete(itemId, now);
             resolution = manager.resolution(itemId);
+
+            // The promise can be gone by the time it is read back (the furni was picked up, or the row dropped):
+            // the furni offers the picker again, as it does for any furni without a promise.
+            if (resolution == null) {
+                this.offerPicker(manager, habbo, itemId);
+                return;
+            }
         }
 
-        if (resolution != null && resolution.completed()) {
+        if (resolution.completed()) {
             this.client.sendResponse(
                     new NewYearResolutionCompletedComposer(item.getBaseItem().getName(), resolution.badgeCode()));
             return;
@@ -80,5 +86,10 @@ public class RequestResolutionEvent extends MessageHandler {
                 progress[0],
                 progress[1],
                 resolution.secondsLeft(now)));
+    }
+
+    private void offerPicker(AchievementResolutionManager manager, Habbo habbo, int itemId) {
+        this.client.sendResponse(
+                new NewYearResolutionComposer(itemId, manager.candidates(habbo), manager.durationSeconds()));
     }
 }

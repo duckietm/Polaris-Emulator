@@ -205,6 +205,8 @@ public class AchievementResolutionManager {
 
     /** Where the owner is on the promised achievement: what they have, and what the level asks for. */
     public int[] progress(Habbo habbo, AchievementResolution resolution) {
+        if (habbo == null || resolution == null) return new int[] {0, 0};
+
         Achievement achievement =
                 Emulator.getGameEnvironment().getAchievementManager().getAchievement(resolution.achievementId());
 
@@ -218,6 +220,8 @@ public class AchievementResolutionManager {
 
     /** True once the owner reached the level they promised. */
     public boolean kept(Habbo habbo, AchievementResolution resolution) {
+        if (habbo == null || resolution == null) return false;
+
         Achievement achievement =
                 Emulator.getGameEnvironment().getAchievementManager().getAchievement(resolution.achievementId());
 

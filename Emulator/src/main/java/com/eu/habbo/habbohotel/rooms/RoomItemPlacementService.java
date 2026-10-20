@@ -45,7 +45,9 @@ final class RoomItemPlacementService {
     }
 
     FurnitureMovementError canPlaceFurnitureAt(HabboItem item, Habbo habbo, RoomTile tile, int rotation) {
-        if (this.facade.itemCount() >= Room.MAXIMUM_FURNI) {
+        // The room cap is for furni that would enter the room: moving or rotating one already here adds nothing, and a
+        // room that is full (or was loaded over the cap) must still be able to rearrange what it holds.
+        if (this.facade.getHabboItem(item.getId()) == null && this.facade.itemCount() >= Room.MAXIMUM_FURNI) {
             return FurnitureMovementError.MAX_ITEMS;
         }
         if (tile == null || tile.state == RoomTileState.INVALID) {

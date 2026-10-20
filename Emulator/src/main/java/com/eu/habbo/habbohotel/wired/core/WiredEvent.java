@@ -245,6 +245,8 @@ public final class WiredEvent {
     private final Map<String, String> carriedPlaceholders; // a signal's or call's sender placeholders
     private final int linkSourceRoomId; // the room a received link came from (AIR @event.link.source_room_id)
     private final int transactionFailureReason; // AIR @event.transaction_failed.reason
+    private final TransactionTotals transactionTotals; // AIR @event.transaction_complete.*, null when none
+    private final int habbiconId; // AIR @event.habbicon: the habbicon the event is about, 0 when none
 
     private WiredEvent(Builder builder) {
         this.type = builder.type;
@@ -287,6 +289,25 @@ public final class WiredEvent {
         this.carriedPlaceholders = builder.carriedPlaceholders;
         this.linkSourceRoomId = builder.linkSourceRoomId;
         this.transactionFailureReason = builder.transactionFailureReason;
+        this.transactionTotals = builder.transactionTotals;
+        this.habbiconId = builder.habbiconId;
+    }
+
+    /**
+     * What a completed wired transaction moved (AIR {@code @event.transaction_complete.*}): how many times the contract
+     * ran, and the furni and coins the player paid into the chests (deposit) and got out of them (withdrawal).
+     */
+    public record TransactionTotals(
+            int multiplier, int depositFurni, int depositCoins, int withdrawalFurni, int withdrawalCoins) {}
+
+    /** What the completed transaction moved; null for other events. */
+    public TransactionTotals getTransactionTotals() {
+        return transactionTotals;
+    }
+
+    /** The habbicon the event is about (AIR {@code @event.habbicon}); 0 when it is about none. */
+    public int getHabbiconId() {
+        return habbiconId;
     }
 
     /**
@@ -609,6 +630,8 @@ public final class WiredEvent {
         private Map<String, String> carriedPlaceholders = Map.of();
         private int linkSourceRoomId;
         private int transactionFailureReason;
+        private TransactionTotals transactionTotals;
+        private int habbiconId;
 
         private Builder(Type type, Room room) {
             if (type == null) throw new IllegalArgumentException("Event type cannot be null");
@@ -632,6 +655,18 @@ public final class WiredEvent {
         /** Why the transaction a TRANSACTION_FAIL event reports failed. */
         public Builder transactionFailureReason(int reason) {
             this.transactionFailureReason = reason;
+            return this;
+        }
+
+        /** What a TRANSACTION_COMPLETE event's transaction moved. */
+        public Builder transactionTotals(TransactionTotals totals) {
+            this.transactionTotals = totals;
+            return this;
+        }
+
+        /** The habbicon the event is about. */
+        public Builder habbiconId(int habbiconId) {
+            this.habbiconId = Math.max(0, habbiconId);
             return this;
         }
 

@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -22,6 +23,14 @@ public class RotateMoveItemEvent extends MessageHandler {
 
         HabboItem item = room.getHabboItem(furniId);
         if (item == null) return;
+
+        // AIR playtest mode: the user moves and rotates furni as a visitor without rights.
+        if (RoomPlayTestSupport.isRestricted(this.client.getHabbo())) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+            this.client.sendResponse(new FloorItemUpdateComposer(item));
+            return;
+        }
 
         int x = this.packet.readInt();
         int y = this.packet.readInt();

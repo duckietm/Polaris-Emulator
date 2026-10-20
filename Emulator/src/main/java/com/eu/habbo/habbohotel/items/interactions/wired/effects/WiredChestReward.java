@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 
 /**
  * The official chest reward settings both chest boxes share (give currency 45, give furni 46). Int
@@ -33,7 +34,8 @@ final class WiredChestReward {
         this.mode = (params.length > 0 && params[0] == MODE_EVERYTHING) ? MODE_EVERYTHING : MODE_AMOUNT;
         this.amount = Math.max(minimumAmount, params.length > 1 ? params[1] : minimumAmount);
         String[] variableIds = settings.getVariableIds();
-        int variableId = variableIds.length > 0 ? WiredValueVariable.parseId(variableIds[0]) : 0;
+        // The variable list's id (room:12); a bare box id from an older client still reads.
+        int variableId = variableIds.length > 0 ? WiredVariableIds.boxIdOf(variableIds[0]) : 0;
         this.amountFromVariable = params.length > 2 && params[2] == 1 && variableId > 0;
         this.amountVariableId = this.amountFromVariable ? variableId : 0;
         this.amountTarget = normalizeTarget(params.length > 3 ? params[3] : WiredValueVariable.TARGET_GLOBAL);
@@ -54,7 +56,9 @@ final class WiredChestReward {
     }
 
     String[] officialVariableIds() {
-        return this.amountFromVariable ? new String[] {Integer.toString(this.amountVariableId)} : new String[0];
+        return this.amountFromVariable
+                ? new String[] {WiredVariableIds.toWire(this.amountTarget, this.amountVariableId)}
+                : new String[0];
     }
 
     /** What one rewarded user gets this time: everything, the amount, or the variable's value (null: nothing). */

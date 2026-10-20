@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 /**
@@ -28,6 +29,9 @@ public class SetBuildUnderpassEvent extends MessageHandler {
         if (room == null) return;
 
         if (this.client.getHabbo().getRoomUnit() == null) return;
+
+        // Playtest (the hotel's own rule beyond AIR): the build tools stay off.
+        if (enabled && RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
 
         this.client.getHabbo().getRoomUnit().setBuildUnderpass(enabled);
     }

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.FurnitureUsagePolicy;
 import com.eu.habbo.habbohotel.items.IEventTriggers;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionCrackable;
@@ -189,7 +190,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
             serverMessage.appendString(this.extradata.split(" ")[0]);
         else serverMessage.appendString(this.extradata);
         serverMessage.appendInt(this.getSecondsToExpiration());
-        serverMessage.appendInt(this.isUsable());
+        serverMessage.appendInt(FurnitureUsagePolicy.of(this));
         serverMessage.appendInt(this.getUserId());
         serverMessage.appendInt(this.getBaseItem().allowStack() ? 1 : 0);
         serverMessage.appendInt(this.getBaseItem().allowSit() ? 1 : 0);

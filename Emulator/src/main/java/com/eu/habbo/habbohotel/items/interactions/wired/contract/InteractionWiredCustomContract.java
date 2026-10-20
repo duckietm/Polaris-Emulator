@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -173,8 +174,9 @@ public class InteractionWiredCustomContract extends InteractionWiredContract
         }
 
         String[] variableIds = settings.getVariableIds();
-        int paymentVariable = variableIds.length > 0 ? WiredValueVariable.parseId(variableIds[0]) : 0;
-        int rewardVariable = variableIds.length > 1 ? WiredValueVariable.parseId(variableIds[1]) : 0;
+        // The variable list's ids (room:12); bare box ids from an older client still read.
+        int paymentVariable = variableIds.length > 0 ? WiredVariableIds.boxIdOf(variableIds[0]) : 0;
+        int rewardVariable = variableIds.length > 1 ? WiredVariableIds.boxIdOf(variableIds[1]) : 0;
         Element nextPayment = new Element();
         Element nextReward = new Element();
         nextPayment.read(params, 0, paymentVariable);
@@ -392,10 +394,9 @@ public class InteractionWiredCustomContract extends InteractionWiredContract
     @Override
     public String[] officialVariableIds() {
         if (!this.official || (!this.payment.fromVariable && !this.reward.fromVariable)) return new String[0];
-        return new String[] {
-            this.payment.fromVariable ? Integer.toString(this.payment.variableId) : "",
-            this.reward.fromVariable ? Integer.toString(this.reward.variableId) : ""
-        };
+        return WiredVariableIds.list(
+                this.payment.fromVariable ? WiredVariableIds.toWire(this.payment.target, this.payment.variableId) : "",
+                this.reward.fromVariable ? WiredVariableIds.toWire(this.reward.target, this.reward.variableId) : "");
     }
 
     @Override

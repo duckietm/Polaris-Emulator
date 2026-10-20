@@ -183,8 +183,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
                         : "");
         // Official layout: [created, value changed, deleted, (bit 0 increased, 1 decreased, 2
         // unchanged), origins (official bits, -1 every one), mode (0 the picked variable, 1 the
-        // picked variable boxes)]; ours follows: [variable target (official ids)].
-        message.appendInt(7);
+        // picked variable boxes)]. The variable's target is its id's, as in AIR.
+        message.appendInt(6);
         message.appendInt(this.createdEnabled ? 1 : 0);
         message.appendInt(this.valueChangedEnabled ? 1 : 0);
         message.appendInt(this.deletedEnabled ? 1 : 0);
@@ -192,7 +192,6 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
                 (this.increasedEnabled ? 1 : 0) | (this.decreasedEnabled ? 2 : 0) | (this.unchangedEnabled ? 4 : 0));
         message.appendInt(toOfficialOrigins(this.originMask));
         message.appendInt(this.mode);
-        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -246,7 +245,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         int[] params = settings.getIntParams();
 
-        // Official layout (see serializeWiredData); our variable target follows the official ints.
+        // Official layout (see serializeWiredData). The target is the variable id's; older clients sent ours as a
+        // seventh int, which still wins when present.
         this.createdEnabled = (params.length <= 0) || (params[0] == 1);
         this.valueChangedEnabled = (params.length <= 1) || (params[1] == 1);
         this.deletedEnabled = (params.length <= 2) || (params[2] == 1);

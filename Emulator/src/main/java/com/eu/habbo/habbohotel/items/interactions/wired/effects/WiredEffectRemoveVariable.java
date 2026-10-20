@@ -109,6 +109,13 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect
                     }
                     continue;
                 }
+                if ("@habbicon".equals(this.internalVariableKey)) {
+                    // Takes the shown habbicon away; a user showing none has no @habbicon to remove.
+                    if (WiredInternalVariableSupport.hasUserValue(room, unit, "@habbicon")) {
+                        WiredInternalVariableSupport.writeUserValue(room, unit, "@habbicon", 0);
+                    }
+                    continue;
+                }
                 if ("@has_rights".equals(this.internalVariableKey)) {
                     Habbo habbo = room.getHabbo(unit);
                     if (habbo == null || habbo.getHabboInfo() == null) continue;
@@ -533,7 +540,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@has_rights", "@handitem_id", FREE_MOVE_KEY).contains(key) ? key : "";
+        return Set.of("@has_rights", "@handitem_id", "@habbicon", FREE_MOVE_KEY).contains(key) ? key : "";
     }
 
     /** The holder an internal variable of this box lives on: {@code @can_move_freely} on floor furni, the rest on users. */

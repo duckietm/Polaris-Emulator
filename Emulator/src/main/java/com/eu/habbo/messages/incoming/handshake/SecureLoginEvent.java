@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.habbohotel.navigation.NavigatorSavedSearch;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.quests.QuestProgressEvents;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
@@ -442,6 +443,10 @@ public class SecureLoginEvent extends MessageHandler {
                 // long as the account is locked, so replay the stored status on every login.
                 this.client.sendResponse(new UnknownStatusComposer(
                         habbo.getHabboStats().safetyLocked ? SAFETY_LOCK_LOCKED : SAFETY_LOCK_UNLOCKED));
+
+                // Official RewardTracks push: the client never requests the tracks, the progress
+                // menu ("Introduction") and its claimable-rewards badge read the pushed list.
+                QuestProgressEvents.loggedIn(habbo);
 
                 // Official ModToolPreferences (31) round trip: replay where the moderator left the
                 // issue handler window.

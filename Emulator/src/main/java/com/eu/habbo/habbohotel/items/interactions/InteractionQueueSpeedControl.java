@@ -10,6 +10,11 @@ import java.sql.SQLException;
 public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl {
     private static final int[] MODE_STATES = new int[] {0, 3, 6, 9};
     private static final int MODE_FRAME_COUNT = 3;
+    /** The speed modes a click steps through (states 0, 3, 6 and 9). */
+    public static final int MODE_COUNT = MODE_STATES.length;
+    /** Every state the furni shows: each mode plus its animation frames, 0 to 11. */
+    public static final int STATE_COUNT = MODE_COUNT * MODE_FRAME_COUNT;
+
     private static final int BASE_FRAME_DURATION_MS = 500;
 
     private transient volatile int animationRevision = 0;
@@ -91,12 +96,20 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
             }
         }
 
-        int nextModeState = getNextModeState(this.getExtradata());
-        applyModeState(room, nextModeState, true);
+        this.stepMode(room, true);
 
         if (client != null) {
             super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
         }
+    }
+
+    /** Moves to the next (or previous) speed mode and saves it. */
+    public void stepMode(Room room, boolean forward) {
+        if (room == null) {
+            return;
+        }
+
+        applyModeState(room, getNextModeState(this.getExtradata(), forward), true);
     }
 
     @Override
@@ -170,15 +183,16 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
         Emulator.getThreading().run(() -> this.animateNextFrame(room, modeState, followingFrame, revision), delay);
     }
 
-    private static int getNextModeState(String extradata) {
+    static int getNextModeState(String extradata, boolean forward) {
         int currentModeState = toModeState(extradata);
+        int step = forward ? 1 : (MODE_STATES.length - 1);
 
         for (int index = 0; index < MODE_STATES.length; index++) {
             if (MODE_STATES[index] != currentModeState) {
                 continue;
             }
 
-            return MODE_STATES[(index + 1) % MODE_STATES.length];
+            return MODE_STATES[(index + step) % MODE_STATES.length];
         }
 
         return MODE_STATES[0];

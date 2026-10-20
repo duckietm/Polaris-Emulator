@@ -24,6 +24,10 @@ import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.rooms.RoomVariableManager;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredServices;
+import com.eu.habbo.habbohotel.wired.core.WiredState;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import java.sql.ResultSet;
 import org.junit.jupiter.api.Test;
@@ -109,7 +113,7 @@ class WiredConditionChestOfficialTest {
         WiredLegacyWireReader wire = WiredLegacyWireReader.read(box, room);
         assertArrayEquals(new int[] {0, 1, -10, WiredComparison.EQUAL}, wire.intParams);
         assertEquals("", wire.stringParam);
-        assertArrayEquals(new String[] {String.valueOf(VARIABLE)}, box.officialVariableIds());
+        assertArrayEquals(new String[] {"room:" + VARIABLE}, box.officialVariableIds());
         assertTrue(box.evaluate(WiredConditionTestSupport.context(room, null)));
 
         assertTrue(save(
@@ -137,7 +141,7 @@ class WiredConditionChestOfficialTest {
                 "{\"amount\":4,\"comparison\":5,\"chestIds\":[1],\"amountMode\":1,\"amountTarget\":0,"
                         + "\"amountVariableToken\":\"custom:7\"}");
         assertArrayEquals(new int[] {4, 1, 1, 5}, WiredLegacyWireReader.read(box, room).intParams);
-        assertArrayEquals(new String[] {"7"}, box.officialVariableIds());
+        assertArrayEquals(new String[] {"user:7"}, box.officialVariableIds());
 
         // The oldest boxes have a typed amount only; their missing target reads as before (the user's).
         load(box, room, "{\"amount\":4,\"comparison\":5,\"chestIds\":[1]}");
@@ -149,7 +153,65 @@ class WiredConditionChestOfficialTest {
                 box,
                 room,
                 new WiredSettings(new int[] {0, 1, 1, WiredComparison.EQUAL}, "custom:7", new int[] {CHEST}, 0)));
-        assertArrayEquals(new String[] {"7"}, box.officialVariableIds());
+        assertArrayEquals(new String[] {"user:7"}, box.officialVariableIds());
+    }
+
+    @Test
+    void chestHasItemsReadsItsChestsFromTheOfficialSourceSlot() throws Exception {
+        Room room = room();
+        HabboItem chest = room.getHabboItem(CHEST);
+        WiredConditionChestHasItems box =
+                new WiredConditionChestHasItems(14, 1, WiredConditionTestSupport.boxBase(), "", 0, 0);
+
+        // Picks (the default): the picked chest holds 5.
+        assertTrue(save(
+                box,
+                room,
+                settings(new int[] {5, 0, -10, WiredComparison.EQUAL}, new String[0], new int[] {CHEST}, new int[0])));
+        assertArrayEquals(new int[] {100}, box.officialFurniSources());
+        assertTrue(box.evaluate(WiredConditionTestSupport.context(room, null)));
+
+        // The trigger: the chest the event happened on, with nothing picked.
+        assertTrue(save(
+                box,
+                room,
+                withSources(
+                        settings(new int[] {5, 0, -10, WiredComparison.EQUAL}, new String[0], new int[0], new int[0]),
+                        0)));
+        assertArrayEquals(new int[] {0}, box.officialFurniSources());
+        WiredContext onChest = new WiredContext(
+                WiredEvent.builder(WiredEvent.Type.CUSTOM, room)
+                        .sourceItem(chest)
+                        .build(),
+                null,
+                mock(WiredServices.class),
+                new WiredState(20));
+        assertTrue(box.evaluate(onChest));
+
+        // Compared above its 5, the trigger's chest fails: it is what is counted.
+        assertTrue(save(
+                box,
+                room,
+                withSources(
+                        settings(
+                                new int[] {6, 0, -10, WiredComparison.GREATER_EQUAL},
+                                new String[0],
+                                new int[0],
+                                new int[0]),
+                        0)));
+        assertFalse(box.evaluate(onChest));
+
+        // The source survives a reload; a box saved before the slot keeps reading its picks.
+        load(box, room, box.getWiredData());
+        assertArrayEquals(new int[] {0}, box.officialFurniSources());
+        load(box, room, "{\"amount\":5,\"comparison\":1,\"chestIds\":[1],\"valueTarget\":-10}");
+        assertArrayEquals(new int[] {100}, box.officialFurniSources());
+        assertTrue(box.evaluate(WiredConditionTestSupport.context(room, null)));
+    }
+
+    private static WiredSettings withSources(WiredSettings settings, int... furniSources) {
+        settings.setFurniSourceTypes(furniSources);
+        return settings;
     }
 
     @Test

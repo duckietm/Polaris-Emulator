@@ -23,6 +23,7 @@ public final class RoomWiredRuntime {
     private final WiredBoxFlashes boxFlashes;
     private final WiredMessageBudget messageBudget = new WiredMessageBudget();
     private final Set<Integer> movesFreely = ConcurrentHashMap.newKeySet();
+    private final WiredHabbicons habbicons = new WiredHabbicons();
     private final AtomicInteger nextTemporaryItemId = new AtomicInteger(ItemManager.FIRST_TEMPORARY_ITEM_ID);
 
     RoomWiredRuntime(Room room) {
@@ -59,6 +60,11 @@ public final class RoomWiredRuntime {
     /** The room's open wired contract negotiations, one per player. */
     public WiredTradingManager getTradingManager() {
         return this.trading;
+    }
+
+    /** The habbicons the room's users show, read by the {@code @habbicon} variable. */
+    public WiredHabbicons getHabbicons() {
+        return this.habbicons;
     }
 
     long cacheGeneration() {
@@ -198,6 +204,7 @@ public final class RoomWiredRuntime {
         this.visualization.dispose();
         this.projectiles.clear();
         this.movesFreely.clear();
+        this.habbicons.clear();
         this.nextTemporaryItemId.set(ItemManager.FIRST_TEMPORARY_ITEM_ID);
         // Every open negotiation is holding somebody's furniture out of their inventory. Letting the
         // room go without handing it back would lose it.

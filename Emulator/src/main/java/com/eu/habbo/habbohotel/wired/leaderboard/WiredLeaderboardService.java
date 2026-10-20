@@ -141,16 +141,16 @@ public final class WiredLeaderboardService implements WiredTickable {
     /**
      * A player's chunks of one panel, replacing what they had for it. A request for a panel that is
      * gone, an old revision or a variable the panel does not offer is dropped, as the official server
-     * does; the client asks again once it has the new snapshot.
+     * does; the client asks again once it has the new snapshot. The variable is the panel's by the
+     * box it names, whatever form of its id the client sent; the chunks echo the id it sent.
      */
     synchronized void subscribe(
-            Room room, Habbo habbo, int overlayId, int revision, String variableId, int[] chunkIndices) {
-        if (habbo.getClient() == null || !isValidChunkSet(chunkIndices)) return;
+            Room room, Habbo habbo, int overlayId, int revision, String requestedId, int[] chunkIndices) {
+        if (habbo.getClient() == null || !isValidChunkSet(chunkIndices) || requestedId == null) return;
 
         Panel panel = this.panel(overlayId);
-        if (panel == null
-                || panel.descriptor().revision() != revision
-                || !panel.descriptor().offers(variableId)) {
+        String variableId = panel != null ? panel.descriptor().choiceId(requestedId) : null;
+        if (panel == null || panel.descriptor().revision() != revision || variableId == null) {
             return;
         }
 
@@ -160,17 +160,18 @@ public final class WiredLeaderboardService implements WiredTickable {
         if (previous != null
                 && previous.revision() == revision
                 && previous.variableId().equals(variableId)
+                && previous.sentId().equals(requestedId)
                 && Arrays.equals(previous.chunks(), chunkIndices)) {
             return;
         }
 
-        Subscription subscription = new Subscription(revision, variableId, chunkIndices.clone());
+        Subscription subscription = new Subscription(revision, variableId, requestedId, chunkIndices.clone());
         this.subscriptions.computeIfAbsent(userId, id -> new HashMap<>()).put(overlayId, subscription);
 
         for (int chunkIndex : subscription.chunks()) {
             WiredLeaderboardChunk chunk = WiredLeaderboardQuery.chunk(room, panel.config(), variableId, chunkIndex);
             subscription.sent().put(chunkIndex, chunk.toString());
-            habbo.getClient().sendResponse(new WiredLeaderboardChunkComposer(overlayId, revision, variableId, chunk));
+            habbo.getClient().sendResponse(new WiredLeaderboardChunkComposer(overlayId, revision, requestedId, chunk));
         }
     }
 
@@ -195,7 +196,7 @@ public final class WiredLeaderboardService implements WiredTickable {
             List<WiredLeaderboardDescriptor.Choice> choices = new ArrayList<>();
             for (InteractionWiredExtra variable : box.getRankedVariables(room)) {
                 if (choices.size() >= MAX_CHOICES) break;
-                String id = Integer.toString(variable.getId());
+                String id = WiredLeaderboardCodec.userVariableId(Integer.toString(variable.getId()));
                 String name = config.displayOverrides().get(id);
                 choices.add(new WiredLeaderboardDescriptor.Choice(
                         id,
@@ -306,7 +307,7 @@ public final class WiredLeaderboardService implements WiredTickable {
                     subscription.sent().put(chunkIndex, signature);
                     habbo.getClient()
                             .sendResponse(new WiredLeaderboardChunkComposer(
-                                    overlay.getKey(), subscription.revision(), subscription.variableId(), chunk));
+                                    overlay.getKey(), subscription.revision(), subscription.sentId(), chunk));
                 }
             }
         }
@@ -346,9 +347,11 @@ public final class WiredLeaderboardService implements WiredTickable {
 
     private record Revision(int boxId, String semanticKey, int revision) {}
 
-    private record Subscription(int revision, String variableId, int[] chunks, Map<Integer, String> sent) {
-        Subscription(int revision, String variableId, int[] chunks) {
-            this(revision, variableId, chunks, new LinkedHashMap<>());
+    /** {@code variableId} is the panel's id of the variable, {@code sentId} the form the client asked by. */
+    private record Subscription(
+            int revision, String variableId, String sentId, int[] chunks, Map<Integer, String> sent) {
+        Subscription(int revision, String variableId, String sentId, int[] chunks) {
+            this(revision, variableId, sentId, chunks, new LinkedHashMap<>());
         }
 
         @Override

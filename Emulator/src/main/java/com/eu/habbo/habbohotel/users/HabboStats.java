@@ -93,6 +93,8 @@ public class HabboStats implements Runnable {
     public boolean wiredWhisperDisabled;
     /** The official wired menu preferences as {@code UserPreferencePackets.WiredMenuPreferences} encodes them; "" until saved. */
     public String wiredMenuPreferences = "";
+    /** The playtest switch of {@link #wiredMenuPreferences}, kept apart so room checks read it cheaply. */
+    private volatile boolean playTestMode;
     /** Official UserInfo.accountSafetyLocked / AccountSafetyLockStatusChange (1243). */
     public boolean safetyLocked;
     /** Official ModToolPreferences (31): the issue handler window geometry. */
@@ -208,6 +210,7 @@ public class HabboStats implements Runnable {
                 safeColumnInt(set, "online_indicator_preference", 0));
         this.wiredWhisperDisabled = "1".equals(safeColumnString(set, "wired_whisper_disabled", "0"));
         this.wiredMenuPreferences = safeColumnString(set, "wired_menu_preferences", "");
+        this.playTestMode = UserPreferencePackets.isPlayTestModeStored(this.wiredMenuPreferences);
         this.safetyLocked = "1".equals(safeColumnString(set, "safety_locked", "0"));
         this.modToolWindowX = safeColumnInt(set, "modtool_window_x", 0);
         this.modToolWindowY = safeColumnInt(set, "modtool_window_y", 0);
@@ -1398,7 +1401,16 @@ public class HabboStats implements Runnable {
     /** The official wired menu preferences, already encoded and sanitized. */
     public void setWiredMenuPreferences(String encoded) {
         this.wiredMenuPreferences = encoded == null ? "" : encoded;
+        this.playTestMode = UserPreferencePackets.isPlayTestModeStored(this.wiredMenuPreferences);
         persistText("wired_menu_preferences", this.wiredMenuPreferences);
+    }
+
+    /**
+     * AIR playtest mode (wired menu preference): while it is on the room treats this user as a
+     * visitor without rights for moving, picking up and using furni ({@code RoomPlayTestSupport}).
+     */
+    public boolean isPlayTestMode() {
+        return this.playTestMode;
     }
 
     /** Official account safety lock: locking is what raises the toolbar badge. */

@@ -17,7 +17,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,8 +40,13 @@ import java.util.List;
  * constant and behaves exactly as it did; one saved with the user / room choice keeps it (user 1,
  * global -10). When the mode is variable and the variable cannot be read, the condition fails rather
  * than falling back to a number nobody chose.
+ *
+ * <p>The chests come from AIR's one furni source slot ({@code mergedSelections [[1, 0]]}, titled
+ * {@code sources.furni.title.chests}): the picks by default, or the trigger, a selector or a signal. A box saved
+ * before the slot has no source and keeps reading its picks.
  */
-public class WiredConditionChestHasItems extends InteractionWiredCondition implements WiredOfficialVariableIds {
+public class WiredConditionChestHasItems extends InteractionWiredCondition
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final WiredConditionType type = WiredConditionType.CHEST_HAS_ITEMS;
 
     static final int AMOUNT_CONSTANT = 0;
@@ -49,8 +56,12 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     static final String REQUIRE_CHESTS = "wiredfurni.error.require_chests";
+    static final int DEFAULT_CHEST_SOURCE = WiredSourceUtil.SOURCE_SELECTED;
 
     private final List<Integer> chestIds = new ArrayList<>();
+    /** Where the chests come from: the picks (100), the trigger, a selector or a signal. */
+    private int furniSource = DEFAULT_CHEST_SOURCE;
+
     private int amount = 1;
     private int comparison = WiredComparison.GREATER_EQUAL;
     private int amountMode = AMOUNT_CONSTANT;
@@ -75,11 +86,13 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
 
         int total = 0;
         boolean anyChest = false;
-        for (Integer id : this.chestIds) {
-            HabboItem item = room.getHabboItem(id);
-            anyChest |= item instanceof InteractionWiredChest;
+        List<InteractionWiredChest> seen = new ArrayList<>();
+        for (HabboItem item : this.resolveChests(ctx, room)) {
+            if (!(item instanceof InteractionWiredChest chest) || seen.contains(chest)) continue;
+            seen.add(chest);
+            anyChest = true;
             // Wired only reaches a chest whose owner upgraded it to answer wired.
-            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
+            if (chest.answersWired()) {
                 total += chest.getContents().total(ChestStorage.KIND_CURRENCY)
                         + chest.getContents().total(ChestStorage.KIND_FURNI);
             }
@@ -90,6 +103,40 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         }
         Integer threshold = this.resolveAmount(ctx, room);
         return threshold != null && WiredComparison.compare(total, threshold, this.comparison);
+    }
+
+    /** The furni of the source slot: the picked chests, or what the trigger, a selector or a signal hands over. */
+    private List<HabboItem> resolveChests(WiredContext ctx, Room room) {
+        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
+            List<HabboItem> picked = new ArrayList<>();
+            for (Integer id : this.chestIds) {
+                HabboItem item = room.getHabboItem(id);
+                if (item != null) picked.add(item);
+            }
+            return WiredSourceUtil.resolveItems(ctx, WiredSourceUtil.SOURCE_SELECTED, picked);
+        }
+        return WiredSourceUtil.resolveItems(ctx, this.furniSource, new ArrayList<>());
+    }
+
+    /** The official furni sources this slot takes; anything else reads as the picks. */
+    static int normalizeSource(int value) {
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER,
+                    WiredSourceUtil.SOURCE_SELECTED,
+                    WiredSourceUtil.SOURCE_SELECTOR,
+                    WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> DEFAULT_CHEST_SOURCE;
+        };
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     /** The typed number, or the current value of the chosen variable; null when it cannot be read. */
@@ -118,7 +165,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         if (token.isEmpty() || token.startsWith(CUSTOM_TOKEN_PREFIX)) {
             return token;
         }
-        int id = WiredValueVariable.parseId(token);
+        // The variable list's id (room:12), or a bare box id from an older client.
+        int id = WiredVariableIds.boxIdOf(token);
         return id > 0 ? CUSTOM_TOKEN_PREFIX + id : "";
     }
 
@@ -130,7 +178,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
     @Override
     public String[] officialVariableIds() {
         int id = customItemId(this.amountVariableToken);
-        return id > 0 ? new String[] {String.valueOf(id)} : new String[0];
+        return id > 0 ? new String[] {WiredVariableIds.toWire(officialTargetOf(this.amountTarget), id)} : new String[0];
     }
 
     /** Tokens are {@code custom:<itemId>}; anything else names no variable this box can read. */
@@ -162,6 +210,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         this.amountTarget = this.valueTarget == WiredValueVariable.TARGET_USER ? TARGET_USER : TARGET_ROOM;
         this.comparison = (params.length > 3) ? WiredComparison.normalize(params[3]) : WiredComparison.GREATER_EQUAL;
         this.amountVariableToken = variableTokenOf(settings);
+        this.furniSource = normalizeSource(settings.furniSource(0, DEFAULT_CHEST_SOURCE));
 
         // A variable amount that names no variable would silently behave as a constant, so it is
         // refused at the door instead of being saved as something the dialog did not say.
@@ -222,7 +271,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
                         this.amountMode,
                         this.amountTarget,
                         this.amountVariableToken,
-                        this.valueTarget));
+                        this.valueTarget,
+                        this.furniSource));
     }
 
     @Override
@@ -247,6 +297,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         if (data.chestIds != null) {
             this.chestIds.addAll(data.chestIds);
         }
+        // Saved before the source slot: the picks, as the box always read them.
+        this.furniSource = (data.furniSource != null) ? normalizeSource(data.furniSource) : DEFAULT_CHEST_SOURCE;
     }
 
     @Override
@@ -282,6 +334,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         this.amountTarget = TARGET_ROOM;
         this.amountVariableToken = "";
         this.valueTarget = WiredValueVariable.TARGET_GLOBAL;
+        this.furniSource = DEFAULT_CHEST_SOURCE;
     }
 
     /** Normalises the token the dialog sends; a blank one simply names no variable. */
@@ -297,6 +350,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
         int amountTarget;
         String amountVariableToken;
         Integer valueTarget;
+        Integer furniSource;
 
         public JsonData(
                 int amount,
@@ -305,7 +359,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
                 int amountMode,
                 int amountTarget,
                 String amountVariableToken,
-                Integer valueTarget) {
+                Integer valueTarget,
+                Integer furniSource) {
             this.amount = amount;
             this.comparison = comparison;
             this.chestIds = chestIds;
@@ -313,6 +368,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition imple
             this.amountTarget = amountTarget;
             this.amountVariableToken = amountVariableToken;
             this.valueTarget = valueTarget;
+            this.furniSource = furniSource;
         }
     }
 }

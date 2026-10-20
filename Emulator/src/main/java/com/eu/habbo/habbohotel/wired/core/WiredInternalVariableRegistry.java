@@ -97,7 +97,9 @@ final class WiredInternalVariableRegistry {
                 "@user_id",
                 "@bot_id",
                 "@pet_id",
-                "@pet_owner_id");
+                "@pet_owner_id",
+                WiredHabbiconVariables.HABBICON);
+        builder.register(Capability.USER_REFERENCE, WiredTransactionVariables.USER_KEYS.toArray(String[]::new));
         builder.register(Capability.USER_REFERENCE, WiredSmartVariables.USER_KEYS.toArray(String[]::new));
         builder.register(
                 Capability.USER_DESTINATION,
@@ -109,7 +111,8 @@ final class WiredInternalVariableRegistry {
                 "@handitem_id",
                 "@effect_id",
                 "@team_score",
-                "@player_score");
+                "@player_score",
+                WiredHabbiconVariables.HABBICON);
         builder.register(
                 Capability.FURNI_REFERENCE,
                 "~teleport.target_id",
@@ -159,7 +162,8 @@ final class WiredInternalVariableRegistry {
                 "~recolorable_furni.color.rgb",
                 "~recolorable_furni.color.rgb.red",
                 "~recolorable_furni.color.rgb.green",
-                "~recolorable_furni.color.rgb.blue");
+                "~recolorable_furni.color.rgb.blue",
+                WiredSmartVariables.CLOCK_PULSE_COUNT);
         builder.registerWhen(
                 ALWAYS_ENABLED, EnumSet.of(Capability.FURNI_REFERENCE, Capability.FURNI_DESTINATION), "@gravity");
         builder.registerWhen(
@@ -209,6 +213,10 @@ final class WiredInternalVariableRegistry {
                 "@chat_style",
                 "@event.link.source_room_id",
                 "@event.transaction_failed.reason",
+                WiredHabbiconVariables.EVENT_HABBICON);
+        builder.register(Capability.CONTEXT_REFERENCE, WiredTransactionVariables.COMPLETE_KEYS.toArray(String[]::new));
+        builder.register(
+                Capability.CONTEXT_REFERENCE,
                 "@array.change_type",
                 "@array.index",
                 "@array.source_index",

@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,8 +18,15 @@ import java.util.TreeMap;
  * 19 int params, 12 variable ids and 17 TAB-separated text fields, with the same validation, so a
  * box saved by the AIR client and one saved by Octane read back the same.
  *
- * <p>Our save packet has no variable-id list, so on the wire the 12 variable ids ride after the
- * 17 text fields ({@link #fromWire}/{@link #toWire}); storage keeps the official three parts.
+ * <p>The variable ids are the variable list's ids, as every other box sends them: slot 0 (the filter)
+ * and slots 2-11 (the display names) are user variables ({@code user:<box id>}), slot 1 (the compared
+ * global) is a global one ({@code room:<box id>}), and {@code "0"} is an empty slot. A box stored
+ * before that, or a save from an older client, may carry bare box ids or tokens; {@link #decode}
+ * reads them as the same variable, so its config, panel and cache are the same as a re-saved box's,
+ * and the next save writes the list ids.
+ *
+ * <p>The definition and the official save carry the ids as the packet's variable ids; an older
+ * client sends them after the 17 text fields instead ({@link #fromWire}/{@link #toWire}).
  */
 public final class WiredLeaderboardCodec {
 
@@ -136,16 +145,22 @@ public final class WiredLeaderboardCodec {
     }
 
     /**
-     * A save: ours carries the variable ids after the string fields; the official client sends the
-     * string fields alone and the ids as the packet's variable ids.
+     * A save: the official client (and Octane) sends the string fields alone and the ids as the
+     * packet's variable ids, empty slots at the end possibly left out; an older client carries the
+     * ids after the string fields.
      */
     public static Stored fromSave(int[] intParams, String wireString, String[] variableIds) {
         String text = wireString == null ? "" : wireString;
         if (!text.isEmpty()
                 && variableIds != null
-                && variableIds.length == VARIABLE_ID_COUNT
+                && variableIds.length <= VARIABLE_ID_COUNT
                 && text.split(SEPARATOR, -1).length == STRING_FIELD_COUNT) {
-            return new Stored(intParams == null ? new int[0] : intParams.clone(), variableIds.clone(), text);
+            String[] ids = new String[VARIABLE_ID_COUNT];
+            Arrays.fill(ids, NULL_VARIABLE_ID);
+            for (int i = 0; i < variableIds.length; i++) {
+                ids[i] = canonicalId(variableIds[i]);
+            }
+            return new Stored(intParams == null ? new int[0] : intParams.clone(), ids, text);
         }
         return fromWire(intParams, wireString);
     }
@@ -223,8 +238,8 @@ public final class WiredLeaderboardCodec {
         if (title.isEmpty()) return new Decoded(null, "title_required");
         if (title.length() > MAX_TITLE || description.length() > MAX_DESCRIPTION) return Decoded.invalid();
 
-        String filterVariable = canonicalId(ids[0]);
-        String operandVariable = canonicalId(ids[1]);
+        String filterVariable = userVariableId(ids[0]);
+        String operandVariable = globalVariableId(ids[1]);
         String literal = strings[6];
         boolean filterOn = filter == 1;
         boolean compareOn = compare == 1;
@@ -254,7 +269,7 @@ public final class WiredLeaderboardCodec {
 
         TreeMap<String, String> overrides = new TreeMap<>();
         for (int i = 0; i < MAX_OVERRIDES; i++) {
-            String id = canonicalId(ids[2 + i]);
+            String id = userVariableId(ids[2 + i]);
             String name = strings[7 + i];
             if (i < overrideCount) {
                 if (id.equals(NULL_VARIABLE_ID)
@@ -349,7 +364,50 @@ public final class WiredLeaderboardCodec {
 
     /** "0" and "n" both mean "no variable". */
     public static String canonicalId(String id) {
-        return (id == null || id.isEmpty() || id.equals("n")) ? NULL_VARIABLE_ID : id;
+        return (id == null || id.isEmpty() || id.equals(WiredVariableIds.NONE)) ? NULL_VARIABLE_ID : id;
+    }
+
+    /**
+     * The variable list's id of a user variable slot ({@code user:<box id>}) from any form it was
+     * stored or sent in ({@code 12}, {@code custom:12}, {@code user:12}); {@code "0"} for none. An id
+     * that names no box stays as it is.
+     */
+    public static String userVariableId(String id) {
+        return listId(RoomWiredVariableCatalog.TARGET_USER, id);
+    }
+
+    /** {@link #userVariableId} for the compared global variable ({@code room:<box id>}). */
+    public static String globalVariableId(String id) {
+        return listId(RoomWiredVariableCatalog.TARGET_GLOBAL, id);
+    }
+
+    /** The user variable box a leaderboard variable id names (any form), or 0. */
+    public static int userBoxIdOf(String id) {
+        return boxIdOf(RoomWiredVariableCatalog.TARGET_USER, id);
+    }
+
+    /** The global variable box a leaderboard variable id names (any form), or 0. */
+    public static int globalBoxIdOf(String id) {
+        return boxIdOf(RoomWiredVariableCatalog.TARGET_GLOBAL, id);
+    }
+
+    private static int boxIdOf(int officialTarget, String id) {
+        String listId = listId(officialTarget, id);
+        return WiredVariableIds.officialTargetOf(listId) == officialTarget ? WiredVariableIds.boxIdOf(listId) : 0;
+    }
+
+    /** A box id, bare or as a token, takes the slot's target; an id naming another target stays as it is. */
+    private static String listId(int officialTarget, String id) {
+        String canonical = canonicalId(id == null ? null : id.trim());
+        if (canonical.equals(NULL_VARIABLE_ID)) {
+            return NULL_VARIABLE_ID;
+        }
+        int target = WiredVariableIds.officialTargetOf(canonical);
+        if (target != Integer.MIN_VALUE && target != officialTarget) {
+            return canonical;
+        }
+        int boxId = WiredVariableIds.boxIdOf(canonical);
+        return boxId > 0 ? WiredVariableIds.toWire(officialTarget, boxId) : canonical;
     }
 
     /** A signed 64-bit decimal without leading zeros or "-0". */

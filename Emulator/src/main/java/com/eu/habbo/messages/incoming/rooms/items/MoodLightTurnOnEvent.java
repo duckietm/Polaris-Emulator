@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomMoodlightData;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -13,8 +14,14 @@ public class MoodLightTurnOnEvent extends MessageHandler {
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if ((room.getGuildId() > 0 && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS)) && !room.hasRights(this.client.getHabbo()))
-            return;
+        if (room == null) return;
+
+        // Playtest (the hotel's own rule beyond AIR): the dimmer is not switched, as for a visitor without rights.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
+
+        if ((room.getGuildId() > 0
+                        && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS))
+                && !room.hasRights(this.client.getHabbo())) return;
 
         for (HabboItem moodLight : room.getRoomSpecialTypes().getItemsOfType(InteractionMoodLight.class)) {
             // enabled ? 2 : 1, preset id, background only ? 2 : 1, color, intensity

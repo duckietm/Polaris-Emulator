@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -134,9 +133,23 @@ class WiredVariableCatalogFlagsTest {
     }
 
     @Test
-    void builtInsOurEngineDoesNotReadAreLeftOut() {
-        assertNull(builtIn("-284")); // @transaction.state
-        assertNull(builtIn("~120")); // ~clock.state
+    void theClockTransactionAndHabbiconBuiltInsAreListedAsAir() {
+        RoomWiredVariableCatalog.Variable state = builtIn("-284");
+        assertEquals("@transaction.state", state.getVariableName());
+        assertFalse(state.canWriteValue(), "read only");
+        assertEquals(2, state.getTextConnector().size(), "Adding Items, Confirmed");
+
+        RoomWiredVariableCatalog.Variable pulses = builtIn("~121");
+        assertEquals("~clock.pulse_count", pulses.getVariableName());
+        assertTrue(pulses.canWriteValue());
+        assertTrue(pulses.isInvisible(), "no clock in the room");
+
+        RoomWiredVariableCatalog.Variable habbicon = builtIn("-245");
+        assertTrue(habbicon.canCreateAndDelete());
+        assertTrue(habbicon.canWriteValue());
+        assertEquals(RoomWiredVariableCatalog.TARGET_CONTEXT, builtIn("-452").getVariableTarget());
+        assertEquals(RoomWiredVariableCatalog.TARGET_CONTEXT, builtIn("-470").getVariableTarget());
+        assertFalse(builtIn("~601").canWriteValue(), "~plant.shape");
     }
 
     @Test

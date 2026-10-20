@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.FurnitureDirections;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -30,7 +31,8 @@ public class UpdateFurniturePositionEvent extends MessageHandler {
         if (!RoomItemInputGuard.isPositiveId(furniId)) return;
 
         HabboItem item = room.getHabboItem(furniId);
-        if (item == null) return;
+        // A wall furni has no tile to move to: it moves along the wall (MoveWallItemEvent).
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.FLOOR) return;
 
         // AIR playtest mode: the user moves and rotates furni as a visitor without rights.
         if (RoomPlayTestSupport.isRestricted(this.client.getHabbo())) {

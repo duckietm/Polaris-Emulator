@@ -17,6 +17,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
@@ -173,15 +174,28 @@ class RoomPlayTestEnforcementTest {
         }
     }
 
-    private static Item base() {
+    private static Item base(FurnitureType type) {
         Item base = mock(Item.class);
         when(base.getName()).thenReturn("furni");
+        when(base.getType()).thenReturn(type);
         return base;
     }
 
+    private static Item base() {
+        return base(FurnitureType.FLOOR);
+    }
+
     private static HabboItem floorItem(Room room) {
+        return item(room, FurnitureType.FLOOR);
+    }
+
+    private static HabboItem wallItem(Room room) {
+        return item(room, FurnitureType.WALL);
+    }
+
+    private static HabboItem item(Room room, FurnitureType type) {
         HabboItem item = mock(HabboItem.class);
-        Item itemBase = base();
+        Item itemBase = base(type);
         when(item.getBaseItem()).thenReturn(itemBase);
         when(room.getHabboItem(ITEM)).thenReturn(item);
         return item;
@@ -230,7 +244,7 @@ class RoomPlayTestEnforcementTest {
     @EnumSource(Mode.class)
     void wallFurniIsMovedOnlyOutsidePlaytest(Mode mode) throws Exception {
         Room room = room();
-        HabboItem item = floorItem(room);
+        HabboItem item = wallItem(room);
         String position = ":w=1,2 l=3,4 l";
         when(item.getWallPosition()).thenReturn(position);
         Actor actor = new Actor(mode, room);
@@ -239,6 +253,34 @@ class RoomPlayTestEnforcementTest {
 
         verify(item, mode.refused ? never() : times(1)).setWallPosition(position);
         verify(room, mode.refused ? never() : times(1)).updateItem(item);
+    }
+
+    @Test
+    void aWallFurniIsNotMovedOnTheFloor() throws Exception {
+        Room room = room();
+        wallItem(room);
+        Actor actor = new Actor(false, false, room);
+
+        actor.handle(
+                new RotateMoveItemEvent(),
+                new Packet().integer(ITEM).integer(1).integer(2).integer(2));
+        actor.handle(
+                new UpdateFurniturePositionEvent(),
+                new Packet().integer(ITEM).integer(1).integer(2).integer(0).integer(2));
+
+        verify(room, never()).getLayout();
+    }
+
+    @Test
+    void aFloorFurniIsNotGivenAWallPosition() throws Exception {
+        Room room = room();
+        HabboItem item = floorItem(room);
+        Actor actor = new Actor(false, false, room);
+
+        actor.handle(new MoveWallItemEvent(), new Packet().integer(ITEM).string(":w=1,2 l=3,4 l"));
+
+        verify(item, never()).setWallPosition(any());
+        verify(room, never()).updateItem(item);
     }
 
     // --- picking up and ejecting ---

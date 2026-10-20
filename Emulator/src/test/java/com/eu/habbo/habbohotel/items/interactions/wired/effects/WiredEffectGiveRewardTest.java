@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.base;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.row;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -34,5 +35,16 @@ class WiredEffectGiveRewardTest {
 
         assertEquals(1, box.getLimit());
         assertTrue(box.getRewardItems().isEmpty());
+    }
+
+    @Test
+    void aRewardGivenIsSavedWithTheBoxSoARestartDoesNotGiveItAgain() {
+        WiredEffectGiveReward box = new WiredEffectGiveReward(1, 1, base(), "", 0, 0);
+        assertFalse(box.needsUpdate());
+
+        box.incrementGiven();
+
+        assertEquals(1, box.getGiven());
+        assertTrue(box.needsUpdate(), "the new count is written on the next save");
     }
 }

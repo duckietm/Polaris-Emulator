@@ -35,6 +35,51 @@ class UserPermissionOverridesTest {
     }
 
     @Test
+    void theCacheStaysWithinItsLimitEvenWhenEveryRowIsFresh() {
+        UserPermissionOverrides overrides = new UserPermissionOverrides(userId -> List.of(), () -> 0L, () -> 0, 3);
+
+        for (int user = 1; user <= 10; user++) {
+            overrides.find(user, "cmd_ha");
+        }
+
+        assertTrue(overrides.cachedUsers() <= 3, "ten fresh users must not grow a cache limited to three");
+    }
+
+    @Test
+    void aFullCacheDropsTheOldRowsFirst() {
+        AtomicLong millis = new AtomicLong(0);
+        UserPermissionOverrides overrides = new UserPermissionOverrides(userId -> List.of(), millis::get, () -> 0, 3);
+
+        overrides.find(1, "cmd_ha");
+        overrides.find(2, "cmd_ha");
+        overrides.find(3, "cmd_ha");
+        millis.set(UserPermissionOverrides.CACHE_MS);
+        overrides.find(4, "cmd_ha");
+
+        assertEquals(1, overrides.cachedUsers(), "the three old rows go, the new user stays");
+    }
+
+    @Test
+    void aFullCacheOfFreshRowsStillServesTheUsersItHolds() {
+        AtomicInteger loads = new AtomicInteger();
+        UserPermissionOverrides overrides = new UserPermissionOverrides(
+                userId -> {
+                    loads.incrementAndGet();
+                    return List.of();
+                },
+                () -> 0L,
+                () -> 0,
+                2);
+
+        overrides.find(1, "cmd_ha");
+        overrides.find(2, "cmd_ha");
+        overrides.find(2, "cmd_ha");
+        overrides.find(2, "cmd_ha");
+
+        assertEquals(2, loads.get(), "a user that is cached is not loaded again");
+    }
+
+    @Test
     void rowsAreCachedUntilInvalidatedOrOld() {
         AtomicInteger loads = new AtomicInteger();
         AtomicLong millis = new AtomicLong(0);

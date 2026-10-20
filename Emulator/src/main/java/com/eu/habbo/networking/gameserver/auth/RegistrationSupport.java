@@ -13,6 +13,19 @@ final class RegistrationSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationSupport.class);
 
+    /**
+     * The template's furni into the new player's room. {@code room_templates_items.wired_data} may be NULL
+     * (it is by default) while {@code items} keeps its text columns NOT NULL, so a NULL becomes the items
+     * default instead of leaving the new room empty.
+     */
+    static final String CLONE_TEMPLATE_ITEMS_SQL =
+            "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, "
+                    + "extra_data, wired_data, limited_data, guild_id) "
+                    + "(SELECT ?, ?, item_id, COALESCE(wall_pos, ''), x, y, z, rot, COALESCE(extra_data, ''), "
+                    + "COALESCE(wired_data, ''), '0:0', 0 "
+                    + "FROM room_templates_items WHERE template_id = ? "
+                    + "AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))";
+
     private RegistrationSupport() {}
 
     static void materializeCustomLayout(Connection conn, int templateId, int newRoomId) {
@@ -149,12 +162,7 @@ final class RegistrationSupport {
         materializeCustomLayout(conn, templateId, newRoomId);
 
         int itemsInserted = 0;
-        try (PreparedStatement ins =
-                conn.prepareStatement("INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, "
-                        + "extra_data, wired_data, limited_data, guild_id) "
-                        + "(SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, '0:0', 0 "
-                        + "FROM room_templates_items WHERE template_id = ? "
-                        + "AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))")) {
+        try (PreparedStatement ins = conn.prepareStatement(CLONE_TEMPLATE_ITEMS_SQL)) {
             ins.setInt(1, userId);
             ins.setInt(2, newRoomId);
             ins.setInt(3, templateId);

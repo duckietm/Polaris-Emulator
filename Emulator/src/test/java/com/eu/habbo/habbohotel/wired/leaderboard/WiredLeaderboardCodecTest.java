@@ -16,9 +16,13 @@ import org.junit.jupiter.api.Test;
 class WiredLeaderboardCodecTest {
 
     private static WiredLeaderboardConfig sample() {
+        return sample("user:77", "user:812", "user:1200");
+    }
+
+    private static WiredLeaderboardConfig sample(String filter, String coins, String wins) {
         TreeMap<String, String> overrides = new TreeMap<>();
-        overrides.put("812", "Coins");
-        overrides.put("1200", "Wins");
+        overrides.put(coins, "Coins");
+        overrides.put(wins, "Wins");
         return new WiredLeaderboardConfig(
                 "Top players",
                 "This week",
@@ -31,7 +35,7 @@ class WiredLeaderboardCodecTest {
                 true,
                 true,
                 WiredLeaderboardCodec.OPERAND_LITERAL,
-                "77",
+                filter,
                 "0",
                 "-12",
                 overrides,
@@ -49,9 +53,10 @@ class WiredLeaderboardCodecTest {
         assertEquals(WiredLeaderboardCodec.VARIABLE_ID_COUNT, stored.variableIds().length);
         assertEquals(
                 WiredLeaderboardCodec.STRING_FIELD_COUNT, stored.stringParam().split("\t", -1).length);
-        // Overrides are stored by plain string order: "1200" before "812".
-        assertEquals("1200", stored.variableIds()[2]);
-        assertEquals("812", stored.variableIds()[3]);
+        // Overrides are stored by plain string order: "user:1200" before "user:812".
+        assertEquals("user:77", stored.variableIds()[0]);
+        assertEquals("user:1200", stored.variableIds()[2]);
+        assertEquals("user:812", stored.variableIds()[3]);
 
         WiredLeaderboardCodec.Decoded decoded = WiredLeaderboardCodec.decode(stored, 0, 0);
         assertTrue(decoded.valid(), decoded.error());
@@ -89,6 +94,85 @@ class WiredLeaderboardCodecTest {
         WiredLeaderboardCodec.Stored ours = WiredLeaderboardCodec.fromSave(
                 stored.intParams(), WiredLeaderboardCodec.toWire(stored), new String[] {"1", "2"});
         assertArrayEquals(stored.variableIds(), ours.variableIds());
+    }
+
+    @Test
+    void aRowStoredWithBareIdsReadsAsTheSameVariablesAsAReSavedOne() {
+        // A box stored before the list ids: bare box ids in every slot, the global operand too.
+        TreeMap<String, String> overrides = new TreeMap<>();
+        overrides.put("812", "Coins");
+        overrides.put("1200", "Wins");
+        WiredLeaderboardConfig old = new WiredLeaderboardConfig(
+                "Top players",
+                "",
+                WiredLeaderboardCodec.SORT_HIGHEST_VALUE,
+                0,
+                List.of(new WiredLeaderboardConfig.Column(WiredLeaderboardCodec.COLUMN_USERNAME, "Player", 3)),
+                true,
+                true,
+                WiredLeaderboardCodec.OPERAND_GLOBAL_VARIABLE,
+                "77",
+                "5",
+                "",
+                overrides,
+                1,
+                1,
+                0,
+                0);
+        WiredLeaderboardCodec.Stored oldRow = WiredLeaderboardCodec.encode(old);
+        assertEquals("77", oldRow.variableIds()[0]);
+
+        WiredLeaderboardCodec.Decoded loaded = WiredLeaderboardCodec.decode(oldRow, 0, 0);
+        assertTrue(loaded.valid(), loaded.error());
+        WiredLeaderboardConfig config = loaded.config();
+        assertEquals("user:77", config.filterVariableId());
+        assertEquals("room:5", config.operandVariableId());
+        assertEquals(
+                List.of("user:1200", "user:812"),
+                List.copyOf(config.displayOverrides().keySet()));
+
+        // Written back with the list ids (on the next save), which read as the very same config.
+        WiredLeaderboardCodec.Stored rewritten = WiredLeaderboardCodec.encode(config);
+        assertArrayEquals(
+                new String[] {"user:77", "room:5", "user:1200", "user:812", "0", "0", "0", "0", "0", "0", "0", "0"},
+                rewritten.variableIds());
+        WiredLeaderboardConfig resaved =
+                WiredLeaderboardCodec.decode(rewritten, 0, 0).config();
+        List<WiredLeaderboardDescriptor.Choice> choices =
+                List.of(new WiredLeaderboardDescriptor.Choice("user:812", "Coins"));
+        assertEquals(
+                WiredLeaderboardService.semanticKey(config, choices),
+                WiredLeaderboardService.semanticKey(resaved, choices));
+
+        // Tokens from an older client read the same too.
+        String[] tokens = oldRow.variableIds().clone();
+        tokens[0] = "custom:77";
+        tokens[2] = "custom:1200";
+        WiredLeaderboardConfig fromTokens = WiredLeaderboardCodec.decode(
+                        new WiredLeaderboardCodec.Stored(oldRow.intParams(), tokens, oldRow.stringParam()), 0, 0)
+                .config();
+        assertEquals(config.filterVariableId(), fromTokens.filterVariableId());
+        assertEquals(config.displayOverrides(), fromTokens.displayOverrides());
+    }
+
+    @Test
+    void anIdOfAnotherTargetOrABuiltInIsKeptAsItIs() {
+        assertEquals("furni:7", WiredLeaderboardCodec.userVariableId("furni:7"));
+        assertEquals("-234", WiredLeaderboardCodec.userVariableId("-234"));
+        assertEquals("0", WiredLeaderboardCodec.userVariableId("n"));
+        assertEquals("0", WiredLeaderboardCodec.globalVariableId(""));
+        assertEquals("user:7", WiredLeaderboardCodec.userVariableId(" 7 "));
+    }
+
+    @Test
+    void anOfficialSaveMayLeaveOutTheEmptySlotsAtTheEnd() {
+        WiredLeaderboardCodec.Stored stored = WiredLeaderboardCodec.encode(sample());
+        WiredLeaderboardCodec.Stored trimmed = WiredLeaderboardCodec.fromSave(
+                stored.intParams(), stored.stringParam(), new String[] {"user:77", "n", "user:1200", "user:812"});
+
+        assertArrayEquals(stored.variableIds(), trimmed.variableIds());
+        WiredLeaderboardCodec.Decoded decoded = WiredLeaderboardCodec.decode(trimmed, 0, 0);
+        assertTrue(decoded.valid(), decoded.error());
     }
 
     @Test
@@ -177,9 +261,15 @@ class WiredLeaderboardCodecTest {
         assertTrue(WiredLeaderboardQuery.isDescending(3));
         assertEquals(RoomUserVariableStore.Order.UPDATE_TIME, WiredLeaderboardQuery.orderOf(5));
         assertTrue(WiredLeaderboardQuery.isDescending(5));
-        assertEquals(0, WiredLeaderboardQuery.parseId("n"));
-        assertEquals(812, WiredLeaderboardQuery.parseId("812"));
-        assertEquals(0, WiredLeaderboardQuery.parseId("99999999999"));
+        assertEquals(0, WiredLeaderboardCodec.userBoxIdOf("n"));
+        assertEquals(812, WiredLeaderboardCodec.userBoxIdOf("812"));
+        assertEquals(812, WiredLeaderboardCodec.userBoxIdOf("user:812"));
+        assertEquals(812, WiredLeaderboardCodec.userBoxIdOf("custom:812"));
+        assertEquals(0, WiredLeaderboardCodec.userBoxIdOf("room:812"));
+        assertEquals(0, WiredLeaderboardCodec.userBoxIdOf("99999999999"));
+        assertEquals(5, WiredLeaderboardCodec.globalBoxIdOf("room:5"));
+        assertEquals(5, WiredLeaderboardCodec.globalBoxIdOf("5"));
+        assertEquals(0, WiredLeaderboardCodec.globalBoxIdOf("user:5"));
     }
 
     @Test
@@ -197,13 +287,13 @@ class WiredLeaderboardCodecTest {
     void onlyWhatChangesTheRowsMovesTheRevision() {
         WiredLeaderboardConfig config = sample();
         List<WiredLeaderboardDescriptor.Choice> choices =
-                List.of(new WiredLeaderboardDescriptor.Choice("812", "Coins"));
+                List.of(new WiredLeaderboardDescriptor.Choice("user:812", "Coins"));
         String key = WiredLeaderboardService.semanticKey(config, choices);
 
         WiredLeaderboardConfig moved = config.withLocation(9, 9, 0, 0);
         assertEquals(key, WiredLeaderboardService.semanticKey(moved, choices));
         assertFalse(key.equals(WiredLeaderboardService.semanticKey(
-                config, List.of(new WiredLeaderboardDescriptor.Choice("1200", "Wins")))));
+                config, List.of(new WiredLeaderboardDescriptor.Choice("user:1200", "Wins")))));
     }
 
     private static String decode(int[] ints, String[] ids, String[] strings) {

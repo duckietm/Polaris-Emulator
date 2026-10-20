@@ -38,16 +38,13 @@ class WiredConditionUserLevelAccountTest {
                 new WiredState(20));
 
         WiredConditionUserLevel equal = new WiredConditionUserLevel(1, 1, mock(Item.class), "", 0, 0);
-        equal.saveData(new WiredSettings(
-                new int[] {level, WiredConditionUserLevel.COMPARISON_EQUAL, 0, 0}, "", new int[0], 0));
+        equal.saveData(
+                new WiredSettings(new int[] {level, WiredConditionUserLevel.OFFICIAL_EQUAL, 0}, "", new int[0], 0));
         assertTrue(equal.evaluate(ctx));
 
         WiredConditionUserLevel higher = new WiredConditionUserLevel(2, 1, mock(Item.class), "", 0, 0);
         higher.saveData(new WiredSettings(
-                new int[] {level + 1, WiredConditionUserLevel.COMPARISON_GREATER_THAN_OR_EQUAL, 0, 0},
-                "",
-                new int[0],
-                0));
+                new int[] {level, WiredConditionUserLevel.OFFICIAL_GREATER_THAN, 0}, "", new int[0], 0));
         assertFalse(higher.evaluate(ctx));
     }
 }

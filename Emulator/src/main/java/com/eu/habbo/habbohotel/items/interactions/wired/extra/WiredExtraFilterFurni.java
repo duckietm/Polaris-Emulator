@@ -10,16 +10,23 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class WiredExtraFilterFurni extends InteractionWiredExtra {
+/**
+ * The official selector filter (AIR addons 10 / 11). Int params {@code [N, N from a variable, variable target]}, ours
+ * follow: {@code [random pick]}; variable ids {@code [N variable]} and no string (older clients sent the N variable's
+ * id as the string; still read).
+ */
+public class WiredExtraFilterFurni extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int CODE = 56;
     private static final int MAX_FILTER_AMOUNT = 10000;
 
     private int amount = 0;
-    /** Official: N may come from a variable (its id in the string), read on the triggering holder. */
+    /** Official: N may come from a variable (the first variable id), read on the triggering holder. */
     private boolean amountFromVariable = false;
 
     private int amountTarget = WiredValueVariable.TARGET_USER;
@@ -63,13 +70,20 @@ public class WiredExtraFilterFurni extends InteractionWiredExtra {
         this.amountTarget =
                 WiredValueVariable.normalizeTarget(params.length > 2 ? params[2] : WiredValueVariable.TARGET_USER);
         this.randomPick = params.length > 3 && params[3] == 1;
-        this.amountVariableId = this.amountFromVariable && params.length > 0
-                ? WiredValueVariable.parseId(settings.getStringParam())
-                : 0;
+        int variableId = WiredVariableIds.present(settings.getVariableIds())
+                ? WiredVariableIds.boxIdOf(settings.getVariableIds()[0])
+                : WiredValueVariable.parseId(settings.getStringParam());
+        this.amountVariableId = this.amountFromVariable && params.length > 0 ? variableId : 0;
         if (this.amountFromVariable && this.amountVariableId <= 0) {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                this.amountFromVariable ? WiredVariableIds.toWire(this.amountTarget, this.amountVariableId) : "");
     }
 
     @Override
@@ -89,7 +103,7 @@ public class WiredExtraFilterFurni extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.amountVariableId > 0 ? String.valueOf(this.amountVariableId) : "");
+        message.appendString("");
         message.appendInt(4);
         message.appendInt(this.amount);
         message.appendInt(this.amountFromVariable ? 1 : 0);

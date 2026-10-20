@@ -36,9 +36,12 @@ It focuses on:
   - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredStackExecutor.java` (stack cost estimate)
   - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredRoomDiagnostics.java`
   - `Gameserver/Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredMonitorDataComposer.java`
+  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredErrorLogs.java` and
+    `messages/outgoing/wired/WiredErrorLogsComposer.java` (AIR's error list, 1132 / 1632 / 15)
   - `Gameserver/Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredRoomLogsPageEvent.java`
 - Renderer parsing:
   - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredMonitorDataParser.ts`
+  - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredErrorLogsParser.ts`
   - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredLogPageParser.ts`
 - Octane UI:
   - `Octane/src/components/wired-tools/WiredCreatorToolsView.tsx` (container, state)
@@ -119,6 +122,13 @@ This allows safe rollout during migration.
 | `wired.monitor.heavy.usage.percent` | `70` | Usage percentage threshold that contributes to `MARKED_AS_HEAVY`. |
 | `wired.monitor.heavy.consecutive.windows` | `5` | Consecutive heavy windows required before the room is marked heavy. |
 | `wired.monitor.heavy.delayed.percent` | `60` | Delayed queue percentage threshold that contributes to the heavy state. |
+| `wired.monitor.permanent.furni.variables.limit` | `23` | Permanent furni variables a room may hold (Habbo: 23); a new one over it is refused. |
+| `wired.monitor.permanent.user.variables.limit` | `93` | Permanent user variables a room may hold (Habbo: 93); a new one over it is refused. |
+| `wired.monitor.permanent.global.variables.limit` | `70` | Permanent global variables a room may hold (Habbo: 70); a new one over it is refused. A box that arrives already permanent is refused at placement over the cap (`${wiredfurni.error.variables.permanent_limit}`) and stays where it came from with its settings. |
+| `wired.variables.holder.max` | `200` | Different variables one furni or user (pet, bot) may hold; a variable new to a holder past it is not given and the monitor counts `TOO_MANY_VARIABLES` (6). Values the holder already has keep changing; values restored from the database are never dropped. Habbo does not publish its number ("very high"); `0` turns the cap off. Migration `V20261020120000`. |
+| `wired.variablefx.max.boxes` | `25` | Variable fx boxes a room draws (turbo's `VariableFxMaxBoxes`); the rest stay in the room, are left out and the monitor counts `VARIABLE_FX_LIMIT` once per box over. Migration `V20261020120000`. |
+| `hotel.room.floorfurni.max` (`emulator_settings`) | `4000` | Floor furni a room may hold (Habbo: 4000); a new floor furni, wired boxes included, over it is refused. Shown on the monitor's floor line, bounded by `hotel.room.furni.max`. |
+| `hotel.room.wallfurni.max` (`emulator_settings`) | `4000` | Wall furni a room may hold (Habbo: 4000); new wall furni over it is refused. Shown on the monitor's wall line. |
 
 The defaults above are the values the migration and the Flyway base schema seed (the base schema
 seeds `hotel.wired.message.max_length` as `512`). When a key is missing from both settings tables
@@ -132,18 +142,33 @@ match the table.
 
 ## 4.1 Statistics shown in the UI
 
-The `Monitor` tab currently shows:
+The `Monitor` tab shows Habbo's statistics lines first, then a few rows of our own:
 
 - `Wired usage`
 - `Is heavy`
-- `Room furni`
+- `Floor furni`
 - `Wall furni`
+- `Permanent furni vars`
+- `Permanent user vars`
+- `Permanent global vars`
 - `Delayed events`
 - `Average execution`
 - `Peak execution`
 - `Recursion`
 - `Killed remaining`
-- `Permanent furni vars`
+
+The seven official lines come from Habbo's own room stats packet: the client sends
+`WiredRoomStatsRequestEvent` (1957, no fields) every 500 ms while the tab is open and the server
+answers `WiredRoomStatsComposer` (1891): `double usage, double usage limit, bool heavy`, then floor
+count, floor limit, wall count, wall limit and the permanent furni, user and global variables, each
+count followed by its limit. The log table is Habbo's error list: the client sends
+`WiredErrorLogsRequestEvent` (1132, no fields) right after 1957 and the server answers
+`WiredErrorLogsComposer` (15), see 4.4. The custom monitor packet (`WiredMonitorDataComposer`, 5101)
+carries only what AIR has no packet for: our own rows below, the thresholds of the info window, the
+detail of the latest occurrence of each diagnostic type (`string type, string reason, string source
+label, int source id`) and the history. It no longer carries the room counters nor the type, severity,
+count and latest time of the logs. Until the first 1891 arrives the client shows its own room object
+counts and leaves out the user and global lines.
 
 ### 4.1.1 `Wired usage`
 
@@ -178,31 +203,28 @@ Meaning:
 
 - `Yes` if the room has crossed the heavy thresholds for enough consecutive windows
 
-### 4.1.3 `Room furni`
+### 4.1.3 `Floor furni` and 4.1.4 `Wall furni`
 
 Format:
 
 ```text
-(floor count + wall count) / roomItemLimit
+floor count / floor limit
+wall count / wall limit
 ```
 
 Source:
 
-- numerator: renderer room object counts
-- denominator: server room item limit exposed in room/session data
-
-### 4.1.4 `Wall furni`
-
-Format:
-
-```text
-wall count / roomItemLimit
-```
-
-Important note:
-
-- there is **no separate wall-only cap** here
-- the denominator is the same room furni limit exposed by the server
+- `WiredRoomStats`: every floor and wall item of the room, not only wired
+- the floor line uses the floor-only cap `hotel.room.floorfurni.max` (4000), bounded by the room item cap
+  `hotel.room.furni.max` (which counts floor and wall furni and still refuses a floor furni first when it is
+  lower); placing floor furni past the floor cap fails with `${room.error.max_furniture}` before anything else
+  is checked (`RoomItemPlacementService.placeFloorFurniture`), so it holds for the inventory, Builders Club,
+  a shared wired setup and Place Furni alike, and a room already over it keeps its furni
+- a new wired box is refused at the floor cap like any floor furni (Habbo refuses new wired boxes once a
+  furni cap is reached); AIR has no wired-specific text for it, the official placement error is
+  `${room.error.max_furniture}`
+- the wall line uses the wall-only cap `hotel.room.wallfurni.max` (4000); placing wall furni past it
+  fails with `${room.error.max_furniture}`, a room already over it keeps its furni
 
 ### 4.1.5 `Delayed events`
 
@@ -264,20 +286,22 @@ Meaning:
 
 - remaining room cooldown while wired execution is temporarily halted by protection logic
 
-### 4.1.10 `Permanent furni vars`
+### 4.1.10 Permanent variables
 
 Format:
 
 ```text
-customVariableEntryCount / 60
+permanent furni variable boxes / wired.monitor.permanent.furni.variables.limit
+permanent user variable boxes / wired.monitor.permanent.user.variables.limit
+permanent global variable boxes / wired.monitor.permanent.global.variables.limit
 ```
 
-Current meaning:
-
-- the numerator is the total number of renderer-side entries stored inside `RoomObjectVariable.FURNITURE_CUSTOM_VARIABLES`
-- the denominator `60` is currently a fixed UI denominator
-
-This is currently **renderer-side custom variable count**, not a DB row count.
+A box counts when its availability is permanent (user and global: also permanent and shared). Saving a
+box as permanent when the room already holds the limit of that kind is refused with Habbo's
+`wiredfurni.error.variables.permanent_limit` (`WiredRoomStats.canBecomePermanent`). A box that already is
+permanent keeps its slot, so a room over a limit from before keeps working and can still edit those
+boxes. A pre-configured permanent box placed from the inventory is counted, but only checked again
+when it is saved.
 
 ---
 
@@ -441,7 +465,32 @@ Recursion past `wired.abuse.max.recursion.depth` records
 
 ## 4.4 Error / warning log types
 
-The monitor currently supports:
+The log table is AIR's error list (`WiredErrorLogsComposer`, 15): `int count`, then per row
+`int errorId, string name, string category, int count, long ms since the latest` (`-1` while it never
+happened). It always holds Habbo's ten rows, in Habbo's order, then our three:
+
+| Id | Name | Category | Fed by |
+|---:|---|---|---|
+| 0 | `EXECUTION_CAP` | ERROR | `EXECUTION_CAP` |
+| 1 | `DELAYED_EVENTS_CAP` | ERROR | `DELAYED_EVENTS_CAP` |
+| 2 | `EXECUTOR_OVERLOAD` | ERROR | `EXECUTOR_OVERLOAD` |
+| 3 | `MARKED_AS_HEAVY` | WARNING | `MARKED_AS_HEAVY` |
+| 4 | `KILLED` | ERROR | `KILLED` |
+| 5 | `RECURSION_TIMEOUT` | ERROR | `RECURSION_TIMEOUT` |
+| 6 | `TOO_MANY_VARIABLES` | ERROR | `TOO_MANY_VARIABLES`: a furni or user at `wired.variables.holder.max` was not given another variable |
+| 7 | `TRANSACTION_FAILURE` | ERROR | `TRANSACTION_FAILURE`: a wired transaction failed on the room's or the server's side (see below) |
+| 8 | `PLACEMENT_FAILURE` | ERROR | `PLACEMENT_FAILED` |
+| 8 | `VARIABLE_FX_LIMIT` | ERROR | `VARIABLE_FX_LIMIT`: more fx boxes than `wired.variablefx.max.boxes` (Habbo gives it id 8 too) |
+| 100 | `NO_TARGETS` | its severity | ours |
+| 101 | `UNREACHABLE` | its severity | ours |
+| 102 | `WIRED_LOG` | its severity | ours |
+
+The client picks the info text by the id (`wiredmenu.error_info.<id>`, ids 0-6 have one) and falls back
+to its own text. `Clear all` is AIR's `WiredErrorLogsClearEvent` (1632, no fields, modify rights): it
+clears the counters and the history and answers with the list at zero. The old clear action of 5101
+still works.
+
+The diagnostics behind it support:
 
 - `EXECUTION_CAP`
 - `DELAYED_EVENTS_CAP`
@@ -455,8 +504,21 @@ The monitor currently supports:
   producing, such as a highscore board in a room with no game that can end
 - `WIRED_LOG` — a line a "write to logs" box (`wf_act_log`, and its negative
   variant) wrote, at the level the box was set to
+- `TOO_MANY_VARIABLES` — a furni or user already held `wired.variables.holder.max` different variables,
+  so a new one was not given (source: the variable's name and box id)
+- `TRANSACTION_FAILURE` — an Initiate Transaction, a negotiated contract or a donation failed for a reason
+  the room or the server is behind: misconfigured (5: no user to trade with, a contract that cannot be
+  resolved, a contract gone mid-trade), the chests no longer hold the reward (7), chests full (11), not a
+  wired chest (12), chest not in the room (13), no usable chest (15), over capacity (19), internal or
+  database errors (1000, 1001). What the player does is gameplay and left to the Transaction Failed
+  trigger: walking away (0), invalid offer (1), timeout (2), a Cancel Transaction box (3), already
+  trading (4), not enough to pay (6), an empty offer (10), too many offers (17). Plain chest deposits and
+  the chest window's own withdrawals are not wired transactions and are never counted (source:
+  `init_transaction` / `contract` with the box or the first contract's id)
+- `VARIABLE_FX_LIMIT` — the room holds more variable fx boxes than are drawn; counted once each time
+  one more box goes over (source: the first box left out)
 
-Each log/history entry can carry:
+Each diagnostic entry (5101 detail or history) can carry:
 
 - type
 - severity
@@ -815,8 +877,9 @@ Behaviour notes:
 - **Variable fx** (9473-9476 out): the variable fx add-ons (health points, progress bar, boss bar,
   levelling progress, number display, status bar) draw a variable's value over avatars and furni.
   `WiredVariableFxService` works out per player what they should see and sends only the difference,
-  a quarter second at a time, as fx configs and fx statuses (and their removals). At most 25 fx
-  boxes per room and 500 statuses per viewer are honoured. Octane receives them in
+  a quarter second at a time, as fx configs and fx statuses (and their removals). At most
+  `wired.variablefx.max.boxes` (25) fx boxes per room and 500 statuses per viewer are honoured; the boxes
+  past the cap are counted on the monitor as `VARIABLE_FX_LIMIT`. Octane receives them in
   `useWiredVariableFxEvents`.
 
 ### 6.9 Quick menu on the setup window
@@ -855,7 +918,7 @@ only coins and `2` only furni (`ChestTransactionLog.FILTER_*`).
 
 ## 7. Current limitations
 
-- `Permanent furni vars` currently uses a fixed denominator (`60`) in the Octane UI
+- The permanent variable limits are shown on the monitor but not enforced
 - `@wired_timer` is still client-side, not a dedicated server timer
 - `wired.tick.resolution` is kept for compatibility/documentation, but the current tick service uses `wired.tick.interval.ms`
 - `wired.highscores.displaycount` is migrated/documented, but its usage should be validated in the current runtime path if highscore behaviour is changed later

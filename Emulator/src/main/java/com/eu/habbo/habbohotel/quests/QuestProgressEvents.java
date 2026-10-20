@@ -105,6 +105,14 @@ public final class QuestProgressEvents {
         }
     }
 
+    /** A user logged in: the reward tracks are pushed, the official client never asks for them. */
+    public static void loggedIn(Habbo habbo) {
+        GameEnvironment environment = environment();
+        if (environment != null && environment.getRewardTrackManager() != null) {
+            environment.getRewardTrackManager().sendRewardTracksOnLogin(habbo);
+        }
+    }
+
     /** Drops the cached state of a user who left. */
     public static void unload(int userId) {
         GameEnvironment environment = environment();

@@ -8,7 +8,8 @@ import java.util.Collection;
 
 /**
  * AIR 13 {@code ObjectRemoveMultiple} (official id 1451, parser
- * {@code class_2853}): {@code int count [ int id ] int pickerId}. The client
+ * {@code class_2853}): {@code int count [ int id ] int pickerId bool
+ * byInvisibleFurniManager}. The client
  * disposes every floor object of the batch and refreshes the tile object map
  * once, instead of once per {@code ObjectRemove}.
  */
@@ -16,10 +17,17 @@ public class RemoveFloorItemsComposer extends MessageComposer {
 
     private final Collection<Integer> itemIds;
     private final int pickerId;
+    private final boolean byInvisibleFurniManager;
 
     public RemoveFloorItemsComposer(Collection<Integer> itemIds, int pickerId) {
+        this(itemIds, pickerId, false);
+    }
+
+    /** @param byInvisibleFurniManager AIR's trailing flag, as in {@link RemoveFloorItemComposer} */
+    public RemoveFloorItemsComposer(Collection<Integer> itemIds, int pickerId, boolean byInvisibleFurniManager) {
         this.itemIds = itemIds;
         this.pickerId = pickerId;
+        this.byInvisibleFurniManager = byInvisibleFurniManager;
     }
 
     @Override
@@ -31,6 +39,7 @@ public class RemoveFloorItemsComposer extends MessageComposer {
             this.response.appendInt(BuildersClubItemIds.toWire(itemId));
         }
         this.response.appendInt(this.pickerId);
+        this.response.appendBoolean(this.byInvisibleFurniManager);
 
         return this.response;
     }
@@ -41,5 +50,9 @@ public class RemoveFloorItemsComposer extends MessageComposer {
 
     public int getPickerId() {
         return this.pickerId;
+    }
+
+    public boolean isByInvisibleFurniManager() {
+        return this.byInvisibleFurniManager;
     }
 }

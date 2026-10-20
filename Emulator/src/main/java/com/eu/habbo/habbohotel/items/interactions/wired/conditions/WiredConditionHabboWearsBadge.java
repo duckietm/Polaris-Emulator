@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -45,7 +46,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition imp
 
         Room room = ctx.room();
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
 
         if (this.quantifier == QUANTIFIER_ALL) {
             return this.matchesAllTargets(room, targets);
@@ -153,8 +154,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition imp
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.badge);
-        message.appendInt(1);
-        message.appendInt(this.quantifier);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -164,13 +164,12 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition imp
     @Override
     public boolean saveData(WiredSettings settings) {
         this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
-        int[] params = settings.getIntParams();
-        // Official layout: the badge in the string, no int params, the users in the official source slot;
-        // our quantifier (0 all, 1 any) follows as param 0.
+        // Official layout: the badge in the string, no int params, the users in the official source slot,
+        // the quantifier (0 all, 1 any) in its slot.
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0], QUANTIFIER_ALL) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode(), QUANTIFIER_ALL);
 
         return true;
     }

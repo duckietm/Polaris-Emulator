@@ -22,19 +22,30 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
+public class WiredTriggerVariableChanged extends InteractionWiredTrigger implements WiredOfficialVariableIds {
     public static final WiredTriggerType type = WiredTriggerType.VARIABLE_CHANGED;
 
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
     public static final int TARGET_CONTEXT = 2;
     public static final int TARGET_ROOM = 3;
+
+    /** Official trigger modes ({@code variables.trigger_mode}): the picked variable, or the picked variable boxes. */
+    public static final int MODE_SELECTED_VARIABLE = 0;
+
+    public static final int MODE_PICKED_BOXES = 1;
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
@@ -76,6 +87,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
     private int arrayOptions = ARRAY_CREATED | ARRAY_CHANGED;
     private int arrayFieldId;
     private boolean arrayDataConfigured;
+    private int mode = MODE_SELECTED_VARIABLE;
+    /** The variable boxes picked for mode 1, by item id; any variable they define is watched. */
+    private final Set<Integer> pickedBoxIds = new LinkedHashSet<>();
 
     public WiredTriggerVariableChanged(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -92,11 +106,15 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             return false;
         }
 
-        if (event.getVariableTargetType() != this.targetType) {
+        if (this.mode == MODE_PICKED_BOXES) {
+            // The picked boxes name their variables themselves, whatever the holder type.
+            if (!event.getInternalVariableKey().isEmpty()
+                    || !this.pickedBoxIds.contains(event.getVariableDefinitionItemId())) {
+                return false;
+            }
+        } else if (event.getVariableTargetType() != this.targetType) {
             return false;
-        }
-
-        if (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
+        } else if (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
             if (!this.variableToken.substring(INTERNAL_TOKEN_PREFIX.length()).equals(event.getInternalVariableKey())) {
                 return false;
             }
@@ -145,28 +163,35 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
+        if (room != null) {
+            this.pickedBoxIds.removeIf(id -> room.getHabboItem(id) == null);
+        }
+
         message.appendBoolean(false);
-        message.appendInt(0);
-        message.appendInt(0);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(this.pickedBoxIds.size());
+        for (Integer id : this.pickedBoxIds) {
+            message.appendInt(id);
+        }
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        String editorToken = this.variableToken == null ? "" : this.variableToken;
-        if (this.resolveArrayDefinition(room) != null) {
-            editorToken += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayOptions, this.arrayFieldId));
-        }
-        message.appendString(editorToken);
+        // AIR sends no string; the variable goes out as the definition's variable id. Ours: an array variable's
+        // options as JSON.
+        message.appendString(
+                this.resolveArrayDefinition(room) != null
+                        ? WiredManager.getGson().toJson(new ArrayData(this.arrayOptions, this.arrayFieldId))
+                        : "");
         // Official layout: [created, value changed, deleted, (bit 0 increased, 1 decreased, 2
-        // unchanged), origins (official bits, -1 every one), mode (0: the picked variable)]; ours
-        // follows: [variable target (official ids)].
-        message.appendInt(7);
+        // unchanged), origins (official bits, -1 every one), mode (0 the picked variable, 1 the
+        // picked variable boxes)]. The variable's target is its id's, as in AIR.
+        message.appendInt(6);
         message.appendInt(this.createdEnabled ? 1 : 0);
         message.appendInt(this.valueChangedEnabled ? 1 : 0);
         message.appendInt(this.deletedEnabled ? 1 : 0);
         message.appendInt(
                 (this.increasedEnabled ? 1 : 0) | (this.decreasedEnabled ? 2 : 0) | (this.unchangedEnabled ? 4 : 0));
         message.appendInt(toOfficialOrigins(this.originMask));
-        message.appendInt(0);
-        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
+        message.appendInt(this.mode);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -174,9 +199,11 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
     }
 
     // Official origin bits: 0 this room, 1 another room, 2 inspection, 3 external. Ours: wired (this
-    // room), creator tools (inspection), web API (external); another room never happens here.
+    // room), other room (a shared variable changed elsewhere), creator tools (inspection), web API
+    // (external).
     private static final int OFFICIAL_ORIGINS_ALL = -1;
     private static final int OFFICIAL_ORIGIN_THIS_ROOM = 0;
+    private static final int OFFICIAL_ORIGIN_OTHER_ROOM = 1;
     private static final int OFFICIAL_ORIGIN_INSPECTION = 2;
     private static final int OFFICIAL_ORIGIN_EXTERNAL = 3;
 
@@ -184,6 +211,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         if (ourMask == WiredVariableChangeOrigin.MASK_ALL || ourMask == 0) return OFFICIAL_ORIGINS_ALL;
         int official = 0;
         if ((ourMask & (1 << WiredVariableChangeOrigin.WIRED)) != 0) official |= 1 << OFFICIAL_ORIGIN_THIS_ROOM;
+        if ((ourMask & (1 << WiredVariableChangeOrigin.OTHER_ROOM)) != 0) {
+            official |= 1 << OFFICIAL_ORIGIN_OTHER_ROOM;
+        }
         if ((ourMask & (1 << WiredVariableChangeOrigin.CREATOR_TOOLS)) != 0) {
             official |= 1 << OFFICIAL_ORIGIN_INSPECTION;
         }
@@ -195,6 +225,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         if (officialMask < 0) return WiredVariableChangeOrigin.MASK_ALL;
         int ours = 0;
         if ((officialMask & (1 << OFFICIAL_ORIGIN_THIS_ROOM)) != 0) ours |= 1 << WiredVariableChangeOrigin.WIRED;
+        if ((officialMask & (1 << OFFICIAL_ORIGIN_OTHER_ROOM)) != 0) {
+            ours |= 1 << WiredVariableChangeOrigin.OTHER_ROOM;
+        }
         if ((officialMask & (1 << OFFICIAL_ORIGIN_INSPECTION)) != 0) {
             ours |= 1 << WiredVariableChangeOrigin.CREATOR_TOOLS;
         }
@@ -212,7 +245,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         int[] params = settings.getIntParams();
 
-        // Official layout (see serializeWiredData); our variable target follows the official ints.
+        // Official layout (see serializeWiredData). The target is the variable id's; older clients sent ours as a
+        // seventh int, which still wins when present.
         this.createdEnabled = (params.length <= 0) || (params[0] == 1);
         this.valueChangedEnabled = (params.length <= 1) || (params[1] == 1);
         this.deletedEnabled = (params.length <= 2) || (params[2] == 1);
@@ -222,16 +256,42 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         this.unchangedEnabled = (changes & 4) != 0;
         this.originMask = WiredVariableChangeOrigin.normalizeMask(
                 fromOfficialOrigins((params.length > 4) ? params[4] : OFFICIAL_ORIGINS_ALL));
+        this.mode = (params.length > 5 && params[5] == MODE_PICKED_BOXES) ? MODE_PICKED_BOXES : MODE_SELECTED_VARIABLE;
         this.targetType = normalizeTargetType(WiredVariableTargets.fromOfficial(
                 (params.length > 6) ? params[6] : WiredVariableTargets.OFFICIAL_USER));
-        String[] stringParts = settings.getStringParam() == null
-                ? new String[0]
-                : settings.getStringParam().split("\\t", 2);
-        this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
-        ArrayData arrayData = parseArrayData(stringParts.length > 1 ? stringParts[1] : null);
+        this.pickedBoxIds.clear();
+        int[] furniIds = settings.getFurniIds() != null ? settings.getFurniIds() : new int[0];
+        for (int i = 0; i < furniIds.length && i < WiredManager.MAXIMUM_FURNI_SELECTION; i++) {
+            if (furniIds[i] > 0 && (room == null || room.getHabboItem(furniIds[i]) != null)) {
+                this.pickedBoxIds.add(furniIds[i]);
+            }
+        }
+        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+        String arrayText;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            // AIR: the variable is the first variable id; the string carries only our array options.
+            this.setVariableToken(WiredVariableIds.tokenAt(settings.getVariableIds(), 0));
+            int tab = text.indexOf('\t');
+            arrayText = tab >= 0 ? text.substring(tab + 1) : text;
+            if (params.length <= 6) {
+                this.targetType = targetOfId(settings.getVariableIds()[0], this.targetType);
+            }
+        } else {
+            // Older clients and share codes: the token, then the array options after a tab.
+            String[] stringParts = text.split("\\t", 2);
+            this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
+            arrayText = stringParts.length > 1 ? stringParts[1] : null;
+        }
+        ArrayData arrayData = parseArrayData(arrayText);
         this.arrayOptions = arrayData.options;
         this.arrayFieldId = Math.max(0, arrayData.fieldId);
         this.normalizeOptions();
+
+        if (this.mode == MODE_PICKED_BOXES) {
+            // The picked boxes stand for the variables; the variable picker is off in this mode.
+            this.arrayDataConfigured = false;
+            return this.hasAnyEnabledOption();
+        }
 
         if (this.variableToken.isEmpty()) {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
@@ -274,7 +334,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
                         this.deletedEnabled,
                         this.originMask,
                         this.arrayDataConfigured ? this.arrayOptions : null,
-                        this.arrayDataConfigured ? this.arrayFieldId : null));
+                        this.arrayDataConfigured ? this.arrayFieldId : null,
+                        this.mode == MODE_PICKED_BOXES ? this.mode : null,
+                        this.pickedBoxIds.isEmpty() ? null : new ArrayList<>(this.pickedBoxIds)));
     }
 
     @Override
@@ -314,6 +376,15 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
                 (data.variableToken != null)
                         ? data.variableToken
                         : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
+        // Boxes saved before the trigger modes watch their one variable (mode 0) and pick nothing.
+        this.mode = (data.mode != null && data.mode == MODE_PICKED_BOXES) ? MODE_PICKED_BOXES : MODE_SELECTED_VARIABLE;
+        if (data.pickedBoxIds != null) {
+            for (Integer id : data.pickedBoxIds) {
+                if (id != null && id > 0 && this.pickedBoxIds.size() < WiredManager.MAXIMUM_FURNI_SELECTION) {
+                    this.pickedBoxIds.add(id);
+                }
+            }
+        }
         this.normalizeOptions();
     }
 
@@ -332,6 +403,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         this.arrayOptions = ARRAY_CREATED | ARRAY_CHANGED;
         this.arrayFieldId = 0;
         this.arrayDataConfigured = false;
+        this.mode = MODE_SELECTED_VARIABLE;
+        this.pickedBoxIds.clear();
     }
 
     private void setVariableToken(String token) {
@@ -348,8 +421,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
         // Room variables and built-ins are never created or deleted, except a projectile's counts: its
         // traveling flag goes when it lands, which Habbo reports as a deletion.
-        if (this.targetType == TARGET_ROOM
-                || (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX) && !this.watchesProjectile())) {
+        if (this.mode != MODE_PICKED_BOXES
+                && (this.targetType == TARGET_ROOM
+                        || (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX) && !this.watchesProjectile()))) {
             this.createdEnabled = false;
             this.deletedEnabled = false;
         }
@@ -445,6 +519,22 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         }
     }
 
+    @Override
+    public String[] officialVariableIds() {
+        if (this.mode == MODE_PICKED_BOXES || this.variableToken.isEmpty()) {
+            return new String[0];
+        }
+        return new String[] {WiredVariableIds.toWireForHolder(this.targetType, this.variableToken)};
+    }
+
+    /** Our holder kind of the target a variable id names, else {@code fallback}. */
+    private static int targetOfId(String id, int fallback) {
+        int official = WiredVariableIds.officialTargetOf(id);
+        return official == Integer.MIN_VALUE
+                ? fallback
+                : normalizeTargetType(WiredVariableTargets.fromOfficial(official));
+    }
+
     private static int normalizeTargetType(int value) {
         return switch (value) {
             case TARGET_FURNI, TARGET_CONTEXT, TARGET_ROOM -> value;
@@ -505,6 +595,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         Integer originMask;
         Integer arrayOptions;
         Integer arrayFieldId;
+        Integer mode;
+        List<Integer> pickedBoxIds;
 
         JsonData(
                 String variableToken,
@@ -518,7 +610,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
                 boolean deletedEnabled,
                 Integer originMask,
                 Integer arrayOptions,
-                Integer arrayFieldId) {
+                Integer arrayFieldId,
+                Integer mode,
+                List<Integer> pickedBoxIds) {
             this.variableToken = variableToken;
             this.variableItemId = variableItemId;
             this.targetType = targetType;
@@ -531,7 +625,17 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             this.originMask = originMask;
             this.arrayOptions = arrayOptions;
             this.arrayFieldId = arrayFieldId;
+            this.mode = mode;
+            this.pickedBoxIds = pickedBoxIds;
         }
+    }
+
+    public int getMode() {
+        return this.mode;
+    }
+
+    public Set<Integer> getPickedBoxIds() {
+        return Set.copyOf(this.pickedBoxIds);
     }
 
     static class ArrayData {

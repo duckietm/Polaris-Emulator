@@ -59,7 +59,7 @@ class WiredConditionMatchSnapshotWallTest {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
             emulator.when(Emulator::getConfig).thenReturn(config);
             // state, direction, position, altitude, picked furni
-            condition.saveData(new WiredSettings(new int[] {1, 1, 1, 0, 100}, "", new int[] {55}, 0));
+            condition.saveData(new WiredSettings(new int[] {1, 1, 1, 0}, "", new int[] {55}, 0));
 
             when(torch.getRotation()).thenReturn(4); // a wall item has no direction
             assertTrue(condition.evaluate(ctx));

@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -63,6 +64,10 @@ public final class WiredContextVariableSupport {
 
         definitions.addAll(WiredPointerVariableSupport.definitionInfos(room, WiredVariableTargets.OFFICIAL_CONTEXT));
 
+        for (WiredExtraVariableEcho echo : contextEchoes(room)) {
+            definitions.add(echo.createDefinitionInfo(room));
+        }
+
         if (room != null && room.getRoomSpecialTypes() != null) {
             Set<String> projections = new LinkedHashSet<>();
             for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
@@ -100,6 +105,10 @@ public final class WiredContextVariableSupport {
 
     public static WiredVariableDefinitionInfo getDefinitionInfo(Room room, int definitionItemId) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
+        WiredExtraVariableEcho echo = contextEcho(room, definitionItemId);
+        if (echo != null) {
+            return echo.createDefinitionInfo(room);
+        }
         if (definition == null && WiredPointerVariableSupport.isPointer(room, definitionItemId)) {
             return WiredPointerVariableSupport.definitionInfo(
                     room, definitionItemId, WiredVariableTargets.OFFICIAL_CONTEXT);
@@ -131,10 +140,8 @@ public final class WiredContextVariableSupport {
             return false;
         }
 
-        if (overrideExisting && ctx.contextVariables().hasVariable(definitionItemId)) {
-            ctx.forkContextVariables();
-        }
-
+        // An overriding give creates the variable in this execution's own scope (assignValue), where it
+        // hides the sender's; nothing has to be copied for that.
         return ctx.contextVariables()
                 .assignValue(definitionItemId, definition.hasValue() ? value : null, overrideExisting);
     }
@@ -155,11 +162,47 @@ public final class WiredContextVariableSupport {
     }
 
     public static boolean hasVariable(WiredContext ctx, int definitionItemId) {
-        return ctx != null && ctx.contextVariables().hasVariable(definitionItemId);
+        if (ctx == null) return false;
+        if (ctx.contextVariables().hasVariable(definitionItemId)) return true;
+
+        WiredExtraVariableEcho echo = contextEcho(ctx.room(), definitionItemId);
+        return echo != null && echo.readContextValue(ctx) != null;
     }
 
     public static Integer getCurrentValue(WiredContext ctx, int definitionItemId) {
-        return ctx != null ? ctx.contextVariables().getValue(definitionItemId) : null;
+        if (ctx == null) return null;
+
+        WiredExtraVariableEcho echo = contextEcho(ctx.room(), definitionItemId);
+        return echo != null ? echo.readContextValue(ctx) : ctx.contextVariables().getValue(definitionItemId);
+    }
+
+    /** The echo with this id when it echoes a context variable (AIR's echo of the running stack's context). */
+    public static WiredExtraVariableEcho contextEcho(Room room, int definitionItemId) {
+        if (room == null || room.getRoomSpecialTypes() == null || definitionItemId <= 0) {
+            return null;
+        }
+
+        InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(definitionItemId);
+        return (extra instanceof WiredExtraVariableEcho echo && echo.isContextEcho()) ? echo : null;
+    }
+
+    private static List<WiredExtraVariableEcho> contextEchoes(Room room) {
+        List<WiredExtraVariableEcho> echoes = new ArrayList<>();
+        if (room == null || room.getRoomSpecialTypes() == null || room.getRoomSpecialTypes().getExtras() == null) {
+            return echoes;
+        }
+
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+            if (extra instanceof WiredExtraVariableEcho echo
+                    && echo.isContextEcho()
+                    && echo.getVariableName() != null
+                    && !echo.getVariableName().isEmpty()) {
+                echoes.add(echo);
+            }
+        }
+        echoes.sort(Comparator.comparing(WiredExtraVariableEcho::getVariableName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparingInt(WiredExtraVariableEcho::getId));
+        return echoes;
     }
 
     public static void triggerVariableChanged(

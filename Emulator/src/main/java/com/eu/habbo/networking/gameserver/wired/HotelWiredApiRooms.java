@@ -217,6 +217,7 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             for (RoomWiredVariableCatalog.Variable variable : RoomWiredVariableCatalog.variables(this.room)) {
                 Scope scope = scopeOf(variable.getVariableTarget());
                 if (scope == null
+                        || variable.getVariableType() != RoomWiredVariableCatalog.TYPE_CREATED
                         || variable.isReadOnly()
                         || variable.getVariableName() == null
                         || !NAME.matcher(variable.getVariableName()).matches()) {

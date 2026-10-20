@@ -12,6 +12,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.lang.ref.WeakReference;
@@ -33,11 +35,13 @@ import java.util.List;
  * <p>The strength is typed or read from a variable when the furni moves, as Habbo's editor offers.
  *
  * <p>Int params, official first: {@code [strength from variable (0/1), strength, variable target
- * (official ids)]}, then ours: {@code [curve, intensity (0-100, easing)]}. String param: the
- * variable token. Sources: the variable's user and furni source in the official slots. Picked furni:
+ * (official ids)]}, then ours: {@code [curve, intensity (0-100, easing)]}. Variable ids {@code [variable]}, no string
+ * (older clients sent the variable token as the string; still read). Sources: the variable's user and furni source in
+ * the official slots. Picked furni:
  * the furni the variable is read from when its source is the box's own picks.
  */
-public class WiredExtraMovementCurve extends InteractionWiredExtra implements WiredOfficialSources {
+public class WiredExtraMovementCurve extends InteractionWiredExtra
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final int CODE = 97;
 
     public static final int CURVE_LINEAR = 0;
@@ -104,7 +108,9 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra implements Wi
                 WiredVariableOperand.normalizeUserSource(users.length > 0 ? users[0] : WiredSourceUtil.SOURCE_TRIGGER);
         this.variableFurniSource = WiredVariableOperand.normalizeFurniSource(
                 fromOfficialPicks(furni.length > 0 ? furni[0] : WiredSourceUtil.SOURCE_TRIGGER));
-        this.variableToken = WiredVariableOperand.normalizeToken(settings.getStringParam());
+        this.variableToken = WiredVariableIds.present(settings.getVariableIds())
+                ? WiredVariableIds.tokenAt(settings.getVariableIds(), 0)
+                : WiredVariableOperand.normalizeToken(settings.getStringParam());
 
         this.variableFurni.clear();
         Room room = settings.getRoom();
@@ -116,6 +122,14 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra implements Wi
             }
         }
         return true;
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                this.strengthMode == STRENGTH_VARIABLE
+                        ? WiredVariableIds.toWireForHolder(this.variableTarget, this.variableToken)
+                        : "");
     }
 
     @Override
@@ -145,7 +159,7 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra implements Wi
         }
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableToken);
+        message.appendString("");
         message.appendInt(5);
         message.appendInt(this.strengthMode);
         message.appendInt(this.strength);

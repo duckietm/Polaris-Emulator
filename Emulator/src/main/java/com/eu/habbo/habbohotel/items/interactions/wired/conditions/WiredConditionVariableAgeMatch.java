@@ -13,8 +13,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
@@ -22,6 +24,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * The official "variable age matches" (AIR code 37). Int params {@code [target, comparison, useUpdate, durationHigh,
+ * durationLow, unit, fromVariable, durationTarget]}; variable ids {@code [variable, duration variable or none]}; the
+ * furni and users in the official source slots, the quantifier in its slot; no string (older clients sent the variable,
+ * a tab and the duration variable's id; still read).
+ */
 public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
     public static final WiredConditionType type = WiredConditionType.VAR_AGE_MATCH;
 
@@ -84,10 +92,10 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         // Official layout: [target, comparison (0 less, 2 more), useUpdate, durationHigh, durationLow, unit,
-        // fromVariable, durationTarget], the variable then a tab and the duration variable in the string,
-        // the furni and users in the official source slots; our quantifier follows.
-        message.appendString((this.variableToken == null ? "" : this.variableToken) + "\t" + this.durationVariableId);
-        message.appendInt(9);
+        // fromVariable, durationTarget], variable ids [variable, duration variable or none], no string, the furni
+        // and users in the official source slots, the quantifier in its slot.
+        message.appendString("");
+        message.appendInt(8);
         message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(this.comparison);
         message.appendInt(this.compareValue);
@@ -96,11 +104,17 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         message.appendInt(this.durationUnit);
         message.appendInt(this.fromVariable ? 1 : 0);
         message.appendInt(this.durationTarget);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
         message.appendInt(0);
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWireForHolder(this.targetType, this.variableToken),
+                this.fromVariable ? WiredVariableIds.toWire(this.durationTarget, this.durationVariableId) : "");
     }
 
     @Override
@@ -118,17 +132,25 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         this.durationUnit = (params.length > 5) ? normalizeDurationUnit(params[5]) : DURATION_UNIT_SECONDS;
         this.durationTarget =
                 WiredValueVariable.normalizeTarget((params.length > 7) ? params[7] : WiredValueVariable.TARGET_GLOBAL);
-        this.quantifier = (params.length > 8) ? normalizeQuantifier(params[8]) : QUANTIFIER_ALL;
+        this.quantifier = normalizeQuantifier(settings.getQuantifierCode());
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
-        int tab = text.indexOf('\t');
-        this.setVariableToken(normalizeVariableToken(tab < 0 ? text : text.substring(0, tab)));
-        this.durationVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            // AIR: [variable, duration variable or none].
+            this.setVariableToken(WiredVariableIds.tokenAt(settings.getVariableIds(), 0));
+            this.durationVariableId =
+                    settings.getVariableIds().length > 1 ? WiredVariableIds.boxIdOf(settings.getVariableIds()[1]) : 0;
+        } else {
+            // Older clients and share codes: the variable, a tab and the duration variable's id.
+            String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+            int tab = text.indexOf('\t');
+            this.setVariableToken(normalizeVariableToken(tab < 0 ? text : text.substring(0, tab)));
+            this.durationVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        }
         this.fromVariable = (params.length > 6) && params[6] == 1 && this.durationVariableId > 0;
         if (!this.fromVariable) this.durationVariableId = 0;
 
@@ -293,7 +315,7 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
 
     private boolean evaluateUserTargets(WiredContext ctx, Room room, long thresholdMs, int variableId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (RoomUnit roomUnit : targets) {
@@ -314,7 +336,7 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (HabboItem item : targets) {

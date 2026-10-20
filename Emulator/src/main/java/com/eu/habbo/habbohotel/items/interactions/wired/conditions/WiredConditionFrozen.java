@@ -9,7 +9,9 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,7 +23,7 @@ import java.util.List;
  * dialog leaves out the effect id. Being frozen is a state, not an effect you name:
  * {@code matchesFrozen} asks {@code WiredFreezeUtil}, and the stored id is never read.
  */
-public class WiredConditionFrozen extends InteractionWiredCondition {
+public class WiredConditionFrozen extends InteractionWiredCondition implements WiredOfficialQuantifier {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int MAX_EFFECT_ID = 10_000;
@@ -43,7 +45,7 @@ public class WiredConditionFrozen extends InteractionWiredCondition {
     @Override
     public boolean evaluate(WiredContext ctx) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
 
         if (this.quantifier == QUANTIFIER_ALL) {
             return this.matchesAllTargets(targets);
@@ -142,10 +144,8 @@ public class WiredConditionFrozen extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(1);
         message.appendInt(this.effectId);
-        message.appendInt(this.userSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -157,15 +157,21 @@ public class WiredConditionFrozen extends InteractionWiredCondition {
         if (settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
-        this.userSource = (params.length > 1)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[1])
+        // As the wearing-effect box: [effect], the users in the official source slot, the quantifier in its slot.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ANY) : QUANTIFIER_ANY;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode(), QUANTIFIER_ANY);
 
         return true;
     }
 
     protected int getQuantifier() {
+        return this.quantifier;
+    }
+
+    @Override
+    public int officialQuantifierCode() {
         return this.quantifier;
     }
 

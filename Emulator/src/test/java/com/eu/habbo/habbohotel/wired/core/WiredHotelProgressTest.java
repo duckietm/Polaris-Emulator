@@ -97,6 +97,17 @@ class WiredHotelProgressTest {
     }
 
     @Test
+    void anAmountOfZeroProgressesNothingAndALargeOneIsLeftToTheAllowance() throws Exception {
+        Achievement game = achievement("ACH_Game");
+        Habbo habbo = this.habbo(7, this.room, true);
+
+        assertEquals(0, this.progress(List.of(habbo), game, Set.of("ACH_Game"), 1, 0, policy("ACH_Game")));
+        assertTrue(this.progressed.isEmpty());
+        int given = this.progress(List.of(habbo), game, Set.of("ACH_Game"), 1, Integer.MAX_VALUE, policy("ACH_Game"));
+        assertTrue(given > 0 && given < Integer.MAX_VALUE, "the hotel's window allowance bounds it");
+    }
+
+    @Test
     void theHotelSwitchOffMeansNothing() throws Exception {
         Achievement game = achievement("ACH_Game");
         Habbo habbo = this.habbo(7, this.room, true);
@@ -210,6 +221,13 @@ class WiredHotelProgressTest {
         assertEquals(WiredHotelProgress.MAX_AMOUNT, WiredHotelProgress.normalizeAmount(Integer.MAX_VALUE));
         assertEquals(WiredHotelProgress.MODE_ADD, WiredHotelProgress.normalizeMode(9));
         assertEquals(WiredHotelProgress.MODE_RAISE_TO, WiredHotelProgress.normalizeMode(0));
+    }
+
+    @Test
+    void achievementAmountsRunFromZeroToIntMaxAsAir() {
+        assertEquals(0, WiredHotelProgress.normalizeAchievementAmount(-4));
+        assertEquals(0, WiredHotelProgress.normalizeAchievementAmount(0));
+        assertEquals(Integer.MAX_VALUE, WiredHotelProgress.normalizeAchievementAmount(Integer.MAX_VALUE));
     }
 
     // ---------------------------------------------------------------- reward tracks

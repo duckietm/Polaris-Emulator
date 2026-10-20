@@ -3,7 +3,12 @@ package com.eu.habbo.messages.incoming.rooms.pets;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.pets.Pet;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.PetErrorComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemovePetComposer;
@@ -14,10 +19,18 @@ public class PetPlaceEvent extends MessageHandler {
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId() && !room.isAllowPets() && !(this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER) || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI))) {
+        // Playtest (the hotel's own rule beyond AIR): pets stay in the inventory.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) {
+            this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_PETS_FORBIDDEN_IN_FLAT));
+            return;
+        }
+
+        if (this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId()
+                && !room.isAllowPets()
+                && !(this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)
+                        || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI))) {
             this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_PETS_FORBIDDEN_IN_FLAT));
             return;
         }
@@ -29,7 +42,8 @@ public class PetPlaceEvent extends MessageHandler {
         if (pet == null) {
             return;
         }
-        if (room.getCurrentPets().size() >= Room.MAXIMUM_PETS && !this.client.getHabbo().hasPermission(Permission.ACC_UNLIMITED_PETS)) {
+        if (room.getCurrentPets().size() >= Room.MAXIMUM_PETS
+                && !this.client.getHabbo().hasPermission(Permission.ACC_UNLIMITED_PETS)) {
             this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_MAX_PETS));
             return;
         }
@@ -41,18 +55,25 @@ public class PetPlaceEvent extends MessageHandler {
         RoomTile playerTile = this.client.getHabbo().getRoomUnit().getCurrentLocation();
 
         if ((x == 0 && y == 0) || !room.isOwner(this.client.getHabbo())) {
-            //Place the pet in front of the player.
-            tile = room.getLayout().getTileInFront(this.client.getHabbo().getRoomUnit().getCurrentLocation(), this.client.getHabbo().getRoomUnit().getBodyRotation().getValue());
+            // Place the pet in front of the player.
+            tile = room.getLayout()
+                    .getTileInFront(
+                            this.client.getHabbo().getRoomUnit().getCurrentLocation(),
+                            this.client
+                                    .getHabbo()
+                                    .getRoomUnit()
+                                    .getBodyRotation()
+                                    .getValue());
 
             if (tile == null || !tile.isWalkable()) {
                 this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_PETS_NO_FREE_TILES));
             }
 
-            //Check if tile exists and is walkable. Else place it in the current location the Habbo is standing.
+            // Check if tile exists and is walkable. Else place it in the current location the Habbo is standing.
             if (tile == null || !tile.isWalkable()) {
                 tile = playerTile;
 
-                //If the current tile is not walkable, place it at the door.
+                // If the current tile is not walkable, place it at the door.
                 if (tile == null || !tile.isWalkable()) {
                     tile = room.getLayout().getDoorTile();
                 }

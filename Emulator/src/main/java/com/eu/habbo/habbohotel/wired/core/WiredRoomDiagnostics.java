@@ -27,19 +27,26 @@ public final class WiredRoomDiagnostics {
         /** A line a "write to logs" box wrote, at the level the box was set to. */
         WIRED_LOG,
         /** Place Furni could not place one or more of its copies (room full, tile taken, a gate or roller). */
-        PLACEMENT_FAILED
+        PLACEMENT_FAILED,
+        /** A furni or user could not be given one more variable: it holds as many as one holder may. */
+        TOO_MANY_VARIABLES,
+        /** A wired transaction failed for a reason the room or the server is behind, not the player. */
+        TRANSACTION_FAILURE,
+        /** The room holds more variable fx boxes than are drawn; the rest are left out. */
+        VARIABLE_FX_LIMIT
     }
 
     /**
      * How serious an entry is. {@link #getLogLevel()} is the number the room log window filters and
-     * colours by - Habbo's four levels, debug to error. It is not the ordinal: the two the engine
-     * always used stay first, where they were.
+     * colours by - AIR's four levels, 0 info, 1 warn, 2 error, 3 debug
+     * ({@code WiredRoomLogListTableObject.COLORS}). It is not the ordinal: the two the engine always
+     * used stay first, where they were.
      */
     public enum Severity {
-        WARNING(2),
-        ERROR(3),
-        DEBUG(0),
-        INFO(1);
+        WARNING(1),
+        ERROR(2),
+        DEBUG(3),
+        INFO(0);
 
         private final int logLevel;
 
@@ -500,6 +507,24 @@ public final class WiredRoomDiagnostics {
     public void recordPlacementFailure(long now, String reason, String sourceLabel, int sourceId) {
         rollWindowIfNeeded(now);
         record(Type.PLACEMENT_FAILED, now, reason, sourceLabel, sourceId);
+    }
+
+    /** A holder could not be given one more variable (Habbo's TOO_MANY_VARIABLES, error 6). */
+    public void recordTooManyVariables(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.TOO_MANY_VARIABLES, now, reason, sourceLabel, sourceId);
+    }
+
+    /** A wired transaction failed on the room's or the server's side (Habbo's TRANSACTION_FAILURE, error 7). */
+    public void recordTransactionFailure(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.TRANSACTION_FAILURE, now, reason, sourceLabel, sourceId);
+    }
+
+    /** More variable fx boxes than the room may draw (Habbo's VARIABLE_FX_LIMIT, error 8). */
+    public void recordVariableFxLimit(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.VARIABLE_FX_LIMIT, now, reason, sourceLabel, sourceId);
     }
 
     /**

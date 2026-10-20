@@ -43,9 +43,8 @@ public final class WiredSourceUtil {
             return resolvedItems;
         }
 
-        List<HabboItem> filtered = (sourceType == SOURCE_SELECTOR)
-                ? resolvedItems
-                : WiredSelectionFilterSupport.filterItems(ctx.room(), ctx.triggerItem(), ctx, resolvedItems);
+        // The filter add-ons narrow what the selectors picked (applied once after them), never another source.
+        List<HabboItem> filtered = resolvedItems;
 
         if (filtered.isEmpty() && ctx.state() != null) {
             ctx.state().noteUnresolvedFurniSource(sourceType);
@@ -70,9 +69,8 @@ public final class WiredSourceUtil {
             return resolvedUsers;
         }
 
-        List<RoomUnit> filtered = (sourceType == SOURCE_SELECTOR)
-                ? resolvedUsers
-                : WiredSelectionFilterSupport.filterUsers(ctx.room(), ctx.triggerItem(), ctx, resolvedUsers);
+        // The filter add-ons narrow what the selectors picked (applied once after them), never another source.
+        List<RoomUnit> filtered = resolvedUsers;
 
         if (filtered.isEmpty() && ctx.state() != null) {
             ctx.state().noteUnresolvedUserSource(sourceType);

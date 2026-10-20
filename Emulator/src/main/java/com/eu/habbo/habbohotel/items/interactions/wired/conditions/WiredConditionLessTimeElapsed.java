@@ -79,8 +79,10 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // AIR stores the slider value plus one ([value + 1], read back as param - 1); ours keeps the
+        // half-seconds the slider shows, so saved boxes keep their meaning.
         message.appendInt(1);
-        message.appendInt(this.cycles);
+        message.appendInt(toOfficial(this.cycles));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -90,8 +92,18 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.cycles = WiredConditionInputGuard.normalizeTimerCycles(settings.getIntParams()[0]);
+        this.cycles = fromOfficial(settings.getIntParams()[0]);
         return true;
+    }
+
+    /** The official param of the half-seconds the slider shows: the value plus one. */
+    static int toOfficial(int cycles) {
+        return cycles + 1;
+    }
+
+    /** The half-seconds of an official param (the slider value plus one); never below 0. */
+    static int fromOfficial(int param) {
+        return WiredConditionInputGuard.normalizeTimerCycles(param - 1);
     }
 
     int normalizeCycles(int value) {

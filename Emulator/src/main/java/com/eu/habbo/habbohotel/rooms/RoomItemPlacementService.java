@@ -5,12 +5,14 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.messages.outgoing.rooms.items.AddFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.AddWallItemComposer;
 import com.eu.habbo.plugin.Event;
@@ -146,6 +148,13 @@ final class RoomItemPlacementService {
     }
 
     FurnitureMovementError placeFloorFurniture(HabboItem item, RoomTile tile, int rotation, Habbo owner) {
+        // Habbo's own floor furni cap, before anything else is asked: a new wired box is refused at it like any
+        // other floor furni, whichever way it comes in (inventory, Builders Club, a shared setup, Place Furni).
+        // A room already over the cap keeps its furni.
+        if (!RoomFloorItemLimit.hasRoomFor(this.room.getFloorItems().size())) {
+            return FurnitureMovementError.MAX_ITEMS;
+        }
+
         RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
         if (specialTypes != null) {
             if (item instanceof WiredEffectSendSignal && specialTypes.isSignalSenderLimitReached()) {
@@ -153,6 +162,12 @@ final class RoomItemPlacementService {
             }
             if (item instanceof WiredTriggerReceiveSignal && specialTypes.isSignalReceiverLimitReached()) {
                 return FurnitureMovementError.MAX_SIGNAL_RECEIVERS;
+            }
+            // A variable box that arrives already permanent takes a permanent slot as it lands: with none free it
+            // stays where it came from, settings and all, rather than being placed and losing its permanence.
+            if (item instanceof InteractionWiredExtra extra
+                    && !WiredRoomStats.hasPermanentSlotFor(specialTypes.getExtras(), extra)) {
+                return FurnitureMovementError.MAX_PERMANENT_VARIABLES;
             }
         }
 
@@ -233,6 +248,11 @@ final class RoomItemPlacementService {
                 || this.room.getGuildRightLevel(owner).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)
                 || BuildersClubRoomSupport.canPlaceInRoom(owner, this.room))) {
             return FurnitureMovementError.NO_RIGHTS;
+        }
+
+        // Habbo's own wall furni cap; a room already over it keeps its furni.
+        if (!RoomWallItemLimit.hasRoomFor(this.room.getWallItems().size())) {
+            return FurnitureMovementError.MAX_ITEMS;
         }
 
         if (Emulator.getPluginManager().isRegistered(FurniturePlacedEvent.class, true)) {

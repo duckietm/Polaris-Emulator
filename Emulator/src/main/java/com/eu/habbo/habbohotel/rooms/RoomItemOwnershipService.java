@@ -221,9 +221,7 @@ final class RoomItemOwnershipService {
                 this.room.sendComposer(new RemoveFloorItemComposer(item).compose());
             }
             this.refreshRemovedFloorArea(item);
-            if (RoomChooserDisableSupport.isActiveController(item)) {
-                RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
-            }
+            RoomConfigurationFurniSupport.onControllerRemoved(this.room, item);
         } else if (item.getBaseItem().getType() == FurnitureType.WALL && sendRemoveComposer) {
             this.room.sendComposer(new RemoveWallItemComposer(item).compose());
         }

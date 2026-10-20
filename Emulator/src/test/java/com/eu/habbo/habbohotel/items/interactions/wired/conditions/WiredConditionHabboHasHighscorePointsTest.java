@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredComparison;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +29,13 @@ class WiredConditionHabboHasHighscorePointsTest {
                 700, List.of(entry(700, List.of(10), 15), entry(700, List.of(10, 11), 40), entry(700, List.of(11), 99)),
                 701, List.of(entry(701, List.of(10), 25)))::get);
 
-        box.saveData(settings(new int[] {40, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {40, WiredComparison.GREATER_EQUAL, 0}, 700));
         assertTrue(box.evaluate(context(room, actor)));
 
-        box.saveData(settings(new int[] {41, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {41, WiredComparison.GREATER_EQUAL, 0}, 700));
         assertFalse(box.evaluate(context(room, actor)));
 
-        box.saveData(settings(new int[] {25, WiredComparison.EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 701));
+        box.saveData(settings(new int[] {25, WiredComparison.EQUAL, 0}, 701));
         assertTrue(box.evaluate(context(room, actor)));
     }
 
@@ -48,10 +47,10 @@ class WiredConditionHabboHasHighscorePointsTest {
                 new WiredConditionHabboHasHighscorePoints(1, 1, boxBase(), "", 0, 0);
         box.scores(Map.of(700, List.of(entry(700, List.of(11), 99)))::get);
 
-        box.saveData(settings(new int[] {0, WiredComparison.EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {0, WiredComparison.EQUAL, 0}, 700));
         assertTrue(box.evaluate(context(room, actor)));
 
-        box.saveData(settings(new int[] {1, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {1, WiredComparison.GREATER_EQUAL, 0}, 700));
         assertFalse(box.evaluate(context(room, actor)));
     }
 
@@ -63,13 +62,13 @@ class WiredConditionHabboHasHighscorePointsTest {
                 new WiredConditionNotHabboHasHighscorePoints(1, 1, boxBase(), "", 0, 0);
         box.scores(Map.of(700, List.of(entry(700, List.of(10), 50)))::get);
 
-        box.saveData(settings(new int[] {50, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {50, WiredComparison.GREATER_EQUAL, 0}, 700));
         assertFalse(box.evaluate(context(room, actor)));
 
-        box.saveData(settings(new int[] {51, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}, 700));
+        box.saveData(settings(new int[] {51, WiredComparison.GREATER_EQUAL, 0}, 700));
         assertTrue(box.evaluate(context(room, actor)));
 
-        box.saveData(settings(new int[] {51, WiredComparison.GREATER_EQUAL, WiredSourceUtil.SOURCE_TRIGGER, 0}));
+        box.saveData(settings(new int[] {51, WiredComparison.GREATER_EQUAL, 0}));
         assertFalse(box.evaluate(context(room, actor)));
     }
 

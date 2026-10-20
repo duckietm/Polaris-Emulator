@@ -61,7 +61,8 @@ public final class WiredTextPlaceholderUtil {
                 (extras != null && !extras.isEmpty()) ? WiredExecutionOrderUtil.sort(extras) : List.of();
         List<WiredExtraTextOutputGlobal> globals =
                 text.contains("$(") ? collectGlobalPlaceholders(room) : Collections.emptyList();
-        if (stackExtras.isEmpty() && globals.isEmpty()) {
+        java.util.Map<String, String> carried = ctx.event().getCarriedPlaceholders();
+        if (stackExtras.isEmpty() && globals.isEmpty() && carried.isEmpty()) {
             return text;
         }
 
@@ -120,6 +121,18 @@ public final class WiredTextPlaceholderUtil {
             }
         }
 
+        // Then the sender's, as they were when the signal or stack call went out (official).
+        for (java.util.Map.Entry<String, String> placeholder : carried.entrySet()) {
+            if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                break;
+            }
+
+            if (resolvedText.contains(placeholder.getKey())) {
+                resolvedText = replaceWithBudget(resolvedText, placeholder.getKey(), placeholder.getValue());
+                replacementCount++;
+            }
+        }
+
         for (WiredExtraTextOutputGlobal global : globals) {
             if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
                 break;
@@ -133,6 +146,66 @@ public final class WiredTextPlaceholderUtil {
         }
 
         return preserveRepeatedSpaces(resolvedText);
+    }
+
+    /** At most this many placeholders travel with a signal or a stack call. */
+    static final int MAX_CARRIED_PLACEHOLDERS = 50;
+
+    /**
+     * The placeholders a signal or stack call hands to the stacks it starts: this stack's own
+     * (username, furni name and variable outputs), as they read now, then the ones it was handed
+     * itself. The receiving stack applies its own first and these after them.
+     */
+    public static java.util.Map<String, String> carriedPlaceholders(WiredContext ctx) {
+        java.util.LinkedHashMap<String, String> carried = new java.util.LinkedHashMap<>();
+        if (ctx == null) {
+            return carried;
+        }
+
+        Room room = ctx.room();
+        HabboItem triggerItem = ctx.triggerItem();
+        if (room != null && room.getRoomSpecialTypes() != null && triggerItem != null) {
+            Collection<InteractionWiredExtra> extras =
+                    room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+            List<InteractionWiredExtra> stackExtras =
+                    (extras != null && !extras.isEmpty()) ? WiredExecutionOrderUtil.sort(extras) : List.of();
+
+            for (InteractionWiredExtra extra : stackExtras) {
+                if (carried.size() >= MAX_CARRIED_PLACEHOLDERS) {
+                    break;
+                }
+
+                if (extra instanceof WiredExtraTextOutputUsername username) {
+                    putPlaceholder(
+                            carried, username.getPlaceholderToken(), () -> buildUsernameReplacement(ctx, username));
+                } else if (extra instanceof WiredExtraTextOutputFurniName furni) {
+                    putPlaceholder(carried, furni.getPlaceholderToken(), () -> buildFurniNameReplacement(ctx, furni));
+                } else if (extra instanceof WiredExtraTextOutputVariable variable) {
+                    putPlaceholder(
+                            carried, variable.getPlaceholderToken(), () -> buildVariableReplacement(ctx, variable));
+                }
+            }
+        }
+
+        for (java.util.Map.Entry<String, String> inherited :
+                ctx.event().getCarriedPlaceholders().entrySet()) {
+            if (carried.size() >= MAX_CARRIED_PLACEHOLDERS) {
+                break;
+            }
+            carried.putIfAbsent(inherited.getKey(), inherited.getValue());
+        }
+        return carried;
+    }
+
+    private static void putPlaceholder(
+            java.util.Map<String, String> carried, String token, java.util.function.Supplier<String> text) {
+        if (token == null || token.isEmpty() || carried.containsKey(token)) {
+            return;
+        }
+        String resolved = text.get();
+        if (resolved != null) {
+            carried.put(token, resolved);
+        }
     }
 
     /** The official {@code $(trigger_text)}: the whole message that fired a User Says Keyword stack. */

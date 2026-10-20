@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.protocol.WiredEditorState;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -19,6 +20,8 @@ import java.util.regex.Pattern;
 /** Builds the {@link WiredSetupDocument} of a room's wired boxes. */
 final class WiredSetupExporter {
     static final Pattern CUSTOM_TOKEN = Pattern.compile("custom:(\\d{1,10})");
+    /** A box's variable id: the token, the variable list's {@code <target>:<box id>}, or the bare box id. */
+    static final Pattern BOX_VARIABLE_ID = Pattern.compile("(custom:|user:|furni:|room:|ctx:)?(\\d{1,10})");
 
     /** Boxes are read in a stable order: by tile, then from the bottom of the stack up. */
     static final Comparator<HabboItem> STACK_ORDER = Comparator.comparingInt(HabboItem::getX)
@@ -115,17 +118,31 @@ final class WiredSetupExporter {
         return out.toString();
     }
 
+    /**
+     * The variable ids slot by slot. A box's variable becomes {@code <prefix>#<index>} when the box is exported;
+     * otherwise a bare or {@code custom:} id is dropped to "none" ({@code n}), while a {@code <target>:<id>} stays (a
+     * reference names a shared variable of another room). Built-in ids are the same in every room.
+     */
     List<String> exportVariables(String[] variableIds) {
         List<String> out = new ArrayList<>();
         if (variableIds == null) return out;
         for (String variableId : variableIds) {
-            if (variableId == null || variableId.isEmpty()) continue;
-            String plain = variableId.startsWith("custom:") ? variableId.substring("custom:".length()) : variableId;
-            if (isDigits(plain)) {
-                Integer index = this.boxIndexes.get(parseId(plain));
-                if (index != null) out.add(variableId.startsWith("custom:") ? "custom:#" + index : "#" + index);
+            if (variableId == null || variableId.isEmpty()) {
+                out.add(WiredVariableIds.NONE);
+                continue;
+            }
+            Matcher matcher = BOX_VARIABLE_ID.matcher(variableId);
+            if (!matcher.matches()) {
+                out.add(variableId);
+                continue;
+            }
+            String prefix = matcher.group(1) == null ? "" : matcher.group(1);
+            Integer index = this.boxIndexes.get(parseId(matcher.group(2)));
+            if (index != null) {
+                out.add(prefix + "#" + index);
+            } else if (prefix.isEmpty() || prefix.equals("custom:")) {
+                out.add(WiredVariableIds.NONE);
             } else {
-                // Built-in and internal variables are the same in every room.
                 out.add(variableId);
             }
         }

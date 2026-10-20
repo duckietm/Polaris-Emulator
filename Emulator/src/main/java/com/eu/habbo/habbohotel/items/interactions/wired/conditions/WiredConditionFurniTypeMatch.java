@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -71,7 +72,7 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition impl
     protected boolean evaluateAllMatches(WiredContext ctx) {
         List<HabboItem> matchTargets = this.resolveMatchTargets(ctx);
         if (matchTargets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmpty(true);
         }
 
         Set<Integer> compareTypeIds = this.resolveCompareTypeIds(ctx);
@@ -230,8 +231,8 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition impl
         this.refresh();
 
         // Official layout: the picks are the furni types to match, the furni checked come from the
-        // official source slot, no int params. Ours follow: the source of the types (101 = the picks),
-        // the quantifier, and the furni checked as picks of their own in the string.
+        // official source slot, no int params, the quantifier in its slot. Ours follow: the source of the
+        // types (101 = the picks) and the furni checked as picks of their own in the string.
         message.appendBoolean(false);
         message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
         message.appendInt(this.secondaryItems.size());
@@ -243,9 +244,8 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition impl
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeIds(this.items));
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.compareFurniSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -268,8 +268,8 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition impl
                 : WiredSourceUtil.SOURCE_TRIGGER;
         this.compareFurniSource =
                 (params.length > 0) ? this.normalizeFurniSource(params[0]) : SOURCE_SECONDARY_SELECTED;
-        // Officially one match is enough.
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ANY;
+        // A fresh box opens on "any": officially one match is enough.
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {

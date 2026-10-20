@@ -77,8 +77,11 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
         }
 
         List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        // AIR: "everything" cannot be split between several users.
-        if (everything && units.size() > 1) return;
+        // AIR: "everything" cannot be split between several users (fail 16).
+        if (everything && units.size() > 1) {
+            WiredChestTargets.answerCannotGiveAllToMany(ctx, room, "give_furni_from_chest", this.getId());
+            return;
+        }
 
         for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);

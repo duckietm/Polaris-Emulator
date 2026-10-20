@@ -11,14 +11,15 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
-import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,14 +32,21 @@ import java.util.List;
  *
  * <p>That amount can be a number you type or the current value of a variable, which is what the
  * official calls a value-or-variable section - a threshold that moves with the game instead of being
- * fixed when the box was saved. This reads a <b>room</b> or <b>user</b> variable; the official's furni
- * and context targets are not offered, since a chest threshold has no natural per-furni reading.
+ * fixed when the box was saved. As AIR's ChestHasAmount the variable is a furni, user, global or
+ * context one (official targets 0, 1, -10, -20), read on the triggering furni or user.
  *
- * <p>A box saved before this existed has two ints and no token, so it reads as a constant and behaves
- * exactly as it did. When the mode is variable and the variable cannot be read, the condition fails
- * rather than falling back to a number nobody chose.
+ * <p>Official layout: {@code [value, valueIsVariable, variable target, comparison]}, the variable as the
+ * first variable id. A box saved before this existed has two ints and no token, so it reads as a
+ * constant and behaves exactly as it did; one saved with the user / room choice keeps it (user 1,
+ * global -10). When the mode is variable and the variable cannot be read, the condition fails rather
+ * than falling back to a number nobody chose.
+ *
+ * <p>The chests come from AIR's one furni source slot ({@code mergedSelections [[1, 0]]}, titled
+ * {@code sources.furni.title.chests}): the picks by default, or the trigger, a selector or a signal. A box saved
+ * before the slot has no source and keeps reading its picks.
  */
-public class WiredConditionChestHasItems extends InteractionWiredCondition {
+public class WiredConditionChestHasItems extends InteractionWiredCondition
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final WiredConditionType type = WiredConditionType.CHEST_HAS_ITEMS;
 
     static final int AMOUNT_CONSTANT = 0;
@@ -48,13 +56,19 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     static final String REQUIRE_CHESTS = "wiredfurni.error.require_chests";
+    static final int DEFAULT_CHEST_SOURCE = WiredSourceUtil.SOURCE_SELECTED;
 
     private final List<Integer> chestIds = new ArrayList<>();
+    /** Where the chests come from: the picks (100), the trigger, a selector or a signal. */
+    private int furniSource = DEFAULT_CHEST_SOURCE;
+
     private int amount = 1;
     private int comparison = WiredComparison.GREATER_EQUAL;
     private int amountMode = AMOUNT_CONSTANT;
     private int amountTarget = TARGET_ROOM;
     private String amountVariableToken = "";
+    /** The official target the variable is read on (0 furni, 1 user, -10 global, -20 context). */
+    private int valueTarget = WiredValueVariable.TARGET_GLOBAL;
 
     public WiredConditionChestHasItems(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -72,11 +86,13 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
 
         int total = 0;
         boolean anyChest = false;
-        for (Integer id : this.chestIds) {
-            HabboItem item = room.getHabboItem(id);
-            anyChest |= item instanceof InteractionWiredChest;
+        List<InteractionWiredChest> seen = new ArrayList<>();
+        for (HabboItem item : this.resolveChests(ctx, room)) {
+            if (!(item instanceof InteractionWiredChest chest) || seen.contains(chest)) continue;
+            seen.add(chest);
+            anyChest = true;
             // Wired only reaches a chest whose owner upgraded it to answer wired.
-            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
+            if (chest.answersWired()) {
                 total += chest.getContents().total(ChestStorage.KIND_CURRENCY)
                         + chest.getContents().total(ChestStorage.KIND_FURNI);
             }
@@ -89,41 +105,80 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         return threshold != null && WiredComparison.compare(total, threshold, this.comparison);
     }
 
+    /** The furni of the source slot: the picked chests, or what the trigger, a selector or a signal hands over. */
+    private List<HabboItem> resolveChests(WiredContext ctx, Room room) {
+        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
+            List<HabboItem> picked = new ArrayList<>();
+            for (Integer id : this.chestIds) {
+                HabboItem item = room.getHabboItem(id);
+                if (item != null) picked.add(item);
+            }
+            return WiredSourceUtil.resolveItems(ctx, WiredSourceUtil.SOURCE_SELECTED, picked);
+        }
+        return WiredSourceUtil.resolveItems(ctx, this.furniSource, new ArrayList<>());
+    }
+
+    /** The official furni sources this slot takes; anything else reads as the picks. */
+    static int normalizeSource(int value) {
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER,
+                    WiredSourceUtil.SOURCE_SELECTED,
+                    WiredSourceUtil.SOURCE_SELECTOR,
+                    WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> DEFAULT_CHEST_SOURCE;
+        };
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
+    }
+
     /** The typed number, or the current value of the chosen variable; null when it cannot be read. */
     private Integer resolveAmount(WiredContext ctx, Room room) {
         if (this.amountMode != AMOUNT_VARIABLE) {
             return this.amount;
         }
 
-        int variableItemId = customItemId(this.amountVariableToken);
-        if (variableItemId <= 0) {
-            return null;
-        }
+        return WiredValueVariable.read(
+                ctx,
+                room,
+                this.valueTarget,
+                customItemId(this.amountVariableToken),
+                WiredSourceUtil.SOURCE_TRIGGER,
+                WiredSourceUtil.SOURCE_TRIGGER);
+    }
 
-        if (this.amountTarget == TARGET_ROOM) {
-            WiredVariableDefinitionInfo definition =
-                    room.getRoomVariableManager().getDefinitionInfo(variableItemId);
-            return (definition != null && definition.hasValue())
-                    ? room.getRoomVariableManager().getCurrentValue(variableItemId)
-                    : null;
+    /** The variable id the dialog sends: the first variable id, or (older clients) the token in the string. */
+    static String variableTokenOf(WiredSettings settings) {
+        String[] variableIds = settings.getVariableIds();
+        String raw =
+                (variableIds != null && variableIds.length > 0 && variableIds[0] != null && !variableIds[0].isBlank())
+                        ? variableIds[0]
+                        : settings.getStringParam();
+        String token = normalizeToken(raw);
+        if (token.isEmpty() || token.startsWith(CUSTOM_TOKEN_PREFIX)) {
+            return token;
         }
+        // The variable list's id (room:12), or a bare box id from an older client.
+        int id = WiredVariableIds.boxIdOf(token);
+        return id > 0 ? CUSTOM_TOKEN_PREFIX + id : "";
+    }
 
-        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(variableItemId);
-        if (definition == null || !definition.hasValue()) {
-            return null;
-        }
+    /** Our stored user / room choice as the official target. */
+    static int officialTargetOf(int amountTarget) {
+        return amountTarget == TARGET_USER ? WiredValueVariable.TARGET_USER : WiredValueVariable.TARGET_GLOBAL;
+    }
 
-        for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_TRIGGER)) {
-            int holder = UserVariableHolders.of(room, roomUnit);
-            if (holder != 0) {
-                Integer value = room.getUserVariableManager().getCurrentValue(holder, variableItemId);
-                if (value != null) {
-                    return value;
-                }
-            }
-        }
-
-        return null;
+    @Override
+    public String[] officialVariableIds() {
+        int id = customItemId(this.amountVariableToken);
+        return id > 0 ? new String[] {WiredVariableIds.toWire(officialTargetOf(this.amountTarget), id)} : new String[0];
     }
 
     /** Tokens are {@code custom:<itemId>}; anything else names no variable this box can read. */
@@ -150,10 +205,12 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
         this.amount = (params.length > 0) ? Math.max(0, params[0]) : 1;
         this.amountMode = ((params.length > 1) && params[1] == AMOUNT_VARIABLE) ? AMOUNT_VARIABLE : AMOUNT_CONSTANT;
-        this.amountTarget =
-                ((params.length > 2) && params[2] == WiredVariableTargets.OFFICIAL_USER) ? TARGET_USER : TARGET_ROOM;
+        this.valueTarget =
+                WiredValueVariable.normalizeTarget((params.length > 2) ? params[2] : WiredValueVariable.TARGET_GLOBAL);
+        this.amountTarget = this.valueTarget == WiredValueVariable.TARGET_USER ? TARGET_USER : TARGET_ROOM;
         this.comparison = (params.length > 3) ? WiredComparison.normalize(params[3]) : WiredComparison.GREATER_EQUAL;
-        this.amountVariableToken = normalizeToken(settings.getStringParam());
+        this.amountVariableToken = variableTokenOf(settings);
+        this.furniSource = normalizeSource(settings.furniSource(0, DEFAULT_CHEST_SOURCE));
 
         // A variable amount that names no variable would silently behave as a constant, so it is
         // refused at the door instead of being saved as something the dialog did not say.
@@ -213,7 +270,9 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
                         this.chestIds,
                         this.amountMode,
                         this.amountTarget,
-                        this.amountVariableToken));
+                        this.amountVariableToken,
+                        this.valueTarget,
+                        this.furniSource));
     }
 
     @Override
@@ -230,10 +289,16 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         this.comparison = WiredComparison.normalize(data.comparison);
         this.amountMode = (data.amountMode == AMOUNT_VARIABLE) ? AMOUNT_VARIABLE : AMOUNT_CONSTANT;
         this.amountTarget = (data.amountTarget == TARGET_USER) ? TARGET_USER : TARGET_ROOM;
+        // Boxes saved with the user / room choice read their variable where they did.
+        this.valueTarget = (data.valueTarget != null)
+                ? WiredValueVariable.normalizeTarget(data.valueTarget)
+                : officialTargetOf(this.amountTarget);
         this.amountVariableToken = normalizeToken(data.amountVariableToken);
         if (data.chestIds != null) {
             this.chestIds.addAll(data.chestIds);
         }
+        // Saved before the source slot: the picks, as the box always read them.
+        this.furniSource = (data.furniSource != null) ? normalizeSource(data.furniSource) : DEFAULT_CHEST_SOURCE;
     }
 
     @Override
@@ -246,16 +311,13 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         }
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.amountVariableToken);
-        // Official layout: [value, valueIsVariable, variable target (user 1, global -10), comparison]; the
-        // chests are the picks, the variable in the string.
+        message.appendString("");
+        // Official layout: [value, valueIsVariable, variable target (0 furni, 1 user, -10 global, -20
+        // context), comparison]; the chests are the picks, the variable the first variable id.
         message.appendInt(4);
         message.appendInt(this.amount);
         message.appendInt(this.amountMode);
-        message.appendInt(
-                this.amountTarget == TARGET_USER
-                        ? WiredVariableTargets.OFFICIAL_USER
-                        : WiredVariableTargets.OFFICIAL_GLOBAL);
+        message.appendInt(this.valueTarget);
         message.appendInt(this.comparison);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -271,6 +333,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         this.amountMode = AMOUNT_CONSTANT;
         this.amountTarget = TARGET_ROOM;
         this.amountVariableToken = "";
+        this.valueTarget = WiredValueVariable.TARGET_GLOBAL;
+        this.furniSource = DEFAULT_CHEST_SOURCE;
     }
 
     /** Normalises the token the dialog sends; a blank one simply names no variable. */
@@ -285,6 +349,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         int amountMode;
         int amountTarget;
         String amountVariableToken;
+        Integer valueTarget;
+        Integer furniSource;
 
         public JsonData(
                 int amount,
@@ -292,13 +358,17 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
                 List<Integer> chestIds,
                 int amountMode,
                 int amountTarget,
-                String amountVariableToken) {
+                String amountVariableToken,
+                Integer valueTarget,
+                Integer furniSource) {
             this.amount = amount;
             this.comparison = comparison;
             this.chestIds = chestIds;
             this.amountMode = amountMode;
             this.amountTarget = amountTarget;
             this.amountVariableToken = amountVariableToken;
+            this.valueTarget = valueTarget;
+            this.furniSource = furniSource;
         }
     }
 }

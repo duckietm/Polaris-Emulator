@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +57,65 @@ class WiredSelectionFilterSupportTest {
         List<HabboItem> filtered = WiredSelectionFilterSupport.filterItems(room, trigger(), context(room), items);
 
         assertEquals(1, filtered.size());
+    }
+
+    @Test
+    void withoutASelectorOfItsKindAFilterStartsFromNothing() throws Exception {
+        WiredExtraFilterUser filter = new WiredExtraFilterUser(9, 1, base(), "", 0, 0);
+        filter.saveData(new WiredSettings(new int[] {2}, "", new int[0], 0), null);
+        Room room = roomWithExtras(filter);
+        HabboItem trigger = trigger();
+        WiredContext ctx = new WiredContext(
+                WiredEvent.builder(WiredEvent.Type.CUSTOM, room)
+                        .actor(mock(RoomUnit.class))
+                        .build(),
+                trigger,
+                mock(WiredServices.class),
+                new WiredState(20));
+        ctx.targets().addItem(mock(HabboItem.class));
+
+        WiredSelectionFilterSupport.applySelectorFilters(room, trigger, ctx);
+
+        // The users kind had a filter and no selector: it is emptied, not left on the triggering user.
+        assertTrue(ctx.targets().isUsersModifiedBySelector());
+        assertTrue(ctx.targets().users().isEmpty());
+        // No furni filter: the furni defaults stay as they were.
+        assertFalse(ctx.targets().isItemsModifiedBySelector());
+        assertEquals(2, ctx.targets().items().size());
+    }
+
+    @Test
+    void anUnconfiguredFilterWithoutASelectorChangesNothing() throws Exception {
+        WiredExtraFilterUser filter = new WiredExtraFilterUser(9, 1, base(), "", 0, 0);
+        Room room = roomWithExtras(filter);
+        HabboItem trigger = trigger();
+        WiredContext ctx = new WiredContext(
+                WiredEvent.builder(WiredEvent.Type.CUSTOM, room)
+                        .actor(mock(RoomUnit.class))
+                        .build(),
+                trigger,
+                mock(WiredServices.class),
+                new WiredState(20));
+
+        WiredSelectionFilterSupport.applySelectorFilters(room, trigger, ctx);
+
+        assertFalse(ctx.targets().isUsersModifiedBySelector());
+        assertEquals(1, ctx.targets().users().size());
+    }
+
+    @Test
+    void aFilterNeverNarrowsAnotherSourceThanTheSelectors() throws Exception {
+        WiredExtraFilterUser filter = new WiredExtraFilterUser(9, 1, base(), "", 0, 0);
+        filter.saveData(new WiredSettings(new int[] {1}, "", new int[0], 0), null);
+        Room room = roomWithExtras(filter);
+        WiredContext ctx = new WiredContext(
+                WiredEvent.builder(WiredEvent.Type.CUSTOM, room).build(),
+                trigger(),
+                mock(WiredServices.class),
+                new WiredState(20));
+        List<RoomUnit> picked = List.of(mock(RoomUnit.class), mock(RoomUnit.class));
+
+        assertEquals(picked, WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_SELECTED, picked));
     }
 
     private static WiredContext context(Room room) {

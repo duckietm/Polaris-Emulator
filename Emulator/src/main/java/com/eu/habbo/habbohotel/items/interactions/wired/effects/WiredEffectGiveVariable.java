@@ -33,6 +33,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableDefinitionFlash;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -47,10 +50,12 @@ import java.util.Set;
  * override, fromVariable, referenceTarget, sameHolder]}: the target is an official variable target
  * (1 user, 0 furni, -20 context), the initial value a long split in two ints. Since WIN63-202610121624
  * the initial value may come from a variable: read once on the box's selection, or with "same holder"
- * on each target itself. String param: the variable (an id, or {@code internal:<key>}), then a tab and
- * the reference variable's id. Furni slot 0 and user slot 0 are the targets.
+ * on each target itself. Variable ids {@code [variable, reference variable or none]}, no string (older clients sent
+ * the variable, a tab and the reference variable's id as the string; still read). Furni slot 0 and user slot 0 are the
+ * targets.
  */
-public class WiredEffectGiveVariable extends InteractionWiredEffect implements WiredOfficialSources {
+public class WiredEffectGiveVariable extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final WiredEffectType type = WiredEffectType.GIVE_VAR;
 
     public static final int TARGET_USER = 0;
@@ -367,11 +372,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString((this.internalVariableKey.isEmpty()
-                        ? String.valueOf(this.variableItemId)
-                        : "internal:" + this.internalVariableKey)
-                + "\t"
-                + this.referenceVariableId);
+        message.appendString("");
         message.appendInt(7);
         message.appendInt(
                 this.targetType == TARGET_GLOBAL
@@ -416,10 +417,23 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         int nextFurniSource =
                 normalizeFurniSource(furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
 
-        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
-        int tab = text.indexOf('\t');
-        String variableText = tab < 0 ? text : text.substring(0, tab);
-        int nextReferenceVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        String variableText;
+        int nextReferenceVariableId;
+        String[] variableIds = settings.getVariableIds();
+        if (WiredVariableIds.present(variableIds)) {
+            // AIR: [variable, reference variable or none].
+            String token = WiredVariableIds.tokenAt(variableIds, 0);
+            variableText = token.startsWith(WiredVariableIds.CUSTOM_TOKEN_PREFIX)
+                    ? token.substring(WiredVariableIds.CUSTOM_TOKEN_PREFIX.length())
+                    : token;
+            nextReferenceVariableId = variableIds.length > 1 ? WiredVariableIds.boxIdOf(variableIds[1]) : 0;
+        } else {
+            // Older clients and share codes: the variable, a tab and the reference variable's id.
+            String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+            int tab = text.indexOf('\t');
+            variableText = tab < 0 ? text : text.substring(0, tab);
+            nextReferenceVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        }
         if (nextFromVariable && nextReferenceVariableId <= 0) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
@@ -621,6 +635,17 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     }
 
     @Override
+    public String[] officialVariableIds() {
+        String variable = this.internalVariableKey.isEmpty()
+                ? WiredVariableIds.toWire(WiredVariableTargets.toOfficial(this.targetType), this.variableItemId)
+                : WiredVariableIds.toWireForHolder(
+                        this.targetType, WiredVariableIds.INTERNAL_TOKEN_PREFIX + this.internalVariableKey);
+        String reference =
+                this.fromVariable ? WiredVariableIds.toWire(this.referenceTarget, this.referenceVariableId) : "";
+        return WiredVariableIds.list(variable, reference);
+    }
+
+    @Override
     public int[] officialUserSources() {
         return new int[] {this.userSource};
     }
@@ -690,7 +715,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@handitem_id", "@effect_id", "@has_rights", FREE_MOVE_KEY)
+        return Set.of("@handitem_id", "@effect_id", "@has_rights", "@habbicon", FREE_MOVE_KEY)
                         .contains(key)
                 ? key
                 : "";

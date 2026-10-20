@@ -66,7 +66,7 @@ public class WiredVariableHoldersPageComposer extends MessageComposer {
         for (RoomWiredVariableCatalog.Holder holder : this.elements) {
             this.response.appendInt(holder.getEntityType());
             this.response.appendInt(BuildersClubItemIds.toWire(
-                    holder.getEntityId(), holder.getEntityType() == RoomWiredVariableCatalog.TARGET_FURNI));
+                    holder.getEntityId(), holder.getEntityType() == RoomWiredVariableCatalog.HOLDER_FURNI));
             this.response.appendString(holder.getEntityName());
             this.response.appendInt(holder.getValue());
             appendLong(this.response, holder.getCreatedAt());

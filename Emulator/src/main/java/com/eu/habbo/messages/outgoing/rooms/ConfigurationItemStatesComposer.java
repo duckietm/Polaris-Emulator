@@ -1,10 +1,10 @@
 package com.eu.habbo.messages.outgoing.rooms;
 
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChooserDisableSupport;
 import com.eu.habbo.habbohotel.rooms.RoomConfInvisSupport;
 import com.eu.habbo.habbohotel.rooms.RoomHanditemBlockSupport;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -43,7 +43,7 @@ public class ConfigurationItemStatesComposer extends MessageComposer {
         this.handitemControlBlocked = RoomHanditemBlockSupport.isHanditemBlocked(room);
         this.invisibleFurni = RoomConfInvisSupport.hasActiveController(room);
         this.chooserDisabled = RoomChooserDisableSupport.isChooserDisabled(room);
-        this.freeFurniMovementsEnabled = habbo != null && habbo.hasPermission(Permission.ACC_MOVEROTATE);
+        this.freeFurniMovementsEnabled = RoomPlayTestSupport.hasFreeFurniMovementsMode(habbo);
     }
 
     public ConfigurationItemStatesComposer(

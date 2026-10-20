@@ -35,6 +35,27 @@ public final class DatabaseChestStore implements ChestStore {
     private static final String ITEM_COLUMNS =
             "item_id, extra_data, wired_data, limited_data, guild_id, expires, allow_underpass";
 
+    // The same columns read from items, where older hotels allow NULL in the text columns; the chest table does
+    // not, so a NULL becomes the chest table's default.
+    private static final String ITEM_SOURCE_COLUMNS = "item_id, COALESCE(extra_data, ''), COALESCE(wired_data, ''), "
+            + "COALESCE(limited_data, '0:0'), COALESCE(guild_id, 0), COALESCE(expires, 0), COALESCE(allow_underpass, 0)";
+
+    /** Where the store gets its connections: the hotel database, or a test's. */
+    @FunctionalInterface
+    interface ConnectionSource {
+        Connection open() throws SQLException;
+    }
+
+    private final ConnectionSource connections;
+
+    public DatabaseChestStore() {
+        this(DatabaseChestStore::hotelConnection);
+    }
+
+    DatabaseChestStore(ConnectionSource connections) {
+        this.connections = connections;
+    }
+
     @Override
     public ChestRow loadChest(int chestId) {
         try (Connection connection = connection();
@@ -146,7 +167,7 @@ public final class DatabaseChestStore implements ChestStore {
             connection.setAutoCommit(false);
             try (PreparedStatement copy =
                             connection.prepareStatement("INSERT INTO wired_chest_items (id, chest_id, sequence, "
-                                    + ITEM_COLUMNS + ") SELECT id, ?, ?, " + ITEM_COLUMNS
+                                    + ITEM_COLUMNS + ") SELECT id, ?, ?, " + ITEM_SOURCE_COLUMNS
                                     + " FROM items WHERE id = ? AND user_id = ? AND room_id = 0");
                     PreparedStatement delete = connection.prepareStatement(
                             "DELETE FROM items WHERE id = ? AND user_id = ? AND room_id = 0")) {
@@ -466,7 +487,11 @@ public final class DatabaseChestStore implements ChestStore {
         return orphans;
     }
 
-    private static Connection connection() throws SQLException {
+    private Connection connection() throws SQLException {
+        return this.connections.open();
+    }
+
+    private static Connection hotelConnection() throws SQLException {
         com.eu.habbo.database.Database database = WiredPlatform.database();
         if (database == null || database.getDataSource() == null) {
             throw new SQLException("The hotel database is not available");

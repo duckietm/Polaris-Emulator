@@ -24,11 +24,20 @@ import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.messages.ServerMessage;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class WiredVariableAddonSharingTest {
     private static final int SOURCE_VARIABLE_ID = 500;
+
+    @AfterEach
+    void resetSavedSources() {
+        WiredUnloadedAddonSources.reset();
+    }
 
     private static Item base() {
         Item item = mock(Item.class);
@@ -175,5 +184,110 @@ class WiredVariableAddonSharingTest {
         assertTrue(WiredVariableAddonSharing.importedAddons(room, variable, WiredVariableAddonSharing.TEXT_CONNECTORS)
                 .isEmpty());
         assertSame(null, WiredVariableLevelSystemSupport.getTimeUtilities(room, variable));
+    }
+
+    @Test
+    void anUnloadedSourceRoomSharesFromItsSavedBoxesUntilItChanges() {
+        WiredExtraUserVariable variable = sharedVariable();
+        WiredExtraVariableTextConnector connector = addon(WiredExtraVariableTextConnector.class, 40, 1.0);
+        WiredExtraVariableAddonShare share =
+                configured(new WiredExtraVariableAddonShare(43, 1, base(), "", 0, 0), 1, 0, 0);
+        AtomicInteger loads = new AtomicInteger();
+        AtomicLong now = new AtomicLong();
+        WiredUnloadedAddonSources.useForTests(
+                (roomId, itemId) -> {
+                    loads.incrementAndGet();
+                    assertEquals(10, roomId);
+                    assertEquals(SOURCE_VARIABLE_ID, itemId);
+                    return new WiredUnloadedAddonSources.Saved(77, variable, List.of(variable, connector, share));
+                },
+                now::get);
+
+        WiredExtraVariableReference reference = reference();
+        WiredExtraVariableAddonImport importBox =
+                configured(new WiredExtraVariableAddonImport(44, 1, base(), "", 0, 0), 1, 0, 0);
+        Room room = room(1, 2, new LinkedHashSet<>(List.of(reference, importBox)), reference);
+        when(room.getId()).thenReturn(20);
+        when(room.getOwnerId()).thenReturn(77);
+
+        assertEquals(
+                List.of(connector),
+                WiredVariableAddonSharing.importedAddons(room, reference, WiredVariableAddonSharing.TEXT_CONNECTORS));
+        WiredVariableAddonSharing.importedAddons(room, reference, WiredVariableAddonSharing.TEXT_CONNECTORS);
+        assertEquals(1, loads.get(), "the saved boxes are read once");
+
+        // Saving, moving or picking up a box there invalidates the room; an entry also expires.
+        WiredUnloadedAddonSources.invalidate(10);
+        WiredVariableAddonSharing.importedAddons(room, reference, WiredVariableAddonSharing.TEXT_CONNECTORS);
+        assertEquals(2, loads.get());
+        WiredUnloadedAddonSources.invalidate(11);
+        now.set(WiredUnloadedAddonSources.TTL_MS);
+        WiredVariableAddonSharing.importedAddons(room, reference, WiredVariableAddonSharing.TEXT_CONNECTORS);
+        assertEquals(3, loads.get());
+
+        when(room.getOwnerId()).thenReturn(78);
+        assertTrue(
+                WiredVariableAddonSharing.importedAddons(room, reference, WiredVariableAddonSharing.TEXT_CONNECTORS)
+                        .isEmpty(),
+                "another owner's room shares nothing");
+    }
+
+    @Test
+    void onlyTheBoxTypesSharingReadsAreBuiltFromSavedFurni() {
+        assertTrue(WiredUnloadedAddonSources.isRead(WiredExtraUserVariable.class));
+        assertTrue(WiredUnloadedAddonSources.isRead(WiredExtraVariableAddonShare.class));
+        assertTrue(WiredUnloadedAddonSources.isRead(WiredExtraTimeUtilities.class));
+        assertFalse(WiredUnloadedAddonSources.isRead(WiredExtraVariableAddonImport.class));
+        assertFalse(WiredUnloadedAddonSources.isRead(WiredExtraVariableReference.class));
+        assertFalse(WiredUnloadedAddonSources.isRead(null));
+    }
+
+    @Test
+    void importedFxMapTheSourceRoomsVariablesToThisRoomsReferences() {
+        WiredExtraUserVariable variable = sharedVariable();
+        WiredExtraVariableFx fx = addon(WiredExtraVariableFx.class, 60, 1.0);
+        when(fx.isUserFx()).thenReturn(true);
+        WiredExtraVariableAddonShare share =
+                configured(new WiredExtraVariableAddonShare(43, 1, base(), "", 0, 0), 0, 0, 1);
+        share.setZ(2.0);
+        WiredUnloadedAddonSources.useForTests(
+                (roomId, itemId) -> new WiredUnloadedAddonSources.Saved(0, variable, List.of(variable, fx, share)),
+                () -> 0L);
+
+        WiredExtraVariableReference reference = reference();
+        WiredExtraVariableAddonImport importBox =
+                configured(new WiredExtraVariableAddonImport(44, 1, base(), "", 0, 0), 0, 0, 1);
+        // More references to the same source room: a second one to the shown variable, and one to its
+        // variable 600 (say the fx's range or audience variable).
+        WiredExtraVariableReference second = reference();
+        when(second.getId()).thenReturn(950);
+        when(second.getX()).thenReturn((short) 8);
+        WiredExtraVariableReference range = reference();
+        when(range.getId()).thenReturn(905);
+        when(range.getSourceVariableItemId()).thenReturn(600);
+        when(range.getX()).thenReturn((short) 8);
+        WiredExtraVariableReference elsewhere = reference();
+        when(elsewhere.getId()).thenReturn(906);
+        when(elsewhere.getSourceRoomId()).thenReturn(11);
+        when(elsewhere.getSourceVariableItemId()).thenReturn(601);
+        when(elsewhere.getX()).thenReturn((short) 8);
+
+        Room room = mock(Room.class);
+        RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
+        when(room.getId()).thenReturn(20);
+        when(room.getRoomSpecialTypes()).thenReturn(specialTypes);
+        when(specialTypes.getExtras())
+                .thenReturn(new LinkedHashSet<>(List.of(reference, importBox, second, range, elsewhere)));
+        when(specialTypes.getExtras(1, 2)).thenReturn(new LinkedHashSet<>(List.of(reference, importBox)));
+
+        List<WiredVariableAddonSharing.ImportedFx> imported = WiredVariableAddonSharing.importedFx(room, 25);
+        assertEquals(1, imported.size());
+        WiredVariableAddonSharing.ImportedFx shown = imported.get(0);
+        assertSame(fx, shown.box());
+        assertSame(reference, shown.reference());
+        assertEquals(905, shown.localId(600));
+        assertEquals(900, shown.localId(SOURCE_VARIABLE_ID), "the lowest reference id wins");
+        assertEquals(601, shown.localId(601), "another room's variable keeps its id (and so reads as nothing)");
+        assertEquals(Map.of(SOURCE_VARIABLE_ID, 900, 600, 905), WiredVariableAddonSharing.referencedIds(room, 10));
     }
 }

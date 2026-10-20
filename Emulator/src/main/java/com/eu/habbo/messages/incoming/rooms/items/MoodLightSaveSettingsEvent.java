@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomMoodlightData;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -22,6 +23,9 @@ public class MoodLightSaveSettingsEvent extends MessageHandler {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null) return;
+
+        // Playtest (the hotel's own rule beyond AIR): the dimmer is not set up, as for a visitor without rights.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
 
         if ((room.getGuildId() <= 0
                         && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS))

@@ -28,6 +28,7 @@ public final class WiredAddonCodes {
             Map.entry(80, 15), // variable placeholder
             Map.entry(85, 16), // variable capturer
             Map.entry(64, 17), // execute in order
+            Map.entry(18, 18), // chest item type scanner
             Map.entry(68, 19), // furni name placeholder
             Map.entry(113, 20), // custom contract
             Map.entry(136, 21), // projectile

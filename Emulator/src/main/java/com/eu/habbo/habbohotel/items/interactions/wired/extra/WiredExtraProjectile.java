@@ -12,9 +12,12 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredProjectileDirections;
+import com.eu.habbo.habbohotel.wired.core.WiredProjectileFlight;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import java.lang.ref.WeakReference;
 import java.sql.ResultSet;
@@ -29,15 +32,16 @@ import java.util.stream.Collectors;
  * makes with the furni picked as projectiles (every furni the stack moves when none are picked).
  *
  * <p>The first nineteen int params are the editor's, in turbo-cloud's order; five more hold where
- * the two variables are read and who the shooter is. The string param holds the time and the
- * distance variable tokens, tab separated.
+ * the two variables are read and who the shooter is. Variable ids {@code [time variable, distance variable]} (AIR's
+ * {@code [timeVar, distanceVar]}), no string; older clients sent the two tokens tab separated as the string (still
+ * read).
  *
  * <p>Animation time, when scaled with the distance: the distance is the largest of the axes the
  * box measures (x and y when none is ticked, height in tiles), each tile flown takes the time per
  * tile minus the speed increase for every tile already behind it (never under 1 ms), a part tile
  * its share, and the flight is kept between {@link #MIN_FLIGHT_MS} and {@link #MAX_FLIGHT_MS}.
  */
-public class WiredExtraProjectile extends InteractionWiredExtra {
+public class WiredExtraProjectile extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int CODE = 136;
 
     public static final int PARAM_COUNT = 19;
@@ -79,7 +83,21 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
 
     private static final int MIN_TILE_MS = 1;
     private static final int MAX_TIMED_TILES = 256;
-    private static final int DATA_VERSION = 2;
+    /** 3: the internal variables mask in AIR's bit order (see {@link WiredProjectileFlight#KEYS}). */
+    private static final int DATA_VERSION = 3;
+
+    private static final int MASK_IN_AIR_ORDER_VERSION = 3;
+
+    /** The mask's bit order before AIR's: x, y, altitude, is traveling, tiles traveled, furni and user collisions. */
+    private static final List<String> LEGACY_MASK_KEYS = List.of(
+            WiredProjectileFlight.POSITION_X,
+            WiredProjectileFlight.POSITION_Y,
+            WiredProjectileFlight.POSITION_ALTITUDE,
+            WiredProjectileFlight.IS_TRAVELING,
+            WiredProjectileFlight.TILES_TRAVELED,
+            WiredProjectileFlight.FURNI_COLLISIONS,
+            WiredProjectileFlight.USER_COLLISIONS);
+
     private static final String TOKEN_SEPARATOR = "\t";
 
     /** The bounds of the editor's inputs, per param; a value outside them is clamped on save. */
@@ -136,7 +154,12 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
         }
 
         this.params = normalizeParams(settings.getIntParams());
-        String[] tokens = splitTokens(settings.getStringParam());
+        String[] tokens = WiredVariableIds.present(settings.getVariableIds())
+                ? new String[] {
+                    WiredVariableIds.tokenAt(settings.getVariableIds(), 0),
+                    WiredVariableIds.tokenAt(settings.getVariableIds(), 1)
+                }
+                : splitTokens(settings.getStringParam());
         this.timeToken = tokens[0];
         this.distanceToken = tokens[1];
         this.items.clear();
@@ -177,7 +200,7 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.getStringParam());
+        message.appendString("");
         message.appendInt(TOTAL_PARAM_COUNT);
 
         for (int param : this.params) {
@@ -205,6 +228,9 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
         }
 
         this.params = normalizeParams(data.params);
+        if (data.version < MASK_IN_AIR_ORDER_VERSION) {
+            this.params[PARAM_VARIABLES_MASK] = fromLegacyMask(this.params[PARAM_VARIABLES_MASK]);
+        }
         this.timeToken = WiredVariableOperand.normalizeToken(data.timeToken);
         this.distanceToken = WiredVariableOperand.normalizeToken(data.distanceToken);
 
@@ -405,6 +431,17 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
         return this.params.clone();
     }
 
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                this.params[PARAM_TIME_IS_VARIABLE] == 1
+                        ? WiredVariableIds.toWireForHolder(this.params[PARAM_TIME_TARGET], this.timeToken)
+                        : "",
+                this.params[PARAM_DISTANCE_IS_VARIABLE] == 1
+                        ? WiredVariableIds.toWireForHolder(this.params[PARAM_DISTANCE_TARGET], this.distanceToken)
+                        : "");
+    }
+
     public String getStringParam() {
         if (this.timeToken.isEmpty() && this.distanceToken.isEmpty()) {
             return "";
@@ -563,6 +600,17 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
         }
 
         return normalized;
+    }
+
+    /** A mask a box stored in the bit order before AIR's, in AIR's order. */
+    static int fromLegacyMask(int legacyMask) {
+        int mask = 0;
+        for (int bit = 0; bit < LEGACY_MASK_KEYS.size(); bit++) {
+            if ((legacyMask & (1 << bit)) != 0) {
+                mask |= 1 << WiredProjectileFlight.KEYS.indexOf(LEGACY_MASK_KEYS.get(bit));
+            }
+        }
+        return mask;
     }
 
     static String[] splitTokens(String raw) {

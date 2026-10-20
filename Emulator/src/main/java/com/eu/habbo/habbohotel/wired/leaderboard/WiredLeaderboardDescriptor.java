@@ -31,12 +31,23 @@ public record WiredLeaderboardDescriptor(
     }
 
     public boolean offers(String variableId) {
+        return this.choiceId(variableId) != null;
+    }
+
+    /**
+     * The id of the offered variable an id names, by the user variable box it resolves to, so a bare
+     * box id and the variable list's id ({@code 12}, {@code user:12}) are the same choice; null when
+     * the panel does not offer it.
+     */
+    public String choiceId(String variableId) {
+        int boxId = WiredLeaderboardCodec.userBoxIdOf(variableId);
         for (Choice choice : this.choices) {
-            if (choice.variableId().equals(variableId)) {
-                return true;
+            if (choice.variableId().equals(variableId)
+                    || (boxId > 0 && WiredLeaderboardCodec.userBoxIdOf(choice.variableId()) == boxId)) {
+                return choice.variableId();
             }
         }
-        return false;
+        return null;
     }
 
     public WiredLeaderboardDescriptor withRevision(int revision) {

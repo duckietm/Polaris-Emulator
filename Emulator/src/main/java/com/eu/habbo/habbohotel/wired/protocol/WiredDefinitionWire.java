@@ -106,10 +106,11 @@ public final class WiredDefinitionWire {
                         definition.inputSources.defaultUsers(),
                         definition.userSources);
             }
-            // The box and its picks go out by the ids the client knows them by (Builders Club band ids).
+            // The box and its picks go out by the ids the client knows them by (Builders Club band ids), wall
+            // picks negative as AIR picks them.
             definition.id = BuildersClubItemIds.toWire(definition.id);
-            definition.stuffIds = BuildersClubItemIds.toWire(definition.stuffIds);
-            definition.stuffIds2 = BuildersClubItemIds.toWire(definition.stuffIds2);
+            definition.stuffIds = WiredWallPicks.toWire(definition.stuffIds, box);
+            definition.stuffIds2 = WiredWallPicks.toWire(definition.stuffIds2, box);
             writeOfficial(definition, holder, target);
         } finally {
             body.release();

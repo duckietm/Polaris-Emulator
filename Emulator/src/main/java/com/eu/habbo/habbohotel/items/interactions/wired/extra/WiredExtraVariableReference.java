@@ -7,20 +7,26 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.wired.WiredAllVariablesDiffComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WiredExtraVariableReference extends InteractionWiredExtra implements WiredArrayVariableDefinition {
+public class WiredExtraVariableReference extends InteractionWiredExtra
+        implements WiredArrayVariableDefinition, WiredOfficialVariableIds {
     public static final int CODE = 81;
+    /** AIR wired context SHARED_VARIABLE_LIST: the shared variables of the owner's other rooms. */
+    private static final int CONTEXT_SHARED_VARIABLE_LIST = 4;
 
     private String variableName = "";
     private int sourceRoomId = 0;
@@ -54,7 +60,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
             throw new WiredSaveException("Room not found");
         }
 
-        ConfigData config = parseConfigData(settings.getStringParam());
+        ConfigData config = readEditor(room, settings);
         String normalizedName = WiredVariableNameValidator.normalizeForSave(config.variableName);
 
         WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
@@ -110,12 +116,125 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(buildEditorPayload(room));
-        message.appendInt(0);
+        // AIR (ReferenceVariable): the name, [readOnly], the shared variable as the definition's variable id and
+        // the owner's shared variables in the SHARED_VARIABLE_LIST context.
+        message.appendString(this.variableName);
+        message.appendInt(1);
+        message.appendInt(this.readOnly ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
         message.appendInt(0);
+
+        List<WiredVariableReferenceSupport.SharedDefinitionOption> shared = new ArrayList<>();
+        for (WiredVariableReferenceSupport.RoomOption option : WiredVariableReferenceSupport.loadRoomOptions(room)) {
+            shared.addAll(option.getVariables());
+        }
+        boolean listsSource = false;
+        for (WiredVariableReferenceSupport.SharedDefinitionOption definition : shared) {
+            listsSource |= definition.getItemId() == this.sourceVariableItemId
+                    && definition.getTargetType() == this.sourceTargetType;
+        }
+
+        message.appendInt(1);
+        message.appendInt(CONTEXT_SHARED_VARIABLE_LIST);
+        boolean keepsLostSource = !listsSource && this.sourceVariableItemId > 0;
+        message.appendInt(shared.size() + (keepsLostSource ? 1 : 0));
+        for (WiredVariableReferenceSupport.SharedDefinitionOption definition : shared) {
+            appendSharedVariable(
+                    message,
+                    definition.getRoomId(),
+                    definition.getRoomName(),
+                    definition.getItemId(),
+                    definition.getName(),
+                    definition.getTargetType(),
+                    definition.hasValue());
+        }
+        if (keepsLostSource) {
+            // A source that is no longer shared still shows, so the editor opens on it.
+            appendSharedVariable(
+                    message,
+                    this.sourceRoomId,
+                    this.sourceRoomName,
+                    this.sourceVariableItemId,
+                    this.sourceVariableName,
+                    this.sourceTargetType,
+                    this.hasValue);
+        }
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return this.sourceVariableItemId > 0
+                ? new String[] {sharedVariableId(this.sourceTargetType, this.sourceVariableItemId)}
+                : new String[0];
+    }
+
+    /** The id of a shared variable as the catalog names it: {@code user:<id>} or {@code room:<id>}. */
+    static String sharedVariableId(int targetType, int itemId) {
+        return RoomWiredVariableCatalog.variableId(catalogTarget(targetType), itemId);
+    }
+
+    private static int catalogTarget(int targetType) {
+        return (targetType == WiredVariableReferenceSupport.TARGET_ROOM)
+                ? RoomWiredVariableCatalog.TARGET_ROOM
+                : RoomWiredVariableCatalog.TARGET_USER;
+    }
+
+    private static void appendSharedVariable(
+            ServerMessage message,
+            int roomId,
+            String roomName,
+            int itemId,
+            String name,
+            int targetType,
+            boolean hasValue) {
+        message.appendInt(roomId);
+        message.appendString(sanitizeLabel(roomName));
+        WiredAllVariablesDiffComposer.appendVariable(
+                message,
+                new RoomWiredVariableCatalog.Variable(
+                        sharedVariableId(targetType, itemId),
+                        RoomWiredVariableCatalog.TYPE_CREATED,
+                        name != null ? name : "",
+                        WiredVariableReferenceSupport.SHARED_AVAILABILITY,
+                        catalogTarget(targetType),
+                        hasValue,
+                        false,
+                        false));
+    }
+
+    /**
+     * What the editor saved: AIR's name, [readOnly] and shared variable id, or the JSON string of our earlier editor
+     * (kept so older share codes and clients still save).
+     */
+    static ConfigData readEditor(Room room, WiredSettings settings) {
+        String text = settings.getStringParam();
+        if (text != null && text.trim().startsWith("{")) {
+            return parseConfigData(text.trim());
+        }
+
+        ConfigData config = new ConfigData();
+        config.variableName = (text != null) ? text : "";
+        int[] ints = settings.getIntParams();
+        config.readOnly = ints.length == 0 || ints[0] != 0;
+
+        String[] variableIds = settings.getVariableIds();
+        String id = (variableIds.length > 0 && variableIds[0] != null) ? variableIds[0].trim() : "";
+        config.sourceVariableItemId = RoomWiredVariableCatalog.definitionIdOf(id);
+        config.sourceTargetType = RoomWiredVariableCatalog.targetOf(id) == RoomWiredVariableCatalog.TARGET_ROOM
+                ? WiredVariableReferenceSupport.TARGET_ROOM
+                : WiredVariableReferenceSupport.TARGET_USER;
+
+        for (WiredVariableReferenceSupport.RoomOption option : WiredVariableReferenceSupport.loadRoomOptions(room)) {
+            for (WiredVariableReferenceSupport.SharedDefinitionOption definition : option.getVariables()) {
+                if (definition.getItemId() == config.sourceVariableItemId
+                        && definition.getTargetType() == config.sourceTargetType) {
+                    config.sourceRoomId = definition.getRoomId();
+                }
+            }
+        }
+        return config;
     }
 
     @Override
@@ -265,39 +384,6 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
         return Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
     }
 
-    private String buildEditorPayload(Room room) {
-        List<RoomEditorData> roomOptions = new ArrayList<>();
-
-        for (WiredVariableReferenceSupport.RoomOption option : WiredVariableReferenceSupport.loadRoomOptions(room)) {
-            List<VariableEditorData> variables = new ArrayList<>();
-
-            for (WiredVariableReferenceSupport.SharedDefinitionOption definition : option.getVariables()) {
-                variables.add(new VariableEditorData(
-                        definition.getItemId(),
-                        definition.getName(),
-                        definition.getTargetType(),
-                        definition.hasValue(),
-                        definition.getArrayDefinition() == null
-                                ? WiredVariableDefinitionData.scalar(definition.getName())
-                                : WiredVariableDefinitionData.array(
-                                        definition.getName(), definition.getArrayDefinition())));
-            }
-
-            roomOptions.add(new RoomEditorData(option.getRoomId(), option.getRoomName(), variables));
-        }
-
-        return WiredManager.getGson()
-                .toJson(new EditorPayload(
-                        this.variableName,
-                        this.sourceRoomId,
-                        this.sourceRoomName,
-                        this.sourceVariableItemId,
-                        this.sourceVariableName,
-                        this.sourceTargetType,
-                        this.readOnly,
-                        roomOptions));
-    }
-
     private static ConfigData parseConfigData(String value) {
         if (value == null || value.isEmpty() || !value.startsWith("{")) {
             return new ConfigData();
@@ -360,59 +446,5 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
         int sourceVariableItemId = 0;
         int sourceTargetType = WiredVariableReferenceSupport.TARGET_USER;
         boolean readOnly = true;
-    }
-
-    static class EditorPayload extends ConfigData {
-        String sourceRoomName;
-        String sourceVariableName;
-        List<RoomEditorData> rooms;
-
-        EditorPayload(
-                String variableName,
-                int sourceRoomId,
-                String sourceRoomName,
-                int sourceVariableItemId,
-                String sourceVariableName,
-                int sourceTargetType,
-                boolean readOnly,
-                List<RoomEditorData> rooms) {
-            this.variableName = variableName;
-            this.sourceRoomId = sourceRoomId;
-            this.sourceRoomName = sourceRoomName;
-            this.sourceVariableItemId = sourceVariableItemId;
-            this.sourceVariableName = sourceVariableName;
-            this.sourceTargetType = sourceTargetType;
-            this.readOnly = readOnly;
-            this.rooms = rooms;
-        }
-    }
-
-    static class RoomEditorData {
-        int roomId;
-        String roomName;
-        List<VariableEditorData> variables;
-
-        RoomEditorData(int roomId, String roomName, List<VariableEditorData> variables) {
-            this.roomId = roomId;
-            this.roomName = roomName;
-            this.variables = variables;
-        }
-    }
-
-    static class VariableEditorData {
-        int itemId;
-        String name;
-        int targetType;
-        boolean hasValue;
-        WiredVariableDefinitionData definition;
-
-        VariableEditorData(
-                int itemId, String name, int targetType, boolean hasValue, WiredVariableDefinitionData definition) {
-            this.itemId = itemId;
-            this.name = name;
-            this.targetType = targetType;
-            this.hasValue = hasValue;
-            this.definition = definition;
-        }
     }
 }

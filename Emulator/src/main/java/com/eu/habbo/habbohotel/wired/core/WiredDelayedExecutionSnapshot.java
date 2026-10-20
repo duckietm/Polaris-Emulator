@@ -561,7 +561,8 @@ final class WiredDelayedExecutionSnapshot {
             long newVariableValue,
             com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange arrayChange,
             WiredContextVariableScope contextVariableScope,
-            long createdAtMs) {
+            long createdAtMs,
+            Map<String, String> carriedPlaceholders) {
 
         static EventSnapshot capture(WiredEvent event, Room room) {
             return new EventSnapshot(
@@ -598,7 +599,8 @@ final class WiredDelayedExecutionSnapshot {
                     event.getContextVariableScope() != null
                             ? event.getContextVariableScope().copy()
                             : null,
-                    event.getCreatedAtMs());
+                    event.getCreatedAtMs(),
+                    event.getCarriedPlaceholders());
         }
 
         WiredEvent resolve(Room room) {
@@ -629,6 +631,7 @@ final class WiredDelayedExecutionSnapshot {
                     .variableChangeOrigin(this.variableChangeOrigin)
                     .variableValues(this.oldVariableValue, this.newVariableValue)
                     .arrayChange(this.arrayChange)
+                    .carriedPlaceholders(this.carriedPlaceholders)
                     .createdAtMs(this.createdAtMs);
             if (this.contextVariableScope != null) {
                 builder.contextVariableScope(this.contextVariableScope.copy());

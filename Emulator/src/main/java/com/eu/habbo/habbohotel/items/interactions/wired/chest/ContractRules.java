@@ -2,6 +2,8 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +63,31 @@ public final class ContractRules {
         return this.getRule.isEmpty();
     }
 
+    /**
+     * The same contract run {@code times} times over: every amount on both sides multiplied, which is
+     * what the official multiplier modes of Initiate Transaction pay and hand back. The ceilings are
+     * not applied again (500 contracts of 500 coins is a real price); amounts saturate at int max.
+     */
+    public ContractRules times(int times) {
+        if (times <= 1) return this;
+
+        List<List<Term>> give = new ArrayList<>();
+        for (List<Term> rule : this.giveRules) give.add(scale(rule, times));
+        return new ContractRules(Collections.unmodifiableList(give), scale(this.getRule, times));
+    }
+
+    private static List<Term> scale(List<Term> rule, int times) {
+        List<Term> out = new ArrayList<>();
+        for (Term term : rule) {
+            int amount = (int) Math.min(Integer.MAX_VALUE, (long) term.amount * times);
+            out.add(
+                    term.isFurni()
+                            ? Term.furni(term.direction, term.wallItem, term.baseItemId, term.posterId(), amount)
+                            : Term.currency(term.direction, term.currencyType, amount));
+        }
+        return List.copyOf(out);
+    }
+
     /** Take the snapshot from a contract furni. */
     public static ContractRules from(InteractionWiredContract contract) {
         return contract == null ? of(List.of(), List.of()) : of(contract.getGiveRules(), contract.getGetRule());
@@ -80,6 +107,26 @@ public final class ContractRules {
             if (contract == null) continue;
             give.addAll(contract.getGiveRules());
             get.addAll(contract.getGetRule());
+        }
+        return of(give, get);
+    }
+
+    /**
+     * Merge several contracts as they stand for this run ({@link InteractionWiredContract#giveRulesFor}): the custom
+     * contract may read a variable or a selector. Null when one of them cannot be resolved this run.
+     */
+    public static ContractRules from(List<InteractionWiredContract> contracts, WiredContext ctx, Room room) {
+        if (contracts == null || contracts.isEmpty()) return of(List.of(), List.of());
+
+        List<List<Term>> give = new ArrayList<>();
+        List<Term> get = new ArrayList<>();
+        for (InteractionWiredContract contract : contracts) {
+            if (contract == null) continue;
+            List<List<Term>> rules = contract.giveRulesFor(ctx, room);
+            List<Term> reward = contract.getRuleFor(ctx, room);
+            if (rules == null || reward == null) return null;
+            give.addAll(rules);
+            get.addAll(reward);
         }
         return of(give, get);
     }

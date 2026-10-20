@@ -31,7 +31,8 @@ import java.util.List;
  * grants what the chest actually holds (no minting beyond the configured pool).
  *
  * <p>Official layout (45): the shared {@link WiredChestReward} ints with the earnings category (11
- * games, 13 agency; stored) as the sixth; furni slot 0 the chests, user slot 0 the rewarded users.
+ * games, 13 agency) as the sixth; furni slot 0 the chests, user slot 0 the rewarded users. The coins go to that
+ * row of the earnings window when the hotel runs it ({@link com.eu.habbo.habbohotel.earnings.WiredEarnings}).
  */
 public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         implements WiredOfficialSources, WiredOfficialVariableIds {
@@ -74,8 +75,11 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         }
 
         List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        // AIR: "everything" cannot be split between several users.
-        if (everything && units.size() > 1) return;
+        // AIR: "everything" cannot be split between several users (fail 16).
+        if (everything && units.size() > 1) {
+            WiredChestTargets.answerCannotGiveAllToMany(ctx, room, "give_currency_from_chest", this.getId());
+            return;
+        }
 
         for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
@@ -86,8 +90,14 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
             int total = 0;
             for (InteractionWiredChestCurrency chest : chests) {
                 if (remaining <= 0) break;
+                // The coins land in the earnings window row the box names (AIR earnings category).
                 int taken = ChestWithdrawals.coins(
-                                habbo, chest, room, everything ? -1 : remaining, ChestTransactionLog.SOURCE_WIRED)
+                                habbo,
+                                chest,
+                                room,
+                                everything ? -1 : remaining,
+                                ChestTransactionLog.SOURCE_WIRED,
+                                this.earningsCategory)
                         .coins();
                 total += taken;
                 remaining -= taken;

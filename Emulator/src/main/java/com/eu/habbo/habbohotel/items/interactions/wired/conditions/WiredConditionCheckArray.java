@@ -22,7 +22,9 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -33,7 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Checks entry matches, result counts, or bounded array state. */
-public final class WiredConditionCheckArray extends InteractionWiredCondition implements WiredLargePayload {
+public final class WiredConditionCheckArray extends InteractionWiredCondition
+        implements WiredLargePayload, WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.CHECK_ARRAY;
     public static final int MODE_MATCH = 0;
     public static final int MODE_STATE = 1;
@@ -91,7 +94,7 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
         if (definition == null || !definition.isArray()) return false;
         List<WiredArrayRuntimeSupport.Owner> owners =
                 WiredArrayRuntimeSupport.resolveOwners(ctx, this.selectedItems, definition, this.ownerSource);
-        if (owners.isEmpty()) return false;
+        if (owners.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
 
         boolean any = this.quantifier == QUANTIFIER_ANY;
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
@@ -164,6 +167,11 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
     }
 
     @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings) {
         Room room = settings.getRoom();
         int[] params = settings.getIntParams();
@@ -171,7 +179,7 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
         if (room == null
                 || room.getId() != this.getRoomId()
                 || params == null
-                || params.length < 10
+                || params.length < 9
                 || raw == null
                 || raw.length() > MAX_PAYLOAD_LENGTH) return false;
         try {
@@ -226,7 +234,8 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
             this.resultMode = nextResultMode;
             this.stateCheck = nextStateCheck;
             this.stateComparison = WiredArrayEditorSupport.normalizeComparison(params[8]);
-            this.quantifier = params[9] == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+            // The owners' all / any choice comes in the save packet's quantifier slot.
+            this.quantifier = settings.getQuantifierCode() == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
             this.index = nextIndex;
             this.criteria = nextCriteria;
             this.resultReference = nextResultReference;
@@ -284,7 +293,7 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(WiredManager.getGson().toJson(this.data(true, WiredArrayDefinitionSupport.collect(room))));
-        message.appendInt(10);
+        message.appendInt(9);
         message.appendInt(this.variableType);
         message.appendInt(this.ownerSource);
         message.appendInt(this.conditionMode);
@@ -294,7 +303,6 @@ public final class WiredConditionCheckArray extends InteractionWiredCondition im
         message.appendInt(2); // Reserved legacy comparison slot; resultMode carries the operation.
         message.appendInt(this.stateCheck);
         message.appendInt(this.stateComparison);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);

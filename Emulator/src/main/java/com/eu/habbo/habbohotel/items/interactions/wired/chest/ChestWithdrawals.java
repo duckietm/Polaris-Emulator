@@ -2,12 +2,18 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.earnings.WiredEarnings;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -68,16 +74,33 @@ public final class ChestWithdrawals {
     }
 
     /**
-     * Coins out of a coin chest into a player's wallet as credits. A negative amount takes them all.
+     * Coins out of a coin chest into a player's wallet as credits. A negative amount takes them all. Coins wired
+     * hands out go to the games row of the earnings window ({@link WiredEarnings}).
      */
     public static Result coins(Habbo habbo, InteractionWiredChest chest, Room room, int amount, int source) {
+        return coins(habbo, chest, room, amount, source, WiredEarnings.CATEGORY_GAMES);
+    }
+
+    /**
+     * Coins out of a coin chest. A player's own withdrawal goes into their wallet; coins wired hands out go to the
+     * earnings window row of {@code earningsCategory} (AIR 11 games, 13 agency) when the hotel runs it.
+     */
+    public static Result coins(
+            Habbo habbo, InteractionWiredChest chest, Room room, int amount, int source, int earningsCategory) {
         if (habbo == null || chest == null || chest.chestKind() != ChestStorage.KIND_CURRENCY) return Result.NOTHING;
 
         int storedBefore = chest.getContents().getCoins();
         int taken = chest.takeCoins(amount);
         if (taken <= 0) return Result.NOTHING;
 
-        habbo.giveCredits(taken);
+        if (source == ChestTransactionLog.SOURCE_WIRED) {
+            WiredEarnings.get().pay(habbo, taken, earningsCategory);
+        } else if (!PAYER.get().pay(habbo, chest.getId(), taken)) {
+            // The purse refused (a plugin cancelled it or the ledger failed): the coins go back into the
+            // chest rather than vanishing between the two.
+            chest.addCoins(taken);
+            return Result.NOTHING;
+        }
         record(chest, room, habbo, source, taken, List.of());
 
         chest.notifyViewers(room, List.of(), List.of());
@@ -91,6 +114,54 @@ public final class ChestWithdrawals {
                 storedBefore,
                 chest.getContents().getCoins());
         return new Result(taken, List.of());
+    }
+
+    /** Pays a player's own coin withdrawal into their purse. */
+    @FunctionalInterface
+    interface CreditPayer {
+        /** @return false when the credits did not reach the purse */
+        boolean pay(Habbo habbo, int chestId, int credits);
+    }
+
+    /**
+     * The purse payment of a withdrawal, through the economy ledger under its own reason and the chest's id, like
+     * every wallet change.
+     */
+    static final CreditPayer LEDGER_PAYER = (habbo, chestId, credits) -> {
+        if (habbo == null || habbo.getHabboInfo() == null || credits <= 0) return false;
+        com.eu.habbo.plugin.events.users.UserCreditsEvent event =
+                new com.eu.habbo.plugin.events.users.UserCreditsEvent(habbo, credits);
+        com.eu.habbo.plugin.PluginManager plugins = WiredPlatform.pluginManager();
+        if (plugins != null && plugins.fireEvent(event).isCancelled()) return false;
+        int userId = habbo.getHabboInfo().getId();
+        try {
+            LedgerWalletMutation.execute(
+                    habbo,
+                    new EconomyOperation(
+                            EconomyOperationId.create("wired-chest-withdraw:" + chestId),
+                            userId,
+                            userId,
+                            "wired_chest_withdraw",
+                            "wired.chest.withdraw",
+                            EconomyLedger.CREDITS,
+                            event.credits,
+                            chestId,
+                            "Coins taken out of a wired coin chest"));
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(ChestWithdrawals.class)
+                    .error("Could not pay {} coins out of wired chest {} to user {}", credits, chestId, userId, e);
+            return false;
+        }
+        if (habbo.getClient() != null) habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
+        return true;
+    };
+
+    private static final java.util.concurrent.atomic.AtomicReference<CreditPayer> PAYER =
+            new java.util.concurrent.atomic.AtomicReference<>(LEDGER_PAYER);
+
+    /** Replace the purse payment, returning the previous one so a test can put it back. */
+    static CreditPayer usePayer(CreditPayer payer) {
+        return PAYER.getAndSet(payer == null ? LEDGER_PAYER : payer);
     }
 
     /** Tell the player their own withdrawal went through (AIR success type 1). */

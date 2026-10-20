@@ -144,12 +144,14 @@ public final class V20261017200000__wired_chest_air_storage extends BaseJavaMigr
         @Override
         public void storeItem(int chestId, int ownerId, FurniRow furni, long sequence) {
             // The item is created where items are created, so its id comes from the item sequence and
-            // can go back into items on withdrawal, then parked in the chest.
+            // can go back into items on withdrawal, then parked in the chest. Columns this insert leaves to
+            // the items defaults may be NULL on hotels from Arcturus; the chest table takes its own then.
             int itemId = this.insertItem(ownerId, furni);
             this.update(
                     "INSERT INTO wired_chest_items (id, chest_id, sequence, item_id, extra_data, wired_data, limited_data,"
-                            + " guild_id, expires, allow_underpass) SELECT id, ?, ?, item_id, extra_data, wired_data,"
-                            + " limited_data, guild_id, expires, allow_underpass FROM items WHERE id = ?",
+                            + " guild_id, expires, allow_underpass) SELECT id, ?, ?, item_id, COALESCE(extra_data, ''),"
+                            + " COALESCE(wired_data, ''), COALESCE(limited_data, '0:0'), COALESCE(guild_id, 0),"
+                            + " COALESCE(expires, 0), COALESCE(allow_underpass, 0) FROM items WHERE id = ?",
                     chestId,
                     sequence,
                     itemId);

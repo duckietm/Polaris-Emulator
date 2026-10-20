@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
@@ -285,7 +286,9 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 .forwardedUsers(usersCarried)
                 .forwardedItems(forwarded)
                 .sourceItem(antenna)
-                .contextVariableScope(ctx.contextVariables().copy())
+                // The receiving stacks work inside this context and read its placeholders after their own.
+                .contextVariableScope(ctx.contextVariables())
+                .carriedPlaceholders(WiredTextPlaceholderUtil.carriedPlaceholders(ctx))
                 .signalPath(withAntenna(ctx.event().getSignalPath(), signalChannel))
                 .triggeredByEffect(true);
 

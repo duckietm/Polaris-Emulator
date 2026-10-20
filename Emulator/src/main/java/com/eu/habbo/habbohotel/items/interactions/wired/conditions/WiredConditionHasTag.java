@@ -9,7 +9,9 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,7 +22,7 @@ import java.util.List;
  * ACTOR_WEARS_BADGE text dialog (text = tag), so no new client dialog is required. An empty configured
  * tag never matches. Reads {@link com.eu.habbo.habbohotel.users.HabboStats#hasTag}.
  */
-public class WiredConditionHasTag extends InteractionWiredCondition {
+public class WiredConditionHasTag extends InteractionWiredCondition implements WiredOfficialQuantifier {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int MAX_TAG_LENGTH = 38;
@@ -47,7 +49,7 @@ public class WiredConditionHasTag extends InteractionWiredCondition {
 
         Room room = ctx.room();
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
 
         if (this.quantifier == QUANTIFIER_ALL) {
             return this.matchesAllTargets(room, targets);
@@ -148,10 +150,10 @@ public class WiredConditionHasTag extends InteractionWiredCondition {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
+        // As the badge box: the tag in the string, no int params, the users in the official source slot and
+        // the quantifier in its slot.
         message.appendString(this.tag);
-        message.appendInt(2);
-        message.appendInt(this.userSource);
-        message.appendInt(this.quantifier);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -161,9 +163,10 @@ public class WiredConditionHasTag extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         this.tag = this.normalizeTag(settings.getStringParam());
-        int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? this.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ANY;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? this.normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         return true;
     }
@@ -203,5 +206,10 @@ public class WiredConditionHasTag extends InteractionWiredCondition {
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

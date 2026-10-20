@@ -93,6 +93,9 @@ public class RoomUnit {
     private int walkTimeOut;
     private int effectId;
     private int effectEndTimestamp;
+    // The effect the give effect box (52) put on, with its priority; -1 when none did.
+    private int wiredEffectId;
+    private int wiredEffectPriority = -1;
     private ScheduledFuture<?> moveBlockingTask;
 
     private int idleTimer;
@@ -773,6 +776,21 @@ public class RoomUnit {
 
     public int getEffectEndTimestamp() {
         return this.effectEndTimestamp;
+    }
+
+    /**
+     * The priority of the effect a give effect box put on, or -1 when the unit wears no such effect
+     * any more (another source changed it since).
+     */
+    public int getWiredEffectPriority() {
+        return this.wiredEffectPriority >= 0 && this.effectId != 0 && this.effectId == this.wiredEffectId
+                ? this.wiredEffectPriority
+                : -1;
+    }
+
+    public void setWiredEffect(int effectId, int priority) {
+        this.wiredEffectId = effectId;
+        this.wiredEffectPriority = effectId != 0 ? priority : -1;
     }
 
     public int getWalkTimeOut() {

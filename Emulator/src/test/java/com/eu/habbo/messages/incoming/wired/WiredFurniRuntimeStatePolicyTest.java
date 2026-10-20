@@ -60,8 +60,9 @@ class WiredFurniRuntimeStatePolicyTest {
         assertEquals(
                 "~recolorable_furni.color.rgb",
                 WiredFurniRuntimeStatePolicy.normalizeAllowedKey("~recolorable_furni.color.rgb"));
+        // Our earlier part name reads as AIR's.
         assertEquals(
-                "~recolorable_furni.color.rgb.g",
+                "~recolorable_furni.color.rgb.green",
                 WiredFurniRuntimeStatePolicy.normalizeAllowedKey(" ~recolorable_furni.color.rgb.g "));
         assertEquals("", WiredFurniRuntimeStatePolicy.normalizeAllowedKey("~recolorable_furni.color.alpha"));
 

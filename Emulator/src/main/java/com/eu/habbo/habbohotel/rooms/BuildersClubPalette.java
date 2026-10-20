@@ -42,9 +42,15 @@ public final class BuildersClubPalette {
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildersClubPalette.class);
 
     public static final String RGB = "~recolorable_furni.color.rgb";
-    public static final String RED = "~recolorable_furni.color.rgb.r";
-    public static final String GREEN = "~recolorable_furni.color.rgb.g";
-    public static final String BLUE = "~recolorable_furni.color.rgb.b";
+    // AIR's part names (smart variables ~140..~142).
+    public static final String RED = "~recolorable_furni.color.rgb.red";
+    public static final String GREEN = "~recolorable_furni.color.rgb.green";
+    public static final String BLUE = "~recolorable_furni.color.rgb.blue";
+
+    // Our earlier part names, still read from saved boxes.
+    public static final String LEGACY_RED = "~recolorable_furni.color.rgb.r";
+    public static final String LEGACY_GREEN = "~recolorable_furni.color.rgb.g";
+    public static final String LEGACY_BLUE = "~recolorable_furni.color.rgb.b";
 
     /** Each recolor re-sends the furni to the room, so a room gets a limited number per second. */
     static final int MAX_RECOLORS_PER_SECOND = 100;
@@ -73,7 +79,8 @@ public final class BuildersClubPalette {
     private BuildersClubPalette() {}
 
     public static boolean isKey(String key) {
-        return RGB.equals(key) || RED.equals(key) || GREEN.equals(key) || BLUE.equals(key);
+        String part = canonical(key);
+        return RGB.equals(part) || RED.equals(part) || GREEN.equals(part) || BLUE.equals(part);
     }
 
     /** True when the furni is a recolourable furni, or a colour variant with a known colour. */
@@ -190,19 +197,29 @@ public final class BuildersClubPalette {
     }
 
     /** The value of a variable for a colour: the colour itself or one of its parts. */
+    /** AIR's part name for a key, so our earlier {@code .r / .g / .b} keep working. */
+    static String canonical(String key) {
+        if (LEGACY_RED.equals(key)) return RED;
+        if (LEGACY_GREEN.equals(key)) return GREEN;
+        if (LEGACY_BLUE.equals(key)) return BLUE;
+        return key;
+    }
+
     static int component(int rgb, String key) {
-        if (RED.equals(key)) return (rgb >> 16) & 0xFF;
-        if (GREEN.equals(key)) return (rgb >> 8) & 0xFF;
-        if (BLUE.equals(key)) return rgb & 0xFF;
+        String part = canonical(key);
+        if (RED.equals(part)) return (rgb >> 16) & 0xFF;
+        if (GREEN.equals(part)) return (rgb >> 8) & 0xFF;
+        if (BLUE.equals(part)) return rgb & 0xFF;
         return rgb & WHITE;
     }
 
     /** The colour asked for: the value as colour, or the current colour with one part replaced. */
     static int withComponent(int rgb, String key, int value) {
+        String name = canonical(key);
         int part = Math.max(0, Math.min(0xFF, value));
-        if (RED.equals(key)) return (rgb & 0x00FFFF) | (part << 16);
-        if (GREEN.equals(key)) return (rgb & 0xFF00FF) | (part << 8);
-        if (BLUE.equals(key)) return (rgb & 0xFFFF00) | part;
+        if (RED.equals(name)) return (rgb & 0x00FFFF) | (part << 16);
+        if (GREEN.equals(name)) return (rgb & 0xFF00FF) | (part << 8);
+        if (BLUE.equals(name)) return (rgb & 0xFFFF00) | part;
         return Math.max(0, Math.min(WHITE, value));
     }
 

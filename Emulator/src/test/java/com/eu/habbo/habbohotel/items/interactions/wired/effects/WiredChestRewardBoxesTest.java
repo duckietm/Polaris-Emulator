@@ -30,7 +30,7 @@ class WiredChestRewardBoxesTest {
         var body = WiredEffectProgressAchievementTest.body(box);
         assertArrayEquals(new int[] {0, 25, 1, -20, 1, 13}, body.params());
         assertEquals("Well done!\nline 2\nline 3", body.text(), "three lines at most");
-        assertArrayEquals(new String[] {"55"}, box.officialVariableIds());
+        assertArrayEquals(new String[] {"ctx:55"}, box.officialVariableIds());
         assertArrayEquals(new int[] {200, 200}, box.officialUserSources());
     }
 

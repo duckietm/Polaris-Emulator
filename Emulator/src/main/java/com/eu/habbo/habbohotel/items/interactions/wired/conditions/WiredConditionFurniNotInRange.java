@@ -12,7 +12,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,7 +23,7 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 
-public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
+public class WiredConditionFurniNotInRange extends InteractionWiredCondition implements WiredOfficialQuantifier {
     private static final int COMPARISON_LESS = 0;
     private static final int COMPARISON_EQUAL = 1;
     private static final int COMPARISON_GREATER = 2;
@@ -72,8 +74,9 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
         }
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
+        // Its own reading ("all are outside" / "any is outside"), so all holds over none.
         if (targets.isEmpty()) {
-            return true;
+            return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
         }
 
         if (this.quantifier == QUANTIFIER_ANY) {
@@ -175,10 +178,9 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.formatRadius(this.radius));
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.comparison);
         message.appendInt(this.furniSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -190,7 +192,7 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
         this.comparison = (params.length > 0) ? this.normalizeComparison(params[0]) : COMPARISON_EQUAL;
         this.furniSource = (params.length > 1) ? this.normalizeFurniSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
         this.radius = this.parseRadiusOrDefault(settings.getStringParam());
 
         int count = settings.getFurniIds().length;
@@ -321,5 +323,10 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
             this.quantifier = quantifier;
             this.itemIds = itemIds;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

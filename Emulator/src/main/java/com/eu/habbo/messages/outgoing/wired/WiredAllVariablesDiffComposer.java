@@ -30,25 +30,25 @@ public class WiredAllVariablesDiffComposer extends MessageComposer {
     }
 
     /** Writes one {@code WiredVariable} block exactly as the official client reads it. */
-    static void appendVariable(ServerMessage response, RoomWiredVariableCatalog.Variable variable) {
+    public static void appendVariable(ServerMessage response, RoomWiredVariableCatalog.Variable variable) {
         response.appendString(variable.getVariableId());
         response.appendInt(variable.getVariableType());
         response.appendString(variable.getVariableName());
         response.appendInt(variable.getAvailabilityType());
         response.appendInt(variable.getVariableTarget());
-        response.appendBoolean(true); // alwaysAvailable
-        response.appendBoolean(!variable.isReadOnly()); // canCreateAndDelete
+        response.appendBoolean(variable.isAlwaysAvailable());
+        response.appendBoolean(variable.canCreateAndDelete());
         response.appendBoolean(variable.hasValue());
-        response.appendBoolean(!variable.isReadOnly()); // canWriteValue
-        response.appendBoolean(false); // canInterceptChanges
-        response.appendBoolean(false); // isInvisible
+        response.appendBoolean(variable.canWriteValue());
+        response.appendBoolean(variable.canInterceptChanges());
+        response.appendBoolean(variable.isInvisible());
         response.appendBoolean(variable.requiresExecutionContext()); // a pointer only exists while a stack runs
-        response.appendBoolean(true); // canReadCreationTime
-        response.appendBoolean(true); // canReadLastUpdateTime
+        response.appendBoolean(variable.canReadCreationTime());
+        response.appendBoolean(variable.canReadLastUpdateTime());
 
         Map<Integer, String> textConnector = variable.getTextConnector();
-        response.appendBoolean(!textConnector.isEmpty()); // hasTextConnector
-        if (!textConnector.isEmpty()) {
+        response.appendBoolean(variable.hasTextConnector());
+        if (variable.hasTextConnector()) {
             response.appendInt(textConnector.size());
             for (Map.Entry<Integer, String> mapping : textConnector.entrySet()) {
                 response.appendInt(mapping.getKey());

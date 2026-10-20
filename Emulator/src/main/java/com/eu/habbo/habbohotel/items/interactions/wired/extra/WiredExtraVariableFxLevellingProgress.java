@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.IntUnaryOperator;
 
 /**
  * A level badge with a progress bar for the experience variable on this tile. The client does not
@@ -100,6 +101,19 @@ public class WiredExtraVariableFxLevellingProgress extends WiredExtraVariableFx 
         }
 
         return new WiredVariableFxStatus(key, false, value, levelStart, nextStart, extra);
+    }
+
+    /** A level badge has no range overrides, so the variable ids it would read do not matter. */
+    @Override
+    public WiredVariableFxStatus resolveStatus(
+            Room room,
+            InteractionWiredExtra variableBox,
+            WiredVariableFxStatus.Key key,
+            int holderId,
+            long value,
+            String teamColor,
+            IntUnaryOperator variableIds) {
+        return this.resolveStatus(room, variableBox, key, holderId, value, teamColor);
     }
 
     private static Integer derive(WiredExtraVariableLevelUpSystem levelSystem, int subvariable, long value) {

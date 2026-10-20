@@ -125,8 +125,9 @@ public final class WiredContext {
         this.services = services;
         this.state = state;
         this.legacySettings = legacySettings;
+        // A stack a signal or a stack call started works in a scope inside its sender's (official).
         this.contextVariables = (event.getContextVariableScope() != null)
-                ? event.getContextVariableScope().copy()
+                ? event.getContextVariableScope().child()
                 : new WiredContextVariableScope();
         this.targets = new WiredTargets();
 
@@ -283,8 +284,9 @@ public final class WiredContext {
         return this.contextVariables;
     }
 
+    /** Opens a scope inside the current one: what is given from now on hides, changes still reach. */
     public void forkContextVariables() {
-        this.contextVariables = this.contextVariables.copy();
+        this.contextVariables = this.contextVariables.child();
     }
 
     public boolean includeWiredSelectorItems() {

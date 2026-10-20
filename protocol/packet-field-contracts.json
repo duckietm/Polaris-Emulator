@@ -17833,6 +17833,11 @@
           "kind": "scalar",
           "type": "int",
           "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
         }
       ]
     },
@@ -18520,6 +18525,11 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]
@@ -21821,6 +21831,126 @@
         {
           "kind": "scalar",
           "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_ROOM_STATS_REQUEST",
+      "direction": "client_to_server",
+      "header": 1957,
+      "java": {
+        "symbol": "WiredRoomStatsRequestEvent",
+        "className": "WiredRoomStatsRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredRoomStatsRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ROOM_STATS_REQUEST",
+        "className": "WiredRoomStatsRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredRoomStatsRequestComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "WIRED_ERROR_LOGS_REQUEST",
+      "direction": "client_to_server",
+      "header": 1132,
+      "java": {
+        "symbol": "WiredErrorLogsRequestEvent",
+        "className": "WiredErrorLogsRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredErrorLogsRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ERROR_LOGS_REQUEST",
+        "className": "WiredErrorLogsRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredErrorLogsRequestComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "WIRED_ERROR_LOGS_CLEAR",
+      "direction": "client_to_server",
+      "header": 1632,
+      "java": {
+        "symbol": "WiredErrorLogsClearEvent",
+        "className": "WiredErrorLogsClearEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredErrorLogsClearEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ERROR_LOGS_CLEAR",
+        "className": "WiredErrorLogsClearComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredErrorLogsClearComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "WIRED_ROOM_STATS",
+      "direction": "server_to_client",
+      "header": 1891,
+      "java": {
+        "symbol": "WiredRoomStatsComposer",
+        "className": "WiredRoomStatsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredRoomStatsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ROOM_STATS",
+        "className": "WiredRoomStatsParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredRoomStatsParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
           "name": ""
         }
       ]
@@ -28676,6 +28806,22 @@
         "path": "packages/communication/src/messages/parser/roomevents/WiredMonitorDataParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_ERROR_LOGS",
+      "direction": "server_to_client",
+      "header": 15,
+      "java": {
+        "symbol": "WiredErrorLogsComposer",
+        "className": "WiredErrorLogsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredErrorLogsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ERROR_LOGS",
+        "className": "WiredErrorLogsParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredErrorLogsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "WIRED_USER_VARIABLES_DATA",

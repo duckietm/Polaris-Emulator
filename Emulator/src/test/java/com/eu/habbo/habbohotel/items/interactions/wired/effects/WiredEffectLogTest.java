@@ -67,7 +67,7 @@ class WiredEffectLogTest {
     void theDialogGetsTheLevelAndTheUserSourceUnderItsOwnCode() {
         WiredEffectLog box = box();
 
-        WiredSettings settings = settings("  boss down  ", 3);
+        WiredSettings settings = settings("  boss down  ", WiredEffectLog.LEVEL_DEBUG);
         settings.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_TRIGGER});
         assertTrue(box.saveData(settings, null));
 
@@ -78,12 +78,12 @@ class WiredEffectLogTest {
     }
 
     @Test
-    void anOutOfRangeLevelIsClampedAndALongMessageCut() {
+    void anOutOfRangeLevelReadsAsInfoAndALongMessageIsCut() {
         WiredEffectLog box = box();
 
         box.saveData(settings("x".repeat(500), 9), null);
 
-        assertEquals(WiredEffectLog.LEVEL_ERROR, box.getLogLevel());
+        assertEquals(WiredEffectLog.LEVEL_INFO, box.getLogLevel());
         assertEquals(WiredEffectLog.MAX_MESSAGE_LENGTH, body(box).message().length());
     }
 
@@ -95,7 +95,7 @@ class WiredEffectLogTest {
     @Test
     void theLevelSurvivesTheDatabaseAndOldBoxesReadAsInfo() throws Exception {
         WiredEffectLog saved = box();
-        saved.saveData(settings("door opened", 0), null);
+        saved.saveData(settings("door opened", WiredEffectLog.LEVEL_DEBUG), null);
 
         WiredEffectLog loaded = box();
         loaded.loadWiredData(row(saved.getWiredData()), null);
@@ -104,5 +104,45 @@ class WiredEffectLogTest {
         WiredEffectLog legacy = box();
         legacy.loadWiredData(row("{\"message\":\"hi\",\"delay\":0,\"userSource\":0}"), null);
         assertEquals(WiredEffectLog.LEVEL_INFO, legacy.getLogLevel());
+    }
+
+    @Test
+    void theLevelsAreAirsAndTheOldNumbersMapOntoThem() {
+        // AIR's dropdown and room log: 0 INFO, 1 WARN, 2 ERROR, 3 DEBUG.
+        assertEquals(0, WiredEffectLog.LEVEL_INFO);
+        assertEquals(1, WiredEffectLog.LEVEL_WARN);
+        assertEquals(2, WiredEffectLog.LEVEL_ERROR);
+        assertEquals(3, WiredEffectLog.LEVEL_DEBUG);
+
+        // Before: 0 debug, 1 info, 2 warning, 3 error.
+        assertEquals(WiredEffectLog.LEVEL_DEBUG, WiredEffectLog.legacyLevelToAir(0));
+        assertEquals(WiredEffectLog.LEVEL_INFO, WiredEffectLog.legacyLevelToAir(1));
+        assertEquals(WiredEffectLog.LEVEL_WARN, WiredEffectLog.legacyLevelToAir(2));
+        assertEquals(WiredEffectLog.LEVEL_ERROR, WiredEffectLog.legacyLevelToAir(3));
+        assertEquals(WiredEffectLog.LEVEL_INFO, WiredEffectLog.legacyLevelToAir(7));
+    }
+
+    @Test
+    void theMigrationRewritesOnlyTheStoredLevel() throws Exception {
+        String stored = "{\"message\":\"say ,\\\"logLevel\\\":3 here\",\"delay\":4,\"userSource\":1,\"logLevel\":0}";
+        String migrated = WiredEffectLog.migrateLegacyLevel(stored);
+        assertEquals(
+                "{\"message\":\"say ,\\\"logLevel\\\":3 here\",\"delay\":4,\"userSource\":1,\"logLevel\":3}", migrated);
+
+        WiredEffectLog loaded = box();
+        loaded.loadWiredData(row(migrated), null);
+        assertEquals(WiredEffectLog.LEVEL_DEBUG, loaded.getLogLevel());
+        assertEquals(4, loaded.getDelay());
+
+        assertEquals(null, WiredEffectLog.migrateLegacyLevel("{\"message\":\"x\",\"delay\":0,\"userSource\":0}"));
+        assertEquals(null, WiredEffectLog.migrateLegacyLevel("0\tlegacy"));
+        assertEquals(null, WiredEffectLog.migrateLegacyLevel("{broken"));
+        assertEquals(null, WiredEffectLog.migrateLegacyLevel(null));
+        assertEquals("{\"logLevel\":2}", WiredEffectLog.migrateLegacyLevel("{\"logLevel\":3}"));
+    }
+
+    @Test
+    void aFreshBoxStartsAtInfoLikeTheOfficialDropdown() {
+        assertEquals(WiredEffectLog.LEVEL_INFO, box().getLogLevel());
     }
 }

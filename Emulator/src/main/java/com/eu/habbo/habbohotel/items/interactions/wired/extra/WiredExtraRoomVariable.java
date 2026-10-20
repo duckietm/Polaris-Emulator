@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState;
@@ -15,7 +16,9 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.wired.WiredAllVariablesDiffComposer;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +29,8 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         implements WiredArrayVariableDefinition, WiredLargePayload {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredExtraRoomVariable.class);
     public static final int CODE = 72;
+    /** AIR wired context GLOBAL_VARIABLE_INFO_AND_VALUE: the variable and its current value. */
+    private static final int CONTEXT_GLOBAL_VARIABLE_INFO_AND_VALUE = 3;
     public static final int AVAILABILITY_ROOM_ACTIVE = 1;
     public static final int AVAILABILITY_PERMANENT = 10;
     public static final int AVAILABILITY_SHARED = 11;
@@ -66,6 +71,11 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
         int[] intParams = settings.getIntParams();
         int nextAvailability = normalizeAvailability((intParams.length > 0) ? intParams[0] : AVAILABILITY_ROOM_ACTIVE);
+
+        if ((nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED)
+                && !WiredRoomStats.canBecomePermanent(room, this)) {
+            throw new WiredSaveException(WiredRoomStats.PERMANENT_LIMIT_ERROR);
+        }
 
         WiredArrayDefinition nextArrayDefinition;
         try {
@@ -111,13 +121,24 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.array.editorString(this.variableName));
-        message.appendInt(2);
+        // AIR (GlobalVariable): [availability]; the inspection's current value comes in the wired context.
+        message.appendInt(1);
         message.appendInt(this.availability);
-        message.appendInt(currentValue);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
         message.appendInt(0);
+
+        RoomWiredVariableCatalog.Variable variable = (room != null)
+                ? RoomWiredVariableCatalog.byId(RoomWiredVariableCatalog.variables(room))
+                        .get(RoomWiredVariableCatalog.variableId(RoomWiredVariableCatalog.TARGET_ROOM, this.getId()))
+                : null;
+        if (variable != null) {
+            message.appendInt(1);
+            message.appendInt(CONTEXT_GLOBAL_VARIABLE_INFO_AND_VALUE);
+            WiredAllVariablesDiffComposer.appendVariable(message, variable);
+            message.appendInt(currentValue);
+        }
     }
 
     @Override

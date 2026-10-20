@@ -9,7 +9,9 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.users.UserProfileLevel;
 import java.sql.ResultSet;
@@ -20,12 +22,25 @@ import java.util.List;
  * Passes when a user's account level compares as asked: the level the extended profile shows (from the achievement
  * score), the same value as the {@code @level} variable, as in Habbo. Bots and pets have no account level and fail.
  *
+ * <p>The comparison is AIR's LevelMatches radio: 0 lower than, 1 equal to, 2 higher than. Boxes saved before kept
+ * a six-way comparison ({@code COMPARISON_*}); they load converted to the same test ({@code >= n} as {@code > n-1},
+ * {@code <= n} as {@code < n+1}), and a saved "not equal", which AIR cannot show, keeps its test until the box is
+ * saved again.
+ *
  * <p>Older saves also stored a variable; it is kept so they load and re-save unchanged, but no longer read.
  */
-public class WiredConditionUserLevel extends InteractionWiredCondition {
+public class WiredConditionUserLevel extends InteractionWiredCondition implements WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.USER_LEVEL;
 
+    /** AIR LevelMatches comparisons ({@code wiredfurni.params.comparison.0..2}). */
+    public static final int OFFICIAL_LESS_THAN = 0;
+
+    public static final int OFFICIAL_EQUAL = 1;
+    public static final int OFFICIAL_GREATER_THAN = 2;
+
+    /** The six-way comparison boxes stored before the official radio; read only to convert them. */
     public static final int COMPARISON_GREATER_THAN = 0;
+
     public static final int COMPARISON_GREATER_THAN_OR_EQUAL = 1;
     public static final int COMPARISON_EQUAL = 2;
     public static final int COMPARISON_LESS_THAN_OR_EQUAL = 3;
@@ -38,8 +53,14 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
     public static final int MIN_LEVEL = 1;
     public static final int MAX_LEVEL = 10_000;
 
+    /** Stored data format: 2 holds the official comparison; absent, the six-way one. */
+    private static final int FORMAT_OFFICIAL = 2;
+
     private int level = MIN_LEVEL;
-    private int comparison = COMPARISON_GREATER_THAN_OR_EQUAL;
+    private int comparison = OFFICIAL_EQUAL;
+    /** A loaded six-way "not equal" box, tested as such until it is saved with an official comparison. */
+    private boolean legacyNotEqual = false;
+
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int quantifier = QUANTIFIER_ALL;
     private String variableToken = "";
@@ -73,7 +94,7 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
 
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
         }
 
         boolean anyMatched = false;
@@ -105,13 +126,13 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
     }
 
     boolean matches(int reached) {
+        if (this.legacyNotEqual) {
+            return reached != this.level;
+        }
         return switch (this.comparison) {
-            case COMPARISON_GREATER_THAN -> reached > this.level;
-            case COMPARISON_EQUAL -> reached == this.level;
-            case COMPARISON_LESS_THAN_OR_EQUAL -> reached <= this.level;
-            case COMPARISON_LESS_THAN -> reached < this.level;
-            case COMPARISON_NOT_EQUAL -> reached != this.level;
-            default -> reached >= this.level;
+            case OFFICIAL_LESS_THAN -> reached < this.level;
+            case OFFICIAL_GREATER_THAN -> reached > this.level;
+            default -> reached == this.level;
         };
     }
 
@@ -120,9 +141,14 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         int[] intParams = settings.getIntParams();
 
         this.level = normalizeLevel(param(intParams, 0, MIN_LEVEL));
-        this.comparison = normalizeComparison(param(intParams, 1, COMPARISON_GREATER_THAN_OR_EQUAL));
-        this.userSource = param(intParams, 2, WiredSourceUtil.SOURCE_TRIGGER);
-        this.quantifier = param(intParams, 3, QUANTIFIER_ALL) == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+        this.comparison = normalizeComparison(param(intParams, 1, OFFICIAL_EQUAL));
+        this.legacyNotEqual = false;
+        // Official layout: [level, comparison (0 <, 1 =, 2 >)], the users in the official source slot;
+        // the quantifier (0 all, 1 any) in its slot.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? settings.getUserSourceTypes()[0]
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = settings.getQuantifierCode() == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
         this.variableToken = normalizeToken(settings.getStringParam());
         this.variableItemId = tokenItemId(this.variableToken);
 
@@ -136,11 +162,13 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         return WiredManager.getGson()
                 .toJson(new JsonData(
                         this.level,
-                        this.comparison,
+                        // A kept "not equal" stays in the six-way form it was loaded from.
+                        this.legacyNotEqual ? COMPARISON_NOT_EQUAL : this.comparison,
                         this.userSource,
                         this.quantifier,
                         this.variableToken,
-                        this.variableItemId));
+                        this.variableItemId,
+                        this.legacyNotEqual ? null : FORMAT_OFFICIAL));
     }
 
     @Override
@@ -151,11 +179,9 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.variableToken);
-        message.appendInt(4);
+        message.appendInt(2);
         message.appendInt(this.level);
         message.appendInt(this.comparison);
-        message.appendInt(this.userSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -176,18 +202,61 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
             return;
         }
 
-        this.level = normalizeLevel(data.level);
-        this.comparison = normalizeComparison(data.comparison);
+        if (data.format != null && data.format == FORMAT_OFFICIAL) {
+            this.level = normalizeLevel(data.level);
+            this.comparison = normalizeComparison(data.comparison);
+            this.legacyNotEqual = false;
+        } else {
+            this.applyLegacyComparison(data.level, data.comparison);
+        }
         this.userSource = data.userSource;
         this.quantifier = data.quantifier == QUANTIFIER_ANY ? QUANTIFIER_ANY : QUANTIFIER_ALL;
         this.variableToken = normalizeToken(data.variableToken);
         this.variableItemId = data.variableItemId > 0 ? data.variableItemId : tokenItemId(this.variableToken);
     }
 
+    /**
+     * A six-way comparison as the official one with the same test on whole levels: {@code >= n} is {@code > n-1} and
+     * {@code <= n} is {@code < n+1}. "Not equal" has no official form and keeps its own test.
+     */
+    void applyLegacyComparison(int storedLevel, int storedComparison) {
+        int legacyLevel = Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, storedLevel));
+        this.legacyNotEqual = false;
+        switch (storedComparison) {
+            case COMPARISON_GREATER_THAN -> {
+                this.level = legacyLevel;
+                this.comparison = OFFICIAL_GREATER_THAN;
+            }
+            case COMPARISON_EQUAL -> {
+                this.level = legacyLevel;
+                this.comparison = OFFICIAL_EQUAL;
+            }
+            case COMPARISON_LESS_THAN_OR_EQUAL -> {
+                this.level = legacyLevel + 1;
+                this.comparison = OFFICIAL_LESS_THAN;
+            }
+            case COMPARISON_LESS_THAN -> {
+                this.level = legacyLevel;
+                this.comparison = OFFICIAL_LESS_THAN;
+            }
+            case COMPARISON_NOT_EQUAL -> {
+                this.level = legacyLevel;
+                this.comparison = OFFICIAL_EQUAL;
+                this.legacyNotEqual = true;
+            }
+            default -> {
+                // ">=" (also what an unknown code meant).
+                this.level = legacyLevel - 1;
+                this.comparison = OFFICIAL_GREATER_THAN;
+            }
+        }
+    }
+
     @Override
     public void onPickUp() {
         this.level = MIN_LEVEL;
-        this.comparison = COMPARISON_GREATER_THAN_OR_EQUAL;
+        this.comparison = OFFICIAL_EQUAL;
+        this.legacyNotEqual = false;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = QUANTIFIER_ALL;
         this.variableToken = "";
@@ -199,9 +268,15 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
     }
 
     static int normalizeComparison(int value) {
-        return value >= COMPARISON_GREATER_THAN && value <= COMPARISON_NOT_EQUAL
-                ? value
-                : COMPARISON_GREATER_THAN_OR_EQUAL;
+        return value >= OFFICIAL_LESS_THAN && value <= OFFICIAL_GREATER_THAN ? value : OFFICIAL_EQUAL;
+    }
+
+    int getLevel() {
+        return this.level;
+    }
+
+    int getComparison() {
+        return this.comparison;
     }
 
     static String normalizeToken(String token) {
@@ -231,14 +306,28 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
         int quantifier;
         String variableToken;
         int variableItemId;
+        Integer format;
 
-        JsonData(int level, int comparison, int userSource, int quantifier, String variableToken, int variableItemId) {
+        JsonData(
+                int level,
+                int comparison,
+                int userSource,
+                int quantifier,
+                String variableToken,
+                int variableItemId,
+                Integer format) {
             this.level = level;
             this.comparison = comparison;
             this.userSource = userSource;
             this.quantifier = quantifier;
             this.variableToken = variableToken;
             this.variableItemId = variableItemId;
+            this.format = format;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

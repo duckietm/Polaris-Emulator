@@ -99,6 +99,7 @@ public final class WiredInternalVariableSupport {
                     "@achievement_score",
                     "@position_x",
                     "@position_y",
+                    "@position",
                     "@direction",
                     "@altitude" -> true;
             case "@gender" -> habbo != null || bot != null;
@@ -131,6 +132,11 @@ public final class WiredInternalVariableSupport {
             case "@bot_id" -> bot != null;
             case "@pet_id" -> pet != null;
             case "@pet_owner_id" -> pet != null && pet.getUserId() > 0;
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.has(room, roomUnit);
+            case String transaction
+            when WiredTransactionVariables.isUserKey(transaction) ->
+                WiredTransactionVariables.has(room, habbo, transaction);
+            case String smart when WiredSmartVariables.isUserKey(smart) -> WiredSmartVariables.hasUserValue(pet, smart);
             default -> false;
         };
     }
@@ -168,6 +174,8 @@ public final class WiredInternalVariableSupport {
                     "@state",
                     "@position_x",
                     "@position_y",
+                    "@position",
+                    "@occupation",
                     "@rotation",
                     "@altitude",
                     "@is_invisible",
@@ -176,10 +184,12 @@ public final class WiredInternalVariableSupport {
                     "@dimensions.x",
                     "@dimensions.y" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
-            case "~recolorable_furni.color.rgb",
-                    "~recolorable_furni.color.rgb.r",
-                    "~recolorable_furni.color.rgb.g",
-                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.hasColor(item);
+            case BuildersClubPalette.RGB,
+                    BuildersClubPalette.RED,
+                    BuildersClubPalette.GREEN,
+                    BuildersClubPalette.BLUE -> BuildersClubPalette.hasColor(item);
+            case String smart
+            when WiredSmartVariables.isFurniKey(smart) -> WiredSmartVariables.hasFurniValue(item, smart);
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
             case "@gravity" -> item.getBaseItem().getType() == FurnitureType.FLOOR;
             case "@opacity" -> true;
@@ -248,6 +258,7 @@ public final class WiredInternalVariableSupport {
             case "@handitem_id" -> roomUnit.getHandItem();
             case "@position_x" -> (int) roomUnit.getX();
             case "@position_y" -> (int) roomUnit.getY();
+            case "@position" -> packPosition(roomUnit.getX(), roomUnit.getY());
             case "@direction" ->
                 (roomUnit.getBodyRotation() != null)
                         ? (int) roomUnit.getBodyRotation().getValue()
@@ -261,6 +272,12 @@ public final class WiredInternalVariableSupport {
             case "@bot_id" -> (bot != null) ? bot.getId() : null;
             case "@pet_id" -> (pet != null) ? pet.getId() : null;
             case "@pet_owner_id" -> (pet != null) ? pet.getUserId() : null;
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.read(room, roomUnit);
+            case String transaction
+            when WiredTransactionVariables.isUserKey(transaction) ->
+                WiredTransactionVariables.read(room, habbo, transaction);
+            case String smart
+            when WiredSmartVariables.isUserKey(smart) -> WiredSmartVariables.readUserValue(pet, smart);
             default -> null;
         };
     }
@@ -300,6 +317,9 @@ public final class WiredInternalVariableSupport {
         return switch (normalized) {
             case "@position_x" -> moveUserTo(room, roomUnit, value, roomUnit.getY(), animationDuration, noAnimation);
             case "@position_y" -> moveUserTo(room, roomUnit, roomUnit.getX(), value, animationDuration, noAnimation);
+            // AIR's packed position, x << 8 | y: one move to both.
+            case "@position" ->
+                moveUserTo(room, roomUnit, positionX(value), positionY(value), animationDuration, noAnimation);
             case "@direction" -> {
                 RoomUserRotation rotation = RoomUserRotation.fromValue(value);
                 yield WiredUserMovementHelper.updateUserDirection(room, roomUnit, rotation, rotation);
@@ -317,6 +337,7 @@ public final class WiredInternalVariableSupport {
                 room.giveEffect(roomUnit, value, Integer.MAX_VALUE);
                 yield true;
             }
+            case WiredHabbiconVariables.HABBICON -> WiredHabbiconVariables.write(room, roomUnit, value);
             case "@handitem_id" -> {
                 Habbo habbo = room.getHabbo(roomUnit);
                 if (value < 0) yield false;
@@ -394,11 +415,17 @@ public final class WiredInternalVariableSupport {
 
         return switch (normalized) {
             case "~teleport.target_id" -> item.getTeleportTargetId();
-            case "~recolorable_furni.color.rgb",
-                    "~recolorable_furni.color.rgb.r",
-                    "~recolorable_furni.color.rgb.g",
-                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.read(item, normalized);
-            case "@id" -> item.getId();
+            case BuildersClubPalette.RGB,
+                    BuildersClubPalette.RED,
+                    BuildersClubPalette.GREEN,
+                    BuildersClubPalette.BLUE -> BuildersClubPalette.read(item, normalized);
+            case String smart
+            when WiredSmartVariables.isFurniKey(smart) -> WiredSmartVariables.readFurniValue(item, smart);
+            // A wall item's id is negative, as AIR picks it.
+            case "@id" ->
+                (item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL)
+                        ? -item.getId()
+                        : item.getId();
             case "@class_id" ->
                 (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
             // The height it has now: a multi-height furni's current setting, not its base height.
@@ -406,6 +433,8 @@ public final class WiredInternalVariableSupport {
             case "@state" -> parseInteger(item.getExtradata());
             case "@position_x" -> (int) item.getX();
             case "@position_y" -> (int) item.getY();
+            case "@position" -> packPosition(item.getX(), item.getY());
+            case "@occupation" -> (packPosition(item.getX(), item.getY()) << 8) | (item.getRotation() & 0xFF);
             case "@rotation" -> item.getRotation();
             case "@altitude" -> (int) Math.round(item.getZ() * 100);
             case "@is_invisible" -> 0;
@@ -481,13 +510,18 @@ public final class WiredInternalVariableSupport {
             case "@gravity" -> room.getWiredRuntime().setGravityEnabled(item, value != 0);
             case "@position_x" -> moveFurniTo(room, item, value, item.getY(), item.getRotation(), item.getZ());
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
+            // AIR's packed position (x << 8 | y) and occupation (x << 16 | y << 8 | rotation): one move each.
+            case "@position" ->
+                moveFurniTo(room, item, positionX(value), positionY(value), item.getRotation(), item.getZ());
+            case "@occupation" -> writeFurniOccupation(room, item, value);
             case "@rotation" -> writeFurniRotation(room, item, value);
             case "@altitude" -> moveFurniTo(room, item, item.getX(), item.getY(), item.getRotation(), value / 100.0);
+            case WiredSmartVariables.CLOCK_PULSE_COUNT -> WiredSmartVariables.writeClockPulses(room, item, value);
             // Builders Club furni only, into the nearest colour of its palette.
-            case "~recolorable_furni.color.rgb",
-                    "~recolorable_furni.color.rgb.r",
-                    "~recolorable_furni.color.rgb.g",
-                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.write(room, item, normalized, value);
+            case BuildersClubPalette.RGB,
+                    BuildersClubPalette.RED,
+                    BuildersClubPalette.GREEN,
+                    BuildersClubPalette.BLUE -> BuildersClubPalette.write(room, item, normalized, value);
             default -> false;
         };
     }
@@ -563,6 +597,16 @@ public final class WiredInternalVariableSupport {
             case "@antenna_id" -> ctx.event().getSignalChannel();
             case "@chat_type" -> ctx.event().getChatType();
             case "@chat_style" -> ctx.event().getChatStyle();
+            // AIR: the room a received WIRED Link came from, 0 otherwise.
+            case "@event.link.source_room_id" -> ctx.event().getLinkSourceRoomId();
+            case "@event.transaction_failed.reason" ->
+                ctx.event().getType() == WiredEvent.Type.TRANSACTION_FAIL
+                        ? ctx.event().getTransactionFailureReason()
+                        : null;
+            case WiredHabbiconVariables.EVENT_HABBICON -> WiredHabbiconVariables.readEvent(ctx);
+            case String complete
+            when WiredTransactionVariables.COMPLETE_KEYS.contains(complete) ->
+                WiredTransactionVariables.readComplete(ctx, complete);
             default -> null;
         };
     }
@@ -644,6 +688,8 @@ public final class WiredInternalVariableSupport {
                 .internalVariableKey(key)
                 .variableChangeKind(kind)
                 .variableValues(previousValue, currentValue)
+                // A habbicon change is about the habbicon now shown (AIR @event.habbicon).
+                .habbiconId(WiredHabbiconVariables.HABBICON.equals(normalizeKey(key)) ? currentValue : 0)
                 .triggeredByEffect(true)
                 .build());
     }
@@ -940,6 +986,33 @@ public final class WiredInternalVariableSupport {
      * nearest direction within 45 degrees (clockwise first) and anything further is refused, as in
      * Habbo; without them the value is written as before.
      */
+    /** AIR's packed {@code @position}: {@code x << 8 | y}. */
+    static int packPosition(int x, int y) {
+        return ((x & 0xFF) << 8) | (y & 0xFF);
+    }
+
+    static int positionX(int packed) {
+        return (packed >> 8) & 0xFF;
+    }
+
+    static int positionY(int packed) {
+        return packed & 0xFF;
+    }
+
+    /** {@code @occupation}, {@code x << 16 | y << 8 | rotation}: moves and turns the furni in one move. */
+    private static boolean writeFurniOccupation(Room room, HabboItem item, int value) {
+        int x = (value >> 16) & 0xFF;
+        int y = (value >> 8) & 0xFF;
+        int rotation = value & 0xFF;
+        FurnitureDirections directions = FurnitureDirections.of(item);
+        if (directions.isKnown()) {
+            Integer allowed = directions.write(rotation);
+            if (allowed == null) return false;
+            rotation = allowed;
+        }
+        return moveFurniTo(room, item, x, y, rotation, item.getZ());
+    }
+
     private static boolean writeFurniRotation(Room room, HabboItem item, int value) {
         FurnitureDirections directions = FurnitureDirections.of(item);
         if (!directions.isKnown()) {

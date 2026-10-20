@@ -242,6 +242,11 @@ public final class WiredEvent {
     private final long createdAtMs;
     private final int linkHops; // WIRED Link deliveries this event is away from the first send
     private final Map<String, String> linkValues; // a received link dataframe: key to value
+    private final Map<String, String> carriedPlaceholders; // a signal's or call's sender placeholders
+    private final int linkSourceRoomId; // the room a received link came from (AIR @event.link.source_room_id)
+    private final int transactionFailureReason; // AIR @event.transaction_failed.reason
+    private final TransactionTotals transactionTotals; // AIR @event.transaction_complete.*, null when none
+    private final int habbiconId; // AIR @event.habbicon: the habbicon the event is about, 0 when none
 
     private WiredEvent(Builder builder) {
         this.type = builder.type;
@@ -281,6 +286,36 @@ public final class WiredEvent {
         this.createdAtMs = builder.createdAtMs;
         this.linkHops = builder.linkHops;
         this.linkValues = builder.linkValues;
+        this.carriedPlaceholders = builder.carriedPlaceholders;
+        this.linkSourceRoomId = builder.linkSourceRoomId;
+        this.transactionFailureReason = builder.transactionFailureReason;
+        this.transactionTotals = builder.transactionTotals;
+        this.habbiconId = builder.habbiconId;
+    }
+
+    /**
+     * What a completed wired transaction moved (AIR {@code @event.transaction_complete.*}): how many times the contract
+     * ran, and the furni and coins the player paid into the chests (deposit) and got out of them (withdrawal).
+     */
+    public record TransactionTotals(
+            int multiplier, int depositFurni, int depositCoins, int withdrawalFurni, int withdrawalCoins) {}
+
+    /** What the completed transaction moved; null for other events. */
+    public TransactionTotals getTransactionTotals() {
+        return transactionTotals;
+    }
+
+    /** The habbicon the event is about (AIR {@code @event.habbicon}); 0 when it is about none. */
+    public int getHabbiconId() {
+        return habbiconId;
+    }
+
+    /**
+     * The placeholders (token to text) the stack that sent this signal or made this stack call had
+     * when it did; the receiving stack's own placeholders come first. Empty for other events.
+     */
+    public Map<String, String> getCarriedPlaceholders() {
+        return carriedPlaceholders;
     }
 
     /** How many WIRED Link deliveries this event is away from the stack that sent the first one. */
@@ -291,6 +326,19 @@ public final class WiredEvent {
     /** The key/value rows of a received link dataframe, in row order; empty for other events. */
     public Map<String, String> getLinkValues() {
         return linkValues;
+    }
+
+    /** The room a received WIRED Link came from (AIR {@code @event.link.source_room_id}); 0 for other events. */
+    public int getLinkSourceRoomId() {
+        return linkSourceRoomId;
+    }
+
+    /**
+     * Why a wired transaction failed (AIR {@code @event.transaction_failed.reason}, the {@code
+     * wired_transactions.notification.fail.<n>} number); 0 for other events.
+     */
+    public int getTransactionFailureReason() {
+        return transactionFailureReason;
     }
 
     // Getters
@@ -579,6 +627,11 @@ public final class WiredEvent {
         private long createdAtMs = System.currentTimeMillis();
         private int linkHops;
         private Map<String, String> linkValues = Map.of();
+        private Map<String, String> carriedPlaceholders = Map.of();
+        private int linkSourceRoomId;
+        private int transactionFailureReason;
+        private TransactionTotals transactionTotals;
+        private int habbiconId;
 
         private Builder(Type type, Room room) {
             if (type == null) throw new IllegalArgumentException("Event type cannot be null");
@@ -593,6 +646,30 @@ public final class WiredEvent {
             return this;
         }
 
+        /** The room a received WIRED Link was sent from. */
+        public Builder linkSourceRoomId(int roomId) {
+            this.linkSourceRoomId = Math.max(0, roomId);
+            return this;
+        }
+
+        /** Why the transaction a TRANSACTION_FAIL event reports failed. */
+        public Builder transactionFailureReason(int reason) {
+            this.transactionFailureReason = reason;
+            return this;
+        }
+
+        /** What a TRANSACTION_COMPLETE event's transaction moved. */
+        public Builder transactionTotals(TransactionTotals totals) {
+            this.transactionTotals = totals;
+            return this;
+        }
+
+        /** The habbicon the event is about. */
+        public Builder habbiconId(int habbiconId) {
+            this.habbiconId = Math.max(0, habbiconId);
+            return this;
+        }
+
         /** The rows of a received link dataframe; copied, null keys and values dropped. */
         public Builder linkValues(Map<String, String> values) {
             if (values == null || values.isEmpty()) {
@@ -604,6 +681,20 @@ public final class WiredEvent {
                 if (key != null && value != null) copy.put(key, value);
             });
             this.linkValues = Collections.unmodifiableMap(copy);
+            return this;
+        }
+
+        /** The sender's placeholders a signal or stack call hands on; copied, null tokens and texts dropped. */
+        public Builder carriedPlaceholders(Map<String, String> placeholders) {
+            if (placeholders == null || placeholders.isEmpty()) {
+                this.carriedPlaceholders = Map.of();
+                return this;
+            }
+            LinkedHashMap<String, String> copy = new LinkedHashMap<>();
+            placeholders.forEach((token, text) -> {
+                if (token != null && !token.isEmpty() && text != null) copy.put(token, text);
+            });
+            this.carriedPlaceholders = Collections.unmodifiableMap(copy);
             return this;
         }
 

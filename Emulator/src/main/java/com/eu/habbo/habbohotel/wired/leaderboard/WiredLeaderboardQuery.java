@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore;
@@ -14,7 +14,8 @@ import java.util.Map;
 
 /**
  * The rows of one leaderboard chunk, read from the room's user variables: the users in the room
- * live, everybody else from their saved rows. Ranks are the position in the sort order, starting at
+ * live, everybody else from their saved rows (a reference's are the source room's rows of the shared
+ * variable). Ranks are the position in the sort order, starting at
  * one; ties keep the store's order (by user id).
  */
 public final class WiredLeaderboardQuery {
@@ -27,12 +28,12 @@ public final class WiredLeaderboardQuery {
     /** Chunk {@code chunkIndex} of {@code variableId} on a panel with this config. */
     public static WiredLeaderboardChunk chunk(
             Room room, WiredLeaderboardConfig config, String variableId, int chunkIndex) {
-        int definitionItemId = parseId(variableId);
+        int definitionItemId = WiredLeaderboardCodec.userBoxIdOf(variableId);
         if (room == null || definitionItemId <= 0 || chunkIndex < 0 || room.getRoomSpecialTypes() == null) {
             return new WiredLeaderboardChunk(chunkIndex, 0, List.of());
         }
-        InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(definitionItemId);
-        if (!(extra instanceof WiredExtraUserVariable definition)) {
+        InteractionWiredExtra definition = room.getRoomSpecialTypes().getExtra(definitionItemId);
+        if (definition == null || !WiredExtraVariableLeaderboard.isRankable(definition)) {
             return new WiredLeaderboardChunk(chunkIndex, 0, List.of());
         }
 
@@ -67,7 +68,7 @@ public final class WiredLeaderboardQuery {
             int definitionItemId,
             RoomUserVariableStore.Order order,
             boolean descending) {
-        int filterItemId = parseId(config.filterVariableId());
+        int filterItemId = WiredLeaderboardCodec.userBoxIdOf(config.filterVariableId());
         if (filterItemId <= 0) {
             return List.of();
         }
@@ -109,7 +110,7 @@ public final class WiredLeaderboardQuery {
                 return null;
             }
         }
-        int globalItemId = parseId(config.operandVariableId());
+        int globalItemId = WiredLeaderboardCodec.globalBoxIdOf(config.operandVariableId());
         if (globalItemId <= 0 || !room.getRoomVariableManager().hasVariable(globalItemId)) {
             return null;
         }
@@ -119,7 +120,7 @@ public final class WiredLeaderboardQuery {
     static List<WiredLeaderboardRow> rows(
             Room room,
             WiredLeaderboardConfig config,
-            WiredExtraUserVariable definition,
+            InteractionWiredExtra definition,
             List<RoomUserVariableStore.Holder> holders,
             long offset) {
         if (holders.isEmpty()) {
@@ -177,16 +178,5 @@ public final class WiredLeaderboardQuery {
         return sortMode == WiredLeaderboardCodec.SORT_HIGHEST_VALUE
                 || sortMode == WiredLeaderboardCodec.SORT_LATEST_CREATION
                 || sortMode == WiredLeaderboardCodec.SORT_LATEST_UPDATE;
-    }
-
-    static int parseId(String id) {
-        if (id == null || id.isEmpty() || id.length() > 10) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(id));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 }

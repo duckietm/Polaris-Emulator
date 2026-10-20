@@ -2503,10 +2503,10 @@ Conventions used in the entries below:
 
 ### `wf_xtra_scan_chest_furni_by_type`
 
-- **Class:** `WiredEffectScanChestFurniByType`
-- **Behavior:** a read-only selector despite its `wf_xtra` key. It picks every room floor furni whose base type is stored in the picked wired chest(s).
-- **Main settings:** int params `[filterExisting, invert]` plus up to 20 picked chests.
-- **Notes:** follows the section 5 selector rules. Chests whose owner has not enabled wired access (`answersWired`) are ignored.
+- **Class:** `WiredExtraChestItemTypeScanner`
+- **Behavior:** the official chest item type scanner add-on (code 18). Before the stack's conditions it counts the stored furni whose base type is one of the item-type furni, in the chests, and writes the count into the chosen context variable for that run. Mode 0 counts everything in the chests; mode 1 only the items a chest shows on its lid (none while its preview is off, otherwise the first item of each type up to the preview amount).
+- **Main settings:** int params `[mode]`; the context variable as the first variable id (a user-made context variable with a value); furni slot 0 the item types (first picks, default source 100), slot 1 the chests (second picks, default source 101). Chest picks must be furni chests (`wiredfurni.error.require_furni_chests`).
+- **Notes:** chests whose owner has not enabled wired access (`answersWired`) are not read. Rows saved by the old selector keep their chests as the chest picks and open on the defaults otherwise.
 
 ### `wf_xtra_custom_contract`
 
@@ -2856,7 +2856,7 @@ Variable names are 1-40 characters of `A-Z a-z 0-9 _`, with whitespace turned in
 
 ## 9. Special Wired Items
 
-These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*` controller is a switch: it is on while its state is `1`. Rights holders (or renters of the space) toggle it, and so does the wired toggle-state effect. One active controller applies to the whole room.
+These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*` controller is a switch: it is on while its state is `1`, and a click flips 0/1 whatever `interaction_modes_count` says. Rights holders (or renters of the space) toggle it, and so does the wired toggle-state effect. One active controller applies to the whole room. Picking up a controller that is on ends its effect for the room. See `docs/wired/air-parity/room_configuration.md` and `Database/Optional/room_configuration_furni.sql`.
 
 ### `wf_conf_invis_control`
 
@@ -2874,7 +2874,7 @@ These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*`
 ### `wf_conf_handitem_block`
 
 - **Class:** `InteractionHanditemBlockControl`
-- **Behavior:** while on, users cannot give hand items to other users or to pets.
+- **Behavior:** while on, users cannot give hand items to other users or to pets, nor drop them.
 - **Main settings:** none; on/off.
 
 ### `wf_conf_queue_speed`
@@ -2882,7 +2882,7 @@ These furni are not trigger, condition, effect or add-on boxes. Each `wf_conf_*`
 - **Class:** `InteractionQueueSpeedControl`
 - **Behavior:** overrides the room's roller speed. Clicking cycles four modes (states 0/3/6/9 map to roller speed 0-3), with an interval of `(speed + 1) * 500` ms. The furni animates at that speed.
 - **Main settings:** none; only the mode state.
-- **Notes:** the first controller found applies whether or not it is "on". A click from a user without rights is passed on as a normal use.
+- **Notes:** the first controller found applies whether or not it is "on". A click from a user without rights is passed on as a normal use. The wired toggle-state effect steps one whole mode. Its states run 0-11 (each mode plus two animation frames), so `interaction_modes_count` is 12.
 
 ### `wf_conf_wired_disable`
 

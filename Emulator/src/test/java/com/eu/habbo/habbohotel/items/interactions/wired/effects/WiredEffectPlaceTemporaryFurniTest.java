@@ -26,9 +26,12 @@ import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.MockedStatic;
@@ -88,6 +91,37 @@ class WiredEffectPlaceTemporaryFurniTest {
     }
 
     @Test
+    void applyingTheSnapshotPutsThePicksBackWhereAndHowTheyWereSaved() throws Exception {
+        Room room = mock(Room.class);
+        HabboItem chair = floorItem(11, 501, 3, 4, 1.5, 2, "1");
+        HabboItem lamp = floorItem(12, 502, 5, 6, 0.0, 4, "");
+        when(room.getHabboItem(11)).thenReturn(chair);
+        when(room.getHabboItem(12)).thenReturn(lamp);
+
+        WiredEffectPlaceTemporaryFurni box = new WiredEffectPlaceTemporaryFurni(1, 1, mock(Item.class), "", 0, 0);
+        box.setRoomId(7);
+        GameEnvironment environment = mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS);
+        when(environment.getRoomManager().getRoom(7)).thenReturn(room);
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class)) {
+            platform.when(WiredPlatform::gameEnvironment).thenReturn(environment);
+            assertTrue(box.saveData(new WiredSettings(new int[10], "", new int[] {11, 12}, -1), null));
+        }
+
+        List<WiredMatchFurniSetting> settings = new ArrayList<>(box.getMatchFurniSettings());
+        assertEquals(2, settings.size());
+        WiredMatchFurniSetting first = settings.get(0);
+        assertEquals(11, first.item_id);
+        assertEquals("1", first.state);
+        assertEquals(3, first.x);
+        assertEquals(4, first.y);
+        assertEquals(1.5, first.z);
+        assertEquals(2, first.rotation);
+        assertEquals(" ", settings.get(1).state, "an empty state is left alone");
+        assertTrue(box.shouldMatchState() && box.shouldMatchPosition());
+        assertTrue(box.shouldMatchRotation() && box.shouldMatchAltitude());
+    }
+
+    @Test
     void spawningWithAVariableKeepsBothVariablesAndNeedsAWritableFurniVariable() throws Exception {
         Room room = mock(Room.class);
         RoomFurniVariableManager furniVariables = mock(RoomFurniVariableManager.class);
@@ -110,6 +144,13 @@ class WiredEffectPlaceTemporaryFurniTest {
             assertTrue(saved.contains("\"spawnVariableId\":40"), saved);
             assertTrue(saved.contains("\"valueVariableId\":41"), saved);
             assertTrue(saved.contains("\"valueTarget\":-10"), saved);
+            // AIR: the two variables go out as the variable ids, the string stays empty.
+            assertArrayEquals(new String[] {"furni:40", "room:41"}, box.officialVariableIds());
+
+            WiredSettings fromIds = new WiredSettings(new int[] {0, 0, 0, 0, 0, 0, 1, 1, 0, -10}, "", new int[0], -1);
+            fromIds.setVariableIds(new String[] {"furni:40", "room:42"});
+            assertTrue(box.saveData(fromIds, null));
+            assertArrayEquals(new String[] {"furni:40", "room:42"}, box.officialVariableIds());
 
             // Not a furni variable of this room.
             assertThrows(

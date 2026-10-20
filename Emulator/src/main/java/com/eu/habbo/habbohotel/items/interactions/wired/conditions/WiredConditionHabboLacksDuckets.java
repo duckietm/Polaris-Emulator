@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,7 +25,7 @@ import java.util.List;
  * team colour. A row saved before the operator was honoured reads as {@code >=}, so it still passes
  * below the amount - the one way this box used to compare.
  */
-public class WiredConditionHabboLacksDuckets extends WiredConditionTeamGameBase {
+public class WiredConditionHabboLacksDuckets extends WiredConditionTeamGameBase implements WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.USER_AMOUNT;
 
     private static final int DUCKETS_CURRENCY = 0;
@@ -112,12 +113,11 @@ public class WiredConditionHabboLacksDuckets extends WiredConditionTeamGameBase 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(5);
+        message.appendInt(4);
         message.appendInt(this.teamType);
         message.appendInt(this.comparison);
         message.appendInt(this.amount);
         message.appendInt(this.userSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -133,7 +133,7 @@ public class WiredConditionHabboLacksDuckets extends WiredConditionTeamGameBase 
         if (params.length > 1) this.comparison = WiredComparison.normalize(params[1]);
         if (params.length > 2) this.amount = this.normalizeScore(params[2]);
         if (params.length > 3) this.userSource = this.normalizeUserSource(params[3]);
-        if (params.length > 4) this.quantifier = this.normalizeQuantifier(params[4]);
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         return true;
     }
@@ -177,5 +177,10 @@ public class WiredConditionHabboLacksDuckets extends WiredConditionTeamGameBase 
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

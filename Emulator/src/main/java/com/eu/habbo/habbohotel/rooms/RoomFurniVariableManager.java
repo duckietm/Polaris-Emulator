@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableHolderLimit;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -174,6 +175,13 @@ public class RoomFurniVariableManager {
         VariableAssignment existingAssignment = assignments.get(definitionItemId);
 
         if (existingAssignment != null && !overrideExisting) {
+            return false;
+        }
+
+        // Habbo's cap on different variables per holder (monitor error 6); a value it already holds still changes.
+        if (existingAssignment == null && !WiredVariableHolderLimit.hasRoomFor(assignments.size())) {
+            WiredVariableHolderLimit.noteRefused(
+                    this.room.getId(), "furni", furniId, definitionInfo.getName(), definitionItemId);
             return false;
         }
 

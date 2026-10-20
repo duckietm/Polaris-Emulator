@@ -26,7 +26,7 @@ class WiredVariableTextConnectorWireTest {
 
     private static RoomWiredVariableCatalog.Variable variable(Map<Integer, String> textConnector) {
         return new RoomWiredVariableCatalog.Variable(
-                "user:42", 1, "Weapon", 0, 1, true, !textConnector.isEmpty(), false, textConnector);
+                "user:42", 0, "Weapon", 0, 1, true, !textConnector.isEmpty(), false, textConnector);
     }
 
     @Test
@@ -40,7 +40,7 @@ class WiredVariableTextConnectorWireTest {
         assertEquals(1, reader.readInt()); // addedOrUpdated
         reader.readInt(); // hash
         assertEquals("user:42", reader.readString());
-        assertEquals(1, reader.readInt());
+        assertEquals(0, reader.readInt()); // variableType: made with a box
         assertEquals("Weapon", reader.readString());
         assertEquals(0, reader.readInt());
         assertEquals(1, reader.readInt());
@@ -60,7 +60,7 @@ class WiredVariableTextConnectorWireTest {
     @Test
     void theDiffWritesTheFallbackTextAfterTheTable() {
         RoomWiredVariableCatalog.Variable variable = new RoomWiredVariableCatalog.Variable(
-                "user:42", 1, "Weapon", 0, 1, true, true, false, swordAndShield(), "Fists", false);
+                "user:42", 0, "Weapon", 0, 1, true, true, false, swordAndShield(), "Fists", false);
         WireReader reader = compose(new WiredAllVariablesDiffComposer(7, true, List.of(), List.of(variable)));
 
         skipToFlags(reader);
@@ -81,7 +81,7 @@ class WiredVariableTextConnectorWireTest {
     @Test
     void aPointerIsSentAsRequiringAnExecutionContext() {
         RoomWiredVariableCatalog.Variable pointer = new RoomWiredVariableCatalog.Variable(
-                "furni:9", 2, "target", 0, 2, true, false, false, Map.of(), null, true);
+                "furni:9", 0, "target", 0, 0, true, false, false, Map.of(), null, true);
         WireReader reader = compose(new WiredAllVariablesDiffComposer(7, true, List.of(), List.of(pointer)));
 
         skipToFlags(reader);
@@ -95,7 +95,7 @@ class WiredVariableTextConnectorWireTest {
         assertEquals(0, reader.remaining());
         assertNotEquals(
                 pointer.hash(),
-                new RoomWiredVariableCatalog.Variable("furni:9", 2, "target", 0, 2, true, false, false, Map.of())
+                new RoomWiredVariableCatalog.Variable("furni:9", 0, "target", 0, 0, true, false, false, Map.of())
                         .hash());
     }
 

@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.plugin.events.furniture.FurnitureRoomTonerEvent;
@@ -15,6 +16,9 @@ public class RoomBackgroundEvent extends MessageHandler {
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null) return;
+
+        // Playtest (the hotel's own rule beyond AIR): the toner is not set up, as for a visitor without rights.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
 
         if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)) {
             HabboItem item = room.getHabboItem(itemId);

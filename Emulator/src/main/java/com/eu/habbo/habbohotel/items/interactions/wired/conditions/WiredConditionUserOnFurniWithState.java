@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -9,6 +8,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
@@ -22,8 +22,8 @@ import java.util.Set;
  * {@link HabboItem#getExtradata() extradata state} equals a required value.
  *
  * <p>This is a specialisation of {@link WiredConditionTriggerOnFurni}: it reuses the same furni
- * picker, {@code userSource}, and {@code quantifier} machinery (and therefore the same int-param
- * layout {@code [furniSource, userSource, quantifier]} and furni-id selection), but additionally
+ * picker, {@code userSource}, and {@code quantifier} machinery (and therefore the same layout: no int
+ * params, the quantifier in its slot, the furni and users in the official source slots, and furni-id selection), but additionally
  * carries a single {@code requiredState} string. When that string is non-empty, a user only counts
  * as "on the furni" if the furni under their feet currently reports that exact extradata state. An
  * empty {@code requiredState} degrades gracefully to the plain on-furni behaviour.</p>
@@ -65,7 +65,7 @@ public class WiredConditionUserOnFurniWithState extends WiredConditionTriggerOnF
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (userTargets.isEmpty()) return false;
+        if (userTargets.isEmpty()) return WiredQuantifier.overEmpty(this.getQuantifier() != QUANTIFIER_ANY);
 
         List<HabboItem> itemTargets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (itemTargets.isEmpty()) return false;
@@ -191,10 +191,7 @@ public class WiredConditionUserOnFurniWithState extends WiredConditionTriggerOnF
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.requiredState == null ? "" : this.requiredState);
-        message.appendInt(3);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.userSource);
-        message.appendInt(this.getQuantifier());
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -203,37 +200,10 @@ public class WiredConditionUserOnFurniWithState extends WiredConditionTriggerOnF
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        int count = settings.getFurniIds().length;
-        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
-
-        int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0)
-                ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0])
-                : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource = (params.length > 1)
-                ? WiredFurniConditionInputGuard.normalizeUserSource(params[1])
-                : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        // The parent's official layout: the furni and users in the official source slots, the quantifier in
+        // its slot; the required state in the string.
+        if (!super.saveData(settings)) return false;
         this.requiredState = this.normalizeRequiredState(settings.getStringParam());
-
-        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
-
-        this.items.clear();
-
-        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
-
-            if (room != null) {
-                for (int i = 0; i < count; i++) {
-                    HabboItem item = room.getHabboItem(settings.getFurniIds()[i]);
-
-                    if (item != null) {
-                        this.items.add(item);
-                    }
-                }
-            }
-        }
-
         return true;
     }
 

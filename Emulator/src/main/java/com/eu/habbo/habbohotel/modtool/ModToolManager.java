@@ -798,7 +798,7 @@ public class ModToolManager {
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE bans INNER JOIN users ON bans.user_id = users.id SET ban_expire = ?, ban_reason = CONCAT('"
                                 + Emulator.getTexts().getValue("unbanned")
-                                + ": ', ban_reason) WHERE users.username LIKE ? AND ban_expire > ?")) {
+                                + ": ', ban_reason) WHERE users.username = ? AND ban_expire > ?")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp());
             statement.setString(2, username);
             statement.setInt(3, Emulator.getIntUnixTimestamp());

@@ -472,6 +472,67 @@ class MigrationRunnerIT {
     }
 
     @Test
+    void writeToLogsBoxesKeepTheirLevelUnderTheAirNumbers() throws Exception {
+        requireDocker();
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_wired_log_levels")) {
+            String before = MigrationRunner.BASELINE_VERSION;
+            for (SchemaEvidence.Migration migration : SchemaEvidence.packaged(MigrationRunner.flyway(ds))) {
+                String version = migration.version();
+                if (version.compareTo("20261020130000") < 0 && version.compareTo(before) > 0) before = version;
+            }
+            Flyway.configure()
+                    .dataSource(ds)
+                    .locations(MigrationRunner.MIGRATION_LOCATION)
+                    .target(before)
+                    .placeholderReplacement(false)
+                    .load()
+                    .migrate();
+
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO items_base (id, sprite_id, public_name, item_name, interaction_type)
+                        VALUES (1900000201, 1900000201, 'Log', 'wf_act_log', 'wf_act_log'),
+                               (1900000202, 1900000202, 'Neg log', 'wf_act_neg_log', 'wf_act_neg_log'),
+                               (1900000203, 1900000203, 'Other', 'wf_act_other', 'wf_act_show_message')
+                        """);
+                // Old numbers: 0 debug, 1 info, 2 warning, 3 error.
+                statement.execute("""
+                        INSERT INTO items (id, user_id, room_id, item_id, wired_data) VALUES
+                        (1900000301, 1, 0, 1900000201,
+                            '{"message":"a \\\\"logLevel\\\\":0 b","delay":0,"userSource":0,"logLevel":0}'),
+                        (1900000302, 1, 0, 1900000201, '{"message":"i","delay":2,"userSource":0,"logLevel":1}'),
+                        (1900000303, 1, 0, 1900000202, '{"message":"w","delay":0,"userSource":0,"logLevel":2}'),
+                        (1900000304, 1, 0, 1900000201, '{"message":"e","delay":0,"userSource":0,"logLevel":3}'),
+                        (1900000305, 1, 0, 1900000201, '{"message":"old","delay":0,"userSource":0}'),
+                        (1900000306, 1, 0, 1900000201, '0\tlegacy tab'),
+                        (1900000307, 1, 0, 1900000203, '{"logLevel":0}')
+                        """);
+            }
+
+            MigrationRunner.migrate(ds);
+
+            assertEquals(
+                    "{\"message\":\"a \\\"logLevel\\\":0 b\",\"delay\":0,\"userSource\":0,\"logLevel\":3}",
+                    stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000301"));
+            assertEquals(
+                    "{\"message\":\"i\",\"delay\":2,\"userSource\":0,\"logLevel\":0}",
+                    stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000302"));
+            assertEquals(
+                    "{\"message\":\"w\",\"delay\":0,\"userSource\":0,\"logLevel\":1}",
+                    stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000303"));
+            assertEquals(
+                    "{\"message\":\"e\",\"delay\":0,\"userSource\":0,\"logLevel\":2}",
+                    stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000304"));
+            assertEquals(
+                    "{\"message\":\"old\",\"delay\":0,\"userSource\":0}",
+                    stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000305"));
+            assertEquals("0\tlegacy tab", stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000306"));
+            assertEquals("{\"logLevel\":0}", stringValue(ds, "SELECT wired_data FROM items WHERE id = 1900000307"));
+        }
+    }
+
+    @Test
     void soundboardMigrationPreservesPreexistingPermissionAssignments() throws Exception {
         requireDocker();
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_existing_soundboard_permission")) {

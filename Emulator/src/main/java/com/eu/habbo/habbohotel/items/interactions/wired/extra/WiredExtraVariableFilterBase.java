@@ -25,6 +25,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -34,7 +36,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra implements WiredOfficialSources {
+/**
+ * The official furni / user variable filters (AIR addons 12 and 13). Int params {@code [N, sort, N from a variable, its
+ * target]}; variable ids {@code [sorted variable, N variable or none]}, no string (older clients sent both as
+ * {@code variable\tN variable}; still read); the N variable's holders in the official source slots.
+ */
+public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     protected static final int TARGET_USER = 0;
     protected static final int TARGET_FURNI = 1;
     protected static final int TARGET_CONTEXT = 2;
@@ -54,7 +62,6 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
     private static final int MAX_FILTER_AMOUNT = 10000;
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
-    private static final String DELIM = "\t";
 
     protected int sortBy = SORT_VALUE_HIGHEST;
     protected int amountMode = AMOUNT_CONSTANT;
@@ -145,11 +152,18 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         if (room == null) throw new WiredSaveException("Room not found");
 
         int[] params = settings.getIntParams();
-        String[] stringParts = parseStringData(settings.getStringParam());
-        String nextVariableToken = normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : "");
-        String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
-        // Official layout: [N, sort, N from a variable, its target (official ids)]; the sort and the
-        // N variable tokens as "sort\tN" text, the N variable's sources in the official slots.
+        String nextVariableToken;
+        String nextReferenceVariableToken;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            nextVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 0);
+            nextReferenceVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 1);
+        } else {
+            String[] stringParts = parseStringData(settings.getStringParam());
+            nextVariableToken = normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : "");
+            nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
+        }
+        // Official layout: [N, sort, N from a variable, its target (official ids)]; the sorted and the N
+        // variables as variable ids, the N variable's sources in the official slots.
         int nextAmountConstantValue = normalizeAmount(param(params, 0, 1));
         int nextSortBy = normalizeSortBy(param(params, 1, SORT_VALUE_HIGHEST));
         int nextAmountMode = normalizeAmountMode(param(params, 2, AMOUNT_CONSTANT));
@@ -230,7 +244,7 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         for (HabboItem item : selectedItems) message.appendInt(item.getId());
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeStringData());
+        message.appendString("");
         message.appendInt(4);
         message.appendInt(this.amountConstantValue);
         message.appendInt(this.sortBy);
@@ -575,10 +589,13 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         return result;
     }
 
-    private String serializeStringData() {
-        return (this.variableToken == null ? "" : this.variableToken)
-                + DELIM
-                + (this.referenceVariableToken == null ? "" : this.referenceVariableToken);
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWireForHolder(this.getVariableTargetType(), this.variableToken),
+                this.amountMode == AMOUNT_VARIABLE
+                        ? WiredVariableIds.toWireForHolder(this.referenceTargetType, this.referenceVariableToken)
+                        : "");
     }
 
     private void refreshReferenceItems() {

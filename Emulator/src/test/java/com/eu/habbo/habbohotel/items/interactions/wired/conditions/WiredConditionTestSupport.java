@@ -60,4 +60,11 @@ final class WiredConditionTestSupport {
     static WiredSettings settings(int[] ints, int... furniIds) {
         return new WiredSettings(ints, "", furniIds, 0);
     }
+
+    /** A condition save with {@code quantifier} in the save packet's quantifier slot. */
+    static WiredSettings quantified(int[] ints, int quantifier) {
+        WiredSettings settings = settings(ints);
+        settings.setQuantifierCode(quantifier);
+        return settings;
+    }
 }

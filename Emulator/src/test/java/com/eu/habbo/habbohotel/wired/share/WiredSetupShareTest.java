@@ -10,7 +10,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import java.io.ByteArrayOutputStream;
@@ -144,9 +147,32 @@ class WiredSetupShareTest {
         exporter.boxIndexes.put(777, 3);
 
         assertEquals("a\tcustom:#0\tcustom:0\tcustom:#3", exporter.exportText("a\tcustom:501\tcustom:9\tcustom:777"));
+        // Slot by slot: an id of a box that is not exported, or an empty slot, is "none".
         assertEquals(
-                List.of("#0", "custom:#3", "@internal"),
+                List.of("#0", "custom:#3", "n", "@internal", "n"),
                 exporter.exportVariables(new String[] {"501", "custom:777", "12", "@internal", ""}));
+        // The variable list's ids of exported boxes keep their target.
+        assertEquals(
+                List.of("user:#0", "room:#3", "-125", "n", "user:41"),
+                exporter.exportVariables(new String[] {"user:501", "room:777", "-125", "n", "user:41"}));
+        // An echo's built-in source names its target; a reference names the shared variable of another room.
+        assertEquals(
+                List.of("ctx:@chat_type", "furni:@position_x", "user:9"),
+                exporter.exportVariables(new String[] {"ctx:@chat_type", "furni:@position_x", "user:9"}));
+    }
+
+    @Test
+    void echoAndReferenceSourcesSurviveTheImport() {
+        GameClient client = mock(GameClient.class);
+        when(client.getHabbo()).thenReturn(mock(Habbo.class));
+        WiredSetupImporter importer = new WiredSetupImporter(mock(Room.class), client, new WiredSetupDocument());
+        InteractionWired echoed = mock(InteractionWired.class);
+        when(echoed.getId()).thenReturn(4242);
+        importer.resolved.put(2, echoed);
+
+        assertArrayEquals(
+                new String[] {"4242", "ctx:@chat_type", "room:11"},
+                importer.remapVariables(List.of("#2", "ctx:@chat_type", "room:11")));
     }
 
     @Test
@@ -160,10 +186,51 @@ class WiredSetupShareTest {
 
         assertEquals("custom:9001|custom:0", importer.remapText("custom:#0|custom:#5"));
         assertArrayEquals(
-                new String[] {"9001", "custom:9001", "@built_in"},
+                new String[] {"9001", "custom:9001", "n", "n", "n", "@built_in"},
                 importer.remapVariables(List.of("#0", "custom:#0", "#4", "123", "custom:55", "@built_in")));
+        assertArrayEquals(
+                new String[] {"n", "user:9001", "-125"},
+                importer.remapVariables(List.of("furni:#4", "user:#0", "-125")));
         // Item ids never come from a code: only box references and furni found in this room.
         assertArrayEquals(new int[] {9001}, importer.remapPicks(List.of("b0", "b1", "b0", "123", "f0"), 0, 0));
+    }
+
+    @Test
+    void aLeaderboardKeepsItsVariablesThroughAShareCode() throws Exception {
+        // Sort highest, username column, filter on, two display names; the filter variable is not exported.
+        int[] ints = {0, 1, 0, -1, -1, -1, 1, 0, 0, 2, 1, 1, 0, 0, 3, 0, 0, 0, 0};
+        String text =
+                String.join("\t", "Top", "", "Player", "", "", "", "", "Gold", "Wins", "", "", "", "", "", "", "", "");
+        WiredExtraVariableLeaderboard board = new WiredExtraVariableLeaderboard(50, 1, mock(Item.class), "", 0, 0);
+        WiredSettings saved = new WiredSettings(ints, text, new int[0], 0);
+        saved.setVariableIds(new String[] {"user:77", "n", "user:1200", "user:900"});
+        assertTrue(board.saveData(saved, null));
+
+        WiredSetupExporter exporter = new WiredSetupExporter(mock(Room.class));
+        exporter.boxIndexes.put(900, 0);
+        exporter.boxIndexes.put(1200, 1);
+        List<String> exported = exporter.exportVariables(board.officialVariableIds());
+        assertEquals(List.of("user:77", "n", "user:#1", "user:#0", "n", "n", "n", "n", "n", "n", "n", "n"), exported);
+
+        GameClient client = mock(GameClient.class);
+        when(client.getHabbo()).thenReturn(mock(Habbo.class));
+        WiredSetupImporter importer = new WiredSetupImporter(mock(Room.class), client, new WiredSetupDocument());
+        InteractionWired coins = mock(InteractionWired.class);
+        when(coins.getId()).thenReturn(4900);
+        InteractionWired wins = mock(InteractionWired.class);
+        when(wins.getId()).thenReturn(5200);
+        importer.resolved.put(0, coins);
+        importer.resolved.put(1, wins);
+
+        WiredExtraVariableLeaderboard copy = new WiredExtraVariableLeaderboard(51, 1, mock(Item.class), "", 0, 0);
+        WiredSettings imported = new WiredSettings(ints, text, new int[0], 0);
+        imported.setVariableIds(importer.remapVariables(exported));
+        assertTrue(copy.saveData(imported, null));
+        assertArrayEquals(
+                new String[] {"user:77", "0", "user:4900", "user:5200", "0", "0", "0", "0", "0", "0", "0", "0"},
+                copy.officialVariableIds());
+        assertEquals("Gold", copy.getConfig().displayOverrides().get("user:5200"));
+        assertEquals("Wins", copy.getConfig().displayOverrides().get("user:4900"));
     }
 
     private static void assertStatus(int status, String code) {

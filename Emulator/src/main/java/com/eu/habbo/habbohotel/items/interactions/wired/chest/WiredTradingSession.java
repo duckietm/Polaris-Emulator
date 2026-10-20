@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.Match;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +23,13 @@ import java.util.function.IntUnaryOperator;
  * here and sold in the marketplace at once. And <strong>any change to the offer clears the
  * acceptance</strong> and drops back to {@link #STATE_ADDING_ITEMS}, so nothing can be slipped in
  * under a player who has already agreed.
+ *
+ * <p>A contract's table holds no more than the contract asks, as AIR's trade errors 4 ("you have already met the
+ * requirements") and 5 ("exceeds the offering requirements") say: an item past the contract times its multiplier or
+ * auto limit is refused ({@link #offerRefusal}), and the requirements are met only when the table is exactly one
+ * alternative, that many times over ({@link ContractRequirementEvaluator#firstExact}). So what settles is what lies on
+ * the table: a 30 coin price is never paid with a 50 credit furni. A chest deposit or a donation is an open table
+ * ({@link #openTable()}): anything goes on it, up to the chest's room.
  */
 public class WiredTradingSession {
     public static final int STATE_READY = 0;
@@ -32,6 +40,12 @@ public class WiredTradingSession {
 
     /** Same ceiling the room trade uses; the window has no more room than that either. */
     public static final int MAX_OFFERED_ITEMS = 100;
+
+    /**
+     * Kinds of furni the table takes: AIR's offer grid has nine slots, one per kind with its count, and the
+     * official error 2 ("too many different items") refuses a tenth.
+     */
+    static final int MAX_OFFERED_TYPES = 9;
 
     /**
      * The client counts three seconds between accepting and being allowed to confirm. The server does
@@ -47,6 +61,15 @@ public class WiredTradingSession {
     public static final int FAILURE_LEFT_ROOM = 3;
     public static final int FAILURE_CONTRACT_GONE = 4;
     public static final int FAILURE_REWARD_UNAVAILABLE = 5;
+
+    /** {@link #offerRefusal}: the item may go on the table. */
+    public static final int OFFER_ACCEPTED = -1;
+
+    /** {@link #offerRefusal}: the table already meets every requirement (AIR trade error 4). */
+    public static final int OFFER_ALREADY_MET = 4;
+
+    /** {@link #offerRefusal}: the item would put more on the table than the contract asks (AIR trade error 5). */
+    public static final int OFFER_EXCEEDS = 5;
 
     /**
      * The inventory seen from the session's side. Narrow on purpose: the state machine has no reason
@@ -64,6 +87,7 @@ public class WiredTradingSession {
     }
 
     private final ContractRules rules;
+    private final ContractMultiplier multiplier;
     private final ItemVault vault;
     private final IntUnaryOperator walletBalance;
     private final int timeoutSeconds;
@@ -75,6 +99,8 @@ public class WiredTradingSession {
     private int state = STATE_READY;
     private long acceptedAtMillis = 0L;
     private boolean closed = false;
+    private int settledTimes = 0;
+    private boolean openTable = false;
 
     public WiredTradingSession(
             ContractRules rules,
@@ -82,12 +108,41 @@ public class WiredTradingSession {
             IntUnaryOperator walletBalance,
             int timeoutSeconds,
             long openedAtMillis) {
+        this(rules, ContractMultiplier.NONE, vault, walletBalance, Math.max(1, timeoutSeconds), openedAtMillis);
+    }
+
+    /**
+     * @param multiplier how many times the contract runs; {@code rules} is the contract once
+     * @param timeoutSeconds how long the offer stays open; zero or less never lapses (AIR: no
+     *     countdown when the window gets no timeout)
+     */
+    public WiredTradingSession(
+            ContractRules rules,
+            ContractMultiplier multiplier,
+            ItemVault vault,
+            IntUnaryOperator walletBalance,
+            int timeoutSeconds,
+            long openedAtMillis) {
         this.rules = rules;
+        this.multiplier = multiplier == null ? ContractMultiplier.NONE : multiplier;
         this.vault = vault;
         this.walletBalance = walletBalance;
-        this.timeoutSeconds = Math.max(1, timeoutSeconds);
+        this.timeoutSeconds = Math.max(0, timeoutSeconds);
         this.openedAtMillis = openedAtMillis;
         this.state = STATE_ADDING_ITEMS;
+    }
+
+    /**
+     * Make this an open table (a chest deposit, a donation): anything may be offered and an offer covering the rules is
+     * enough, as before. Call it before anything is offered.
+     */
+    public WiredTradingSession openTable() {
+        this.openTable = true;
+        return this;
+    }
+
+    public boolean isOpenTable() {
+        return this.openTable;
     }
 
     public int getState() {
@@ -98,8 +153,85 @@ public class WiredTradingSession {
         return this.closed;
     }
 
+    /** The contract once, as the window shows it. */
     public ContractRules getRules() {
         return this.rules;
+    }
+
+    public ContractMultiplier getMultiplier() {
+        return this.multiplier;
+    }
+
+    /** When the negotiation opened, in epoch milliseconds. */
+    public long openedAtMillis() {
+        return this.openedAtMillis;
+    }
+
+    /** True when the offer lapses at all. */
+    public boolean hasTimeout() {
+        return this.timeoutSeconds > 0;
+    }
+
+    /**
+     * The window's "met" count, up to the multiplier's limit. With the auto multiplier it is how many runs the table is
+     * exactly (zero while it is between two), since that is what confirming settles; otherwise how many whole runs it
+     * covers, the fixed multiplier's "met k/N".
+     */
+    public int timesMet() {
+        if (!this.openTable && this.multiplier.mode() == ContractMultiplier.MODE_AUTO) return exactRuns();
+        return coveredRuns();
+    }
+
+    /** The runs, 1 up to the limit, the table is exactly; zero when it is none of them. */
+    private int exactRuns() {
+        List<OfferedItem> items = getOfferedItems();
+        int credits = credits();
+        for (int times = 1; times <= this.multiplier.limit(); times++) {
+            if (ContractRequirementEvaluator.firstExact(this.rules.times(times), credits, items)
+                    .satisfied()) return times;
+        }
+        return 0;
+    }
+
+    /** How many whole runs the table covers, up to the limit. */
+    private int coveredRuns() {
+        int limit = this.multiplier.limit();
+        if (!matches(1)) return 0;
+
+        // Paying k times implies paying k - 1 times, so the count can be searched for.
+        int low = 1;
+        int high = limit;
+        while (low < high) {
+            int middle = (low + high + 1) >>> 1;
+            if (matches(middle)) low = middle;
+            else high = middle - 1;
+        }
+        return low;
+    }
+
+    /** How many times the contract runs when the player confirms now: fixed, or what the offer covers. */
+    public int timesToSettle() {
+        return switch (this.multiplier.mode()) {
+            case ContractMultiplier.MODE_FIXED -> this.multiplier.value();
+            case ContractMultiplier.MODE_AUTO -> Math.max(1, timesMet());
+            default -> 1;
+        };
+    }
+
+    /** The contract scaled to {@link #timesToSettle()}: what the player pays and gets right now. */
+    public ContractRules effectiveRules() {
+        return this.rules.times(timesToSettle());
+    }
+
+    /** How many times the confirmed settlement runs the contract; zero before a confirmation. */
+    public int settledTimes() {
+        return this.settledTimes;
+    }
+
+    private boolean matches(int times) {
+        return ContractRequirementEvaluator.firstSatisfied(
+                        this.rules.times(times), this.walletBalance, getOfferedItems())
+                .satisfied();
     }
 
     /** The items on the table, in the order the player put them there. */
@@ -107,8 +239,12 @@ public class WiredTradingSession {
         return List.copyOf(this.offered.values());
     }
 
-    /** Seconds before the offer lapses. Never negative; zero means it has lapsed. */
+    /**
+     * Seconds before the offer lapses. Never negative; zero means it has lapsed, int max that it never
+     * does.
+     */
     public int secondsLeft(long nowMillis) {
+        if (!hasTimeout()) return Integer.MAX_VALUE;
         long elapsed = (nowMillis - this.openedAtMillis) / 1000L;
         return (int) Math.max(0L, this.timeoutSeconds - elapsed);
     }
@@ -117,9 +253,56 @@ public class WiredTradingSession {
         return secondsLeft(nowMillis) <= 0;
     }
 
-    /** Which alternative the current offer pays for, and what is still short. */
+    /**
+     * Which alternative the current offer pays for, and what is still short, against the contract
+     * scaled to {@link #timesToSettle()}; a match's rule index is the same in the unscaled rules.
+     */
     public Match evaluate() {
-        return ContractRequirementEvaluator.firstSatisfied(this.rules, this.walletBalance, getOfferedItems());
+        return matchAt(timesToSettle());
+    }
+
+    /** The offer against the contract {@code times} over: exactly for a contract, covering for an open table. */
+    private Match matchAt(int times) {
+        ContractRules scaled = this.rules.times(times);
+        if (this.openTable) {
+            return ContractRequirementEvaluator.firstSatisfied(scaled, this.walletBalance, getOfferedItems());
+        }
+        return ContractRequirementEvaluator.firstExact(scaled, credits(), getOfferedItems());
+    }
+
+    /** The coins on the table: the credit furni, as the wallet lookup values them. */
+    private int credits() {
+        return this.walletBalance == null
+                ? 0
+                : Math.max(0, this.walletBalance.applyAsInt(InteractionWiredContract.CURRENCY_CREDITS));
+    }
+
+    /**
+     * Whether {@code next} may go on the table after {@code pending} (items accepted in the same batch but not taken
+     * yet): {@link #OFFER_ACCEPTED}, {@link #OFFER_ALREADY_MET} when the table already is the contract at its limit,
+     * or {@link #OFFER_EXCEEDS} when it would hold more than any alternative asks at the limit (furni of a type it does
+     * not ask for, more of a type, more coins). An open table accepts anything.
+     */
+    public synchronized int offerRefusal(List<OfferedItem> pending, OfferedItem next) {
+        if (this.openTable || next == null) return OFFER_ACCEPTED;
+
+        List<OfferedItem> current = new ArrayList<>(this.offered.values());
+        int credits = credits();
+        if (pending != null) {
+            for (OfferedItem item : pending) {
+                if (item == null) continue;
+                current.add(item);
+                credits += item.creditValue();
+            }
+        }
+
+        ContractRules most = this.rules.times(this.multiplier.limit());
+        if (ContractRequirementEvaluator.firstExact(most, credits, current).satisfied()) return OFFER_ALREADY_MET;
+
+        current.add(next);
+        return ContractRequirementEvaluator.fitsAny(most, credits + next.creditValue(), current)
+                ? OFFER_ACCEPTED
+                : OFFER_EXCEEDS;
     }
 
     /** True when the player may press accept: the offer covers one of the alternatives. */
@@ -143,6 +326,7 @@ public class WiredTradingSession {
 
             OfferedItem described = this.vault.describe(itemId);
             if (described == null) continue;
+            if (offerRefusal(List.of(), described) != OFFER_ACCEPTED) continue;
             if (!this.vault.take(itemId)) continue;
 
             this.offered.put(itemId, described);
@@ -207,9 +391,11 @@ public class WiredTradingSession {
         if (this.state != STATE_CONFIRMING) return Confirmation.refused(FAILURE_SILENT);
         if (hasExpired(nowMillis)) return Confirmation.refused(FAILURE_TIMEOUT);
 
-        Match match = evaluate();
+        int times = timesToSettle();
+        Match match = matchAt(times);
         if (!match.satisfied()) return Confirmation.refused(FAILURE_REQUIREMENTS);
 
+        this.settledTimes = times;
         this.state = STATE_CONFIRMED;
         return Confirmation.settle(match);
     }

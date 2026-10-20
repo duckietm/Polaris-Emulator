@@ -32,10 +32,10 @@ class WiredRoomDiagnosticsTest {
 
         var history = diagnostics.snapshot(0, 10, 0L, 1_002L).getHistory();
         assertEquals(2, history.size());
-        // Newest first; the level is Habbo's number, not the enum's place.
+        // Newest first; the level is AIR's number (0 info, 1 warn, 2 error, 3 debug), not the enum's place.
         assertEquals("boss escaped", history.get(0).getReason());
-        assertEquals(3, history.get(0).getSeverity().getLogLevel());
-        assertEquals(0, history.get(1).getSeverity().getLogLevel());
+        assertEquals(2, history.get(0).getSeverity().getLogLevel());
+        assertEquals(3, history.get(1).getSeverity().getLogLevel());
         assertEquals(WiredRoomDiagnostics.Type.WIRED_LOG, history.get(1).getType());
     }
 

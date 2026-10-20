@@ -17,9 +17,10 @@ public final class WiredVariableChangeOrigin {
     public static final int WIRED = 0;
     public static final int WEB_API = 1;
     public static final int CREATOR_TOOLS = 2;
+    public static final int OTHER_ROOM = 3;
     public static final int MASK_ALL = -1;
 
-    private static final int HIGHEST = CREATOR_TOOLS;
+    private static final int HIGHEST = OTHER_ROOM;
     private static final int MASK_BITS = (1 << (HIGHEST + 1)) - 1;
     private static final ThreadLocal<Integer> CURRENT = ThreadLocal.withInitial(() -> WIRED);
 

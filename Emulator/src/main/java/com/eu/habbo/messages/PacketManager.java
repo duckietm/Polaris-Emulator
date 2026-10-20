@@ -549,6 +549,8 @@ import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionUpdateEvent;
 import com.eu.habbo.messages.incoming.wired.WiredConditionSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
+import com.eu.habbo.messages.incoming.wired.WiredErrorLogsClearEvent;
+import com.eu.habbo.messages.incoming.wired.WiredErrorLogsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent;
@@ -569,6 +571,7 @@ import com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomStateActionEvent;
+import com.eu.habbo.messages.incoming.wired.WiredRoomStatsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSetupExportEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSetupImportEvent;
@@ -693,9 +696,7 @@ public class PacketManager {
     }
 
     public void unregisterCallables(Integer header) {
-        if (this.callables.containsKey(header)) {
-            this.callables.clear();
-        }
+        this.callables.remove(header);
     }
 
     public void handlePacket(GameClient client, ClientMessage packet) {
@@ -1365,6 +1366,9 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
         this.registerHandler(Incoming.WiredRoomStateActionEvent, WiredRoomStateActionEvent.class);
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
+        this.registerHandler(Incoming.WiredRoomStatsRequestEvent, WiredRoomStatsRequestEvent.class);
+        this.registerHandler(Incoming.WiredErrorLogsRequestEvent, WiredErrorLogsRequestEvent.class);
+        this.registerHandler(Incoming.WiredErrorLogsClearEvent, WiredErrorLogsClearEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredLeaderboardSubscribeEvent, WiredLeaderboardSubscribeEvent.class);
         this.registerHandler(Incoming.WiredLinkRequestConfigEvent, WiredLinkRequestConfigEvent.class);

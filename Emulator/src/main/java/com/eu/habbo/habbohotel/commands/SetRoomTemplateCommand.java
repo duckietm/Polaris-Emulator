@@ -16,6 +16,19 @@ import org.slf4j.LoggerFactory;
 public class SetRoomTemplateCommand extends Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(SetRoomTemplateCommand.class);
 
+    /**
+     * The room's furni into the template. Hotels from Arcturus allow NULL in the text columns of
+     * {@code items} while {@code room_templates_items} keeps {@code wall_pos} and {@code extra_data} NOT NULL,
+     * so a NULL there becomes the template's default instead of failing the whole copy.
+     */
+    static final String COPY_ROOM_ITEMS_SQL =
+            "INSERT INTO room_templates_items (template_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data) "
+                    + "SELECT ?, i.item_id, COALESCE(i.wall_pos, ''), i.x, i.y, i.z, i.rot, COALESCE(i.extra_data, ''), "
+                    + "COALESCE(i.wired_data, '') "
+                    + "FROM items i "
+                    + "WHERE i.room_id = ? AND i.item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS
+                    + ")";
+
     public SetRoomTemplateCommand() {
         super(
                 "cmd_setroom_template",
@@ -92,12 +105,7 @@ public class SetRoomTemplateCommand extends Command {
                 }
             }
 
-            try (PreparedStatement insItems = connection.prepareStatement(
-                    "INSERT INTO room_templates_items (template_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data) "
-                            + "SELECT ?, i.item_id, i.wall_pos, i.x, i.y, i.z, i.rot, i.extra_data, i.wired_data "
-                            + "FROM items i "
-                            + "WHERE i.room_id = ? AND i.item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS
-                            + ")")) {
+            try (PreparedStatement insItems = connection.prepareStatement(COPY_ROOM_ITEMS_SQL)) {
                 insItems.setInt(1, newTemplateId);
                 insItems.setInt(2, room.getId());
                 itemsCopied = insItems.executeUpdate();

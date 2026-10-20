@@ -16,8 +16,9 @@ public enum FurnitureMovementError {
     MAX_ITEMS("${room.error.max_furniture}"),
     MAX_STICKIES("${room.error.max_stickies}"),
     MAX_SIGNAL_SENDERS("${room.error.max_signal_senders}"),
-    MAX_SIGNAL_RECEIVERS("${room.error.max_signal_receivers}");
-
+    MAX_SIGNAL_RECEIVERS("${room.error.max_signal_receivers}"),
+    /** A permanent variable box would go over the room's permanent variables of its kind. */
+    MAX_PERMANENT_VARIABLES("${wiredfurni.error.variables.permanent_limit}");
 
     public final String errorCode;
 

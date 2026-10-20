@@ -106,10 +106,9 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.lowerLimit);
         message.appendInt(this.upperLimit);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -121,8 +120,9 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
         if (settings.getIntParams().length < 2) return false;
         int[] params = settings.getIntParams();
         this.applyLimits(params[0], params[1]);
-        this.userSource = (params.length > 2)
-                ? WiredConditionInputGuard.normalizeUserSource(params[2])
+        // Official layout: [min, max], the users in the official source slot.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
 
         return true;

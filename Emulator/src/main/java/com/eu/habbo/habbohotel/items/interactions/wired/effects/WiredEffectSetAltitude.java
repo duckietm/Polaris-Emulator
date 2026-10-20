@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomFurniHeightLimit;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -72,7 +73,11 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
             }
 
             double nextAltitude = this.computeAltitude(item.getZ());
-            WiredMoveCarryHelper.moveFurni(room, this, item, tile, item.getRotation(), nextAltitude, null, true, ctx);
+            // AIR's range runs to 80.00, above the room's build ceiling, for this box's own moves.
+            try (RoomFurniHeightLimit.Scope ignored = RoomFurniHeightLimit.beginWiredAltitude()) {
+                WiredMoveCarryHelper.moveFurni(
+                        room, this, item, tile, item.getRotation(), nextAltitude, null, true, ctx);
+            }
         }
     }
 
@@ -265,7 +270,7 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
     }
 
     private double normalizeAltitude(double value) {
-        double clampedValue = Math.max(0.0D, Math.min(Room.MAXIMUM_FURNI_HEIGHT, value));
+        double clampedValue = Math.max(0.0D, Math.min(RoomFurniHeightLimit.wiredAltitudeMax(), value));
         return BigDecimal.valueOf(clampedValue)
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();

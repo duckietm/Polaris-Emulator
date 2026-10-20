@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -38,7 +39,7 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition impl
     @Override
     public boolean evaluate(WiredContext ctx) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (targets.isEmpty()) return false;
+        if (targets.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier == QUANTIFIER_ALL);
 
         if (this.quantifier == QUANTIFIER_ALL) {
             return this.matchesAllTargets(targets);
@@ -139,9 +140,8 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition impl
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.effectId);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -153,11 +153,11 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition impl
         if (settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
-        // Official layout: [effect (0 any)], the users in the official source slot; our quantifier follows.
+        // Official layout: [effect (0 any)], the users in the official source slot, the quantifier in its slot.
         this.userSource = settings.getUserSourceTypes().length > 0
                 ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ALL) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode(), QUANTIFIER_ALL);
 
         return true;
     }

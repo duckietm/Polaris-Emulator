@@ -186,6 +186,36 @@ public final class WiredInputSourcesConf {
                 "wf_act_give_currency",
                 "wf_act_give_furni");
 
+        // Initiate Transaction (AIR class_4135): the chests on the first picks, the contracts on the second, then
+        // the multiplier variable's reference slots (mergedSelections [[2, 1]]).
+        put(
+                "wf_act_init_transaction",
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI, ALL_FURNI, ALL_FURNI},
+                        new int[][] {USERS, USERS},
+                        new int[] {100, 101, 200},
+                        new int[] {0, 200},
+                        false));
+        // Cancel Transaction: the contracts a "specific contract" cancel matches.
+        put("wf_act_cancel_transaction", furni(new int[][] {FURNI_NO_SECOND_PICKS}, 100));
+        // Chest Has Items (AIR ChestHasAmount, mergedSelections [[1, 0]]): one furni slot, the chests, picked by
+        // default.
+        put("wf_cnd_chest_has_items", furni(new int[][] {FURNI_NO_SECOND_PICKS}, 100));
+
+        // Custom contract (AIR class_4234): the payment furni on the first picks, the reward furni on the second;
+        // either may be wall furni.
+        put(
+                "wf_xtra_custom_contract",
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI, ALL_FURNI}, new int[0][], new int[] {100, 101}, new int[0], true));
+
+        // Chest item type scanner: the item types on the first picks, the chests on the second; types may be wall
+        // furni.
+        put(
+                "wf_xtra_scan_chest_furni_by_type",
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI, ALL_FURNI}, new int[0][], new int[] {100, 101}, new int[0], true));
+
         // Their reference picks are 100 in the official editor; stored 101 rows still load as the same picks.
         put(
                 new WiredInputSourcesConf(

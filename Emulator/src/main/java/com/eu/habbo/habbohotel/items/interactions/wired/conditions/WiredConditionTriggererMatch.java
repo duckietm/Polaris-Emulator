@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
@@ -125,11 +126,10 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
         message.appendInt(this.getId());
         message.appendString(this.username);
         // Official layout: [type mask (1 Habbo, 2 pet, 4 bot)], the name in the string (empty: any), the
-        // users in the official source slot; our compare source and quantifier follow.
-        message.appendInt(3);
+        // users in the official source slot, the quantifier in its slot; our compare source follows.
+        message.appendInt(2);
         message.appendInt(this.entityType);
         message.appendInt(this.compareUserSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -144,7 +144,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
 
         if (params.length > 0) this.entityType = this.normalizeEntityType(params[0]);
         if (params.length > 1) this.compareUserSource = this.normalizeCompareUserSource(params[1]);
-        if (params.length > 2) this.quantifier = this.normalizeQuantifier(params[2]);
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
         if (settings.getUserSourceTypes().length > 0)
             this.matchUserSource = this.normalizePrimaryUserSource(settings.getUserSourceTypes()[0]);
 
@@ -158,7 +158,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
     protected MatchResult evaluateMatch(WiredContext ctx) {
         List<RoomUnit> matchUsers = this.resolvePrimaryUsers(ctx);
         if (matchUsers.isEmpty()) {
-            return MatchResult.invalid();
+            return MatchResult.valid(WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY));
         }
 
         List<RoomUnit> compareUsers = this.resolveCompareUsers(ctx);

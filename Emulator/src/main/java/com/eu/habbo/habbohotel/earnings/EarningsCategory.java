@@ -13,7 +13,9 @@ public enum EarningsCategory {
     DONATIONS("donations"),
     BONUS_BAG("bonus_bag"),
     MYSTERY_BOXES("mystery_boxes"),
-    CLUB_JOB("club_job");
+    CLUB_JOB("club_job"),
+    /** AIR earnings category 13 ("Agency"), filled by wired credits (see {@link WiredEarnings}). */
+    AGENCY("agency");
 
     private final String key;
 

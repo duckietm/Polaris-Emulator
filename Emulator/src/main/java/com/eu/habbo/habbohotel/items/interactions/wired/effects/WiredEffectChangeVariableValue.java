@@ -42,7 +42,13 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableChangeFold;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableDefinitionFlash;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -50,8 +56,21 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
-public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
+/**
+ * The official "change variable" (AIR code 41). Int params {@code [target, operation, operandIsVariable, operandHigh,
+ * operandLow, referenceTarget, sameHolder]} with official targets (furni 0, user 1, global -10, context -20) and the
+ * operand a long in two ints; variable ids {@code [destination, reference or none]}; sources slot 0 the destination
+ * holders and slot 1 the reference holders; the destination picks are the picks and the reference picks the second
+ * picks. The string carries only our array addresses (JSON). Boxes and older clients that sent our ten ints
+ * ({@code [target, operation, referenceMode, constant, referenceTarget, destination user / furni source, reference
+ * user / furni source, sameHolder]} with our targets) and the variables, reference picks and array data as the
+ * string are still read.
+ */
+public class WiredEffectChangeVariableValue extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialSecondaryPicks, WiredOfficialVariableIds {
     public static final WiredEffectType type = WiredEffectType.CHANGE_VAR_VAL;
     public static final int TARGET_USER = 0, TARGET_FURNI = 1, TARGET_CONTEXT = 2, TARGET_ROOM = 3;
     public static final int REF_CONSTANT = 0, REF_VARIABLE = 1;
@@ -91,7 +110,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     private static final int LOWEST_BIT = 0, HIGHEST_BIT = Integer.SIZE - 1;
 
     private static final int SOURCE_SECONDARY_SELECTED = 101;
-    private static final String DELIM = "\t", FURNI_DELIM = ";";
+
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
 
@@ -298,7 +317,13 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
 
             int currentValue = room.getUserVariableManager().getCurrentValue(holder, destinationId);
             int nextValue = applyOperation(this.operation, currentValue, referenceValue);
-            room.getUserVariableManager().updateVariableValue(holder, destinationId, nextValue);
+            if (!this.deferChange(
+                    new FoldKey(room.getId(), TARGET_USER, destinationId, holder),
+                    referenceValue,
+                    () -> room.getUserVariableManager().getCurrentValue(holder, destinationId),
+                    value -> room.getUserVariableManager().updateVariableValue(holder, destinationId, value))) {
+                room.getUserVariableManager().updateVariableValue(holder, destinationId, nextValue);
+            }
             wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
         }
         return wrote;
@@ -346,9 +371,16 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             Integer referenceValue = this.referenceFor(references, item.getId(), TARGET_FURNI, index++);
             if (!this.isUnaryOperation() && referenceValue == null) continue;
 
-            int currentValue = room.getFurniVariableManager().getCurrentValue(item.getId(), destinationId);
+            int itemId = item.getId();
+            int currentValue = room.getFurniVariableManager().getCurrentValue(itemId, destinationId);
             int nextValue = applyOperation(this.operation, currentValue, referenceValue);
-            room.getFurniVariableManager().updateVariableValue(item.getId(), destinationId, nextValue);
+            if (!this.deferChange(
+                    new FoldKey(room.getId(), TARGET_FURNI, destinationId, itemId),
+                    referenceValue,
+                    () -> room.getFurniVariableManager().getCurrentValue(itemId, destinationId),
+                    value -> room.getFurniVariableManager().updateVariableValue(itemId, destinationId, value))) {
+                room.getFurniVariableManager().updateVariableValue(itemId, destinationId, nextValue);
+            }
             wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
         }
         return wrote;
@@ -399,8 +431,26 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
 
         int currentValue = room.getRoomVariableManager().getCurrentValue(destinationId);
         int nextValue = applyOperation(this.operation, currentValue, referenceValue);
-        room.getRoomVariableManager().updateVariableValue(destinationId, nextValue);
+        if (!this.deferChange(
+                new FoldKey(room.getId(), TARGET_ROOM, destinationId, 0),
+                referenceValue,
+                () -> room.getRoomVariableManager().getCurrentValue(destinationId),
+                value -> room.getRoomVariableManager().updateVariableValue(destinationId, value))) {
+            room.getRoomVariableManager().updateVariableValue(destinationId, nextValue);
+        }
         return nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME;
+    }
+
+    /** Which variable on which holder a folded change is for. */
+    private record FoldKey(int roomId, int targetType, int variableId, int holder) {}
+
+    /**
+     * Hands the change to the stack's fold when one is open (no Execute In Order), so every change to
+     * this variable on this holder is applied once, in the official order, when the execution ends.
+     */
+    private boolean deferChange(FoldKey key, Integer referenceValue, IntSupplier read, IntConsumer write) {
+        return WiredVariableChangeFold.defer(
+                key, this.operation, referenceValue, WiredEffectChangeVariableValue::applyOperation, read, write);
     }
 
     private int executeContext(WiredContext ctx, Room room, int destinationId) {
@@ -463,16 +513,13 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringData());
-        message.appendInt(10);
-        message.appendInt(this.destinationTargetType);
+        message.appendInt(7);
+        message.appendInt(WiredVariableTargets.toOfficial(this.destinationTargetType));
         message.appendInt(this.operation);
         message.appendInt(this.referenceMode);
+        message.appendInt(this.referenceConstantValue < 0 ? -1 : 0);
         message.appendInt(this.referenceConstantValue);
-        message.appendInt(this.referenceTargetType);
-        message.appendInt(this.destinationUserSource);
-        message.appendInt(this.destinationFurniSource);
-        message.appendInt(this.referenceUserSource);
-        message.appendInt(this.referenceFurniSource);
+        message.appendInt(WiredVariableTargets.toOfficial(this.referenceTargetType));
         message.appendInt(this.referenceSameHolder ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -486,22 +533,60 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         if (room == null) throw new WiredSaveException("Room not found");
 
         int[] params = settings.getIntParams();
-        String[] stringParts = this.parseStringData(settings.getStringParam());
-        int nextDestinationTargetType = normalizeTargetType(param(params, 0, TARGET_USER));
+        // Our ten-int layout (older clients, stored share codes) never carries variable ids; AIR's has seven ints.
+        boolean legacyLayout = params.length >= 10 && !WiredVariableIds.present(settings.getVariableIds());
+        int nextDestinationTargetType;
         int nextOperation = normalizeOperation(param(params, 1, OP_ASSIGN));
         int nextReferenceMode = normalizeReferenceMode(param(params, 2, REF_CONSTANT));
-        int nextReferenceConstantValue = param(params, 3, 0);
-        int nextReferenceTargetType = normalizeTargetType(param(params, 4, TARGET_USER));
-        int nextDestinationUserSource = normalizeUserSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextDestinationFurniSource =
-                normalizeDestinationFurniSource(param(params, 6, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextReferenceUserSource = normalizeUserSource(param(params, 7, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 8, WiredSourceUtil.SOURCE_TRIGGER));
+        int nextReferenceConstantValue;
+        int nextReferenceTargetType;
+        int nextDestinationUserSource;
+        int nextDestinationFurniSource;
+        int nextReferenceUserSource;
+        int nextReferenceFurniSource;
+        boolean sameHolderRequested;
+        String nextDestinationVariableToken;
+        String nextReferenceVariableToken;
+        String arrayText;
+        String legacyReferencePicks = null;
+        if (legacyLayout) {
+            String[] stringParts = this.parseStringData(settings.getStringParam());
+            nextDestinationTargetType = normalizeTargetType(param(params, 0, TARGET_USER));
+            nextReferenceConstantValue = param(params, 3, 0);
+            nextReferenceTargetType = normalizeTargetType(param(params, 4, TARGET_USER));
+            nextDestinationUserSource = normalizeUserSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
+            nextDestinationFurniSource =
+                    normalizeDestinationFurniSource(param(params, 6, WiredSourceUtil.SOURCE_TRIGGER));
+            nextReferenceUserSource = normalizeUserSource(param(params, 7, WiredSourceUtil.SOURCE_TRIGGER));
+            nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 8, WiredSourceUtil.SOURCE_TRIGGER));
+            sameHolderRequested = param(params, 9, 0) == 1;
+            nextDestinationVariableToken = normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : "");
+            nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
+            legacyReferencePicks = (stringParts.length > 2) ? stringParts[2] : "";
+            arrayText = (stringParts.length > 3) ? stringParts[3] : null;
+        } else {
+            int[] furniSources = settings.getFurniSourceTypes();
+            int[] userSources = settings.getUserSourceTypes();
+            nextDestinationTargetType = normalizeTargetType(
+                    WiredVariableTargets.fromOfficial(param(params, 0, WiredVariableTargets.OFFICIAL_USER)));
+            long operand = (((long) param(params, 3, 0)) << 32) | (param(params, 4, 0) & 0xFFFFFFFFL);
+            nextReferenceConstantValue = (int) Math.clamp(operand, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            nextReferenceTargetType = normalizeTargetType(
+                    WiredVariableTargets.fromOfficial(param(params, 5, WiredVariableTargets.OFFICIAL_USER)));
+            sameHolderRequested = param(params, 6, 0) == 1;
+            nextDestinationUserSource = normalizeUserSource(param(userSources, 0, WiredSourceUtil.SOURCE_TRIGGER));
+            nextDestinationFurniSource =
+                    normalizeDestinationFurniSource(param(furniSources, 0, WiredSourceUtil.SOURCE_TRIGGER));
+            nextReferenceUserSource = normalizeUserSource(param(userSources, 1, WiredSourceUtil.SOURCE_TRIGGER));
+            nextReferenceFurniSource =
+                    normalizeReferenceFurniSource(param(furniSources, 1, WiredSourceUtil.SOURCE_TRIGGER));
+            nextDestinationVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 0);
+            nextReferenceVariableToken = WiredVariableIds.tokenAt(settings.getVariableIds(), 1);
+            arrayText = settings.getStringParam();
+        }
         boolean nextReferenceSameHolder = sameHolderApplies(
-                param(params, 9, 0) == 1, nextReferenceMode, nextDestinationTargetType, nextReferenceTargetType);
-        String nextDestinationVariableToken = normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : "");
-        String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
-        ArrayData nextArrayData = this.parseArrayData((stringParts.length > 3) ? stringParts[3] : null);
+                sameHolderRequested, nextReferenceMode, nextDestinationTargetType, nextReferenceTargetType);
+        ArrayData nextArrayData = this.parseArrayData(arrayText);
 
         // No variable chosen yet: Habbo saves the box, and it does nothing until one is (5a3c7a05).
         if (nextDestinationVariableToken != null && !nextDestinationVariableToken.isEmpty()) {
@@ -525,11 +610,14 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
                         && nextDestinationFurniSource == WiredSourceUtil.SOURCE_SELECTED)
                 ? this.parseItems(settings.getFurniIds(), room)
                 : new ArrayList<>();
-        List<HabboItem> nextReferenceItems = (nextReferenceMode == REF_VARIABLE
-                        && nextReferenceTargetType == TARGET_FURNI
-                        && nextReferenceFurniSource == SOURCE_SECONDARY_SELECTED)
-                ? this.parseItems((stringParts.length > 2) ? stringParts[2] : "", room)
-                : new ArrayList<>();
+        boolean referencePicks = nextReferenceMode == REF_VARIABLE
+                && nextReferenceTargetType == TARGET_FURNI
+                && nextReferenceFurniSource == SOURCE_SECONDARY_SELECTED;
+        List<HabboItem> nextReferenceItems = !referencePicks
+                ? new ArrayList<>()
+                : (legacyLayout
+                        ? this.parseItems(legacyReferencePicks, room)
+                        : this.parseItems(settings.getFurniIds2(), room));
         int selectionLimit = Emulator.getConfig().getInt("hotel.wired.furni.selection.count");
         if (nextDestinationItems.size() > selectionLimit || nextReferenceItems.size() > selectionLimit)
             throw new WiredSaveException("Too many furni selected");
@@ -1283,16 +1371,44 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         }
     }
 
+    /** AIR sends no string; ours carries the array addresses of an array variable as JSON. */
     private String serializeStringData() {
-        ArrayData arrayData =
-                new ArrayData(this.destinationArrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant);
-        return (this.destinationVariableToken == null ? "" : this.destinationVariableToken)
-                + DELIM
-                + (this.referenceVariableToken == null ? "" : this.referenceVariableToken)
-                + DELIM
-                + this.serializeIds(this.referenceSelectedFurni)
-                + DELIM
-                + WiredManager.getGson().toJson(arrayData);
+        if (!this.arrayDataConfigured) return "";
+        return WiredManager.getGson()
+                .toJson(new ArrayData(
+                        this.destinationArrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant));
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWireForHolder(this.destinationTargetType, this.destinationVariableToken),
+                this.referenceMode == REF_VARIABLE
+                        ? WiredVariableIds.toWireForHolder(this.referenceTargetType, this.referenceVariableToken)
+                        : "");
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.destinationFurniSource, this.referenceFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.destinationUserSource, this.referenceUserSource};
+    }
+
+    @Override
+    public int[] officialFurniIds2() {
+        this.validateItems(this.referenceSelectedFurni);
+        if (this.referenceMode != REF_VARIABLE
+                || this.referenceTargetType != TARGET_FURNI
+                || this.referenceFurniSource != SOURCE_SECONDARY_SELECTED) {
+            return new int[0];
+        }
+        return this.toIds(this.referenceSelectedFurni).stream()
+                .mapToInt(Integer::intValue)
+                .toArray();
     }
 
     private String[] parseStringData(String value) {
@@ -1303,18 +1419,6 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         List<Integer> ids = new ArrayList<>();
         for (HabboItem item : items) if (item != null) ids.add(item.getId());
         return ids;
-    }
-
-    private String serializeIds(List<HabboItem> items) {
-        StringBuilder builder = new StringBuilder();
-
-        for (HabboItem item : items) {
-            if (item == null) continue;
-            if (builder.length() > 0) builder.append(FURNI_DELIM);
-            builder.append(item.getId());
-        }
-
-        return builder.toString();
     }
 
     private void setDestinationVariableToken(String token) {

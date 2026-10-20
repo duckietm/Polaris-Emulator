@@ -11,12 +11,13 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
+public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase implements WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.TEAM_HAS_RANK;
 
     private int teamType = GameTeamColors.RED.type;
@@ -108,12 +109,11 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         message.appendInt(this.getId());
         message.appendString("");
         // Official layout: [team (0 the triggerer's team, 1-4), placement (0 first .. 3 fourth)]; ours follow:
-        // the users whose team counts for team 0, and the quantifier.
-        message.appendInt(4);
+        // the users whose team counts for team 0. The quantifier goes in its own slot.
+        message.appendInt(3);
         message.appendInt(this.teamType);
         message.appendInt(this.placement - 1);
         message.appendInt(this.userSource);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -128,7 +128,7 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         if (params.length > 0) this.teamType = this.normalizeRankTeamType(params[0]);
         if (params.length > 1) this.placement = this.normalizePlacement(params[1] + 1);
         if (params.length > 2) this.userSource = this.normalizeUserSource(params[2]);
-        if (params.length > 3) this.quantifier = this.normalizeQuantifier(params[3]);
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
 
         return true;
     }
@@ -187,5 +187,10 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

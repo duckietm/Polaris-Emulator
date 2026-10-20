@@ -88,6 +88,7 @@ final class WiredInternalVariableRegistry {
                 "@handitem_id",
                 "@position_x",
                 "@position_y",
+                "@position",
                 "@direction",
                 "@altitude",
                 "@favourite_group_id",
@@ -96,30 +97,37 @@ final class WiredInternalVariableRegistry {
                 "@user_id",
                 "@bot_id",
                 "@pet_id",
-                "@pet_owner_id");
+                "@pet_owner_id",
+                WiredHabbiconVariables.HABBICON);
+        builder.register(Capability.USER_REFERENCE, WiredTransactionVariables.USER_KEYS.toArray(String[]::new));
+        builder.register(Capability.USER_REFERENCE, WiredSmartVariables.USER_KEYS.toArray(String[]::new));
         builder.register(
                 Capability.USER_DESTINATION,
                 "@position_x",
                 "@position_y",
+                "@position",
                 "@direction",
                 "@altitude",
                 "@handitem_id",
                 "@effect_id",
                 "@team_score",
-                "@player_score");
+                "@player_score",
+                WiredHabbiconVariables.HABBICON);
         builder.register(
                 Capability.FURNI_REFERENCE,
                 "~teleport.target_id",
                 "~recolorable_furni.color.rgb",
-                "~recolorable_furni.color.rgb.r",
-                "~recolorable_furni.color.rgb.g",
-                "~recolorable_furni.color.rgb.b",
+                "~recolorable_furni.color.rgb.red",
+                "~recolorable_furni.color.rgb.green",
+                "~recolorable_furni.color.rgb.blue",
                 "@id",
                 "@class_id",
                 "@height",
                 "@state",
                 "@position_x",
                 "@position_y",
+                "@position",
+                "@occupation",
                 "@rotation",
                 "@altitude",
                 "@is_invisible",
@@ -132,6 +140,7 @@ final class WiredInternalVariableRegistry {
                 "@wallitem_offset",
                 "@dimensions.x",
                 "@dimensions.y");
+        builder.register(Capability.FURNI_REFERENCE, WiredSmartVariables.FURNI_KEYS.toArray(String[]::new));
         builder.register(
                 Capability.FURNI_REFERENCE,
                 WiredProjectileFlight.POSITION_X,
@@ -146,12 +155,15 @@ final class WiredInternalVariableRegistry {
                 "@state",
                 "@position_x",
                 "@position_y",
+                "@position",
+                "@occupation",
                 "@rotation",
                 "@altitude",
                 "~recolorable_furni.color.rgb",
-                "~recolorable_furni.color.rgb.r",
-                "~recolorable_furni.color.rgb.g",
-                "~recolorable_furni.color.rgb.b");
+                "~recolorable_furni.color.rgb.red",
+                "~recolorable_furni.color.rgb.green",
+                "~recolorable_furni.color.rgb.blue",
+                WiredSmartVariables.CLOCK_PULSE_COUNT);
         builder.registerWhen(
                 ALWAYS_ENABLED, EnumSet.of(Capability.FURNI_REFERENCE, Capability.FURNI_DESTINATION), "@gravity");
         builder.registerWhen(
@@ -199,6 +211,12 @@ final class WiredInternalVariableRegistry {
                 "@antenna_id",
                 "@chat_type",
                 "@chat_style",
+                "@event.link.source_room_id",
+                "@event.transaction_failed.reason",
+                WiredHabbiconVariables.EVENT_HABBICON);
+        builder.register(Capability.CONTEXT_REFERENCE, WiredTransactionVariables.COMPLETE_KEYS.toArray(String[]::new));
+        builder.register(
+                Capability.CONTEXT_REFERENCE,
                 "@array.change_type",
                 "@array.index",
                 "@array.source_index",
@@ -217,6 +235,12 @@ final class WiredInternalVariableRegistry {
 
         // AIR's part name; boxes saved with our earlier name keep resolving.
         builder.alias("@current_time.millisecond_of_second", "@current_time.milliseconds_of_seconds");
+        // AIR's part names; boxes saved with ours (.r / .g / .b) keep resolving.
+        builder.alias("~recolorable_furni.color.rgb.r", "~recolorable_furni.color.rgb.red");
+        builder.alias("~recolorable_furni.color.rgb.g", "~recolorable_furni.color.rgb.green");
+        builder.alias("~recolorable_furni.color.rgb.b", "~recolorable_furni.color.rgb.blue");
+        builder.alias(WiredProjectileFlight.LEGACY_IS_TRAVELING, WiredProjectileFlight.IS_TRAVELING);
+        builder.alias(WiredProjectileFlight.LEGACY_TILES_TRAVELED, WiredProjectileFlight.TILES_TRAVELED);
         builder.alias("@position.x", "@position_x");
         builder.alias("@position.y", "@position_y");
         builder.alias("@effect", "@effect_id");

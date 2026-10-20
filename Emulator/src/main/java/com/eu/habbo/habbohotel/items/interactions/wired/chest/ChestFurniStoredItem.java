@@ -99,7 +99,11 @@ public class ChestFurniStoredItem {
             stored.limitedSells = item.getLimitedSells();
             stored.limitedStack = item.getLimitedStack();
         }
-        if (!stored.wallItem) {
+        if (stored.wallItem) {
+            // The same identity a row read back from the store gets: a poster is its poster id, so a
+            // freshly deposited poster groups, withdraws and pays out like one stored before.
+            stored.legacyPosterId = "poster".equals(base.getName()) ? stored.extradata : "";
+        } else {
             try {
                 stored.extra = Integer.parseInt(stored.extradata);
             } catch (NumberFormatException ignored) {

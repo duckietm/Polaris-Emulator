@@ -201,7 +201,8 @@ class WiredTradingSessionTest {
     @Test
     void closingHandsBackEverythingItStillHolds() {
         FakeVault vault = new FakeVault().add(101, 1389).add(102, 4242);
-        WiredTradingSession session = session(oneChair(), vault, 0);
+        WiredTradingSession session =
+                session(ContractRules.of(List.of(List.of(furni(1389, 1), furni(4242, 1))), List.of()), vault, 0);
         session.offerItems(List.of(101, 102));
 
         assertEquals(List.of(101, 102), session.close());

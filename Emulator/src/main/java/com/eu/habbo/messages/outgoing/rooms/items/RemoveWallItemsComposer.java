@@ -14,10 +14,17 @@ public class RemoveWallItemsComposer extends MessageComposer {
 
     private final Collection<Integer> itemIds;
     private final int pickerId;
+    private final boolean byInvisibleFurniManager;
 
     public RemoveWallItemsComposer(Collection<Integer> itemIds, int pickerId) {
+        this(itemIds, pickerId, false);
+    }
+
+    /** @param byInvisibleFurniManager AIR's trailing flag, as in {@link RemoveFloorItemComposer} */
+    public RemoveWallItemsComposer(Collection<Integer> itemIds, int pickerId, boolean byInvisibleFurniManager) {
         this.itemIds = itemIds;
         this.pickerId = pickerId;
+        this.byInvisibleFurniManager = byInvisibleFurniManager;
     }
 
     @Override
@@ -29,6 +36,7 @@ public class RemoveWallItemsComposer extends MessageComposer {
             this.response.appendInt(BuildersClubItemIds.toWire(itemId));
         }
         this.response.appendInt(this.pickerId);
+        this.response.appendBoolean(this.byInvisibleFurniManager);
 
         return this.response;
     }
@@ -39,5 +47,9 @@ public class RemoveWallItemsComposer extends MessageComposer {
 
     public int getPickerId() {
         return this.pickerId;
+    }
+
+    public boolean isByInvisibleFurniManager() {
+        return this.byInvisibleFurniManager;
     }
 }

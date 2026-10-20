@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredRoomStats;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -66,7 +67,13 @@ public class WiredExtraUserVariable extends InteractionWiredExtra
         }
 
         WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
-        int nextAvailability = normalizeAvailability((intParams.length > 1) ? intParams[1] : AVAILABILITY_ROOM);
+        // AIR (UserVariable): [availability, hasValue]; a furni variable keeps [hasValue, availability].
+        int nextAvailability = normalizeAvailability((intParams.length > 0) ? intParams[0] : AVAILABILITY_ROOM);
+
+        if ((nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED)
+                && !WiredRoomStats.canBecomePermanent(room, this)) {
+            throw new WiredSaveException(WiredRoomStats.PERMANENT_LIMIT_ERROR);
+        }
 
         WiredArrayDefinition nextArrayDefinition;
         try {
@@ -86,7 +93,7 @@ public class WiredExtraUserVariable extends InteractionWiredExtra
                             () -> {
                                 this.variableName = normalizedName;
                                 this.array.assign(nextArrayDefinition);
-                                this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
+                                this.hasValue = this.array.isArray() || ((intParams.length > 1) && (intParams[1] == 1));
                                 this.availability = nextAvailability;
 
                                 room.getUserVariableManager().handleDefinitionUpdated(this);
@@ -113,8 +120,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra
         message.appendInt(this.getId());
         message.appendString(this.array.editorString(this.variableName));
         message.appendInt(2);
-        message.appendInt(this.hasValue ? 1 : 0);
         message.appendInt(this.availability);
+        message.appendInt(this.hasValue ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);

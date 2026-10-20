@@ -37,6 +37,22 @@ class ChestTransactionLogTest {
     }
 
     @Test
+    void aWallItemKeepsItsKindThroughTheDetail() {
+        ChestFurniStoredItem poster = storedItem(500, 4001);
+        poster.wallItem = true;
+        ChestFurniStoredItem chair = storedItem(77, 4001);
+
+        String encoded = ChestTransactionLog.encodeDetails(List.of(poster, poster, chair));
+        assertEquals("-4001:2,4001:1", encoded, "the same sprite id as wall and floor furni are two lines");
+
+        List<ChestTransactionLog.DetailItem> items = ChestTransactionLog.decodeDetails(encoded);
+        assertEquals(2, items.size());
+        assertEquals(-4001, items.get(0).spriteId(), "a wall item reads back negated");
+        assertEquals(2, items.get(0).quantity());
+        assertEquals(4001, items.get(1).spriteId());
+    }
+
+    @Test
     void currencyTransactionsCarryNoDetailPayload() {
         assertNull(ChestTransactionLog.encodeDetails(null));
         assertNull(ChestTransactionLog.encodeDetails(new ArrayList<>()));

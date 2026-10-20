@@ -221,4 +221,84 @@ class InteractionWiredContractNativeEditorTest {
         assertEquals(List.of(42), contract.getChestIds());
         assertEquals(8, contract.getGiveRules().get(0).get(0).amount);
     }
+
+    @Test
+    void nodesForTheSameThingShowAsOneAndASaveStoresTheShorterForm() {
+        InteractionWiredContract contract = payment();
+        // Six nodes in one rule (AIR allows five), but only two different things.
+        contract.applyWiredData("{\"giveRules\":[["
+                + "{\"direction\":0,\"currencyType\":-1,\"amount\":5},"
+                + "{\"direction\":0,\"kind\":1,\"baseItemId\":10,\"amount\":1},"
+                + "{\"direction\":0,\"currencyType\":-1,\"amount\":5},"
+                + "{\"direction\":0,\"kind\":1,\"baseItemId\":10,\"amount\":2},"
+                + "{\"direction\":0,\"currencyType\":-1,\"amount\":1},"
+                + "{\"direction\":0,\"kind\":1,\"baseItemId\":10,\"amount\":1}"
+                + "]],\"getRule\":[]}");
+
+        WiredNativeContract shown = contract.toNative(1, CATALOG);
+
+        assertNotNull(shown, "the merged rule fits the official editor");
+        assertEquals(List.of(List.of(Node.coins(11), Node.furni(4, false, 1389, ""))), shown.give());
+        assertTrue(contract.opensNativeEditor(CATALOG));
+        assertTrue(contract.applyNative(shown, CATALOG));
+        assertEquals(2, contract.getGiveRules().get(0).size(), "the save keeps the merged rule");
+        assertEquals(11, contract.getGiveRules().get(0).get(0).amount);
+        assertEquals(4, contract.getGiveRules().get(0).get(1).amount);
+    }
+
+    @Test
+    void whatStaysOverTheOfficialLimitsKeepsTheWiredEditor() {
+        StringBuilder six = new StringBuilder("{\"giveRules\":[[");
+        for (int baseItem = 0; baseItem < 6; baseItem++) {
+            if (baseItem > 0) six.append(',');
+            six.append("{\"direction\":0,\"kind\":1,\"baseItemId\":").append(10 + (baseItem % 2) * 10);
+            six.append(",\"wallItem\":")
+                    .append(baseItem % 2 == 1)
+                    .append(",\"posterId\":\"p")
+                    .append(baseItem);
+            six.append("\",\"amount\":1}");
+        }
+        six.append("]]}");
+        InteractionWiredContract sixPosters = payment();
+        sixPosters.applyWiredData(six.toString());
+        assertNull(sixPosters.toNative(1, CATALOG), "six different furni stay six nodes");
+
+        InteractionWiredContract tooMany = payment();
+        tooMany.applyWiredData("{\"giveRules\":[[{\"direction\":0,\"currencyType\":-1,\"amount\":60000},"
+                + "{\"direction\":0,\"currencyType\":-1,\"amount\":60000}]]}");
+        assertNull(tooMany.toNative(1, CATALOG), "120000 coins are over the official 100000");
+
+        InteractionWiredContract fourOptions = payment();
+        fourOptions.applyWiredData("{\"giveRules\":["
+                + "[{\"direction\":0,\"currencyType\":-1,\"amount\":1}],"
+                + "[{\"direction\":0,\"currencyType\":-1,\"amount\":2}],"
+                + "[{\"direction\":0,\"currencyType\":-1,\"amount\":3}],"
+                + "[{\"direction\":0,\"currencyType\":-1,\"amount\":4}]]}");
+        assertNull(fourOptions.toNative(1, CATALOG), "AIR allows three payment options");
+
+        InteractionWiredContract untradeable = payment();
+        untradeable.applyWiredData("{\"giveRules\":[[{\"direction\":0,\"kind\":1,\"baseItemId\":12,\"amount\":1}]]}");
+        assertNull(untradeable.toNative(1, CATALOG), "furni a contract may not hold");
+
+        String stored = fourOptions.getWiredData();
+        assertFalse(fourOptions.opensNativeEditor(CATALOG));
+        assertEquals(stored, fourOptions.getWiredData(), "nothing is dropped");
+    }
+
+    @Test
+    void mergingNodesAddsUpOnlyTheSameThing() {
+        List<Term> merged = InteractionWiredContract.mergeSameNodes(List.of(
+                Term.currency(0, -1, 3),
+                Term.currency(0, 5, 4),
+                Term.furni(0, true, 20, "a", 1),
+                Term.furni(0, true, 20, "b", 1),
+                Term.currency(0, -1, 2),
+                Term.furni(0, true, 20, "a", 2)));
+
+        assertEquals(4, merged.size());
+        assertEquals(5, merged.get(0).amount);
+        assertEquals(4, merged.get(1).amount);
+        assertEquals(3, merged.get(2).amount);
+        assertEquals("b", merged.get(3).posterId());
+    }
 }

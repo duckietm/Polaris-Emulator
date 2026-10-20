@@ -10,7 +10,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredConditionHasAltitude extends InteractionWiredCondition {
+public class WiredConditionHasAltitude extends InteractionWiredCondition implements WiredOfficialQuantifier {
     private static final int COMPARISON_LESS = 0;
     private static final int COMPARISON_EQUAL = 1;
     private static final int COMPARISON_GREATER = 2;
@@ -59,7 +61,7 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (targets.isEmpty()) {
-            return false;
+            return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
         }
 
         if (this.quantifier == QUANTIFIER_ANY) {
@@ -161,12 +163,11 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         // Official layout: [altitude in hundredths (0-8000), comparison (0 less, 1 equal, 2 more)], the furni
-        // in the official source slot; our quantifier (0 all, 1 any) follows.
+        // in the official source slot, the quantifier (0 all, 1 any) in its slot.
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt((int) Math.round(this.altitude * 100));
         message.appendInt(this.comparison);
-        message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -179,7 +180,7 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
         int hundredths = (params.length > 0) ? Math.clamp(params[0], 0, 8000) : 0;
         this.altitude = this.normalizeAltitude(hundredths / 100.0D);
         this.comparison = (params.length > 1) ? this.normalizeComparison(params[1]) : COMPARISON_EQUAL;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
         this.furniSource = settings.getFurniSourceTypes().length > 0
                 ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
@@ -305,5 +306,10 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
             this.quantifier = quantifier;
             this.itemIds = itemIds;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 }

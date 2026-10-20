@@ -72,7 +72,11 @@ public final class ChestTransactionLog {
     /** A page of rows plus the paging state the client renders. */
     public record Page(int page, int pageCount, int totalRows, int filter, List<Row> rows) {}
 
-    /** One aggregated furni line inside a transaction's detail. */
+    /**
+     * One aggregated furni line inside a transaction's detail. {@code spriteId} is negative for a wall
+     * item: floor and wall furni have separate sprite id ranges, so the sign is what tells the detail
+     * window which icon to draw.
+     */
     public record DetailItem(int spriteId, int quantity) {}
 
     /** A single transaction with the furni it moved. Empty item list for currency rows. */
@@ -293,8 +297,8 @@ public final class ChestTransactionLog {
     }
 
     /**
-     * Aggregate the moved furni into {@code spriteId:quantity} pairs and store them as a compact
-     * {@code "id:count,id:count"} string. Deliberately not JSON: the payload is read back only here,
+     * Aggregate the moved furni into {@code spriteId:quantity} pairs (a wall item's sprite id negated,
+     * see {@link DetailItem}) and store them as a compact {@code "id:count,id:count"} string. Deliberately not JSON: the payload is read back only here,
      * and a flat pair list stays small for a hundred-item withdraw.
      */
     static String encodeDetails(List<ChestFurniStoredItem> items) {
@@ -302,7 +306,7 @@ public final class ChestTransactionLog {
 
         Map<Integer, Integer> byType = new LinkedHashMap<>();
         for (ChestFurniStoredItem item : items) {
-            if (item != null) byType.merge(item.wireTypeId(), 1, Integer::sum);
+            if (item != null) byType.merge(item.wallItem ? -item.wireTypeId() : item.wireTypeId(), 1, Integer::sum);
         }
         if (byType.isEmpty()) return null;
 
@@ -324,7 +328,7 @@ public final class ChestTransactionLog {
             try {
                 int spriteId = Integer.parseInt(pair.substring(0, separator).trim());
                 int quantity = Integer.parseInt(pair.substring(separator + 1).trim());
-                if (spriteId > 0 && quantity > 0) items.add(new DetailItem(spriteId, quantity));
+                if (spriteId != 0 && quantity > 0) items.add(new DetailItem(spriteId, quantity));
             } catch (NumberFormatException malformedPair) {
                 // A malformed pair drops out of the detail rather than failing the whole row, but it
                 // is still recorded: a detail that silently loses lines is worse than a short one.

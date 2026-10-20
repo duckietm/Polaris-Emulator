@@ -11,13 +11,20 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 
-public class WiredExtraTextInputVariable extends InteractionWiredExtra {
+/**
+ * The official variable capturer (AIR addon 16): int params {@code [text mode]}, variable ids {@code [context
+ * variable]}, the capturer name as the string. Older clients sent {@code variable\tname}; still read.
+ */
+public class WiredExtraTextInputVariable extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int CODE = 85;
     public static final int DISPLAY_NUMERIC = 1;
     public static final int DISPLAY_TEXTUAL = 2;
@@ -54,7 +61,12 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         }
 
         int[] intParams = settings.getIntParams();
-        String[] stringData = splitStringData(settings.getStringParam());
+        String[] stringData = WiredVariableIds.present(settings.getVariableIds())
+                ? new String[] {
+                    WiredVariableIds.tokenAt(settings.getVariableIds(), 0),
+                    settings.getStringParam() == null ? DEFAULT_CAPTURER_NAME : settings.getStringParam()
+                }
+                : splitStringData(settings.getStringParam());
         String nextVariableToken = normalizeVariableToken(stringData[0]);
         int nextVariableItemId = getCustomItemId(nextVariableToken);
 
@@ -82,6 +94,12 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     }
 
     @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(
+                WiredVariableIds.toWire(WiredVariableTargets.OFFICIAL_CONTEXT, this.variableItemId));
+    }
+
+    @Override
     public String getWiredData() {
         return WiredManager.getGson()
                 .toJson(new JsonData(this.variableToken, this.variableItemId, this.capturerName, this.displayType));
@@ -94,7 +112,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableToken + "\t" + this.capturerName);
+        message.appendString(this.capturerName);
         message.appendInt(1);
         message.appendInt(this.getDisplayType(room) == DISPLAY_TEXTUAL ? 1 : 0);
         message.appendInt(0);

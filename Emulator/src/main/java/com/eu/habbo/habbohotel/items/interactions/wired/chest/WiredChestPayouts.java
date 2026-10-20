@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.habbohotel.earnings.WiredEarnings;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -127,6 +128,17 @@ public final class WiredChestPayouts {
      * @return what was actually given, as a rule for the success notification
      */
     public static List<Term> give(Habbo habbo, Room room, List<InteractionWiredChest> chests, List<Term> reward) {
+        return give(habbo, room, chests, reward, WiredEarnings.CATEGORY_GAMES);
+    }
+
+    /**
+     * Hand {@code reward} out of the chests to a player, the coins into the earnings window row of
+     * {@code earningsCategory} (AIR 11 games, 13 agency).
+     *
+     * @return what was actually given, as a rule for the success notification
+     */
+    public static List<Term> give(
+            Habbo habbo, Room room, List<InteractionWiredChest> chests, List<Term> reward, int earningsCategory) {
         int coinsGiven = 0;
         List<ChestFurniStoredItem> furniGiven = new ArrayList<>();
         if (habbo == null || reward == null) return ChestAirWire.givenRule(0, furniGiven);
@@ -136,7 +148,12 @@ public final class WiredChestPayouts {
             if (coinsDue - coinsGiven <= 0) break;
             if (chest.chestKind() != ChestStorage.KIND_CURRENCY) continue;
             coinsGiven += ChestWithdrawals.coins(
-                            habbo, chest, room, coinsDue - coinsGiven, ChestTransactionLog.SOURCE_WIRED)
+                            habbo,
+                            chest,
+                            room,
+                            coinsDue - coinsGiven,
+                            ChestTransactionLog.SOURCE_WIRED,
+                            earningsCategory)
                     .coins();
         }
 

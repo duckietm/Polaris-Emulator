@@ -19,6 +19,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -32,7 +34,14 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class WiredExtraTextOutputVariable extends InteractionWiredExtra implements WiredOfficialSources {
+/**
+ * The official variable placeholder (AIR addon 15). Int params {@code [every holder, variable target, text mode]};
+ * variable ids {@code [variable]}; string AIR's {@code name}, or {@code name\tdelimiter} for every holder (ours: an
+ * array variable's cell as JSON after one more tab); the holders' sources in the official slots. Older clients sent
+ * {@code token\tname\tdelimiter[\tjson]}; still read.
+ */
+public class WiredExtraTextOutputVariable extends InteractionWiredExtra
+        implements WiredOfficialSources, WiredOfficialVariableIds {
     public static final int CODE = 80;
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
@@ -89,7 +98,9 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra implemen
         }
 
         int[] intParams = settings.getIntParams();
-        String[] stringData = splitStringData(settings.getStringParam());
+        String[] stringData = WiredVariableIds.present(settings.getVariableIds())
+                ? editorStringData(WiredVariableIds.tokenAt(settings.getVariableIds(), 0), settings.getStringParam())
+                : splitStringData(settings.getStringParam());
         // Official layout: [every holder (0/1), variable target (official ids), text mode (0/1)]; the
         // holders' furni and user source in the official slots.
         int nextTargetType = normalizeTargetType(WiredVariableTargets.fromOfficial(
@@ -195,10 +206,11 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra implemen
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        String editorData = this.variableToken + "\t" + this.placeholderName + "\t" + this.delimiter;
-        if (resolveArrayDefinition(room, this.targetType, this.variableItemId) != null) {
-            editorData += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayAddress));
-        }
+        // AIR: the name, then the delimiter for every holder; ours: an array variable's cell after one more tab.
+        boolean array = resolveArrayDefinition(room, this.targetType, this.variableItemId) != null;
+        String editorData = this.placeholderName;
+        if (this.placeholderType == TYPE_MULTIPLE || array) editorData += "\t" + this.delimiter;
+        if (array) editorData += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayAddress));
         message.appendString(editorData);
         message.appendInt(3);
         message.appendInt(this.placeholderType == TYPE_MULTIPLE ? 1 : 0);
@@ -390,6 +402,19 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra implemen
         } catch (NumberFormatException ignored) {
             return 0;
         }
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(WiredVariableIds.toWireForHolder(this.targetType, this.variableToken));
+    }
+
+    /** AIR's {@code name[\tdelimiter]} (ours: {@code \tjson} after it) as the parts of our older layout. */
+    private static String[] editorStringData(String token, String value) {
+        String[] parts = (value == null ? "" : value).split("\t", -1);
+        return new String[] {
+            token, parts[0], parts.length > 1 ? parts[1] : DEFAULT_DELIMITER, parts.length > 2 ? parts[2] : ""
+        };
     }
 
     private static String[] splitStringData(String value) {

@@ -7,9 +7,9 @@ com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurn
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir | CONDITION | type=ACTOR_DIR | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCheckArray | CONDITION | type=CHECK_ARRAY | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems | CONDITION | type=CHEST_HAS_ITEMS | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionDateRangeActive | CONDITION | type=DATE_RANGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFrozen | CONDITION | type=USER_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveFurni | CONDITION | type=FURNI_HAS_FURNI | operator=AND | evaluate=false
@@ -17,28 +17,28 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniH
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniInRange | CONDITION | type=FURNI_RANGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniNotInRange | CONDITION | type=FURNI_RANGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniOpacityIs | CONDITION | type=FURNI_OPACITY | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch | CONDITION | type=STUFF_IS | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch | CONDITION | type=STUFF_IS | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionGroupMember | CONDITION | type=ACTOR_IN_GROUP | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboCount | CONDITION | type=USER_COUNT | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasEffect | CONDITION | type=ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasHandItem | CONDITION | type=ACTOR_HAS_HANDITEM | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasHandItem | CONDITION | type=ACTOR_HAS_HANDITEM | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasHighscorePoints | CONDITION | type=USER_HIGHSCORE_POINTS | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRank | CONDITION | type=USER_RANK | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRank | CONDITION | type=USER_RANK | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDiamonds | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDiamonds | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights | CONDITION | type=NOT_USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotOwnsFurni | CONDITION | type=FURNI_PROPERTY | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboOwnsBadge | CONDITION | type=ACTOR_WEARS_BADGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboOwnsFurni | CONDITION | type=FURNI_PROPERTY | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboWearsBadge | CONDITION | type=ACTOR_WEARS_BADGE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHasAltitude | CONDITION | type=HAS_ALTITUDE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHasAltitude | CONDITION | type=HAS_ALTITUDE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHasTag | CONDITION | type=USER_TAG | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHasVariable | CONDITION | type=HAS_VAR | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionLessTimeElapsed | CONDITION | type=TIME_LESS_THAN | operator=AND | evaluate=false
@@ -49,22 +49,22 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMoreTi
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMottoContains | CONDITION | type=USER_MOTTO | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMovementValidation | CONDITION | type=MOVEMENT_VALIDATION | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNoBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_USER_STATE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_USER_STATE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveFurni | CONDITION | type=NOT_FURNI_HAVE_FURNI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveHabbo | CONDITION | type=NOT_FURNI_HAVE_HABBO | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniOpacityIs | CONDITION | type=FURNI_OPACITY | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniTypeMatch | CONDITION | type=NOT_STUFF_IS | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniTypeMatch | CONDITION | type=NOT_STUFF_IS | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboCount | CONDITION | type=NOT_USER_COUNT | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasEffect | CONDITION | type=NOT_ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasEffect | CONDITION | type=NOT_ACTOR_WEARS_EFFECT | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasHandItem | CONDITION | type=NOT_ACTOR_HAS_HANDITEM | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasHighscorePoints | CONDITION | type=USER_HIGHSCORE_POINTS | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasRank | CONDITION | type=USER_RANK | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboHasRank | CONDITION | type=USER_RANK | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboOwnsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboWearsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasTag | CONDITION | type=NOT_USER_TAG | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable | CONDITION | type=NOT_HAS_VAR | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInGroup | CONDITION | type=NOT_ACTOR_IN_GROUP | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInTeam | CONDITION | type=NOT_ACTOR_IN_TEAM | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInTeam | CONDITION | type=NOT_ACTOR_IN_TEAM | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotMatchStatePosition | CONDITION | type=NOT_MATCH_SSHOT | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotSameHeight | CONDITION | type=FURNI_PROPERTY | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotTriggerOnFurni | CONDITION | type=NOT_ACTOR_ON_FURNI | operator=AND | evaluate=false
@@ -74,18 +74,18 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionSameHe
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionSelectionQuantity | CONDITION | type=SLC_QUANTITY | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamHasRank | CONDITION | type=TEAM_HAS_RANK | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamHasScore | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamMember | CONDITION | type=ACTOR_IN_TEAM | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamMember | CONDITION | type=ACTOR_IN_TEAM | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerFurniAdjacentState | CONDITION | type=TRG_FURNI_ADJACENT_STATE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerOnFurni | CONDITION | type=TRIGGER_ON_FURNI | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggererMatch | CONDITION | type=TRIGGERER_MATCH | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerOnFurni | CONDITION | type=TRIGGER_ON_FURNI | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggererMatch | CONDITION | type=TRIGGERER_MATCH | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserCooldown | CONDITION | type=USER_COOLDOWN | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserDaily | CONDITION | type=USER_DAILY | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserFirstTime | CONDITION | type=USER_ONCE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel | CONDITION | type=USER_LEVEL | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel | CONDITION | type=USER_LEVEL | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserOnFurniWithState | CONDITION | type=USER_ON_FURNI_WITH_STATE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserPerformsAction | CONDITION | type=USER_PERFORMS_ACTION | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserOnFurniWithState | CONDITION | type=USER_ON_FURNI_WITH_STATE | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserPerformsAction | CONDITION | type=USER_PERFORMS_ACTION | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionVariableAgeMatch | CONDITION | type=VAR_AGE_MATCH | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionVariableValueMatch | CONDITION | type=VAR_VAL_MATCH | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractPayment | EXTRA | configured=true | execute=false
@@ -197,6 +197,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWhisper | EF
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAchievementEnabler | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraChestItemTypeScanner | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraDailyTask | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecuteInOrder | EXTRA | configured=true | execute=false
@@ -250,7 +251,6 @@ com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniPicks 
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniSignal | EFFECT | type=FURNI_SIGNAL_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniWithVariable | EFFECT | type=FURNI_WITH_VAR_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectRemoteSelector | EFFECT | type=REMOTE_SELECTOR | actor=false | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectScanChestFurniByType | EFFECT | type=SCAN_CHEST_FURNI_BY_TYPE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea | EFFECT | type=USERS_AREA_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction | EFFECT | type=USERS_BY_ACTION_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByName | EFFECT | type=USERS_BY_NAME_SELECTOR | actor=false | execute=OK

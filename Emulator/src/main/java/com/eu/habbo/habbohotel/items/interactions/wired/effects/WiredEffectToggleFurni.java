@@ -15,6 +15,8 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionOneWayGate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPressurePlate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPushable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
+import com.eu.habbo.habbohotel.items.interactions.InteractionQueueSpeedControl;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRemoteSwitchControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionSwitch;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
@@ -242,7 +244,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
             }
 
             try {
-                if (item.getBaseItem().getStateCount() > 1 || item instanceof InteractionGameTimer) {
+                if (toggleStateCount(item) > 1 || item instanceof InteractionGameTimer) {
                     this.toggleItemState(room, habbo, item);
                 }
             } catch (Exception e) {
@@ -339,12 +341,36 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         return (value == TOGGLE_TYPE_PREVIOUS) ? TOGGLE_TYPE_PREVIOUS : TOGGLE_TYPE_NEXT;
     }
 
+    /**
+     * The number of states the toggle cycles through. A room configuration switch is on/off, and the
+     * queue speed controller steps through its own modes, whatever {@code interaction_modes_count}
+     * their catalog row carries.
+     */
+    static int toggleStateCount(HabboItem item) {
+        if (item instanceof InteractionQueueSpeedControl) {
+            return InteractionQueueSpeedControl.MODE_COUNT;
+        }
+
+        if (item instanceof InteractionRemoteSwitchControl) {
+            return 2;
+        }
+
+        return item.getBaseItem().getStateCount();
+    }
+
     private void toggleItemState(Room room, Habbo habbo, HabboItem item) throws Exception {
-        if (item.getBaseItem().getStateCount() <= 1) {
+        if (item instanceof InteractionQueueSpeedControl queueSpeed) {
+            // Its state also carries the animation frame, so it steps a whole mode, never a frame.
+            queueSpeed.stepMode(room, this.toggleType != TOGGLE_TYPE_PREVIOUS);
+            WiredManager.triggerFurniStateUpdated(room, (habbo != null) ? habbo.getRoomUnit() : null, item, true);
             return;
         }
 
-        int stateCount = item.getBaseItem().getStateCount();
+        int stateCount = toggleStateCount(item);
+
+        if (stateCount <= 1) {
+            return;
+        }
         int currentState = 0;
 
         if (!item.getExtradata().isEmpty()) {

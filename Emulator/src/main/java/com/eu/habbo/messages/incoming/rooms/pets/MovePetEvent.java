@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.pets;
 
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -14,7 +15,10 @@ public class MovePetEvent extends MessageHandler {
 
         if (pet != null) {
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-            if (room != null && room.hasRights(this.client.getHabbo())) {
+            // AIR playtest mode: pets are moved and rotated as by a visitor without rights.
+            if (room != null
+                    && room.hasRights(this.client.getHabbo())
+                    && !RoomPlayTestSupport.isRestricted(this.client.getHabbo())) {
                 if (pet.getRoomUnit() != null) {
                     int x = this.packet.readInt();
                     int y = this.packet.readInt();

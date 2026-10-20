@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.wired.core.WiredHabbiconVariables;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.habbicons.UserHabbiconsComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUseHabbiconComposer;
@@ -40,6 +41,7 @@ public class TriggerHabbiconEvent extends MessageHandler {
         }
 
         room.sendComposer(new RoomUseHabbiconComposer(habbo.getRoomUnit(), habbiconId).compose());
+        WiredHabbiconVariables.used(room, habbo.getRoomUnit(), habbiconId);
         com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                 habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.USE_HABBICON, 1);
         this.client.sendResponse(

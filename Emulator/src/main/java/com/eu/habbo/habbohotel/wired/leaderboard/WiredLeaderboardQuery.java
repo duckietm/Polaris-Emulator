@@ -28,7 +28,7 @@ public final class WiredLeaderboardQuery {
     /** Chunk {@code chunkIndex} of {@code variableId} on a panel with this config. */
     public static WiredLeaderboardChunk chunk(
             Room room, WiredLeaderboardConfig config, String variableId, int chunkIndex) {
-        int definitionItemId = parseId(variableId);
+        int definitionItemId = WiredLeaderboardCodec.userBoxIdOf(variableId);
         if (room == null || definitionItemId <= 0 || chunkIndex < 0 || room.getRoomSpecialTypes() == null) {
             return new WiredLeaderboardChunk(chunkIndex, 0, List.of());
         }
@@ -68,7 +68,7 @@ public final class WiredLeaderboardQuery {
             int definitionItemId,
             RoomUserVariableStore.Order order,
             boolean descending) {
-        int filterItemId = parseId(config.filterVariableId());
+        int filterItemId = WiredLeaderboardCodec.userBoxIdOf(config.filterVariableId());
         if (filterItemId <= 0) {
             return List.of();
         }
@@ -110,7 +110,7 @@ public final class WiredLeaderboardQuery {
                 return null;
             }
         }
-        int globalItemId = parseId(config.operandVariableId());
+        int globalItemId = WiredLeaderboardCodec.globalBoxIdOf(config.operandVariableId());
         if (globalItemId <= 0 || !room.getRoomVariableManager().hasVariable(globalItemId)) {
             return null;
         }
@@ -178,16 +178,5 @@ public final class WiredLeaderboardQuery {
         return sortMode == WiredLeaderboardCodec.SORT_HIGHEST_VALUE
                 || sortMode == WiredLeaderboardCodec.SORT_LATEST_CREATION
                 || sortMode == WiredLeaderboardCodec.SORT_LATEST_UPDATE;
-    }
-
-    static int parseId(String id) {
-        if (id == null || id.isEmpty() || id.length() > 10) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(id));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 }

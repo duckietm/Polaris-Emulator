@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureUsagePolicy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
@@ -35,7 +36,7 @@ public class FloorItemUpdateComposer extends MessageComposer {
                                                 : 0))));
         this.item.serializeExtradata(this.response);
         this.response.appendInt(this.item.getSecondsToExpiration());
-        this.response.appendInt(0);
+        this.response.appendInt(FurnitureUsagePolicy.of(this.item));
         this.response.appendInt(this.item.getUserId());
         this.response.appendInt(this.item.getBaseItem().allowStack() ? 1 : 0);
         this.response.appendInt(this.item.getBaseItem().allowSit() ? 1 : 0);

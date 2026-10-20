@@ -198,6 +198,9 @@ public final class WiredInputSourcesConf {
                         false));
         // Cancel Transaction: the contracts a "specific contract" cancel matches.
         put("wf_act_cancel_transaction", furni(new int[][] {FURNI_NO_SECOND_PICKS}, 100));
+        // Chest Has Items (AIR ChestHasAmount, mergedSelections [[1, 0]]): one furni slot, the chests, picked by
+        // default.
+        put("wf_cnd_chest_has_items", furni(new int[][] {FURNI_NO_SECOND_PICKS}, 100));
 
         // Custom contract (AIR class_4234): the payment furni on the first picks, the reward furni on the second;
         // either may be wall furni.

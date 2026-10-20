@@ -126,7 +126,7 @@ class WiredExtraChestItemTypeScannerTest {
         assertEquals(1, scanner.getMode());
         assertEquals(VARIABLE, scanner.getVariableItemId());
         assertArrayEquals(new int[] {200, 101}, scanner.officialFurniSources());
-        assertArrayEquals(new String[] {String.valueOf(VARIABLE)}, scanner.officialVariableIds());
+        assertArrayEquals(new String[] {"ctx:" + VARIABLE}, scanner.officialVariableIds());
         assertEquals(List.of(CHAIR_PICK, LAMP_PICK), scanner.getTypeItemIds());
         assertArrayEquals(new int[] {CHEST}, scanner.officialFurniIds2());
     }

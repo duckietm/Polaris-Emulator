@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -42,6 +43,11 @@ public class SetStackHelperAdjacentHeightEvent extends MessageHandler {
         }
 
         if (habbo.getHabboInfo().getId() != room.getOwnerId() && !room.hasRights(habbo)) {
+            return;
+        }
+
+        // Playtest (the hotel's own rule beyond AIR): the helper keeps its height, as for a visitor without rights.
+        if (RoomPlayTestSupport.isBuildingRefused(habbo)) {
             return;
         }
 

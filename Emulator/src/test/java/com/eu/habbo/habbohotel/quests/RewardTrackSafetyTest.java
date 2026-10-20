@@ -100,13 +100,13 @@ class RewardTrackSafetyTest {
         Habbo habbo = habbo(7);
         manager.paymentFailure = new SQLException("ledger down");
 
-        assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.purchasePremium(habbo, "season_1"));
+        assertEquals(RewardTrackManager.PREMIUM_FAILED, manager.purchasePremium(habbo, "season_1"));
         UserRewardTrackState state = manager.stateFor(habbo, manager.getTrack("season_1"));
         assertFalse(state.isPremium());
         assertEquals(100, state.getPoints(), "no instant points without payment");
 
         manager.paymentFailure = new IllegalArgumentException("balance");
-        assertEquals(RewardTrackManager.RESULT_NOT_ENOUGH_CURRENCY, manager.purchasePremium(habbo, "season_1"));
+        assertEquals(RewardTrackManager.PREMIUM_FAILED, manager.purchasePremium(habbo, "season_1"));
         assertFalse(state.isPremium());
         assertTrue(manager.events.isEmpty(), "nothing is saved for a failed payment");
     }
@@ -151,7 +151,7 @@ class RewardTrackSafetyTest {
         Habbo habbo = habbo(7);
         manager.claimInserted = false;
 
-        assertEquals(RewardTrackManager.RESULT_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
+        assertEquals(RewardTrackManager.CLAIM_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
         verify(habbo, never()).giveCredits(anyInt(), anyString(), anyString(), any());
         verify(habbo, never()).giveCredits(anyInt(), anyString());
         assertTrue(manager.stateFor(habbo, manager.getTrack("season_1")).isClaimed("p1"));
@@ -163,14 +163,14 @@ class RewardTrackSafetyTest {
         Habbo habbo = habbo(7);
         manager.claimInserted = null;
 
-        assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.claim(habbo, "season_1", "p1"));
+        assertEquals(RewardTrackManager.CLAIM_FAILED, manager.claim(habbo, "season_1", "p1"));
         verify(habbo, never()).giveCredits(anyInt(), anyString(), anyString(), any());
         assertFalse(manager.stateFor(habbo, manager.getTrack("season_1")).isClaimed("p1"));
 
         manager.claimInserted = true;
         assertEquals(RewardTrackManager.RESULT_OK, manager.claim(habbo, "season_1", "p1"));
         verify(habbo).giveCredits(5, "quests.reward", "reward_track:7:season_1:p1", 7);
-        assertEquals(RewardTrackManager.RESULT_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
+        assertEquals(RewardTrackManager.CLAIM_ALREADY_CLAIMED, manager.claim(habbo, "season_1", "p1"));
     }
 
     @Test
@@ -181,8 +181,8 @@ class RewardTrackSafetyTest {
         manager.failLoads = true;
 
         assertNull(manager.stateFor(habbo, track));
-        assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.claim(habbo, "season_1", "p1"));
-        assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.purchasePremium(habbo, "season_1"));
+        assertEquals(RewardTrackManager.CLAIM_FAILED, manager.claim(habbo, "season_1", "p1"));
+        assertEquals(RewardTrackManager.PREMIUM_FAILED, manager.purchasePremium(habbo, "season_1"));
         manager.progress(habbo, QuestGoalType.TALK_IN_ROOM, 1);
         assertNotNull(manager.rewardTracks(habbo, false));
         assertTrue(manager.payments.isEmpty());

@@ -222,6 +222,11 @@ public class MonsterplantPet extends Pet implements IPetLook {
         return this.type;
     }
 
+    /** The plant's colour, 0..10 ({@link #colorRarity}). */
+    public int getHue() {
+        return this.hue;
+    }
+
     public int getRarity() {
         if (bodyRarity.containsKey(this.type) && colorRarity.containsKey(this.hue)) {
             return bodyRarity.get(this.type).getValue()

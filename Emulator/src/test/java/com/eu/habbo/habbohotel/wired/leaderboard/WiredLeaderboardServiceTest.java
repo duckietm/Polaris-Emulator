@@ -1,12 +1,16 @@
 package com.eu.habbo.habbohotel.wired.leaderboard;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
@@ -16,12 +20,19 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer;
+import io.netty.buffer.ByteBuf;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Panel numbering, the room's revision counter, the push grid and the row times. */
 class WiredLeaderboardServiceTest {
@@ -158,5 +169,124 @@ class WiredLeaderboardServiceTest {
                 WiredLeaderboardQuery.rows(room, timed, coins, holders, 0).get(0);
         assertEquals(100_000L, row.creationTime());
         assertEquals(200_000L, row.lastUpdateTime());
+    }
+
+    /** A filtered board with one display name. */
+    private static WiredLeaderboardConfig filtered(String filter, String coins) {
+        TreeMap<String, String> overrides = new TreeMap<>();
+        overrides.put(coins, "Gold");
+        return new WiredLeaderboardConfig(
+                "Top",
+                "",
+                WiredLeaderboardCodec.SORT_HIGHEST_VALUE,
+                0,
+                List.of(WiredLeaderboardCodec.defaultColumn(WiredLeaderboardCodec.COLUMN_USERNAME)),
+                true,
+                false,
+                WiredLeaderboardCodec.OPERAND_LITERAL,
+                filter,
+                WiredLeaderboardCodec.NULL_VARIABLE_ID,
+                "",
+                overrides,
+                1,
+                1,
+                0,
+                0);
+    }
+
+    /** What the box holds after loading a stored row with this config. */
+    private static WiredLeaderboardConfig load(WiredLeaderboardConfig config) {
+        WiredLeaderboardCodec.Decoded decoded =
+                WiredLeaderboardCodec.decode(WiredLeaderboardCodec.encode(config), 1, 1);
+        assertTrue(decoded.valid(), decoded.error());
+        return decoded.config();
+    }
+
+    @Test
+    void anOldRowAndAReSavedRowShowTheSamePanelAndRows() {
+        WiredLeaderboardConfig oldRow = load(filtered("77", "900"));
+        WiredLeaderboardConfig newRow = load(filtered("user:77", "user:900"));
+        assertArrayEquals(
+                WiredLeaderboardCodec.encode(newRow).variableIds(),
+                WiredLeaderboardCodec.encode(oldRow).variableIds());
+        assertEquals("user:77", oldRow.filterVariableId());
+        assertEquals(newRow.displayOverrides(), oldRow.displayOverrides());
+
+        // The panel offers the variable under its list id, with the stored display name of either row.
+        WiredExtraVariableLeaderboard box = board(20);
+        when(box.getConfig()).thenReturn(oldRow);
+        WiredLeaderboardService service = new WiredLeaderboardService(1);
+        service.flush(room);
+        WiredLeaderboardDescriptor before = service.descriptors().get(0);
+        assertEquals(List.of(new WiredLeaderboardDescriptor.Choice("user:900", "Gold")), before.choices());
+        assertEquals("user:900", before.defaultVariableId());
+        assertEquals("user:900", before.choiceId("900"));
+        assertEquals("user:900", before.choiceId("user:900"));
+        assertEquals(null, before.choiceId("room:900"));
+
+        // The row saved again with the list ids keeps the panel and its revision: nothing it ranks changed.
+        when(box.getConfig()).thenReturn(newRow);
+        service.flush(room);
+        assertEquals(before, service.descriptors().get(0));
+
+        // Both rows read the same holders.
+        RoomUserVariableStore store = mock(RoomUserVariableStore.class);
+        when(userVariables.getStore()).thenReturn(store);
+        when(specialTypes.getExtra(900)).thenReturn(coins);
+        when(store.page(77, RoomUserVariableStore.Order.ID, false, 0, WiredLeaderboardQuery.MAX_FILTERED_HOLDERS))
+                .thenReturn(List.of(new RoomUserVariableStore.Holder(5, "ann", 1, 100, 200)));
+        when(store.page(900, RoomUserVariableStore.Order.VALUE, true, 0, WiredLeaderboardQuery.MAX_FILTERED_HOLDERS))
+                .thenReturn(List.of(
+                        new RoomUserVariableStore.Holder(5, "ann", 42, 100, 200),
+                        new RoomUserVariableStore.Holder(6, "bob", 40, 100, 200)));
+        when(store.figures(any())).thenReturn(Map.of());
+        WiredLeaderboardChunk fromOld = WiredLeaderboardQuery.chunk(room, oldRow, "900", 0);
+        WiredLeaderboardChunk fromNew = WiredLeaderboardQuery.chunk(room, newRow, "user:900", 0);
+        assertEquals(1, fromOld.totalCount());
+        assertEquals(fromOld.toString(), fromNew.toString());
+    }
+
+    @Test
+    void aSubscriptionByABareIdIsTheListIdsVariableAndEchoesWhatWasSent() {
+        WiredExtraVariableLeaderboard box = board(20);
+        when(box.getConfig()).thenReturn(load(filtered("user:77", "user:900")));
+        RoomUserVariableStore store = mock(RoomUserVariableStore.class);
+        when(userVariables.getStore()).thenReturn(store);
+        when(specialTypes.getExtra(900)).thenReturn(coins);
+        when(store.figures(any())).thenReturn(Map.of());
+        WiredLeaderboardService service = new WiredLeaderboardService(1);
+        service.flush(room);
+        int revision = service.descriptors().get(0).revision();
+
+        Habbo habbo = mock(Habbo.class);
+        HabboInfo info = mock(HabboInfo.class);
+        GameClient client = mock(GameClient.class);
+        when(habbo.getHabboInfo()).thenReturn(info);
+        when(info.getId()).thenReturn(5);
+        when(habbo.getClient()).thenReturn(client);
+
+        service.subscribe(room, habbo, 1, revision, "user:900", new int[] {0});
+        service.subscribe(room, habbo, 1, revision, "900", new int[] {0});
+        service.subscribe(room, habbo, 1, revision, "user:901", new int[] {0});
+
+        ArgumentCaptor<MessageComposer> sent = ArgumentCaptor.forClass(MessageComposer.class);
+        verify(client, atLeastOnce()).sendResponse(sent.capture());
+        List<String> echoed = sent.getAllValues().stream()
+                .filter(WiredLeaderboardChunkComposer.class::isInstance)
+                .map(WiredLeaderboardServiceTest::chunkVariableId)
+                .toList();
+        assertEquals(List.of("user:900", "900"), echoed);
+    }
+
+    private static String chunkVariableId(MessageComposer composer) {
+        ByteBuf body = composer.compose().get();
+        try {
+            body.skipBytes(6 + 8);
+            byte[] text = new byte[body.readShort()];
+            body.readBytes(text);
+            return new String(text, StandardCharsets.UTF_8);
+        } finally {
+            body.release();
+        }
     }
 }

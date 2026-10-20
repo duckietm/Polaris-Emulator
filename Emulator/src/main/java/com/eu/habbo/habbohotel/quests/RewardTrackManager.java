@@ -45,15 +45,35 @@ public class RewardTrackManager {
     /** Task saves queued and not started yet; such a save writes the newest progress when it runs. */
     private final Set<String> pendingTaskSaves = ConcurrentHashMap.newKeySet();
 
-    /** Result codes: 0 is success, the client localizes any other value as reward_track.*.notification.fail.&lt;code&gt;. */
+    /**
+     * Result codes: 0 is success, the client localizes any other value as
+     * reward_track.claim.notification.fail.&lt;code&gt; or reward_track.premium.notification.fail.&lt;code&gt;,
+     * so each code keeps the official client's meaning.
+     */
     public static final int RESULT_OK = 0;
 
-    public static final int RESULT_UNKNOWN = 1;
-    public static final int RESULT_NOT_ENOUGH_POINTS = 2;
-    public static final int RESULT_PREMIUM_REQUIRED = 3;
-    public static final int RESULT_ALREADY_CLAIMED = 4;
-    public static final int RESULT_NOT_ENOUGH_CURRENCY = 5;
-    public static final int RESULT_ALREADY_PREMIUM = 6;
+    /** Claim results, the official client's RewardTrackClaimResult codes. */
+    public static final int CLAIM_DISABLED = 1;
+
+    public static final int CLAIM_TRACK_NOT_FOUND = 2;
+    public static final int CLAIM_REWARD_NOT_FOUND = 3;
+    public static final int CLAIM_NOT_ELIGIBLE = 4;
+    public static final int CLAIM_NOT_ENOUGH_POINTS = 5;
+    public static final int CLAIM_ALREADY_CLAIMED = 6;
+    public static final int CLAIM_FAILED = 7;
+    public static final int CLAIM_PREMIUM_REQUIRED = 8;
+
+    /** Premium purchase results, the official client's RewardTrackPremiumPurchaseResult codes. */
+    public static final int PREMIUM_DISABLED = 1;
+
+    public static final int PREMIUM_TRACK_NOT_FOUND = 2;
+    public static final int PREMIUM_NOT_ELIGIBLE = 3;
+    public static final int PREMIUM_NOT_AVAILABLE = 4;
+    public static final int PREMIUM_ALREADY_OWNED = 5;
+    public static final int PREMIUM_INVALID_SETTINGS = 6;
+    public static final int PREMIUM_NOT_ENOUGH_CREDITS = 7;
+    public static final int PREMIUM_NOT_ENOUGH_DIAMONDS = 8;
+    public static final int PREMIUM_FAILED = 9;
 
     static final String PREMIUM_REASON = "reward_track.premium";
     private static final int MAX_OPERATION_ID = 96;
@@ -554,6 +574,25 @@ public class RewardTrackManager {
         habbo.getClient().sendResponse(this.rewardTracks(habbo, reload));
     }
 
+    /**
+     * Login: the official client never asks for the tracks, the hotel pushes them once the user is in,
+     * so the progress menu can count the claimable rewards and the progress packets find their track.
+     * A track that cannot be read must not break the login, so a failure is only logged.
+     */
+    public void sendRewardTracksOnLogin(Habbo habbo) {
+        if (habbo == null || habbo.getClient() == null) {
+            return;
+        }
+        try {
+            this.sendRewardTracks(habbo, false);
+        } catch (RuntimeException exception) {
+            LOGGER.error(
+                    "Could not send the reward tracks to user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
+        }
+    }
+
     /** The texts of the active tracks as full localization keys, "reward_track.&lt;track&gt;.&lt;key&gt;". */
     public Map<String, String> activeTexts() {
         Map<String, String> full = new LinkedHashMap<>();
@@ -679,8 +718,12 @@ public class RewardTrackManager {
         RewardTrack.Prize prize = track == null ? null : track.getPrize(prizeId);
         UserRewardTrackState state = prize == null ? null : this.stateFor(habbo, track);
         int result;
-        if (state == null) {
-            result = RESULT_UNKNOWN;
+        if (track == null) {
+            result = CLAIM_TRACK_NOT_FOUND;
+        } else if (prize == null) {
+            result = CLAIM_REWARD_NOT_FOUND;
+        } else if (state == null) {
+            result = CLAIM_FAILED;
         } else {
             synchronized (state) {
                 result = this.claimLoaded(habbo, track, prize, state);
@@ -701,13 +744,13 @@ public class RewardTrackManager {
     /** Checks the prize and stores the claim; RESULT_OK only when this call stored it. */
     private int claimLoaded(Habbo habbo, RewardTrack track, RewardTrack.Prize prize, UserRewardTrackState state) {
         if (state.isClaimed(prize.getId())) {
-            return RESULT_ALREADY_CLAIMED;
+            return CLAIM_ALREADY_CLAIMED;
         }
         if (state.isPrizeLocked(prize)) {
-            return RESULT_PREMIUM_REQUIRED;
+            return CLAIM_PREMIUM_REQUIRED;
         }
         if (state.getPoints() < prize.getRequiredPoints()) {
-            return RESULT_NOT_ENOUGH_POINTS;
+            return CLAIM_NOT_ENOUGH_POINTS;
         }
         int userId = habbo.getHabboInfo().getId();
         boolean inserted;
@@ -720,10 +763,10 @@ public class RewardTrackManager {
                     prize.getId(),
                     userId,
                     exception);
-            return RESULT_UNKNOWN;
+            return CLAIM_FAILED;
         }
         state.markClaimed(prize.getId());
-        return inserted ? RESULT_OK : RESULT_ALREADY_CLAIMED;
+        return inserted ? RESULT_OK : CLAIM_ALREADY_CLAIMED;
     }
 
     /** PurchaseRewardTrackPremium(trackId): pays the diamonds and/or credits, unlocks the premium tier. */
@@ -732,19 +775,19 @@ public class RewardTrackManager {
         UserRewardTrackState state = track == null || !track.hasPremium() ? null : this.stateFor(habbo, track);
         int result;
         int points = 0;
-        if (state == null) {
-            result = RESULT_UNKNOWN;
+        if (track == null) {
+            result = PREMIUM_TRACK_NOT_FOUND;
+        } else if (!track.hasPremium()) {
+            result = PREMIUM_NOT_AVAILABLE;
+        } else if (state == null) {
+            result = PREMIUM_FAILED;
         } else {
             synchronized (state) {
                 points = state.getPoints();
                 if (state.isPremium()) {
-                    result = RESULT_ALREADY_PREMIUM;
-                } else if (habbo.getHabboInfo().getCredits() < track.getPremiumCostCredits()
-                        || habbo.getHabboInfo().getCurrencyAmount(QuestRewards.DIAMONDS_POINT_TYPE)
-                                < track.getPremiumCostDiamonds()) {
-                    result = RESULT_NOT_ENOUGH_CURRENCY;
+                    result = PREMIUM_ALREADY_OWNED;
                 } else {
-                    result = RESULT_OK;
+                    result = missingCurrency(habbo, track);
                 }
             }
             if (result == RESULT_OK) {
@@ -754,7 +797,7 @@ public class RewardTrackManager {
             if (result == RESULT_OK) {
                 synchronized (state) {
                     if (state.isPremium()) {
-                        result = RESULT_ALREADY_PREMIUM;
+                        result = PREMIUM_ALREADY_OWNED;
                     } else {
                         state.setPremium(true);
                         state.addPoints(track.getPremiumInstantPoints());
@@ -777,6 +820,17 @@ public class RewardTrackManager {
         return result;
     }
 
+    /** RESULT_OK when the user can pay the pass, otherwise the code of the currency that is short. */
+    private static int missingCurrency(Habbo habbo, RewardTrack track) {
+        if (habbo.getHabboInfo().getCredits() < track.getPremiumCostCredits()) {
+            return PREMIUM_NOT_ENOUGH_CREDITS;
+        }
+        if (habbo.getHabboInfo().getCurrencyAmount(QuestRewards.DIAMONDS_POINT_TYPE) < track.getPremiumCostDiamonds()) {
+            return PREMIUM_NOT_ENOUGH_DIAMONDS;
+        }
+        return RESULT_OK;
+    }
+
     private int payPremium(Habbo habbo, RewardTrack track) {
         List<EconomyOperation> operations =
                 premiumOperations(habbo.getHabboInfo().getId(), track);
@@ -786,14 +840,16 @@ public class RewardTrackManager {
         try {
             this.applyPayment(habbo, operations);
         } catch (IllegalArgumentException exception) {
-            return RESULT_NOT_ENOUGH_CURRENCY;
+            // The ledger refused a balance: name the short currency when the cached wallet shows it.
+            int missing = missingCurrency(habbo, track);
+            return missing == RESULT_OK ? PREMIUM_FAILED : missing;
         } catch (SQLException | RuntimeException exception) {
             LOGGER.error(
                     "Could not take the reward track {} premium payment of user {}",
                     track.getId(),
                     habbo.getHabboInfo().getId(),
                     exception);
-            return RESULT_UNKNOWN;
+            return PREMIUM_FAILED;
         }
         if (habbo.getClient() != null) {
             for (EconomyOperation operation : operations) {

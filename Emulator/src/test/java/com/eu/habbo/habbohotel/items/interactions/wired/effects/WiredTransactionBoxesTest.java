@@ -53,7 +53,7 @@ class WiredTransactionBoxesTest {
         assertArrayEquals(
                 new int[] {1, 7, 1, -20, 1, 600},
                 WiredEffectProgressAchievementTest.body(box).params());
-        assertArrayEquals(new String[] {"42"}, box.officialVariableIds());
+        assertArrayEquals(new String[] {"ctx:42"}, box.officialVariableIds());
         assertEquals(600, box.negotiationTimeout());
     }
 

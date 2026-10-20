@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 /**
@@ -30,6 +31,9 @@ public class SetBuildHeightEvent extends MessageHandler {
         if (this.client.getHabbo().getRoomUnit() == null) return;
 
         if (enabled && !room.hasRights(this.client.getHabbo())) return;
+
+        // Playtest (the hotel's own rule beyond AIR): no build height, as for a visitor without rights.
+        if (enabled && RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
 
         this.client
                 .getHabbo()

@@ -33,6 +33,7 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCompletedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeErrorComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeItemsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeOpenComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionFailComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer;
@@ -289,14 +290,15 @@ class WiredTradingManagerAirTest {
                 wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
         InteractionWiredChestFurni trophies = this.trophyChest(2);
         WiredTradingManager manager = new WiredTradingManager(this.room);
-        give(301, "CF_50", 1);
+        give(301, "CF_10", 1);
+        give(302, "CF_20", 2);
 
         assertNotNull(manager.open(
                 this.habbo, this.thirtyCoinsForTrophies(1), 1, "Well done", "generic", 60, List.of(coins, trophies)));
-        manager.offer(this.habbo, List.of(301), false);
+        manager.offer(this.habbo, List.of(301, 302), false);
         assertTrue(this.acceptAndConfirm(manager));
 
-        assertEquals(50, coins.getContents().getCoins(), "the credit furni became the coin chest's coins");
+        assertEquals(30, coins.getContents().getCoins(), "the credit furni became the coin chest's coins");
         assertEquals(1, trophies.getContents().furniItemCount());
         assertEquals(1, this.store.inventoryCount(PLAYER), "the trophy is the player's now");
         List<WiredTransactionSuccessComposer> successes = this.sent(WiredTransactionSuccessComposer.class);
@@ -313,7 +315,7 @@ class WiredTradingManagerAirTest {
                 wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
         InteractionWiredChestFurni trophies = this.trophyChest(2);
         WiredTradingManager manager = new WiredTradingManager(this.room);
-        give(301, "CF_50", 1);
+        give(301, "CF_30", 1);
 
         manager.open(this.habbo, this.thirtyCoinsForTrophies(5), 1, "", "generic", 60, List.of(coins, trophies));
         manager.offer(this.habbo, List.of(301), false);
@@ -324,6 +326,197 @@ class WiredTradingManagerAirTest {
         assertTrue(this.inventory.containsKey(301), "the credit furni went back");
         assertEquals(1, this.store.inventoryCount(PLAYER));
         assertEquals(1, this.sent(WiredTradeCancelledComposer.class).size());
+    }
+
+    private static Object field(Object composer, String name) {
+        try {
+            java.lang.reflect.Field field = composer.getClass().getDeclaredField(name);
+            field.setAccessible(true);
+            return field.get(composer);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private List<Integer> tradeErrors() {
+        return this.sent(WiredTradeErrorComposer.class).stream()
+                .map(WiredTradeErrorComposer::getErrorId)
+                .toList();
+    }
+
+    /** The last table state the player got. */
+    private WiredTradeItemsComposer lastState(WiredTradingManager manager) {
+        WiredTradingSession session = manager.getSession(this.habbo);
+        manager.pushState(this.habbo, session);
+        List<WiredTradeItemsComposer> states = this.sent(WiredTradeItemsComposer.class);
+        return states.get(states.size() - 1);
+    }
+
+    /** Whether the last table state says the requirements are met (AIR's met boolean). */
+    private boolean met(WiredTradingManager manager) {
+        return (boolean) field(this.lastState(manager), "canAccept");
+    }
+
+    /** The last table state's count (AIR "extra": met N times). */
+    private int extra(WiredTradingManager manager) {
+        return (int) field(this.lastState(manager), "extra");
+    }
+
+    @Test
+    void aCreditFurniWorthMoreThanThePriceIsRefusedWithTradeError5() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(2);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_50", 1);
+        give(302, "CF_10", 2);
+        give(303, "CF_10", 2);
+        give(304, "CF_10", 2);
+        give(305, "CF_10", 2);
+
+        manager.open(this.habbo, this.thirtyCoinsForTrophies(1), 1, "", "generic", 0, List.of(coins, trophies));
+        assertEquals(0, manager.offer(this.habbo, List.of(301), false), "fifty coins exceed thirty");
+        assertEquals(List.of(WiredTradeErrorComposer.EXCEEDS_REQUIREMENTS), this.tradeErrors());
+        assertTrue(this.inventory.containsKey(301), "the refused credit furni never left the inventory");
+
+        assertEquals(2, manager.offer(this.habbo, List.of(302, 303), false));
+        assertFalse(this.met(manager), "twenty of thirty is not met");
+        assertEquals(1, manager.offer(this.habbo, List.of(304), false));
+        assertTrue(this.met(manager), "thirty of thirty is met");
+        assertEquals(1, this.extra(manager));
+
+        // Anything more: the requirements are already met (error 4).
+        assertEquals(0, manager.offer(this.habbo, List.of(305), false));
+        assertEquals(WiredTradeErrorComposer.ALREADY_MET, this.tradeErrors().get(1));
+
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(30, coins.getContents().getCoins(), "exactly the price, never the fifty");
+        assertTrue(this.inventory.containsKey(301));
+        assertTrue(this.inventory.containsKey(305));
+    }
+
+    @Test
+    void aBatchKeepsWhatFitsAndRefusesTheRest() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(2);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_50", 1);
+        give(302, "CF_10", 2);
+        give(303, "CF_10", 2);
+        give(304, "CF_10", 2);
+
+        manager.open(this.habbo, this.thirtyCoinsForTrophies(1), 1, "", "generic", 0, List.of(coins, trophies));
+        assertEquals(3, manager.offer(this.habbo, List.of(301, 302, 303, 304), false));
+        assertEquals(List.of(WiredTradeErrorComposer.EXCEEDS_REQUIREMENTS), this.tradeErrors());
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(30, coins.getContents().getCoins());
+        assertTrue(this.inventory.containsKey(301));
+    }
+
+    @Test
+    void furniPastWhatTheContractAsksIsRefused() {
+        InteractionWiredChestFurni chairs =
+                wiredChest(new InteractionWiredChestFurni(41, OWNER, chestFurni(), "", 0, 0));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "chair", 7);
+        give(302, "chair", 7);
+        give(303, "chair", 7);
+        give(304, "table", 8);
+        ContractRules twoChairs = ContractRules.of(
+                List.of(List.of(Term.furni(InteractionWiredContract.DIR_PAY, false, 7, "", 2))), List.of());
+
+        manager.open(this.habbo, twoChairs, 2, "", "generic", 0, List.of(chairs));
+        assertEquals(0, manager.offer(this.habbo, List.of(304), false), "the contract asks for no table");
+        assertEquals(2, manager.offer(this.habbo, List.of(301, 302), false));
+        assertEquals(0, manager.offer(this.habbo, List.of(303), false), "a third chair: already met");
+        assertEquals(
+                List.of(WiredTradeErrorComposer.EXCEEDS_REQUIREMENTS, WiredTradeErrorComposer.ALREADY_MET),
+                this.tradeErrors());
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(2, chairs.getContents().furniItemCount());
+    }
+
+    @Test
+    void theAutoMultiplierIsMetOnlyOnAWholeNumberOfRuns() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(3);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_50", 1);
+        give(302, "CF_10", 2);
+        give(303, "CF_10", 2);
+
+        manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                new ContractMultiplier(ContractMultiplier.MODE_AUTO, 2),
+                1,
+                "",
+                "generic",
+                0,
+                List.of(coins, trophies),
+                List.of());
+        // Fifty coins fit under the limit (sixty) but lie between one and two runs: not met, nothing to settle.
+        assertEquals(1, manager.offer(this.habbo, List.of(301), false));
+        assertFalse(this.met(manager));
+        assertEquals(0, this.extra(manager));
+        assertFalse(manager.getSession(this.habbo).accept(0L));
+
+        // Sixty: two runs, met (2x); another ten would pass the limit.
+        assertEquals(1, manager.offer(this.habbo, List.of(302), false));
+        assertTrue(this.met(manager));
+        assertEquals(2, this.extra(manager));
+        assertEquals(0, manager.offer(this.habbo, List.of(303), false));
+        assertEquals(List.of(WiredTradeErrorComposer.ALREADY_MET), this.tradeErrors());
+
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(60, coins.getContents().getCoins());
+        assertEquals(1, trophies.getContents().furniItemCount(), "two trophies for two runs");
+    }
+
+    @Test
+    void theFixedMultiplierCountsTheRunsCoveredAndIsMetOnlyAtAllOfThem() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(3);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_30", 1);
+        give(302, "CF_50", 2);
+        give(303, "CF_30", 1);
+
+        manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                new ContractMultiplier(ContractMultiplier.MODE_FIXED, 2),
+                1,
+                "",
+                "generic",
+                0,
+                List.of(coins, trophies),
+                List.of());
+        assertEquals(1, manager.offer(this.habbo, List.of(301), false));
+        assertFalse(this.met(manager));
+        assertEquals(1, this.extra(manager), "met 1/2");
+        assertEquals(0, manager.offer(this.habbo, List.of(302), false), "eighty coins exceed sixty");
+        assertEquals(List.of(WiredTradeErrorComposer.EXCEEDS_REQUIREMENTS), this.tradeErrors());
+        assertEquals(1, manager.offer(this.habbo, List.of(303), false));
+        assertTrue(this.met(manager));
+        assertEquals(2, this.extra(manager), "met 2/2");
+    }
+
+    @Test
+    void aChestDepositStillTakesAnyAmount() {
+        InteractionWiredChestCurrency chest =
+                wiredChest(new InteractionWiredChestCurrency(31, OWNER, chestFurni(), "", 0, 0));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_50", 1);
+        give(302, "CF_100", 2);
+
+        manager.openDeposit(this.habbo, chest, 300);
+        assertEquals(2, manager.offer(this.habbo, List.of(301, 302), false));
+        assertTrue(this.acceptAndConfirm(manager));
+        assertEquals(150, chest.getContents().getCoins());
     }
 
     @Test
@@ -403,7 +596,10 @@ class WiredTradingManagerAirTest {
         assertEquals(
                 WiredTransactionSuccessComposer.TYPE_PAYMENT,
                 this.sent(WiredTransactionSuccessComposer.class).get(0).getType());
-        this.wired.verify(() -> WiredManager.dispatchEffectTriggeredEvent(any()), atLeastOnce());
+        assertEquals(
+                new com.eu.habbo.habbohotel.wired.core.WiredEvent.TransactionTotals(1, 1, 50, 0, 0),
+                this.lastEvent().getTransactionTotals(),
+                "a donation runs once: a chair and 50 coins in, nothing out");
     }
 
     @Test
@@ -431,6 +627,51 @@ class WiredTradingManagerAirTest {
         assertEquals(60, coins.getContents().getCoins(), "sixty coins paid for two runs");
         assertEquals(1, trophies.getContents().furniItemCount(), "two trophies handed out");
         assertEquals(2, this.store.inventoryCount(PLAYER));
+
+        // AIR @event.transaction_complete.*: two runs, 60 coins in, two trophies out.
+        com.eu.habbo.habbohotel.wired.core.WiredEvent completed = this.lastEvent();
+        assertEquals(com.eu.habbo.habbohotel.wired.core.WiredEvent.Type.TRANSACTION_COMPLETE, completed.getType());
+        assertEquals(
+                new com.eu.habbo.habbohotel.wired.core.WiredEvent.TransactionTotals(2, 0, 60, 2, 0),
+                completed.getTransactionTotals());
+    }
+
+    private com.eu.habbo.habbohotel.wired.core.WiredEvent lastEvent() {
+        ArgumentCaptor<com.eu.habbo.habbohotel.wired.core.WiredEvent> events =
+                ArgumentCaptor.forClass(com.eu.habbo.habbohotel.wired.core.WiredEvent.class);
+        this.wired.verify(() -> WiredManager.dispatchEffectTriggeredEvent(events.capture()), atLeastOnce());
+        return events.getAllValues().get(events.getAllValues().size() - 1);
+    }
+
+    @Test
+    void anOpenNegotiationIsReadAsTheUsersTransaction() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni trophies = this.trophyChest(1);
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_10", 1);
+        give(302, "CF_10", 2);
+        give(303, "CF_10", 3);
+
+        assertEquals(0, manager.contractId(this.habbo), "no negotiation");
+        manager.open(
+                this.habbo,
+                this.thirtyCoinsForTrophies(1),
+                ContractMultiplier.NONE,
+                1,
+                "",
+                "generic",
+                0,
+                List.of(coins, trophies),
+                List.of(77, 78));
+        WiredTradingSession session = manager.getSession(this.habbo);
+
+        assertEquals(77, manager.contractId(this.habbo), "the first contract it started from");
+        assertFalse(session.canAccept());
+        manager.offer(this.habbo, List.of(301, 302, 303), false);
+        assertTrue(session.canAccept());
+        assertEquals(1, session.timesToSettle());
+        assertEquals(WiredTradingSession.STATE_ADDING_ITEMS, session.getState());
     }
 
     @Test
@@ -439,7 +680,7 @@ class WiredTradingManagerAirTest {
                 wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
         InteractionWiredChestFurni trophies = this.trophyChest(2);
         WiredTradingManager manager = new WiredTradingManager(this.room);
-        give(301, "CF_100", 1);
+        give(301, "CF_90", 1);
 
         manager.open(
                 this.habbo,
@@ -466,7 +707,7 @@ class WiredTradingManagerAirTest {
         InteractionWiredChestFurni trophies = this.trophyChest(5);
         WiredTradingManager manager = new WiredTradingManager(this.room);
         give(301, "CF_50", 1);
-        give(302, "CF_50", 2);
+        give(302, "CF_40", 2);
 
         manager.open(
                 this.habbo,
@@ -479,10 +720,10 @@ class WiredTradingManagerAirTest {
                 List.of(coins, trophies),
                 List.of());
         manager.offer(this.habbo, List.of(301, 302), false);
-        assertEquals(3, manager.getSession(this.habbo).timesMet(), "a hundred coins pay thirty three times");
+        assertEquals(3, manager.getSession(this.habbo).timesMet(), "ninety coins pay thirty three times");
         assertTrue(this.acceptAndConfirm(manager));
 
-        assertEquals(100, coins.getContents().getCoins(), "both credit furni were needed for ninety coins");
+        assertEquals(90, coins.getContents().getCoins(), "both credit furni were needed for ninety coins");
         assertEquals(2, trophies.getContents().furniItemCount(), "three trophies handed out");
     }
 
@@ -708,7 +949,7 @@ class WiredTradingManagerAirTest {
                 wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
         InteractionWiredChestFurni trophies = this.trophyChest(2);
         WiredTradingManager manager = new WiredTradingManager(this.room);
-        give(301, "CF_100", 1);
+        give(301, "CF_90", 1);
 
         manager.open(
                 this.habbo,

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionStickyPole;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
@@ -29,6 +30,13 @@ public class PostItPlaceEvent extends MessageHandler {
         if (!RoomItemInputGuard.isPositiveId(itemId) || !RoomItemInputGuard.isValidWallPosition(location)) return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+
+        // Playtest (the hotel's own rule beyond AIR): post-its stay in the inventory too.
+        if (room != null && RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+            return;
+        }
 
         if (room != null) {
             if (room.hasRights(this.client.getHabbo())

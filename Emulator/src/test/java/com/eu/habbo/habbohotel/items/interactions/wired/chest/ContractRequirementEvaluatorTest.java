@@ -187,4 +187,67 @@ class ContractRequirementEvaluatorTest {
         assertTrue(match.satisfied());
         assertEquals(List.of(101), match.consumedItemIds());
     }
+
+    private static OfferedItem credit(int itemId, int value) {
+        return new OfferedItem(itemId, false, 77, "", value);
+    }
+
+    @Test
+    void coinsFitUpToThePriceAndAreMetOnlyAtIt() {
+        List<Term> thirty = List.of(coins(30));
+
+        assertTrue(ContractRequirementEvaluator.fits(thirty, 20, List.of(credit(1, 10), credit(2, 10))));
+        assertTrue(ContractRequirementEvaluator.fits(thirty, 30, List.of(credit(1, 30))));
+        assertFalse(ContractRequirementEvaluator.fits(thirty, 50, List.of(credit(1, 50))), "fifty exceeds thirty");
+        assertFalse(ContractRequirementEvaluator.matchesExactly(thirty, 20, List.of(credit(1, 20))));
+        assertTrue(ContractRequirementEvaluator.matchesExactly(thirty, 30, List.of(credit(1, 30))));
+        assertFalse(ContractRequirementEvaluator.matchesExactly(thirty, 50, List.of(credit(1, 50))));
+    }
+
+    @Test
+    void furniFitsOnlyWhatTheRuleAsksForAndNoMore() {
+        List<Term> twoChairs = List.of(furni(1389, 2));
+
+        assertTrue(ContractRequirementEvaluator.fits(twoChairs, 0, List.of(offered(1, 1389), offered(2, 1389))));
+        assertFalse(
+                ContractRequirementEvaluator.fits(
+                        twoChairs, 0, List.of(offered(1, 1389), offered(2, 1389), offered(3, 1389))),
+                "a third chair exceeds two");
+        assertFalse(ContractRequirementEvaluator.fits(twoChairs, 0, List.of(offered(1, 4242))), "a table is not asked");
+        assertFalse(ContractRequirementEvaluator.fits(twoChairs, 10, List.of(credit(1, 10))), "no coins are asked");
+        assertTrue(
+                ContractRequirementEvaluator.matchesExactly(twoChairs, 0, List.of(offered(1, 1389), offered(2, 1389))));
+    }
+
+    @Test
+    void theExactMatchPicksTheAlternativeTheTableIsAndClaimsItsFurni() {
+        ContractRules rules =
+                ContractRules.of(List.of(List.of(coins(30)), List.of(furni(1389, 1), coins(10))), List.of());
+
+        Match chairAndTen =
+                ContractRequirementEvaluator.firstExact(rules, 10, List.of(offered(5, 1389), credit(6, 10)));
+        assertTrue(chairAndTen.satisfied());
+        assertEquals(1, chairAndTen.ruleIndex());
+        assertEquals(List.of(5), chairAndTen.consumedItemIds(), "the credit furni pay the coins, not a furni term");
+
+        Match short20 = ContractRequirementEvaluator.firstExact(rules, 20, List.of(credit(1, 20)));
+        assertFalse(short20.satisfied());
+        assertEquals(1, short20.missing().size(), "ten coins short of the first alternative");
+        assertEquals(10, short20.missing().get(0).amount);
+
+        assertTrue(ContractRequirementEvaluator.fitsAny(rules, 30, List.of(credit(1, 30))));
+        assertFalse(ContractRequirementEvaluator.fitsAny(rules, 40, List.of(credit(1, 40))));
+    }
+
+    @Test
+    void aNamedPosterFillsItsOwnTermBeforeAGenericOne() {
+        Term anyPoster = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "", 1);
+        Term poster7 = Term.furni(InteractionWiredContract.DIR_PAY, true, 4001, "7", 1);
+        List<Term> rule = List.of(anyPoster, poster7);
+
+        assertTrue(ContractRequirementEvaluator.matchesExactly(
+                rule, 0, List.of(new OfferedItem(1, true, 4001, "7"), new OfferedItem(2, true, 4001, "3"))));
+        assertFalse(ContractRequirementEvaluator.fits(
+                rule, 0, List.of(new OfferedItem(1, true, 4001, "3"), new OfferedItem(2, true, 4001, "4"))));
+    }
 }

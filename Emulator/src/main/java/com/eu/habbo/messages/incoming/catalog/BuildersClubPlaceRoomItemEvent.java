@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnersh
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -34,6 +35,13 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());
 
         if (room == null || !this.client.getHabbo().getRoomUnit().isInRoom()) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+            return;
+        }
+
+        // Playtest (the hotel's own rule beyond AIR): no Builders Club furni is placed either.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) {
             this.client.sendResponse(new BubbleAlertComposer(
                     BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;

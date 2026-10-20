@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
@@ -16,6 +17,9 @@ public class RoomPlacePaintEvent extends MessageHandler {
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+
+        // Playtest (the hotel's own rule beyond AIR): no paint is applied, as for a visitor without rights.
+        if (RoomPlayTestSupport.isBuildingRefused(this.client.getHabbo())) return;
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
                 || room.hasRights(this.client.getHabbo())

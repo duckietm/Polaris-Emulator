@@ -272,6 +272,8 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                 // Trip the catch path so the deduction is refunded.
                                 throw new IllegalStateException("null item before limitedSold()");
                             }
+                            // The box shares the set for cleanup, but it carries no limited number.
+                            if (itm == gift) continue;
                             limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), itm);
                         }
                     }

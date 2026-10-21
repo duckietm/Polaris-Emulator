@@ -454,6 +454,14 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
+    void aLimitedTeleporterRecordsOneSaleForItsNumber() {
+        makeLimited();
+        chair = baseItem(301, "teleport", FurnitureType.FLOOR, InteractionTeleport.class);
+
+        assertGift(gift(FREE_WRAP_SPRITE, true, "ltd tele"));
+    }
+
+    @Test
     void aLimitedItemWithoutAConfigurationGetsOne() {
         makeLimited();
         when(catalogManager.getLimitedConfig(any())).thenReturn(null);

@@ -271,14 +271,19 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     createdGiftItems.add(gift);
 
                     if (limitedConfiguration != null) {
+                        // One number, one sale, as a purchase for oneself records it: both halves of a teleporter
+                        // carry the same number, and the box carries none. The first item created is the one sold.
+                        HabboItem limitedItem = null;
                         for (HabboItem itm : itemsList) {
                             if (itm == null) {
                                 // Trip the catch path so the deduction is refunded.
                                 throw new IllegalStateException("null item before limitedSold()");
                             }
-                            // The box shares the set for cleanup, but it carries no limited number.
                             if (itm == gift) continue;
-                            limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), itm);
+                            if (limitedItem == null || itm.getId() < limitedItem.getId()) limitedItem = itm;
+                        }
+                        if (limitedItem != null) {
+                            limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), limitedItem);
                         }
                     }
 

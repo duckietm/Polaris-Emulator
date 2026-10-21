@@ -18,7 +18,7 @@ import java.util.List;
  * PostQuizAnswers (3720): the chosen answer index per question, in the order
  * of the QuizData question ids; answered with QuizResults (2772) carrying the
  * wrongly answered question ids. A perfect score earns the official
- * "Habbo Way Graduate" badge.
+ * "Habbo Way Graduate" badge, or "Safety Quiz Graduate" for the safety quiz.
  */
 public class PostQuizAnswersEvent extends MessageHandler {
 
@@ -44,36 +44,38 @@ public class PostQuizAnswersEvent extends MessageHandler {
 
         Habbo habbo = this.client.getHabbo();
         HabboWayQuizSessions sessions = HabboWayQuizSessions.getInstance();
-        int[] questionIds = sessions.pending(habbo.getHabboInfo().getId());
+        int[] questionIds = sessions.pending(habbo.getHabboInfo().getId(), quizCode);
 
         if (questionIds == null) {
             return;
         }
 
-        List<Integer> wrongQuestionIds = HabboWayQuiz.grade(questionIds, answerIds);
-        sessions.finish(habbo.getHabboInfo().getId());
+        List<Integer> wrongQuestionIds = HabboWayQuiz.grade(quizCode, questionIds, answerIds);
+        sessions.finish(habbo.getHabboInfo().getId(), quizCode);
 
         if (wrongQuestionIds.isEmpty()) {
-            awardGraduateBadge(habbo);
+            awardGraduateBadge(habbo, HabboWayQuiz.graduateAchievement(quizCode));
         }
 
         this.client.sendResponse(new UnknownHabboWayQuizComposer(quizCode, wrongQuestionIds));
     }
 
-    private static void awardGraduateBadge(Habbo habbo) {
+    private static void awardGraduateBadge(Habbo habbo, String achievementName) {
         Achievement achievement =
-                Emulator.getGameEnvironment().getAchievementManager().getAchievement(ACHIEVEMENT_NAME);
+                Emulator.getGameEnvironment().getAchievementManager().getAchievement(achievementName);
 
         if (achievement != null) {
             AchievementManager.progressAchievement(habbo, achievement);
             return;
         }
 
-        if (habbo.getInventory().getBadgesComponent().hasBadge(BADGE_CODE)) {
+        String badgeCode = "ACH_" + achievementName + "1";
+
+        if (habbo.getInventory().getBadgesComponent().hasBadge(badgeCode)) {
             return;
         }
 
-        HabboBadge badge = BadgesComponent.createBadge(BADGE_CODE, habbo);
+        HabboBadge badge = BadgesComponent.createBadge(badgeCode, habbo);
         habbo.getClient()
                 .sendResponse(new AddHabboItemComposer(badge.getId(), AddHabboItemComposer.AddHabboItemCategory.BADGE));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());

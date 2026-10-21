@@ -165,6 +165,61 @@ class QuestEngineTest {
     }
 
     @Test
+    void aFinishedSeasonalDayStaysOnTheCalendarWithItsDay() {
+        QuestManager manager = questManager();
+        manager.register(new Quest(
+                20,
+                "xmas_1",
+                "xmas_visit",
+                "",
+                1,
+                QuestGoalType.VISIT_ROOMS,
+                "",
+                1,
+                Quest.REWARD_DUCKETS,
+                5,
+                "",
+                true,
+                false,
+                86400,
+                0,
+                "",
+                "1"));
+        manager.register(new Quest(
+                21,
+                "xmas_2",
+                "xmas_chat",
+                "",
+                2,
+                QuestGoalType.TALK_IN_ROOM,
+                "",
+                1,
+                Quest.REWARD_DUCKETS,
+                5,
+                "",
+                true,
+                false,
+                86400,
+                0,
+                "",
+                "1"));
+        Habbo habbo = habbo(7, false);
+        manager.accept(habbo, 20);
+        manager.progress(habbo, QuestGoalType.VISIT_ROOMS, 1);
+
+        List<QuestsComposer.Quest> seasonal = manager.seasonalEntries(habbo);
+        assertEquals(2, seasonal.size());
+        assertEquals("xmas_1", seasonal.get(0).getCampaignCode());
+        assertEquals(0, seasonal.get(0).getId(), "the finished day is a completed entry");
+        assertEquals(1, seasonal.get(0).getSortOrder(), "and keeps its day");
+        assertEquals(21, seasonal.get(1).getId());
+        assertTrue(
+                manager.campaignEntries(habbo).stream()
+                        .noneMatch(entry -> entry.getCampaignCode().startsWith("xmas_")),
+                "seasonal days never show in the regular list");
+    }
+
+    @Test
     void theDailyQuestOffersTheOpenQuestsOfTheDayAndCancelsWithoutAnId() {
         QuestManager manager = questManager();
         Habbo habbo = habbo(7, false);

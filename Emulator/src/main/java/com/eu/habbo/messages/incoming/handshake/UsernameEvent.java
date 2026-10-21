@@ -94,6 +94,15 @@ public class UsernameEvent extends MessageHandler {
         this.client.getHabbo().getHabboInfo().setLastOnline(Emulator.getIntUnixTimestamp());
     }
 
+    /**
+     * IsFirstLoginOfDay (793): the quest engine opens the seasonal calendar on the first login of a
+     * day. The previous login is still the stored {@code last_online} here, it is moved at the end of
+     * {@link #handle()}; days are counted the way {@link #loginStreak} counts them.
+     */
+    public static boolean isFirstLoginOfDay(int previousLogin, int timestamp) {
+        return previousLogin <= 0 || Math.floorDiv(timestamp, 86400) > Math.floorDiv(previousLogin, 86400);
+    }
+
     static int loginStreak(int previousStreak, int previousLogin, int timestamp) {
         int elapsedDays = Math.floorDiv(timestamp, 86400) - Math.floorDiv(previousLogin, 86400);
         if (elapsedDays <= 0) return Math.max(1, previousStreak);

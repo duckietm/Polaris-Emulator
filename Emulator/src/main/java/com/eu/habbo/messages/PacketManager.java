@@ -27,6 +27,7 @@ import com.eu.habbo.messages.incoming.catalog.CatalogRuntimeConfigurationEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogSearchedItemEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogSelectClubGiftEvent;
 import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
+import com.eu.habbo.messages.incoming.catalog.GetSeasonalCalendarDailyOfferEvent;
 import com.eu.habbo.messages.incoming.catalog.JukeBoxRequestTrackCodeEvent;
 import com.eu.habbo.messages.incoming.catalog.JukeBoxRequestTrackDataEvent;
 import com.eu.habbo.messages.incoming.catalog.PurchaseTargetOfferEvent;
@@ -1700,6 +1701,7 @@ public class PacketManager {
 
         this.registerHandler(Incoming.GetQuestsEvent, GetQuestsEvent.class);
         this.registerHandler(Incoming.GetSeasonalQuestsOnlyEvent, GetSeasonalQuestsOnlyEvent.class);
+        this.registerHandler(Incoming.GetSeasonalCalendarDailyOfferEvent, GetSeasonalCalendarDailyOfferEvent.class);
         this.registerHandler(Incoming.AcceptQuestEvent, AcceptQuestEvent.class);
         this.registerHandler(Incoming.ActivateQuestEvent, ActivateQuestEvent.class);
         this.registerHandler(Incoming.RejectQuestEvent, RejectQuestEvent.class);

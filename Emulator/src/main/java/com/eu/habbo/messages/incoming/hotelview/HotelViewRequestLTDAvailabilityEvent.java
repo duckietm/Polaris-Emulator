@@ -14,12 +14,22 @@ public class HotelViewRequestLTDAvailabilityEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (ENABLED) {
-            int timeremaining = Math.max(TIMESTAMP - Emulator.getIntUnixTimestamp(), -1);
-            this.client.sendResponse(new HotelViewNextLTDAvailableComposer(
-                    timeremaining,
-                    timeremaining > 0 ? -1 : ITEM_ID,
-                    timeremaining > 0 ? -1 : PAGE_ID,
-                    timeremaining > 0 ? "" : ITEM_NAME));
+            this.client.sendResponse(availability(Emulator.getIntUnixTimestamp()));
         }
+    }
+
+    /**
+     * LimitedOfferAppearingNext (44): seconds until the rare, then page id, offer id and product
+     * class name (NextLimitedRareCountdownWidget reads them in that order); page and offer stay -1
+     * while the countdown runs. Page and item used to be written the other way round, so the
+     * "get" button opened the item id as a page.
+     */
+    public static HotelViewNextLTDAvailableComposer availability(int now) {
+        int timeremaining = Math.max(TIMESTAMP - now, -1);
+        return new HotelViewNextLTDAvailableComposer(
+                timeremaining,
+                timeremaining > 0 ? -1 : PAGE_ID,
+                timeremaining > 0 ? -1 : ITEM_ID,
+                timeremaining > 0 ? "" : ITEM_NAME);
     }
 }

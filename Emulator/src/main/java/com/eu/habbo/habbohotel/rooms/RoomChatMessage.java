@@ -5,6 +5,7 @@ import com.eu.habbo.core.DatabaseLoggable;
 import com.eu.habbo.habbohotel.games.GamePlayer;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.users.ChatStyleRepository;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
@@ -76,6 +77,13 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
                     this.bubble = RoomChatMessageBubbles.NORMAL;
                     break;
                 }
+            }
+
+            // A catalog-sold style only for its owners; the ownership lookup only runs for those styles.
+            if (ChatStyleRepository.isPurchasable(this.bubble.getType())
+                    && !ChatStyleRepository.owns(
+                            message.client.getHabbo().getHabboInfo().getId(), this.bubble.getType())) {
+                this.bubble = RoomChatMessageBubbles.NORMAL;
             }
         }
 

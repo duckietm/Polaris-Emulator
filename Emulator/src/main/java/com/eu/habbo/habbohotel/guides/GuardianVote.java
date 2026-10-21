@@ -23,10 +23,16 @@ public class GuardianVote implements Comparable<GuardianVote> {
     @Override
     public boolean equals(Object o) {
         if (o instanceof GuardianVote) {
-            return ((GuardianVote) o).id == this.id && ((GuardianVote) o).guardian == this.guardian && ((GuardianVote) o).type == this.type;
+            return ((GuardianVote) o).id == this.id
+                    && ((GuardianVote) o).guardian == this.guardian
+                    && ((GuardianVote) o).type == this.type;
         }
 
         return false;
+    }
+
+    public Habbo getGuardian() {
+        return this.guardian;
     }
 
     public void ignore() {

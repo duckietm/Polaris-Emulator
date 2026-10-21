@@ -1175,6 +1175,8 @@ U|com/eu/habbo/messages/incoming/catalog/CatalogSearchedItemEvent.java|CALL|getG
 U|com/eu/habbo/messages/incoming/catalog/CatalogSelectClubGiftEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/catalog/CatalogSelectClubGiftEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/catalog/CheckPetNameEvent.java|CALL|getConfig|2
+U|com/eu/habbo/messages/incoming/catalog/GetSeasonalCalendarDailyOfferEvent.java|CALL|getConfig|1
+U|com/eu/habbo/messages/incoming/catalog/GetSeasonalCalendarDailyOfferEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/JukeBoxRequestTrackCodeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/JukeBoxRequestTrackDataEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/PurchaseTargetOfferEvent.java|CALL|getGameEnvironment|3

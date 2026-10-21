@@ -74,6 +74,8 @@ public class Outgoing {
     public static final int RoomAccessDeniedComposer = 878;
     public static final int GuildFurniWidgetComposer = 3293;
     public static final int GiftConfigurationComposer = 2234;
+    // AIR 15 special items display: has-claimed response (official id)
+    public static final int HasClaimedProductComposer = 266;
     public static final int UserClubComposer = 954;
     public static final int InventoryBadgesComposer = 717;
     public static final int BadgeInfoComposer = 3228;
@@ -469,6 +471,10 @@ public class Outgoing {
     public static final int NewNavigatorCategoryUserCountComposer = 1455; // PRODUCTION-201611291003-338511768
     public static final int CameraRoomThumbnailSavedComposer = 3595; // PRODUCTION-201611291003-338511768
     public static final int RoomEditSettingsErrorComposer = 1555; // PRODUCTION-201611291003-338511768
+    // AIR raid protection (navigator/raidprotection), official ids free in both repos.
+    public static final int RaidProtectionCapabilityComposer = 2671;
+    public static final int RaidProtectionSettingsComposer = 3877;
+    public static final int RaidProtectionSaveResultComposer = 958;
     public static final int GuildAcceptMemberErrorComposer = 818; // PRODUCTION-201611291003-338511768
     public static final int MostUselessErrorAlertComposer = 662; // PRODUCTION-201611291003-338511768
     public static final int AchievementsConfigurationComposer = 1689; // PRODUCTION-201611291003-338511768

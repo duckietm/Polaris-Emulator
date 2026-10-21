@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTalkingFurniture;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.rooms.raidprotection.RaidProtectionManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.UserWordFilter;
@@ -333,6 +334,11 @@ public class RoomChatManager {
         if (roomChatMessage == null
                 || roomChatMessage.getMessage() == null
                 || roomChatMessage.getMessage().equals("")) {
+            return;
+        }
+
+        // AIR raid protection: a chat flood of newcomers is a raid; a raider acted on loses the line.
+        if (RaidProtectionManager.get().onChat(this.room, habbo)) {
             return;
         }
 

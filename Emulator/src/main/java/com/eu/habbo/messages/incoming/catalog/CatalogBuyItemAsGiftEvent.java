@@ -771,7 +771,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
             HabboItem habboItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedNumber, limitedNumber, extraData);
+                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (habboItem == null) {
                 LOGGER.debug("hopper creation failed. baseItemId={}", baseItem.getId());

@@ -524,7 +524,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void aLimitedHopperIsCreatedWithItsNumberAsTheStack() {
+    void aLimitedHopperKeepsItsStackAndNumber() {
         makeLimited();
         chair = baseItem(302, "hopper", FurnitureType.FLOOR, InteractionHopper.class);
 

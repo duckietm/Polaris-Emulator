@@ -127,9 +127,9 @@ senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
-== aLimitedHopperIsCreatedWithItsNumberAsTheStack #0
+== aLimitedHopperKeepsItsStackAndNumber #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:hopper, 7, 7, )
+itemManager.createItem(2, item:hopper, 50, 7, )
 itemManager.insertHopper(habboItem1000:hopper)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:hopper)

@@ -5,8 +5,11 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
 public class BullyReportClosedComposer extends MessageComposer {
-    public final static int CLOSED = 1;
-    public final static int MISUSE = 2;
+    /** GuideTicketResolution codes of the official client: action taken, forwarded, reporter abusive. */
+    public static final int TOOK_ACTION = 0;
+
+    public static final int CLOSED = 1;
+    public static final int MISUSE = 2;
 
     public final int code;
 

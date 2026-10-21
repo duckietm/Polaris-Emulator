@@ -4,10 +4,14 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.outgoing.guides.*;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionAttachedComposer;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionDetachedComposer;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionEndedComposer;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionErrorComposer;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionStartedComposer;
+import com.eu.habbo.messages.outgoing.guides.GuideToolsComposer;
 import com.eu.habbo.threading.runnables.GuardianTicketFindMoreSlaves;
 import com.eu.habbo.threading.runnables.GuideFindNewHelper;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,20 +52,17 @@ public class GuideManager {
         this.activeGuardians.remove(habbo);
     }
 
-
     public void setOnGuide(Habbo habbo, boolean onDuty) {
         if (onDuty) {
             this.activeHelpers.put(habbo, false);
         } else {
             GuideTour tour = this.getGuideTourByHabbo(habbo);
 
-            if (tour != null)
-                return;
+            if (tour != null) return;
 
             this.activeHelpers.remove(habbo);
         }
     }
-
 
     public boolean findHelper(GuideTour tour) {
         synchronized (this.activeHelpers) {
@@ -80,11 +81,12 @@ public class GuideManager {
             }
         }
         this.endSession(tour);
-        tour.getNoob().getClient().sendResponse(new GuideSessionErrorComposer(GuideSessionErrorComposer.NO_HELPERS_AVAILABLE));
+        tour.getNoob()
+                .getClient()
+                .sendResponse(new GuideSessionErrorComposer(GuideSessionErrorComposer.NO_HELPERS_AVAILABLE));
 
         return false;
     }
-
 
     public void declineTour(GuideTour tour) {
         Habbo helper = tour.getHelper();
@@ -94,10 +96,11 @@ public class GuideManager {
         helper.getClient().sendResponse(new GuideSessionDetachedComposer());
         if (!this.findHelper(tour)) {
             this.endSession(tour);
-            tour.getNoob().getClient().sendResponse(new GuideSessionErrorComposer(GuideSessionErrorComposer.NO_HELPERS_AVAILABLE));
+            tour.getNoob()
+                    .getClient()
+                    .sendResponse(new GuideSessionErrorComposer(GuideSessionErrorComposer.NO_HELPERS_AVAILABLE));
         }
     }
-
 
     public void startSession(GuideTour tour, Habbo helper) {
         synchronized (this.activeTours) {
@@ -113,16 +116,19 @@ public class GuideManager {
         }
     }
 
-
     public void endSession(GuideTour tour) {
         synchronized (this.activeTours) {
             synchronized (this.activeHelpers) {
-                tour.getNoob().getClient().sendResponse(new GuideSessionEndedComposer(GuideSessionEndedComposer.HELP_CASE_CLOSED));
+                tour.getNoob()
+                        .getClient()
+                        .sendResponse(new GuideSessionEndedComposer(GuideSessionEndedComposer.HELP_CASE_CLOSED));
                 tour.end();
 
                 if (tour.getHelper() != null) {
                     this.activeHelpers.put(tour.getHelper(), false);
-                    tour.getHelper().getClient().sendResponse(new GuideSessionEndedComposer(GuideSessionEndedComposer.HELP_CASE_CLOSED));
+                    tour.getHelper()
+                            .getClient()
+                            .sendResponse(new GuideSessionEndedComposer(GuideSessionEndedComposer.HELP_CASE_CLOSED));
                     tour.getHelper().getClient().sendResponse(new GuideSessionDetachedComposer());
                     tour.getHelper().getClient().sendResponse(new GuideToolsComposer(true));
                 }
@@ -130,17 +136,17 @@ public class GuideManager {
         }
     }
 
-
     public void recommend(GuideTour tour, boolean recommend) {
         synchronized (this.activeTours) {
             tour.setWouldRecommend(recommend ? GuideRecommendStatus.YES : GuideRecommendStatus.NO);
             tour.getNoob().getClient().sendResponse(new GuideSessionDetachedComposer());
-            AchievementManager.progressAchievement(tour.getNoob(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideFeedbackGiver"));
+            AchievementManager.progressAchievement(
+                    tour.getNoob(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideFeedbackGiver"));
 
             this.activeTours.remove(tour);
         }
     }
-
 
     public GuideTour getGuideTourByHelper(Habbo helper) {
         synchronized (this.activeTours) {
@@ -154,7 +160,6 @@ public class GuideManager {
         return null;
     }
 
-
     public GuideTour getGuideTourByNoob(Habbo noob) {
         synchronized (this.activeTours) {
             for (GuideTour tour : this.activeTours) {
@@ -166,7 +171,6 @@ public class GuideManager {
 
         return null;
     }
-
 
     public GuideTour getGuideTourByHabbo(Habbo habbo) {
         synchronized (this.activeTours) {
@@ -180,28 +184,23 @@ public class GuideManager {
         return null;
     }
 
-
     public int getGuidesCount() {
         return this.activeHelpers.size();
     }
-
 
     public int getGuardiansCount() {
         return this.activeGuardians.size();
     }
 
-
     public boolean activeGuardians() {
         return this.activeGuardians.size() > 0;
     }
-
 
     public int getAverageWaitingTime() {
         synchronized (this.tourRequestTiming) {
             int total = 0;
 
-            if (this.tourRequestTiming.isEmpty())
-                return 5;
+            if (this.tourRequestTiming.isEmpty()) return 5;
 
             for (Map.Entry<Integer, Integer> set : this.tourRequestTiming.entrySet()) {
                 total += (set.getValue() - set.getKey());
@@ -211,7 +210,6 @@ public class GuideManager {
         }
     }
 
-
     public void addGuardianTicket(GuardianTicket ticket) {
         synchronized (this.activeTickets) {
             this.activeTickets.add(ticket);
@@ -220,7 +218,6 @@ public class GuideManager {
         }
     }
 
-
     public void findGuardians(GuardianTicket ticket) {
         synchronized (this.activeGuardians) {
             int count = ticket.getVotedCount();
@@ -228,12 +225,9 @@ public class GuideManager {
             Set<Habbo> selectedGuardians = new HashSet<>();
 
             for (Map.Entry<Habbo, GuardianTicket> set : this.activeGuardians.entrySet()) {
-                if (count == 5)
-                    break;
+                if (count == 5) break;
 
-                if (set.getKey() == ticket.getReporter() ||
-                        set.getKey() == ticket.getReported())
-                    continue;
+                if (set.getKey() == ticket.getReporter() || set.getKey() == ticket.getReported()) continue;
 
                 if (set.getValue() == null) {
                     if (ticket.getVoteForGuardian(set.getKey()) == null) {
@@ -256,7 +250,6 @@ public class GuideManager {
         }
     }
 
-
     public void acceptTicket(Habbo guardian, boolean accepted) {
         GuardianTicket ticket = this.getTicketForGuardian(guardian);
 
@@ -272,13 +265,23 @@ public class GuideManager {
         }
     }
 
+    /** The guardian left their review: their vote stays counted and they are free for the next one. */
+    public void detachGuardian(Habbo guardian) {
+        synchronized (this.activeGuardians) {
+            GuardianTicket ticket = this.activeGuardians.get(guardian);
+
+            if (ticket == null) return;
+
+            ticket.detachGuardian(guardian);
+            this.activeGuardians.put(guardian, null);
+        }
+    }
 
     public GuardianTicket getTicketForGuardian(Habbo guardian) {
         synchronized (this.activeGuardians) {
             return this.activeGuardians.get(guardian);
         }
     }
-
 
     public GuardianTicket getRecentTicket(Habbo reporter) {
         GuardianTicket ticket = null;
@@ -293,10 +296,12 @@ public class GuideManager {
 
         synchronized (this.closedTickets) {
             for (GuardianTicket t : this.closedTickets) {
-                if (t.getReporter() != reporter)
-                    continue;
+                if (t.getReporter() != reporter) continue;
 
-                if (ticket == null || Emulator.getIntUnixTimestamp() - (t.getDate().getTime() / 1000) < Emulator.getIntUnixTimestamp() - (ticket.getDate().getTime() / 1000)) {
+                if (ticket == null
+                        || Emulator.getIntUnixTimestamp() - (t.getDate().getTime() / 1000)
+                                < Emulator.getIntUnixTimestamp()
+                                        - (ticket.getDate().getTime() / 1000)) {
                     ticket = t;
                 }
             }
@@ -316,7 +321,6 @@ public class GuideManager {
 
         return null;
     }
-
 
     public void closeTicket(GuardianTicket ticket) {
         synchronized (this.activeTickets) {
@@ -342,7 +346,6 @@ public class GuideManager {
         }
     }
 
-
     public void setOnGuardian(Habbo habbo, boolean onDuty) {
         if (onDuty) {
             this.activeGuardians.put(habbo, null);
@@ -356,7 +359,6 @@ public class GuideManager {
             this.activeGuardians.remove(habbo);
         }
     }
-
 
     public void cleanup() {
         synchronized (this.activeTours) {

@@ -84,4 +84,34 @@ class HabboWayQuizTest {
         assertFalse(sessions.isLocked(2));
         assertEquals(HabboWayQuiz.QUESTIONS_PER_QUIZ, sessions.start(2).length);
     }
+
+    @Test
+    void safetyQuizHasItsOwnKeyAndNoLockout() {
+        String code = HabboWayQuiz.SAFETY_QUIZ_CODE;
+        assertTrue(HabboWayQuiz.isKnownQuiz(code));
+        assertFalse(HabboWayQuiz.isKnownQuiz("Unknown1"));
+        assertEquals(13, HabboWayQuiz.questionCount(code));
+        assertEquals("SafetyQuizGraduate", HabboWayQuiz.graduateAchievement(code));
+        assertEquals("HabboWayGraduate", HabboWayQuiz.graduateAchievement(HabboWayQuiz.QUIZ_CODE));
+
+        for (int seed = 0; seed < 50; seed++) {
+            assertTrue(HabboWayQuiz.isValidQuestionSet(code, HabboWayQuiz.pickQuestions(code, new Random(seed))));
+        }
+
+        assertTrue(HabboWayQuiz.grade(code, new int[] {0, 5, 8, 9, 12}, new int[] {1, 0, 2, 2, 0})
+                .isEmpty());
+        assertEquals(List.of(5), HabboWayQuiz.grade(code, new int[] {0, 5}, new int[] {1, 1}));
+
+        HabboWayQuizSessions sessions = new HabboWayQuizSessions(() -> 5L, new Random(3));
+        assertEquals(HabboWayQuiz.QUESTIONS_PER_QUIZ, sessions.start(9, code).length);
+        assertNull(sessions.pending(9));
+        sessions.finish(9, code);
+        assertFalse(sessions.isLocked(9, code));
+        assertEquals(HabboWayQuiz.QUESTIONS_PER_QUIZ, sessions.start(9, code).length);
+
+        sessions.start(9);
+        sessions.finish(9);
+        assertTrue(sessions.isLocked(9));
+        assertFalse(sessions.isLocked(9, code));
+    }
 }

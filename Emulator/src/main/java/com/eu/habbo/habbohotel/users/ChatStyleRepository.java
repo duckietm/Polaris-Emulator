@@ -53,6 +53,16 @@ public final class ChatStyleRepository {
         CATALOG_ITEM_STYLES.putAll(styles);
     }
 
+    /** The chat bubble style the catalog offer sells, or 0 when it sells none. */
+    public static int styleForCatalogItem(int catalogItemId) {
+        return CATALOG_ITEM_STYLES.getOrDefault(catalogItemId, 0);
+    }
+
+    /** True when some catalog offer sells the style, so only its owners may pick it. */
+    public static boolean isPurchasable(int styleId) {
+        return styleId > 0 && CATALOG_ITEM_STYLES.containsValue(styleId);
+    }
+
     public static List<Integer> findOwnedStyles(int userId) {
         List<Integer> styles = new ArrayList<>();
 

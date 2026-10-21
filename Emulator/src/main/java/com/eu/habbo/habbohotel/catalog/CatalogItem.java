@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
+import com.eu.habbo.habbohotel.users.ChatStyleRepository;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.Connection;
@@ -349,11 +350,13 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         message.appendInt(this.getCredits());
         message.appendInt(this.getPoints());
         message.appendInt(this.getPointsType());
-        message.appendBoolean(this.habbiconId <= 0 && this.allowGift);
+        // A chat bubble style is granted to the buyer's account, so it cannot be wrapped as a gift.
+        int chatStyleId = this.habbiconId > 0 ? 0 : ChatStyleRepository.styleForCatalogItem(this.getId());
+        message.appendBoolean(this.habbiconId <= 0 && chatStyleId <= 0 && this.allowGift);
 
         Set<Item> items = this.habbiconId > 0 ? Set.of() : this.getBaseItems();
 
-        message.appendInt(this.habbiconId > 0 ? 1 : items.size());
+        message.appendInt(this.habbiconId > 0 ? 1 : items.size() + (chatStyleId > 0 ? 1 : 0));
 
         if (this.habbiconId > 0) {
             message.appendString("habbicon");
@@ -407,6 +410,16 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
                     message.appendInt(this.getLimitedStack() - this.getLimitedSells());
                 }
             }
+        }
+
+        if (chatStyleId > 0) {
+            // AIR 13 PRODUCT_TYPE_CHAT_STYLE: the style id is the class id (recycler reward
+            // wrapper) and the extra param (catalog preview, Offer chat style id).
+            message.appendString("chat_style");
+            message.appendInt(chatStyleId);
+            message.appendString(Integer.toString(chatStyleId));
+            message.appendInt(1);
+            message.appendBoolean(false);
         }
 
         message.appendInt(this.clubOnly);

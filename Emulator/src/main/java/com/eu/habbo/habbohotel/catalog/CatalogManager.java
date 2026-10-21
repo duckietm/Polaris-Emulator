@@ -1479,6 +1479,16 @@ public class CatalogManager {
                 return;
             }
 
+            // An offer that only sells a chat bubble style cannot be bought again by its owner.
+            int soldChatStyle = ChatStyleRepository.styleForCatalogItem(item.getId());
+            if (soldChatStyle > 0
+                    && item.getBaseItems().isEmpty()
+                    && ChatStyleRepository.owns(habbo.getHabboInfo().getId(), soldChatStyle)) {
+                habbo.getClient()
+                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return;
+            }
+
             try {
                 int limitedStack = 0;
                 if (item.isLimited()) {

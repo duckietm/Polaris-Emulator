@@ -11,6 +11,7 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceBuyErrorComposer;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceCancelSaleComposer;
+import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceItemInfoComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
@@ -264,9 +265,17 @@ public class MarketPlace {
     }
 
     public static void serializeItemInfo(int itemId, ServerMessage message) {
+        serializeItemInfo(MarketplaceItemInfoComposer.CATEGORY_FLOOR, itemId, message);
+    }
+
+    /**
+     * MarketplaceItemStats: the history rows run oldest day first (the client draws them as one
+     * line), and the request's category and sprite id are echoed so the client accepts the answer.
+     */
+    public static void serializeItemInfo(int category, int itemId, ServerMessage message) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp))",
+                        "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp)) ORDER BY DATE(from_unixtime(marketplace_items.timestamp)) ASC",
                         ResultSet.TYPE_SCROLL_INSENSITIVE,
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, itemId);
@@ -287,7 +296,7 @@ public class MarketPlace {
                 }
             }
 
-            message.appendInt(1);
+            message.appendInt(category);
             message.appendInt(itemId);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

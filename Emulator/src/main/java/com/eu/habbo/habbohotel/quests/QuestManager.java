@@ -271,8 +271,44 @@ public class QuestManager {
 
     /** A completed campaign is an entry with id 0 and completed == total; the client shows "completed". */
     static QuestsComposer.Quest completedCampaignWire(String campaignCode, int questCount) {
+        return completedCampaignWire(campaignCode, questCount, 0);
+    }
+
+    /**
+     * The seasonal calendar places every entry on the day of its sort order, a finished day too
+     * (Calendar.onQuests reads it from the completed entry), so a completed seasonal campaign keeps
+     * the sort order of its last quest.
+     */
+    static QuestsComposer.Quest completedCampaignWire(String campaignCode, int questCount, int sortOrder) {
         return new QuestsComposer.Quest(
-                campaignCode, questCount, questCount, 0, 0, false, "", "", 0, "", 0, 0, 0, "", "", false, false, 0);
+                campaignCode,
+                questCount,
+                questCount,
+                0,
+                0,
+                false,
+                "",
+                "",
+                0,
+                "",
+                0,
+                0,
+                sortOrder,
+                "",
+                "",
+                false,
+                false,
+                0);
+    }
+
+    /** A campaign of the seasonal calendar: its quests carry a seasonal countdown. */
+    static boolean isSeasonalCampaign(List<Quest> chain) {
+        for (Quest quest : chain) {
+            if (quest.isSeasonal()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** One entry per campaign, the official list layout; seasonal campaigns go to the seasonal list. */
@@ -282,8 +318,10 @@ public class QuestManager {
         for (Map.Entry<String, List<Quest>> campaign : this.campaigns.entrySet()) {
             Quest current = this.currentQuest(campaign.getKey(), state);
             if (current == null) {
-                entries.add(completedCampaignWire(
-                        campaign.getKey(), campaign.getValue().size()));
+                if (!isSeasonalCampaign(campaign.getValue())) {
+                    entries.add(completedCampaignWire(
+                            campaign.getKey(), campaign.getValue().size()));
+                }
             } else if (!current.isSeasonal()) {
                 entries.add(this.toWire(current, state));
             }
@@ -295,9 +333,15 @@ public class QuestManager {
         UserQuestState state = this.stateFor(habbo);
         List<QuestsComposer.Quest> entries = new ArrayList<>();
         for (Map.Entry<String, List<Quest>> campaign : this.campaigns.entrySet()) {
+            List<Quest> chain = campaign.getValue();
             Quest current = this.currentQuest(campaign.getKey(), state);
             if (current != null && current.isSeasonal()) {
                 entries.add(this.toWire(current, state));
+            } else if (current == null && !chain.isEmpty() && isSeasonalCampaign(chain)) {
+                entries.add(completedCampaignWire(
+                        campaign.getKey(),
+                        chain.size(),
+                        chain.get(chain.size() - 1).getSortOrder()));
             }
         }
         return entries;

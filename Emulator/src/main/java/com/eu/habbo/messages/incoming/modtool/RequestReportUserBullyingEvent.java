@@ -5,8 +5,7 @@ import com.eu.habbo.habbohotel.guides.GuardianTicket;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.BullyReportRequestComposer;
 
-import java.util.Calendar;
-
+/** GetGuideReportingStatus (3786): may this user report a bully now? */
 public class RequestReportUserBullyingEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
@@ -14,16 +13,20 @@ public class RequestReportUserBullyingEvent extends MessageHandler {
 
         if (ticket != null) {
             if (ticket.inProgress()) {
-                this.client.sendResponse(new BullyReportRequestComposer(BullyReportRequestComposer.ONGOING_HELPER_CASE, 1));
+                this.client.sendResponse(
+                        new BullyReportRequestComposer(BullyReportRequestComposer.ONGOING_HELPER_CASE, ticket));
                 return;
             }
 
-            if ((Calendar.getInstance().getTime().getTime() / 1000) - ticket.getDate().getTime() < Emulator.getConfig().getInt("guardians.reporting.cooldown")) {
-                this.client.sendResponse(new BullyReportRequestComposer(BullyReportRequestComposer.TOO_RECENT, 1));
+            // The ticket date is in milliseconds and the cooldown in seconds.
+            long secondsSince = (System.currentTimeMillis() - ticket.getDate().getTime()) / 1000L;
+
+            if (secondsSince < Emulator.getConfig().getInt("guardians.reporting.cooldown")) {
+                this.client.sendResponse(new BullyReportRequestComposer(BullyReportRequestComposer.TOO_RECENT));
                 return;
             }
         }
 
-        this.client.sendResponse(new BullyReportRequestComposer(BullyReportRequestComposer.START_REPORT, 0));
+        this.client.sendResponse(new BullyReportRequestComposer(BullyReportRequestComposer.START_REPORT));
     }
 }

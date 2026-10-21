@@ -40,7 +40,9 @@ public class HotelViewLandingSaveEvent extends MessageHandler {
             "generic",
             "communitygoalvsmode",
             "communitygoalvsmodevote",
-            "widgetcontainer");
+            "widgetcontainer",
+            // The concurrent-users goal (AIR element_concurrentusersinfo) as a slot of its own.
+            "concurrentusersgoal");
 
     @Override
     public int getRatelimit() {

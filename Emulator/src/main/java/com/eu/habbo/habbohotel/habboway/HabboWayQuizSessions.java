@@ -6,9 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 
 /**
- * In-memory bookkeeping of the Habbo Way quiz: the question set handed to
- * each user (so PostQuizAnswers is graded against what was actually asked)
- * and the retry lockout that follows a submitted attempt.
+ * In-memory bookkeeping of the quizzes: the question set handed to each user per quiz (so
+ * PostQuizAnswers is graded against what was actually asked) and the retry lockout that follows a
+ * submitted attempt. The methods without a quiz code work on the Habbo Way quiz.
  */
 public final class HabboWayQuizSessions {
 
@@ -18,8 +18,8 @@ public final class HabboWayQuizSessions {
     private static final HabboWayQuizSessions INSTANCE =
             new HabboWayQuizSessions(System::currentTimeMillis, new Random());
 
-    private final Map<Integer, int[]> pendingQuestions = new ConcurrentHashMap<>();
-    private final Map<Integer, Long> lockedUntil = new ConcurrentHashMap<>();
+    private final Map<String, int[]> pendingQuestions = new ConcurrentHashMap<>();
+    private final Map<String, Long> lockedUntil = new ConcurrentHashMap<>();
     private final LongSupplier clock;
     private final Random random;
 
@@ -32,44 +32,74 @@ public final class HabboWayQuizSessions {
         return INSTANCE;
     }
 
+    private static String key(int userId, String quizCode) {
+        return userId + ":" + quizCode;
+    }
+
     public boolean isLocked(int userId) {
-        Long until = this.lockedUntil.get(userId);
+        return this.isLocked(userId, HabboWayQuiz.QUIZ_CODE);
+    }
+
+    public boolean isLocked(int userId, String quizCode) {
+        String key = key(userId, quizCode);
+        Long until = this.lockedUntil.get(key);
         if (until == null) {
             return false;
         }
         if (until <= this.clock.getAsLong()) {
-            this.lockedUntil.remove(userId, until);
+            this.lockedUntil.remove(key, until);
             return false;
         }
         return true;
     }
 
-    /**
-     * Starts an attempt: returns the question ids to send, or an empty array
-     * while the user is still locked out from a previous attempt.
-     */
     public int[] start(int userId) {
-        if (this.isLocked(userId)) {
+        return this.start(userId, HabboWayQuiz.QUIZ_CODE);
+    }
+
+    /**
+     * Starts an attempt: returns the question ids to send, or an empty array while the user is
+     * still locked out from a previous attempt.
+     */
+    public int[] start(int userId, String quizCode) {
+        if (this.isLocked(userId, quizCode)) {
             return new int[0];
         }
-        int[] questions = HabboWayQuiz.pickQuestions(this.random);
-        this.pendingQuestions.put(userId, questions);
+        int[] questions = HabboWayQuiz.pickQuestions(quizCode, this.random);
+        this.pendingQuestions.put(key(userId, quizCode), questions);
         return questions;
     }
 
-    /** The question set the user is currently answering, or null. */
     public int[] pending(int userId) {
-        return this.pendingQuestions.get(userId);
+        return this.pending(userId, HabboWayQuiz.QUIZ_CODE);
     }
 
-    /** Closes the attempt and starts the retry lockout. */
+    /** The question set the user is currently answering, or null. */
+    public int[] pending(int userId, String quizCode) {
+        return this.pendingQuestions.get(key(userId, quizCode));
+    }
+
     public void finish(int userId) {
-        this.pendingQuestions.remove(userId);
-        this.lockedUntil.put(userId, this.clock.getAsLong() + RETRY_LOCKOUT_MS);
+        this.finish(userId, HabboWayQuiz.QUIZ_CODE);
+    }
+
+    /** Closes the attempt and starts the retry lockout of that quiz. */
+    public void finish(int userId, String quizCode) {
+        String key = key(userId, quizCode);
+        this.pendingQuestions.remove(key);
+
+        long lockout = HabboWayQuiz.retryLockoutMs(quizCode);
+
+        if (lockout > 0) {
+            this.lockedUntil.put(key, this.clock.getAsLong() + lockout);
+        }
     }
 
     public void forget(int userId) {
-        this.pendingQuestions.remove(userId);
-        this.lockedUntil.remove(userId);
+        for (String quizCode : new String[] {HabboWayQuiz.QUIZ_CODE, HabboWayQuiz.SAFETY_QUIZ_CODE}) {
+            String key = key(userId, quizCode);
+            this.pendingQuestions.remove(key);
+            this.lockedUntil.remove(key);
+        }
     }
 }

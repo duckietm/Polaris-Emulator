@@ -720,6 +720,7 @@ public class Incoming {
     // Quest engine (AIR 13 quests, daily tasks and reward track; the client-side ids of the renderer)
     public static final int GetQuestsEvent = 3333;
     public static final int GetSeasonalQuestsOnlyEvent = 1190;
+    public static final int GetSeasonalCalendarDailyOfferEvent = 3257;
     public static final int AcceptQuestEvent = 3604;
     public static final int ActivateQuestEvent = 793;
     public static final int RejectQuestEvent = 2397;

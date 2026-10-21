@@ -31,6 +31,7 @@ import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
@@ -42,6 +43,9 @@ import org.slf4j.LoggerFactory;
 public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureAssetHandler.class);
     private static final String MASTER_KEY_CONFIG = "nitro.secure.master_key";
+    private static final String SESSION_TTL_CONFIG = "nitro.secure.session_ttl_sec";
+    private static final int DEFAULT_SESSION_TTL_SECONDS = 300;
+    private static final AtomicBoolean MISSING_ROOT_REPORTED = new AtomicBoolean();
     private static final String ENABLED_CONFIG = "nitro.secure.assets.enabled";
     private static final String BOOTSTRAP_PATH = "/nitro-sec/bootstrap";
     private static final String FILE_PATH = "/nitro-sec/file";
@@ -122,6 +126,8 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
                     "key",
                     Base64.getEncoder()
                             .encodeToString(SERVER_KEYPAIR.getPublic().getEncoded()));
+            // How long the client keeps this session before it bootstraps a new key.
+            response.addProperty("ttl", sessionTtlSeconds());
             sendText(ctx, req, HttpResponseStatus.OK, response.toString(), "application/json; charset=utf-8");
         } catch (Exception e) {
             LOGGER.warn("Nitro secure bootstrap failed", e);
@@ -184,7 +190,14 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
                 rootConfigKey,
                 fallback,
                 kind.equals("config")
-                        ? new String[] {"../Nitro-V3/public", "../../Nitro-V3/public", "Nitro-V3/public"}
+                        ? new String[] {
+                            "../Octane/public/configuration",
+                            "../../Octane/public/configuration",
+                            "Octane/public/configuration",
+                            "../Nitro-V3/public",
+                            "../../Nitro-V3/public",
+                            "Nitro-V3/public"
+                        }
                         : new String[] {
                             "../Nitro-V3/public/nitro/gamedata",
                             "../../Nitro-V3/public/nitro/gamedata",
@@ -259,7 +272,19 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
             if (Files.isDirectory(path)) return path;
         }
 
-        return Path.of(fallback).toAbsolutePath().normalize();
+        Path missing = Path.of(fallback).toAbsolutePath().normalize();
+        if (MISSING_ROOT_REPORTED.compareAndSet(false, true)) {
+            LOGGER.warn(
+                    "Nitro secure assets: {} is not set and no client folder was found, so files are looked up in {}. Set {} in config.ini.",
+                    configKey,
+                    missing,
+                    configKey);
+        }
+        return missing;
+    }
+
+    static int sessionTtlSeconds() {
+        return positiveConfigInt(SESSION_TTL_CONFIG, DEFAULT_SESSION_TTL_SECONDS);
     }
 
     private static boolean secureAssetsEnabled() {

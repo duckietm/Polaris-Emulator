@@ -103,6 +103,36 @@ class NitroSecureAssetHandlerTest {
     }
 
     @Test
+    void bootstrapTellsTheClientHowLongToKeepItsSession() throws Exception {
+        assertEquals(300, bootstrapTtl(), "unset: the client's previous fixed five minutes");
+
+        useConfig("nitro.secure.session_ttl_sec=900\n");
+        assertEquals(900, bootstrapTtl());
+
+        useConfig("nitro.secure.session_ttl_sec=0\n");
+        assertEquals(300, bootstrapTtl(), "zero or negative falls back to the default");
+    }
+
+    private int bootstrapTtl() throws Exception {
+        FullHttpResponse response = bootstrap(publicKey("EC", new ECGenParameterSpec("secp256r1")));
+        int ttl = JsonParser.parseString(response.content().toString(StandardCharsets.UTF_8))
+                .getAsJsonObject()
+                .get("ttl")
+                .getAsInt();
+        response.release();
+        return ttl;
+    }
+
+    private void useConfig(String extraLines) throws Exception {
+        Path configFile = this.temporaryDirectory.resolve("config-" + System.nanoTime() + ".ini");
+        Files.writeString(
+                configFile, "nitro.secure.master_key=test-key\nnitro.secure.assets.enabled=true\n" + extraLines);
+        Field configField = Emulator.class.getDeclaredField("config");
+        configField.setAccessible(true);
+        configField.set(null, new ConfigurationManager(configFile.toString()));
+    }
+
+    @Test
     void bootstrapRefusesAKeyThatIsNotAValidP256PublicKey() throws Exception {
         String[] invalid = {
             "AAAA", "not base64 !!", publicKey("EC", new ECGenParameterSpec("secp384r1")), publicKey("RSA", 2048)

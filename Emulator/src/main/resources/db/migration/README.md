@@ -25,6 +25,22 @@ table and column, and atomically updates `db/runtime-schema-contract.json`.
 Normal `mvn verify` is check-only and fails if a migration changed the schema
 without a matching contract update.
 
+## When the history and the schema disagree
+
+Never delete or edit migrations to get past a startup error, and never replay the
+chain over a hotel. Pick the case:
+
+| Situation | What Polaris does / what to run |
+|---|---|
+| `flyway_schema_history` dropped, or `TRUNCATE`d (table empty) | Nothing to run. A normal startup treats an empty history like a missing one: it recognises the hotel, records the baseline at the last migration whose tables and columns the schema already carries, and applies only the newer ones. |
+| A table or column was dropped by hand, then the history truncated | Also a normal startup. For a hotel that carries Polaris's own tables, adoption judges each migration on its own: it re-runs only the migrations whose tables or columns are missing, plus the data-only migrations that fill those tables (the seed rows of a re-created table), and records everything else as applied. Nothing else is replayed. |
+| Some history rows lost (partial restore, hand-edited rows) | `--migrations=validate` lists the pending migrations the schema already carries; `--migrations=reconcile` records them as applied without running them. |
+| A released migration was edited, so a checksum mismatches, or a failed row blocks startup | `--migrations=repair` realigns the checksums and clears failed rows. |
+| Only want to see the state | `--migrations=validate` (read-only). |
+
+Each command runs against the same raw datasource as a normal startup. Add
+`--migrations-only` to exit after the migration step.
+
 ## Automatic pre-migration backup
 
 Before Flyway changes a recognized existing or managed hotel with pending

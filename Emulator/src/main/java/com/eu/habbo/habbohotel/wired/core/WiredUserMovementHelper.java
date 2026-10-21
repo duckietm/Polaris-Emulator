@@ -24,8 +24,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,9 @@ public final class WiredUserMovementHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredUserMovementHelper.class);
     private static final ThreadLocal<Set<Integer>> SUPPRESSED_STATUS_ROOM_UNIT_IDS = new ThreadLocal<>();
-    private static final ConcurrentHashMap<Integer, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL = new ConcurrentHashMap<>();
+    // Keyed by the unit itself: a unit id is only unique inside its room, so two rooms would share an integer key.
+    private static final Map<RoomUnit, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private WiredUserMovementHelper() {}
 
@@ -446,14 +449,14 @@ public final class WiredUserMovementHelper {
             return false;
         }
 
-        Long suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit.getId());
+        Long suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit);
 
         if (suppressedUntil == null) {
             return false;
         }
 
         if (suppressedUntil <= System.currentTimeMillis()) {
-            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId(), suppressedUntil);
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit, suppressedUntil);
             return false;
         }
 
@@ -465,7 +468,7 @@ public final class WiredUserMovementHelper {
             return;
         }
 
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit);
     }
 
     static void clearThreadLocalsForCurrentThread() {
@@ -811,7 +814,7 @@ public final class WiredUserMovementHelper {
 
         long suppressedUntil =
                 System.currentTimeMillis() + Math.max(duration, InteractionRoller.DELAY) + STATUS_SUPPRESSION_GRACE_MS;
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.put(roomUnit.getId(), suppressedUntil);
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.put(roomUnit, suppressedUntil);
     }
 
     private static void runWithSuppressedStatusUpdates(Collection<RoomUnit> roomUnits, Runnable action) {
@@ -851,7 +854,7 @@ public final class WiredUserMovementHelper {
 
     public static void cleanupRoomUnit(RoomUnit roomUnit) {
         if (roomUnit != null) {
-            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit);
         }
     }
 }

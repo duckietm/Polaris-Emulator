@@ -59,9 +59,11 @@ public final class WiredMoveCarryHelper {
 
     private record Firing(int id, boolean dropsReturnedFurni) {}
 
-    private static final ConcurrentHashMap<Integer, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, UserFollowEntry>> ACTIVE_USER_FOLLOWERS =
-            new ConcurrentHashMap<>();
+    // Keyed by the unit itself: a unit id is only unique inside its room, so two rooms would share an integer key.
+    private static final Map<RoomUnit, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL =
+            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<RoomUnit, ConcurrentHashMap<Integer, UserFollowEntry>> ACTIVE_USER_FOLLOWERS =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private WiredMoveCarryHelper() {}
 
@@ -411,14 +413,14 @@ public final class WiredMoveCarryHelper {
             return false;
         }
 
-        Long suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit.getId());
+        Long suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit);
 
         if (suppressedUntil == null) {
             return false;
         }
 
         if (suppressedUntil <= System.currentTimeMillis()) {
-            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId(), suppressedUntil);
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit, suppressedUntil);
             return false;
         }
 
@@ -430,7 +432,7 @@ public final class WiredMoveCarryHelper {
             return;
         }
 
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit);
     }
 
     public static void beginMovementCollection() {
@@ -580,7 +582,7 @@ public final class WiredMoveCarryHelper {
         }
 
         ACTIVE_USER_FOLLOWERS
-                .computeIfAbsent(targetUnit.getId(), key -> new ConcurrentHashMap<>())
+                .computeIfAbsent(targetUnit, key -> new ConcurrentHashMap<>())
                 .compute(movingItem.getId(), (key, existing) -> {
                     if (existing != null
                             && existing.roomId == room.getId()
@@ -602,7 +604,7 @@ public final class WiredMoveCarryHelper {
             return;
         }
 
-        ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(targetUnit.getId());
+        ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(targetUnit);
         if (followers == null) {
             return;
         }
@@ -620,7 +622,7 @@ public final class WiredMoveCarryHelper {
             return false;
         }
 
-        ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(targetUnit.getId());
+        ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(targetUnit);
         if (followers == null) {
             return false;
         }
@@ -643,13 +645,13 @@ public final class WiredMoveCarryHelper {
                 continue;
             }
 
-            ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(roomUnit.getId());
+            ConcurrentHashMap<Integer, UserFollowEntry> followers = ACTIVE_USER_FOLLOWERS.get(roomUnit);
             if (followers == null || followers.isEmpty()) {
                 continue;
             }
 
             if (!roomUnit.hasStatus(RoomUnitStatus.MOVE) || roomUnit.getCurrentLocation() == null) {
-                ACTIVE_USER_FOLLOWERS.remove(roomUnit.getId(), followers);
+                ACTIVE_USER_FOLLOWERS.remove(roomUnit, followers);
                 continue;
             }
 
@@ -735,7 +737,7 @@ public final class WiredMoveCarryHelper {
                 followers.remove(movingItemId);
             }
 
-            purgeExpiredFollowers(roomUnit.getId(), followers, true);
+            purgeExpiredFollowers(roomUnit, followers, true);
         }
     }
 
@@ -901,7 +903,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static void purgeExpiredFollowers(
-            int roomUnitId, ConcurrentHashMap<Integer, UserFollowEntry> followers, boolean removeEmpty) {
+            RoomUnit roomUnit, ConcurrentHashMap<Integer, UserFollowEntry> followers, boolean removeEmpty) {
         if (followers == null) {
             return;
         }
@@ -910,7 +912,7 @@ public final class WiredMoveCarryHelper {
         followers.entrySet().removeIf(entry -> entry.getValue() == null || entry.getValue().expiresAt < now);
 
         if (removeEmpty && followers.isEmpty()) {
-            ACTIVE_USER_FOLLOWERS.remove(roomUnitId, followers);
+            ACTIVE_USER_FOLLOWERS.remove(roomUnit, followers);
         }
     }
 
@@ -1352,7 +1354,7 @@ public final class WiredMoveCarryHelper {
         long suppressedUntil = System.currentTimeMillis()
                 + Math.max(duration, WiredMovementsComposer.DEFAULT_DURATION)
                 + STATUS_SUPPRESSION_GRACE_MS;
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.put(roomUnit.getId(), suppressedUntil);
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.put(roomUnit, suppressedUntil);
     }
 
     private static WiredExtraMoveCarryUsers getActiveExtra(Room room, HabboItem stackItem) {
@@ -1647,8 +1649,8 @@ public final class WiredMoveCarryHelper {
 
     public static void cleanupRoomUnit(RoomUnit roomUnit) {
         if (roomUnit != null) {
-            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
-            ACTIVE_USER_FOLLOWERS.remove(roomUnit.getId());
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit);
+            ACTIVE_USER_FOLLOWERS.remove(roomUnit);
         }
     }
 }

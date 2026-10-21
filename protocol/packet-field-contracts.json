@@ -21960,6 +21960,14 @@
     {
       "direction": "client_to_server",
       "side": "java",
+      "header": 395,
+      "symbol": "RequestHasClaimedProductEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/RequestHasClaimedProductEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
       "header": 1523,
       "symbol": "RequestFriendsEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestFriendsEvent.java",
@@ -21968,9 +21976,25 @@
     {
       "direction": "client_to_server",
       "side": "java",
+      "header": 2170,
+      "symbol": "SaveRaidProtectionSettingsEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/SaveRaidProtectionSettingsEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
       "header": 2318,
       "symbol": "HotelViewRequestBadgeRewardEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewRequestBadgeRewardEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 2394,
+      "symbol": "GetRaidProtectionSettingsEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/GetRaidProtectionSettingsEvent.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -21991,6 +22015,22 @@
     },
     {
       "direction": "client_to_server",
+      "side": "java",
+      "header": 3935,
+      "symbol": "ClaimFreeProductEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/ClaimFreeProductEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 266,
+      "symbol": "HasClaimedProductComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/specialitems/HasClaimedProductComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
       "side": "typescript",
       "header": 9401,
       "symbol": "WELCOME_OPEN_GIFT",
@@ -22003,6 +22043,14 @@
       "header": 690,
       "symbol": "HotelViewCatalogPageExpiringComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewCatalogPageExpiringComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 958,
+      "symbol": "RaidProtectionSaveResultComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSaveResultComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -22032,6 +22080,14 @@
     {
       "direction": "server_to_client",
       "side": "java",
+      "header": 2671,
+      "symbol": "RaidProtectionCapabilityComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionCapabilityComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
       "header": 3379,
       "symbol": "HabboWayQuizComposer1",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habboway/HabboWayQuizComposer1.java",
@@ -22043,6 +22099,14 @@
       "header": 3786,
       "symbol": "RoomFloorThicknessUpdatedComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/RoomFloorThicknessUpdatedComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 3877,
+      "symbol": "RaidProtectionSettingsComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSettingsComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {

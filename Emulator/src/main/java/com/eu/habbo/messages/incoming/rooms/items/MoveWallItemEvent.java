@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
@@ -37,7 +38,8 @@ public class MoveWallItemEvent extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item == null) return;
+        // A floor furni has no wall position; it moves between tiles (RotateMoveItemEvent).
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.WALL) return;
 
         boolean moved = !wallPosition.equals(item.getWallPosition());
         item.setWallPosition(wallPosition);

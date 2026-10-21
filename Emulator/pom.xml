@@ -62,7 +62,9 @@
         <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
-        <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
+        <!-- Measured 39.4% of the instructions on the tests that run without Docker (CI runs more). Keep the minimum
+             a few points under what is measured, and raise it when the coverage rises. -->
+        <jacoco.minimum.instruction.coveredratio>0.35</jacoco.minimum.instruction.coveredratio>
         <japicmp.version>0.26.5</japicmp.version>
         <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>

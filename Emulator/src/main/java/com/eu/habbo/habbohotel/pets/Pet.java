@@ -185,11 +185,15 @@ public class Pet implements ISerialize, Runnable {
     }
 
     public String bornDate() {
+        return formatBornDate(this.created, TimeZone.getDefault());
+    }
 
-        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
-        cal.setTime(new java.util.Date(this.created));
+    /** {@code created} is a unix timestamp in seconds; the date reads day/month/year with the month from 1. */
+    static String formatBornDate(int created, TimeZone zone) {
+        Calendar cal = Calendar.getInstance(zone);
+        cal.setTimeInMillis(created * 1000L);
 
-        return cal.get(Calendar.DAY_OF_MONTH) + "/" + cal.get(Calendar.MONTH) + "/" + cal.get(Calendar.YEAR);
+        return cal.get(Calendar.DAY_OF_MONTH) + "/" + (cal.get(Calendar.MONTH) + 1) + "/" + cal.get(Calendar.YEAR);
     }
 
     @Override

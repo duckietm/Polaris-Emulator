@@ -271,8 +271,15 @@ public class MarketPlace {
     /**
      * MarketplaceItemStats: the history rows run oldest day first (the client draws them as one
      * line), and the request's category and sprite id are echoed so the client accepts the answer.
+     * AIR's parser reads two more ints after those for its make-offer window: the lowest price an
+     * open offer of the furni asks right now (what buyers pay, like the average price) and the
+     * suggested asking price (see {@link #suggestedPrice}). Older clients stop reading before them.
      */
     public static void serializeItemInfo(int category, int itemId, ServerMessage message) {
+        int recentSalesAverage = averageLastXDays(itemId, 7);
+        int[] openOffers = openOffers(itemId);
+        int lowestOpenPrice = openOffers[1];
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp)) ORDER BY DATE(from_unixtime(marketplace_items.timestamp)) ASC",
@@ -280,8 +287,8 @@ public class MarketPlace {
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, itemId);
 
-            message.appendInt(avarageLastXDays(itemId, 7));
-            message.appendInt(itemsOnSale(itemId));
+            message.appendInt(calculateCommision(recentSalesAverage));
+            message.appendInt(openOffers[0]);
             message.appendInt(30);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -298,32 +305,61 @@ public class MarketPlace {
 
             message.appendInt(category);
             message.appendInt(itemId);
+            message.appendInt(lowestOpenPrice > 0 ? calculateCommision(lowestOpenPrice) : 0);
+            message.appendInt(suggestedPrice(recentSalesAverage, lowestOpenPrice));
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
     }
 
     public static int itemsOnSale(int baseItemId) {
+        return openOffers(baseItemId)[0];
+    }
+
+    /**
+     * The furni's open, unexpired offers: {@code [count, lowest asking price]}, the price without
+     * commission and 0 when there is no offer.
+     */
+    private static int[] openOffers(int baseItemId) {
         int number = 0;
+        int lowest = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COUNT(*) as number, AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND timestamp >= ? AND items_base.sprite_id = ?",
+                        "SELECT COUNT(*) as number, MIN(price) as lowest FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND timestamp >= ? AND items_base.sprite_id = ?",
                         ResultSet.TYPE_SCROLL_INSENSITIVE,
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, Emulator.getIntUnixTimestamp() - 172800);
             statement.setInt(2, baseItemId);
             try (ResultSet set = statement.executeQuery()) {
-                set.first();
-                number = set.getInt("number");
+                if (set.first()) {
+                    number = set.getInt("number");
+                    lowest = set.getInt("lowest");
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        return number;
+        return new int[] {number, lowest};
     }
 
-    private static int avarageLastXDays(int baseItemId, int days) {
+    /**
+     * The asking price AIR's "copy suggested price" button puts into the make-offer window. Here an
+     * asking price is what the seller receives (buyers pay the commission on top), so the suggestion
+     * is in that unit: the average price of the furni's sales in the last week or, without recent
+     * sales, the lowest asking price of its open offers. Zero when there is neither, which hides the
+     * suggestion line and the copy button.
+     */
+    public static int suggestedPrice(int recentSalesAverage, int lowestOpenPrice) {
+        if (recentSalesAverage > 0) {
+            return recentSalesAverage;
+        }
+
+        return Math.max(lowestOpenPrice, 0);
+    }
+
+    /** The average sale price (without commission) of the furni over the last {@code days} days; 0 when none. */
+    private static int averageLastXDays(int baseItemId, int days) {
         int avg = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -341,7 +377,7 @@ public class MarketPlace {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        return calculateCommision(avg);
+        return avg;
     }
 
     public static void buyItem(int offerId, GameClient client) {

@@ -486,6 +486,25 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
+    void aFailedLimitedGiftReturnsItsReservedNumber() {
+        makeLimited();
+
+        tryTakeResult = false;
+        assertGift(gift(FREE_WRAP_SPRITE, true, "payment refused"));
+
+        reset();
+        tryTakeResult = true;
+        giftCreated = false;
+        assertGift(gift(FREE_WRAP_SPRITE, true, "no box"));
+
+        reset();
+        giftCreated = true;
+        when(itemManager.createItem(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+                .thenThrow(new IllegalStateException("database gone"));
+        assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
+    }
+
+    @Test
     void aSoldOutLimitedItemIsRefused() {
         makeLimited();
         when(item.getLimitedSells()).thenReturn(50);
@@ -985,6 +1004,8 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             "executeQuery",
             "run",
             "createOrUpdateLimitedConfig",
+            "getNumber",
+            "restoreNumber",
             "setExtradata",
             "needsUpdate",
             "close");

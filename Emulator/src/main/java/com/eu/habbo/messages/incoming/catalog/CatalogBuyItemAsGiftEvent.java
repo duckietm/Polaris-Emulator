@@ -101,6 +101,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             int paidCredits = 0;
             int paidPoints = 0;
             int paidPointsType = 0;
+            CatalogLimitedConfiguration reservedLimitedConfiguration = null;
+            int reservedLimitedItemId = 0;
+            int reservedLimitedNumber = 0;
             Set<HabboItem> createdGiftItems = new HashSet<>();
             boolean giftDelivered = false;
 
@@ -206,6 +209,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         }
 
                         limitedNumber = limitedConfiguration.getNumber();
+                        reservedLimitedConfiguration = limitedConfiguration;
+                        reservedLimitedItemId = item.getId();
+                        reservedLimitedNumber = limitedNumber;
                         limitedStack = limitedConfiguration.getTotalSet();
                     }
 
@@ -317,6 +323,11 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         for (HabboItem createdItem : createdGiftItems) {
                             if (createdItem != null)
                                 Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+                        }
+                        if (reservedLimitedConfiguration != null && reservedLimitedNumber > 0) {
+                            // Return the reserved number to the pool, as a failed purchase for oneself does,
+                            // so a failed gift neither shrinks the stock nor keeps the number marked as sold.
+                            reservedLimitedConfiguration.restoreNumber(reservedLimitedItemId, reservedLimitedNumber);
                         }
                         if (paidCredits > 0 || paidPoints > 0) {
                             CatalogPaymentService.refund(

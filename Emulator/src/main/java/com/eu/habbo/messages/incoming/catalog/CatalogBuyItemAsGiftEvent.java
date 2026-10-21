@@ -755,6 +755,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (teleportOne == null || teleportTwo == null) {
+                // The half that was created is deleted with the rest when the gift fails.
+                if (teleportOne != null) itemsList.add(teleportOne);
+                if (teleportTwo != null) itemsList.add(teleportTwo);
                 LOGGER.debug(
                         "teleport creation failed. baseItemId={}, teleportOneNull={}, teleportTwoNull={}",
                         baseItem.getId(),

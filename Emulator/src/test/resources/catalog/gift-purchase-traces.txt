@@ -232,12 +232,13 @@ connection.close()
 payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
-== aTeleporterWhoseSecondHalfFailsRefundsButKeepsTheFirstHalf #0
+== aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf #0
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:teleport, 0, 0, )
 itemManager.createItem(2, item:teleport, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
+itemManager.deleteItem(habboItem1000:teleport)
 payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 

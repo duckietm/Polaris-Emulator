@@ -516,7 +516,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void aTeleporterWhoseSecondHalfFailsRefundsButKeepsTheFirstHalf() {
+    void aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf() {
         chair = baseItem(301, "teleport", FurnitureType.FLOOR, InteractionTeleport.class);
         failingCreation = 1;
 

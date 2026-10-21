@@ -24,7 +24,7 @@ class NitroSecureAssetHandlerContractTest {
         int size = handler.indexOf("long size = Files.size(target)");
         int maxBytes = handler.indexOf("int maxBytes = maxAssetBytes(kind)", size);
         int oversizedGuard = handler.indexOf("size > maxBytes", maxBytes);
-        int cacheLookup = handler.indexOf("CACHE.get(cacheKey)", oversizedGuard);
+        int cacheLookup = handler.indexOf("CACHE.get(cacheKey, modified)", oversizedGuard);
         int readAllBytes = handler.indexOf("Files.readAllBytes(target)", oversizedGuard);
 
         assertTrue(handler.contains("DEFAULT_MAX_CONFIG_BYTES = 2 * 1024 * 1024"),

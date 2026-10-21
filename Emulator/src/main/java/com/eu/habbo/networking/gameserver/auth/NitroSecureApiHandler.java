@@ -32,8 +32,12 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureApiHandler.class);
     private static final String ENABLED_CONFIG = "nitro.secure.api.enabled";
     private static final String MAX_PAYLOAD_CONFIG = "nitro.secure.api.max_payload_bytes";
+    private static final String REQUIRED_CONFIG = "nitro.secure.api.required";
     private static final String API_PREFIX = "/api/";
     private static final String PUBLIC_API_PREFIX = "/api/public/";
+    // What the Octane client always sends encrypted. The endpoints other callers use in
+    // the clear (CMS, health, maintenance, stats, the public wired API) are not listed.
+    private static final String[] CLIENT_API_ROOTS = {"/api/auth", "/api/badges"};
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
@@ -67,6 +71,11 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
         }
 
         if (!isSecureRequest(req)) {
+            if (secureApiRequired() && isClientApiPath(path)) {
+                sendText(ctx, req, HttpResponseStatus.FORBIDDEN, "Secure API required.");
+                ReferenceCountUtil.release(req);
+                return;
+            }
             super.channelRead(ctx, msg);
             return;
         }
@@ -75,6 +84,13 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             String clientKey = req.headers().get("X-Nitro-Key");
             if (clientKey == null || clientKey.isBlank()) {
                 sendText(ctx, req, HttpResponseStatus.UNAUTHORIZED, "Missing key.");
+                ReferenceCountUtil.release(req);
+                return;
+            }
+
+            if (!NitroSecureAssetHandler.isValidClientKey(clientKey)) {
+                sendText(ctx, req, HttpResponseStatus.BAD_REQUEST, "Invalid key.");
+                ReferenceCountUtil.release(req);
                 return;
             }
 
@@ -95,6 +111,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             int maxPayloadBytes = maxPayloadBytes();
             if (readableBytes > maxPayloadBytes) {
                 sendText(ctx, req, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "Secure payload too large.");
+                ReferenceCountUtil.release(req);
                 return;
             }
 
@@ -159,8 +176,15 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             ReferenceCountUtil.release(response);
             super.write(ctx, encryptedResponse, promise);
         } catch (Exception e) {
+            // The caller asked for an encrypted answer: never fall back to the clear one.
             LOGGER.error("Nitro secure API failed to encrypt response", e);
-            super.write(ctx, msg, promise);
+            ReferenceCountUtil.safeRelease(msg);
+            byte[] body = "Secure response failed.".getBytes(StandardCharsets.UTF_8);
+            FullHttpResponse failure = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(body));
+            failure.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8");
+            failure.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, body.length);
+            super.write(ctx, failure, promise);
         }
     }
 
@@ -183,7 +207,22 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     }
 
     private static boolean secureApiEnabled() {
-        return com.eu.habbo.Emulator.getConfig().getBoolean(ENABLED_CONFIG, true);
+        return configFlag(ENABLED_CONFIG, true);
+    }
+
+    private static boolean secureApiRequired() {
+        return configFlag(REQUIRED_CONFIG, false);
+    }
+
+    private static boolean configFlag(String key, boolean fallback) {
+        return com.eu.habbo.Emulator.getConfig().getBoolean(key, fallback);
+    }
+
+    static boolean isClientApiPath(String path) {
+        for (String root : CLIENT_API_ROOTS) {
+            if (path.equals(root) || path.startsWith(root + "/")) return true;
+        }
+        return false;
     }
 
     static int maxPayloadBytes() {

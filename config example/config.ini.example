@@ -70,6 +70,9 @@ enc.d=59ae13e243392e89ded305764bdd9e92e4eafa67bb6dac7e1415e8c645b0950bccd26246fd
 # Nitro secure runtime assets. JSON files are read live from disk.
 nitro.secure.assets.enabled=false
 nitro.secure.api.enabled=false
+# When true, /api/auth/* and /api/badges/* answer 403 unless the call is encrypted (X-Nitro-Api).
+# Leave false while a CMS or another site calls those endpoints in the clear.
+nitro.secure.api.required=false
 
 # Secure runtime ECDH session TTL in seconds.
 nitro.secure.session_ttl_sec=900

@@ -461,6 +461,278 @@
   },
   "contracts": [
     {
+      "name": "RAID_PROTECTION_SETTINGS_GET",
+      "direction": "client_to_server",
+      "header": 2394,
+      "java": {
+        "symbol": "GetRaidProtectionSettingsEvent",
+        "className": "GetRaidProtectionSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/GetRaidProtectionSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS_GET",
+        "className": "GetRaidProtectionSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/roomsettings/GetRaidProtectionSettingsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SETTINGS_SAVE",
+      "direction": "client_to_server",
+      "header": 2170,
+      "java": {
+        "symbol": "SaveRaidProtectionSettingsEvent",
+        "className": "SaveRaidProtectionSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/SaveRaidProtectionSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS_SAVE",
+        "className": "SaveRaidProtectionSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/roomsettings/SaveRaidProtectionSettingsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "sensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actionType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "guardEnabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirmed"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_CAPABILITY",
+      "direction": "server_to_client",
+      "header": 2671,
+      "java": {
+        "symbol": "RaidProtectionCapabilityComposer",
+        "className": "RaidProtectionCapabilityComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionCapabilityComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_CAPABILITY",
+        "className": "RaidProtectionCapabilityParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionCapabilityParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SETTINGS",
+      "direction": "server_to_client",
+      "header": 3877,
+      "java": {
+        "symbol": "RaidProtectionSettingsComposer",
+        "className": "RaidProtectionSettingsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSettingsComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS",
+        "className": "RaidProtectionSettingsParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionSettingsParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SAVE_RESULT",
+      "direction": "server_to_client",
+      "header": 958,
+      "java": {
+        "symbol": "RaidProtectionSaveResultComposer",
+        "className": "RaidProtectionSaveResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSaveResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SAVE_RESULT",
+        "className": "RaidProtectionSaveResultParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionSaveResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "CANCEL_ROOM_EVENT",
+      "direction": "client_to_server",
+      "header": 2725,
+      "java": {
+        "symbol": "CancelRoomPromotionEvent",
+        "className": "CancelRoomPromotionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/promotions/CancelRoomPromotionEvent.java"
+      },
+      "typescript": {
+        "symbol": "CANCEL_ROOM_EVENT",
+        "className": "CancelEventMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/navigator/CancelEventMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "promotionId"
+        }
+      ]
+    },
+    {
       "name": "USER_UNIGNORE",
       "direction": "client_to_server",
       "header": 2061,
@@ -5129,6 +5401,77 @@
         {
           "kind": "scalar",
           "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "HAS_CLAIMED_PRODUCT_REQUEST",
+      "direction": "client_to_server",
+      "header": 395,
+      "java": {
+        "symbol": "RequestHasClaimedProductEvent",
+        "className": "RequestHasClaimedProductEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/RequestHasClaimedProductEvent.java"
+      },
+      "typescript": {
+        "symbol": "HAS_CLAIMED_PRODUCT_REQUEST",
+        "className": "GetHasClaimedProductComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/GetHasClaimedProductComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "claimId"
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_FREE_PRODUCT",
+      "direction": "client_to_server",
+      "header": 3935,
+      "java": {
+        "symbol": "ClaimFreeProductEvent",
+        "className": "ClaimFreeProductEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/ClaimFreeProductEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_FREE_PRODUCT",
+        "className": "ClaimFreeProductComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/ClaimFreeProductComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "claimId"
+        }
+      ]
+    },
+    {
+      "name": "HAS_CLAIMED_PRODUCT",
+      "direction": "server_to_client",
+      "header": 266,
+      "java": {
+        "symbol": "HasClaimedProductComposer",
+        "className": "HasClaimedProductComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/specialitems/HasClaimedProductComposer.java"
+      },
+      "typescript": {
+        "symbol": "HAS_CLAIMED_PRODUCT",
+        "className": "HasClaimedProductParser",
+        "path": "packages/communication/src/messages/parser/catalog/HasClaimedProductParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]
@@ -21960,14 +22303,6 @@
     {
       "direction": "client_to_server",
       "side": "java",
-      "header": 395,
-      "symbol": "RequestHasClaimedProductEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/RequestHasClaimedProductEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
       "header": 1523,
       "symbol": "RequestFriendsEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestFriendsEvent.java",
@@ -21976,25 +22311,9 @@
     {
       "direction": "client_to_server",
       "side": "java",
-      "header": 2170,
-      "symbol": "SaveRaidProtectionSettingsEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/SaveRaidProtectionSettingsEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
       "header": 2318,
       "symbol": "HotelViewRequestBadgeRewardEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewRequestBadgeRewardEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 2394,
-      "symbol": "GetRaidProtectionSettingsEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/GetRaidProtectionSettingsEvent.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -22015,22 +22334,6 @@
     },
     {
       "direction": "client_to_server",
-      "side": "java",
-      "header": 3935,
-      "symbol": "ClaimFreeProductEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/specialitems/ClaimFreeProductEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 266,
-      "symbol": "HasClaimedProductComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/specialitems/HasClaimedProductComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
       "side": "typescript",
       "header": 9401,
       "symbol": "WELCOME_OPEN_GIFT",
@@ -22043,14 +22346,6 @@
       "header": 690,
       "symbol": "HotelViewCatalogPageExpiringComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewCatalogPageExpiringComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 958,
-      "symbol": "RaidProtectionSaveResultComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSaveResultComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -22080,14 +22375,6 @@
     {
       "direction": "server_to_client",
       "side": "java",
-      "header": 2671,
-      "symbol": "RaidProtectionCapabilityComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionCapabilityComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
       "header": 3379,
       "symbol": "HabboWayQuizComposer1",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habboway/HabboWayQuizComposer1.java",
@@ -22099,14 +22386,6 @@
       "header": 3786,
       "symbol": "RoomFloorThicknessUpdatedComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/RoomFloorThicknessUpdatedComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 3877,
-      "symbol": "RaidProtectionSettingsComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSettingsComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -22459,14 +22738,6 @@
       "header": 2721,
       "symbol": "VERIFY_CODE",
       "path": "packages/communication/src/messages/outgoing/gifts/VerifyCodeMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2725,
-      "symbol": "CANCEL_ROOM_EVENT",
-      "path": "packages/communication/src/messages/outgoing/navigator/CancelEventMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

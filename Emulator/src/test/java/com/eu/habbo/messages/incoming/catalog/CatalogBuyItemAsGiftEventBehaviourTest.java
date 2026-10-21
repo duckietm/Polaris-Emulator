@@ -456,8 +456,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     @Test
     void aLimitedItemWithoutAConfigurationGetsOne() {
         makeLimited();
-        when(catalogManager.getLimitedConfig(any()))
-                .thenReturn(limitedConfiguration, (CatalogLimitedConfiguration) null);
+        when(catalogManager.getLimitedConfig(any())).thenReturn(null);
         when(catalogManager.createOrUpdateLimitedConfig(any())).thenReturn(limitedConfiguration);
 
         assertGift(gift(FREE_WRAP_SPRITE, true, "ltd, new"));

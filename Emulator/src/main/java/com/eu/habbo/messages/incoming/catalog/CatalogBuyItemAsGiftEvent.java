@@ -186,21 +186,19 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     int limitedNumber = 0;
 
                     if (item.isLimited()) {
-                        if (Emulator.getGameEnvironment()
-                                        .getCatalogManager()
-                                        .getLimitedConfig(item)
-                                        .available()
-                                == 0) {
+                        // A limited item without a configuration yet gets one below; asking the missing one
+                        // for its stock used to end the gift in a NullPointerException.
+                        limitedConfiguration = Emulator.getGameEnvironment()
+                                .getCatalogManager()
+                                .getLimitedConfig(item);
+
+                        if (limitedConfiguration != null && limitedConfiguration.available() == 0) {
                             LOGGER.debug("LTD available=0 -> itemId={}", itemId);
                             this.client.sendResponse(new AlertLimitedSoldOutComposer());
                             return;
                         }
 
                         if (this.exceedsDailyLimitedLimits(item)) return;
-
-                        limitedConfiguration = Emulator.getGameEnvironment()
-                                .getCatalogManager()
-                                .getLimitedConfig(item);
 
                         if (limitedConfiguration == null) {
                             limitedConfiguration = Emulator.getGameEnvironment()

@@ -867,11 +867,49 @@ public class RoomManager {
     }
 
     public void enterRoom(final Habbo habbo, final Room room) {
+        if (!this.placeAtDoor(habbo, room)) {
+            return;
+        }
+
+        habbo.getRoomUnit().setPathFinderRoom(room);
+        habbo.getRoomUnit().resetIdleTimer();
+
+        habbo.getRoomUnit().setInvisible(false);
+        room.addHabbo(habbo);
+        BuildersClubRoomSupport.sendCurrentRoomPlacementStatus(room);
+        room.getUserVariableManager().restorePermanentAssignments(habbo);
+
+        habbo.getClient()
+                .sendResponse(new UserBadgesComposer(
+                        habbo.getInventory().getBadgesComponent().getWearingBadges(),
+                        habbo.getHabboInfo().getId()));
+
+        List<Habbo> habbos = this.announceEntry(habbo, room);
+
+        this.sendRoomState(habbo, room);
+        this.sendPetsAndMuteState(habbo, room);
+        this.sendOtherUsersState(habbo, habbos);
+        this.sendRoomExtras(habbo, room);
+
+        WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());
+        room.habboEntered(habbo);
+        if (room.getOwnerId() != habbo.getHabboInfo().getId()) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.VISIT_ROOMS, 1);
+        }
+
+        if (!habbo.getHabboStats().nux && (room.isOwner(habbo) || room.isPublicRoom())) {
+            UserNuxEvent.handle(habbo);
+        }
+    }
+
+    /** Puts the entering user on the door tile of the room; false when the room has no usable door and the user went back to the hotel view. */
+    private boolean placeAtDoor(final Habbo habbo, final Room room) {
         if (habbo.getHabboInfo().getLoadingRoom() != room.getId()) {
             if (habbo.getHabboInfo().getLoadingRoom() != 0) {
                 habbo.getClient().sendResponse(new HotelViewComposer());
             }
-            return;
+            return false;
         }
 
         habbo.getRoomUnit().removeStatus(RoomUnitStatus.FLAT_CONTROL);
@@ -911,22 +949,14 @@ public class RoomManager {
             habbo.getHabboInfo().setLoadingRoom(0);
             habbo.getHabboInfo().setCurrentRoom(null);
             habbo.getClient().sendResponse(new HotelViewComposer());
-            return;
+            return false;
         }
 
-        habbo.getRoomUnit().setPathFinderRoom(room);
-        habbo.getRoomUnit().resetIdleTimer();
+        return true;
+    }
 
-        habbo.getRoomUnit().setInvisible(false);
-        room.addHabbo(habbo);
-        BuildersClubRoomSupport.sendCurrentRoomPlacementStatus(room);
-        room.getUserVariableManager().restorePermanentAssignments(habbo);
-
-        habbo.getClient()
-                .sendResponse(new UserBadgesComposer(
-                        habbo.getInventory().getBadgesComponent().getWearingBadges(),
-                        habbo.getHabboInfo().getId()));
-
+    /** Tells the users already in the room about the newcomer, and gives back the visible ones for the newcomer's own view. */
+    private List<Habbo> announceEntry(final Habbo habbo, final Room room) {
         List<Habbo> habbos = new ArrayList<>();
         if (!room.getCurrentHabbos().isEmpty()) {
 
@@ -971,6 +1001,11 @@ public class RoomManager {
             room.giveEffect(habbo.getRoomUnit(), effect, -1);
         }
 
+        return habbos;
+    }
+
+    /** What the newcomer is sent about the room itself: bots, panes, items, the visualization state. */
+    private void sendRoomState(final Habbo habbo, final Room room) {
         RoomForwardGlow.onEnter(room, habbo);
 
         habbo.getClient()
@@ -1042,7 +1077,10 @@ public class RoomManager {
         WiredVisualizationBroadcaster.sendState(room, habbo);
         // AIR: a room whose message boxes use $(trigger_text) says so to everyone entering.
         WiredTextPlaceholderContext.sendTriggerTextNotice(room, habbo);
+    }
 
+    /** The pets in the room and whether the newcomer is muted. */
+    private void sendPetsAndMuteState(final Habbo habbo, final Room room) {
         if (!room.getCurrentPets().isEmpty()) {
             habbo.getClient()
                     .sendResponse(new RoomPetComposer(room.getCurrentPets().values()));
@@ -1059,7 +1097,10 @@ public class RoomManager {
         } else if (habbo.getHabboStats().mutedBubbleTracker) {
             habbo.getHabboStats().mutedBubbleTracker = false;
         }
+    }
 
+    /** What the other users are doing: dancing, hand items, effects, ignores, guild badges and pets. */
+    private void sendOtherUsersState(final Habbo habbo, final List<Habbo> habbos) {
         Map<Integer, String> guildBadges = new HashMap<>();
         for (Habbo roomHabbo : habbos) {
             {
@@ -1122,7 +1163,10 @@ public class RoomManager {
         }
 
         habbo.getClient().sendResponse(new RoomUsersGuildBadgesComposer(guildBadges));
+    }
 
+    /** The doorbell queue, polls, the word quiz, YouTube, the soundboard and raid protection. */
+    private void sendRoomExtras(final Habbo habbo, final Room room) {
         if (room.hasRights(habbo)
                 || (room.hasGuild()
                         && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
@@ -1187,17 +1231,6 @@ public class RoomManager {
 
         // AIR 2671: whether the room info shows the raid protection button to this visitor.
         RaidProtectionManager.get().sendCapability(room, habbo);
-
-        WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());
-        room.habboEntered(habbo);
-        if (room.getOwnerId() != habbo.getHabboInfo().getId()) {
-            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
-                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.VISIT_ROOMS, 1);
-        }
-
-        if (!habbo.getHabboStats().nux && (room.isOwner(habbo) || room.isPublicRoom())) {
-            UserNuxEvent.handle(habbo);
-        }
     }
 
     /** Records the visit and returns true when it is the first one for this user. */

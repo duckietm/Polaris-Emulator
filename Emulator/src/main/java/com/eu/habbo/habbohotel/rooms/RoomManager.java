@@ -26,6 +26,7 @@ import com.eu.habbo.habbohotel.pets.PetData;
 import com.eu.habbo.habbohotel.pets.PetTasks;
 import com.eu.habbo.habbohotel.polls.Poll;
 import com.eu.habbo.habbohotel.polls.PollManager;
+import com.eu.habbo.habbohotel.rooms.raidprotection.RaidProtectionManager;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -795,6 +796,11 @@ public class RoomManager {
             return;
         }
 
+        // AIR raid protection: a raider is kicked or banned at the door, the guard keeps suspicious visitors out.
+        if (!RaidProtectionManager.get().admit(room, habbo, firstVisit)) {
+            return;
+        }
+
         if (room.getUserCount() >= room.getUsersMax()
                 && !habbo.hasPermission(Permission.ACC_FULLROOMS)
                 && !room.hasRights(habbo)) {
@@ -1178,6 +1184,9 @@ public class RoomManager {
                                 soundboardManager.getSoundsForRank(
                                         habbo.getHabboInfo().getRank().getId()))
                         .compose());
+
+        // AIR 2671: whether the room info shows the raid protection button to this visitor.
+        RaidProtectionManager.get().sendCapability(room, habbo);
 
         WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());
         room.habboEntered(habbo);

@@ -267,6 +267,9 @@ public class Incoming {
     public static final int ReloadRecyclerEvent = 1342;
     public static final int RoomUserActionEvent = 2456;
     public static final int RequestGiftConfigurationEvent = 418;
+    // AIR 15 special items display free claim: has-claimed request and claim (official ids)
+    public static final int RequestHasClaimedProductEvent = 395;
+    public static final int ClaimFreeProductEvent = 3935;
     public static final int RequestRoomDataEvent = 2230;
     public static final int RequestRoomHeightmapEvent = 2300;
     public static final int RequestGuildFurniWidgetEvent = 2651;
@@ -349,6 +352,9 @@ public class Incoming {
     public static final int BuyRoomPromotionEvent = 777;
     public static final int EditRoomPromotionMessageEvent = 3991;
     public static final int CancelRoomPromotionEvent = 2725;
+    // AIR raid protection (navigator/raidprotection), official ids free in both repos.
+    public static final int GetRaidProtectionSettingsEvent = 2394;
+    public static final int SaveRaidProtectionSettingsEvent = 2170;
     public static final int RequestGuideToolEvent = 1922;
     public static final int RequestGuideAssistanceEvent = 3338;
     public static final int GuideUserTypingEvent = 519;

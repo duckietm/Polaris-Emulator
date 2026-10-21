@@ -15,6 +15,7 @@ import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.catalog.specialitems.SpecialItemClaimService;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
@@ -223,6 +224,8 @@ final class PolarisBootstrap {
                         LOGGER.error("Catalog reload after publish failed", exception);
                     }
                 }));
+        SpecialItemClaimService.install(new SpecialItemClaimService(
+                runtime.database().getDataSource(), runtime.gameEnvironment().getItemManager()));
         boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
         StressRunRegistry.install(new StressRunManager(
                 runtime.gameEnvironment().getRoomManager(),

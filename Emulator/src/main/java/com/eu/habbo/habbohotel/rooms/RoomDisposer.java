@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameUpCounter;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.rooms.raidprotection.RaidProtectionManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
@@ -34,6 +35,7 @@ final class RoomDisposer {
                 traxManager.dispose();
             }
 
+            RaidProtectionManager.get().onRoomUnloaded(this.room.getId());
             this.room.scheduledTasks.clear();
             this.room.scheduledComposers.clear();
             this.room.getChatManager().clearMutes();

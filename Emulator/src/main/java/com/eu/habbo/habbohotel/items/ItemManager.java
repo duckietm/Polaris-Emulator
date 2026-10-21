@@ -83,6 +83,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTrap;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVikingCotie;
+import com.eu.habbo.habbohotel.items.interactions.InteractionVimeo;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVoteCounter;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWater;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWaterCan;
@@ -594,6 +595,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("information_terminal", InteractionInformationTerminal.class));
         this.interactionsList.add(new ItemInteraction("external_image", InteractionExternalImage.class));
         this.interactionsList.add(new ItemInteraction("youtube", InteractionYoutubeTV.class));
+        this.interactionsList.add(new ItemInteraction("vimeo", InteractionVimeo.class));
         this.interactionsList.add(new ItemInteraction("jukebox", InteractionJukeBox.class));
         this.interactionsList.add(new ItemInteraction("switch", InteractionSwitch.class));
         this.interactionsList.add(new ItemInteraction("conf_invis_control", InteractionConfInvisControl.class));

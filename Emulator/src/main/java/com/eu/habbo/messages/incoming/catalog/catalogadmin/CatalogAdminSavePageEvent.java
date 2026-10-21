@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
@@ -35,8 +34,7 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_CATALOGFURNI)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "No permission"));
+        if (!CatalogAdminAccess.check(this.client)) {
             return;
         }
 

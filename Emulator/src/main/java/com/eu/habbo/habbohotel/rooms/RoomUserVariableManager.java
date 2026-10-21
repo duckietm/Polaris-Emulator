@@ -760,6 +760,12 @@ public class RoomUserVariableManager {
             if (assignments.isEmpty()) this.activeAssignmentsByUserId.remove(entry.getKey(), assignments);
         }
 
+        // Other rooms read a shared variable from the cache: it must not keep the values just taken away.
+        WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
+        if (definition != null && definition.isSharedAvailability()) {
+            WiredVariableReferenceSupport.clearSharedUserDefinition(this.room.getId(), definitionItemId);
+        }
+
         for (Map.Entry<Integer, Integer> entry : previousValues.entrySet()) {
             this.emitVariableChangedEvent(
                     entry.getKey(), definitionItemId, definitionInfo.hasValue(), true, entry.getValue(), false, null);

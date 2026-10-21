@@ -4,6 +4,7 @@ import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.database.SqlQueries;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,6 +25,8 @@ public final class UserPermissionOverrides {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserPermissionOverrides.class);
     static final long CACHE_MS = 5 * 60 * 1000L;
     private static final int MAX_CACHED_USERS = 20_000;
+    /** A full cache looks for old rows at most this often; between sweeps a miss only makes room for one row. */
+    private static final long SWEEP_MS = 60 * 1000L;
 
     public record UserOverride(
             String key, PermissionSetting setting, int expiresAt, String reason, int createdBy, String createdByName) {
@@ -39,15 +42,27 @@ public final class UserPermissionOverrides {
     private final IntFunction<List<UserOverride>> loader;
     private final LongSupplier millis;
     private final IntSupplier now;
+    private final int maxCachedUsers;
+    private volatile long lastSweepAt;
 
     public UserPermissionOverrides() {
         this(UserPermissionOverrides::loadFromDatabase, System::currentTimeMillis, WiredPlatform::unixTimestamp);
     }
 
     UserPermissionOverrides(IntFunction<List<UserOverride>> loader, LongSupplier millis, IntSupplier now) {
+        this(loader, millis, now, MAX_CACHED_USERS);
+    }
+
+    UserPermissionOverrides(
+            IntFunction<List<UserOverride>> loader, LongSupplier millis, IntSupplier now, int maxCachedUsers) {
         this.loader = loader;
         this.millis = millis;
         this.now = now;
+        this.maxCachedUsers = maxCachedUsers;
+    }
+
+    int cachedUsers() {
+        return this.cache.size();
     }
 
     /** The user's active value for the key, or null when there is none. */
@@ -96,13 +111,34 @@ public final class UserPermissionOverrides {
             byKey.put(override.key(), override);
         }
 
-        if (this.cache.size() >= MAX_CACHED_USERS) {
-            this.cache.entrySet().removeIf(entry -> time - entry.getValue().loadedAt() >= CACHE_MS);
-        }
+        this.makeRoom(time);
 
         loaded = new Loaded(Map.copyOf(byKey), time);
         this.cache.put(userId, loaded);
         return loaded;
+    }
+
+    /**
+     * Keeps the cache within its limit. Old rows go first, and a full cache looks for them at most once a minute, so a
+     * burst of new users does not scan every row on each miss; when nothing is old, one row is dropped to make room.
+     */
+    private void makeRoom(long time) {
+        if (this.cache.size() < this.maxCachedUsers) {
+            return;
+        }
+
+        if (time - this.lastSweepAt >= SWEEP_MS || this.lastSweepAt > time) {
+            this.lastSweepAt = time;
+            this.cache.entrySet().removeIf(entry -> time - entry.getValue().loadedAt() >= CACHE_MS);
+        }
+
+        if (this.cache.size() >= this.maxCachedUsers) {
+            Iterator<Integer> oldest = this.cache.keySet().iterator();
+
+            if (oldest.hasNext()) {
+                this.cache.remove(oldest.next());
+            }
+        }
     }
 
     /** Writes (or replaces) the user's value for the key; expiresAt 0 is permanent. */

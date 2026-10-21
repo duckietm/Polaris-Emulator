@@ -348,6 +348,7 @@ public class Incoming {
     public static final int RequestPromotionRoomsEvent = 1075;
     public static final int BuyRoomPromotionEvent = 777;
     public static final int EditRoomPromotionMessageEvent = 3991;
+    public static final int CancelRoomPromotionEvent = 2725;
     public static final int RequestGuideToolEvent = 1922;
     public static final int RequestGuideAssistanceEvent = 3338;
     public static final int GuideUserTypingEvent = 519;

@@ -453,6 +453,7 @@ import com.eu.habbo.messages.incoming.rooms.pets.ScratchPetEvent;
 import com.eu.habbo.messages.incoming.rooms.pets.StopBreedingEvent;
 import com.eu.habbo.messages.incoming.rooms.pets.ToggleMonsterplantBreedableEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.BuyRoomPromotionEvent;
+import com.eu.habbo.messages.incoming.rooms.promotions.CancelRoomPromotionEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.RequestPromotionRoomsEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.UpdateRoomPromotionEvent;
 import com.eu.habbo.messages.incoming.rooms.users.ClickUserEvent;
@@ -1199,6 +1200,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestPromotionRoomsEvent, RequestPromotionRoomsEvent.class);
         this.registerHandler(Incoming.BuyRoomPromotionEvent, BuyRoomPromotionEvent.class);
         this.registerHandler(Incoming.EditRoomPromotionMessageEvent, UpdateRoomPromotionEvent.class);
+        this.registerHandler(Incoming.CancelRoomPromotionEvent, CancelRoomPromotionEvent.class);
         this.registerHandler(Incoming.IgnoreRoomUserEvent, IgnoreRoomUserEvent.class);
         this.registerHandler(Incoming.IgnoreUserIdEvent, IgnoreUserIdEvent.class);
         this.registerHandler(Incoming.UnIgnoreRoomUserEvent, UnIgnoreRoomUserEvent.class);

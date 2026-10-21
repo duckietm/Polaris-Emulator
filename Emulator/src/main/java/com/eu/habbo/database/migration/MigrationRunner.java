@@ -145,7 +145,9 @@ public final class MigrationRunner {
                                             + "A full database backup before first startup is strongly recommended.",
                                     adoption.baselineVersion());
                             adoption.log();
+                            dropEmptyHistory(dataSource);
                             flyway.baseline();
+                            recordGap(dataSource, flyway, adoption);
                             yield flyway.migrate();
                         }
                         case EMPTY, MANAGED -> flyway.migrate();
@@ -162,6 +164,30 @@ public final class MigrationRunner {
                             + "Inspect the error, restore from backup or forward-fix, then retry."
                             + schemaAheadHint(e),
                     e);
+        }
+    }
+
+    /**
+     * Flyway refuses to baseline over an existing but empty {@code flyway_schema_history}, which
+     * is what a {@code TRUNCATE} of the history leaves behind. The table holds no rows, so dropping
+     * it loses nothing; the row count is checked again here so a non-empty history is never touched.
+     */
+    private static void dropEmptyHistory(DataSource dataSource) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM information_schema.TABLES "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flyway_schema_history'")) {
+                if (!rs.next() || rs.getInt(1) == 0) return;
+            }
+            try (ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM flyway_schema_history")) {
+                if (!rs.next() || rs.getInt(1) > 0) {
+                    throw new MigrationException(
+                            "flyway_schema_history gained rows during adoption; refusing to continue.");
+                }
+            }
+            LOGGER.warn(
+                    "[migrate] flyway_schema_history exists but is empty; recreating it for the adoption baseline.");
+            statement.execute("DROP TABLE `flyway_schema_history`");
         }
     }
 
@@ -292,17 +318,44 @@ public final class MigrationRunner {
             SchemaPreflight.State state, MigrationInfo migration, Adoption adoption) {
         return state == SchemaPreflight.State.RECOGNISED_EXISTING
                 && migration.getVersion() != null
-                && migration.getVersion().compareTo(MigrationVersion.fromVersion(adoption.baselineVersion())) <= 0;
+                && (migration.getVersion().compareTo(MigrationVersion.fromVersion(adoption.baselineVersion())) <= 0
+                        || adoption.gap()
+                                .record()
+                                .contains(migration.getVersion().getVersion()));
+    }
+
+    /** Writes the history rows for the migrations adoption found applied beyond its baseline. */
+    private static void recordGap(DataSource dataSource, Flyway flyway, Adoption adoption) throws SQLException {
+        if (adoption.gap().record().isEmpty()) return;
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                int rank = nextInstalledRank(connection);
+                String installedBy = installedBy(connection);
+                for (MigrationInfo migration : flyway.info().all()) {
+                    if (migration.getVersion() != null
+                            && adoption.gap()
+                                    .record()
+                                    .contains(migration.getVersion().getVersion())) {
+                        recordAsApplied(connection, rank++, migration, installedBy);
+                    }
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
     }
 
     /**
      * Where adoption records its baseline: the clean-install version, moved forward to the
      * last packaged migration whose objects the schema already carries.
      */
-    record Adoption(String baselineVersion, SchemaEvidence.Assessment assessment) {
+    record Adoption(String baselineVersion, SchemaEvidence.Assessment assessment, SchemaEvidence.GapPlan gap) {
 
         static Adoption none() {
-            return new Adoption(BASELINE_VERSION, null);
+            return new Adoption(BASELINE_VERSION, null, SchemaEvidence.GapPlan.none());
         }
 
         static Adoption detect(DataSource dataSource) {
@@ -315,7 +368,7 @@ public final class MigrationRunner {
             try (Connection connection = dataSource.getConnection()) {
                 SchemaEvidence.Assessment assessment = SchemaEvidence.assess(connection, candidates);
                 String version = assessment.appliedThrough() == null ? BASELINE_VERSION : assessment.appliedThrough();
-                return new Adoption(version, assessment);
+                return new Adoption(version, assessment, SchemaEvidence.gapPlan(connection, candidates, assessment));
             } catch (SQLException e) {
                 throw new MigrationException("Could not inspect the schema to choose the adoption baseline", e);
             }
@@ -335,7 +388,13 @@ public final class MigrationRunner {
                         baselineVersion,
                         assessment.evidentlyApplied());
             }
-            if (!assessment.presentBeyond().isEmpty()) {
+            if (!gap.isEmpty()) {
+                LOGGER.warn(
+                        "[migrate] The schema lacks objects of migrations that later migrations evidently followed. "
+                                + "Only these run again to restore them: {}; these are recorded as applied: {}",
+                        gap.run(),
+                        gap.record());
+            } else if (!assessment.presentBeyond().isEmpty()) {
                 LOGGER.warn(
                         "[migrate] Later migrations whose objects also exist will still run and rely on their own guards: {}",
                         assessment.presentBeyond());
@@ -345,10 +404,18 @@ public final class MigrationRunner {
         void describe(StringBuilder out) {
             if (assessment == null || !movedForward()) return;
             out.append("Already present in the schema, recorded as applied without running: ")
-                    .append(assessment.evidentlyApplied().size())
+                    .append(assessment.evidentlyApplied().size() + gap.record().size())
                     .append('\n');
             for (String version : assessment.evidentlyApplied()) {
                 out.append("  = V").append(version).append('\n');
+            }
+            for (String version : gap.record()) {
+                out.append("  = V").append(version).append('\n');
+            }
+            if (!gap.run().isEmpty()) {
+                out.append("Missing from the schema, run again to restore it: ")
+                        .append(gap.run().size())
+                        .append('\n');
             }
         }
     }

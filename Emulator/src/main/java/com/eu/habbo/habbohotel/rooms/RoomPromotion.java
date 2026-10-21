@@ -1,13 +1,12 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RoomPromotion {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomPromotion.class);
@@ -19,7 +18,8 @@ public class RoomPromotion {
     private int startTimestamp;
     private int category;
 
-    public RoomPromotion(Room room, String title, String description, int endTimestamp, int startTimestamp, int category) {
+    public RoomPromotion(
+            Room room, String title, String description, int endTimestamp, int startTimestamp, int category) {
         this.room = room;
         this.title = title;
         this.description = description;
@@ -39,11 +39,14 @@ public class RoomPromotion {
 
     public void save() {
         if (this.needsUpdate) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE room_promotions SET title = ?, description = ?, category = ? WHERE room_id = ?")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE room_promotions SET title = ?, description = ?, category = ?, end_timestamp = ? WHERE room_id = ?")) {
                 statement.setString(1, this.title);
                 statement.setString(2, this.description);
                 statement.setInt(3, this.category);
-                statement.setInt(4, this.room.getId());
+                statement.setInt(4, this.endTimestamp);
+                statement.setInt(5, this.room.getId());
                 statement.executeUpdate();
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);

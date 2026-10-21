@@ -95,7 +95,8 @@ final class SchemaEvidence {
             Set<String> tables,
             Set<Column> columns,
             Set<String> droppedTables,
-            Set<Column> droppedColumns) {
+            Set<Column> droppedColumns,
+            String body) {
         boolean hasEvidence() {
             return !tables.isEmpty() || !columns.isEmpty();
         }
@@ -110,6 +111,13 @@ final class SchemaEvidence {
 
         boolean dropsColumn(Column column) {
             return droppedColumns.contains(column);
+        }
+
+        /** Whether the migration's SQL names the table, e.g. to insert or update rows in it. */
+        boolean mentions(String table) {
+            return Pattern.compile("(?<![\\w$])" + Pattern.quote(table) + "(?![\\w$])")
+                    .matcher(body)
+                    .find();
         }
     }
 
@@ -209,7 +217,8 @@ final class SchemaEvidence {
                 Collections.unmodifiableSet(tables),
                 Collections.unmodifiableSet(columns),
                 Collections.unmodifiableSet(droppedTables),
-                Collections.unmodifiableSet(droppedColumns));
+                Collections.unmodifiableSet(droppedColumns),
+                text.toLowerCase(Locale.ROOT));
     }
 
     /** Removes objects that a later migration drops or renames, since an upgraded schema lacks them. */
@@ -247,7 +256,8 @@ final class SchemaEvidence {
                     Collections.unmodifiableSet(tables),
                     Collections.unmodifiableSet(columns),
                     migration.droppedTables(),
-                    migration.droppedColumns()));
+                    migration.droppedColumns(),
+                    migration.body()));
         }
         return stable;
     }
@@ -271,6 +281,83 @@ final class SchemaEvidence {
             }
         }
         return new Assessment(appliedThrough, Collections.unmodifiableMap(presence));
+    }
+
+    /**
+     * What adoption does with the migrations between the unbroken prefix and the last migration
+     * whose objects all exist, for a hotel that has been on Polaris before.
+     *
+     * @param record migrations recorded as applied without running
+     * @param run migrations that run (out of order) to restore what the schema lacks
+     */
+    record GapPlan(List<String> record, List<String> run) {
+        static GapPlan none() {
+            return new GapPlan(List.of(), List.of());
+        }
+
+        boolean isEmpty() {
+            return record.isEmpty() && run.isEmpty();
+        }
+    }
+
+    /**
+     * A hotel migrated by Polaris that later lost a table or column (dropped by hand, or a partial
+     * restore) has a gap in its evidence: the prefix stops at the first migration whose objects are
+     * missing although the migrations after it evidently ran. Replaying everything after the gap
+     * would re-run migrations that are not written to run twice. Instead, below the last migration
+     * whose objects all exist, only the migrations with missing objects run, plus the data-only
+     * migrations that fill one of the tables they restore (seed rows of a re-created table). Every
+     * other migration in that range is recorded as applied. Migrations above it run as usual.
+     *
+     * <p>Only applies when the prefix holds at least one migration, i.e. the hotel carries Polaris's
+     * own tables; an Arcturus hotel being converted keeps the conservative prefix behaviour, since
+     * objects it shares with a later migration say nothing about whether that migration ran.
+     */
+    static GapPlan gapPlan(Connection connection, List<Migration> candidates, Assessment assessment)
+            throws SQLException {
+        if (assessment.appliedThrough() == null) return GapPlan.none();
+        String highWater = null;
+        for (Map.Entry<String, Presence> entry : assessment.presence().entrySet()) {
+            if (entry.getValue() == Presence.PRESENT) highWater = entry.getKey();
+        }
+        if (highWater == null || compare(highWater, assessment.appliedThrough()) <= 0) return GapPlan.none();
+
+        List<Migration> range = new ArrayList<>();
+        for (Migration migration : candidates) {
+            if (compare(migration.version(), assessment.appliedThrough()) > 0
+                    && compare(migration.version(), highWater) <= 0) {
+                range.add(migration);
+            }
+        }
+        Set<String> restoredTables = new LinkedHashSet<>();
+        Set<String> run = new LinkedHashSet<>();
+        for (Migration migration : range) {
+            Presence presence = assessment.presence().get(migration.version());
+            if (presence == Presence.ABSENT || presence == Presence.PARTIAL) {
+                run.add(migration.version());
+                for (String table : migration.tables()) {
+                    if (!tableExists(connection, table)) restoredTables.add(table);
+                }
+                for (Column column : migration.columns()) {
+                    if (!columnExists(connection, column.table(), column.name())) restoredTables.add(column.table());
+                }
+            }
+        }
+        for (Migration migration : range) {
+            if (assessment.presence().get(migration.version()) != Presence.NO_EVIDENCE) continue;
+            for (String table : restoredTables) {
+                if (migration.mentions(table)) {
+                    run.add(migration.version());
+                    break;
+                }
+            }
+        }
+        List<String> recorded = new ArrayList<>();
+        List<String> running = new ArrayList<>();
+        for (Migration migration : range) {
+            (run.contains(migration.version()) ? running : recorded).add(migration.version());
+        }
+        return new GapPlan(Collections.unmodifiableList(recorded), Collections.unmodifiableList(running));
     }
 
     static Presence presence(Connection connection, Migration migration) throws SQLException {

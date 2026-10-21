@@ -1,9 +1,5 @@
 package com.eu.habbo.database.migration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,6 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Inspects a database before migration and classifies it into one of the states
@@ -55,12 +54,14 @@ public final class SchemaPreflight {
         UNKNOWN
     }
 
-    private SchemaPreflight() {
-    }
+    private SchemaPreflight() {}
 
     public static State detect(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection()) {
-            if (tableExists(connection, "flyway_schema_history")) {
+            // An emptied history (TRUNCATE flyway_schema_history, or a dump that kept the table
+            // but not its rows) records nothing; treat it like no history so adoption works out
+            // where the schema stands instead of re-running the base database over the hotel.
+            if (tableExists(connection, "flyway_schema_history") && historyRowCount(connection) > 0) {
                 return State.MANAGED;
             }
 
@@ -87,7 +88,9 @@ public final class SchemaPreflight {
                 return State.RECOGNISED_EXISTING;
             }
 
-            LOGGER.warn("[migrate] Database is non-empty but missing required invariant tables {} — refusing to touch it.", missing);
+            LOGGER.warn(
+                    "[migrate] Database is non-empty but missing required invariant tables {} — refusing to touch it.",
+                    missing);
             return State.UNKNOWN;
         } catch (SQLException e) {
             throw new MigrationException("Could not inspect the database before migration", e);
@@ -105,9 +108,8 @@ public final class SchemaPreflight {
     }
 
     private static boolean columnExists(Connection connection, String table, String column) throws SQLException {
-        try (var statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM information_schema.COLUMNS "
-                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
+        try (var statement = connection.prepareStatement("SELECT COUNT(*) FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
             statement.setString(1, table);
             statement.setString(2, column);
             try (ResultSet rs = statement.executeQuery()) {
@@ -116,10 +118,18 @@ public final class SchemaPreflight {
         }
     }
 
+    private static int historyRowCount(Connection connection) throws SQLException {
+        try (var statement = connection.prepareStatement("SELECT COUNT(*) FROM flyway_schema_history");
+                ResultSet rs = statement.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
     private static int userTableCount(Connection connection) throws SQLException {
         try (var statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'");
-             ResultSet rs = statement.executeQuery()) {
+                        "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' "
+                                + "AND TABLE_NAME <> 'flyway_schema_history'");
+                ResultSet rs = statement.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }

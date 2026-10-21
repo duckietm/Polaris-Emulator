@@ -748,6 +748,79 @@ class MigrationRunnerIT {
     }
 
     @Test
+    void truncatedHistoryIsAdoptedInsteadOfReplayingTheBaseDatabase() throws Exception {
+        requireDocker();
+
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_truncated_history")) {
+            MigrationRunner.migrate(ds);
+            int users = intValue(ds, "SELECT COUNT(*) FROM users");
+            // TRUNCATE keeps the table but drops every row; Flyway would otherwise treat the
+            // hotel as managed with nothing applied and re-run the base database over it.
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
+                s.execute("TRUNCATE TABLE flyway_schema_history");
+            }
+
+            assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
+            MigrationRunner.migrate(ds);
+
+            assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
+            assertEquals(1, intValue(ds, "SELECT COUNT(*) FROM flyway_schema_history WHERE type = 'BASELINE'"));
+            assertEquals(0, intValue(ds, "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 0"));
+            assertEquals(users, intValue(ds, "SELECT COUNT(*) FROM users"));
+            assertTrue(MigrationRunner.status(ds).contains("Pending migrations: 0"));
+        }
+    }
+
+    @Test
+    void droppedTableIsRestoredWithoutReplayingTheMigrationsAfterIt() throws Exception {
+        requireDocker();
+
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_dropped_table")) {
+            MigrationRunner.migrate(ds);
+            int sounds = intValue(ds, "SELECT COUNT(*) FROM soundboard_sounds");
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
+                s.execute("SET FOREIGN_KEY_CHECKS = 0");
+                s.execute("DROP TABLE soundboard_sounds");
+                s.execute("TRUNCATE TABLE flyway_schema_history");
+            }
+
+            String status = MigrationRunner.status(ds);
+            assertTrue(status.contains("Missing from the schema, run again to restore it: "), status);
+            // Replaying everything after the soundboard migration would stop on objects that exist
+            // (catalog_id_sequences); only the migrations that build or fill soundboard_sounds run.
+            MigrationRunner.migrate(ds);
+
+            assertEquals(0, intValue(ds, "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 0"));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'soundboard_sounds' AND COLUMN_NAME = 'cooldown_seconds'
+                    """));
+            assertEquals(sounds, intValue(ds, "SELECT COUNT(*) FROM soundboard_sounds"));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM flyway_schema_history
+                    WHERE version = '20260802090000' AND execution_time = 0
+                    """));
+            assertTrue(MigrationRunner.status(ds).contains("Pending migrations: 0"));
+        }
+    }
+
+    @Test
+    void emptyHistoryOnAnEmptyDatabaseRunsTheFullChain() throws Exception {
+        requireDocker();
+
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_empty_history_only")) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
+                s.execute("CREATE TABLE flyway_schema_history (installed_rank INT NOT NULL PRIMARY KEY)");
+            }
+
+            assertEquals(SchemaPreflight.State.EMPTY, SchemaPreflight.detect(ds));
+        }
+    }
+
+    @Test
     void managedHistoryBehindTheSchemaIsReconciledInsteadOfReplayed() throws Exception {
         requireDocker();
 

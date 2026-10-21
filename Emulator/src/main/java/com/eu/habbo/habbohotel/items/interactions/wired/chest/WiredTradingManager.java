@@ -655,7 +655,7 @@ public class WiredTradingManager {
                 negotiation.session().getRules().times(negotiation.session().settledTimes());
         List<Term> paidRule = settled.giveRules().get(match.ruleIndex());
         List<Term> reward = settled.getRule();
-        List<InteractionWiredChest> chests = WiredChestPayouts.usable(negotiation.chests());
+        List<InteractionWiredChest> chests = this.usableHere(negotiation);
         WiredEvent.TransactionTotals[] totals = {null};
 
         int failure = WiredChestPayouts.holding(chests, () -> {
@@ -668,7 +668,9 @@ public class WiredTradingManager {
             List<HabboItem> furniPayment = new ArrayList<>();
             for (Integer itemId : match.consumedItemIds()) {
                 HabboItem item = negotiation.vault().peek(itemId);
-                if (item != null) furniPayment.add(item);
+                // The negotiation ended since the confirmation (timeout, cancel, leaving) and handed the table back.
+                if (item == null) return ChestTransactionFailures.TRADE_CANCELLED;
+                furniPayment.add(item);
             }
             List<HabboItem> creditPayment = pickCredits(
                     negotiation.vault().heldItems(), match.consumedItemIds(), WiredChestPayouts.coins(paidRule));
@@ -811,6 +813,10 @@ public class WiredTradingManager {
      */
     private boolean settleDeposit(Habbo habbo, Negotiation negotiation) {
         InteractionWiredChest chest = negotiation.chests().get(0);
+        if (!this.isInRoom(chest)) {
+            cancelWithReason(habbo, ChestTransactionFailures.CHEST_NOT_IN_ROOM);
+            return false;
+        }
         List<HabboItem> offered = negotiation.vault().heldItems();
         if (offered.isEmpty()) {
             cancelWithReason(habbo, ChestTransactionFailures.EMPTY);
@@ -863,7 +869,7 @@ public class WiredTradingManager {
         List<HabboItem> furni = new ArrayList<>();
         for (HabboItem item : offered) (ChestAirWire.creditValue(item) > 0 ? credits : furni).add(item);
 
-        List<InteractionWiredChest> chests = WiredChestPayouts.usable(negotiation.chests());
+        List<InteractionWiredChest> chests = this.usableHere(negotiation);
         int failure = WiredChestPayouts.holding(chests, () -> {
             if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
 
@@ -964,6 +970,18 @@ public class WiredTradingManager {
             if (id != null) return id;
         }
         return 0;
+    }
+
+    /** The negotiation's chests that wired may still use and that are still in this room. */
+    private List<InteractionWiredChest> usableHere(Negotiation negotiation) {
+        List<InteractionWiredChest> chests = WiredChestPayouts.usable(negotiation.chests());
+        chests.removeIf(chest -> !this.isInRoom(chest));
+        return chests;
+    }
+
+    /** A chest picked up while a window was open is no longer a place to pay into or take a reward from. */
+    private boolean isInRoom(InteractionWiredChest chest) {
+        return this.room == null || chest.getRoomId() == this.room.getId();
     }
 
     private synchronized Negotiation getNegotiation(Habbo habbo) {

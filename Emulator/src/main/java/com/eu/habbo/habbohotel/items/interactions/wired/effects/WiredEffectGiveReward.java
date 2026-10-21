@@ -314,6 +314,8 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
 
     public void incrementGiven() {
         this.given.incrementAndGet();
+        // The count is part of the saved wired data: without this a restart forgets rewards already given.
+        this.needsUpdate(true);
     }
 
     public int getRewardTime() {

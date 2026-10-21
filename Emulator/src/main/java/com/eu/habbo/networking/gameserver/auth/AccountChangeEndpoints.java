@@ -282,54 +282,25 @@ final class AccountChangeEndpoints {
         long cooldownSeconds = cooldownDays * 86400L;
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-            String storedHash = null;
-            String currentUsername = null;
-            int lastChange = 0;
-            boolean cooldownColumnExists = true;
+            RenameAccount account = lookupRenameAccount(conn, userId);
 
-            try (PreparedStatement lookup = conn.prepareStatement(
-                    "SELECT username, password, last_username_change FROM users WHERE id = ? LIMIT 1")) {
-                lookup.setInt(1, userId);
-                try (ResultSet rs = lookup.executeQuery()) {
-                    if (rs.next()) {
-                        currentUsername = rs.getString("username");
-                        storedHash = rs.getString("password");
-                        lastChange = rs.getInt("last_username_change");
-                    }
-                }
-            } catch (SQLException missingColumn) {
-                cooldownColumnExists = false;
-                LOGGER.warn(
-                        "[auth/change-username] users.last_username_change column missing — cooldown disabled. Run the migration in config/Database.sql.");
-                try (PreparedStatement lookup =
-                        conn.prepareStatement("SELECT username, password FROM users WHERE id = ? LIMIT 1")) {
-                    lookup.setInt(1, userId);
-                    try (ResultSet rs = lookup.executeQuery()) {
-                        if (rs.next()) {
-                            currentUsername = rs.getString("username");
-                            storedHash = rs.getString("password");
-                        }
-                    }
-                }
-            }
-
-            if (storedHash == null || storedHash.isEmpty()) {
+            if (account.storedHash() == null || account.storedHash().isEmpty()) {
                 AuthRateLimiter.recordFailure(ip);
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Account not found."));
                 return;
             }
 
-            if (!checkPassword(currentPassword, storedHash)) {
+            if (!checkPassword(currentPassword, account.storedHash())) {
                 AuthRateLimiter.recordFailure(ip);
                 LOGGER.info(
                         "[auth/change-username] password mismatch for user id={} username='{}'",
                         userId,
-                        currentUsername);
+                        account.username());
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Current password is incorrect."));
                 return;
             }
 
-            if (currentUsername != null && currentUsername.equals(newUsername)) {
+            if (account.username() != null && account.username().equals(newUsername)) {
                 sendJson(
                         ctx,
                         req,
@@ -339,129 +310,38 @@ final class AccountChangeEndpoints {
             }
 
             int now = Emulator.getIntUnixTimestamp();
-            if (cooldownColumnExists && cooldownSeconds > 0 && lastChange > 0) {
-                long allowedAt = (long) lastChange + cooldownSeconds;
+            if (account.cooldownColumnExists() && cooldownSeconds > 0 && account.lastChange() > 0) {
+                long allowedAt = (long) account.lastChange() + cooldownSeconds;
                 if (now < allowedAt) {
-                    long remaining = allowedAt - now;
-                    long days = remaining / 86400L;
-                    long hours = (remaining % 86400L) / 3600L;
-                    String wait = days > 0
-                            ? (days + " day" + (days == 1 ? "" : "s"))
-                            : (hours + " hour" + (hours == 1 ? "" : "s"));
                     sendJson(
                             ctx,
                             req,
                             HttpResponseStatus.TOO_MANY_REQUESTS,
-                            errorPayload("You can rename again in " + wait + "."));
+                            errorPayload("You can rename again in " + renameWaitText(allowedAt - now) + "."));
                     return;
                 }
             }
 
-            try (PreparedStatement banned =
-                    conn.prepareStatement("SELECT 1 FROM banned_usernames WHERE LOWER(username) = LOWER(?) LIMIT 1")) {
-                banned.setString(1, newUsername);
-                try (ResultSet rs = banned.executeQuery()) {
-                    if (rs.next()) {
-                        sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is not allowed."));
-                        return;
-                    }
-                }
-            } catch (SQLException bannedTableError) {
-                if (bannedTableError.getErrorCode() != 1146 && !"42S02".equals(bannedTableError.getSQLState())) {
-                    throw bannedTableError;
-                }
+            if (isUsernameBanned(conn, newUsername)) {
+                sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is not allowed."));
+                return;
             }
 
-            try (PreparedStatement check = conn.prepareStatement(
-                    "SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND id <> ? LIMIT 1")) {
-                check.setString(1, newUsername);
-                check.setInt(2, userId);
-                try (ResultSet rs = check.executeQuery()) {
-                    if (rs.next()) {
-                        sendJson(
-                                ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is already taken."));
-                        return;
-                    }
-                }
+            if (isUsernameTaken(conn, newUsername, userId)) {
+                sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is already taken."));
+                return;
             }
 
-            boolean previousAutoCommit = conn.getAutoCommit();
-            conn.setAutoCommit(false);
+            RenameOutcome outcome =
+                    applyRename(conn, userId, newUsername, now, account.cooldownColumnExists(), cooldownSeconds);
 
-            boolean cooldownRace = false;
-            boolean duplicateName = false;
-
-            try {
-                int rowsUpdated = 0;
-
-                try (PreparedStatement upd = conn.prepareStatement(
-                        cooldownColumnExists
-                                ? "UPDATE users SET username = ?, last_username_change = ? "
-                                        + "WHERE id = ? "
-                                        + "  AND (last_username_change = 0 OR last_username_change + ? <= ?) "
-                                        + "LIMIT 1"
-                                : "UPDATE users SET username = ? WHERE id = ? LIMIT 1")) {
-                    upd.setString(1, newUsername);
-                    if (cooldownColumnExists) {
-                        upd.setInt(2, now);
-                        upd.setInt(3, userId);
-                        upd.setLong(4, cooldownSeconds);
-                        upd.setInt(5, now);
-                    } else {
-                        upd.setInt(2, userId);
-                    }
-                    try {
-                        rowsUpdated = upd.executeUpdate();
-                    } catch (SQLException dup) {
-                        if (dup.getErrorCode() == 1062 || "23000".equals(dup.getSQLState())) {
-                            duplicateName = true;
-                        } else {
-                            throw dup;
-                        }
-                    }
-                }
-
-                if (duplicateName || (cooldownColumnExists && rowsUpdated == 0)) {
-                    if (!duplicateName) cooldownRace = true;
-                    conn.rollback();
-                } else {
-                    try (PreparedStatement upd =
-                            conn.prepareStatement("UPDATE rooms SET owner_name = ? WHERE owner_id = ?")) {
-                        upd.setString(1, newUsername);
-                        upd.setInt(2, userId);
-                        upd.executeUpdate();
-                    }
-
-                    try (PreparedStatement upd =
-                            conn.prepareStatement("UPDATE rooms_for_sale SET owner_name = ? WHERE user_id = ?")) {
-                        upd.setString(1, newUsername);
-                        upd.setInt(2, userId);
-                        upd.executeUpdate();
-                    } catch (SQLException roomsForSale) {
-                        if (roomsForSale.getErrorCode() != 1146 && !"42S02".equals(roomsForSale.getSQLState())) {
-                            throw roomsForSale;
-                        }
-                    }
-
-                    conn.commit();
-                }
-            } catch (SQLException txError) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ignore) {
-                }
-                throw txError;
-            } finally {
-                conn.setAutoCommit(previousAutoCommit);
-            }
-
-            if (duplicateName) {
+            if (outcome == RenameOutcome.DUPLICATE_NAME) {
                 LOGGER.info("[auth/change-username] dup-entry race for user id={} wanted='{}'", userId, newUsername);
                 sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is already taken."));
                 return;
             }
 
-            if (cooldownRace) {
+            if (outcome == RenameOutcome.COOLDOWN_RACE) {
                 LOGGER.info("[auth/change-username] cooldown race for user id={} (concurrent rename rejected)", userId);
                 sendJson(
                         ctx,
@@ -471,81 +351,13 @@ final class AccountChangeEndpoints {
                 return;
             }
 
-            try {
-                if (Emulator.getGameServer() != null
-                        && Emulator.getGameServer().getGameClientManager() != null
-                        && Emulator.getGameEnvironment() != null
-                        && Emulator.getGameEnvironment().getHabboManager() != null) {
-                    com.eu.habbo.habbohotel.users.Habbo habbo =
-                            Emulator.getGameServer().getGameClientManager().getHabbo(userId);
-                    if (habbo != null) {
-                        Emulator.getGameEnvironment().getHabboManager().removeHabbo(habbo);
-                        habbo.getHabboInfo().setUsername(newUsername);
-                        Emulator.getGameEnvironment().getHabboManager().addHabbo(habbo);
-                    }
-                }
-            } catch (Exception cacheError) {
-                LOGGER.warn("[auth/change-username] failed to refresh HabboManager cache", cacheError);
-            }
-
-            try {
-                if (Emulator.getGameEnvironment() != null
-                        && Emulator.getGameEnvironment().getRoomManager() != null) {
-                    for (com.eu.habbo.habbohotel.rooms.Room room :
-                            Emulator.getGameEnvironment().getRoomManager().getActiveRooms()) {
-                        if (room.getOwnerId() == userId) {
-                            room.setOwnerName(newUsername);
-                        }
-                    }
-                }
-            } catch (Exception cacheError) {
-                LOGGER.warn("[auth/change-username] failed to refresh Room.ownerName cache", cacheError);
-            }
-
-            try {
-                com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent.cachedResults.clear();
-            } catch (Exception cacheError) {
-                LOGGER.warn("[auth/change-username] failed to clear marketplace cache", cacheError);
-            }
-
-            // Bump the token version and revoke remember families atomically: a
-            // username change does not alter the password, so if the family revoke
-            // failed after the version bump committed, surviving families could still
-            // mint fresh tokens under the new version and defeat the forced relogin.
-            boolean revocationAutoCommit = conn.getAutoCommit();
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement clear = conn.prepareStatement("UPDATE users SET auth_ticket = '', online = '0', "
-                        + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
-                    clear.setInt(1, userId);
-                    clear.executeUpdate();
-                }
-                RememberJwtService.revokeAllForUser(conn, userId);
-                conn.commit();
-            } catch (SQLException revokeError) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ignore) {
-                }
-                throw revokeError;
-            } finally {
-                conn.setAutoCommit(revocationAutoCommit);
-            }
-
-            if (Emulator.getGameServer() != null && Emulator.getGameServer().getGameClientManager() != null) {
-                com.eu.habbo.habbohotel.users.Habbo habbo =
-                        Emulator.getGameServer().getGameClientManager().getHabbo(userId);
-                if (habbo != null && habbo.getClient() != null) {
-                    Emulator.getGameServer()
-                            .getGameClientManager()
-                            .disconnectWithReason(habbo.getClient(), DisconnectReasonComposer.LOGOUT);
-                }
-            }
+            refreshRenameCaches(userId, newUsername);
+            revokeSessionsAfterRename(conn, userId);
 
             AuthRateLimiter.recordSuccess(ip);
             LOGGER.info(
                     "[auth/change-username] '{}' -> '{}' (user id={}, ip='{}')",
-                    currentUsername,
+                    account.username(),
                     newUsername,
                     userId,
                     ip);
@@ -558,6 +370,239 @@ final class AccountChangeEndpoints {
         } catch (Exception e) {
             LOGGER.error("[auth/change-username] failed for user id=" + userId, e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    /** The account row a rename is judged against; the cooldown column is absent on databases that never added it. */
+    private record RenameAccount(String username, String storedHash, int lastChange, boolean cooldownColumnExists) {}
+
+    private static RenameAccount lookupRenameAccount(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement lookup = conn.prepareStatement(
+                "SELECT username, password, last_username_change FROM users WHERE id = ? LIMIT 1")) {
+            lookup.setInt(1, userId);
+            try (ResultSet rs = lookup.executeQuery()) {
+                if (rs.next()) {
+                    return new RenameAccount(
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getInt("last_username_change"),
+                            true);
+                }
+                return new RenameAccount(null, null, 0, true);
+            }
+        } catch (SQLException missingColumn) {
+            LOGGER.warn(
+                    "[auth/change-username] users.last_username_change column missing — cooldown disabled. Run the migration in config/Database.sql.");
+            try (PreparedStatement lookup =
+                    conn.prepareStatement("SELECT username, password FROM users WHERE id = ? LIMIT 1")) {
+                lookup.setInt(1, userId);
+                try (ResultSet rs = lookup.executeQuery()) {
+                    if (rs.next()) {
+                        return new RenameAccount(rs.getString("username"), rs.getString("password"), 0, false);
+                    }
+                    return new RenameAccount(null, null, 0, false);
+                }
+            }
+        }
+    }
+
+    /** How long a player still has to wait: whole days, else whole hours, else "less than an hour". */
+    static String renameWaitText(long remainingSeconds) {
+        long days = remainingSeconds / 86400L;
+        long hours = (remainingSeconds % 86400L) / 3600L;
+        if (days > 0) return days + " day" + (days == 1 ? "" : "s");
+        if (hours > 0) return hours + " hour" + (hours == 1 ? "" : "s");
+        return "less than an hour";
+    }
+
+    private static boolean isUsernameBanned(Connection conn, String username) throws SQLException {
+        try (PreparedStatement banned =
+                conn.prepareStatement("SELECT 1 FROM banned_usernames WHERE LOWER(username) = LOWER(?) LIMIT 1")) {
+            banned.setString(1, username);
+            try (ResultSet rs = banned.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException bannedTableError) {
+            if (bannedTableError.getErrorCode() != 1146 && !"42S02".equals(bannedTableError.getSQLState())) {
+                throw bannedTableError;
+            }
+            return false;
+        }
+    }
+
+    private static boolean isUsernameTaken(Connection conn, String username, int exceptUserId) throws SQLException {
+        try (PreparedStatement check =
+                conn.prepareStatement("SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND id <> ? LIMIT 1")) {
+            check.setString(1, username);
+            check.setInt(2, exceptUserId);
+            try (ResultSet rs = check.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private enum RenameOutcome {
+        RENAMED,
+        DUPLICATE_NAME,
+        COOLDOWN_RACE
+    }
+
+    /** Writes the new name on the user and on the rooms they own, in one transaction. */
+    private static RenameOutcome applyRename(
+            Connection conn,
+            int userId,
+            String newUsername,
+            int now,
+            boolean cooldownColumnExists,
+            long cooldownSeconds)
+            throws SQLException {
+        boolean previousAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+
+        RenameOutcome outcome = RenameOutcome.RENAMED;
+
+        try {
+            boolean duplicateName = false;
+            int rowsUpdated = 0;
+
+            try (PreparedStatement upd = conn.prepareStatement(
+                    cooldownColumnExists
+                            ? "UPDATE users SET username = ?, last_username_change = ? "
+                                    + "WHERE id = ? "
+                                    + "  AND (last_username_change = 0 OR last_username_change + ? <= ?) "
+                                    + "LIMIT 1"
+                            : "UPDATE users SET username = ? WHERE id = ? LIMIT 1")) {
+                upd.setString(1, newUsername);
+                if (cooldownColumnExists) {
+                    upd.setInt(2, now);
+                    upd.setInt(3, userId);
+                    upd.setLong(4, cooldownSeconds);
+                    upd.setInt(5, now);
+                } else {
+                    upd.setInt(2, userId);
+                }
+                try {
+                    rowsUpdated = upd.executeUpdate();
+                } catch (SQLException dup) {
+                    if (dup.getErrorCode() == 1062 || "23000".equals(dup.getSQLState())) {
+                        duplicateName = true;
+                    } else {
+                        throw dup;
+                    }
+                }
+            }
+
+            if (duplicateName || (cooldownColumnExists && rowsUpdated == 0)) {
+                outcome = duplicateName ? RenameOutcome.DUPLICATE_NAME : RenameOutcome.COOLDOWN_RACE;
+                conn.rollback();
+            } else {
+                try (PreparedStatement upd =
+                        conn.prepareStatement("UPDATE rooms SET owner_name = ? WHERE owner_id = ?")) {
+                    upd.setString(1, newUsername);
+                    upd.setInt(2, userId);
+                    upd.executeUpdate();
+                }
+
+                try (PreparedStatement upd =
+                        conn.prepareStatement("UPDATE rooms_for_sale SET owner_name = ? WHERE user_id = ?")) {
+                    upd.setString(1, newUsername);
+                    upd.setInt(2, userId);
+                    upd.executeUpdate();
+                } catch (SQLException roomsForSale) {
+                    if (roomsForSale.getErrorCode() != 1146 && !"42S02".equals(roomsForSale.getSQLState())) {
+                        throw roomsForSale;
+                    }
+                }
+
+                conn.commit();
+            }
+        } catch (SQLException txError) {
+            try {
+                conn.rollback();
+            } catch (SQLException ignore) {
+            }
+            throw txError;
+        } finally {
+            conn.setAutoCommit(previousAutoCommit);
+        }
+
+        return outcome;
+    }
+
+    /** The name lives in a few in-memory copies too; a failure to refresh one is logged and does not undo the rename. */
+    private static void refreshRenameCaches(int userId, String newUsername) {
+        try {
+            if (Emulator.getGameServer() != null
+                    && Emulator.getGameServer().getGameClientManager() != null
+                    && Emulator.getGameEnvironment() != null
+                    && Emulator.getGameEnvironment().getHabboManager() != null) {
+                com.eu.habbo.habbohotel.users.Habbo habbo =
+                        Emulator.getGameServer().getGameClientManager().getHabbo(userId);
+                if (habbo != null) {
+                    Emulator.getGameEnvironment().getHabboManager().removeHabbo(habbo);
+                    habbo.getHabboInfo().setUsername(newUsername);
+                    Emulator.getGameEnvironment().getHabboManager().addHabbo(habbo);
+                }
+            }
+        } catch (Exception cacheError) {
+            LOGGER.warn("[auth/change-username] failed to refresh HabboManager cache", cacheError);
+        }
+
+        try {
+            if (Emulator.getGameEnvironment() != null
+                    && Emulator.getGameEnvironment().getRoomManager() != null) {
+                for (com.eu.habbo.habbohotel.rooms.Room room :
+                        Emulator.getGameEnvironment().getRoomManager().getActiveRooms()) {
+                    if (room.getOwnerId() == userId) {
+                        room.setOwnerName(newUsername);
+                    }
+                }
+            }
+        } catch (Exception cacheError) {
+            LOGGER.warn("[auth/change-username] failed to refresh Room.ownerName cache", cacheError);
+        }
+
+        try {
+            com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent.cachedResults.clear();
+        } catch (Exception cacheError) {
+            LOGGER.warn("[auth/change-username] failed to clear marketplace cache", cacheError);
+        }
+    }
+
+    /** Forces a new login: the token version moves, every remember family goes, and a connected client is logged out. */
+    private static void revokeSessionsAfterRename(Connection conn, int userId) throws SQLException {
+        // Bump the token version and revoke remember families atomically: a
+        // username change does not alter the password, so if the family revoke
+        // failed after the version bump committed, surviving families could still
+        // mint fresh tokens under the new version and defeat the forced relogin.
+        boolean revocationAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        try {
+            try (PreparedStatement clear = conn.prepareStatement("UPDATE users SET auth_ticket = '', online = '0', "
+                    + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+                clear.setInt(1, userId);
+                clear.executeUpdate();
+            }
+            RememberJwtService.revokeAllForUser(conn, userId);
+            conn.commit();
+        } catch (SQLException revokeError) {
+            try {
+                conn.rollback();
+            } catch (SQLException ignore) {
+            }
+            throw revokeError;
+        } finally {
+            conn.setAutoCommit(revocationAutoCommit);
+        }
+
+        if (Emulator.getGameServer() != null && Emulator.getGameServer().getGameClientManager() != null) {
+            com.eu.habbo.habbohotel.users.Habbo habbo =
+                    Emulator.getGameServer().getGameClientManager().getHabbo(userId);
+            if (habbo != null && habbo.getClient() != null) {
+                Emulator.getGameServer()
+                        .getGameClientManager()
+                        .disconnectWithReason(habbo.getClient(), DisconnectReasonComposer.LOGOUT);
+            }
         }
     }
 

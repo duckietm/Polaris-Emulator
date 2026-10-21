@@ -435,30 +435,11 @@ class RoomRollerManagerBehaviourTest {
         sitting.sort(null);
         this.trace.add("sit update: " + listed(sitting));
 
-        return sendsInFixedOrder(this.trace);
+        return this.trace.toArray(String[]::new);
     }
 
     private static String listed(List<String> names) {
         return names.isEmpty() ? "-" : String.join(", ", names);
-    }
-
-    /**
-     * The composers of one roller go out of a HashSet, so the order of the sends in one flush is not part of the
-     * behaviour: each run of consecutive sends is put in a fixed order. What is sent, and in which flush, stays.
-     */
-    private static String[] sendsInFixedOrder(List<String> lines) {
-        List<String> ordered = new ArrayList<>();
-        for (int i = 0; i < lines.size(); ) {
-            if (!lines.get(i).startsWith("send ")) {
-                ordered.add(lines.get(i++));
-                continue;
-            }
-            int end = i;
-            while (end < lines.size() && lines.get(end).startsWith("send ")) end++;
-            ordered.addAll(lines.subList(i, end).stream().sorted().toList());
-            i = end;
-        }
-        return ordered.toArray(String[]::new);
     }
 
     // ---------------------------------------------------------------- the expected traces

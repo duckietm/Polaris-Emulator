@@ -17,6 +17,7 @@ import com.eu.habbo.plugin.events.furniture.FurnitureRolledEvent;
 import com.eu.habbo.plugin.events.users.UserRolledEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -46,7 +47,8 @@ public class RoomRollerManager {
         // Do not add a second gate here — it would cause rollers to fire at
         // speed^2 intervals instead of the intended speed.
 
-        Set<MessageComposer> messages = new HashSet<>();
+        // In the order they are composed: a ridden horse before its rider, a stack from the top down.
+        Set<MessageComposer> messages = new LinkedHashSet<>();
         Set<Integer> rollerFurniIds = new HashSet<>();
         Set<Integer> rolledUnitIds = new HashSet<>();
 

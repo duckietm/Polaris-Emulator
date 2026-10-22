@@ -1794,8 +1794,6 @@ public class CatalogManager {
         bot.setOwnerName(habbo.getClient().getHabbo().getHabboInfo().getUsername());
         bot.needsUpdate(true);
         Emulator.getThreading().run(bot);
-        habbo.getClient().getHabbo().getInventory().getBotsComponent().addBot(bot);
-        habbo.getClient().sendResponse(new AddBotComposer(bot));
         purchase.unseenItems
                 .computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.BOT, ignored -> new ArrayList<>())
                 .add(bot.getId());
@@ -1826,14 +1824,6 @@ public class CatalogManager {
         }
 
         purchase.createdPets.add(pet);
-        habbo.getClient().getHabbo().getInventory().getPetsComponent().addPet(pet);
-        habbo.getClient().sendResponse(new AddPetComposer(pet));
-        habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
-
-        AchievementManager.progressAchievement(
-                habbo.getClient().getHabbo(),
-                Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetLover"));
-
         purchase.unseenItems
                 .computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.PET, ignored -> new ArrayList<>())
                 .add(pet.getId());
@@ -2028,7 +2018,7 @@ public class CatalogManager {
     }
 
     /**
-     * Hands a paid legacy purchase over: effects, guild forums, furniture (rented when the offer rents), badges,
+     * Hands a paid legacy purchase over: bots and pets, effects, guild forums, furniture (rented when the offer rents), badges,
      * then the buyer's packets, quests and the purchase log. Furniture a plugin took out of the purchase is deleted.
      */
     private void deliverLegacyPurchase(
@@ -2038,6 +2028,21 @@ public class CatalogManager {
             boolean free,
             UserCatalogItemPurchasedEvent purchasedEvent,
             LegacyPurchase purchase) {
+        // Bots and pets reach the buyer's inventory only now that the purchase is paid: on a failure before this
+        // the buyer never sees them, as with the atomic bot and pet path.
+        for (Bot bot : purchase.createdBots) {
+            habbo.getClient().getHabbo().getInventory().getBotsComponent().addBot(bot);
+            habbo.getClient().sendResponse(new AddBotComposer(bot));
+        }
+        for (Pet pet : purchase.createdPets) {
+            habbo.getClient().getHabbo().getInventory().getPetsComponent().addPet(pet);
+            habbo.getClient().sendResponse(new AddPetComposer(pet));
+            habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
+
+            AchievementManager.progressAchievement(
+                    habbo.getClient().getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetLover"));
+        }
         for (int[] effect : purchase.pendingEffects) {
             habbo.getInventory().getEffectsComponent().createEffect(effect[0], effect[1]);
         }

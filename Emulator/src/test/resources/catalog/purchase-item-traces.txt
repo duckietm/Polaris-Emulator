@@ -164,11 +164,11 @@ purchasing flag false
 == mixed / a bot and furniture
 bots.createBot({motto=Hi, name=Robbie}, generic)
 threading.run(bot(generic))
-inventory.addBot(bot(generic))
-buyer <- AddBot(bot(generic))
 items.createItem(chair, stack 0, number 0, "") -> item#500
 plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addBot(bot(generic))
+buyer <- AddBot(bot(generic))
 inventory.addItems([item#500])
 plugin event UserCatalogFurnitureBoughtEvent
 buyer <- AddHabboItem({BOT=[900], OWNED_FURNI=[500]})
@@ -183,8 +183,6 @@ purchasing flag false
 == mixed / a bot and furniture, payment refused
 bots.createBot({motto=Hi, name=Robbie}, generic)
 threading.run(bot(generic))
-inventory.addBot(bot(generic))
-buyer <- AddBot(bot(generic))
 items.createItem(chair, stack 0, number 0, "") -> item#501
 plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> false
@@ -197,13 +195,13 @@ purchasing flag false
 
 == mixed / a pet and furniture
 pets.createPet(a0 pet1, Rex, 1, FFFFFF)
+items.createItem(chair, stack 0, number 0, "Rex\n1\nFFFFFF") -> item#502
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addPet(pet(Rex))
 buyer <- AddPet(pet(Rex))
 buyer <- PetBoughtNotification(pet(Rex), false)
 AchievementManager.progressAchievement(achievement PetLover)
-items.createItem(chair, stack 0, number 0, "Rex\n1\nFFFFFF") -> item#502
-plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
-CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#502])
 plugin event UserCatalogFurnitureBoughtEvent
 buyer <- AddHabboItem({OWNED_FURNI=[502], PET=[902]})

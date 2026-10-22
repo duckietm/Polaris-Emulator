@@ -1653,6 +1653,7 @@ public class CatalogManager {
                                 "%itemname%",
                                 item.getBaseItems().iterator().next().getDisplayName())
                         .replace("%limit%", ltdLimit + ""));
+                this.refuseAfterLimitAlert(habbo);
                 return true;
             }
 
@@ -1664,11 +1665,20 @@ public class CatalogManager {
                                 "%itemname%",
                                 item.getBaseItems().iterator().next().getDisplayName())
                         .replace("%limit%", ltdLimit + ""));
+                this.refuseAfterLimitAlert(habbo);
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Ends the purchase the client is waiting for after a daily limit alert: without a reply its purchase button
+     * stays busy until the client gives up on its own.
+     */
+    private void refuseAfterLimitAlert(Habbo habbo) {
+        habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
     }
 
     /**

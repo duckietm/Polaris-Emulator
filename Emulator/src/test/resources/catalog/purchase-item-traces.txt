@@ -114,11 +114,13 @@ purchasing flag false
 
 == limited / daily item limit reached
 buyer alerted "<error.catalog.buy.limited.daily.item %username% throne display 1 %badge% %pagename%>"
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
 == limited / daily total reached
 buyer alerted "<error.catalog.buy.limited.daily.total %username% throne display 2 %badge% %pagename%>"
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 

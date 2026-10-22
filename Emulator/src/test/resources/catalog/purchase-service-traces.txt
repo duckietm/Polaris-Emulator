@@ -43,10 +43,12 @@ returned
 purchasing flag false
 
 == club / not enough credits
+buyer <- NotEnoughPointsType(true, false, 5)
 returned
 purchasing flag false
 
 == club / not enough points
+buyer <- NotEnoughPointsType(false, true, 5)
 returned
 purchasing flag false
 
@@ -212,12 +214,12 @@ returned
 purchasing flag false
 
 == room bundle / not enough credits
-buyer <- AlertPurchaseFailed(0)
+buyer <- NotEnoughPointsType(true, false, 5)
 returned
 purchasing flag false
 
 == room bundle / not enough points
-buyer <- AlertPurchaseFailed(0)
+buyer <- NotEnoughPointsType(false, true, 5)
 returned
 purchasing flag false
 

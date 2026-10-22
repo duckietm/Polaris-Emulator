@@ -35,6 +35,7 @@ import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubFurniCountComposer;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer;
+import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
@@ -166,10 +167,7 @@ final class CatalogPurchaseApplicationService {
             return;
         }
 
-        if (roomCredits > this.client.getHabbo().getHabboInfo().getCredits()
-                || roomPoints
-                        > this.client.getHabbo().getHabboInfo().getCurrencyAmount(roomBundleItem.getPointsType())) {
-            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+        if (this.refusedForBalance(roomCredits, roomPoints, roomBundleItem.getPointsType())) {
             return;
         }
         int roomCount = this.environment
@@ -223,6 +221,22 @@ final class CatalogPurchaseApplicationService {
                 this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
             }
         }
+    }
+
+    /**
+     * Refuses a price the buyer's balance does not cover with NOT_ENOUGH_BALANCE, the reply Habbo gives and the
+     * client turns into its "not enough credits" or "not enough points" dialog.
+     */
+    private boolean refusedForBalance(int credits, int points, int pointsType) {
+        boolean notEnoughCredits =
+                credits > this.client.getHabbo().getHabboInfo().getCredits();
+        boolean notEnoughPoints = points > this.client.getHabbo().getHabboInfo().getCurrencyAmount(pointsType);
+        if (!notEnoughCredits && !notEnoughPoints) {
+            return false;
+        }
+
+        this.client.sendResponse(new NotEnoughPointsTypeComposer(notEnoughCredits, notEnoughPoints, pointsType));
+        return true;
     }
 
     /** Gives the buyer each badge of a bought room bundle they do not have yet. */
@@ -307,10 +321,9 @@ final class CatalogPurchaseApplicationService {
             }
 
             if (totalDays > 0) {
-                if (this.client.getHabbo().getHabboInfo().getCurrencyAmount(item.getPointsType()) < totalDuckets)
+                if (this.refusedForBalance(totalCredits, totalDuckets, item.getPointsType())) {
                     return;
-
-                if (this.client.getHabbo().getHabboInfo().getCredits() < totalCredits) return;
+                }
 
                 int paidCredits =
                         this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : totalCredits;

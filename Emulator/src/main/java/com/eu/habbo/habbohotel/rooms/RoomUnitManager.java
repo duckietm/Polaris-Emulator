@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.bots.VisitorBot;
 import com.eu.habbo.habbohotel.items.Item;
@@ -259,7 +258,7 @@ public class RoomUnitManager {
                 || habbo.getRoomUnit().getPath().size() <= 1
                 || this.room.isPublicRoom()) {
             habbo.getRoomUnit().setCanWalk(true);
-            Emulator.getGameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
+            this.room.gameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
         }
     }
 
@@ -423,7 +422,7 @@ public class RoomUnitManager {
             statement.setInt(1, this.room.getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    Bot bot = Emulator.getGameEnvironment().getBotManager().loadBot(set);
+                    Bot bot = this.room.gameEnvironment().getBotManager().loadBot(set);
 
                     if (bot != null) {
                         bot.setRoom(this.room);
@@ -873,7 +872,7 @@ public class RoomUnitManager {
 
             pet.run(); // Run synchronously to ensure DB is updated before room reload
 
-            Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(pet.getUserId());
+            Habbo owner = this.room.gameEnvironment().getHabboManager().getHabbo(pet.getUserId());
             if (owner != null) {
                 owner.getInventory().getPetsComponent().addPet(pet);
                 owner.getClient().sendResponse(new AddPetComposer(pet));
@@ -961,7 +960,7 @@ public class RoomUnitManager {
         if (duration == -1 || duration == Integer.MAX_VALUE) {
             duration = Integer.MAX_VALUE;
         } else {
-            duration += Emulator.getIntUnixTimestamp();
+            duration += this.room.currentUnixTimestamp();
         }
 
         if (this.room.isAllowEffects() && roomUnit != null) {

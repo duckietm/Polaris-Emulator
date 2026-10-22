@@ -1,8 +1,10 @@
 package com.eu.habbo.messages.incoming.guilds;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildBadgeBuilder;
+import com.eu.habbo.habbohotel.guilds.GuildBadgeInput;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -15,6 +17,7 @@ import com.eu.habbo.messages.outgoing.guilds.GuildEditFailComposer;
 import com.eu.habbo.messages.outgoing.guilds.GuildInfoComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomDataComposer;
 import com.eu.habbo.plugin.events.guilds.GuildPurchasedEvent;
+import com.eu.habbo.util.imager.badges.BadgeImager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +31,10 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        final String name = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
-        final String description = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
+        final String name =
+                Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
+        final String description =
+                Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
 
         if (!GuildInputLimits.isValidGuildName(name)) {
             this.client.sendResponse(new GuildEditFailComposer(GuildEditFailComposer.INVALID_GUILD_NAME));
@@ -39,7 +44,8 @@ public class RequestGuildBuyEvent extends MessageHandler {
             return;
         }
 
-        if (Emulator.getConfig().getBoolean("catalog.guild.hc_required", true) && !this.client.getHabbo().getHabboStats().hasActiveClub()) {
+        if (Emulator.getConfig().getBoolean("catalog.guild.hc_required", true)
+                && !this.client.getHabbo().getHabboStats().hasActiveClub()) {
             this.client.sendResponse(new GuildEditFailComposer(GuildEditFailComposer.HC_REQUIRED));
             return;
         }
@@ -64,7 +70,10 @@ public class RequestGuildBuyEvent extends MessageHandler {
         }
 
         if (r.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()) {
-            String message = Emulator.getTexts().getValue("scripter.warning.guild.buy.owner").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%roomname%", r.getName().replace("%owner%", r.getOwnerName()));
+            String message = Emulator.getTexts()
+                    .getValue("scripter.warning.guild.buy.owner")
+                    .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
+                    .replace("%roomname%", r.getName().replace("%owner%", r.getOwnerName()));
             ScripterManager.scripterDetected(this.client, message);
             LOGGER.info(message);
             return;
@@ -73,15 +82,18 @@ public class RequestGuildBuyEvent extends MessageHandler {
         int colorOne = this.packet.readInt();
         int colorTwo = this.packet.readInt();
 
-        if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorOne) || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorTwo)) {
+        if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorOne)
+                || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorTwo)) {
             this.client.sendResponse(new GuildEditFailComposer(GuildEditFailComposer.INVALID_GUILD_NAME));
             return;
         }
 
         int count = this.packet.readInt();
 
+        ConfigurationManager config = Emulator.getConfig();
+        BadgeImager imager = Emulator.getBadgeImager();
         String badge = GuildBadgeBuilder.readBadge(this.packet, count);
-        if (badge == null) {
+        if (badge == null || !GuildBadgeInput.isAcceptable(badge, config, imager)) {
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
@@ -91,7 +103,7 @@ public class RequestGuildBuyEvent extends MessageHandler {
         // failed afterwards (missing room, room already used by a guild, not the
         // owner) still took the credits without ever creating the group.
         if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
-            int guildPrice = Emulator.getConfig().getInt("catalog.guild.price");
+            int guildPrice = config.getInt("catalog.guild.price");
             if (this.client.getHabbo().getHabboInfo().getCredits() >= guildPrice) {
                 this.client.getHabbo().giveCredits(-guildPrice);
             } else {
@@ -100,7 +112,9 @@ public class RequestGuildBuyEvent extends MessageHandler {
             }
         }
 
-        Guild guild = Emulator.getGameEnvironment().getGuildManager().createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge, colorOne, colorTwo);
+        Guild guild = Emulator.getGameEnvironment()
+                .getGuildManager()
+                .createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge, colorOne, colorTwo);
 
         r.setGuild(guild.getId());
         r.removeAllRights();
@@ -108,8 +122,8 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
         Emulator.getGameEnvironment().getGuildManager().addGuild(guild);
 
-        if (Emulator.getConfig().getBoolean("imager.internal.enabled")) {
-            Emulator.getBadgeImager().generate(guild);
+        if (imager != null && config.getBoolean("imager.internal.enabled")) {
+            imager.generate(guild);
         }
 
         this.client.sendResponse(new PurchaseOKComposer());
@@ -123,7 +137,8 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
             habbo.getClient().sendResponse(new GuildInfoComposer(guild, habbo.getClient(), false, null));
 
-            if (habbo.getHabboInfo().getId() != this.client.getHabbo().getHabboInfo().getId()) {
+            if (habbo.getHabboInfo().getId()
+                    != this.client.getHabbo().getHabboInfo().getId()) {
                 habbo.getClient().sendResponse(new RoomDataComposer(r, habbo, true, false));
             }
         }

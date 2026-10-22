@@ -1,6 +1,7 @@
 package com.eu.habbo.util.imager.badges;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildManager;
 import com.eu.habbo.habbohotel.guilds.GuildPart;
@@ -14,8 +15,10 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import javax.imageio.ImageIO;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,17 +26,38 @@ public class BadgeImager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BadgeImager.class);
 
+    /** Badges waiting to be written; more are dropped (the client draws those itself). */
+    private static final int DEFAULT_QUEUE_SIZE = 500;
+
     final Map<String, BufferedImage> cachedImages = new HashMap<>();
     private String partsFolder;
+    private final GuildBadgeGenerator generator;
+    private final AtomicBoolean backfillRunning = new AtomicBoolean(false);
+    private volatile Supplier<List<String>> guildBadges;
 
     public BadgeImager() {
-        if (Emulator.getConfig().getBoolean("imager.internal.enabled")) {
+        this.generator = new GuildBadgeGenerator(
+                BadgeImager::outputFolder,
+                this::compose,
+                config().getInt("imager.badges.queue.size", DEFAULT_QUEUE_SIZE));
+
+        if (config().getBoolean("imager.internal.enabled")) {
             if (this.reload()) {
                 LOGGER.info("Badge Imager -> Loaded!");
             } else {
                 LOGGER.warn("Badge Imager -> Disabled! Please check your configuration!");
             }
         }
+    }
+
+    /** The one place this class reads the hotel configuration. */
+    private static ConfigurationManager config() {
+        return Emulator.getConfig();
+    }
+
+    private static File outputFolder() {
+        String folder = config().getValue("imager.location.output.badges", "");
+        return (folder == null || folder.isEmpty()) ? null : new File(folder);
     }
 
     public static BufferedImage deepCopy(BufferedImage bi) {
@@ -116,8 +140,12 @@ public class BadgeImager {
     }
 
     public synchronized boolean reload() {
-        String folder = Emulator.getConfig().getValue("imager.location.badgeparts");
+        String folder = config().getValue("imager.location.badgeparts", "");
         this.partsFolder = folder;
+        if (folder == null || folder.isEmpty()) {
+            LOGGER.error("BadgeImager: imager.location.badgeparts is not set!");
+            return false;
+        }
         File file = new File(folder);
         if (!file.exists()) {
             LOGGER.error("BadgeImager output folder: {} does not exist!", folder);
@@ -133,16 +161,10 @@ public class BadgeImager {
                 if (set.getKey() == GuildPartType.SYMBOL || set.getKey() == GuildPartType.BASE) {
                     for (Map.Entry<Integer, GuildPart> map : set.getValue().entrySet()) {
                         for (String part : Arrays.asList(map.getValue().valueA, map.getValue().valueB)) {
-                            if (!part.isEmpty()) {
-                                try {
-                                    this.cachedImages.put(part, ImageIO.read(partFile(folder, part)));
-                                } catch (Exception e) {
-                                    LOGGER.info(
-                                            "[Badge Imager] Missing Badge Part: {}/badgepart_{}",
-                                            folder,
-                                            part.replace(".gif", ".png"));
-                                }
+                            if (part == null || part.isEmpty()) {
+                                continue;
                             }
+                            this.cachedImages.put(part, readPart(file, part));
                         }
                     }
                 }
@@ -152,11 +174,25 @@ public class BadgeImager {
             return false;
         }
 
+        // New or changed parts: draw every guild badge that has no image yet (delete images to redraw them).
+        this.backfill();
+
         return true;
     }
 
-    private static File partFile(String folder, String part) {
-        return new File(folder, "badgepart_" + part.replace(".gif", ".png"));
+    /** The image of a part value, read safely, or null (logged) when it is unsafe, missing or too large. */
+    private static BufferedImage readPart(File folder, String part) {
+        File file = BadgePartFiles.partFile(folder, part);
+        if (file == null) {
+            LOGGER.warn("[Badge Imager] Ignoring badge part with an unsafe name: {}", part);
+            return null;
+        }
+        try {
+            return BadgePartFiles.read(file);
+        } catch (Exception e) {
+            LOGGER.info("[Badge Imager] Badge part {} not used: {}", file, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -172,19 +208,9 @@ public class BadgeImager {
             return this.cachedImages.get(part);
         }
         if (this.partsFolder == null) {
-            this.partsFolder = Emulator.getConfig().getValue("imager.location.badgeparts", "");
+            this.partsFolder = config().getValue("imager.location.badgeparts", "");
         }
-        BufferedImage image = null;
-        File file = partFile(this.partsFolder, part);
-        if (!this.partsFolder.isEmpty()
-                && file.getName().equals("badgepart_" + part.replace(".gif", ".png"))
-                && file.isFile()) {
-            try {
-                image = ImageIO.read(file);
-            } catch (Exception e) {
-                LOGGER.debug("[Badge Imager] Could not read badge part {}", file, e);
-            }
-        }
+        BufferedImage image = this.partsFolder.isEmpty() ? null : readPart(new File(this.partsFolder), part);
         this.cachedImages.put(part, image);
         return image;
     }
@@ -220,34 +246,99 @@ public class BadgeImager {
         });
     }
 
+    /** True when the code names only parts and colours of this hotel ({@code guilds_elements}). */
+    public boolean isValidBadge(String badge) {
+        GuildManager guildManager;
+        try {
+            guildManager = Emulator.getGameEnvironment().getGuildManager();
+        } catch (RuntimeException e) {
+            return GuildBadgeComposer.isBadgeCode(badge);
+        }
+        if (guildManager == null || guildManager.getBases().isEmpty()) {
+            // Parts not loaded: only the shape can be checked.
+            return GuildBadgeComposer.isBadgeCode(badge);
+        }
+        return GuildBadgeValidator.isValid(badge, new GuildBadgeComposer.Parts() {
+            @Override
+            public GuildPart part(GuildPartType type, int id) {
+                return guildManager.getPart(type, id);
+            }
+
+            @Override
+            public BufferedImage image(String partValue) {
+                return null;
+            }
+        });
+    }
+
+    /** Queues the guild's badge image; it is written in the background (see {@link GuildBadgeGenerator}). */
     public void generate(Guild guild) {
-        String badge = guild.getBadge();
-        File outputFile;
-        try {
-            outputFile = new File(Emulator.getConfig().getValue("imager.location.output.badges"), badge + ".png");
+        if (guild != null) {
+            this.generate(guild.getBadge());
+        }
+    }
 
-            if (outputFile.exists()) return;
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+    /** Queues a badge image; false when the code is not a valid badge of this hotel or the queue is full. */
+    public boolean generate(String badge) {
+        if (!this.isValidBadge(badge)) {
+            LOGGER.warn("Not generating guild badge with a malformed or unknown code: {}", badge);
+            return false;
+        }
+        return this.generator.submit(badge);
+    }
+
+    /**
+     * Where the backfill finds the badges of all guilds (the boot passes the database); starts a backfill.
+     */
+    public void installGuildBadgeSource(Supplier<List<String>> guildBadges) {
+        this.guildBadges = guildBadges;
+        this.backfill();
+    }
+
+    /**
+     * Draws every guild badge that has no image yet, on its own thread at the generator's pace. Runs after the
+     * parts load (boot and :update_guildparts) unless {@code imager.badges.backfill} is off.
+     */
+    public void backfill() {
+        if (!config().getBoolean("imager.internal.enabled")
+                || !config().getBoolean("imager.badges.backfill", true)
+                || outputFolder() == null
+                || !this.backfillRunning.compareAndSet(false, true)) {
             return;
         }
 
-        if (!GuildBadgeComposer.isBadgeCode(badge)) {
-            LOGGER.warn("Not generating guild badge with a malformed code: {}", badge);
+        Supplier<List<String>> source = this.guildBadges;
+        if (source == null) {
+            this.backfillRunning.set(false);
             return;
         }
 
-        BufferedImage image = this.compose(badge);
-        if (image == null) {
-            image = new BufferedImage(GuildBadgeComposer.SIZE, GuildBadgeComposer.SIZE, BufferedImage.TYPE_INT_ARGB);
-        }
-
-        try {
-            ImageIO.write(image, "PNG", outputFile);
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to generate guild badge: {}.png Make sure the output folder exists and is writable!",
-                    outputFile);
-        }
+        Thread thread = new Thread(
+                () -> {
+                    int queued = 0;
+                    try {
+                        for (String badge : source.get()) {
+                            File file = this.generator.outputFile(badge);
+                            if (file == null || file.isFile() || !this.isValidBadge(badge)) {
+                                continue;
+                            }
+                            if (this.generator.submitWaiting(badge)) {
+                                queued++;
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (Exception e) {
+                        LOGGER.error("[Badge Imager] Backfill failed", e);
+                    } finally {
+                        this.backfillRunning.set(false);
+                    }
+                    if (queued > 0) {
+                        LOGGER.info("[Badge Imager] Drawing {} missing guild badge images", queued);
+                    }
+                },
+                "polaris-badge-backfill");
+        thread.setDaemon(true);
+        thread.start();
     }
 }

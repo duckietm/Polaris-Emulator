@@ -75,7 +75,7 @@ class NeverSentEventsContractTest {
         String nux = source("com/eu/habbo/messages/incoming/users/UserNuxEvent.java");
 
         assertTrue(login.contains("new NewUserExperienceNotCompleteComposer()"));
-        assertTrue(login.contains("!this.client.getHabbo().getHabboStats().nuxReward"));
+        assertTrue(login.contains("!habbo.getHabboStats().nuxReward"));
         assertTrue(nux.contains("new NewUserGiftComposer(List.of(gifts))"));
         assertTrue(nux.contains("hotel.nux.gifts.enabled"));
     }

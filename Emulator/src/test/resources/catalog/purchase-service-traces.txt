@@ -167,18 +167,21 @@ LtdRaffleManager.enter(offer chair) -> true
 returned
 purchasing flag false
 
+== room bundle / a purchase already running
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag true
+
 == room bundle / badge already owned
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
 page.buyRoom(buyer)
-buyer.giveCredits(-50)
-buyer.givePoints(type 5, -5)
 buyer <- PurchaseOK()
 returned
 purchasing flag false
 
 == room bundle / bought
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
 page.buyRoom(buyer)
-buyer.giveCredits(-50)
-buyer.givePoints(type 5, -5)
 buyer <- PurchaseOK()
 threading.run(badge ACH_ROOM)
 inventory.addBadge(badge ACH_ROOM)
@@ -188,6 +191,7 @@ returned
 purchasing flag false
 
 == room bundle / infinite credits and points
+CatalogPaymentService.tryTake(credits 0, type 5, points 0) -> true
 page.buyRoom(buyer)
 buyer <- PurchaseOK()
 threading.run(badge ACH_ROOM)
@@ -217,6 +221,12 @@ buyer <- AlertPurchaseFailed(0)
 returned
 purchasing flag false
 
+== room bundle / payment refused
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> false
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
 == room bundle / room limit reached
 buyer <- CanCreateRoom(25, 25)
 buyer <- PurchaseOK(null)
@@ -224,6 +234,9 @@ returned
 purchasing flag false
 
 == room bundle / the room cannot be created
-threw IllegalStateException: room creation failed
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
+CatalogPaymentService.refund(credits 50, type 5, points 5)
+buyer <- AlertPurchaseFailed(0)
+returned
 purchasing flag false
 

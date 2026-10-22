@@ -140,8 +140,8 @@ final class CatalogPurchaseApplicationService {
     }
 
     /**
-     * Sells the room of a room bundle page: checks the price and the buyer's room limit, creates the room, takes the
-     * price and hands over the badges of the bundle.
+     * Sells the room of a room bundle page: checks the price and the buyer's room limit, takes the price, creates the
+     * room (refunding when it cannot be created) and hands over the badges of the bundle.
      */
     private void purchaseRoomBundle(RoomBundleLayout page) {
         CatalogItem roomBundleItem = null;
@@ -186,20 +186,43 @@ final class CatalogPurchaseApplicationService {
             // handled :S
             return;
         }
-        page.buyRoom(this.client.getHabbo());
-        if (!this.client
-                .getHabbo()
-                .hasPermission(Permission.ACC_INFINITE_CREDITS)) { // if the player has this perm disabled
-            this.client.getHabbo().giveCredits(-roomCredits); // takes their credits away
+        // One purchase at a time per buyer, paid before the room exists: the payment service takes the price
+        // against the ledger at once, so a balance spent meanwhile refuses the purchase instead of leaving a free room.
+        synchronized (this.client.getHabbo().getHabboStats()) {
+            if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
+                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return;
+            }
+            this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
         }
-        if (!this.client
-                .getHabbo()
-                .hasPermission(Permission.ACC_INFINITE_POINTS)) { // if the player has this perm disabled
-            this.client.getHabbo().givePoints(roomBundleItem.getPointsType(), -roomPoints); // takes their points away
-        }
-        this.client.sendResponse(new PurchaseOKComposer()); // Sends the composer to close the window.
 
-        this.giveBundleBadges(roomBundleItem);
+        try {
+            int paidCredits = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : roomCredits;
+            int paidPoints = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : roomPoints;
+            int pointsType = roomBundleItem.getPointsType();
+            if (!CatalogPaymentService.tryTake(this.client.getHabbo(), paidCredits, pointsType, paidPoints)) {
+                this.client.sendResponse(
+                        new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return;
+            }
+
+            try {
+                page.buyRoom(this.client.getHabbo());
+            } catch (RuntimeException e) {
+                LOGGER.error("Room bundle purchase failed for user {}", this.buyerId(), e);
+                CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, pointsType, paidPoints);
+                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return;
+            }
+
+            this.client.sendResponse(new PurchaseOKComposer()); // Sends the composer to close the window.
+
+            this.giveBundleBadges(roomBundleItem);
+        } finally {
+            synchronized (this.client.getHabbo().getHabboStats()) {
+                this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
+            }
+        }
     }
 
     /** Gives the buyer each badge of a bought room bundle they do not have yet. */

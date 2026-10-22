@@ -260,6 +260,14 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         this.buy("room bundle / no offer on the page", 7, 21, "", 1);
 
         this.page = this.roomBundlePage(bundle);
+        this.paymentAccepted = false;
+        this.buy("room bundle / payment refused", 7, 20, "", 1);
+        this.paymentAccepted = true;
+
+        this.stats.isPurchasingFurniture = true;
+        this.buy("room bundle / a purchase already running", 7, 20, "", 1);
+        this.stats.isPurchasingFurniture = false;
+
         doThrow(new IllegalStateException("room creation failed"))
                 .when((RoomBundleLayout) this.page)
                 .buyRoom(any(Habbo.class));

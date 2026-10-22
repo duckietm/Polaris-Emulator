@@ -271,9 +271,9 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition
     @Override
     public boolean saveData(WiredSettings settings) {
         int count = settings.getFurniIds().length;
-        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
-        if (settings.getFurniIds2().length > Emulator.getConfig().getInt("hotel.wired.furni.selection.count"))
-            return false;
+        int maxFurni = Emulator.getConfig().getInt("hotel.wired.furni.selection.count");
+        if (count > maxFurni) return false;
+        if (settings.getFurniIds2().length > maxFurni) return false;
 
         int[] params = settings.getIntParams();
         int[] sources = settings.getFurniSourceTypes();

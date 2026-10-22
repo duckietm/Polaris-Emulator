@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.bots;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -9,17 +10,41 @@ import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BotErrorComposer;
+import com.eu.habbo.messages.outgoing.rooms.BotForceOpenContextMenuComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDanceComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserNameChangedComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersComposer;
+import com.eu.habbo.messages.outgoing.unknown.UnknownRoomDesktopComposer;
 import com.eu.habbo.plugin.events.bots.BotSavedChatEvent;
 import com.eu.habbo.plugin.events.bots.BotSavedLookEvent;
 import com.eu.habbo.plugin.events.bots.BotSavedNameEvent;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import org.jsoup.Jsoup;
 
 public class BotSaveSettingsEvent extends MessageHandler {
+    static final String REOPEN_MENU_SETTING = "hotel.bots.menu.reopen_after_action";
+
+    /** Skills AIR turns into data-driven buttons (in-client link, NUX proceed, navigator search). */
+    private static final Set<Integer> DATA_SKILLS = Set.of(7, 8, 14);
+
+    /**
+     * The bot's skills as a BotSkillListUpdate list. AIR replaces the bot's skills with this list and
+     * renders a button for each data skill, so those are left out: they carry no data here and would
+     * show an empty "proceed" button.
+     */
+    static Map<Integer, String> menuSkills(short[] ownerActionIds) {
+        Map<Integer, String> skills = new LinkedHashMap<>();
+        if (ownerActionIds == null) return skills;
+        for (short id : ownerActionIds) {
+            if (!DATA_SKILLS.contains((int) id)) skills.put((int) id, "");
+        }
+        return skills;
+    }
+
     @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
@@ -43,6 +68,9 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
             if (!bot.tryAcquireOwnerActionSlot()) return;
 
+            boolean reopenMenu = false;
+            ConfigurationManager config = Emulator.getConfig();
+
             switch (settingId) {
                 case 1:
                     BotSavedLookEvent lookEvent = new BotSavedLookEvent(
@@ -58,6 +86,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     bot.setGender(lookEvent.gender);
                     bot.setEffect(lookEvent.effect, -1);
                     bot.needsUpdate(true);
+                    reopenMenu = true;
                     break;
 
                 case 2:
@@ -132,6 +161,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                 case 3:
                     bot.setCanWalk(!bot.canWalk());
                     bot.needsUpdate(true);
+                    reopenMenu = true;
                     break;
 
                 case 4:
@@ -142,6 +172,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                                                     % DanceType.values().length]);
                     room.sendComposer(new RoomUserDanceComposer(bot.getRoomUnit()).compose());
                     bot.needsUpdate(true);
+                    reopenMenu = true;
                     break;
 
                 case 5:
@@ -177,7 +208,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                 case 9:
                     String motto = this.packet.readString();
 
-                    if (motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) break;
+                    if (motto.length() > config.getInt("motto.max_length", 38)) break;
 
                     bot.setMotto(motto);
                     bot.needsUpdate(true);
@@ -194,6 +225,15 @@ public class BotSaveSettingsEvent extends MessageHandler {
             }
 
             bot.onPostOwnerAction(settingId);
+
+            // AIR closes the bot menu on a dress up / random walk / dance click; the server answers with the
+            // bot's skills (BotSkillListUpdate) and BotForceOpenContextMenu, which AIR's avatar info widget
+            // uses to reopen the menu of the bot that was last selected, so the owner can keep toggling.
+            if (reopenMenu && config.getBoolean(REOPEN_MENU_SETTING, true)) {
+                this.client.sendResponse(
+                        new UnknownRoomDesktopComposer(-bot.getId(), menuSkills(bot.getOwnerActionIds())));
+                this.client.sendResponse(new BotForceOpenContextMenuComposer(-bot.getId()));
+            }
 
             if (bot.needsUpdate()) {
                 Emulator.getThreading().run(bot);

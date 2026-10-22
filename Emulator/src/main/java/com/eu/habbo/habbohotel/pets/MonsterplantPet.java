@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.pets;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionMonsterPlantSeed;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -412,7 +413,13 @@ public class MonsterplantPet extends Pet implements IPetLook {
 
         HabboItem seed = Emulator.getGameEnvironment()
                 .getItemManager()
-                .createItem(owner.getHabboInfo().getId(), seedBase, 0, 0, "");
+                .createItem(
+                        owner.getHabboInfo().getId(),
+                        seedBase,
+                        0,
+                        0,
+                        // The seed carries the rarity the breeding result shows (AIR MapStuffData "rarity").
+                        InteractionMonsterPlantSeed.extradataFor(rarity));
 
         owner.getInventory().getItemsComponent().addItem(seed);
         owner.getClient().sendResponse(new AddHabboItemComposer(seed));

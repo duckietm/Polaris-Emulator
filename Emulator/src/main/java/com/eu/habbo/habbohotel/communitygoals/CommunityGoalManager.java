@@ -1,11 +1,17 @@
 package com.eu.habbo.habbohotel.communitygoals;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +43,12 @@ public class CommunityGoalManager {
     public static final int CONCURRENT_USERS_ACTIVE = 1;
     public static final int CONCURRENT_USERS_REDEEM = 2;
     public static final int CONCURRENT_USERS_REWARDED = 3;
+
+    /** The AIR hall of fame shows ten avatars. */
+    public static final int HALL_OF_FAME_MAX = 10;
+
+    /** Upper bound of finished goals one earned prizes packet lists. */
+    public static final int EARNED_PRIZES_MAX = 20;
 
     private final AtomicReference<CommunityGoal> activeGoal = new AtomicReference<>();
 
@@ -231,6 +243,337 @@ public class CommunityGoalManager {
         if (badge != null && !badge.isBlank()) habbo.addBadge(badge, "Community Goal");
 
         return true;
+    }
+
+    /** How many players the hall of fame lists; the AIR {@code UserListWidget} draws ten. */
+    public int getHallOfFameSize() {
+        return Math.max(
+                1,
+                Math.min(
+                        HALL_OF_FAME_MAX,
+                        Emulator.getConfig().getInt("hotel.communitygoal.halloffame.size", HALL_OF_FAME_MAX)));
+    }
+
+    /**
+     * `GetCommunityGoalHallOfFame` 2167: the best contributors of the goal with
+     * {@code goalCode}, or of the active goal when the code is empty. An unknown
+     * code gives an empty list, which hides the widget.
+     */
+    public List<CommunityGoalHallOfFameEntry> getHallOfFame(String goalCode) {
+        List<CommunityGoalHallOfFameEntry> entries = new ArrayList<>();
+        int goalId = this.findGoalId(goalCode);
+
+        if (goalId <= 0) return entries;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("""
+                        SELECT c.user_id, c.score, u.username, u.look
+                        FROM community_goal_contributions c
+                        INNER JOIN users u ON u.id = c.user_id
+                        WHERE c.goal_id = ? AND c.score > 0
+                        ORDER BY c.score DESC, c.updated_at ASC, c.user_id ASC
+                        LIMIT ?
+                        """)) {
+            statement.setInt(1, goalId);
+            statement.setInt(2, this.getHallOfFameSize());
+
+            try (ResultSet set = statement.executeQuery()) {
+                List<Integer> scores = new ArrayList<>();
+                List<Object[]> rows = new ArrayList<>();
+
+                while (set.next()) {
+                    scores.add(set.getInt("score"));
+                    rows.add(new Object[] {
+                        set.getInt("user_id"), value(set.getString("username")), value(set.getString("look"))
+                    });
+                }
+
+                int[] ranks = competitionRanks(scores);
+
+                for (int i = 0; i < rows.size(); i++) {
+                    Object[] row = rows.get(i);
+                    entries.add(new CommunityGoalHallOfFameEntry(
+                            (Integer) row[0], (String) row[1], (String) row[2], ranks[i], scores.get(i)));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Could not read the hall of fame of community goal {}", goalCode, e);
+        }
+
+        return entries;
+    }
+
+    /** The code the hall of fame packet names: the asked one, or the active goal's. */
+    public String resolveGoalCode(String goalCode) {
+        if (goalCode != null && !goalCode.isBlank()) return goalCode;
+
+        CommunityGoal goal = this.activeGoal.get();
+
+        return goal == null ? "" : goal.code();
+    }
+
+    /**
+     * `GetCommunityGoalEarnedPrizes` 2688: one prize per finished goal (expired)
+     * in which the player's final rank falls into a rewarded bucket of
+     * {@code reward_user_limits} that has a row in {@code community_goal_prizes},
+     * and which the player did not redeem yet.
+     */
+    public List<CommunityGoalPrize> getEarnedPrizes(int userId) {
+        List<CommunityGoalPrize> prizes = new ArrayList<>();
+
+        if (userId <= 0) return prizes;
+
+        int now = Emulator.getIntUnixTimestamp();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            List<Object[]> finished = new ArrayList<>();
+
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT g.id, g.code, g.reward_user_limits, c.score
+                    FROM community_goals g
+                    INNER JOIN community_goal_contributions c ON c.goal_id = g.id AND c.user_id = ?
+                    WHERE g.enabled = 1 AND g.expires_at > 0 AND g.expires_at <= ? AND c.score > 0
+                    ORDER BY g.expires_at DESC
+                    LIMIT ?
+                    """)) {
+                statement.setInt(1, userId);
+                statement.setInt(2, now);
+                statement.setInt(3, EARNED_PRIZES_MAX);
+
+                try (ResultSet set = statement.executeQuery()) {
+                    while (set.next()) {
+                        finished.add(new Object[] {
+                            set.getInt("id"),
+                            value(set.getString("code")),
+                            numbers(set.getString("reward_user_limits")),
+                            set.getInt("score")
+                        });
+                    }
+                }
+            }
+
+            for (Object[] goal : finished) {
+                int goalId = (Integer) goal[0];
+                String code = (String) goal[1];
+
+                if (this.hasClaimed(code, userId)) continue;
+
+                int rank = this.rankOf(connection, goalId, (Integer) goal[3]);
+                int level = prizeLevelForRank(rank, (int[]) goal[2]);
+
+                if (level <= 0) continue;
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT reward_code, is_badge, localized_name FROM community_goal_prizes WHERE goal_id = ? AND prize_level = ?")) {
+                    statement.setInt(1, goalId);
+                    statement.setInt(2, level);
+
+                    try (ResultSet set = statement.executeQuery()) {
+                        if (!set.next()) continue;
+
+                        String rewardCode = value(set.getString("reward_code"));
+
+                        if (rewardCode.isBlank()) continue;
+
+                        prizes.add(new CommunityGoalPrize(
+                                goalId,
+                                code,
+                                rank,
+                                rewardCode,
+                                set.getInt("is_badge") == 1,
+                                value(set.getString("localized_name"))));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Could not read the community goal prizes of user {}", userId, e);
+        }
+
+        return prizes;
+    }
+
+    /**
+     * `RedeemCommunityGoalPrize` 90: hands out the prize of one finished goal once.
+     * The claim row is booked first, so a double click cannot pay out twice.
+     */
+    public boolean redeemPrize(Habbo habbo, int communityGoalId) {
+        if (habbo == null || communityGoalId <= 0) return false;
+
+        int userId = habbo.getHabboInfo().getId();
+        CommunityGoalPrize prize = null;
+
+        for (CommunityGoalPrize candidate : this.getEarnedPrizes(userId)) {
+            if (candidate.communityGoalId() == communityGoalId) {
+                prize = candidate;
+                break;
+            }
+        }
+
+        if (prize == null) return false;
+
+        Item baseItem = null;
+
+        if (!prize.badge()) {
+            baseItem = Emulator.getGameEnvironment().getItemManager().getItem(prize.rewardCode());
+
+            if (baseItem == null) {
+                LOGGER.warn(
+                        "Community goal {} rewards the unknown item {}; nothing was handed out.",
+                        prize.communityGoalCode(),
+                        prize.rewardCode());
+                return false;
+            }
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT IGNORE INTO community_goal_rewards_claimed (goal_code, user_id, claimed_at) VALUES (?, ?, ?)")) {
+            statement.setString(1, prize.communityGoalCode());
+            statement.setInt(2, userId);
+            statement.setInt(3, Emulator.getIntUnixTimestamp());
+
+            if (statement.executeUpdate() != 1) return false;
+        } catch (SQLException e) {
+            LOGGER.error("Could not book the community goal prize of user {}", userId, e);
+            return false;
+        }
+
+        if (prize.badge()) {
+            habbo.addBadge(prize.rewardCode(), "Community Goal");
+            return true;
+        }
+
+        String extraData = "";
+
+        if (baseItem.getInteractionType().getType() == InteractionTrophy.class) {
+            extraData = trophyExtraData(
+                    habbo.getHabboInfo().getUsername(),
+                    LocalDate.now(),
+                    this.trophyInscription(prize.communityGoalId(), prize.communityGoalCode(), prize.userRank()));
+        }
+
+        HabboItem reward = Emulator.getGameEnvironment().getItemManager().createItem(userId, baseItem, 0, 0, extraData);
+
+        if (reward == null) return false;
+
+        habbo.getInventory().getItemsComponent().addItem(reward);
+
+        if (habbo.getClient() != null) {
+            habbo.getClient().sendResponse(new AddHabboItemComposer(reward));
+            habbo.getClient().sendResponse(new InventoryRefreshComposer());
+        }
+
+        return true;
+    }
+
+    /**
+     * The prize bucket of a rank: bucket 1 covers ranks 1..limits[0], bucket 2 the
+     * next limits[1] ranks, and so on - the same split the AIR
+     * {@code CommunityGoalPrizesWidget.setPrizeRankLimits} prints. 0 = no prize.
+     */
+    public static int prizeLevelForRank(int rank, int[] rewardUserLimits) {
+        if (rank <= 0 || rewardUserLimits == null) return 0;
+
+        int end = 0;
+
+        for (int level = 0; level < rewardUserLimits.length; level++) {
+            end += Math.max(0, rewardUserLimits[level]);
+
+            if (rank <= end) return level + 1;
+        }
+
+        return 0;
+    }
+
+    /** Ranks of a score list sorted high to low; equal scores share a rank (1, 2, 2, 4). */
+    public static int[] competitionRanks(List<Integer> scoresDescending) {
+        int[] ranks = new int[scoresDescending.size()];
+
+        for (int i = 0; i < ranks.length; i++) {
+            ranks[i] = i > 0 && scoresDescending.get(i).equals(scoresDescending.get(i - 1)) ? ranks[i - 1] : i + 1;
+        }
+
+        return ranks;
+    }
+
+    /** The extradata of a trophy: name, date and inscription separated by tabs. */
+    public static String trophyExtraData(String username, LocalDate date, String inscription) {
+        return username
+                + (char) 9
+                + date.getDayOfMonth()
+                + "-"
+                + date.getMonthValue()
+                + "-"
+                + date.getYear()
+                + (char) 9
+                + inscription;
+    }
+
+    private String trophyInscription(int goalId, String goalCode, int rank) {
+        String inscription = "";
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT trophy_inscription FROM community_goal_prizes WHERE goal_id = ? AND prize_level = ?")) {
+            statement.setInt(1, goalId);
+            statement.setInt(2, prizeLevelForRank(rank, this.limitsOf(connection, goalId)));
+
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) inscription = value(set.getString("trophy_inscription"));
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Could not read the trophy inscription of community goal {}", goalCode, e);
+        }
+
+        if (inscription.isBlank()) inscription = goalCode + " #%rank%";
+
+        return inscription.replace("%rank%", String.valueOf(rank)).replace("{0}", String.valueOf(rank));
+    }
+
+    private int[] limitsOf(Connection connection, int goalId) throws SQLException {
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT reward_user_limits FROM community_goals WHERE id = ?")) {
+            statement.setInt(1, goalId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? numbers(set.getString("reward_user_limits")) : new int[0];
+            }
+        }
+    }
+
+    private int rankOf(Connection connection, int goalId, int score) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) AS better FROM community_goal_contributions WHERE goal_id = ? AND score > ?")) {
+            statement.setInt(1, goalId);
+            statement.setInt(2, score);
+
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt("better") + 1 : 0;
+            }
+        }
+    }
+
+    private int findGoalId(String goalCode) {
+        if (goalCode == null || goalCode.isBlank()) {
+            CommunityGoal goal = this.activeGoal.get();
+
+            return goal == null ? 0 : goal.id();
+        }
+
+        if (goalCode.length() > 64) return 0;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT id FROM community_goals WHERE code = ? AND enabled = 1")) {
+            statement.setString(1, goalCode);
+
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt("id") : 0;
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Could not look up community goal {}", goalCode, e);
+            return 0;
+        }
     }
 
     private boolean hasClaimed(String goalCode, int userId) {

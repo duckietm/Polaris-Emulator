@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.quests;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.messenger.FriendActivityNotifier;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.quests.DailyQuestComposer;
 import com.eu.habbo.messages.outgoing.quests.QuestCompletedComposer;
@@ -530,5 +531,6 @@ public class QuestManager {
         QuestRewards.grantBadge(habbo, quest.getRewardBadge());
         habbo.getClient().sendResponse(new QuestCompletedComposer(this.toWire(quest, state), true));
         QuestProgressEvents.questCompleted(habbo);
+        FriendActivityNotifier.questCompleted(habbo, quest.getCampaignCode(), quest.getCode());
     }
 }

@@ -15,7 +15,11 @@ import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.catalog.marketplace.MarketplaceTokenService;
 import com.eu.habbo.habbohotel.catalog.specialitems.SpecialItemClaimService;
+import com.eu.habbo.habbohotel.collectibles.CollectiblesRuntime;
+import com.eu.habbo.habbohotel.collectibles.CollectiblesService;
+import com.eu.habbo.habbohotel.collectibles.CollectiblesSettings;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
@@ -226,6 +230,14 @@ final class PolarisBootstrap {
                 }));
         SpecialItemClaimService.install(new SpecialItemClaimService(
                 runtime.database().getDataSource(), runtime.gameEnvironment().getItemManager()));
+        MarketplaceTokenService.install(
+                new MarketplaceTokenService(runtime.database().getDataSource(), configuration));
+        CollectiblesRuntime.install(new CollectiblesRuntime(
+                new CollectiblesService(runtime.database().getDataSource()),
+                () -> CollectiblesSettings.from(configuration),
+                runtime.gameEnvironment().getItemManager(),
+                id -> runtime.gameEnvironment().getHabboManager().getHabbo(id),
+                () -> (int) (System.currentTimeMillis() / 1000L)));
         boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
         StressRunRegistry.install(new StressRunManager(
                 runtime.gameEnvironment().getRoomManager(),

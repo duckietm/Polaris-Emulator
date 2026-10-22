@@ -54,6 +54,7 @@ public final class CmsCommandScopes {
             Map.entry("hotelalert", "alerts"),
             Map.entry("imagealertuser", "alerts"),
             Map.entry("imagehotelalert", "alerts"),
+            Map.entry("epicpopup", "alerts"),
             Map.entry("staffalert", "alerts"),
             Map.entry("talkuser", "alerts"),
             // social & rooms

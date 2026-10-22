@@ -2,8 +2,11 @@ package com.eu.habbo.habbohotel.achievements;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
+import com.eu.habbo.habbohotel.earnings.EarningsCategory;
+import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.messenger.FriendActivityNotifier;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -192,6 +195,7 @@ public class AchievementManager {
                     achievement.name));
         }
 
+        String achievementsPeriod = EarningsNotifications.period(habbo, EarningsCategory.ACHIEVEMENTS);
         AchievementRewards.Result result;
         synchronized (habbo.getHabboStats()) {
             try (Connection connection = openConnection()) {
@@ -208,6 +212,7 @@ public class AchievementManager {
             }
             if (result.badge() != null) habbo.getHabboStats().achievementScore = result.score();
         }
+        EarningsNotifications.afterProgress(habbo, EarningsCategory.ACHIEVEMENTS, achievementsPeriod);
 
         habbo.getHabboStats().setProgress(achievement, newProgress);
         for (int index = 0; index < rewards.size(); index++) {
@@ -257,6 +262,7 @@ public class AchievementManager {
                 habbo.getClient()
                         .sendResponse(new AchievementUnlockedComposer(habbo, achievement, level, badge.getId()));
             }
+            if (!earnedLevels.isEmpty()) FriendActivityNotifier.achievementUnlocked(habbo, badge.getCode());
 
             if (habbo.getHabboInfo().getCurrentRoom() != null) {
                 if (badge.getSlot() > 0) {
@@ -565,7 +571,9 @@ public class AchievementManager {
                                 earnedLevels,
                                 Math.toIntExact(java.time.Instant.now().getEpochSecond()));
                     }
+                    String levelPeriod = EarningsNotifications.period(habbo, EarningsCategory.LEVEL_PROGRESS);
                     habbo.getHabboStats().setTalentLevel(type, currentLevel.level);
+                    EarningsNotifications.afterProgress(habbo, EarningsCategory.LEVEL_PROGRESS, levelPeriod);
                     if (result.trade()) habbo.getHabboStats().perkTrade = true;
                     if (result.subscription() != null) {
                         Subscription subscription = habbo.getHabboStats().subscriptions.stream()

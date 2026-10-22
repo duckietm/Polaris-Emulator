@@ -71,6 +71,22 @@ public class EarningsCenterManager {
         return entries;
     }
 
+    /** Whether the player can claim the row now (what the window would show). */
+    public boolean isClaimable(Habbo habbo, EarningsCategory category) {
+        EarningsEntry entry = buildEntry(habbo, getUserId(habbo), category, now());
+        return entry.isEnabled() && entry.isClaimable();
+    }
+
+    /**
+     * The claim period of a row that progress opens (achievement score steps, talent levels), or null for a row that
+     * time or another source opens. A new period after a change means a new reward may be waiting.
+     */
+    public String progressPeriod(Habbo habbo, EarningsCategory category) {
+        if (category != EarningsCategory.ACHIEVEMENTS && category != EarningsCategory.LEVEL_PROGRESS) return null;
+        if (!nativeEnabled(category) || habbo == null || habbo.getHabboStats() == null) return null;
+        return periodKey(habbo, category, now(), DEFAULT_COOLDOWN_SECONDS);
+    }
+
     public EarningsClaimResult claim(Habbo habbo, String categoryKey) {
         Optional<EarningsCategory> requestedCategory = EarningsCategory.fromKey(categoryKey);
         if (requestedCategory.isEmpty()) {

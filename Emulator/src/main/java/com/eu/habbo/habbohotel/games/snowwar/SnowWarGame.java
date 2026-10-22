@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarMachineObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarPileObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarSnowballObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarTreeObject;
+import com.eu.habbo.habbohotel.messenger.FriendActivityNotifier;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -362,6 +363,9 @@ public class SnowWarGame {
         this.state = SnowWarGameState.RUNNING;
 
         this.broadcast(new SnowStormOnStageRunningComposer(this.gameLengthSeconds));
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            FriendActivityNotifier.playingGame(player.getHabbo(), FriendActivityNotifier.SNOWSTORM);
+        }
 
         this.task.start();
     }
@@ -379,6 +383,11 @@ public class SnowWarGame {
 
         List<SnowWarGamePlayer> finalPlayers = this.getActivePlayers();
         SnowWarManager.getInstance().recordScores(finalPlayers);
+        if (this.task != null) {
+            for (SnowWarGamePlayer player : finalPlayers) {
+                FriendActivityNotifier.finishedGame(player.getHabbo(), FriendActivityNotifier.SNOWSTORM);
+            }
+        }
         List<Integer> finalPlayerIds = new ArrayList<>();
         for (SnowWarGamePlayer player : finalPlayers) {
             finalPlayerIds.add(player.getUserId());
@@ -443,6 +452,10 @@ public class SnowWarGame {
         // AIR Game2UserBlocked (3508): abandoning a live match blocks starting
         // a new one for a while (GamesMainViewController.changeBlockStatus).
         // Kept on the server too, so it also holds after a disconnect.
+        if (this.state == SnowWarGameState.RUNNING) {
+            FriendActivityNotifier.finishedGame(player.getHabbo(), FriendActivityNotifier.SNOWSTORM);
+        }
+
         int blockSeconds = this.state == SnowWarGameState.RUNNING
                 ? Math.max(0, setting("gamecenter.game.leave.block.seconds", 180))
                 : 0;

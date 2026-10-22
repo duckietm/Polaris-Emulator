@@ -14,20 +14,48 @@ public class InteractionMonsterPlantSeed extends HabboItem {
     public InteractionMonsterPlantSeed(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
 
-        if (this.getExtradata().isEmpty()) {
-            this.setExtradata("" + randomRarityLevel());
-            this.needsUpdate(true);
-        }
+        this.assignRarityWhenUnset();
     }
 
     public InteractionMonsterPlantSeed(
             int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
-        if (this.getExtradata().isEmpty()) {
-            this.setExtradata("" + randomRarityLevel());
-            this.needsUpdate(true);
+        this.assignRarityWhenUnset();
+    }
+
+    /**
+     * The seed's extra data is its rarity plus one ("0" or empty: not rolled yet, as {@code HabboItem} stores an empty
+     * extra data as "0"). A seed rolls its rarity once, the golden table for a rare seed, so the inventory, the room
+     * and the planting all agree on it.
+     */
+    private void assignRarityWhenUnset() {
+        if (rarityOf(this.getExtradata()) >= 0) return;
+
+        boolean rare = this.getBaseItem() != null
+                && this.getBaseItem().getName() != null
+                && this.getBaseItem().getName().contains("rare");
+        this.setExtradata("" + (rare ? randomGoldenRarityLevel() : randomRarityLevel()));
+        this.needsUpdate(true);
+    }
+
+    /** The rarity level a seed's extra data holds (AIR {@code MapStuffData} "rarity"), -1 when it has none yet. */
+    public static int rarityOf(String extradata) {
+        if (extradata == null || extradata.isEmpty()) return -1;
+        try {
+            return Integer.parseInt(extradata.trim()) - 1;
+        } catch (NumberFormatException e) {
+            return -1;
         }
+    }
+
+    /** The extra data of a seed of rarity {@code level} (bred seeds carry their parent's rarity). */
+    public static String extradataFor(int level) {
+        return String.valueOf(Math.max(0, level) + 1);
+    }
+
+    public int getRarityLevel() {
+        return Math.max(0, rarityOf(this.getExtradata()));
     }
 
     public static int randomGoldenRarityLevel() {
@@ -75,7 +103,7 @@ public class InteractionMonsterPlantSeed extends HabboItem {
         serverMessage.appendInt(1 + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(1);
         serverMessage.appendString("rarity");
-        serverMessage.appendString(this.getExtradata());
+        serverMessage.appendString(String.valueOf(this.getRarityLevel()));
 
         super.serializeExtradata(serverMessage);
     }

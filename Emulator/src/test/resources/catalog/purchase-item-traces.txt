@@ -329,19 +329,7 @@ returned
 purchasing flag false
 
 == mixed / guild furniture for an outsider
-plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 0, badges [ACH_1])
-CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
-threading.run(badge ACH_1)
-inventory.addBadge(badge ACH_1)
-buyer <- AddUserBadge(badge ACH_1)
-buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
-stats.addPurchase(offer guild_badge)
-buyer <- AddHabboItem({BADGE=[0]})
-buyer <- PurchaseOK(offer guild_badge)
-QuestProgressEvents.progress(BUY_CATALOG_FURNI)
-ChatStyleRepository.grantForPurchase
-buyer <- InventoryRefresh()
-threading.run(CatalogPurchaseLogEntry)
+buyer <- AlertPurchaseFailed(0)
 returned
 purchasing flag false
 

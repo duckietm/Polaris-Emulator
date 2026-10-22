@@ -1928,42 +1928,45 @@ public class CatalogManager {
 
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
-        if (guild != null && Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, habbo) != null) {
-            if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
-                    && !GuildForumPurchasePolicy.mayBuy(
-                            guild.hasForum(),
-                            guild.getOwnerId(),
-                            habbo.getHabboInfo().getId(),
-                            habbo.getHabboInfo().getRank().getLevel())) {
-                habbo.getClient()
-                        .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                return false;
-            }
+        if (guild == null || Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, habbo) == null) {
+            // Guild furniture is sold to members of its guild only, as on the atomic furniture path.
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
 
-            HabboItem createdItem = Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .createItem(
-                            habbo.getClient().getHabbo().getHabboInfo().getId(),
-                            baseItem,
-                            limitedStack,
-                            purchase.limitedNumber,
-                            extradata);
-            if (!(createdItem instanceof InteractionGuildFurni)) {
-                if (createdItem != null) purchase.createdItems.add(createdItem);
-                throw new IllegalStateException("failed to create catalog guild item");
-            }
-            InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
-            purchase.createdItems.add(habboItem);
-            habboItem.setExtradata("");
-            habboItem.needsUpdate(true);
+        if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
+                && !GuildForumPurchasePolicy.mayBuy(
+                        guild.hasForum(),
+                        guild.getOwnerId(),
+                        habbo.getHabboInfo().getId(),
+                        habbo.getHabboInfo().getRank().getLevel())) {
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
 
-            Emulator.getThreading().run(habboItem);
-            Emulator.getGameEnvironment().getGuildManager().setGuild(habboItem, guildId);
-            purchase.itemsList.add(habboItem);
+        HabboItem createdItem = Emulator.getGameEnvironment()
+                .getItemManager()
+                .createItem(
+                        habbo.getClient().getHabbo().getHabboInfo().getId(),
+                        baseItem,
+                        limitedStack,
+                        purchase.limitedNumber,
+                        extradata);
+        if (!(createdItem instanceof InteractionGuildFurni)) {
+            if (createdItem != null) purchase.createdItems.add(createdItem);
+            throw new IllegalStateException("failed to create catalog guild item");
+        }
+        InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
+        purchase.createdItems.add(habboItem);
+        habboItem.setExtradata("");
+        habboItem.needsUpdate(true);
 
-            if (baseItem.getName().equals("guild_forum")) {
-                purchase.pendingGuildForums.add(guild);
-            }
+        Emulator.getThreading().run(habboItem);
+        Emulator.getGameEnvironment().getGuildManager().setGuild(habboItem, guildId);
+        purchase.itemsList.add(habboItem);
+
+        if (baseItem.getName().equals("guild_forum")) {
+            purchase.pendingGuildForums.add(guild);
         }
 
         return true;

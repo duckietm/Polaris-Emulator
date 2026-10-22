@@ -93,6 +93,8 @@ public class TransferCollectiblesEvent extends MessageHandler {
         if (online != null && online.getClient() != null) {
             online.getClient().sendResponse(new CollectiblesInventoryUpdateComposer(moved, List.of(), products));
             CollectiblesSupport.sendScore(online, service, settings);
+            if (CollectibleWardrobe.hasClothing(moved, products)) CollectibleWardrobe.refresh(online);
         }
+        if (CollectibleWardrobe.hasClothing(moved, products)) CollectibleWardrobe.refresh(habbo);
     }
 }

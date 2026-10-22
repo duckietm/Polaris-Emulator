@@ -117,6 +117,7 @@ final class CollectiblesSupport {
         }
         habbo.getClient().sendResponse(new CollectiblesInventoryUpdateComposer(minted, List.of(), products));
         sendScore(habbo, service, settings);
+        if (CollectibleWardrobe.hasClothing(minted, products)) CollectibleWardrobe.refresh(habbo);
     }
 
     /** Deletes a furni the user gave up (a minted relic's furni, an opened reward box). */

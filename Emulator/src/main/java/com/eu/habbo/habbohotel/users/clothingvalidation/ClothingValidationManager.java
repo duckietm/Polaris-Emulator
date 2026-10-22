@@ -52,7 +52,7 @@ public class ClothingValidationManager {
                 habbo.getHabboInfo().getLook(),
                 habbo.getHabboInfo().getGender().name(),
                 habbo.getHabboStats().hasActiveClub(),
-                habbo.getInventory().getWardrobeComponent().getClothingSets());
+                habbo.getInventory().getWardrobeComponent().getWearableSets());
     }
 
     /**
@@ -67,7 +67,7 @@ public class ClothingValidationManager {
                 look,
                 gender,
                 habbo.getHabboStats().hasActiveClub(),
-                habbo.getInventory().getWardrobeComponent().getClothingSets());
+                habbo.getInventory().getWardrobeComponent().getWearableSets());
     }
 
     /**

@@ -128,16 +128,68 @@ public final class EmulatorStatsService {
 
         appendMemoryHistory(now, usedMemMb, maxMemMb, memoryUsagePercent);
 
-        double averageRoomCycleMs = 0D;
-        double worstRoomCycleMs = 0D;
-        int worstRoomCycleRoomId = 0;
-        String worstRoomCycleRoomName = "-";
+        List<OnlineUserRow> users = onlineUserRows(habbos);
+        RoomSection roomSection = collectRoomSection(rooms, wiredTickService);
 
-        long totalDelayedEventsPending = 0L;
-        int overloadedWiredRooms = 0;
-        int heavyWiredRooms = 0;
-        double wiredActivityPerSecond = 0D;
+        ThreadPooling threading = Emulator.getThreading();
+        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
+        PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
+        SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
+        PersistenceOperationMetrics persistenceOperations =
+                persistenceOperationMetrics(threading == null ? null : threading.getPersistenceOperationSnapshot());
+        NetworkMetrics networkMetrics = collectNetworkMetrics(now);
+        GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
+        RuntimeResilienceService.Status resilience = RuntimeResilienceRuntime.status();
+        DependencyCircuitBreakers.Snapshot turnstileCircuit = RuntimeResilienceRuntime.circuitSnapshot("turnstile");
+        DependencyCircuitBreakers.Snapshot smtpCircuit = RuntimeResilienceRuntime.circuitSnapshot("smtp");
+        HealthSnapshot health =
+                collectHealth(now, hikariPoolMetrics, schedulerMetrics, memoryUsagePercent, cpuLoadPercent);
 
+        Overview overview = new Overview(
+                Emulator.getOnlineTime(),
+                now,
+                health.status.name(),
+                usedMemMb,
+                maxMemMb,
+                estimatedAllocMb,
+                memoryUsagePercent,
+                cpuLoadPercent,
+                threadCount,
+                habbos.size(),
+                rooms.size(),
+                totalTickables,
+                peakPlayers,
+                webSocketSessions,
+                peakWebSocketSessions,
+                roomSection.averageRoomCycleMs(),
+                roomSection.worstRoomCycleMs(),
+                roomSection.worstRoomCycleRoomId(),
+                roomSection.worstRoomCycleRoomName(),
+                roomSection.totalDelayedEventsPending(),
+                roomSection.overloadedWiredRooms(),
+                roomSection.heavyWiredRooms(),
+                roomSection.wiredActivityPerSecond());
+
+        return new Snapshot(
+                overview,
+                new ArrayList<>(MEMORY_HISTORY),
+                users,
+                roomSection.activeRooms(),
+                roomSection.wiredRooms(),
+                roomSection.wiredTopRooms(),
+                hikariPoolMetrics,
+                persistenceMetrics,
+                schedulerMetrics,
+                persistenceOperations,
+                networkMetrics,
+                garbageCollectorMetrics,
+                health,
+                resilience,
+                turnstileCircuit,
+                smtpCircuit);
+    }
+
+    private static List<OnlineUserRow> onlineUserRows(List<Habbo> habbos) {
         List<OnlineUserRow> users = new ArrayList<>(habbos.size());
         for (Habbo habbo : habbos) {
             int roomId = (habbo.getHabboInfo().getCurrentRoom() != null)
@@ -151,11 +203,35 @@ public final class EmulatorStatsService {
                     habbo.getHabboInfo().getCurrencyAmount(0),
                     roomId));
         }
+        return users;
+    }
 
+    /** What the active rooms add up to: a row per room, the slowest room, and the load the wired puts on them. */
+    record RoomSection(
+            List<ActiveRoomRow> activeRooms,
+            List<WiredRoomRow> wiredRooms,
+            List<WiredTopRoomRow> wiredTopRooms,
+            double averageRoomCycleMs,
+            double worstRoomCycleMs,
+            int worstRoomCycleRoomId,
+            String worstRoomCycleRoomName,
+            long totalDelayedEventsPending,
+            int overloadedWiredRooms,
+            int heavyWiredRooms,
+            double wiredActivityPerSecond) {}
+
+    static RoomSection collectRoomSection(List<Room> rooms, WiredTickService wiredTickService) {
         List<ActiveRoomRow> activeRooms = new ArrayList<>(rooms.size());
         List<WiredRoomRow> wiredRooms = new ArrayList<>();
         List<WiredTopRoomRow> wiredTopRooms = new ArrayList<>();
 
+        double worstRoomCycleMs = 0D;
+        int worstRoomCycleRoomId = 0;
+        String worstRoomCycleRoomName = "-";
+        long totalDelayedEventsPending = 0L;
+        int overloadedWiredRooms = 0;
+        int heavyWiredRooms = 0;
+        double wiredActivityPerSecond = 0D;
         double roomCycleAccumulator = 0D;
         int roomCycleSamples = 0;
 
@@ -233,51 +309,12 @@ public final class EmulatorStatsService {
                     diagnostics.isHeavy()));
         }
 
-        if (roomCycleSamples > 0) {
-            averageRoomCycleMs = roomCycleAccumulator / roomCycleSamples;
-        }
+        double averageRoomCycleMs = (roomCycleSamples > 0) ? roomCycleAccumulator / roomCycleSamples : 0D;
 
-        wiredTopRooms.sort(Comparator.comparingInt((WiredTopRoomRow row) -> row.usagePercent)
-                .reversed()
-                .thenComparingInt(row -> row.averageTickMs)
-                .reversed()
-                .thenComparingInt(row -> row.peakTickMs)
-                .reversed());
-
-        if (wiredTopRooms.size() > 5) {
-            wiredTopRooms = new ArrayList<>(wiredTopRooms.subList(0, 5));
-        }
-
-        ThreadPooling threading = Emulator.getThreading();
-        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
-        PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
-        SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
-        PersistenceOperationMetrics persistenceOperations =
-                persistenceOperationMetrics(threading == null ? null : threading.getPersistenceOperationSnapshot());
-        NetworkMetrics networkMetrics = collectNetworkMetrics(now);
-        GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
-        RuntimeResilienceService.Status resilience = RuntimeResilienceRuntime.status();
-        DependencyCircuitBreakers.Snapshot turnstileCircuit = RuntimeResilienceRuntime.circuitSnapshot("turnstile");
-        DependencyCircuitBreakers.Snapshot smtpCircuit = RuntimeResilienceRuntime.circuitSnapshot("smtp");
-        HealthSnapshot health =
-                collectHealth(now, hikariPoolMetrics, schedulerMetrics, memoryUsagePercent, cpuLoadPercent);
-
-        Overview overview = new Overview(
-                Emulator.getOnlineTime(),
-                now,
-                health.status.name(),
-                usedMemMb,
-                maxMemMb,
-                estimatedAllocMb,
-                memoryUsagePercent,
-                cpuLoadPercent,
-                threadCount,
-                habbos.size(),
-                rooms.size(),
-                totalTickables,
-                peakPlayers,
-                webSocketSessions,
-                peakWebSocketSessions,
+        return new RoomSection(
+                activeRooms,
+                wiredRooms,
+                topWiredRooms(wiredTopRooms),
                 averageRoomCycleMs,
                 worstRoomCycleMs,
                 worstRoomCycleRoomId,
@@ -286,24 +323,17 @@ public final class EmulatorStatsService {
                 overloadedWiredRooms,
                 heavyWiredRooms,
                 wiredActivityPerSecond);
+    }
 
-        return new Snapshot(
-                overview,
-                new ArrayList<>(MEMORY_HISTORY),
-                users,
-                activeRooms,
-                wiredRooms,
-                wiredTopRooms,
-                hikariPoolMetrics,
-                persistenceMetrics,
-                schedulerMetrics,
-                persistenceOperations,
-                networkMetrics,
-                garbageCollectorMetrics,
-                health,
-                resilience,
-                turnstileCircuit,
-                smtpCircuit);
+    /** The five rooms the wired loads the most: highest usage first, then the slowest average, then the highest peak. */
+    static List<WiredTopRoomRow> topWiredRooms(List<WiredTopRoomRow> rows) {
+        List<WiredTopRoomRow> sorted = new ArrayList<>(rows);
+        sorted.sort(Comparator.comparingInt((WiredTopRoomRow row) -> row.usagePercent)
+                .thenComparingInt(row -> row.averageTickMs)
+                .thenComparingInt(row -> row.peakTickMs)
+                .reversed());
+
+        return (sorted.size() > 5) ? new ArrayList<>(sorted.subList(0, 5)) : sorted;
     }
 
     private static HikariPoolMetrics collectHikariPoolMetrics() {

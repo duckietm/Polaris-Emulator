@@ -1,0 +1,354 @@
+== at goal / a rider stops its pet
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== at goal / kicked
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== at goal / no move status
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== at goal / the pet of the rider
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== at goal / with a move status
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses WAVE=
+tiles walked 0, status update true, sit update false, idle false
+
+== door / a furni keeps the user
+returned false
+wired location 0,0
+at 0,0 z 0.0 facing WEST / WEST
+previous 1,0 z 0.0, goal 0,0
+path 
+statuses MOVE=0,0,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== door / kicks
+threading.run(RoomUnitKick, 500)
+returned false
+wired location 0,0
+at 0,0 z 0.0 facing WEST / WEST
+previous 1,0 z 0.0, goal 0,0
+path 
+statuses MOVE=0,0,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== door / may not leave
+returned false
+wired location 0,0
+at 0,0 z 0.0 facing WEST / WEST
+previous 1,0 z 0.0, goal 0,0
+path 
+statuses MOVE=0,0,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== door / public room with the setting
+threading.run(RoomUnitKick, 500)
+returned false
+wired location 0,0
+at 0,0 z 0.0 facing WEST / WEST
+previous 1,0 z 0.0, goal 0,0
+path 
+statuses MOVE=0,0,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== door / public room without the setting
+returned false
+wired location 0,0
+at 0,0 z 0.0 facing WEST / WEST
+previous 1,0 z 0.0, goal 0,0
+path 
+statuses MOVE=0,0,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== failure / no item manager
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== furni / a gate refuses
+compose RoomUserStatusComposer(user@3,3)
+room.sendComposer(..)
+gate.onRejected
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 5,3
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== furni / along one
+carpet.onWalk(3,3, 4,3)
+returned false
+wired location 4,3
+at 4,3 z 1.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,1.0
+tiles walked 1, status update false, sit update true, idle false
+
+== furni / closed but not a gate
+returned false
+wired location 4,3
+at 4,3 z 1.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,1.0
+tiles walked 1, status update false, sit update true, idle false
+
+== furni / off one onto another
+rug.onWalkOff(3,3, 4,3)
+plate.onWalkOn(3,3, 4,3)
+returned false
+wired location 4,3
+at 4,3 z 1.5 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,1.5
+tiles walked 1, status update false, sit update true, idle false
+
+== furni / stack helper
+returned false
+wired location 4,3
+at 4,3 z 2.5 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,2.5
+tiles walked 1, status update false, sit update true, idle false
+
+== goal / a chair
+chair.onWalkOn(3,3, 4,3)
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== goal / a chair too high
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== goal / a rider and a bed
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== goal / a sit tile without a chair
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== plugins / idle event cancelled
+plugin event UserIdleEvent (cancelled)
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== plugins / idle user walks
+plugin event UserIdleEvent
+room.unIdle(sleeper)
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== plugins / step cancelled
+plugin event UserTakeStepEvent (cancelled)
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== plugins / step heard
+plugin event UserTakeStepEvent
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== riding / the pet after the rider walked
+at 3,3 z 0.0 facing SOUTH_EAST / SOUTH_EAST
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses MOVE=4,4,0.0
+tiles walked 0, status update false, sit update false, idle false
+
+== riding / the pet follows
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 0, status update false, sit update false, idle false
+
+== riding / the pet waits
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 3,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== riding / the rider walks
+compose RoomUserStatusComposer(pet@3,3)
+room.sendComposer(..)
+returned false
+wired location 4,4
+at 4,4 z 1.0 facing SOUTH_EAST / SOUTH_EAST
+previous 3,3 z 0.0, goal 6,6
+path 5,5 6,6
+statuses MOVE=4,4,1.0
+tiles walked 1, status update false, sit update false, idle false
+
+== step / a bot
+returned false
+wired location 4,4
+at 4,4 z 0.0 facing SOUTH_EAST / SOUTH_EAST
+previous 3,3 z 0.0, goal 4,4
+path 
+statuses MOVE=4,4,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== step / empty path
+returned true
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== step / fast walk
+returned false
+wired location 5,3
+at 5,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 6,3
+path 6,3
+statuses MOVE=5,3,0.0
+tiles walked 1, status update false, sit update false, idle false
+
+== step / fast walk, two tiles left
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 5,3
+path 5,3
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update false, idle false
+
+== step / last tile occupied
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses 
+tiles walked 0, status update false, sit update true, idle false
+
+== step / last tile occupied, overridable
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
+== step / plain
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0 SIGN=3
+tiles walked 1, status update true, sit update true, idle false
+
+== step / tile too high
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 5,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== step / unwalkable tile
+returned false
+wired location 3,3
+at 3,3 z 0.0 facing NORTH / NORTH
+previous 3,3 z 0.0, goal 5,3
+path 
+statuses 
+tiles walked 0, status update false, sit update false, idle false
+
+== step / unwalkable tile, overridable
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 5,3
+path 5,3
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update false, idle false
+

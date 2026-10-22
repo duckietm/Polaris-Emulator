@@ -1336,13 +1336,12 @@ U|com/eu/habbo/messages/incoming/handshake/InitDiffieHandshakeEvent.java|CALL|ge
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getThreading|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|11
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|10
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getCrypto|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDate|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|6
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|17
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getIntUnixTimestamp|6
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|5
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|1
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getThreading|3
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|FIELD|isReady|1

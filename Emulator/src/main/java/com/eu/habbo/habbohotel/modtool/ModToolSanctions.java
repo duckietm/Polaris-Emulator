@@ -17,12 +17,10 @@ import org.slf4j.LoggerFactory;
 public class ModToolSanctions {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolSanctions.class);
 
-    private final Map<Integer, ArrayList<ModToolSanctionItem>> sanctionHashmap;
     private final Map<Integer, ModToolSanctionLevelItem> sanctionLevelsHashmap;
 
     public ModToolSanctions() {
         long millis = System.currentTimeMillis();
-        this.sanctionHashmap = new HashMap<>();
         this.sanctionLevelsHashmap = new HashMap<>();
         this.loadModSanctions();
 
@@ -30,7 +28,6 @@ public class ModToolSanctions {
     }
 
     public synchronized void loadModSanctions() {
-        this.sanctionHashmap.clear();
         this.sanctionLevelsHashmap.clear();
 
         this.loadSanctionLevels();
@@ -59,40 +56,36 @@ public class ModToolSanctions {
         return this.sanctionLevelsHashmap.get(sanctionLevel);
     }
 
+    /**
+     * The sanctions of one user, oldest first, keyed by the user id. Every call builds its own map: a map shared
+     * between calls was cleared by one caller while another was still reading it.
+     */
     public Map<Integer, ArrayList<ModToolSanctionItem>> getSanctions(int habboId) {
-        synchronized (this.sanctionHashmap) {
-            this.sanctionHashmap.clear();
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement =
-                            connection.prepareStatement("SELECT * FROM sanctions WHERE habbo_id = ? ORDER BY id ASC")) {
-                statement.setInt(1, habboId);
-                try (ResultSet set = statement.executeQuery()) {
-                    while (set.next()) {
-                        if (this.sanctionHashmap.get(set.getInt("habbo_id")) == null) {
-                            this.sanctionHashmap.put(set.getInt("habbo_id"), new ArrayList<>());
-                        }
-
-                        ModToolSanctionItem item = new ModToolSanctionItem(
-                                set.getInt("id"),
-                                set.getInt("habbo_id"),
-                                set.getInt("sanction_level"),
-                                set.getInt("probation_timestamp"),
-                                set.getBoolean("is_muted"),
-                                set.getInt("mute_duration"),
-                                set.getInt("trade_locked_until"),
-                                set.getString("reason"));
-
-                        if (!this.sanctionHashmap.get(set.getInt("habbo_id")).contains(item)) {
-                            this.sanctionHashmap.get(set.getInt("habbo_id")).add(item);
-                        }
-                    }
+        Map<Integer, ArrayList<ModToolSanctionItem>> sanctions = new HashMap<>();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM sanctions WHERE habbo_id = ? ORDER BY id ASC")) {
+            statement.setInt(1, habboId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    sanctions
+                            .computeIfAbsent(set.getInt("habbo_id"), id -> new ArrayList<>())
+                            .add(new ModToolSanctionItem(
+                                    set.getInt("id"),
+                                    set.getInt("habbo_id"),
+                                    set.getInt("sanction_level"),
+                                    set.getInt("probation_timestamp"),
+                                    set.getBoolean("is_muted"),
+                                    set.getInt("mute_duration"),
+                                    set.getInt("trade_locked_until"),
+                                    set.getString("reason")));
                 }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
-
-            return this.sanctionHashmap;
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
+
+        return sanctions;
     }
 
     private void insertSanction(

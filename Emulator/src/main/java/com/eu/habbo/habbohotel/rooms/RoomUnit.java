@@ -222,7 +222,8 @@ public class RoomUnit {
             if (this.path.isEmpty()) {
                 this.sitUpdate = true;
 
-                if (next != null && next.hasUnits() && !overrideChecks) {
+                // The last step onto someone is refused unless the room is walkthrough (Habbo: avatars share a tile).
+                if (next != null && next.hasUnits() && !overrideChecks && !room.isAllowWalkthrough()) {
                     return false;
                 }
             }

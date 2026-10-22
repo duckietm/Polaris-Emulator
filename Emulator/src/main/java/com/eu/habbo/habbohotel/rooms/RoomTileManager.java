@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackHelper;
@@ -227,9 +226,9 @@ public class RoomTileManager {
             return calculateHeightmap ? Short.MAX_VALUE : 0.0;
         }
 
-        if (Emulator.getPluginManager().isRegistered(FurnitureStackHeightEvent.class, true)) {
+        if (this.room.pluginManager().isRegistered(FurnitureStackHeightEvent.class, true)) {
             FurnitureStackHeightEvent event =
-                    Emulator.getPluginManager().fireEvent(new FurnitureStackHeightEvent(x, y, this.room));
+                    this.room.pluginManager().fireEvent(new FurnitureStackHeightEvent(x, y, this.room));
             if (event.hasPluginHelper()) {
                 return calculateHeightmap ? event.getHeight() * 256.0D : event.getHeight();
             }

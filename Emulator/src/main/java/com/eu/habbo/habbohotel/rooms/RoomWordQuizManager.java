@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollAnswerComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollStartComposer;
@@ -47,7 +46,7 @@ public class RoomWordQuizManager {
             this.room.noVotes = 0;
             this.room.yesVotes = 0;
             this.room.userVotes.clear();
-            this.room.wordQuizEnd = Emulator.getIntUnixTimestamp() + (duration / 1000);
+            this.room.wordQuizEnd = this.room.currentUnixTimestamp() + (duration / 1000);
             this.room.sendComposer(new SimplePollStartComposer(duration, question).compose());
         }
     }
@@ -56,7 +55,7 @@ public class RoomWordQuizManager {
      * Checks if there is an active word quiz.
      */
     public boolean hasActiveWordQuiz() {
-        return Emulator.getIntUnixTimestamp() < this.room.wordQuizEnd;
+        return this.room.currentUnixTimestamp() < this.room.wordQuizEnd;
     }
 
     /**

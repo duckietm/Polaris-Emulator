@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
@@ -72,7 +71,7 @@ public class RoomItemManager {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     HabboItem item =
-                            Emulator.getGameEnvironment().getItemManager().loadHabboItem(set);
+                            this.room.gameEnvironment().getItemManager().loadHabboItem(set);
                     if (item != null) {
                         this.ownership.add(item, buildersClub.contains(item.getId()), false);
                         if (item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.FLOOR) {

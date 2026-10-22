@@ -218,7 +218,6 @@ purchasing flag false
 == mixed / a pet that cannot be created
 pets.createPet(a0 pet1, Rex, 1, FFFFFF)
 buyer <- AlertPurchaseFailed(0)
-buyer <- AlertPurchaseFailed(0)
 returned
 purchasing flag false
 

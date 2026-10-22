@@ -1818,7 +1818,6 @@ public class CatalogManager {
                     .createPet(baseItem, data[0], data[1], data[2], habbo.getClient());
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
-            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
         }
 
         if (pet == null) {

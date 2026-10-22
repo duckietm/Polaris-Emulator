@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -603,7 +604,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                 getCustomItemId(nextReferenceVariableToken),
                 nextArrayData);
 
-        int maxDelay = Emulator.getConfig().getInt("hotel.wired.max_delay", 20);
+        int maxDelay = Emulator.getConfig().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
         if (settings.getDelay() > maxDelay) throw new WiredSaveException("Delay too long");
 
         List<HabboItem> nextDestinationItems = (nextDestinationTargetType == TARGET_FURNI

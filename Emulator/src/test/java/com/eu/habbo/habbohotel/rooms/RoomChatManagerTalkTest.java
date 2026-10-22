@@ -176,6 +176,10 @@ class RoomChatManagerTalkTest {
         Random random = mock(Random.class);
         when(random.nextInt(anyInt())).thenReturn(1);
 
+        when(this.room.pluginManager()).thenReturn(plugins);
+        when(this.room.threading()).thenReturn(threading);
+        when(this.room.currentUnixTimestamp()).thenReturn(1000);
+
         MockedStatic<Emulator> emulator = mockStatic(Emulator.class);
         emulator.when(Emulator::getConfig).thenReturn(config);
         emulator.when(Emulator::getTexts).thenReturn(texts);

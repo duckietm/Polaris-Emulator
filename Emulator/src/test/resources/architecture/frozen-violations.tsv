@@ -951,11 +951,9 @@ U|com/eu/habbo/habbohotel/rooms/RoomBan.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/rooms/RoomChatBubbleManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getConfig|7
 U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getDatabase|2
-U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getIntUnixTimestamp|3
-U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getPluginManager|3
 U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getTexts|3
-U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getThreading|4
+U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getConfig|3
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getDatabaseLogger|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getGameEnvironment|3

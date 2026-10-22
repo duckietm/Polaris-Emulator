@@ -182,7 +182,7 @@ public class RoomChatManager {
         // the map stores an int timestamp, so a large `minutes` (e.g. from a
         // wired mute) would otherwise overflow `minutes * 60` to a negative /
         // unpredictable value instead of a far-future expiry.
-        long unmuteAt = (long) Emulator.getIntUnixTimestamp() + ((long) Math.max(0, minutes) * 60L);
+        long unmuteAt = (long) this.room.currentUnixTimestamp() + ((long) Math.max(0, minutes) * 60L);
         synchronized (this.mutedHabbos) {
             this.mutedHabbos.put(habbo.getHabboInfo().getId(), (int) Math.min(unmuteAt, Integer.MAX_VALUE));
         }
@@ -212,7 +212,7 @@ public class RoomChatManager {
         }
 
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
+            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > this.room.currentUnixTimestamp();
 
             if (!time) {
                 this.mutedHabbos.remove(habbo.getHabboInfo().getId());
@@ -229,7 +229,7 @@ public class RoomChatManager {
      */
     public int getMuteTimeRemaining(Habbo habbo) {
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            return Math.max(0, this.mutedHabbos.get(habbo.getHabboInfo().getId()) - Emulator.getIntUnixTimestamp());
+            return Math.max(0, this.mutedHabbos.get(habbo.getHabboInfo().getId()) - this.room.currentUnixTimestamp());
         }
         return 0;
     }
@@ -361,7 +361,7 @@ public class RoomChatManager {
         if (Emulator.getConfig().getBoolean("easter_eggs.enabled")
                 && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
             if (habbo.getHabboStats().singingPirate.compareAndSet(false, true)) {
-                Emulator.getThreading().run(new YouAreAPirate(habbo, this.room));
+                this.room.threading().run(new YouAreAPirate(habbo, this.room));
             }
 
             return;
@@ -471,7 +471,7 @@ public class RoomChatManager {
 
         // Handle idle event
         UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.TALKED, false);
-        Emulator.getPluginManager().fireEvent(event);
+        this.room.pluginManager().fireEvent(event);
 
         if (!event.isCancelled()) {
             if (!event.idle) {
@@ -522,9 +522,9 @@ public class RoomChatManager {
 
     /** The packet shown before the line in place of the name: a plugin's, or the rank prefix; null for none. */
     private ServerMessage prefixFor(Habbo habbo, RoomChatMessage roomChatMessage, RoomChatType chatType) {
-        if (Emulator.getPluginManager().isRegistered(UsernameTalkEvent.class, true)) {
+        if (this.room.pluginManager().isRegistered(UsernameTalkEvent.class, true)) {
             UsernameTalkEvent usernameTalkEvent =
-                    Emulator.getPluginManager().fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
+                    this.room.pluginManager().fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
             if (usernameTalkEvent.hasCustomComposer()) {
                 return usernameTalkEvent.getCustomComposer();
             }
@@ -854,7 +854,8 @@ public class RoomChatManager {
                             item.setExtradata("1");
                             this.room.updateItemState(item);
 
-                            Emulator.getThreading()
+                            this.room
+                                    .threading()
                                     .run(
                                             () -> {
                                                 item.setExtradata("0");

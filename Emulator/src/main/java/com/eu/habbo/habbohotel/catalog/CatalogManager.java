@@ -79,6 +79,7 @@ import com.eu.habbo.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
 import com.eu.habbo.messages.outgoing.catalog.DiscountComposer;
+import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.messages.outgoing.catalog.PetBoughtNotificationComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.catalog.RedeemVoucherErrorComposer;
@@ -1476,8 +1477,16 @@ public class CatalogManager {
                 int totalCredits = free ? 0 : this.calculateDiscountedPrice(item.getCredits(), amount, item);
                 int totalPoints = free ? 0 : this.calculateDiscountedPrice(item.getPoints(), amount, item);
 
-                if (totalCredits > habbo.getHabboInfo().getCredits()) return;
-                if (totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) return;
+                boolean notEnoughCredits = totalCredits > habbo.getHabboInfo().getCredits();
+                boolean notEnoughPoints = totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType());
+                if (notEnoughCredits || notEnoughPoints) {
+                    // The client checks the balance before it buys; this answers a balance that changed meanwhile
+                    // the way Habbo does, instead of leaving the purchase waiting for a reply.
+                    habbo.getClient()
+                            .sendResponse(new NotEnoughPointsTypeComposer(
+                                    notEnoughCredits, notEnoughPoints, item.getPointsType()));
+                    return;
+                }
 
                 if (purchase.limitedConfiguration != null) {
                     OptionalInt limitedNumberReservation = purchase.limitedConfiguration.pollNumber();

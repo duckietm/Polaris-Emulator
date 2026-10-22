@@ -505,10 +505,12 @@ returned
 purchasing flag false
 
 == price / not enough credits
+buyer <- NotEnoughPointsType(true, false, 5)
 returned
 purchasing flag false
 
 == price / not enough points
+buyer <- NotEnoughPointsType(false, true, 5)
 returned
 purchasing flag false
 

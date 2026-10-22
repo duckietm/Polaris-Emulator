@@ -142,7 +142,6 @@ purchasing flag false
 == mixed / a badge display of a badge not owned
 ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% SILVER %pagename%>")
 items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#504
-ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% buyer\t<date>\tfiltered[UMAD] %pagename%>")
 items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#505
 plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
@@ -424,8 +423,7 @@ purchasing flag false
 
 == mixed / two badge displays of an owned badge
 items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[GOLD]") -> item#502
-ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% buyer\t<date>\tfiltered[GOLD] %pagename%>")
-items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#503
+items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[GOLD]") -> item#503
 plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#502, item#503])
@@ -446,7 +444,7 @@ purchasing flag false
 
 == mixed / two trophies
 items.createItem(trophy, stack 0, number 0, "buyer\t<date>\tfiltered[Well done]") -> item#500
-items.createItem(trophy, stack 0, number 0, "buyer\t<date>\tfiltered[buyer<date>filtered[Well done]]") -> item#501
+items.createItem(trophy, stack 0, number 0, "buyer\t<date>\tfiltered[Well done]") -> item#501
 plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#500, item#501])

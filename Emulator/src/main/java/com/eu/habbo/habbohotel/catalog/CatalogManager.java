@@ -1708,6 +1708,8 @@ public class CatalogManager {
             throws Exception {
         for (int i = 0; i < amount; i++) {
             for (Item baseItem : item.getBaseItems()) {
+                // Engraved once per base item, from what the buyer sent, as the atomic furniture path does.
+                String furnitureExtradata = null;
                 for (int k = 0; k < item.getItemAmount(baseItem.getId()); k++) {
                     if (baseItem.getName().startsWith("rentable_bot_")
                             || baseItem.getName().startsWith("bot_")) {
@@ -1737,9 +1739,12 @@ public class CatalogManager {
                             purchase.badgeFound = true;
                         }
                     } else {
-                        extradata = this.prepareFurnitureExtraData(habbo, baseItem, extradata);
+                        if (furnitureExtradata == null) {
+                            furnitureExtradata = this.prepareFurnitureExtraData(habbo, baseItem, extradata);
+                        }
 
-                        if (!this.createLegacyFurniture(item, habbo, baseItem, extradata, limitedStack, purchase)) {
+                        if (!this.createLegacyFurniture(
+                                item, habbo, baseItem, furnitureExtradata, limitedStack, purchase)) {
                             return false;
                         }
                     }

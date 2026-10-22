@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.catalog.layouts;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -21,6 +20,5 @@ public class InfoRentablesLayout extends CatalogPage {
         for (String d : data) {
             message.appendString(d);
         }
-        message.appendInt(0);
     }
 }

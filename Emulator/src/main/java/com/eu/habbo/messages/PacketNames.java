@@ -12,6 +12,12 @@ public class PacketNames {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PacketNames.class);
 
+    /**
+     * The header of the empty frame GameClientManager.CFKeepAlive sends every client every 30 seconds, so a
+     * proxy such as Cloudflare does not close an idle websocket. No packet has it; the client ignores it.
+     */
+    public static final int KEEP_ALIVE_HEADER = -1;
+
     private final HashMap<Integer, String> incoming;
     private final HashMap<Integer, String> outgoing;
 
@@ -28,6 +34,7 @@ public class PacketNames {
 
         PacketNames.getNames(Incoming.class, this.incoming);
         PacketNames.getNames(Outgoing.class, this.outgoing);
+        this.outgoing.putIfAbsent(KEEP_ALIVE_HEADER, "KeepAlive");
     }
 
     public String getIncomingName(int key) {

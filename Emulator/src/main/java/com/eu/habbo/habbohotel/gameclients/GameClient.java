@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.crypto.HabboEncryption;
 import com.eu.habbo.habbohotel.LatencyTracker;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.PacketNames;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -228,7 +229,7 @@ public class GameClient {
 
     public void sendKeepAlive() {
         if (this.channel != null && this.channel.isOpen()) {
-            this.channel.writeAndFlush(new ServerMessage(-1));
+            this.channel.writeAndFlush(new ServerMessage(PacketNames.KEEP_ALIVE_HEADER));
         }
     }
 

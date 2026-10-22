@@ -87,6 +87,41 @@ class CatalogPageDefinitionsTest {
         }
     }
 
+    /**
+     * Every layout writes only its localization (layout code, images, texts): the offer list, offer id and
+     * season flag come from CatalogPageComposer. A layout that adds an int of its own shifts everything the
+     * client reads after it (info_loyalty broke the catalog that way).
+     */
+    @Test
+    void everyLayoutWritesOnlyItsCodeImagesAndTexts() throws Exception {
+        java.util.List<String> broken = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, Class<? extends CatalogPage>> entry :
+                CatalogManager.pageDefinitions.entrySet()) {
+            CatalogPage page;
+            try {
+                page = entry.getValue().getConstructor(ResultSet.class).newInstance(pageRow(entry.getKey()));
+            } catch (ReflectiveOperationException e) {
+                continue;
+            }
+            ByteBuf packet = serialize(page);
+            try {
+                string(packet);
+                int images = packet.readInt();
+                for (int i = 0; i < images; i++) string(packet);
+                int texts = packet.readInt();
+                for (int i = 0; i < texts; i++) string(packet);
+                if (packet.isReadable()) {
+                    broken.add(entry.getKey() + " (" + packet.readableBytes() + " bytes left)");
+                }
+            } catch (RuntimeException e) {
+                broken.add(entry.getKey() + " (" + e.getClass().getSimpleName() + ")");
+            } finally {
+                packet.release();
+            }
+        }
+        assertEquals(java.util.List.of(), broken);
+    }
+
     /** A {@code catalog_pages} row as a mock {@link ResultSet}, the same path the production loader uses. */
     private static ResultSet pageRow(String layout) throws SQLException {
         ResultSet set = mock(ResultSet.class);

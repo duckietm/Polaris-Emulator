@@ -1,5 +1,6 @@
 package com.eu.habbo.messages;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eu.habbo.messages.incoming.Incoming;
@@ -11,6 +12,14 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class PacketNamesContractTest {
+    @Test
+    void theKeepAliveFrameHasAName() {
+        PacketNames names = new PacketNames();
+        names.initialize();
+
+        assertEquals("KeepAlive", names.getOutgoingName(PacketNames.KEEP_ALIVE_HEADER));
+    }
+
     @Test
     void incomingPacketNameIdsAreUnique() throws Exception {
         assertPublicFinalPacketIdsAreUnique(Incoming.class);

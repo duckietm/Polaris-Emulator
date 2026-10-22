@@ -1,0 +1,532 @@
+== amount / equal to the pack size counts as one
+CatalogPurchaseTransaction.execute(catalog:7:30:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== amount / more than 100 items
+buyer alerted "Whoops! You tried to buy this 120 times. This must've been a mistake."
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== amount / several without a bulk offer
+ScripterManager.scripterDetected("<scripter.warning.catalog.amount buyer chair %limit% %badge% Shop>")
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== atomic / a bot
+CatalogPurchaseTransaction.execute(catalog:7:42:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== atomic / a pet
+CatalogPurchaseTransaction.execute(catalog:7:43:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== atomic / badges and effects
+CatalogPurchaseTransaction.execute(catalog:7:41:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== atomic / furniture
+CatalogPurchaseTransaction.execute(catalog:7:44:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== atomic / habbicon
+CatalogPurchaseTransaction.execute(catalog:7:40:<op>) -> stubbed failure
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== atomic / habbicon bought twice at once
+ScripterManager.scripterDetected("<scripter.warning.catalog.amount buyer habbicon_star %limit% %badge% Shop>")
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== delivery / a rent offer
+items.createItem(chair, stack 0, number 0, "") -> item#504
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+item#504.setExpiresTimestamp(260200)
+threading.run(item#504)
+RentableFurnitureManager.track(item#504)
+inventory.addItems([item#504])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer rent_chair)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[504]})
+buyer <- PurchaseOK(offer rent_chair)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== delivery / furniture that cannot be created
+items.createItem(chair) -> null
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== gate / a purchase already running
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag true
+
+== gate / amount zero
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== gate / chat style already owned
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== gate / club only without club
+buyer <- AlertPurchaseUnavailable(1)
+returned
+purchasing flag false
+
+== gate / no offer
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== gate / web api ownership refusal
+buyer <- BubbleAlert(web api says no)
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== limited / daily item limit reached
+buyer alerted "<error.catalog.buy.limited.daily.item %username% throne display 1 %badge% %pagename%>"
+returned
+purchasing flag false
+
+== limited / daily total reached
+buyer alerted "<error.catalog.buy.limited.daily.total %username% throne display 2 %badge% %pagename%>"
+returned
+purchasing flag false
+
+== limited / furniture goes atomic and gives its number back
+CatalogPurchaseTransaction.execute(catalog:7:20:<op>) -> stubbed failure
+limited.restoreNumber(17)
+buyer <- AlertPurchaseFailed(0)
+limited.restoreNumber(20, 17)
+returned
+purchasing flag false
+
+== limited / no number left after the price check
+buyer <- AlertLimitedSoldOut()
+returned
+purchasing flag false
+
+== limited / sold out
+buyer <- AlertLimitedSoldOut()
+returned
+purchasing flag false
+
+== mixed / a badge display of a badge not owned
+ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% SILVER %pagename%>")
+items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#504
+ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% buyer\t<date>\tfiltered[UMAD] %pagename%>")
+items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#505
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#504, item#505])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer display_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[504, 505]})
+buyer <- PurchaseOK(offer display_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / a bot and furniture
+bots.createBot({motto=Hi, name=Robbie}, generic)
+threading.run(bot(generic))
+inventory.addBot(bot(generic))
+buyer <- AddBot(bot(generic))
+items.createItem(chair, stack 0, number 0, "") -> item#500
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#500])
+plugin event UserCatalogFurnitureBoughtEvent
+buyer <- AddHabboItem({BOT=[900], OWNED_FURNI=[500]})
+buyer <- PurchaseOK(offer bot_generic)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / a bot and furniture, payment refused
+bots.createBot({motto=Hi, name=Robbie}, generic)
+threading.run(bot(generic))
+inventory.addBot(bot(generic))
+buyer <- AddBot(bot(generic))
+items.createItem(chair, stack 0, number 0, "") -> item#501
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> false
+buyer <- AlertPurchaseUnavailable(0)
+items.deleteItem(item#501)
+inventory.removeBot(bot(generic))
+bots.deleteBot(bot(generic))
+returned
+purchasing flag false
+
+== mixed / a pet and furniture
+pets.createPet(a0 pet1, Rex, 1, FFFFFF)
+inventory.addPet(pet(Rex))
+buyer <- AddPet(pet(Rex))
+buyer <- PetBoughtNotification(pet(Rex), false)
+AchievementManager.progressAchievement(achievement PetLover)
+items.createItem(chair, stack 0, number 0, "Rex\n1\nFFFFFF") -> item#502
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#502])
+plugin event UserCatalogFurnitureBoughtEvent
+buyer <- AddHabboItem({OWNED_FURNI=[502], PET=[902]})
+buyer <- PurchaseOK(offer pet_chair)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / a pet that cannot be created
+pets.createPet(a0 pet1, Rex, 1, FFFFFF)
+buyer <- AlertPurchaseFailed(0)
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== mixed / a pet without its name, race and colour
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== mixed / an effect owned for good
+items.createItem(chair, stack 0, number 0, "") -> item#501
+buyer <- AlertPurchaseUnavailable(0)
+items.deleteItem(item#501)
+returned
+purchasing flag false
+
+== mixed / chat style offer without base items
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 0, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+stats.addPurchase(offer bubble_style)
+buyer <- AddHabboItem({})
+buyer <- PurchaseOK(offer bubble_style)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / frank without permission
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== mixed / furniture and a badge already owned
+items.createItem(chair, stack 0, number 0, "") -> item#501
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 2) -> true
+inventory.addItems([item#501])
+plugin event UserCatalogFurnitureBoughtEvent
+stats.addPurchase(offer chair_badge)
+buyer <- AddHabboItem({OWNED_FURNI=[501]})
+buyer <- PurchaseOK(offer chair_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / furniture and a new badge
+items.createItem(chair, stack 0, number 0, "") -> item#500
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 2) -> true
+inventory.addItems([item#500])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer chair_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[500]})
+buyer <- PurchaseOK(offer chair_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / furniture and an effect
+items.createItem(chair, stack 0, number 0, "") -> item#500
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.createEffect(201, 3600)
+inventory.addItems([item#500])
+plugin event UserCatalogFurnitureBoughtEvent
+stats.addPurchase(offer chair_wings)
+buyer <- AddHabboItem({OWNED_FURNI=[500]})
+buyer <- PurchaseOK(offer chair_wings)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / guild furniture for a member
+items.createItem(guild_forum, stack 0, number 0, "33") -> item#503
+item#503.setExtradata("")
+threading.run(item#503)
+guilds.setGuild(item#503, 33)
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+guild.setForum(true)
+guild.run()
+inventory.addItems([item#503])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer guild_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[503]})
+buyer <- PurchaseOK(offer guild_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / guild furniture for an outsider
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 0, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer guild_badge)
+buyer <- AddHabboItem({BADGE=[0]})
+buyer <- PurchaseOK(offer guild_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / guild furniture with a bad id
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== mixed / hopper
+items.createItem(hopper, stack 0, number 0, "") -> item#502
+items.insertHopper(item#502)
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#502])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer hopper_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[502]})
+buyer <- PurchaseOK(offer hopper_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / music disc
+items.createItem(song_disk, stack 0, number 0, "buyer\n<date>\n120\nSong One\n77") -> item#504
+threading.run(item#504)
+AchievementManager.progressAchievement(achievement MusicCollector)
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#504])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer disc_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[504]})
+buyer <- PurchaseOK(offer disc_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / music disc without its track
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== mixed / teleport pair
+items.createItem(teleport, stack 0, number 0, "") -> item#500
+items.createItem(teleport, stack 0, number 0, "") -> item#501
+items.insertTeleportPair(500, 501)
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#500, item#501])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer tele_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[500, 501]})
+buyer <- PurchaseOK(offer tele_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / two badge displays of an owned badge
+items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[GOLD]") -> item#502
+ScripterManager.scripterDetected("<scripter.warning.catalog.badge_display buyer %itemname% %limit% buyer\t<date>\tfiltered[GOLD] %pagename%>")
+items.createItem(badge_display, stack 0, number 0, "buyer\t<date>\tfiltered[UMAD]") -> item#503
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#502, item#503])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer display_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[502, 503]})
+buyer <- PurchaseOK(offer display_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== mixed / two trophies
+items.createItem(trophy, stack 0, number 0, "buyer\t<date>\tfiltered[Well done]") -> item#500
+items.createItem(trophy, stack 0, number 0, "buyer\t<date>\tfiltered[buyer<date>filtered[Well done]]") -> item#501
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+inventory.addItems([item#500, item#501])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer trophy_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[500, 501]})
+buyer <- PurchaseOK(offer trophy_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== payment / a plugin raises the price above the balance
+items.createItem(chair, stack 0, number 0, "") -> item#501
+plugin event UserCatalogItemPurchasedEvent(credits 5005, points 2, items 1, badges [ACH_1])
+buyer <- AlertPurchaseUnavailable(0)
+items.deleteItem(item#501)
+returned
+purchasing flag false
+
+== payment / free
+items.createItem(chair, stack 0, number 0, "") -> item#503
+plugin event UserCatalogItemPurchasedEvent(credits 0, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 0, type 5, points 0) -> true
+inventory.addItems([item#503])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer chair_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[503]})
+buyer <- PurchaseOK(offer chair_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+returned
+purchasing flag false
+
+== payment / infinite credits
+items.createItem(chair, stack 0, number 0, "") -> item#502
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 0, type 5, points 2) -> true
+inventory.addItems([item#502])
+plugin event UserCatalogFurnitureBoughtEvent
+threading.run(badge ACH_1)
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addPurchase(offer chair_badge)
+buyer <- AddHabboItem({BADGE=[0], OWNED_FURNI=[502]})
+buyer <- PurchaseOK(offer chair_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
+== payment / refused
+items.createItem(chair, stack 0, number 0, "") -> item#500
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 2) -> false
+buyer <- AlertPurchaseUnavailable(0)
+items.deleteItem(item#500)
+returned
+purchasing flag false
+
+== price / not enough credits
+returned
+purchasing flag false
+
+== price / not enough points
+returned
+purchasing flag false
+

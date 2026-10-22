@@ -37,6 +37,7 @@ import com.eu.habbo.stress.StressRunManager;
 import com.eu.habbo.stress.StressRunRegistry;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
+import com.eu.habbo.util.imager.badges.GuildBadgeSource;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -262,6 +263,8 @@ final class PolarisBootstrap {
         rconServer.connect();
         BadgeImager badgeImager = new BadgeImager();
         runtime.installBadgeImager(badgeImager);
+        badgeImager.installGuildBadgeSource(
+                GuildBadgeSource.fromDataSource(runtime.database().getDataSource()));
         Emulator.synchronizeLegacyFacade(runtime);
         CameraRenderRuntime.start(configuration, badgeImager::compose);
         return true;

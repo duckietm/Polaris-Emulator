@@ -1,0 +1,597 @@
+== command / talk
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(:about)
+WiredManager.triggerUserSays(room, unit, :about)
+returned
+line ":about" command true delivered false
+speaker chat counter 1, muted count 0, singing false
+
+== command / whisper is not a command
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line ":about" command false delivered false
+speaker chat counter 2, muted count 0, singing false
+
+== filter / masked
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(Darn it, darn)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, bobba it, bobba, 0, 0)
+speaker <- Talk(bobba it, bobba)
+listener <- Talk(bobba it, bobba)
+WiredManager.triggerUserSays(room, unit, bobba it, bobba, 0, 0)
+returned
+line "bobba it, bobba" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== filter / speaker exempt
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(darn it)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, darn it, 0, 0)
+speaker <- Talk(darn it)
+listener <- Talk(darn it)
+WiredManager.triggerUserSays(room, unit, darn it, 0, 0)
+returned
+line "darn it" command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== flood / fifth line, protection 1
+QuestProgressEvents.progress(second, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(second)
+room <- Typing(unit)
+second muted 4s, flood true
+returned
+line "hello" command false delivered false
+second chat counter 0, muted count 1, singing false
+
+== flood / fourth line, protection 0
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+speaker muted 4s, flood true
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 1, singing false
+
+== flood / fourth line, protection 1
+QuestProgressEvents.progress(second, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(second)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+second <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+second chat counter 4, muted count 0, singing false
+
+== flood / rights without flood.with.rights
+QuestProgressEvents.progress(third, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(third)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+second <- Talk(hello)
+third <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+third chat counter 4, muted count 0, singing false
+
+== flood budget / over the budget
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== flood budget / rights with flood.with.rights
+QuestProgressEvents.progress(owner, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(owner)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+owner chat counter 0, muted count 0, singing false
+
+== flood budget / rights without flood.with.rights
+QuestProgressEvents.progress(owner, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(owner)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+owner <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+owner chat counter 0, muted count 0, singing false
+
+== flood budget / within the budget
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 0, muted count 0, singing false
+
+== gate / alone in the room, idle event
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== gate / another room
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / chat delay
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / empty line
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / invisible, a command
+CommandHandler.handleChatCommand(:sit)
+returned
+line ":sit" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / invisible, a line
+CommandHandler.handleChatCommand(hello)
+speaker whispered "text:invisible.prevent.chat.error"
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / invisible, allowed
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== gate / may not talk
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / mute area, no-mute permission
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== gate / mute area, talk
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / mute area, whisper
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== gate / mute area, whisper allowed
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 1, muted count 0, singing false
+
+== gate / raid protection
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== heads / shout
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+speaker <- Shout(hello)
+facing <- Shout(hello)
+facing turns its head WEST
+threading.run(task, 2000)
+away <- Shout(hello)
+walking <- Shout(hello)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== heads / talk
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+facing <- Talk(hello)
+facing turns its head WEST
+threading.run(task, 2000)
+away <- Talk(hello)
+walking <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== listeners / talk
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+bot.onUserSay(hello)
+room <- Talk(text:parrot.message.1)
+parrot.onClick
+parrot.setExtradata(1)
+room.updateItemState(parrot)
+threading.run(task, 2000)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== listeners / whisper
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 2, muted count 0, singing false
+
+== mute / room muted
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "hello" command false delivered false
+speaker chat counter 0, muted count 0, singing false
+
+== mute / room muted, speaker has rights
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+listener <- Talk(hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== mute / speaker muted
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+speaker <- MutedWhisper(60)
+returned
+line "hello" command false delivered false
+speaker chat counter 1, muted count 0, singing false
+
+== pirate / first
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+threading.run(YouAreAPirate)
+returned
+line "I am a pirate" command false delivered false
+speaker chat counter 1, muted count 0, singing true
+
+== pirate / while singing
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "i am a pirate" command false delivered false
+speaker chat counter 2, muted count 0, singing true
+
+== prefix / plugin
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+plugin event UsernameTalkEvent
+speaker <- PluginPrefix
+speaker <- Talk(hello)
+speaker <- NameChanged(speaker)
+near <- PluginPrefix
+near <- Talk(hello)
+near <- NameChanged(speaker)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== prefix / shout
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+speaker <- NameChanged(speaker)
+speaker <- Shout(hello)
+speaker <- NameChanged(speaker)
+near <- NameChanged(speaker)
+near <- Shout(hello)
+near <- NameChanged(speaker)
+old chat <- Shout(hello)
+old chat turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== prefix / talk
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- NameChanged(speaker)
+speaker <- Talk(hello)
+speaker <- NameChanged(speaker)
+near <- NameChanged(speaker)
+near <- Talk(hello)
+near <- NameChanged(speaker)
+old chat <- Talk(hello)
+old chat turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== prefix / whisper
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+speaker <- NameChanged(speaker)
+speaker <- Whisper(hello)
+speaker <- NameChanged(speaker)
+old chat <- NameChanged(speaker)
+old chat <- Whisper(hello)
+old chat <- NameChanged(speaker)
+returned
+line "hello" command false delivered false
+speaker chat counter 3, muted count 0, singing false
+
+== shout / plain
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(HELLO)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, HELLO, 1, 0)
+speaker <- Shout(HELLO)
+near <- Shout(HELLO)
+far <- Shout(HELLO)
+far turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit, HELLO, 1, 0)
+returned
+line "HELLO" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== talk / no chat limit
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+far <- Talk(hello)
+far turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== talk / only spaces
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(   )
+WiredManager.shouldSuppressUserSaysOutput(room, unit,    , 0, 0)
+speaker <- Talk( )
+near <- Talk( )
+far with rights <- Talk( )
+far with rights turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit,    , 0, 0)
+returned
+line " " command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== talk / plain
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello   )
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello   , 0, 0)
+speaker <- Talk(hello)
+near <- Talk(hello)
+far with rights <- Talk(hello)
+far with rights turns its head NORTH_WEST
+threading.run(task, 2000)
+WiredManager.triggerUserSays(room, unit, hello   , 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== tent / shout
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+speaker <- Shout(hello)
+inside <- Shout(hello)
+staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 2, muted count 0, singing false
+
+== tent / talk
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(hello)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
+inside <- Talk(hello)
+staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+returned
+line "hello" command false delivered true
+speaker chat counter 1, muted count 0, singing false
+
+== whisper / no target
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+returned
+line "psst" command false delivered false
+speaker chat counter 3, muted count 0, singing false
+
+== whisper / target ignores
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+speaker <- Whisper(psst)
+staff <- Whisper(To target: psst)
+returned
+line "psst" command false delivered false
+speaker chat counter 2, muted count 0, singing false
+
+== whisper / to the target
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+speaker <- Whisper(psst)
+target <- Whisper(psst)
+staff <- Whisper(To target: psst)
+returned
+line "psst" command false delivered false
+speaker chat counter 1, muted count 0, singing false
+
+== wired / ignored by the caller
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(secret)
+speaker <- Talk(secret)
+listener <- Talk(secret)
+returned
+line "secret" command false delivered true
+speaker chat counter 3, muted count 0, singing false
+
+== wired / suppressed shout
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(secret)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, secret, 1, 0)
+speaker <- Whisper(secret)
+WiredManager.triggerUserSays(room, unit, secret, 1, 0)
+returned
+line "secret" command false delivered false
+speaker chat counter 2, muted count 0, singing false
+
+== wired / suppressed talk
+QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
+plugin event UserIdleEvent
+room.unIdle(speaker)
+room <- Typing(unit)
+CommandHandler.handleChatCommand(secret)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, secret, 0, 0)
+speaker <- Whisper(secret)
+WiredManager.triggerUserSays(room, unit, secret, 0, 0)
+returned
+line "secret" command false delivered false
+speaker chat counter 1, muted count 0, singing false
+

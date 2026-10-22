@@ -189,6 +189,7 @@ public final class ConfigRegistry {
                 "enc.enabled",
                 "nitro.secure.assets.enabled",
                 "nitro.secure.api.enabled",
+                "nitro.secure.api.required",
                 "login.remember.enabled",
                 "db.slow_query.enabled",
                 "ws.enabled",

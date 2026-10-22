@@ -62,6 +62,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `login.remember.jwt.secret` | string | `` | — | yes | no | Built-in login endpoint setting. |
 | `login.sso.ticket.ttl.seconds` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `nitro.secure.api.enabled` | boolean | `false` | — | yes | no | Nitro secure-asset runtime setting. |
+| `nitro.secure.api.required` | boolean | `false` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.assets.enabled` | boolean | `false` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.config.root` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.gamedata.root` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |

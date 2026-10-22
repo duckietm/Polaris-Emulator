@@ -1513,6 +1513,10 @@ public class CatalogManager {
                 }
 
                 if (this.isAtomicFurniturePurchase(item)) {
+                    // The atomic path owns the reserved limited number from here and gives it back itself when its
+                    // transaction fails. Restoring it again below could reset a number another buyer has taken since.
+                    int reservedNumber = purchase.limitedNumber;
+                    purchase.limitedNumber = 0;
                     this.purchaseFurnitureAtomically(
                             item,
                             habbo,
@@ -1521,7 +1525,7 @@ public class CatalogManager {
                             free,
                             purchase.limitedConfiguration,
                             limitedStack,
-                            purchase.limitedNumber,
+                            reservedNumber,
                             totalCredits,
                             totalPoints);
                     purchase.delivered = true;
@@ -2590,7 +2594,7 @@ public class CatalogManager {
             if (limitedConfiguration != null) {
                 habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
             }
-        } catch (SQLException exception) {
+        } catch (SQLException | RuntimeException exception) {
             if (limitedConfiguration != null && limitedNumber > 0) limitedConfiguration.restoreNumber(limitedNumber);
             throw exception;
         }

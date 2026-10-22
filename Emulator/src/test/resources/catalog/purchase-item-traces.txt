@@ -126,7 +126,6 @@ purchasing flag false
 CatalogPurchaseTransaction.execute(catalog:7:20:<op>) -> stubbed failure
 limited.restoreNumber(17)
 buyer <- AlertPurchaseFailed(0)
-limited.restoreNumber(20, 17)
 returned
 purchasing flag false
 

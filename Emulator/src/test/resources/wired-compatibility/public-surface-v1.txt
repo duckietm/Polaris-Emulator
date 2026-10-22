@@ -1293,7 +1293,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredC
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniOpacityIs#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniOpacityIs#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
-TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier,com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources,com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks
 FIELD protected static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#QUANTIFIER_ALL:int
 FIELD protected static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#QUANTIFIER_ANY:int
 FIELD protected static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#SOURCE_SECONDARY_SELECTED:int
@@ -1317,7 +1317,10 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredC
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#matchesType(com.eu.habbo.habbohotel.users.HabboItem,java.util.Set<java.lang.Integer>):boolean throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#normalizeFurniSource(int):int throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#normalizeQuantifier(int):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#officialFurniIds2(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#officialFurniSources(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#officialQuantifierCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#officialUserSources(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#onPickUp(-):void throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#refresh(-):void throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch#resolveCompareTypeIds(com.eu.habbo.habbohotel.wired.core.WiredContext):java.util.Set<java.lang.Integer> throws -

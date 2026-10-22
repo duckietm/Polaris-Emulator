@@ -1,11 +1,14 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import com.eu.habbo.threading.ThreadPooling;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * What the user, furni and room variable managers share when a value changes: how the change is classified for the
@@ -89,6 +92,87 @@ final class RoomVariableChanges {
                         }
                     },
                     50);
+        }
+    }
+
+    /** Hears one variable change, as the holder's own trigger does. */
+    interface ChangeListener {
+        void changed(
+                int definitionItemId,
+                boolean hasValue,
+                boolean existedBefore,
+                Integer previousValue,
+                boolean existsAfter,
+                Integer currentValue);
+    }
+
+    /**
+     * Reports how the derived parts of a user or furni variable (level-up and time utilities) changed with it. The
+     * holder's stamps are read once, at the first part that resolves.
+     */
+    static void emitDerivedChanges(
+            Room room,
+            int targetType,
+            InteractionWiredExtra definitionExtra,
+            WiredVariableDefinitionInfo definitionInfo,
+            boolean existedBefore,
+            Integer previousValue,
+            boolean existsAfter,
+            Integer currentValue,
+            Supplier<RoomVariableAssignment> holderStamps,
+            ChangeListener listener) {
+        RoomVariableAssignment stamps = null;
+        boolean stampsRead = false;
+
+        for (WiredVariableDefinitionInfo derivedDefinition : WiredVariableLevelSystemSupport.getDerivedDefinitions(
+                room, targetType, definitionExtra, definitionInfo)) {
+            WiredVariableLevelSystemSupport.DerivedDefinition resolvedDefinition =
+                    WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                            room, targetType, derivedDefinition.getItemId());
+
+            if (resolvedDefinition == null) {
+                continue;
+            }
+
+            if (!stampsRead) {
+                stamps = holderStamps.get();
+                stampsRead = true;
+            }
+
+            int createdAt = (stamps != null) ? stamps.getCreatedAt() : 0;
+            int updatedAt = (stamps != null) ? stamps.getUpdatedAt() : 0;
+            // A value change also moved the update time; a last-update-time part compares against the old one.
+            int previousUpdatedAt = (stamps != null && !Objects.equals(previousValue, currentValue))
+                    ? stamps.getPreviousUpdatedAt()
+                    : updatedAt;
+            Integer derivedPreviousValue = existedBefore
+                    ? WiredVariableLevelSystemSupport.getDerivedValue(
+                            room,
+                            resolvedDefinition.getLevelSystem(),
+                            resolvedDefinition.getSubvariableType(),
+                            previousValue,
+                            createdAt,
+                            previousUpdatedAt)
+                    : null;
+            Integer derivedCurrentValue = existsAfter
+                    ? WiredVariableLevelSystemSupport.getDerivedValue(
+                            room,
+                            resolvedDefinition.getLevelSystem(),
+                            resolvedDefinition.getSubvariableType(),
+                            currentValue,
+                            createdAt,
+                            updatedAt)
+                    : null;
+
+            // A presence part (is_maxed) is created when it appears and removed when it goes, by itself.
+            boolean presence = WiredVariableLevelSystemSupport.isPresencePart(resolvedDefinition);
+            listener.changed(
+                    derivedDefinition.getItemId(),
+                    true,
+                    presence ? derivedPreviousValue != null : existedBefore,
+                    derivedPreviousValue,
+                    presence ? derivedCurrentValue != null : existsAfter,
+                    derivedCurrentValue);
         }
     }
 }

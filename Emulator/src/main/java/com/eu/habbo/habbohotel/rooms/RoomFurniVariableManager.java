@@ -967,60 +967,19 @@ public class RoomFurniVariableManager {
                 existsAfter,
                 currentValue);
 
-        RoomVariableAssignment stamps = null;
-        boolean stampsRead = false;
-
-        for (WiredVariableDefinitionInfo derivedDefinition : WiredVariableLevelSystemSupport.getDerivedDefinitions(
-                this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionExtra, definitionInfo)) {
-            WiredVariableLevelSystemSupport.DerivedDefinition resolvedDefinition =
-                    WiredVariableLevelSystemSupport.resolveDerivedDefinition(
-                            this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, derivedDefinition.getItemId());
-
-            if (resolvedDefinition == null) {
-                continue;
-            }
-
-            if (!stampsRead) {
-                stamps = this.getRawAssignment(furniId, definitionInfo.getItemId());
-                stampsRead = true;
-            }
-
-            int createdAt = (stamps != null) ? stamps.getCreatedAt() : 0;
-            int updatedAt = (stamps != null) ? stamps.getUpdatedAt() : 0;
-            // A value change also moved the update time; a last-update-time part compares against the old one.
-            int previousUpdatedAt = (stamps != null && !Objects.equals(previousValue, currentValue))
-                    ? stamps.getPreviousUpdatedAt()
-                    : updatedAt;
-            Integer derivedPreviousValue = existedBefore
-                    ? WiredVariableLevelSystemSupport.getDerivedValue(
-                            this.room,
-                            resolvedDefinition.getLevelSystem(),
-                            resolvedDefinition.getSubvariableType(),
-                            previousValue,
-                            createdAt,
-                            previousUpdatedAt)
-                    : null;
-            Integer derivedCurrentValue = existsAfter
-                    ? WiredVariableLevelSystemSupport.getDerivedValue(
-                            this.room,
-                            resolvedDefinition.getLevelSystem(),
-                            resolvedDefinition.getSubvariableType(),
-                            currentValue,
-                            createdAt,
-                            updatedAt)
-                    : null;
-
-            // A presence part (is_maxed) is created when it appears and removed when it goes, by itself.
-            boolean presence = WiredVariableLevelSystemSupport.isPresencePart(resolvedDefinition);
-            this.emitVariableChangedEvent(
-                    furniId,
-                    derivedDefinition.getItemId(),
-                    true,
-                    presence ? derivedPreviousValue != null : existedBefore,
-                    derivedPreviousValue,
-                    presence ? derivedCurrentValue != null : existsAfter,
-                    derivedCurrentValue);
-        }
+        RoomVariableChanges.emitDerivedChanges(
+                this.room,
+                WiredVariableLevelSystemSupport.TARGET_FURNI,
+                definitionExtra,
+                definitionInfo,
+                existedBefore,
+                previousValue,
+                existsAfter,
+                currentValue,
+                () -> this.getRawAssignment(furniId, definitionInfo.getItemId()),
+                (partItemId, hasValue, partBefore, partPrevious, partAfter, partCurrent) ->
+                        this.emitVariableChangedEvent(
+                                furniId, partItemId, hasValue, partBefore, partPrevious, partAfter, partCurrent));
     }
 
     private void emitVariableChangedEvent(

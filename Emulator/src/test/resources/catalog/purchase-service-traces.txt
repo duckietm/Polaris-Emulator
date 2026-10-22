@@ -1,0 +1,250 @@
+== builders club / furni addon
+CatalogPaymentService.tryTake(credits 25, type 5, points 0) -> true
+stats.addBuildersClubBonusFurni(50)
+buyer <- BuildersClubFurniCount(3)
+buyer <- BuildersClubSubscriptionStatus(buyer)
+buyer <- PurchaseOK(null)
+buyer <- InventoryRefresh()
+stats.run()
+returned
+purchasing flag false
+
+== builders club / subscription
+CatalogPaymentService.tryTake(credits 25, type 5, points 0) -> true
+BuildersClubRoomSupport.raisePackageFurniLimit(31)
+stats.createSubscription(BUILDERS_CLUB, 2678400s) -> created
+buyer <- PurchaseOK(null)
+buyer <- InventoryRefresh()
+stats.run()
+returned
+purchasing flag false
+
+== club / a purchase already running
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag true
+
+== club / habbo club bought
+CatalogPaymentService.tryTake(credits 25, type 5, points 0) -> true
+stats.createSubscription(HABBO_CLUB, 2678400s) -> created
+buyer <- PurchaseOK(null)
+buyer <- InventoryRefresh()
+stats.run()
+returned
+purchasing flag false
+
+== club / habbo club for 3 periods
+CatalogPaymentService.tryTake(credits 75, type 5, points 0) -> true
+stats.createSubscription(HABBO_CLUB, 8035200s) -> created
+buyer <- PurchaseOK(null)
+buyer <- InventoryRefresh()
+stats.run()
+returned
+purchasing flag false
+
+== club / not enough credits
+buyer <- NotEnoughPointsType(true, false, 5)
+returned
+purchasing flag false
+
+== club / not enough points
+buyer <- NotEnoughPointsType(false, true, 5)
+returned
+purchasing flag false
+
+== club / offer of another window
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== club / offer of zero days
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== club / payment refused
+CatalogPaymentService.tryTake(credits 25, type 5, points 0) -> false
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== club / price overflow
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== club / subscription not created
+CatalogPaymentService.tryTake(credits 25, type 5, points 0) -> true
+stats.createSubscription(HABBO_CLUB, 2678400s) -> null
+CatalogPaymentService.refund(credits 25, type 5, points 0)
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== club / unknown offer
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== gate / inventory check fails
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== gate / inventory full
+buyer <- AlertPurchaseFailed(0)
+buyer alerted "<inventory.full %amount%>"
+returned
+purchasing flag false
+
+== gate / no page
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== gate / page above the buyer's rank
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / bot inventory full
+buyer alerted "<error.bots.max.inventory 25>"
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / bot inventory full, unlimited bots
+LtdRaffleManager.enter(offer bot_generic) -> false
+catalog.purchaseItem(page, offer bot_generic, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / found by its offer id
+LtdRaffleManager.enter(offer chair) -> false
+catalog.purchaseItem(page, offer chair, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / from recent purchases
+LtdRaffleManager.enter(offer chair) -> false
+catalog.purchaseItem(recent purchases page, offer chair, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / handed to the catalog
+LtdRaffleManager.enter(offer chair) -> false
+catalog.purchaseItem(page, offer chair, count 2, "extra", free false)
+returned
+purchasing flag false
+
+== offer / not on the page
+LtdRaffleManager.enter(null) -> false
+catalog.purchaseItem(page, null, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / pet
+LtdRaffleManager.enter(offer a0 pet1) -> false
+catalog.purchaseItem(page, offer a0 pet1, count 1, "Rex\n1\nFFFFFF", free false)
+returned
+purchasing flag false
+
+== offer / pet inventory full
+buyer alerted "<error.pets.max.inventory 25>"
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / pet with a short name
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / pet with symbols in its name
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / pet without race and colour
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== offer / taken by the limited raffle
+LtdRaffleManager.enter(offer chair) -> true
+returned
+purchasing flag false
+
+== room bundle / a purchase already running
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag true
+
+== room bundle / badge already owned
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
+page.buyRoom(buyer)
+buyer <- PurchaseOK()
+returned
+purchasing flag false
+
+== room bundle / bought
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
+page.buyRoom(buyer)
+buyer <- PurchaseOK()
+threading.run(badge ACH_ROOM)
+inventory.addBadge(badge ACH_ROOM)
+buyer <- AddUserBadge(badge ACH_ROOM)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_ROOM.gif, message=<commands.generic.cmd_badge.received %amount%>})
+returned
+purchasing flag false
+
+== room bundle / infinite credits and points
+CatalogPaymentService.tryTake(credits 0, type 5, points 0) -> true
+page.buyRoom(buyer)
+buyer <- PurchaseOK()
+threading.run(badge ACH_ROOM)
+inventory.addBadge(badge ACH_ROOM)
+buyer <- AddUserBadge(badge ACH_ROOM)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_ROOM.gif, message=<commands.generic.cmd_badge.received %amount%>})
+returned
+purchasing flag false
+
+== room bundle / negative price
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== room bundle / no offer on the page
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== room bundle / not enough credits
+buyer <- NotEnoughPointsType(true, false, 5)
+returned
+purchasing flag false
+
+== room bundle / not enough points
+buyer <- NotEnoughPointsType(false, true, 5)
+returned
+purchasing flag false
+
+== room bundle / payment refused
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> false
+buyer <- AlertPurchaseUnavailable(0)
+returned
+purchasing flag false
+
+== room bundle / room limit reached
+buyer <- CanCreateRoom(25, 25)
+buyer <- PurchaseOK(null)
+returned
+purchasing flag false
+
+== room bundle / the room cannot be created
+CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
+CatalogPaymentService.refund(credits 50, type 5, points 5)
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+

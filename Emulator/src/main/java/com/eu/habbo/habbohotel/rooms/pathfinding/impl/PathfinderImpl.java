@@ -61,9 +61,10 @@ public class PathfinderImpl implements Pathfinder {
     }
 
     /**
-     * A shortest path; when the room allows walking through units and none is found, a second search
-     * ignores units except on the goal. When someone stands on the goal, the walker comes as close as
-     * the tile next to it (config {@code pathfinder.occupied_goal.walk_adjacent}, default on).
+     * A shortest path. In a walkthrough room avatars are no obstacle at all: the path goes straight through them
+     * and may end on a tile someone stands on, as in Habbo. Otherwise someone standing blocks; when they stand on
+     * the goal, the walker comes as close as the tile next to it (config
+     * {@code pathfinder.occupied_goal.walk_adjacent}, default on).
      */
     @Override
     public Deque<RoomTile> findPath(
@@ -90,12 +91,12 @@ public class PathfinderImpl implements Pathfinder {
         RoomPathGrid grid = new RoomPathGrid(this.room, layout, roomUnit);
 
         synchronized (this.search) {
-            Deque<RoomTile> path =
-                    this.search.find(grid, rules, oldTile, newTile, goalLocation, isWalkthroughRetry, false);
-            if (path.isEmpty() && rules.allowWalkthrough() && !isWalkthroughRetry) {
-                path = this.search.find(grid, rules, oldTile, newTile, goalLocation, true, false);
-            }
-            if (path.isEmpty() && grid.occupied(newTile.x, newTile.y) && walkNextToOccupiedGoal()) {
+            boolean throughUnits = rules.allowWalkthrough() || isWalkthroughRetry;
+            Deque<RoomTile> path = this.search.find(grid, rules, oldTile, newTile, goalLocation, throughUnits, false);
+            if (path.isEmpty()
+                    && !rules.allowWalkthrough()
+                    && grid.occupied(newTile.x, newTile.y)
+                    && walkNextToOccupiedGoal()) {
                 path = this.search.find(grid, rules, oldTile, newTile, goalLocation, isWalkthroughRetry, true);
             }
             return path;

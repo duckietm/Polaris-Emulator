@@ -209,6 +209,32 @@ class GridSearchTest {
     }
 
     @Test
+    void aWalkthroughRoomGoesStraightThroughSomeone() {
+        // Without diagonals the way round is four steps; through the avatar it is two.
+        Grid grid = new Grid("...", ".U.", "...");
+        RoomTile target = grid.at(2, 1);
+        Deque<RoomTile> path =
+                new GridSearch().find(grid, rules(false, true, true), grid.at(0, 1), target, target, true, false);
+
+        assertWalkable(path, 0, 1, 2, 1);
+        assertEquals(2, path.size());
+        assertEquals(grid.at(1, 1), path.peekFirst());
+    }
+
+    @Test
+    void aWalkthroughRoomLetsTheWalkerShareTheGoal() {
+        Grid grid = new Grid("....U");
+        RoomTile target = grid.at(4, 0);
+
+        assertWalkable(
+                new GridSearch().find(grid, rules(true, true, true), grid.at(0, 0), target, target, true, false),
+                0,
+                0,
+                4,
+                0);
+    }
+
+    @Test
     void someoneOnTheGoalIsWalkedUpTo() {
         Grid grid = new Grid("....U");
         assertTrue(find(grid, 0, 0, 4, 0).isEmpty());

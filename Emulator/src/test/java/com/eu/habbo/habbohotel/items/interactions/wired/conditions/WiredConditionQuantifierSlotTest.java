@@ -60,7 +60,8 @@ class WiredConditionQuantifierSlotTest {
         families.put(
                 "snapshot",
                 family(() -> new WiredConditionMatchStatePosition(1, 1, boxBase(), "", 0, 0), 4, 1, 1, 1, 1));
-        families.put("stuff is", family(() -> new WiredConditionFurniTypeMatch(1, 1, boxBase(), "", 0, 0), 1, 101));
+        // Official StuffTypeMatches sends no ints: both furni sources are in the source slots.
+        families.put("stuff is", family(() -> new WiredConditionFurniTypeMatch(1, 1, boxBase(), "", 0, 0), 0, 101));
         families.put("altitude", family(() -> new WiredConditionHasAltitude(1, 1, boxBase(), "", 0, 0), 2, 100, 1));
         families.put(
                 "counter time",

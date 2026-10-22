@@ -40,6 +40,10 @@ public class UserClothesComposer extends MessageComposer {
             }
         }
 
+        for (int setId : habbo.getInventory().getWardrobeComponent().getCollectibleSets()) {
+            if (!this.idList.contains(setId)) this.idList.add(setId);
+        }
+
         for (ClothItem item : clothing.values()) {
             if (item != null) {
                 this.clothEntries.add(new ClothEntry(item.name, item.setId));

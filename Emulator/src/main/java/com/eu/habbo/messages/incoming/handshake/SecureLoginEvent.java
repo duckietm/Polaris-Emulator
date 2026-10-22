@@ -24,6 +24,7 @@ import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
 import com.eu.habbo.messages.NoAuthMessage;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.collectibles.CollectibleWardrobe;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer;
 import com.eu.habbo.messages.outgoing.commands.AvailableCommandsComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterAccountInfoComposer;
@@ -329,6 +330,7 @@ public class SecureLoginEvent extends MessageHandler {
                                         .effects
                                         .values())
                         .compose());
+                CollectibleWardrobe.load(this.client.getHabbo());
                 messages.add(new UserClothesComposer(this.client.getHabbo()).compose());
                 HabbiconService habbiconService = habbo.getHabbiconService();
                 HabbiconService.Snapshot habbicons = habbiconService == null

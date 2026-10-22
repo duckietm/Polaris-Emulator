@@ -15,7 +15,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSharedVariableChanges;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
-import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -504,25 +503,12 @@ public class RoomVariableManager {
             return;
         }
 
-        habbo.getClient()
-                .sendResponse(new WiredUserVariablesDataComposer(
-                        this.room.getUserVariableManager().createSnapshot(),
-                        this.room.getFurniVariableManager().createSnapshot(),
-                        this.createSnapshot()));
+        RoomVariableChanges.sendSnapshot(this.room, habbo);
     }
 
     public void requestBroadcast() {
-        if (this.broadcastRequested.compareAndSet(false, true)) {
-            Emulator.getThreading()
-                    .run(
-                            () -> {
-                                this.broadcastRequested.set(false);
-                                if (this.room.isLoaded()) {
-                                    this.broadcastSnapshotRaw();
-                                }
-                            },
-                            50);
-        }
+        RoomVariableChanges.scheduleBroadcast(
+                this.room, this.broadcastRequested, Emulator.getThreading(), this::broadcastSnapshotRaw);
     }
 
     public void broadcastSnapshot() {
@@ -530,20 +516,7 @@ public class RoomVariableManager {
     }
 
     public void broadcastSnapshotRaw() {
-        RoomUserVariableManager.Snapshot userSnapshot =
-                this.room.getUserVariableManager().createSnapshot();
-        RoomFurniVariableManager.Snapshot furniSnapshot =
-                this.room.getFurniVariableManager().createSnapshot();
-        Snapshot roomSnapshot = this.createSnapshot();
-
-        for (Habbo habbo : this.room.getCurrentHabbos().values()) {
-            if (habbo == null || habbo.getClient() == null || !this.room.canInspectWired(habbo)) {
-                continue;
-            }
-
-            habbo.getClient()
-                    .sendResponse(new WiredUserVariablesDataComposer(userSnapshot, furniSnapshot, roomSnapshot));
-        }
+        RoomVariableChanges.broadcastSnapshot(this.room);
     }
 
     public Collection<WiredExtraRoomVariable> getDefinitions() {
@@ -798,7 +771,7 @@ public class RoomVariableManager {
         WiredSharedVariableChanges.roomVariableChanged(
                 this.room,
                 definitionExtra,
-                resolveVariableChangeKind(definitionInfo.hasValue(), previousValue, currentValue),
+                RoomVariableChanges.changeKind(definitionInfo.hasValue(), previousValue, currentValue),
                 previousValue == null ? 0L : previousValue,
                 currentValue == null ? 0L : currentValue);
 
@@ -852,7 +825,8 @@ public class RoomVariableManager {
 
     private void emitVariableChangedEvent(
             int definitionItemId, boolean hasValue, Integer previousValue, Integer currentValue) {
-        WiredEvent.VariableChangeKind changeKind = resolveVariableChangeKind(hasValue, previousValue, currentValue);
+        WiredEvent.VariableChangeKind changeKind =
+                RoomVariableChanges.changeKind(hasValue, previousValue, currentValue);
 
         if (changeKind == WiredEvent.VariableChangeKind.NONE) {
             return;
@@ -864,24 +838,6 @@ public class RoomVariableManager {
                 changeKind,
                 previousValue == null ? 0L : previousValue,
                 currentValue == null ? 0L : currentValue);
-    }
-
-    private static WiredEvent.VariableChangeKind resolveVariableChangeKind(
-            boolean hasValue, Integer previousValue, Integer currentValue) {
-        if (!hasValue) {
-            return WiredEvent.VariableChangeKind.NONE;
-        }
-
-        if (Objects.equals(previousValue, currentValue)) {
-            return WiredEvent.VariableChangeKind.UNCHANGED;
-        }
-
-        int previousNumericValue = (previousValue != null) ? previousValue : 0;
-        int currentNumericValue = (currentValue != null) ? currentValue : 0;
-
-        return (currentNumericValue > previousNumericValue)
-                ? WiredEvent.VariableChangeKind.INCREASED
-                : WiredEvent.VariableChangeKind.DECREASED;
     }
 
     private void upsertPersistentAssignment(int definitionItemId, VariableAssignment assignment) {

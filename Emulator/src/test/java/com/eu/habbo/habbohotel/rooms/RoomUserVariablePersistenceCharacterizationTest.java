@@ -20,7 +20,7 @@ class RoomUserVariablePersistenceCharacterizationTest {
             when(room.getId()).thenReturn(44);
             RoomUserVariableManager manager = new RoomUserVariableManager(room);
 
-            Class<?> assignmentType = Class.forName(RoomUserVariableManager.class.getName() + "$VariableAssignment");
+            Class<?> assignmentType = RoomVariableAssignment.class;
             Constructor<?> constructor = assignmentType.getDeclaredConstructor(Integer.class, int.class, int.class);
             constructor.setAccessible(true);
             Object assignment = constructor.newInstance(null, 101, 202);

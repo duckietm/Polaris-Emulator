@@ -365,6 +365,9 @@ final class CatalogPurchaseApplicationService {
                 this.client.sendResponse(new InventoryRefreshComposer());
 
                 this.client.getHabbo().getHabboStats().run();
+            } else {
+                // An offer of no days gives nothing: end the purchase the client waits for.
+                this.refusePurchase();
             }
         } finally {
             synchronized (this.client.getHabbo().getHabboStats()) {
@@ -435,6 +438,7 @@ final class CatalogPurchaseApplicationService {
                     .alert(this.texts
                             .getValue("error.bots.max.inventory")
                             .replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
+            this.refusePurchase();
             return true;
         }
 
@@ -452,6 +456,7 @@ final class CatalogPurchaseApplicationService {
                         .alert(this.texts
                                 .getValue("error.pets.max.inventory")
                                 .replace("%amount%", PetManager.MAXIMUM_PET_INVENTORY_SIZE + ""));
+                this.refusePurchase();
                 return true;
             }
             String[] check = extraData.split("\n");
@@ -459,6 +464,7 @@ final class CatalogPurchaseApplicationService {
                     || (check[0].length() < PET_NAME_LENGTH_MINIMUM)
                     || (check[0].length() > PET_NAME_LENGTH_MAXIMUM)
                     || (!StringUtils.isAlphanumeric(check[0]))) {
+                this.refusePurchase();
                 return true;
             }
         }
@@ -484,6 +490,14 @@ final class CatalogPurchaseApplicationService {
         }
 
         return ClubOffer.WINDOW_HABBO_CLUB;
+    }
+
+    /**
+     * Ends a purchase the client is waiting for with purchase-not-allowed; without a reply its purchase stays busy
+     * until the client gives up on its own.
+     */
+    private void refusePurchase() {
+        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
     }
 
     /** For refusal logs only; never throws on a half-initialised client. */

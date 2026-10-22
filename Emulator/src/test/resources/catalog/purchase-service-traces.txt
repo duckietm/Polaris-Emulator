@@ -58,6 +58,7 @@ returned
 purchasing flag false
 
 == club / offer of zero days
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
@@ -108,6 +109,7 @@ purchasing flag false
 
 == offer / bot inventory full
 buyer alerted "<error.bots.max.inventory 25>"
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
@@ -149,18 +151,22 @@ purchasing flag false
 
 == offer / pet inventory full
 buyer alerted "<error.pets.max.inventory 25>"
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
 == offer / pet with a short name
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
 == offer / pet with symbols in its name
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
 == offer / pet without race and colour
+buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 

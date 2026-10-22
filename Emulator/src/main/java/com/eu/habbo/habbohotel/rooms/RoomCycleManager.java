@@ -94,7 +94,7 @@ public class RoomCycleManager {
                 }
 
                 for (Habbo habbo : toKick) {
-                    Emulator.getGameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
+                    this.room.gameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
                 }
 
                 processBots(updatedUnit);
@@ -148,7 +148,7 @@ public class RoomCycleManager {
     private void processScheduledTasks() {
         Runnable task;
         while ((task = this.room.scheduledTasks.poll()) != null) {
-            Emulator.getThreading().run(task);
+            this.room.threading().run(task);
         }
     }
 
@@ -173,9 +173,7 @@ public class RoomCycleManager {
                 if (amount > 0) {
                     AchievementManager.progressAchievement(
                             this.room.getOwnerId(),
-                            Emulator.getGameEnvironment()
-                                    .getAchievementManager()
-                                    .getAchievement("RoomDecoHosting"),
+                            this.room.gameEnvironment().getAchievementManager().getAchievement("RoomDecoHosting"),
                             amount);
                 }
             }
@@ -204,7 +202,7 @@ public class RoomCycleManager {
             if (habbo.getRoomUnit().kickCount >= 5) {
                 final Room room = this.room;
                 this.room.scheduledTasks.add(
-                        () -> Emulator.getGameEnvironment().getRoomManager().leaveRoom(habbo, room));
+                        () -> room.gameEnvironment().getRoomManager().leaveRoom(habbo, room));
             }
         }
     }
@@ -231,7 +229,7 @@ public class RoomCycleManager {
             if (!this.room.isOwner(habbo) && habbo.getRoomUnit().getIdleTimer() >= kickCycles) {
                 UserExitRoomEvent event =
                         new UserExitRoomEvent(habbo, UserExitRoomEvent.UserExitRoomReason.KICKED_IDLE);
-                Emulator.getPluginManager().fireEvent(event);
+                this.room.pluginManager().fireEvent(event);
 
                 if (!event.isCancelled()) {
                     toKick.add(habbo);

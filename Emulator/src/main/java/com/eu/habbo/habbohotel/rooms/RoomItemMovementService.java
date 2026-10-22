@@ -485,7 +485,9 @@ final class RoomItemMovementService {
         }
 
         // Update wired spatial index and invalidate cache when wired items are moved
-        this.updateWiredIndex(item, oldLocation);
+        if (oldLocation != null) {
+            this.updateWiredIndex(item, oldLocation);
+        }
 
         // Update Furniture
         this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
@@ -658,7 +660,9 @@ final class RoomItemMovementService {
             item.setZ(Room.MAXIMUM_FURNI_HEIGHT);
         }
 
-        this.updateWiredIndex(item, oldLocation);
+        if (oldLocation != null) {
+            this.updateWiredIndex(item, oldLocation);
+        }
 
         this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
         return FurnitureMovementError.NONE;

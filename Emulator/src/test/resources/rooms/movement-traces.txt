@@ -290,7 +290,16 @@ returned NONE
 trigger.setX(2)
 trigger.setY(2)
 trigger.setZ(0.00)
-threw NullPointerException
+trigger.onMove(room, null, (2,2))
+trigger.needsUpdate(true)
+threading.run(trigger)
+compose FloorItemUpdateComposer([trigger])
+room.sendComposer(floorItemUpdate)
+room.updateTiles([(2,2)])
+room.updateHabbosAt(2, 2, [])
+room.updateBotsAt(2, 2)
+room.onFurnitureTopologyChanged(trigger, true)
+returned NONE
 
 == off the map / moveFurniTo with z
 trigger.setX(2)
@@ -311,7 +320,16 @@ returned NONE
 trigger.setX(2)
 trigger.setY(2)
 trigger.setZ(0.00)
-threw NullPointerException
+trigger.onMove(room, null, (2,2))
+trigger.needsUpdate(true)
+threading.run(trigger)
+compose FloorItemUpdateComposer([trigger])
+room.sendComposer(floorItemUpdate)
+room.updateTiles([(2,2)])
+room.updateHabbosAt(2, 2, [])
+room.updateBotsAt(2, 2)
+room.onFurnitureTopologyChanged(trigger, true)
+returned NONE
 
 == off the map / moveFurniToWithPhysics with z
 trigger.setX(2)

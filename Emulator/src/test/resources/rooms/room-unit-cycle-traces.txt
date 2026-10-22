@@ -316,6 +316,15 @@ path
 statuses MOVE=4,3,0.0
 tiles walked 1, status update false, sit update true, idle false
 
+== step / last tile occupied, walk-through room
+returned false
+wired location 4,3
+at 4,3 z 0.0 facing EAST / EAST
+previous 3,3 z 0.0, goal 4,3
+path 
+statuses MOVE=4,3,0.0
+tiles walked 1, status update false, sit update true, idle false
+
 == step / plain
 returned false
 wired location 4,3

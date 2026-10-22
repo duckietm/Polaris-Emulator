@@ -238,6 +238,14 @@ class RoomUnitCycleTest {
     }
 
     @Test
+    void theLastStepOntoAnOccupiedTileOfAWalkThroughRoom() {
+        RoomUnit unit = this.walking(RoomUnitType.USER, 3, 3, 4, 3);
+        this.tile(4, 3).addUnit(this.unit(RoomUnitType.USER, 4, 3));
+        when(this.room.isAllowWalkthrough()).thenReturn(true);
+        this.tick("step / last tile occupied, walk-through room", unit);
+    }
+
+    @Test
     void fastWalkSkipsATile() {
         RoomUnit unit = this.walking(RoomUnitType.USER, 3, 3, 4, 3, 5, 3, 6, 3);
         unit.setFastWalk(true);

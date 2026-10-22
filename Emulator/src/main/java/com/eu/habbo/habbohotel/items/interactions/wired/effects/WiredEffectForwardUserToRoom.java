@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -158,7 +159,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         int delay = settings.getDelay();
         int maxDelay = (WiredPlatform.configuration() == null)
                 ? 20
-                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
         if (!WiredDelay.isValid(delay, maxDelay)) {
             return false;
         }

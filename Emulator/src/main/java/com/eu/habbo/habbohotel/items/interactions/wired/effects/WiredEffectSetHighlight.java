@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -96,7 +97,9 @@ public class WiredEffectSetHighlight extends InteractionWiredEffect implements W
 
         int delay = settings.getDelay();
         ConfigurationManager configuration = WiredPlatform.configuration();
-        int maximumDelay = configuration == null ? 20 : configuration.getInt("hotel.wired.max_delay", 20);
+        int maximumDelay = configuration == null
+                ? WiredInputGuard.DEFAULT_MAX_DELAY
+                : configuration.getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
         if (!WiredDelay.isValid(delay, maximumDelay)) {
             throw new WiredSaveException("Delay out of range");
         }

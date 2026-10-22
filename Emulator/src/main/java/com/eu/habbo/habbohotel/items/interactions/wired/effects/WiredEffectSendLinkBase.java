@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.InteractionWiredLink;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLinkSpeaker;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
@@ -194,7 +195,7 @@ public abstract class WiredEffectSendLinkBase extends InteractionWiredEffect imp
         int delay = settings.getDelay();
         int max = WiredPlatform.configuration() == null
                 ? 20
-                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
         if (delay > max) throw new WiredSaveException("Delay too long");
         this.setDelay(Math.max(0, delay));
     }

@@ -338,15 +338,14 @@ public class SecureLoginEvent extends MessageHandler {
         }
     }
 
-    private void sendLoginState(Habbo habbo, boolean isSessionResume) throws SQLException {
+    private void sendLoginState(Habbo habbo, boolean isSessionResume) {
         ArrayList<ServerMessage> messages = new ArrayList<>();
         this.addSessionMessages(messages, habbo, isSessionResume);
         addHotelMessages(messages, habbo);
         this.client.sendResponses(messages);
     }
 
-    private void addSessionMessages(ArrayList<ServerMessage> messages, Habbo habbo, boolean isSessionResume)
-            throws SQLException {
+    private void addSessionMessages(ArrayList<ServerMessage> messages, Habbo habbo, boolean isSessionResume) {
         Room resumedRoom = isSessionResume ? habbo.getHabboInfo().getCurrentRoom() : null;
         int resumedRoomId = resumedRoom != null ? resumedRoom.getId() : 0;
         String nextRecoveryToken =
@@ -395,11 +394,21 @@ public class SecureLoginEvent extends MessageHandler {
         return 0;
     }
 
-    private static void addHabbicons(ArrayList<ServerMessage> messages, Habbo habbo) throws SQLException {
+    private static void addHabbicons(ArrayList<ServerMessage> messages, Habbo habbo) {
         HabbiconService habbiconService = habbo.getHabbiconService();
-        HabbiconService.Snapshot habbicons = habbiconService == null
-                ? null
-                : habbiconService.load(habbo.getHabboInfo().getId());
+        if (habbiconService == null) return;
+
+        HabbiconService.Snapshot habbicons;
+        try {
+            habbicons = habbiconService.load(habbo.getHabboInfo().getId());
+        } catch (SQLException e) {
+            // The collection is an extra: a table that cannot be read leaves it out of the login.
+            LOGGER.error(
+                    "Could not load the habbicons of user id={}",
+                    habbo.getHabboInfo().getId(),
+                    e);
+            return;
+        }
         if (habbicons == null) return;
 
         messages.add(new UserHabbiconsComposer(habbicons).compose());

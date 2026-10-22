@@ -182,7 +182,7 @@ public class RoomChatManager {
         // the map stores an int timestamp, so a large `minutes` (e.g. from a
         // wired mute) would otherwise overflow `minutes * 60` to a negative /
         // unpredictable value instead of a far-future expiry.
-        long unmuteAt = (long) Emulator.getIntUnixTimestamp() + ((long) Math.max(0, minutes) * 60L);
+        long unmuteAt = (long) this.room.currentUnixTimestamp() + ((long) Math.max(0, minutes) * 60L);
         synchronized (this.mutedHabbos) {
             this.mutedHabbos.put(habbo.getHabboInfo().getId(), (int) Math.min(unmuteAt, Integer.MAX_VALUE));
         }
@@ -212,7 +212,7 @@ public class RoomChatManager {
         }
 
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
+            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > this.room.currentUnixTimestamp();
 
             if (!time) {
                 this.mutedHabbos.remove(habbo.getHabboInfo().getId());
@@ -229,7 +229,7 @@ public class RoomChatManager {
      */
     public int getMuteTimeRemaining(Habbo habbo) {
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            return Math.max(0, this.mutedHabbos.get(habbo.getHabboInfo().getId()) - Emulator.getIntUnixTimestamp());
+            return Math.max(0, this.mutedHabbos.get(habbo.getHabboInfo().getId()) - this.room.currentUnixTimestamp());
         }
         return 0;
     }
@@ -291,45 +291,11 @@ public class RoomChatManager {
      */
     public void talk(
             final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
-        if (!habbo.getHabboStats().allowTalk()) {
+        if (!this.mayTalkNow(habbo, roomChatMessage)) {
             return;
         }
 
-        if (habbo.getRoomUnit().isInvisible() && Emulator.getConfig().getBoolean("invisible.prevent.chat", false)) {
-            if (!CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
-                habbo.whisper(Emulator.getTexts().getValue("invisible.prevent.chat.error"));
-            }
-
-            return;
-        }
-
-        if (habbo.getHabboInfo().getCurrentRoom() != this.room) {
-            return;
-        }
-
-        long millis = System.currentTimeMillis();
-        if (HABBO_CHAT_DELAY) {
-            if (millis - habbo.getHabboStats().lastChat < 750) {
-                return;
-            }
-        }
-        habbo.getHabboStats().lastChat = millis;
-        if (this.room.getCurrentHabbos().size() > 1) {
-            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
-                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.TALK_IN_ROOM, 1);
-        }
-
-        // Handle idle event
-        UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.TALKED, false);
-        Emulator.getPluginManager().fireEvent(event);
-
-        if (!event.isCancelled()) {
-            if (!event.idle) {
-                this.room.unIdle(habbo);
-            }
-        }
-
-        this.room.sendComposer(new RoomUserTypingComposer(habbo.getRoomUnit(), false).compose());
+        this.noteActivity(habbo);
 
         if (roomChatMessage == null
                 || roomChatMessage.getMessage() == null
@@ -342,25 +308,11 @@ public class RoomChatManager {
             return;
         }
 
-        // Check mute area
-        if (!habbo.hasPermission(Permission.ACC_NOMUTE)
-                && (!MUTEAREA_CAN_WHISPER || chatType != RoomChatType.WHISPER)) {
-            for (HabboItem area : this.room.getRoomSpecialTypes().getItemsOfType(InteractionMuteArea.class)) {
-                if (((InteractionMuteArea) area).inSquare(habbo.getRoomUnit().getCurrentLocation())) {
-                    return;
-                }
-            }
+        if (this.inMuteArea(habbo, chatType)) {
+            return;
         }
 
-        // Apply word filter
-        if (!this.wordFilterWords.isEmpty()) {
-            if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
-                for (String string : this.wordFilterWords) {
-                    roomChatMessage.setMessage(
-                            roomChatMessage.getMessage().replaceAll("(?i)" + Pattern.quote(string), "bobba"));
-                }
-            }
-        }
+        this.applyRoomWordFilter(habbo, roomChatMessage);
 
         // Check room/user mute
         if (!habbo.hasPermission(Permission.ACC_NOMUTE)) {
@@ -409,7 +361,7 @@ public class RoomChatManager {
         if (Emulator.getConfig().getBoolean("easter_eggs.enabled")
                 && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
             if (habbo.getHabboStats().singingPirate.compareAndSet(false, true)) {
-                Emulator.getThreading().run(new YouAreAPirate(habbo, this.room));
+                this.room.threading().run(new YouAreAPirate(habbo, this.room));
             }
 
             return;
@@ -418,17 +370,13 @@ public class RoomChatManager {
         String wiredSayMessage = roomChatMessage.getMessage();
 
         // Handle commands and wired
-        boolean suppressSaysOutput = false;
-        if (chatType != RoomChatType.WHISPER) {
-            if (CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
-                WiredManager.triggerUserSays(
-                        habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
-                roomChatMessage.isCommand = true;
-                return;
-            }
+        if (chatType != RoomChatType.WHISPER && this.ranAsCommand(habbo, roomChatMessage, wiredSayMessage)) {
+            return;
+        }
 
-            if (!ignoreWired) {
-                suppressSaysOutput = WiredManager.shouldSuppressUserSaysOutput(
+        boolean suppressSaysOutput = chatType != RoomChatType.WHISPER
+                && !ignoreWired
+                && WiredManager.shouldSuppressUserSaysOutput(
                         habbo.getHabboInfo().getCurrentRoom(),
                         habbo.getRoomUnit(),
                         wiredSayMessage,
@@ -436,57 +384,29 @@ public class RoomChatManager {
                         roomChatMessage.getBubble() != null
                                 ? roomChatMessage.getBubble().getType()
                                 : -1);
-            }
-        }
 
-        // Build prefix messages
-        ServerMessage prefixMessage = null;
-
-        if (Emulator.getPluginManager().isRegistered(UsernameTalkEvent.class, true)) {
-            UsernameTalkEvent usernameTalkEvent =
-                    Emulator.getPluginManager().fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
-            if (usernameTalkEvent.hasCustomComposer()) {
-                prefixMessage = usernameTalkEvent.getCustomComposer();
-            }
-        }
-
-        if (prefixMessage == null) {
-            prefixMessage = roomChatMessage.getHabbo().getHabboInfo().getRank().hasPrefix()
-                    ? new RoomUserNameChangedComposer(habbo, true).compose()
-                    : null;
-        }
+        ServerMessage prefixMessage = this.prefixFor(habbo, roomChatMessage, chatType);
         ServerMessage clearPrefixMessage =
                 prefixMessage != null ? new RoomUserNameChangedComposer(habbo).compose() : null;
 
         Rectangle tentRectangle =
                 this.room.getRoomSpecialTypes().tentAt(habbo.getRoomUnit().getCurrentLocation());
 
-        // Trim message
-        String trimmedMessage = roomChatMessage.getMessage().replaceAll("\\s+$", "");
-
-        if (trimmedMessage.isEmpty()) {
-            trimmedMessage = " ";
-        }
-
-        roomChatMessage.setMessage(trimmedMessage);
+        trimTrailingWhitespace(roomChatMessage);
 
         // Send chat based on type
         if (chatType == RoomChatType.WHISPER) {
             this.handleWhisper(habbo, roomChatMessage, prefixMessage, clearPrefixMessage);
         } else if (chatType == RoomChatType.TALK) {
             if (suppressSaysOutput) {
-                habbo.getClient()
-                        .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
-                                roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
+                whisperBackToSpeaker(habbo, roomChatMessage);
             } else {
                 roomChatMessage.delivered = true;
                 this.handleTalk(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
             }
         } else if (chatType == RoomChatType.SHOUT) {
             if (suppressSaysOutput) {
-                habbo.getClient()
-                        .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
-                                roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
+                whisperBackToSpeaker(habbo, roomChatMessage);
             } else {
                 roomChatMessage.delivered = true;
                 this.handleShout(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
@@ -508,6 +428,154 @@ public class RoomChatManager {
         if (chatType == RoomChatType.TALK || chatType == RoomChatType.SHOUT) {
             this.notifyBots(roomChatMessage);
             this.handleTalkingFurniture(habbo, roomChatMessage);
+        }
+    }
+
+    /**
+     * Whether the Habbo may say a line now: allowed to talk, in this room, visible (or the hotel lets invisible users
+     * talk; a command still runs) and past the chat delay. Stamps the time of the line when it may.
+     */
+    private boolean mayTalkNow(Habbo habbo, RoomChatMessage roomChatMessage) {
+        if (!habbo.getHabboStats().allowTalk()) {
+            return false;
+        }
+
+        if (habbo.getRoomUnit().isInvisible() && Emulator.getConfig().getBoolean("invisible.prevent.chat", false)) {
+            if (!CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
+                habbo.whisper(Emulator.getTexts().getValue("invisible.prevent.chat.error"));
+            }
+
+            return false;
+        }
+
+        if (habbo.getHabboInfo().getCurrentRoom() != this.room) {
+            return false;
+        }
+
+        long millis = System.currentTimeMillis();
+        if (HABBO_CHAT_DELAY) {
+            if (millis - habbo.getHabboStats().lastChat < 750) {
+                return false;
+            }
+        }
+        habbo.getHabboStats().lastChat = millis;
+        return true;
+    }
+
+    /** Counts the talk quest when someone else is in the room, wakes the Habbo and ends its typing bubble. */
+    private void noteActivity(Habbo habbo) {
+        if (this.room.getCurrentHabbos().size() > 1) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.TALK_IN_ROOM, 1);
+        }
+
+        // Handle idle event
+        UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.TALKED, false);
+        this.room.pluginManager().fireEvent(event);
+
+        if (!event.isCancelled()) {
+            if (!event.idle) {
+                this.room.unIdle(habbo);
+            }
+        }
+
+        this.room.sendComposer(new RoomUserTypingComposer(habbo.getRoomUnit(), false).compose());
+    }
+
+    /** Whether the Habbo stands in a mute area; a whisper passes when the hotel allows it. */
+    private boolean inMuteArea(Habbo habbo, RoomChatType chatType) {
+        if (habbo.hasPermission(Permission.ACC_NOMUTE) || (MUTEAREA_CAN_WHISPER && chatType == RoomChatType.WHISPER)) {
+            return false;
+        }
+
+        for (HabboItem area : this.room.getRoomSpecialTypes().getItemsOfType(InteractionMuteArea.class)) {
+            if (((InteractionMuteArea) area).inSquare(habbo.getRoomUnit().getCurrentLocation())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Replaces the words of the room's filter with "bobba", unless the Habbo is exempt. */
+    private void applyRoomWordFilter(Habbo habbo, RoomChatMessage roomChatMessage) {
+        if (this.wordFilterWords.isEmpty() || habbo.hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
+            return;
+        }
+
+        for (String string : this.wordFilterWords) {
+            roomChatMessage.setMessage(
+                    roomChatMessage.getMessage().replaceAll("(?i)" + Pattern.quote(string), "bobba"));
+        }
+    }
+
+    /** Runs the line as a command when it is one; wired then hears it as said, and nobody sees it. */
+    private boolean ranAsCommand(Habbo habbo, RoomChatMessage roomChatMessage, String wiredSayMessage) {
+        if (!CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
+            return false;
+        }
+
+        WiredManager.triggerUserSays(habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
+        roomChatMessage.isCommand = true;
+        return true;
+    }
+
+    /** The packet shown before the line in place of the name: a plugin's, or the rank prefix; null for none. */
+    private ServerMessage prefixFor(Habbo habbo, RoomChatMessage roomChatMessage, RoomChatType chatType) {
+        if (this.room.pluginManager().isRegistered(UsernameTalkEvent.class, true)) {
+            UsernameTalkEvent usernameTalkEvent =
+                    this.room.pluginManager().fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
+            if (usernameTalkEvent.hasCustomComposer()) {
+                return usernameTalkEvent.getCustomComposer();
+            }
+        }
+
+        return roomChatMessage.getHabbo().getHabboInfo().getRank().hasPrefix()
+                ? new RoomUserNameChangedComposer(habbo, true).compose()
+                : null;
+    }
+
+    /** Drops trailing whitespace; a line of spaces only becomes a single space. */
+    private static void trimTrailingWhitespace(RoomChatMessage roomChatMessage) {
+        String trimmedMessage = roomChatMessage.getMessage().replaceAll("\\s+$", "");
+
+        if (trimmedMessage.isEmpty()) {
+            trimmedMessage = " ";
+        }
+
+        roomChatMessage.setMessage(trimmedMessage);
+    }
+
+    /** A line wired keeps from the room: only the speaker sees it, as a whisper. */
+    private static void whisperBackToSpeaker(Habbo habbo, RoomChatMessage roomChatMessage) {
+        habbo.getClient()
+                .sendResponse(new RoomUserWhisperComposer(
+                        new RoomChatMessage(roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
+    }
+
+    /**
+     * Sends a talk or shout line to one listener: the prefix around it (not for the old chat), the line through their
+     * own word filter, and turns their head toward the speaker.
+     */
+    private static void deliverTo(
+            Habbo listener,
+            Habbo speaker,
+            RoomChatMessage roomChatMessage,
+            ServerMessage message,
+            Function<RoomChatMessage, MessageComposer> composer,
+            ServerMessage prefixMessage,
+            ServerMessage clearPrefixMessage) {
+        if (prefixMessage != null && !listener.getHabboStats().preferOldChat) {
+            listener.getClient().sendResponse(prefixMessage);
+        }
+        listener.getClient().sendResponse(chatPacketFor(listener, speaker, roomChatMessage, message, composer));
+        if (clearPrefixMessage != null && !listener.getHabboStats().preferOldChat) {
+            listener.getClient().sendResponse(clearPrefixMessage);
+        }
+
+        // Turn head toward speaker if conditions are met
+        if (!listener.equals(speaker)) {
+            turnHeadTowardSpeaker(listener.getRoomUnit(), speaker.getRoomUnit());
         }
     }
 
@@ -581,19 +649,14 @@ public class RoomChatManager {
                                     tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
                 if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
                         && !h.getHabboStats().userBlocked(habbo.getHabboInfo().getId())) {
-                    if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
-                        h.getClient().sendResponse(prefixMessage);
-                    }
-                    h.getClient()
-                            .sendResponse(chatPacketFor(h, habbo, roomChatMessage, message, RoomUserTalkComposer::new));
-                    if (clearPrefixMessage != null && !h.getHabboStats().preferOldChat) {
-                        h.getClient().sendResponse(clearPrefixMessage);
-                    }
-
-                    // Turn head toward speaker if conditions are met
-                    if (!h.equals(habbo)) {
-                        turnHeadTowardSpeaker(h.getRoomUnit(), habbo.getRoomUnit());
-                    }
+                    deliverTo(
+                            h,
+                            habbo,
+                            roomChatMessage,
+                            message,
+                            RoomUserTalkComposer::new,
+                            prefixMessage,
+                            clearPrefixMessage);
                 }
                 continue;
             }
@@ -619,19 +682,14 @@ public class RoomChatManager {
                     && (tentRectangle == null
                             || RoomLayout.tileInSquare(
                                     tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
-                if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
-                    h.getClient().sendResponse(prefixMessage);
-                }
-                h.getClient()
-                        .sendResponse(chatPacketFor(h, habbo, roomChatMessage, message, RoomUserShoutComposer::new));
-                if (clearPrefixMessage != null && !h.getHabboStats().preferOldChat) {
-                    h.getClient().sendResponse(clearPrefixMessage);
-                }
-
-                // Turn head toward speaker if conditions are met
-                if (!h.equals(habbo)) {
-                    turnHeadTowardSpeaker(h.getRoomUnit(), habbo.getRoomUnit());
-                }
+                deliverTo(
+                        h,
+                        habbo,
+                        roomChatMessage,
+                        message,
+                        RoomUserShoutComposer::new,
+                        prefixMessage,
+                        clearPrefixMessage);
                 continue;
             }
             // Staff should be able to see the tent chat anyhow
@@ -796,7 +854,8 @@ public class RoomChatManager {
                             item.setExtradata("1");
                             this.room.updateItemState(item);
 
-                            Emulator.getThreading()
+                            this.room
+                                    .threading()
                                     .run(
                                             () -> {
                                                 item.setExtradata("0");

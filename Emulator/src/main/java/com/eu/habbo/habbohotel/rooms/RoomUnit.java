@@ -138,6 +138,11 @@ public class RoomUnit {
         }
     }
 
+    /**
+     * One tick of a walking unit. Returns false when the unit took a step, was stopped by what lies ahead or failed
+     * (its status may have changed and is sent), and true when there was nothing to do: no path, at its goal, or a
+     * plugin cancelled the step. A ridden pet returns whether its status needs sending.
+     */
     public boolean cycle(Room room) {
         this.steppingTo = null;
         try {
@@ -150,59 +155,14 @@ public class RoomUnit {
             }
 
             if (rider != null) {
-                if (this.status.containsKey(RoomUnitStatus.MOVE)
-                        && !rider.getRoomUnit().getStatusMap().containsKey(RoomUnitStatus.MOVE)) {
-                    this.status.remove(RoomUnitStatus.MOVE);
-                }
-
-                if (rider.getRoomUnit().getCurrentLocation().x != this.getX()
-                        || rider.getRoomUnit().getCurrentLocation().y != this.getY()) {
-                    this.status.put(
-                            RoomUnitStatus.MOVE,
-                            rider.getRoomUnit().getCurrentLocation().x + ","
-                                    + rider.getRoomUnit().getCurrentLocation().y + ","
-                                    + (rider.getRoomUnit().getCurrentLocation().getStackHeight()));
-                    this.setPreviousLocation(rider.getRoomUnit().getPreviousLocation());
-                    this.setPreviousLocationZ(
-                            rider.getRoomUnit().getPreviousLocation().getStackHeight());
-                    this.setCurrentLocation(rider.getRoomUnit().getCurrentLocation());
-                    this.setZ(rider.getRoomUnit().getCurrentLocation().getStackHeight());
-                }
-
-                return this.statusUpdate;
+                return this.followRider(rider);
             }
 
-            if (!this.isWalking() && !this.isKicked) {
-                if (this.status.remove(RoomUnitStatus.MOVE) == null) {
-                    Habbo habboT = room.getHabbo(this);
-                    if (habboT != null
-                            && habboT.getHabboInfo() != null
-                            && habboT.getHabboInfo().getRiding() != null) {
-                        RoomUnit ridingRoomUnit =
-                                habboT.getHabboInfo().getRiding().getRoomUnit();
-                        if (ridingRoomUnit != null) {
-                            ridingRoomUnit.status.remove(RoomUnitStatus.MOVE);
-                        }
-                    }
-                    return true;
-                }
+            if (!this.isWalking() && !this.isKicked && this.stopAtGoal(room)) {
+                return true;
             }
 
-            if (this.status.remove(RoomUnitStatus.SIT) != null) {
-                this.statusUpdate = true;
-            }
-            if (this.status.remove(RoomUnitStatus.MOVE) != null) {
-                this.statusUpdate = true;
-            }
-            if (this.status.remove(RoomUnitStatus.LAY) != null) {
-                this.statusUpdate = true;
-            }
-
-            for (Map.Entry<RoomUnitStatus, String> set : this.status.entrySet()) {
-                if (set.getKey().removeWhenWalking) {
-                    this.status.remove(set.getKey());
-                }
-            }
+            this.clearWalkingStatuses();
 
             if (this.path == null || this.path.isEmpty()) {
                 return true;
@@ -239,27 +199,8 @@ public class RoomUnit {
 
             this.status.remove(RoomUnitStatus.DEAD);
 
-            if (habbo != null) {
-                if (this.isIdle()) {
-                    UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
-                    Emulator.getPluginManager().fireEvent(event);
-
-                    if (!event.isCancelled()) {
-                        if (!event.idle) {
-                            room.unIdle(habbo);
-                            this.idleTimer = 0;
-                        }
-                    }
-                }
-
-                if (Emulator.getPluginManager().isRegistered(UserTakeStepEvent.class, false)) {
-                    Event e = new UserTakeStepEvent(habbo, room.getLayout().getTile(this.getX(), this.getY()), next);
-                    Emulator.getPluginManager().fireEvent(e);
-
-                    if (e.isCancelled()) {
-                        return true;
-                    }
-                }
+            if (habbo != null && this.stepIsCancelled(room, habbo, next)) {
+                return true;
             }
 
             HabboItem item = room.getItemManager().getWalkableItemAt(next.x, next.y);
@@ -362,22 +303,8 @@ public class RoomUnit {
             this.setPreviousLocation(this.getCurrentLocation());
 
             this.setStatus(RoomUnitStatus.MOVE, next.x + "," + next.y + "," + zHeight);
-            if (habbo != null) {
-                if (habbo.getHabboInfo().getRiding() != null) {
-                    RoomUnit ridingUnit = habbo.getHabboInfo().getRiding().getRoomUnit();
-
-                    if (ridingUnit != null) {
-                        ridingUnit.setPreviousLocationZ(this.getZ());
-                        this.setZ(zHeight - 1.0);
-                        ridingUnit.setRotation(
-                                RoomUserRotation.values()[
-                                        Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
-                        ridingUnit.setPreviousLocation(this.getCurrentLocation());
-                        ridingUnit.setGoalLocation(this.getGoal());
-                        ridingUnit.setStatus(RoomUnitStatus.MOVE, next.x + "," + next.y + "," + (zHeight - 1.0));
-                        room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
-                    }
-                }
+            if (habbo != null && habbo.getHabboInfo().getRiding() != null) {
+                this.carryRiddenPet(room, habbo.getHabboInfo().getRiding().getRoomUnit(), next, zHeight);
             }
 
             this.setZ(zHeight);
@@ -386,22 +313,7 @@ public class RoomUnit {
             this.resetIdleTimer();
 
             if (habbo != null) {
-                HabboItem topItem = room.getTopItemAt(next.x, next.y);
-
-                boolean isAtDoor = next.x == room.getLayout().getDoorX()
-                        && next.y == room.getLayout().getDoorY();
-                boolean publicRoomKicks =
-                        !room.isPublicRoom() || Emulator.getConfig().getBoolean("hotel.room.public.doortile.kick");
-                boolean invalidated = topItem != null && topItem.invalidatesToRoomKick();
-
-                if (room.isLeaveOnDoorTileEnabled()
-                        && this.canLeaveRoomByDoor
-                        && isAtDoor
-                        && publicRoomKicks
-                        && !invalidated
-                        && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
-                    Emulator.getThreading().run(new RoomUnitKick(habbo, room, false), 500);
-                }
+                this.leaveIfOnTheDoor(room, habbo, next);
             }
 
             return false;
@@ -411,6 +323,128 @@ public class RoomUnit {
             return false;
         } finally {
             this.steppingTo = null;
+        }
+    }
+
+    /** A ridden pet goes where its rider is; returns whether its status needs sending. */
+    private boolean followRider(Habbo rider) {
+        if (this.status.containsKey(RoomUnitStatus.MOVE)
+                && !rider.getRoomUnit().getStatusMap().containsKey(RoomUnitStatus.MOVE)) {
+            this.status.remove(RoomUnitStatus.MOVE);
+        }
+
+        if (rider.getRoomUnit().getCurrentLocation().x != this.getX()
+                || rider.getRoomUnit().getCurrentLocation().y != this.getY()) {
+            this.status.put(
+                    RoomUnitStatus.MOVE,
+                    rider.getRoomUnit().getCurrentLocation().x + ","
+                            + rider.getRoomUnit().getCurrentLocation().y + ","
+                            + (rider.getRoomUnit().getCurrentLocation().getStackHeight()));
+            this.setPreviousLocation(rider.getRoomUnit().getPreviousLocation());
+            this.setPreviousLocationZ(rider.getRoomUnit().getPreviousLocation().getStackHeight());
+            this.setCurrentLocation(rider.getRoomUnit().getCurrentLocation());
+            this.setZ(rider.getRoomUnit().getCurrentLocation().getStackHeight());
+        }
+
+        return this.statusUpdate;
+    }
+
+    /**
+     * A unit at its goal drops its move status; returns true when there was none to drop, and then also stops the
+     * pet its user rides.
+     */
+    private boolean stopAtGoal(Room room) {
+        if (this.status.remove(RoomUnitStatus.MOVE) != null) {
+            return false;
+        }
+
+        Habbo habboT = room.getHabbo(this);
+        if (habboT != null
+                && habboT.getHabboInfo() != null
+                && habboT.getHabboInfo().getRiding() != null) {
+            RoomUnit ridingRoomUnit = habboT.getHabboInfo().getRiding().getRoomUnit();
+            if (ridingRoomUnit != null) {
+                ridingRoomUnit.status.remove(RoomUnitStatus.MOVE);
+            }
+        }
+        return true;
+    }
+
+    /** Drops sit, move, lay and every other status a step ends. */
+    private void clearWalkingStatuses() {
+        if (this.status.remove(RoomUnitStatus.SIT) != null) {
+            this.statusUpdate = true;
+        }
+        if (this.status.remove(RoomUnitStatus.MOVE) != null) {
+            this.statusUpdate = true;
+        }
+        if (this.status.remove(RoomUnitStatus.LAY) != null) {
+            this.statusUpdate = true;
+        }
+
+        for (Map.Entry<RoomUnitStatus, String> set : this.status.entrySet()) {
+            if (set.getKey().removeWhenWalking) {
+                this.status.remove(set.getKey());
+            }
+        }
+    }
+
+    /** Wakes an idle user who walks, then lets plugins cancel the step; returns whether one did. */
+    private boolean stepIsCancelled(Room room, Habbo habbo, RoomTile next) {
+        if (this.isIdle()) {
+            UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
+            Emulator.getPluginManager().fireEvent(event);
+
+            if (!event.isCancelled()) {
+                if (!event.idle) {
+                    room.unIdle(habbo);
+                    this.idleTimer = 0;
+                }
+            }
+        }
+
+        if (Emulator.getPluginManager().isRegistered(UserTakeStepEvent.class, false)) {
+            Event e = new UserTakeStepEvent(habbo, room.getLayout().getTile(this.getX(), this.getY()), next);
+            Emulator.getPluginManager().fireEvent(e);
+
+            return e.isCancelled();
+        }
+
+        return false;
+    }
+
+    /** The pet a user rides takes the same step, one unit lower, and its status is sent at once. */
+    private void carryRiddenPet(Room room, RoomUnit ridingUnit, RoomTile next, double zHeight) {
+        if (ridingUnit == null) {
+            return;
+        }
+
+        ridingUnit.setPreviousLocationZ(this.getZ());
+        this.setZ(zHeight - 1.0);
+        ridingUnit.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
+        ridingUnit.setPreviousLocation(this.getCurrentLocation());
+        ridingUnit.setGoalLocation(this.getGoal());
+        ridingUnit.setStatus(RoomUnitStatus.MOVE, next.x + "," + next.y + "," + (zHeight - 1.0));
+        room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+    }
+
+    /** A user who steps onto the door tile leaves the room half a second later, where the room allows it. */
+    private void leaveIfOnTheDoor(Room room, Habbo habbo, RoomTile next) {
+        HabboItem topItem = room.getTopItemAt(next.x, next.y);
+
+        boolean isAtDoor = next.x == room.getLayout().getDoorX()
+                && next.y == room.getLayout().getDoorY();
+        boolean publicRoomKicks =
+                !room.isPublicRoom() || Emulator.getConfig().getBoolean("hotel.room.public.doortile.kick");
+        boolean invalidated = topItem != null && topItem.invalidatesToRoomKick();
+
+        if (room.isLeaveOnDoorTileEnabled()
+                && this.canLeaveRoomByDoor
+                && isAtDoor
+                && publicRoomKicks
+                && !invalidated
+                && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
+            Emulator.getThreading().run(new RoomUnitKick(habbo, room, false), 500);
         }
     }
 

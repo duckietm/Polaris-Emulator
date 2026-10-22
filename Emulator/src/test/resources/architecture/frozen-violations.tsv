@@ -989,9 +989,6 @@ U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getPluginManager|9
 U|com/eu/habbo/habbohotel/rooms/RoomPromotion.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomPromotionManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomPromotionManager.java|CALL|getIntUnixTimestamp|5
-U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getIntUnixTimestamp|3
-U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getPluginManager|1
 U|com/eu/habbo/habbohotel/rooms/RoomRollerManager.java|CALL|getPluginManager|4
 U|com/eu/habbo/habbohotel/rooms/RoomRollerManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/rooms/RoomSpecialTypes.java|CALL|getRandom|1
@@ -1004,8 +1001,6 @@ U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getPluginManager|7
 U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getThreading|1
-U|com/eu/habbo/habbohotel/rooms/RoomUnitManager.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/rooms/RoomUnitManager.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getThreading|1

@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
@@ -111,13 +110,14 @@ public class RoomRightsManager {
     public RoomRightLevels getGuildRightLevel(Habbo habbo) {
         int guildId = this.room.getGuildId();
         if (guildId > 0 && habbo != null && habbo.getHabboInfo() != null) {
-            Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+            Guild guild = this.room.gameEnvironment().getGuildManager().getGuild(guildId);
 
             if (guild == null) {
                 return RoomRightLevels.NONE;
             }
 
-            GuildMember member = Emulator.getGameEnvironment()
+            GuildMember member = this.room
+                    .gameEnvironment()
                     .getGuildManager()
                     .getGuildMember(guild.getId(), habbo.getHabboInfo().getId());
 
@@ -206,7 +206,7 @@ public class RoomRightsManager {
                             habbo.getHabboInfo().getUsername())
                     .compose());
         } else {
-            Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.room.getOwnerId());
+            Habbo owner = this.room.gameEnvironment().getHabboManager().getHabbo(this.room.getOwnerId());
 
             if (owner != null) {
                 MessengerBuddy buddy = owner.getMessenger().getFriend(userId);
@@ -225,7 +225,8 @@ public class RoomRightsManager {
     public void removeRights(int userId) {
         Habbo habbo = this.room.getHabbo(userId);
 
-        if (Emulator.getPluginManager()
+        if (this.room
+                .pluginManager()
                 .fireEvent(new UserRightsTakenEvent(this.room.getHabbo(this.room.getOwnerId()), userId, habbo))
                 .isCancelled()) {
             return;
@@ -376,7 +377,7 @@ public class RoomRightsManager {
         RoomBan ban = this.bannedHabbos.get(habbo.getHabboInfo().getId());
 
         boolean banned = ban != null
-                && ban.endTimestamp > Emulator.getIntUnixTimestamp()
+                && ban.endTimestamp > this.room.currentUnixTimestamp()
                 && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
                 && !habbo.hasPermission("acc_enteranyroom");
 
@@ -406,7 +407,7 @@ public class RoomRightsManager {
      */
     public void muteHabbo(Habbo habbo, int minutes) {
         synchronized (this.mutedHabbos) {
-            this.mutedHabbos.put(habbo.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + (minutes * 60));
+            this.mutedHabbos.put(habbo.getHabboInfo().getId(), this.room.currentUnixTimestamp() + (minutes * 60));
         }
     }
 
@@ -419,7 +420,7 @@ public class RoomRightsManager {
         }
 
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
+            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > this.room.currentUnixTimestamp();
 
             if (!time) {
                 this.mutedHabbos.remove(habbo.getHabboInfo().getId());

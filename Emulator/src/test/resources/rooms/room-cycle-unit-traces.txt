@@ -1,0 +1,175 @@
+== both / a chair that is also a bed
+room.dance(user, NONE)
+returned true
+at 3,3 z 0.25 facing EAST / EAST, previous 3,3 z 0.0, goal 3,3
+statuses SIT=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== both / sit command on a bed
+room.checkBedLoveEffect(bed)
+returned true
+at 3,3 z 0.5 facing EAST / EAST, previous 3,3 z 0.5, goal 3,3
+statuses LAY=1.0
+status update false, sit update false, cmd sit true, cmd lay false, animate walk false
+
+== lay / already laying
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses LAY=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== lay / by command
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses LAY=0.5
+status update false, sit update false, cmd sit false, cmd lay true, animate walk false
+
+== lay / no bed
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== lay / not a bed
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== lay / on a bed
+room.checkBedLoveEffect(bed)
+returned true
+at 3,3 z 0.5 facing EAST / EAST, previous 3,3 z 0.5, goal 3,3
+statuses LAY=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== move / animated walk
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses MOVE=3,3,0.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk true
+
+== move / dropped
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / horse in place
+returned false
+at 4,4 z 0.0 facing NORTH / NORTH, previous 4,4 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / horse misplaced
+room <- Status(horse)
+returned false
+at 4,4 z 2.0 facing NORTH / NORTH, previous 4,4 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / horse moving
+room <- Status(horse)
+returned false
+at 4,4 z 2.0 facing NORTH / NORTH, previous 4,4 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / on a chair and a bed
+returned true
+at 4,4 z 0.0 facing NORTH / NORTH, previous 4,4 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / the misplaced horse after
+at 4,4 z 1.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== riding / the moving horse after
+at 4,4 z 1.0 facing NORTH / NORTH, previous 4,4 z 0.0, goal 4,4
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sign / shown once
+room <- Status(user)
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / a bot
+room.dance(bot, NONE)
+returned true
+at 3,3 z 0.25 facing WEST / WEST, previous 3,3 z 0.0, goal 3,3
+statuses SIT=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / again after a sit update
+room.dance(user, NONE)
+returned true
+at 3,3 z 0.25 facing EAST / EAST, previous 3,3 z 0.0, goal 3,3
+statuses SIT=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / already seated
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses SIT=0.5
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / chair on an open tile
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / floor sit by command
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses SIT=0.55 1
+status update false, sit update false, cmd sit true, cmd lay false, animate walk false
+
+== sit / no chair
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / not a seat
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / on a chair
+room.dance(user, NONE)
+returned true
+at 3,3 z 0.25 facing SOUTH / SOUTH, previous 3,3 z 0.0, goal 3,3
+statuses SIT=1.0
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== sit / pet playing
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses PLAY=
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== update / pending
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 3,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== walk / nothing to do
+returned false
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 4,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+
+== walk / stepped
+returned true
+at 3,3 z 0.0 facing NORTH / NORTH, previous 3,3 z 0.0, goal 4,3
+statuses 
+status update false, sit update false, cmd sit false, cmd lay false, animate walk false
+

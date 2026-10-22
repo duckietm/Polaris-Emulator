@@ -959,9 +959,6 @@ U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getDatabaseLogger|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getConfig|2
-U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getPluginManager|1
-U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/rooms/RoomDependencies.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomFurniVariableManager.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/rooms/RoomFurniVariableManager.java|CALL|getIntUnixTimestamp|5

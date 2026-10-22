@@ -52,6 +52,7 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.SoundTrack;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBadgeDisplay;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGuildFurni;
@@ -78,6 +79,7 @@ import com.eu.habbo.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
 import com.eu.habbo.messages.outgoing.catalog.DiscountComposer;
+import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.messages.outgoing.catalog.PetBoughtNotificationComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.catalog.RedeemVoucherErrorComposer;
@@ -1441,149 +1443,58 @@ public class CatalogManager {
             habbo.getHabboStats().isPurchasingFurniture = true;
         }
 
-        Set<HabboItem> createdItems = new HashSet<>();
-        List<Bot> createdBots = new ArrayList<>();
-        List<Pet> createdPets = new ArrayList<>();
-        // Effect id and duration (seconds, 0 permanent) per bought effect.
-        List<int[]> pendingEffects = new ArrayList<>();
-        List<Guild> pendingGuildForums = new ArrayList<>();
-        boolean paymentTaken = false;
-        boolean purchaseDelivered = false;
-        int paidCredits = 0;
-        int paidPoints = 0;
-        int paidPointsType = 0;
-        CatalogLimitedConfiguration limitedConfiguration = null;
-        int limitedNumber = 0;
+        LegacyPurchase purchase = new LegacyPurchase();
 
         try {
-            if (item.isClubOnly()
-                    && !habbo.getClient().getHabbo().getHabboStats().hasActiveClub()) {
-                habbo.getClient()
-                        .sendResponse(
-                                new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.REQUIRES_CLUB));
-                return;
-            }
-
-            if (amount <= 0) {
-                habbo.getClient()
-                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                return;
-            }
-
-            String ownershipRefusal = WiredWebApiOwnership.purchaseRefusal(
-                    item, amount, habbo.getHabboInfo().getId());
-            if (ownershipRefusal != null) {
-                habbo.getClient().sendResponse(new BubbleAlertComposer(ownershipRefusal));
-                habbo.getClient()
-                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                return;
-            }
-
-            // An offer that only sells a chat bubble style cannot be bought again by its owner.
-            int soldChatStyle = ChatStyleRepository.styleForCatalogItem(item.getId());
-            if (soldChatStyle > 0
-                    && item.getBaseItems().isEmpty()
-                    && ChatStyleRepository.owns(habbo.getHabboInfo().getId(), soldChatStyle)) {
-                habbo.getClient()
-                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            if (this.refusedBeforePricing(item, habbo, amount)) {
                 return;
             }
 
             try {
-                int limitedStack = 0;
                 if (item.isLimited()) {
                     amount = 1;
-                    if (this.getLimitedConfig(item).available() == 0) {
-                        habbo.getClient().sendResponse(new AlertLimitedSoldOutComposer());
+                    if (this.limitedPurchaseRefused(item, habbo)) {
                         return;
                     }
-
-                    if (Emulator.getConfig().getBoolean("hotel.catalog.ltd.limit.enabled")) {
-                        int ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.total");
-                        if (habbo.getHabboStats().totalLtds() >= ltdLimit) {
-                            habbo.alert(Emulator.getTexts()
-                                    .getValue("error.catalog.buy.limited.daily.total")
-                                    .replace(
-                                            "%itemname%",
-                                            item.getBaseItems()
-                                                    .iterator()
-                                                    .next()
-                                                    .getDisplayName())
-                                    .replace("%limit%", ltdLimit + ""));
-                            return;
-                        }
-
-                        ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.item");
-                        if (habbo.getHabboStats().totalLtds(item.id) >= ltdLimit) {
-                            habbo.alert(Emulator.getTexts()
-                                    .getValue("error.catalog.buy.limited.daily.item")
-                                    .replace(
-                                            "%itemname%",
-                                            item.getBaseItems()
-                                                    .iterator()
-                                                    .next()
-                                                    .getDisplayName())
-                                    .replace("%limit%", ltdLimit + ""));
-                            return;
-                        }
-                    }
                 }
 
-                if (amount > 1) {
-                    if (amount == item.getAmount()) {
-                        amount = 1;
-                    } else {
-                        long requestedItems = (long) amount * item.getAmount();
-                        if (requestedItems > 100) {
-                            habbo.alert("Whoops! You tried to buy this " + requestedItems
-                                    + " times. This must've been a mistake.");
-                            habbo.getClient()
-                                    .sendResponse(new AlertPurchaseUnavailableComposer(
-                                            AlertPurchaseUnavailableComposer.ILLEGAL));
-                            return;
-                        }
-                    }
-                }
-
-                Set<HabboItem> itemsList = new HashSet<>();
-
-                if (amount > 1 && !CatalogItem.haveOffer(item)) {
-                    String message = Emulator.getTexts()
-                            .getValue("scripter.warning.catalog.amount")
-                            .replace("%username%", habbo.getHabboInfo().getUsername())
-                            .replace("%itemname%", item.getName())
-                            .replace("%pagename%", page.getCaption());
-                    ScripterManager.scripterDetected(habbo.getClient(), message);
-                    LOGGER.info(message);
-                    habbo.getClient()
-                            .sendResponse(
-                                    new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                amount = this.checkedAmount(page, item, habbo, amount);
+                if (amount < 0) {
                     return;
                 }
 
+                int limitedStack = 0;
                 if (item.isLimited()) {
-                    limitedConfiguration = this.getLimitedConfig(item);
+                    purchase.limitedConfiguration = this.getLimitedConfig(item);
 
-                    if (limitedConfiguration == null) {
-                        limitedConfiguration = this.createOrUpdateLimitedConfig(item);
+                    if (purchase.limitedConfiguration == null) {
+                        purchase.limitedConfiguration = this.createOrUpdateLimitedConfig(item);
                     }
 
-                    limitedStack = limitedConfiguration.getTotalSet();
+                    limitedStack = purchase.limitedConfiguration.getTotalSet();
                 }
 
                 int totalCredits = free ? 0 : this.calculateDiscountedPrice(item.getCredits(), amount, item);
                 int totalPoints = free ? 0 : this.calculateDiscountedPrice(item.getPoints(), amount, item);
 
-                if (totalCredits > habbo.getHabboInfo().getCredits()) return;
-                if (totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) return;
+                boolean notEnoughCredits = totalCredits > habbo.getHabboInfo().getCredits();
+                boolean notEnoughPoints = totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType());
+                if (notEnoughCredits || notEnoughPoints) {
+                    // The client checks the balance before it buys; this answers a balance that changed meanwhile
+                    // the way Habbo does, instead of leaving the purchase waiting for a reply.
+                    habbo.getClient()
+                            .sendResponse(new NotEnoughPointsTypeComposer(
+                                    notEnoughCredits, notEnoughPoints, item.getPointsType()));
+                    return;
+                }
 
-                if (limitedConfiguration != null) {
-                    OptionalInt limitedNumberReservation = limitedConfiguration.pollNumber();
+                if (purchase.limitedConfiguration != null) {
+                    OptionalInt limitedNumberReservation = purchase.limitedConfiguration.pollNumber();
                     if (limitedNumberReservation.isEmpty()) {
                         habbo.getClient().sendResponse(new AlertLimitedSoldOutComposer());
                         return;
                     }
-                    limitedNumber = limitedNumberReservation.getAsInt();
+                    purchase.limitedNumber = limitedNumberReservation.getAsInt();
                 }
 
                 if (item.getHabbiconId() > 0) {
@@ -1594,570 +1505,57 @@ public class CatalogManager {
                         return;
                     }
                     this.purchaseHabbiconAtomically(item, habbo, free, totalCredits, totalPoints);
-                    purchaseDelivered = true;
+                    purchase.delivered = true;
                     return;
                 }
 
                 if (this.isAtomicEntitlementPurchase(item)) {
                     this.purchaseEntitlementsAtomically(item, habbo, amount, free, totalCredits, totalPoints);
-                    purchaseDelivered = true;
+                    purchase.delivered = true;
                     return;
                 }
 
                 if (this.isAtomicBotOrPetPurchase(item)) {
                     this.purchaseBotsAndPetsAtomically(item, habbo, amount, extradata, free, totalCredits, totalPoints);
-                    purchaseDelivered = true;
+                    purchase.delivered = true;
                     return;
                 }
 
                 if (this.isAtomicFurniturePurchase(item)) {
+                    // The atomic path owns the reserved limited number from here and gives it back itself when its
+                    // transaction fails. Restoring it again below could reset a number another buyer has taken since.
+                    int reservedNumber = purchase.limitedNumber;
+                    purchase.limitedNumber = 0;
                     this.purchaseFurnitureAtomically(
                             item,
                             habbo,
                             amount,
                             extradata,
                             free,
-                            limitedConfiguration,
+                            purchase.limitedConfiguration,
                             limitedStack,
-                            limitedNumber,
+                            reservedNumber,
                             totalCredits,
                             totalPoints);
-                    purchaseDelivered = true;
+                    purchase.delivered = true;
                     return;
                 }
 
-                List<String> badges = new ArrayList<>();
-                Map<AddHabboItemComposer.AddHabboItemCategory, List<Integer>> unseenItems = new HashMap<>();
-                boolean badgeFound = false;
-
-                for (int i = 0; i < amount; i++) {
-                    for (Item baseItem : item.getBaseItems()) {
-                        for (int k = 0; k < item.getItemAmount(baseItem.getId()); k++) {
-                            if (baseItem.getName().startsWith("rentable_bot_")
-                                    || baseItem.getName().startsWith("bot_")) {
-                                String baseName = baseItem.getName();
-                                String type = item.getName().replace("rentable_bot_", "");
-                                type = type.replace("bot_", "");
-                                type = type.replace("visitor_logger", "visitor_log");
-
-                                if (("bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)
-                                        || ("rentable_bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE)
-                                                .equals(baseName)) {
-                                    if (!habbo.getClient()
-                                            .getHabbo()
-                                            .hasPermission(com.eu.habbo.habbohotel.bots.FrankBot.PERMISSION_USE)) {
-                                        habbo.getClient()
-                                                .sendResponse(new AlertPurchaseFailedComposer(
-                                                                AlertPurchaseFailedComposer.SERVER_ERROR)
-                                                        .compose());
-                                        return;
-                                    }
-                                }
-
-                                Map<String, String> data = new HashMap<>();
-
-                                for (String s : item.getExtradata().split(";")) {
-                                    if (s.contains(":")) {
-                                        data.put(s.split(":")[0], s.split(":")[1]);
-                                    }
-                                }
-
-                                Bot bot = Emulator.getGameEnvironment()
-                                        .getBotManager()
-                                        .createBot(
-                                                data, type, habbo.getHabboInfo().getId());
-
-                                if (bot != null) {
-                                    createdBots.add(bot);
-                                    bot.setOwnerId(habbo.getClient()
-                                            .getHabbo()
-                                            .getHabboInfo()
-                                            .getId());
-                                    bot.setOwnerName(habbo.getClient()
-                                            .getHabbo()
-                                            .getHabboInfo()
-                                            .getUsername());
-                                    bot.needsUpdate(true);
-                                    Emulator.getThreading().run(bot);
-                                    habbo.getClient()
-                                            .getHabbo()
-                                            .getInventory()
-                                            .getBotsComponent()
-                                            .addBot(bot);
-                                    habbo.getClient().sendResponse(new AddBotComposer(bot));
-
-                                    if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BOT)) {
-                                        unseenItems.put(
-                                                AddHabboItemComposer.AddHabboItemCategory.BOT, new ArrayList<>());
-                                    }
-
-                                    unseenItems
-                                            .get(AddHabboItemComposer.AddHabboItemCategory.BOT)
-                                            .add(bot.getId());
-                                } else {
-                                    throw new Exception("Failed to create bot of type: " + type);
-                                }
-                            } else if (baseItem.getType() == FurnitureType.EFFECT) {
-                                int effectId = baseItem.getEffectM();
-
-                                if (habbo.getHabboInfo().getGender().equals(HabboGender.F)) {
-                                    effectId = baseItem.getEffectF();
-                                }
-
-                                if (effectId > 0) {
-                                    pendingEffects.add(new int[] {effectId, item.getEffectDuration()});
-                                }
-                            } else if (Item.isPet(baseItem)) {
-                                String[] data = extradata.split("\n");
-
-                                if (data.length < 3) {
-                                    habbo.getClient()
-                                            .sendResponse(new AlertPurchaseFailedComposer(
-                                                    AlertPurchaseFailedComposer.SERVER_ERROR));
-                                    return;
-                                }
-
-                                Pet pet = null;
-                                try {
-                                    pet = Emulator.getGameEnvironment()
-                                            .getPetManager()
-                                            .createPet(baseItem, data[0], data[1], data[2], habbo.getClient());
-                                } catch (Exception e) {
-                                    LOGGER.error("Caught exception", e);
-                                    habbo.getClient()
-                                            .sendResponse(new AlertPurchaseFailedComposer(
-                                                    AlertPurchaseFailedComposer.SERVER_ERROR));
-                                }
-
-                                if (pet == null) {
-                                    habbo.getClient()
-                                            .sendResponse(new AlertPurchaseFailedComposer(
-                                                    AlertPurchaseFailedComposer.SERVER_ERROR));
-                                    return;
-                                }
-
-                                createdPets.add(pet);
-                                habbo.getClient()
-                                        .getHabbo()
-                                        .getInventory()
-                                        .getPetsComponent()
-                                        .addPet(pet);
-                                habbo.getClient().sendResponse(new AddPetComposer(pet));
-                                habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
-
-                                AchievementManager.progressAchievement(
-                                        habbo.getClient().getHabbo(),
-                                        Emulator.getGameEnvironment()
-                                                .getAchievementManager()
-                                                .getAchievement("PetLover"));
-
-                                if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.PET)) {
-                                    unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.PET, new ArrayList<>());
-                                }
-
-                                unseenItems
-                                        .get(AddHabboItemComposer.AddHabboItemCategory.PET)
-                                        .add(pet.getId());
-                            } else if (baseItem.getType() == FurnitureType.BADGE) {
-                                if (!habbo.getInventory().getBadgesComponent().hasBadge(baseItem.getName())) {
-                                    if (!badges.contains(baseItem.getName())) {
-                                        badges.add(baseItem.getName());
-                                    }
-                                } else {
-                                    badgeFound = true;
-                                }
-                            } else {
-                                if (baseItem.getInteractionType().getType() == InteractionTrophy.class
-                                        || baseItem.getInteractionType().getType() == InteractionBadgeDisplay.class) {
-                                    if (baseItem.getInteractionType().getType() == InteractionBadgeDisplay.class
-                                            && !habbo.getClient()
-                                                    .getHabbo()
-                                                    .getInventory()
-                                                    .getBadgesComponent()
-                                                    .hasBadge(extradata)) {
-                                        ScripterManager.scripterDetected(
-                                                habbo.getClient(),
-                                                Emulator.getTexts()
-                                                        .getValue("scripter.warning.catalog.badge_display")
-                                                        .replace(
-                                                                "%username%",
-                                                                habbo.getClient()
-                                                                        .getHabbo()
-                                                                        .getHabboInfo()
-                                                                        .getUsername())
-                                                        .replace("%badge%", extradata));
-                                        extradata = "UMAD";
-                                    }
-
-                                    if (extradata.length()
-                                            > Emulator.getConfig().getInt("hotel.trophies.length.max", 300)) {
-                                        extradata = extradata.substring(
-                                                0, Emulator.getConfig().getInt("hotel.trophies.length.max", 300));
-                                    }
-
-                                    extradata = habbo.getClient()
-                                                    .getHabbo()
-                                                    .getHabboInfo()
-                                                    .getUsername() + (char) 9
-                                            + Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-"
-                                            + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
-                                            + Calendar.getInstance().get(Calendar.YEAR) + (char) 9
-                                            + Emulator.getGameEnvironment()
-                                                    .getWordFilter()
-                                                    .filter(extradata.replace(((char) 9) + "", ""), habbo);
-                                }
-
-                                if (InteractionTeleport.class.isAssignableFrom(
-                                        baseItem.getInteractionType().getType())) {
-                                    HabboItem teleportOne = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .createItem(
-                                                    habbo.getClient()
-                                                            .getHabbo()
-                                                            .getHabboInfo()
-                                                            .getId(),
-                                                    baseItem,
-                                                    limitedStack,
-                                                    limitedNumber,
-                                                    extradata);
-                                    HabboItem teleportTwo = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .createItem(
-                                                    habbo.getClient()
-                                                            .getHabbo()
-                                                            .getHabboInfo()
-                                                            .getId(),
-                                                    baseItem,
-                                                    limitedStack,
-                                                    limitedNumber,
-                                                    extradata);
-                                    if (teleportOne == null || teleportTwo == null) {
-                                        if (teleportOne != null) createdItems.add(teleportOne);
-                                        if (teleportTwo != null) createdItems.add(teleportTwo);
-                                        throw new IllegalStateException("failed to create catalog teleport pair");
-                                    }
-                                    createdItems.add(teleportOne);
-                                    createdItems.add(teleportTwo);
-                                    Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .insertTeleportPair(teleportOne.getId(), teleportTwo.getId());
-                                    itemsList.add(teleportOne);
-                                    itemsList.add(teleportTwo);
-                                } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
-                                    HabboItem hopper = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .createItem(
-                                                    habbo.getClient()
-                                                            .getHabbo()
-                                                            .getHabboInfo()
-                                                            .getId(),
-                                                    baseItem,
-                                                    limitedStack,
-                                                    limitedNumber,
-                                                    extradata);
-
-                                    if (hopper == null)
-                                        throw new IllegalStateException("failed to create catalog hopper");
-                                    createdItems.add(hopper);
-
-                                    Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .insertHopper(hopper);
-
-                                    itemsList.add(hopper);
-                                } else if (baseItem.getInteractionType().getType() == InteractionGuildFurni.class
-                                        || baseItem.getInteractionType().getType() == InteractionGuildGate.class) {
-                                    int guildId;
-                                    try {
-                                        guildId = Integer.parseInt(extradata);
-                                    } catch (Exception e) {
-                                        LOGGER.error("Caught exception", e);
-                                        habbo.getClient()
-                                                .sendResponse(new AlertPurchaseFailedComposer(
-                                                        AlertPurchaseFailedComposer.SERVER_ERROR));
-                                        return;
-                                    }
-
-                                    Guild guild = Emulator.getGameEnvironment()
-                                            .getGuildManager()
-                                            .getGuild(guildId);
-
-                                    if (guild != null
-                                            && Emulator.getGameEnvironment()
-                                                            .getGuildManager()
-                                                            .getGuildMember(guild, habbo)
-                                                    != null) {
-                                        if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
-                                                && !GuildForumPurchasePolicy.mayBuy(
-                                                        guild.hasForum(),
-                                                        guild.getOwnerId(),
-                                                        habbo.getHabboInfo().getId(),
-                                                        habbo.getHabboInfo()
-                                                                .getRank()
-                                                                .getLevel())) {
-                                            habbo.getClient()
-                                                    .sendResponse(new AlertPurchaseFailedComposer(
-                                                            AlertPurchaseFailedComposer.SERVER_ERROR));
-                                            return;
-                                        }
-
-                                        HabboItem createdItem = Emulator.getGameEnvironment()
-                                                .getItemManager()
-                                                .createItem(
-                                                        habbo.getClient()
-                                                                .getHabbo()
-                                                                .getHabboInfo()
-                                                                .getId(),
-                                                        baseItem,
-                                                        limitedStack,
-                                                        limitedNumber,
-                                                        extradata);
-                                        if (!(createdItem instanceof InteractionGuildFurni)) {
-                                            if (createdItem != null) createdItems.add(createdItem);
-                                            throw new IllegalStateException("failed to create catalog guild item");
-                                        }
-                                        InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
-                                        createdItems.add(habboItem);
-                                        habboItem.setExtradata("");
-                                        habboItem.needsUpdate(true);
-
-                                        Emulator.getThreading().run(habboItem);
-                                        Emulator.getGameEnvironment()
-                                                .getGuildManager()
-                                                .setGuild(habboItem, guildId);
-                                        itemsList.add(habboItem);
-
-                                        if (baseItem.getName().equals("guild_forum")) {
-                                            pendingGuildForums.add(guild);
-                                        }
-                                    }
-                                } else if (baseItem.getInteractionType().getType() == InteractionMusicDisc.class) {
-                                    SoundTrack track = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .getSoundTrack(item.getExtradata());
-
-                                    if (track == null) {
-                                        habbo.getClient()
-                                                .sendResponse(new AlertPurchaseFailedComposer(
-                                                        AlertPurchaseFailedComposer.SERVER_ERROR));
-                                        return;
-                                    }
-
-                                    HabboItem createdItem = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .createItem(
-                                                    habbo.getClient()
-                                                            .getHabbo()
-                                                            .getHabboInfo()
-                                                            .getId(),
-                                                    baseItem,
-                                                    limitedStack,
-                                                    limitedNumber,
-                                                    habbo.getClient()
-                                                                    .getHabbo()
-                                                                    .getHabboInfo()
-                                                                    .getUsername() + "\n"
-                                                            + Calendar.getInstance()
-                                                                    .get(Calendar.DAY_OF_MONTH) + "\n"
-                                                            + (Calendar.getInstance()
-                                                                            .get(Calendar.MONTH)
-                                                                    + 1) + "\n"
-                                                            + Calendar.getInstance()
-                                                                    .get(Calendar.YEAR) + "\n" + track.getLength()
-                                                            + "\n" + track.getName() + "\n" + track.getId());
-                                    if (!(createdItem instanceof InteractionMusicDisc)) {
-                                        if (createdItem != null) createdItems.add(createdItem);
-                                        throw new IllegalStateException("failed to create catalog music disc");
-                                    }
-                                    InteractionMusicDisc habboItem = (InteractionMusicDisc) createdItem;
-                                    createdItems.add(habboItem);
-                                    habboItem.needsUpdate(true);
-
-                                    Emulator.getThreading().run(habboItem);
-                                    itemsList.add(habboItem);
-
-                                    AchievementManager.progressAchievement(
-                                            habbo,
-                                            Emulator.getGameEnvironment()
-                                                    .getAchievementManager()
-                                                    .getAchievement("MusicCollector"));
-                                } else {
-                                    HabboItem habboItem = Emulator.getGameEnvironment()
-                                            .getItemManager()
-                                            .createItem(
-                                                    habbo.getClient()
-                                                            .getHabbo()
-                                                            .getHabboInfo()
-                                                            .getId(),
-                                                    baseItem,
-                                                    limitedStack,
-                                                    limitedNumber,
-                                                    extradata);
-                                    if (habboItem == null)
-                                        throw new IllegalStateException("failed to create catalog item");
-                                    createdItems.add(habboItem);
-                                    itemsList.add(habboItem);
-                                }
-                            }
-                        }
-                    }
+                if (!this.createLegacyContents(item, habbo, amount, extradata, limitedStack, purchase)) {
+                    return;
                 }
 
-                // A permanent effect cannot be bought again.
-                for (int[] effect : pendingEffects) {
-                    if (habbo.getInventory().getEffectsComponent().ownsPermanently(effect[0])) {
-                        habbo.getClient()
-                                .sendResponse(
-                                        new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                        return;
-                    }
-                }
-
-                if (badgeFound && item.getBaseItems().size() == 1) {
-                    habbo.getClient()
-                            .sendResponse(
-                                    new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.ALREADY_HAVE_BADGE));
+                if (this.legacyContentsRefused(item, habbo, purchase)) {
                     return;
                 }
 
                 UserCatalogItemPurchasedEvent purchasedEvent =
-                        new UserCatalogItemPurchasedEvent(habbo, item, itemsList, totalCredits, totalPoints, badges);
-                this.fireCatalogPurchaseEvent(purchasedEvent);
-
-                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalCredits, "plugin-adjusted credit price");
-                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalPoints, "plugin-adjusted points price");
-
-                if (purchasedEvent.totalCredits > habbo.getHabboInfo().getCredits()
-                        || purchasedEvent.totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) {
-                    habbo.getClient()
-                            .sendResponse(
-                                    new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        this.chargeLegacyPurchase(item, habbo, free, totalCredits, totalPoints, purchase);
+                if (purchasedEvent == null) {
                     return;
                 }
 
-                paidCredits = (!free && !habbo.hasPermission(Permission.ACC_INFINITE_CREDITS))
-                        ? purchasedEvent.totalCredits
-                        : 0;
-                paidPoints = (!free && !habbo.hasPermission(Permission.ACC_INFINITE_POINTS))
-                        ? purchasedEvent.totalPoints
-                        : 0;
-                paidPointsType = item.getPointsType();
-
-                if (!CatalogPaymentService.tryTake(habbo, paidCredits, paidPointsType, paidPoints)) {
-                    habbo.getClient()
-                            .sendResponse(
-                                    new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                    return;
-                }
-                paymentTaken = true;
-
-                for (int[] effect : pendingEffects) {
-                    habbo.getInventory().getEffectsComponent().createEffect(effect[0], effect[1]);
-                }
-                for (Guild guild : pendingGuildForums) {
-                    guild.setForum(true);
-                    guild.needsUpdate = true;
-                    guild.run();
-                }
-
-                if (purchasedEvent.itemsList != null && !purchasedEvent.itemsList.isEmpty()) {
-                    if (item.isRentOffer()) {
-                        int expires =
-                                RentableFurniture.expiresAfter(Emulator.getIntUnixTimestamp(), item.getRentDays());
-                        for (HabboItem rented : purchasedEvent.itemsList) {
-                            rented.setExpiresTimestamp(expires);
-                            rented.needsUpdate(true);
-                            Emulator.getThreading().run(rented);
-                            RentableFurnitureManager.track(rented);
-                        }
-                    }
-                    habbo.getClient()
-                            .getHabbo()
-                            .getInventory()
-                            .getItemsComponent()
-                            .addItems(purchasedEvent.itemsList);
-                    unseenItems.put(
-                            AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI,
-                            purchasedEvent.itemsList.stream()
-                                    .map(HabboItem::getId)
-                                    .collect(Collectors.toList()));
-
-                    Emulator.getPluginManager()
-                            .fireEvent(new UserCatalogFurnitureBoughtEvent(habbo, item, purchasedEvent.itemsList));
-
-                    if (limitedConfiguration != null) {
-                        for (HabboItem itm : purchasedEvent.itemsList) {
-                            limitedConfiguration.limitedSold(item.getId(), habbo, itm);
-                        }
-                    }
-                }
-
-                if (!purchasedEvent.badges.isEmpty()
-                        && !unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BADGE)) {
-                    unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BADGE, new ArrayList<>());
-                }
-
-                for (String b : purchasedEvent.badges) {
-                    HabboBadge badge = new HabboBadge(0, b, 0, habbo);
-                    Emulator.getThreading().run(badge);
-                    habbo.getInventory().getBadgesComponent().addBadge(badge);
-                    habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
-                    Map<String, String> keys = new HashMap<>();
-                    keys.put("display", "BUBBLE");
-                    keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
-                    keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
-                    habbo.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys));
-                    unseenItems
-                            .get(AddHabboItemComposer.AddHabboItemCategory.BADGE)
-                            .add(badge.getId());
-                }
-
-                // Durable items and wallet debit now agree. Nonessential response,
-                // achievement, and logging failures must not undo a delivered order.
-                purchaseDelivered = true;
-
-                if (item.isLimited()) {
-                    for (int i = 0; i < amount; i++) {
-                        habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
-                    }
-                }
-
-                for (HabboItem createdItem : createdItems) {
-                    if (purchasedEvent.itemsList == null || !purchasedEvent.itemsList.contains(createdItem)) {
-                        Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
-                    }
-                }
-                if (!isPetOrBotItem(purchasedEvent.catalogItem)) {
-                    habbo.getClient().getHabbo().getHabboStats().addPurchase(purchasedEvent.catalogItem);
-                }
-
-                habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
-
-                habbo.getClient().sendResponse(new PurchaseOKComposer(purchasedEvent.catalogItem));
-                progressFurniturePurchase(habbo, purchasedEvent.catalogItem);
-                ChatStyleRepository.grantForPurchase(habbo, purchasedEvent.catalogItem);
-                habbo.getClient().sendResponse(new InventoryRefreshComposer());
-
-                Set<String> itemIds = new HashSet<>();
-
-                for (HabboItem ix : purchasedEvent.itemsList) {
-                    itemIds.add(ix.getId() + "");
-                }
-
-                if (!free) {
-                    Emulator.getThreading()
-                            .run(new CatalogPurchaseLogEntry(
-                                    Emulator.getIntUnixTimestamp(),
-                                    purchasedEvent.habbo.getHabboInfo().getId(),
-                                    purchasedEvent.catalogItem != null ? purchasedEvent.catalogItem.getId() : 0,
-                                    String.join(";", itemIds),
-                                    purchasedEvent.catalogItem != null ? purchasedEvent.catalogItem.getName() : "",
-                                    purchasedEvent.totalCredits,
-                                    purchasedEvent.totalPoints,
-                                    item != null ? item.getPointsType() : 0,
-                                    amount));
-                }
-
+                this.deliverLegacyPurchase(item, habbo, amount, free, purchasedEvent, purchase);
             } catch (Exception e) {
                 LOGGER.error("Exception caught", e);
                 habbo.getClient()
@@ -2165,34 +1563,632 @@ public class CatalogManager {
             }
         } finally {
             try {
-                if (!purchaseDelivered) {
-                    for (HabboItem createdItem : createdItems) {
-                        if (createdItem != null)
-                            Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
-                    }
-                    for (Bot bot : createdBots) {
-                        habbo.getInventory().getBotsComponent().removeBot(bot);
-                        Emulator.getGameEnvironment().getBotManager().deleteBot(bot);
-                    }
-                    for (Pet pet : createdPets) {
-                        habbo.getInventory().getPetsComponent().removePet(pet);
-                        Emulator.getGameEnvironment().getPetManager().deletePet(pet);
-                    }
-                    if (limitedConfiguration != null && limitedNumber > 0) {
-                        // Return the reserved limited number to the pool so a failed
-                        // purchase does not permanently shrink the stock or leave the
-                        // item stranded on the sold-out page.
-                        limitedConfiguration.restoreNumber(item.getId(), limitedNumber);
-                    }
-                    if (paymentTaken) {
-                        CatalogPaymentService.refund(habbo, paidCredits, paidPointsType, paidPoints);
-                    }
+                if (!purchase.delivered) {
+                    this.undoLegacyPurchase(item, habbo, purchase);
                 }
             } finally {
                 synchronized (habbo.getHabboStats()) {
                     habbo.getHabboStats().isPurchasingFurniture = false;
                 }
             }
+        }
+    }
+
+    /**
+     * What an offer being bought collects before it is paid for and handed over; on a failure it says what to undo.
+     * Used by the purchase path that no atomic transaction covers (mixed bundles and offers without base items).
+     */
+    private static final class LegacyPurchase {
+        final Set<HabboItem> createdItems = new HashSet<>();
+        final List<Bot> createdBots = new ArrayList<>();
+        final List<Pet> createdPets = new ArrayList<>();
+        // Effect id and duration (seconds, 0 permanent) per bought effect.
+        final List<int[]> pendingEffects = new ArrayList<>();
+        final List<Guild> pendingGuildForums = new ArrayList<>();
+        final Set<HabboItem> itemsList = new HashSet<>();
+        final List<String> badges = new ArrayList<>();
+        final Map<AddHabboItemComposer.AddHabboItemCategory, List<Integer>> unseenItems = new HashMap<>();
+        boolean badgeFound = false;
+        boolean paymentTaken = false;
+        boolean delivered = false;
+        int paidCredits = 0;
+        int paidPoints = 0;
+        int paidPointsType = 0;
+        CatalogLimitedConfiguration limitedConfiguration = null;
+        int limitedNumber = 0;
+    }
+
+    /**
+     * Refuses an offer the buyer may not have at all: club only without club, no amount, an offer a wired web api
+     * keeps, or a chat bubble style the buyer already owns. Tells the buyer why.
+     */
+    private boolean refusedBeforePricing(CatalogItem item, Habbo habbo, int amount) {
+        if (item.isClubOnly() && !habbo.getClient().getHabbo().getHabboStats().hasActiveClub()) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.REQUIRES_CLUB));
+            return true;
+        }
+
+        if (amount <= 0) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return true;
+        }
+
+        String ownershipRefusal = WiredWebApiOwnership.purchaseRefusal(
+                item, amount, habbo.getHabboInfo().getId());
+        if (ownershipRefusal != null) {
+            habbo.getClient().sendResponse(new BubbleAlertComposer(ownershipRefusal));
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return true;
+        }
+
+        // An offer that only sells a chat bubble style cannot be bought again by its owner.
+        int soldChatStyle = ChatStyleRepository.styleForCatalogItem(item.getId());
+        if (soldChatStyle > 0
+                && item.getBaseItems().isEmpty()
+                && ChatStyleRepository.owns(habbo.getHabboInfo().getId(), soldChatStyle)) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Refuses a limited edition that is sold out or over the buyer's daily limits. */
+    private boolean limitedPurchaseRefused(CatalogItem item, Habbo habbo) {
+        if (this.getLimitedConfig(item).available() == 0) {
+            habbo.getClient().sendResponse(new AlertLimitedSoldOutComposer());
+            return true;
+        }
+
+        if (Emulator.getConfig().getBoolean("hotel.catalog.ltd.limit.enabled")) {
+            int ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.total");
+            if (habbo.getHabboStats().totalLtds() >= ltdLimit) {
+                habbo.alert(Emulator.getTexts()
+                        .getValue("error.catalog.buy.limited.daily.total")
+                        .replace(
+                                "%itemname%",
+                                item.getBaseItems().iterator().next().getDisplayName())
+                        .replace("%limit%", ltdLimit + ""));
+                this.refuseAfterLimitAlert(habbo);
+                return true;
+            }
+
+            ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.item");
+            if (habbo.getHabboStats().totalLtds(item.id) >= ltdLimit) {
+                habbo.alert(Emulator.getTexts()
+                        .getValue("error.catalog.buy.limited.daily.item")
+                        .replace(
+                                "%itemname%",
+                                item.getBaseItems().iterator().next().getDisplayName())
+                        .replace("%limit%", ltdLimit + ""));
+                this.refuseAfterLimitAlert(habbo);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Ends the purchase the client is waiting for after a daily limit alert: without a reply its purchase button
+     * stays busy until the client gives up on its own.
+     */
+    private void refuseAfterLimitAlert(Habbo habbo) {
+        habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+    }
+
+    /**
+     * The number of times the offer is bought: asking for exactly the pack size buys the pack once. Returns -1, after
+     * telling the buyer, for more than 100 items at once or several of an offer without a bulk discount.
+     */
+    private int checkedAmount(CatalogPage page, CatalogItem item, Habbo habbo, int amount) {
+        if (amount > 1) {
+            if (amount == item.getAmount()) {
+                amount = 1;
+            } else {
+                long requestedItems = (long) amount * item.getAmount();
+                if (requestedItems > 100) {
+                    habbo.alert(
+                            "Whoops! You tried to buy this " + requestedItems + " times. This must've been a mistake.");
+                    habbo.getClient()
+                            .sendResponse(
+                                    new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                    return -1;
+                }
+            }
+        }
+
+        if (amount > 1 && !CatalogItem.haveOffer(item)) {
+            String message = Emulator.getTexts()
+                    .getValue("scripter.warning.catalog.amount")
+                    .replace("%username%", habbo.getHabboInfo().getUsername())
+                    .replace("%itemname%", item.getName())
+                    .replace("%pagename%", page.getCaption());
+            ScripterManager.scripterDetected(habbo.getClient(), message);
+            LOGGER.info(message);
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return -1;
+        }
+
+        return amount;
+    }
+
+    /**
+     * Creates what a legacy offer holds, amount times: bots, pets and furniture are created right away, effects and
+     * badges are only noted. Returns false, after telling the buyer, when one part cannot be made.
+     */
+    private boolean createLegacyContents(
+            CatalogItem item, Habbo habbo, int amount, String extradata, int limitedStack, LegacyPurchase purchase)
+            throws Exception {
+        for (int i = 0; i < amount; i++) {
+            for (Item baseItem : item.getBaseItems()) {
+                // Engraved once per base item, from what the buyer sent, as the atomic furniture path does.
+                String furnitureExtradata = null;
+                for (int k = 0; k < item.getItemAmount(baseItem.getId()); k++) {
+                    if (baseItem.getName().startsWith("rentable_bot_")
+                            || baseItem.getName().startsWith("bot_")) {
+                        if (!this.createLegacyBot(item, habbo, baseItem, purchase)) {
+                            return false;
+                        }
+                    } else if (baseItem.getType() == FurnitureType.EFFECT) {
+                        int effectId = baseItem.getEffectM();
+
+                        if (habbo.getHabboInfo().getGender().equals(HabboGender.F)) {
+                            effectId = baseItem.getEffectF();
+                        }
+
+                        if (effectId > 0) {
+                            purchase.pendingEffects.add(new int[] {effectId, item.getEffectDuration()});
+                        }
+                    } else if (Item.isPet(baseItem)) {
+                        if (!this.createLegacyPet(habbo, baseItem, extradata, purchase)) {
+                            return false;
+                        }
+                    } else if (baseItem.getType() == FurnitureType.BADGE) {
+                        if (!habbo.getInventory().getBadgesComponent().hasBadge(baseItem.getName())) {
+                            if (!purchase.badges.contains(baseItem.getName())) {
+                                purchase.badges.add(baseItem.getName());
+                            }
+                        } else {
+                            purchase.badgeFound = true;
+                        }
+                    } else {
+                        if (furnitureExtradata == null) {
+                            furnitureExtradata = this.prepareFurnitureExtraData(habbo, baseItem, extradata);
+                        }
+
+                        if (!this.createLegacyFurniture(
+                                item, habbo, baseItem, furnitureExtradata, limitedStack, purchase)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /** Creates one bot of the offer into the buyer's inventory; Frank needs his permission. */
+    private boolean createLegacyBot(CatalogItem item, Habbo habbo, Item baseItem, LegacyPurchase purchase)
+            throws Exception {
+        String baseName = baseItem.getName();
+        String type = item.getName().replace("rentable_bot_", "");
+        type = type.replace("bot_", "");
+        type = type.replace("visitor_logger", "visitor_log");
+
+        if (("bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)
+                || ("rentable_bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)) {
+            if (!habbo.getClient().getHabbo().hasPermission(com.eu.habbo.habbohotel.bots.FrankBot.PERMISSION_USE)) {
+                habbo.getClient()
+                        .sendResponse(
+                                new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                return false;
+            }
+        }
+
+        Map<String, String> data = new HashMap<>();
+
+        for (String s : item.getExtradata().split(";")) {
+            if (s.contains(":")) {
+                data.put(s.split(":")[0], s.split(":")[1]);
+            }
+        }
+
+        Bot bot = Emulator.getGameEnvironment()
+                .getBotManager()
+                .createBot(data, type, habbo.getHabboInfo().getId());
+
+        if (bot == null) {
+            throw new Exception("Failed to create bot of type: " + type);
+        }
+
+        purchase.createdBots.add(bot);
+        bot.setOwnerId(habbo.getClient().getHabbo().getHabboInfo().getId());
+        bot.setOwnerName(habbo.getClient().getHabbo().getHabboInfo().getUsername());
+        bot.needsUpdate(true);
+        Emulator.getThreading().run(bot);
+        purchase.unseenItems
+                .computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.BOT, ignored -> new ArrayList<>())
+                .add(bot.getId());
+        return true;
+    }
+
+    /** Creates one pet of the offer from the name, race and colour the buyer chose. */
+    private boolean createLegacyPet(Habbo habbo, Item baseItem, String extradata, LegacyPurchase purchase) {
+        String[] data = extradata.split("\n");
+
+        if (data.length < 3) {
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
+
+        Pet pet = null;
+        try {
+            pet = Emulator.getGameEnvironment()
+                    .getPetManager()
+                    .createPet(baseItem, data[0], data[1], data[2], habbo.getClient());
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+
+        if (pet == null) {
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
+
+        purchase.createdPets.add(pet);
+        purchase.unseenItems
+                .computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.PET, ignored -> new ArrayList<>())
+                .add(pet.getId());
+        return true;
+    }
+
+    /**
+     * Creates one piece of furniture of the offer: a linked teleport pair, a hopper, guild furniture tied to its
+     * guild, a music disc with its track, or a plain item. Returns false, after telling the buyer, when the guild id
+     * or the track is wrong, or a guild's forum terminal may not be bought.
+     */
+    private boolean createLegacyFurniture(
+            CatalogItem item, Habbo habbo, Item baseItem, String extradata, int limitedStack, LegacyPurchase purchase) {
+        ItemManager itemManager = Emulator.getGameEnvironment().getItemManager();
+        int ownerId = habbo.getClient().getHabbo().getHabboInfo().getId();
+        int limitedNumber = purchase.limitedNumber;
+
+        if (InteractionTeleport.class.isAssignableFrom(
+                baseItem.getInteractionType().getType())) {
+            HabboItem teleportOne = itemManager.createItem(ownerId, baseItem, limitedStack, limitedNumber, extradata);
+            HabboItem teleportTwo = itemManager.createItem(ownerId, baseItem, limitedStack, limitedNumber, extradata);
+            if (teleportOne == null || teleportTwo == null) {
+                if (teleportOne != null) purchase.createdItems.add(teleportOne);
+                if (teleportTwo != null) purchase.createdItems.add(teleportTwo);
+                throw new IllegalStateException("failed to create catalog teleport pair");
+            }
+            purchase.createdItems.add(teleportOne);
+            purchase.createdItems.add(teleportTwo);
+            itemManager.insertTeleportPair(teleportOne.getId(), teleportTwo.getId());
+            purchase.itemsList.add(teleportOne);
+            purchase.itemsList.add(teleportTwo);
+        } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
+            HabboItem hopper = itemManager.createItem(ownerId, baseItem, limitedStack, limitedNumber, extradata);
+
+            if (hopper == null) throw new IllegalStateException("failed to create catalog hopper");
+            purchase.createdItems.add(hopper);
+
+            itemManager.insertHopper(hopper);
+
+            purchase.itemsList.add(hopper);
+        } else if (baseItem.getInteractionType().getType() == InteractionGuildFurni.class
+                || baseItem.getInteractionType().getType() == InteractionGuildGate.class) {
+            return this.createLegacyGuildFurniture(habbo, baseItem, extradata, limitedStack, purchase);
+        } else if (baseItem.getInteractionType().getType() == InteractionMusicDisc.class) {
+            SoundTrack track = itemManager.getSoundTrack(item.getExtradata());
+
+            if (track == null) {
+                habbo.getClient()
+                        .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return false;
+            }
+
+            HabboItem createdItem = itemManager.createItem(
+                    ownerId, baseItem, limitedStack, limitedNumber, this.createMusicDiscExtraData(habbo, track));
+            if (!(createdItem instanceof InteractionMusicDisc)) {
+                if (createdItem != null) purchase.createdItems.add(createdItem);
+                throw new IllegalStateException("failed to create catalog music disc");
+            }
+            InteractionMusicDisc habboItem = (InteractionMusicDisc) createdItem;
+            purchase.createdItems.add(habboItem);
+            habboItem.needsUpdate(true);
+
+            Emulator.getThreading().run(habboItem);
+            purchase.itemsList.add(habboItem);
+
+            AchievementManager.progressAchievement(
+                    habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("MusicCollector"));
+        } else {
+            HabboItem habboItem = itemManager.createItem(ownerId, baseItem, limitedStack, limitedNumber, extradata);
+            if (habboItem == null) throw new IllegalStateException("failed to create catalog item");
+            purchase.createdItems.add(habboItem);
+            purchase.itemsList.add(habboItem);
+        }
+
+        return true;
+    }
+
+    /**
+     * Creates guild furniture for the guild id the buyer sent, if they are a member; a forum terminal follows the
+     * guild's forum rules and opens the forum once paid.
+     */
+    private boolean createLegacyGuildFurniture(
+            Habbo habbo, Item baseItem, String extradata, int limitedStack, LegacyPurchase purchase) {
+        int guildId;
+        try {
+            guildId = Integer.parseInt(extradata);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
+
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+
+        if (guild == null || Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, habbo) == null) {
+            // Guild furniture is sold to members of its guild only, as on the atomic furniture path.
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
+
+        if (GuildForumPurchasePolicy.isForumTerminal(baseItem.getName())
+                && !GuildForumPurchasePolicy.mayBuy(
+                        guild.hasForum(),
+                        guild.getOwnerId(),
+                        habbo.getHabboInfo().getId(),
+                        habbo.getHabboInfo().getRank().getLevel())) {
+            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return false;
+        }
+
+        HabboItem createdItem = Emulator.getGameEnvironment()
+                .getItemManager()
+                .createItem(
+                        habbo.getClient().getHabbo().getHabboInfo().getId(),
+                        baseItem,
+                        limitedStack,
+                        purchase.limitedNumber,
+                        extradata);
+        if (!(createdItem instanceof InteractionGuildFurni)) {
+            if (createdItem != null) purchase.createdItems.add(createdItem);
+            throw new IllegalStateException("failed to create catalog guild item");
+        }
+        InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
+        purchase.createdItems.add(habboItem);
+        habboItem.setExtradata("");
+        habboItem.needsUpdate(true);
+
+        Emulator.getThreading().run(habboItem);
+        Emulator.getGameEnvironment().getGuildManager().setGuild(habboItem, guildId);
+        purchase.itemsList.add(habboItem);
+
+        if (baseItem.getName().equals("guild_forum")) {
+            purchase.pendingGuildForums.add(guild);
+        }
+
+        return true;
+    }
+
+    /** Refuses a legacy offer whose effect the buyer owns for good, or whose only part is a badge they have. */
+    private boolean legacyContentsRefused(CatalogItem item, Habbo habbo, LegacyPurchase purchase) {
+        // A permanent effect cannot be bought again.
+        for (int[] effect : purchase.pendingEffects) {
+            if (habbo.getInventory().getEffectsComponent().ownsPermanently(effect[0])) {
+                habbo.getClient()
+                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return true;
+            }
+        }
+
+        if (purchase.badgeFound && item.getBaseItems().size() == 1) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.ALREADY_HAVE_BADGE));
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Lets plugins see and reprice the purchase, then takes the payment. Returns the event the delivery follows, or
+     * null, after telling the buyer, when the new price is over their balance or the payment is refused.
+     */
+    private UserCatalogItemPurchasedEvent chargeLegacyPurchase(
+            CatalogItem item, Habbo habbo, boolean free, int totalCredits, int totalPoints, LegacyPurchase purchase) {
+        UserCatalogItemPurchasedEvent purchasedEvent = new UserCatalogItemPurchasedEvent(
+                habbo, item, purchase.itemsList, totalCredits, totalPoints, purchase.badges);
+        this.fireCatalogPurchaseEvent(purchasedEvent);
+
+        CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalCredits, "plugin-adjusted credit price");
+        CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalPoints, "plugin-adjusted points price");
+
+        if (purchasedEvent.totalCredits > habbo.getHabboInfo().getCredits()
+                || purchasedEvent.totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return null;
+        }
+
+        purchase.paidCredits =
+                (!free && !habbo.hasPermission(Permission.ACC_INFINITE_CREDITS)) ? purchasedEvent.totalCredits : 0;
+        purchase.paidPoints =
+                (!free && !habbo.hasPermission(Permission.ACC_INFINITE_POINTS)) ? purchasedEvent.totalPoints : 0;
+        purchase.paidPointsType = item.getPointsType();
+
+        if (!CatalogPaymentService.tryTake(habbo, purchase.paidCredits, purchase.paidPointsType, purchase.paidPoints)) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return null;
+        }
+        purchase.paymentTaken = true;
+        return purchasedEvent;
+    }
+
+    /**
+     * Hands a paid legacy purchase over: bots and pets, effects, guild forums, furniture (rented when the offer rents), badges,
+     * then the buyer's packets, quests and the purchase log. Furniture a plugin took out of the purchase is deleted.
+     */
+    private void deliverLegacyPurchase(
+            CatalogItem item,
+            Habbo habbo,
+            int amount,
+            boolean free,
+            UserCatalogItemPurchasedEvent purchasedEvent,
+            LegacyPurchase purchase) {
+        // Bots and pets reach the buyer's inventory only now that the purchase is paid: on a failure before this
+        // the buyer never sees them, as with the atomic bot and pet path.
+        for (Bot bot : purchase.createdBots) {
+            habbo.getClient().getHabbo().getInventory().getBotsComponent().addBot(bot);
+            habbo.getClient().sendResponse(new AddBotComposer(bot));
+        }
+        for (Pet pet : purchase.createdPets) {
+            habbo.getClient().getHabbo().getInventory().getPetsComponent().addPet(pet);
+            habbo.getClient().sendResponse(new AddPetComposer(pet));
+            habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
+
+            AchievementManager.progressAchievement(
+                    habbo.getClient().getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetLover"));
+        }
+        for (int[] effect : purchase.pendingEffects) {
+            habbo.getInventory().getEffectsComponent().createEffect(effect[0], effect[1]);
+        }
+        for (Guild guild : purchase.pendingGuildForums) {
+            guild.setForum(true);
+            guild.needsUpdate = true;
+            guild.run();
+        }
+
+        Map<AddHabboItemComposer.AddHabboItemCategory, List<Integer>> unseenItems = purchase.unseenItems;
+        if (purchasedEvent.itemsList != null && !purchasedEvent.itemsList.isEmpty()) {
+            if (item.isRentOffer()) {
+                int expires = RentableFurniture.expiresAfter(Emulator.getIntUnixTimestamp(), item.getRentDays());
+                for (HabboItem rented : purchasedEvent.itemsList) {
+                    rented.setExpiresTimestamp(expires);
+                    rented.needsUpdate(true);
+                    Emulator.getThreading().run(rented);
+                    RentableFurnitureManager.track(rented);
+                }
+            }
+            habbo.getClient().getHabbo().getInventory().getItemsComponent().addItems(purchasedEvent.itemsList);
+            unseenItems.put(
+                    AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI,
+                    purchasedEvent.itemsList.stream().map(HabboItem::getId).collect(Collectors.toList()));
+
+            Emulator.getPluginManager()
+                    .fireEvent(new UserCatalogFurnitureBoughtEvent(habbo, item, purchasedEvent.itemsList));
+
+            if (purchase.limitedConfiguration != null) {
+                for (HabboItem itm : purchasedEvent.itemsList) {
+                    purchase.limitedConfiguration.limitedSold(item.getId(), habbo, itm);
+                }
+            }
+        }
+
+        if (!purchasedEvent.badges.isEmpty()
+                && !unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BADGE)) {
+            unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BADGE, new ArrayList<>());
+        }
+
+        for (String b : purchasedEvent.badges) {
+            HabboBadge badge = new HabboBadge(0, b, 0, habbo);
+            Emulator.getThreading().run(badge);
+            habbo.getInventory().getBadgesComponent().addBadge(badge);
+            habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
+            Map<String, String> keys = new HashMap<>();
+            keys.put("display", "BUBBLE");
+            keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
+            keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
+            habbo.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys));
+            unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BADGE).add(badge.getId());
+        }
+
+        // Durable items and wallet debit now agree. Nonessential response,
+        // achievement, and logging failures must not undo a delivered order.
+        purchase.delivered = true;
+
+        if (item.isLimited()) {
+            for (int i = 0; i < amount; i++) {
+                habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
+            }
+        }
+
+        for (HabboItem createdItem : purchase.createdItems) {
+            if (purchasedEvent.itemsList == null || !purchasedEvent.itemsList.contains(createdItem)) {
+                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+            }
+        }
+        if (!isPetOrBotItem(purchasedEvent.catalogItem)) {
+            habbo.getClient().getHabbo().getHabboStats().addPurchase(purchasedEvent.catalogItem);
+        }
+
+        habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
+
+        habbo.getClient().sendResponse(new PurchaseOKComposer(purchasedEvent.catalogItem));
+        progressFurniturePurchase(habbo, purchasedEvent.catalogItem);
+        ChatStyleRepository.grantForPurchase(habbo, purchasedEvent.catalogItem);
+        habbo.getClient().sendResponse(new InventoryRefreshComposer());
+
+        Set<String> itemIds = new HashSet<>();
+
+        for (HabboItem ix : purchasedEvent.itemsList) {
+            itemIds.add(ix.getId() + "");
+        }
+
+        if (!free) {
+            Emulator.getThreading()
+                    .run(new CatalogPurchaseLogEntry(
+                            Emulator.getIntUnixTimestamp(),
+                            purchasedEvent.habbo.getHabboInfo().getId(),
+                            purchasedEvent.catalogItem != null ? purchasedEvent.catalogItem.getId() : 0,
+                            String.join(";", itemIds),
+                            purchasedEvent.catalogItem != null ? purchasedEvent.catalogItem.getName() : "",
+                            purchasedEvent.totalCredits,
+                            purchasedEvent.totalPoints,
+                            item.getPointsType(),
+                            amount));
+        }
+    }
+
+    /**
+     * Undoes a purchase that was not delivered: deletes what was created, takes bots and pets back out of the
+     * inventory, returns a reserved limited number to the pool and refunds a payment already taken.
+     */
+    private void undoLegacyPurchase(CatalogItem item, Habbo habbo, LegacyPurchase purchase) {
+        for (HabboItem createdItem : purchase.createdItems) {
+            if (createdItem != null)
+                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+        }
+        for (Bot bot : purchase.createdBots) {
+            habbo.getInventory().getBotsComponent().removeBot(bot);
+            Emulator.getGameEnvironment().getBotManager().deleteBot(bot);
+        }
+        for (Pet pet : purchase.createdPets) {
+            habbo.getInventory().getPetsComponent().removePet(pet);
+            Emulator.getGameEnvironment().getPetManager().deletePet(pet);
+        }
+        CatalogLimitedConfiguration limitedConfiguration = purchase.limitedConfiguration;
+        int limitedNumber = purchase.limitedNumber;
+        if (limitedConfiguration != null && limitedNumber > 0) {
+            // Return the reserved limited number to the pool so a failed
+            // purchase does not permanently shrink the stock or leave the
+            // item stranded on the sold-out page.
+            limitedConfiguration.restoreNumber(item.getId(), limitedNumber);
+        }
+        if (purchase.paymentTaken) {
+            CatalogPaymentService.refund(habbo, purchase.paidCredits, purchase.paidPointsType, purchase.paidPoints);
         }
     }
 
@@ -2629,7 +2625,7 @@ public class CatalogManager {
             if (limitedConfiguration != null) {
                 habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
             }
-        } catch (SQLException exception) {
+        } catch (SQLException | RuntimeException exception) {
             if (limitedConfiguration != null && limitedNumber > 0) limitedConfiguration.restoreNumber(limitedNumber);
             throw exception;
         }

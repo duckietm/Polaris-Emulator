@@ -191,65 +191,11 @@ final class RoomItemMovementService {
 
         // Update wired spatial index + invalidate cache
         if (oldLocation != null) {
-            if (item instanceof InteractionWiredTrigger) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredEffect) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredCondition) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredExtra) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            }
+            this.updateWiredIndex(item, oldLocation);
         }
 
         // Update furniture
-        item.onMove(this.room, oldLocation, tile);
-        item.needsUpdate(true);
-        Emulator.getThreading().run(item);
-
-        if (sendUpdates) {
-            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
-        }
-
-        // Update old & new tiles
-        occupiedTiles.removeAll(oldOccupiedTiles);
-        occupiedTiles.addAll(oldOccupiedTiles);
-        this.room.updateTiles(occupiedTiles);
-
-        // Update Habbos/Bots
-        for (RoomTile t : occupiedTiles) {
-            this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
-            this.room.updateBotsAt(t.x, t.y);
-        }
-
-        // Preserve your newer "place under" behavior if enabled
-        if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
-            Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
-                    tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
-
-            for (RoomTile t : newOccupiedTiles) {
-                for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
-                    try {
-                        item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-        }
-
-        this.room.onFurnitureTopologyChanged(item, true);
+        this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
 
         return FurnitureMovementError.NONE;
     }
@@ -357,61 +303,10 @@ final class RoomItemMovementService {
         }
 
         if (oldLocation != null) {
-            if (item instanceof InteractionWiredTrigger) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredEffect) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredCondition) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredExtra) {
-                this.room
-                        .getRoomSpecialTypes()
-                        .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
-                WiredManager.invalidateRoom(this.room);
-            }
+            this.updateWiredIndex(item, oldLocation);
         }
 
-        item.onMove(this.room, oldLocation, tile);
-        item.needsUpdate(true);
-        Emulator.getThreading().run(item);
-
-        if (sendUpdates) {
-            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
-        }
-
-        occupiedTiles.removeAll(oldOccupiedTiles);
-        occupiedTiles.addAll(oldOccupiedTiles);
-        this.room.updateTiles(occupiedTiles);
-
-        for (RoomTile t : occupiedTiles) {
-            this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
-            this.room.updateBotsAt(t.x, t.y);
-        }
-
-        if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
-            Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
-                    tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
-
-            for (RoomTile t : newOccupiedTiles) {
-                for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
-                    try {
-                        item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-        }
-
-        this.room.onFurnitureTopologyChanged(item, true);
+        this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
         return FurnitureMovementError.NONE;
     }
 
@@ -445,8 +340,6 @@ final class RoomItemMovementService {
 
         // Check if can be placed at new position
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
-                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
-        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
                 tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.facade.getTopItemAt(occupiedTiles, null);
@@ -592,59 +485,12 @@ final class RoomItemMovementService {
         }
 
         // Update wired spatial index and invalidate cache when wired items are moved
-        if (item instanceof InteractionWiredTrigger) {
-            this.room
-                    .getRoomSpecialTypes()
-                    .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
-            WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredEffect) {
-            this.room
-                    .getRoomSpecialTypes()
-                    .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
-            WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredCondition) {
-            this.room
-                    .getRoomSpecialTypes()
-                    .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
-            WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredExtra) {
-            this.room
-                    .getRoomSpecialTypes()
-                    .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
-            WiredManager.invalidateRoom(this.room);
+        if (oldLocation != null) {
+            this.updateWiredIndex(item, oldLocation);
         }
 
         // Update Furniture
-        item.onMove(this.room, oldLocation, tile);
-        item.needsUpdate(true);
-        Emulator.getThreading().run(item);
-
-        if (sendUpdates) {
-            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
-        }
-
-        // Update old & new tiles
-        occupiedTiles.removeAll(oldOccupiedTiles);
-        occupiedTiles.addAll(oldOccupiedTiles);
-        this.room.updateTiles(occupiedTiles);
-
-        // Update Habbos at old position
-        for (RoomTile t : occupiedTiles) {
-            this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
-            this.room.updateBotsAt(t.x, t.y);
-        }
-        if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
-            for (RoomTile t : newOccupiedTiles) {
-                for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
-                    try {
-                        item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-            }
-        }
-        this.room.onFurnitureTopologyChanged(item, true);
+        this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
         return FurnitureMovementError.NONE;
     }
 
@@ -678,8 +524,6 @@ final class RoomItemMovementService {
         HabboItem stackHelper = this.placement.findStackHeightHelperAt(tile, item);
 
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
-                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
-        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
                 tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.getTopPhysicsItemAt(occupiedTiles, null, physics);
@@ -816,6 +660,16 @@ final class RoomItemMovementService {
             item.setZ(Room.MAXIMUM_FURNI_HEIGHT);
         }
 
+        if (oldLocation != null) {
+            this.updateWiredIndex(item, oldLocation);
+        }
+
+        this.finishMove(item, oldLocation, tile, rotation, sendUpdates, occupiedTiles, oldOccupiedTiles);
+        return FurnitureMovementError.NONE;
+    }
+
+    /** Re-files a moved wired box in the room's spatial index and drops the cached wiring of the room. */
+    private void updateWiredIndex(HabboItem item, RoomTile oldLocation) {
         if (item instanceof InteractionWiredTrigger) {
             this.room
                     .getRoomSpecialTypes()
@@ -837,6 +691,21 @@ final class RoomItemMovementService {
                     .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         }
+    }
+
+    /**
+     * What every accepted move does last: save and announce the item, refresh the tiles it left and took and the
+     * users and bots on them, let users under it walk on it when wired.place.under is on, and report the change.
+     */
+    private void finishMove(
+            HabboItem item,
+            RoomTile oldLocation,
+            RoomTile tile,
+            int rotation,
+            boolean sendUpdates,
+            Set<RoomTile> occupiedTiles,
+            Set<RoomTile> oldOccupiedTiles) {
+        RoomLayout layout = this.room.getLayout();
 
         item.onMove(this.room, oldLocation, tile);
         item.needsUpdate(true);
@@ -846,26 +715,33 @@ final class RoomItemMovementService {
             this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
         }
 
+        // Update old & new tiles
         occupiedTiles.removeAll(oldOccupiedTiles);
         occupiedTiles.addAll(oldOccupiedTiles);
         this.room.updateTiles(occupiedTiles);
 
+        // Update Habbos/Bots
         for (RoomTile t : occupiedTiles) {
             this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
             this.room.updateBotsAt(t.x, t.y);
         }
+
+        // Preserve your newer "place under" behavior if enabled
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
+            Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
+                    tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
+
             for (RoomTile t : newOccupiedTiles) {
                 for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
                     try {
                         item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                     }
                 }
             }
         }
+
         this.room.onFurnitureTopologyChanged(item, true);
-        return FurnitureMovementError.NONE;
     }
 
     public FurnitureMovementError slideFurniTo(HabboItem item, RoomTile tile, int rotation) {

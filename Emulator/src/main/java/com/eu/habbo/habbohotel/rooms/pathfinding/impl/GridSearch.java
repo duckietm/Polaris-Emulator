@@ -195,9 +195,11 @@ final class GridSearch {
             return SKIP;
         }
 
+        // Habbo: in a walkthrough room avatars pass through each other and may share a tile, the goal included;
+        // otherwise someone standing blocks (except near the door).
         if (grid.occupied(to.x, to.y)
                 && (rules.door() == null || rules.door().distance(to) > DISTANCE_DOOR_THRESHOLD)
-                && (!walkthroughRetry || !rules.allowWalkthrough() || to.equals(goal))) {
+                && (!walkthroughRetry || !rules.allowWalkthrough())) {
             return CLOSE;
         }
         return ENTER;

@@ -1,0 +1,425 @@
+== broadcast / furni requests twice
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== broadcast / furni while the room unloads
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+
+== broadcast / room requests twice
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== broadcast / room while the room unloads
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+
+== broadcast / user requests twice
+threading.run(task, 50)
+returned 2
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== broadcast / user while the room unloads
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+
+== furni / a value appears
+WiredManager.triggerFurniVariableChanged(room, 300, 20, true, false, NONE, 0, 5)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni / no override keeps the value
+returned false
+
+== furni / removing it again
+returned false
+
+== furni / the same value again
+WiredManager.triggerFurniVariableChanged(room, 300, 20, false, false, UNCHANGED, 8, 8)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni / the value falls
+WiredManager.triggerFurniVariableChanged(room, 300, 20, false, false, DECREASED, 8, 3)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni / the value rises
+WiredManager.triggerFurniVariableChanged(room, 300, 20, false, false, INCREASED, 5, 8)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni / the variable goes
+WiredManager.triggerFurniVariableChanged(room, 300, 20, false, true, NONE, 3, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni flag / appears
+WiredManager.triggerFurniVariableChanged(room, 300, 21, true, false, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni flag / given again
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni flag / goes
+WiredManager.triggerFurniVariableChanged(room, 300, 21, false, true, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni levelled / appears
+WiredManager.triggerFurniVariableChanged(room, 300, 22, true, false, NONE, 0, 5)
+WiredManager.triggerFurniVariableChanged(room, 300, 9221, true, false, NONE, 0, 1)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni levelled / drops back
+WiredManager.triggerFurniVariableChanged(room, 300, 22, false, false, DECREASED, 9, 2)
+WiredManager.triggerFurniVariableChanged(room, 300, 9221, false, false, DECREASED, 3, 0)
+WiredManager.triggerFurniVariableChanged(room, 300, 9222, false, true, NONE, 1, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni levelled / goes
+WiredManager.triggerFurniVariableChanged(room, 300, 22, false, true, NONE, 2, 0)
+WiredManager.triggerFurniVariableChanged(room, 300, 9221, false, true, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== furni levelled / reaches the top
+WiredManager.triggerFurniVariableChanged(room, 300, 22, false, false, INCREASED, 5, 9)
+WiredManager.triggerFurniVariableChanged(room, 300, 9221, false, false, INCREASED, 1, 3)
+WiredManager.triggerFurniVariableChanged(room, 300, 9222, true, false, NONE, 0, 1)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== no threading / furni requests
+returned null
+
+== no threading / room requests
+returned null
+
+== no threading / user requests
+returned 1
+
+== room / a value appears
+WiredManager.triggerRoomVariableChanged(room, 30, INCREASED, 0, 5)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#30, INCREASED, 0, 5)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room / removing it again
+returned false
+sql DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?
+
+== room / the same value again
+WiredManager.triggerRoomVariableChanged(room, 30, UNCHANGED, 8, 8)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#30, UNCHANGED, 8, 8)
+returned false
+
+== room / the value falls
+WiredManager.triggerRoomVariableChanged(room, 30, DECREASED, 8, 3)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#30, DECREASED, 8, 3)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room / the value rises
+WiredManager.triggerRoomVariableChanged(room, 30, INCREASED, 5, 8)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#30, INCREASED, 5, 8)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room / the variable goes
+WiredManager.triggerRoomVariableChanged(room, 30, DECREASED, 3, 0)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#30, DECREASED, 3, 0)
+threading.run(task, 50)
+returned true
+sql DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room levelled / appears
+WiredManager.triggerRoomVariableChanged(room, 32, INCREASED, 0, 5)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#32, INCREASED, 0, 5)
+WiredManager.triggerRoomVariableChanged(room, 9321, INCREASED, 0, 1)
+WiredManager.triggerRoomVariableChanged(room, 9322, UNCHANGED, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room levelled / drops back
+WiredManager.triggerRoomVariableChanged(room, 32, DECREASED, 9, 2)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#32, DECREASED, 9, 2)
+WiredManager.triggerRoomVariableChanged(room, 9321, DECREASED, 3, 0)
+WiredManager.triggerRoomVariableChanged(room, 9322, DECREASED, 1, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room levelled / goes
+WiredManager.triggerRoomVariableChanged(room, 32, DECREASED, 2, 0)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#32, DECREASED, 2, 0)
+WiredManager.triggerRoomVariableChanged(room, 9321, UNCHANGED, 0, 0)
+WiredManager.triggerRoomVariableChanged(room, 9322, UNCHANGED, 0, 0)
+threading.run(task, 50)
+returned true
+sql DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== room levelled / reaches the top
+WiredManager.triggerRoomVariableChanged(room, 32, INCREASED, 5, 9)
+WiredSharedVariableChanges.roomVariableChanged(room, extra#32, INCREASED, 5, 9)
+WiredManager.triggerRoomVariableChanged(room, 9321, INCREASED, 1, 3)
+WiredManager.triggerRoomVariableChanged(room, 9322, INCREASED, 0, 1)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== snapshot / furni manager to disconnected
+returned null
+
+== snapshot / furni manager to inspector
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+returned null
+
+== snapshot / furni manager to nobody
+returned null
+
+== snapshot / furni manager to visitor
+returned null
+
+== snapshot / room manager to disconnected
+returned null
+
+== snapshot / room manager to inspector
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+returned null
+
+== snapshot / room manager to nobody
+returned null
+
+== snapshot / room manager to visitor
+returned null
+
+== snapshot / user manager to disconnected
+returned null
+
+== snapshot / user manager to inspector
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+returned null
+
+== snapshot / user manager to nobody
+returned null
+
+== snapshot / user manager to visitor
+returned null
+
+== threading back / furni requests
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== threading back / room requests
+threading.run(task, 50)
+returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== threading back / user requests
+threading.run(task, 50)
+returned 2
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user / a value appears
+WiredManager.triggerUserVariableChanged(room, 7, 10, true, false, NONE, 0, 5)
+WiredSharedVariableChanges.userVariableChanged(room, extra#10, 7, true, false, NONE, 0, 5)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user / no override keeps the value
+returned false
+
+== user / removing it again
+returned false
+
+== user / the same value again
+WiredManager.triggerUserVariableChanged(room, 7, 10, false, false, UNCHANGED, 8, 8)
+WiredSharedVariableChanges.userVariableChanged(room, extra#10, 7, false, false, UNCHANGED, 8, 8)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user / the value falls
+WiredManager.triggerUserVariableChanged(room, 7, 10, false, false, DECREASED, 8, 3)
+WiredSharedVariableChanges.userVariableChanged(room, extra#10, 7, false, false, DECREASED, 8, 3)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user / the value rises
+WiredManager.triggerUserVariableChanged(room, 7, 10, false, false, INCREASED, 5, 8)
+WiredSharedVariableChanges.userVariableChanged(room, extra#10, 7, false, false, INCREASED, 5, 8)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user / the variable goes
+WiredManager.triggerUserVariableChanged(room, 7, 10, false, true, NONE, 3, 0)
+WiredSharedVariableChanges.userVariableChanged(room, extra#10, 7, false, true, NONE, 3, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user flag / appears
+WiredManager.triggerUserVariableChanged(room, 7, 11, true, false, NONE, 0, 0)
+WiredSharedVariableChanges.userVariableChanged(room, extra#11, 7, true, false, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user flag / given again
+WiredSharedVariableChanges.userVariableChanged(room, extra#11, 7, false, false, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user flag / goes
+WiredManager.triggerUserVariableChanged(room, 7, 11, false, true, NONE, 0, 0)
+WiredSharedVariableChanges.userVariableChanged(room, extra#11, 7, false, true, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user levelled / appears
+WiredManager.triggerUserVariableChanged(room, 7, 12, true, false, NONE, 0, 5)
+WiredSharedVariableChanges.userVariableChanged(room, extra#12, 7, true, false, NONE, 0, 5)
+WiredManager.triggerUserVariableChanged(room, 7, 9121, true, false, NONE, 0, 1)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user levelled / drops back
+WiredManager.triggerUserVariableChanged(room, 7, 12, false, false, DECREASED, 9, 2)
+WiredSharedVariableChanges.userVariableChanged(room, extra#12, 7, false, false, DECREASED, 9, 2)
+WiredManager.triggerUserVariableChanged(room, 7, 9121, false, false, DECREASED, 3, 0)
+WiredManager.triggerUserVariableChanged(room, 7, 9122, false, true, NONE, 1, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user levelled / goes
+WiredManager.triggerUserVariableChanged(room, 7, 12, false, true, NONE, 2, 0)
+WiredSharedVariableChanges.userVariableChanged(room, extra#12, 7, false, true, NONE, 2, 0)
+WiredManager.triggerUserVariableChanged(room, 7, 9121, false, true, NONE, 0, 0)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+
+== user levelled / reaches the top
+WiredManager.triggerUserVariableChanged(room, 7, 12, false, false, INCREASED, 5, 9)
+WiredSharedVariableChanges.userVariableChanged(room, extra#12, 7, false, false, INCREASED, 5, 9)
+WiredManager.triggerUserVariableChanged(room, 7, 9121, false, false, INCREASED, 1, 3)
+WiredManager.triggerUserVariableChanged(room, 7, 9122, true, false, NONE, 0, 1)
+threading.run(task, 50)
+returned true
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 1 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
+

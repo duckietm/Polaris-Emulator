@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -124,7 +125,7 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         int delay = settings.getDelay();
         int maxDelay = WiredPlatform.configuration() == null
                 ? 20
-                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
         if (delay > maxDelay) {
             throw new WiredSaveException("Delay too long");
         }

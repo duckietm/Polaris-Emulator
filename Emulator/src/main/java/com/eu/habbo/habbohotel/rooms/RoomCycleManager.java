@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClientFlushBatch;
 import com.eu.habbo.habbohotel.items.ICycleable;
-import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -27,6 +26,7 @@ public class RoomCycleManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomCycleManager.class);
 
     private final Room room;
+    private final RoomPostureService posture;
     private boolean cycleOdd;
     private long cycleTimestamp;
     private int idleHostingCycles;
@@ -34,6 +34,7 @@ public class RoomCycleManager {
 
     public RoomCycleManager(Room room) {
         this.room = room;
+        this.posture = new RoomPostureService(room);
         this.cycleOdd = false;
         this.cycleTimestamp = 0;
         this.idleHostingCycles = 0;
@@ -367,6 +368,32 @@ public class RoomCycleManager {
         }
     }
 
+    /**
+     * The horse of a user who is not walking stands under them, one unit lower; its status is sent when it had to
+     * move or was still walking.
+     */
+    private void keepHorseUnderRider(RoomUnit unit, RoomUnit ridingUnit) {
+        if (ridingUnit == null || unit.getCurrentLocation() == null) {
+            return;
+        }
+
+        boolean horseMoving = ridingUnit.hasStatus(RoomUnitStatus.MOVE);
+        RoomTile horseTile = ridingUnit.getCurrentLocation();
+        boolean horseMisplaced = horseTile == null || horseTile.x != unit.getX() || horseTile.y != unit.getY();
+
+        if (horseMoving || horseMisplaced) {
+            ridingUnit.setPreviousLocation(horseTile != null ? horseTile : unit.getCurrentLocation());
+            ridingUnit.setCurrentLocation(unit.getCurrentLocation());
+            ridingUnit.setGoalLocation(unit.getCurrentLocation());
+            ridingUnit.setZ(unit.getZ() - 1.0);
+            ridingUnit.animateWalk = false;
+
+            if (horseMoving) ridingUnit.removeStatus(RoomUnitStatus.MOVE);
+
+            this.room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+        }
+    }
+
     public boolean cycleRoomUnit(RoomUnit unit, RoomUnitType type, Habbo habbo) {
         boolean update = unit.needsStatusUpdate();
         boolean isRiding = type == RoomUnitType.USER
@@ -390,72 +417,22 @@ public class RoomCycleManager {
             }
 
             if (isRiding) {
-                RoomUnit ridingUnit = habbo.getHabboInfo().getRiding().getRoomUnit();
-
-                if (ridingUnit != null && unit.getCurrentLocation() != null) {
-                    boolean horseMoving = ridingUnit.hasStatus(RoomUnitStatus.MOVE);
-                    RoomTile horseTile = ridingUnit.getCurrentLocation();
-                    boolean horseMisplaced =
-                            horseTile == null || horseTile.x != unit.getX() || horseTile.y != unit.getY();
-
-                    if (horseMoving || horseMisplaced) {
-                        ridingUnit.setPreviousLocation(horseTile != null ? horseTile : unit.getCurrentLocation());
-                        ridingUnit.setCurrentLocation(unit.getCurrentLocation());
-                        ridingUnit.setGoalLocation(unit.getCurrentLocation());
-                        ridingUnit.setZ(unit.getZ() - 1.0);
-                        ridingUnit.animateWalk = false;
-
-                        if (horseMoving) ridingUnit.removeStatus(RoomUnitStatus.MOVE);
-
-                        this.room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
-                    }
-                }
+                this.keepHorseUnderRider(unit, habbo.getHabboInfo().getRiding().getRoomUnit());
             }
 
             if (!unit.isWalking() && !unit.cmdSit) {
-                boolean hasSpecialPetStatus = unit.hasStatus(RoomUnitStatus.HANG)
-                        || unit.hasStatus(RoomUnitStatus.SWING)
-                        || unit.hasStatus(RoomUnitStatus.FLAME)
-                        || unit.hasStatus(RoomUnitStatus.PLAY);
-
-                RoomTile thisTile = this.room.getLayout().getTile(unit.getX(), unit.getY());
-                HabboItem topItem = this.room.getTallestChair(thisTile);
-
-                if (isRiding || topItem == null || !topItem.getBaseItem().allowSit()) {
-                    if (unit.hasStatus(RoomUnitStatus.SIT)) {
-                        unit.removeStatus(RoomUnitStatus.SIT);
-                        update = true;
-                    }
-                } else if (!hasSpecialPetStatus
-                        && thisTile.state == RoomTileState.SIT
-                        && (!unit.hasStatus(RoomUnitStatus.SIT) || unit.sitUpdate)) {
-                    this.room.dance(unit, DanceType.NONE);
-                    unit.setStatus(RoomUnitStatus.SIT, (Item.getCurrentHeight(topItem) * 1.0D) + "");
-                    unit.setZ(topItem.getZ());
-                    unit.setRotation(RoomUserRotation.values()[topItem.getRotation()]);
-                    unit.sitUpdate = false;
+                RoomPostureService.ChairOutcome chair = this.posture.settleOnChair(unit, isRiding);
+                if (chair == RoomPostureService.ChairOutcome.SAT) {
                     return true;
+                }
+                if (chair == RoomPostureService.ChairOutcome.STOOD_UP) {
+                    update = true;
                 }
             }
         }
 
-        if (!unit.isWalking() && !unit.cmdLay) {
-            HabboItem topItem = this.room.getTopItemAt(unit.getX(), unit.getY());
-
-            if (isRiding || topItem == null || !topItem.getBaseItem().allowLay()) {
-                if (unit.hasStatus(RoomUnitStatus.LAY)) {
-                    unit.removeStatus(RoomUnitStatus.LAY);
-                    update = true;
-                }
-            } else {
-                if (!unit.hasStatus(RoomUnitStatus.LAY)) {
-                    BedProfile.lay(this.room, topItem, unit);
-
-                    this.room.getUnitManager().checkBedLoveEffect(topItem);
-
-                    update = true;
-                }
-            }
+        if (!unit.isWalking() && !unit.cmdLay && this.posture.settleOnBed(unit, isRiding)) {
+            update = true;
         }
 
         if (update) {

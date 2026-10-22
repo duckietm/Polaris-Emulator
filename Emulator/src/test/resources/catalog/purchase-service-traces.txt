@@ -85,8 +85,6 @@ purchasing flag false
 
 == gate / inventory check fails
 buyer <- AlertPurchaseFailed(0)
-LtdRaffleManager.enter(offer chair) -> false
-catalog.purchaseItem(page, offer chair, count 1, "", free false)
 returned
 purchasing flag false
 

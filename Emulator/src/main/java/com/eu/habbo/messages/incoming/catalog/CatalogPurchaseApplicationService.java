@@ -120,7 +120,7 @@ final class CatalogPurchaseApplicationService {
         this.environment.getCatalogManager().purchaseItem(page, item, this.client.getHabbo(), count, extraData, false);
     }
 
-    /** Refuses a purchase when the buyer's inventory is already over its size. */
+    /** Refuses a purchase when the buyer's inventory is over its size, or cannot be read to tell. */
     private boolean inventoryFull() {
         try {
             if (this.client.getHabbo().getInventory().getItemsComponent().itemCount() > HabboInventory.MAXIMUM_ITEMS) {
@@ -130,8 +130,10 @@ final class CatalogPurchaseApplicationService {
                 return true;
             }
         } catch (Exception e) {
+            LOGGER.error("Purchase refused for user {}: their inventory could not be read", this.buyerId(), e);
             this.client.sendResponse(
                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+            return true;
         }
 
         return false;

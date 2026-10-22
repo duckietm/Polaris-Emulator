@@ -1339,7 +1339,6 @@ U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getThreading
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|10
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getCrypto|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDate|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getIntUnixTimestamp|1

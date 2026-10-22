@@ -64,7 +64,6 @@ import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import com.eu.habbo.session.SessionRecoveryRuntime;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.OptionalInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -526,9 +525,10 @@ public class SecureLoginEvent extends MessageHandler {
             modToolSanctions.updateMuteDuration(item.id, 0);
             habbo.unMute();
         } else if (item.isMuted && item.muteDuration > now) {
-            Date muteDuration = new Date((long) item.muteDuration * 1000);
-            long diff = muteDuration.getTime() - Emulator.getDate().getTime();
-            habbo.mute(Math.toIntExact(diff), false);
+            // mute() counts in seconds and adds to a mute already stored, which usually holds this
+            // sanction already: extend it only up to the sanction's end.
+            int missing = item.muteDuration - Math.max(habbo.getHabboStats().getMuteEndTime(), now);
+            if (missing > 0) habbo.mute(missing, false);
         }
     }
 

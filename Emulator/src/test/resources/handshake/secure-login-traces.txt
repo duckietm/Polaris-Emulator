@@ -1,0 +1,2486 @@
+== builders club / expired
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+BuildersClub.sendMembershipExpiredAlert(7, true)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== builders club / expiring soon
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+BuildersClub.sendMembershipExpiringAlert(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== builders club / plenty left
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / club payday
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processUnclaimed(ann)
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / connect refused
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> false
+clients.disposeClient(client)
+
+== fresh / default
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / look already valid
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / look corrected on login
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+info.setLook(hd-180-1)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / machine id already known
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+info.setMachineID(machine-9)
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== fresh / maintenance refuses the rank
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> false
+client <- GenericAlert(closed for maintenance)
+clients.disposeClient(client)
+
+== fresh / no info
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+handle threw NullPointerException: Cannot invoke "com.eu.habbo.habbohotel.users.HabboInfo.getId()" because the return value of "com.eu.habbo.habbohotel.users.Habbo.getHabboInfo()" is null
+
+== fresh / plugin cancels the login
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> cancelled
+clients.forceDisposeClient(client)
+
+== fresh / rank missing
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+clients.disposeClient(client)
+
+== fresh / saved searches already given
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+
+== fresh / welcome alert
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+threading.run(delayed task, 5000ms)
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+-- delayed task runs
+client <- GenericAlert(Welcome ann (ann)<br/>have fun)
+
+== fresh / welcome alert old style
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+threading.run(delayed task, 5000ms)
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+-- delayed task runs
+client <- MessagesForYou([Welcome ann (ann), have fun])
+
+== gate / channel already closed
+clients.disposeClient(client)
+
+== gate / client release refused
+clients.disposeClient(client)
+
+== gate / deferred admission still logs in
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== gate / emulator not ready
+
+
+== gate / encryption forced, handshake finished
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== gate / encryption forced, handshake not finished
+clients.disposeClient(client)
+
+== gate / hotel too busy
+client <- GenericAlert(The hotel is temporarily busy. Please try again.)
+client.channel.close()
+
+== home room / retro, hotel home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 900)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== home room / retro, no hotel home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== home room / retro, own home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(12, 12)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== home room / tour done, own home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(12, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== home room / tour not done, no home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== home room / tour not done, own home room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(12, 12)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== lookup / database lookup fails
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== lookup / duplicate session replaced
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> previous session
+clients.disconnectWithReason(previous session, 2)
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== lookup / earlier connection with the same ticket
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> earlier connection
+clients.disposeClient(earlier connection)
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== lookup / recovered by token
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> null
+recovery.consume(recovery-1) -> OptionalInt[7]
+habbos.loadHabboById(7) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== lookup / recovered user cannot be loaded
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> null
+recovery.consume(recovery-1) -> OptionalInt[7]
+habbos.loadHabboById(7) -> null
+clients.disposeClient(client)
+
+== lookup / recovery token unknown
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> null
+recovery.consume(recovery-1) -> OptionalInt.empty
+clients.disposeClient(client)
+
+== lookup / unknown ticket
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> null
+clients.disposeClient(client)
+
+== resume / banned meanwhile
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> ann
+ann.setClient(client)
+client.setHabbo(ann)
+client.setMachineId(stored-machine)
+ann.passesConnectionSecurityChecks() -> false
+clients.forceDisposeClient(client)
+
+== resume / duplicate session replaced
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> ann
+ann.setClient(client)
+client.setHabbo(ann)
+client.setMachineId(stored-machine)
+ann.passesConnectionSecurityChecks() -> true
+maintenance.canLogin(3) -> true
+habbos.consumeSsoTicket(7)
+clients.claimAuthenticatedSession(7, client) -> previous session
+clients.disconnectWithReason(previous session, 2)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(true, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+
+== resume / in no room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> ann
+ann.setClient(client)
+client.setHabbo(ann)
+client.setMachineId(stored-machine)
+ann.passesConnectionSecurityChecks() -> true
+maintenance.canLogin(3) -> true
+habbos.consumeSsoTicket(7)
+clients.claimAuthenticatedSession(7, client) -> null
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(true, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+
+== resume / maintenance refuses the rank
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> ann
+ann.setClient(client)
+client.setHabbo(ann)
+client.setMachineId(stored-machine)
+ann.passesConnectionSecurityChecks() -> true
+maintenance.canLogin(3) -> false
+client <- GenericAlert(closed for maintenance)
+clients.forceDisposeClient(client)
+
+== resume / nothing parked
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> null
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== resume / still in a room
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+resume.resumeSession(7) -> ann
+ann.setClient(client)
+client.setHabbo(ann)
+client.setMachineId(stored-machine)
+ann.passesConnectionSecurityChecks() -> true
+maintenance.canLogin(3) -> true
+habbos.consumeSsoTicket(7)
+clients.claimAuthenticatedSession(7, client) -> null
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(true, 55, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+
+== sanctions / disabled
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / mute over
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+sanctions.updateMuteDuration(1, 0)
+ann.unMute()
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / mute running, already stored
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+ann.mute(600000s, flood false)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / mute running, nothing stored
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+ann.mute(600000s, flood false)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / none
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / only the latest counts
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / probation over
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+sanctions.updateSanction(1, 0)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / probation running
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+client <- ModToolSanctionInfo(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / trade lock over
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+sanctions.updateTradeLockedUntil(1, 0)
+stats.setAllowTrade(true)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== sanctions / trade lock running
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+stats.setAllowTrade(false)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / account safety locked
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(0)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / bubble alerts disabled
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(false)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / habbicons cannot be read
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+handle threw SQLException: habbicons down
+
+== state / moderator with a saved window
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 22
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+    ModTool(ann)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+client <- ModToolIssueHandlerDimensions(10, 20, 300, 400)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / moderator without a saved window
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 22
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+    ModTool(ann)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / new user gift offered
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 22
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    NewUserExperienceNotComplete()
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / no habbicon service
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 20
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / talent tracks
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- UserCitizinShip(CITIZENSHIP)
+client <- UserCitizinShip(HELPER)
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== state / unseen habbicons
+client.setSsoTicket(ticket-1)
+clients.findClientBySsoTicket(ticket-1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket-1)
+habbos.loadHabbo(ticket-1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 22
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AddHabboItem([4, 2], HABBICON)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+
+== ticket / connection already logged in
+clients.disposeClient(client)
+
+== ticket / empty
+clients.disposeClient(client)
+
+== ticket / longer than 128
+clients.disposeClient(client)
+
+== ticket / longer than 512
+clients.disposeClient(client)
+
+== ticket / only spaces
+clients.disposeClient(client)
+
+== ticket / spaces are removed
+client.setSsoTicket(ticket1)
+clients.findClientBySsoTicket(ticket1) -> null
+db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
+db.setString(1, ticket1)
+habbos.loadHabbo(ticket1) -> ann
+clients.claimAuthenticatedSession(7, client) -> null
+ann.setClient(client)
+client.setHabbo(ann)
+ann.connect() -> true
+maintenance.canLogin(3) -> true
+threading.run(ann)
+habbos.addHabbo(ann)
+CollectibleWardrobe.load(ann)
+client <- batch of 21
+    SecureLoginOK(false, 0, next-token-7)
+    UserHomeRoom(0, 0)
+    UserEffectsList(ann, [])
+    UserClothes(ann)
+    UserHabbicons(Snapshot)
+    AvatarEffectSelected(4)
+    NewUserIdentity(ann)
+    UserPermissions(ann)
+    AvailableCommands([])
+    AvailabilityStatus(true, false, true)
+    Ping()
+    EnableNotifications(true)
+    UserAchievementScore(ann)
+    IsFirstLoginOfDay(true)
+    MysteryBoxKeys()
+    BuildersClubSubscriptionStatus(ann)
+    CfhTopics()
+    FavoriteRoomsCount(ann)
+    GameCenterGameList()
+    GameCenterAccountInfo(3, 100)
+    UserClub(ann, HABBO_CLUB, 1)
+BuildersClub.syncOwnedRooms(7)
+client <- InventoryAchievements()
+client <- SafetyLockStatus(1)
+QuestProgressEvents.loggedIn(ann)
+UsernameEvent.completeLogin(client)
+plugins.fireEvent(UserLoginEvent ann) -> accepted
+HabboClub.processClubBadge(ann)
+Messenger.checkFriendSizeProgress(ann)
+threading.run(ann's stats)
+info.addSavedSearch(official-root)
+info.addSavedSearch(my)
+info.addSavedSearch(favorites)
+client <- NewNavigatorSavedSearches([search official-root, search my, search favorites])
+

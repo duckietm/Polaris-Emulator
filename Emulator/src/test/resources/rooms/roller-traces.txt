@@ -1,0 +1,180 @@
+== aBlockedOrOccupiedOrMissingTileInFrontStopsTheRoller / blocked, no stacking #1
+returned true
+still to update: carol
+sit update: -
+
+== aBlockedOrOccupiedOrMissingTileInFrontStopsTheRoller / invalid #0
+returned true
+still to update: carol
+sit update: -
+
+== aBlockedOrOccupiedOrMissingTileInFrontStopsTheRoller / occupied #2
+returned true
+still to update: carol, dave
+sit update: -
+
+== aChainOfRollersAtTheSameHeightPassesItemsAndUsersOn #0
+compose unitOnRoller#1(gina, first, (1,1), 0.50, (2,1), 0.50, room)
+send unitOnRoller#1
+compose furniOnRoller#2(box, first, (2,1), 0.00, room)
+send furniOnRoller#2
+returned true
+still to update: -
+sit update: -
+
+== aRiderAndTheirHorseRollTogether #0
+compose unitOnRoller#1(horse, roller, (1,1), 0.50, (2,1), 0.00, room)
+compose unitOnRoller#2(ivy, roller, (1,1), 1.50, (2,1), 1.00, room)
+send unitOnRoller#1
+send unitOnRoller#2
+returned true
+still to update: -
+sit update: -
+
+== aRollerCarriesAUserAndSchedulesTheWalkOnOfTheFurniInFront #0
+compose unitOnRoller#1(alice, roller, (1,1), 0.50, (2,1), 0.10, room)
+schedule after 1000 ms
+walkOn rug by alice [(1,1), (2,1)]
+send unitOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aRollerCarriesAUserAndSchedulesTheWalkOnOfTheFurniInFront / goal elsewhere #1
+compose unitOnRoller#1(alice, roller, (1,1), 0.50, (2,1), 0.10, room)
+schedule after 1000 ms
+send unitOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aRollerCarriesTheFurniOnItToAnEmptyTile #0
+compose furniOnRoller#1(chair, roller, (2,1), -0.50, room)
+send furniOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aRollerInFrontAtAnotherHeightStopsTheChainUnlessRulesAreOff / rules off #1
+compose unitOnRoller#1(hank, first, (1,1), 0.50, (2,1), 1.50, room)
+send unitOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aRollerInFrontAtAnotherHeightStopsTheChainUnlessRulesAreOff / rules on #0
+returned true
+still to update: hank
+sit update: -
+
+== aRollerUnderOtherFurniInFrontStopsTheChain #0
+compose furniOnRoller#1(on the second, second, (3,1), -0.50, room)
+send furniOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aSlopedTileIsSkippedInTheDirectionsThatClimbOrFallOverIt / east, downhill #1
+compose furniOnRoller#1(box, east, (2,1), -0.50, room)
+send furniOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== aSlopedTileIsSkippedInTheDirectionsThatClimbOrFallOverIt / east, uphill #0
+returned true
+still to update: -
+sit update: -
+
+== aSolidFurniInFrontLetsFurnitureOnButNotUsers #0
+compose furniOnRoller#1(box, roller, (2,1), -0.50, room)
+send furniOnRoller#1
+returned true
+still to update: erin
+sit update: -
+
+== aStackIsCarriedTopFirstAndAMultiTileItemStays #0
+compose furniOnRoller#1(high, roller, (2,1), -0.50, room)
+compose furniOnRoller#2(low, roller, (2,1), -0.50, room)
+send furniOnRoller#1
+send furniOnRoller#2
+returned true
+still to update: -
+sit update: -
+
+== aUserLandsOnTheSeatOfAChairInFront #0
+compose unitOnRoller#1(bob, roller, (1,1), 0.50, (1,2), 0.00, room)
+schedule after 1000 ms
+send unitOnRoller#1
+returned true
+still to update: -
+sit update: bob
+
+== aUserWhoIsWalkingOrJustRolledOrAlreadyCarriedStays / cooling down #1
+returned true
+still to update: walking
+sit update: -
+
+== aUserWhoIsWalkingOrJustRolledOrAlreadyCarriedStays / walking #0
+returned true
+still to update: walking
+sit update: -
+
+== anEmptyRollerDoesNothingAndPyramidsChangeWhenDue #0
+change pyramid due
+returned true
+still to update: -
+sit update: -
+
+== anOpenGateInFrontLetsUsersThrough / closed #1
+returned true
+still to update: frank
+sit update: -
+
+== anOpenGateInFrontLetsUsersThrough / open #0
+compose unitOnRoller#1(frank, roller, (1,1), 0.50, (2,1), 0.00, room)
+schedule after 1000 ms
+send unitOnRoller#1
+returned true
+still to update: -
+sit update: -
+
+== onlyAsManyUsersAsTheLimitAllowsAreCarriedPerTile / limit 1 #0
+compose unitOnRoller#1(a user, roller, (1,1), 0.50, (2,1), 0.00, room)
+send unitOnRoller#1
+returned true
+still to update: a user
+sit update: -
+
+== onlyAsManyUsersAsTheLimitAllowsAreCarriedPerTile / limit 2 #1
+compose unitOnRoller#1(a user, roller, (1,1), 0.50, (2,1), 0.00, room)
+compose unitOnRoller#2(a user, roller, (1,1), 0.50, (2,1), 0.00, room)
+send unitOnRoller#1
+send unitOnRoller#2
+returned true
+still to update: -
+sit update: -
+
+== pluginsCanCancelARollForAUserOrAFurni / allowed #0
+event UserRolledEvent(jack, roller, (2,1))
+compose unitOnRoller#1(jack, roller, (1,1), 0.50, (2,1), 0.00, room)
+send unitOnRoller#1
+event FurnitureRolledEvent(box, roller, (2,1))
+compose furniOnRoller#2(box, roller, (2,1), -0.50, room)
+send furniOnRoller#2
+returned true
+still to update: -
+sit update: -
+
+== pluginsCanCancelARollForAUserOrAFurni / cancelled #1
+event UserRolledEvent(jack, roller, (2,1)) -> cancelled
+event FurnitureRolledEvent(box, roller, (2,1)) -> cancelled
+returned true
+still to update: jack
+sit update: -
+
+== theEdgeOfTheRoomStopsTheRoller #0
+returned true
+still to update: -
+sit update: -
+

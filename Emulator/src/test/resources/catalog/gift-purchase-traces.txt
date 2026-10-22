@@ -1,0 +1,620 @@
+== aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #0
+payment.tryTake(5, 0, 0) -> true
+scripterDetected([scripter.warning.catalog.badge_display])
+itemManager.createItem(2, item:badge_display, 0, 0, sender	<today>	UMAD)
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #1
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:badge_display, 0, 0, sender	<today>	ADM)
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display, owned	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aBadgeTheRecipientAlreadyHasIsRefused #0
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=1})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aBadgeTheRecipientAlreadyHasIsRefused #1
+connection.prepareStatement(SELECT id FROM users WHERE username = ?)
+statement.setString(1, friend)
+statement.executeQuery()
+connection.prepareStatement(SELECT COUNT(*) as c FROM users_badges WHERE user_id = ? AND badge_code LIKE ?)
+statement.setInt(1, 3)
+statement.setString(2, ACH_1)
+statement.executeQuery()
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=1})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aBadgeTheRecipientAlreadyHasIsRefused #2
+connection.prepareStatement(SELECT id FROM users WHERE username = ?)
+statement.setString(1, friend)
+statement.executeQuery()
+connection.prepareStatement(SELECT COUNT(*) as c FROM users_badges WHERE user_id = ? AND badge_code LIKE ?)
+statement.setInt(1, 3)
+statement.setString(2, ACH_1)
+statement.executeQuery()
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aClubPageGiftGoesToTheClubOffer #0
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== aClubPageGiftGoesToTheClubOffer #1
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+stats purchasing=false lastGift=0
+
+== aFailedGiftDeletesWhatWasCreatedAndRefunds #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+itemManager.deleteItem(habboItem1000:chair)
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== aFailedLimitedGiftReturnsItsReservedNumber #0
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> false
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+limitedConfiguration.restoreNumber(20, 7)
+stats purchasing=false lastGift=0
+
+== aFailedLimitedGiftReturnsItsReservedNumber #1
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+itemManager.deleteItem(habboItem1000:chair)
+limitedConfiguration.restoreNumber(20, 7)
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== aFailedLimitedGiftReturnsItsReservedNumber #2
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 50, 7, )
+connection.close()
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+limitedConfiguration.restoreNumber(20, 7)
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== aFreeWrapCostsOnlyTheItemAndAnOfflineFriendIsFoundInTheDatabase #0
+connection.prepareStatement(SELECT id FROM users WHERE username = ?)
+statement.setString(1, friend)
+statement.executeQuery()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(3, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+achievement(3, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aGiftIsRefusedWhileTheHotelClosesOrAnotherPurchaseRunsOrTooSoon #0
+senderClient.sendResponse(HotelWillCloseInMinutesComposer{minutes=5})
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== aGiftIsRefusedWhileTheHotelClosesOrAnotherPurchaseRunsOrTooSoon #1
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=true lastGift=0
+
+== aGiftIsRefusedWhileTheHotelClosesOrAnotherPurchaseRunsOrTooSoon #2
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=1000000
+
+== aGiftToOneselfGivesNoAchievements #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(1, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:me	sender	hd-180, 0, 0)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aHopperIsRegistered #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:hopper, 0, 0, )
+itemManager.insertHopper(habboItem1000:hopper)
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hop	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aLimitedHopperKeepsItsStackAndNumber #0
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:hopper, 50, 7, )
+itemManager.insertHopper(habboItem1000:hopper)
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180, 0, 0)
+limitedConfiguration.limitedSold(20, sender, habboItem1000:hopper)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderStats.addLtdLog(20, 1000000)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aLimitedItemIsNumberedAndLogged #0
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd	sender	hd-180, 0, 0)
+limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderStats.addLtdLog(20, 1000000)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aLimitedItemWithoutAConfigurationGetsOne #0
+catalogManager.createOrUpdateLimitedConfig(catalogItem)
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180, 0, 0)
+limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderStats.addLtdLog(20, 1000000)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aLimitedTeleporterRecordsOneSaleForItsNumber #0
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:teleport, 50, 7, )
+itemManager.createItem(2, item:teleport, 50, 7, )
+itemManager.insertTeleportPair(1000, 1001)
+itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180, 0, 0)
+limitedConfiguration.limitedSold(20, sender, habboItem1000:teleport)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderStats.addLtdLog(20, 1000000)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aPaymentThatCannotBeReservedCreatesNothing #0
+payment.tryTake(5, 0, 0) -> false
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aSenderWithInfiniteCurrencyIsChargedNothing #0
+payment.tryTake(0, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:free	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aSoldOutLimitedItemIsRefused #0
+senderClient.sendResponse(AlertLimitedSoldOutComposer{})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aSoldOutLimitedItemIsRefused #1
+senderClient.sendResponse(AlertLimitedSoldOutComposer{})
+connection.close()
+stats purchasing=false lastGift=0
+
+== aTeleporterIsGivenAsALinkedPair #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.insertTeleportPair(1000, 1001)
+itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== aTeleporterThatCannotBeCreatedRefunds #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createItem(2, item:teleport, 0, 0, )
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createItem(2, item:teleport, 0, 0, )
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+itemManager.deleteItem(habboItem1000:teleport)
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== aTrophyCarriesTheSenderAndTheDate #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:trophy, 0, 0, sender	<today>	engraved)
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:trophy	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== anExceptionWhileCreatingRefundsAndAnswersWithAnError #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+connection.close()
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== anItemThatCannotBeCreatedRefunds #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== anItemThatCannotBeCreatedRefunds #1
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:hopper, 0, 0, )
+senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.close()
+payment.refund(5, 0, 0)
+stats purchasing=false lastGift=0
+
+== anOfferIdFromSearchResultsFindsTheItemOnThePage #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:search	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== anOnlineFriendReceivesTheGiftWithTheSendersName #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hello	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_wrap, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_wrap)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== limitedItemsRespectTheDailyLimits #0
+sender.alert([error.catalog.buy.limited.daily.total])
+connection.close()
+stats purchasing=false lastGift=0
+
+== limitedItemsRespectTheDailyLimits #1
+sender.alert([error.catalog.buy.limited.daily.item])
+connection.close()
+stats purchasing=false lastGift=0
+
+== limitedItemsRespectTheDailyLimits #2
+limitedConfiguration.getNumber()
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:under	sender	hd-180, 0, 0)
+limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderStats.addLtdLog(20, 1000000)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== notEnoughPointsIsRefused #0
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== onlyAPermittedSenderMayHideTheirName #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hidden?	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== onlyAPermittedSenderMayHideTheirName #1
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	0	filtered:hidden	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received.anonymous]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== pointsAreChargedInTheirOwnCurrency #0
+payment.tryTake(5, 5, 4) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== pointsAreChargedInTheirOwnCurrency #1
+payment.tryTake(5, 5, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== theMessageIsCutToTheConfiguredLengthAndLosesItsTabs #0
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:abcd	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== thePaidWrapAddsTheConfiguredFee #0
+payment.tryTake(8, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_wrap, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_wrap)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== theRequestIsRefusedBeforeAnythingIsCharged #0
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedBeforeAnythingIsCharged #1
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedBeforeAnythingIsCharged #2
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedBeforeAnythingIsCharged #3
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=1})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedBeforeAnythingIsCharged #4
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:club only, member	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_gen)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== theRequestIsRefusedBeforeAnythingIsCharged #5
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedBeforeAnythingIsCharged #6
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #0
+connection.prepareStatement(SELECT id FROM users WHERE username = ?)
+statement.setString(1, friend)
+statement.executeQuery()
+senderClient.sendResponse(GiftReceiverNotFoundComposer{})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #1
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #2
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #3
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #4
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theRequestIsRefusedWhenTheRecipientOrThePageIsWrong #5
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== theWrappingIsChecked #0
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== theWrappingIsChecked #1
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== theWrappingIsChecked #2
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== theWrappingIsChecked #3
+payment.tryTake(5, 0, 0) -> true
+itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGift(friend, item:present_other, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180, 0, 0)
+achievement(sender, achievement:GiftGiver)
+recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_other, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
+recipientItems.addItem(habboItem9000:present_other)
+recipientClient.sendResponse(InventoryRefreshComposer{})
+recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
+achievement(2, achievement:GiftReceiver)
+senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
+connection.close()
+stats purchasing=false lastGift=1000000
+
+== theWrappingIsChecked #4
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #0
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #1
+senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #2
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #3
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #4
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #5
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+
+== unsupportedItemsAreRefused #6
+senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.close()
+stats purchasing=false lastGift=0
+

@@ -542,6 +542,10 @@ public final class Emulator {
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
+        configuration.register(
+                "nitro.secure.cache.max_bytes",
+                "134217728",
+                "Total bytes of minified secure assets kept in memory; the least recently used go first.");
         registerEarningsSettings();
     }
 

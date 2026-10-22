@@ -173,6 +173,29 @@ public class HabboStats implements Runnable {
         this.habboInfo = habboInfo;
 
         this.previousOnlineTime = set.getInt("online_time");
+        this.readStatsRow(set);
+
+        this.nuxReward = this.nux;
+
+        this.subscriptions =
+                Emulator.getGameEnvironment().getSubscriptionManager().getSubscriptionsForUser(this.habboInfo.getId());
+
+        Connection connection = set.getStatement().getConnection();
+        this.navigatorWindowSettings = this.loadNavigatorSettings(connection);
+        this.loadFavoriteRooms(connection);
+        this.loadSecretRecipes(connection);
+        this.loadCalendarRewards(connection);
+        this.loadLtdPurchaseLog(connection);
+        this.loadIgnoredUsers(connection);
+        this.loadBlockedUsers(connection);
+        this.loadDiscordPreferences(connection);
+        this.loadWordFilter(connection);
+        this.loadOfferPurchases(connection);
+        this.loadVisitedRooms(connection);
+    }
+
+    /** The columns of the user's stats row. */
+    private void readStatsRow(ResultSet set) throws SQLException {
         this.achievementScore = set.getInt("achievement_score");
         this.respectPointsReceived = set.getInt("respects_received");
         this.respectPointsGiven = set.getInt("respects_given");
@@ -236,118 +259,110 @@ public class HabboStats implements Runnable {
         this.hcGiftsClaimed = set.getInt("hc_gifts_claimed");
         this.buildersClubBonusFurni = set.getInt("builders_club_bonus_furni");
         this.buildersClubPackageFurniLimit = set.getInt("builders_club_furni_limit");
+    }
 
-        this.nuxReward = this.nux;
+    /** One row of a result set, read into the stats. */
+    @FunctionalInterface
+    private interface RowReader {
+        void read(ResultSet row) throws SQLException;
+    }
 
-        this.subscriptions =
-                Emulator.getGameEnvironment().getSubscriptionManager().getSubscriptionsForUser(this.habboInfo.getId());
+    /** Runs a query that takes the user id as its only parameter and reads every row it returns. */
+    private void forEachUserRow(Connection connection, String sql, RowReader reader) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, this.habboInfo.getId());
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    reader.read(rows);
+                }
+            }
+        }
+    }
 
-        try (PreparedStatement statement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT * FROM user_window_settings WHERE user_id = ? LIMIT 1")) {
+    private HabboNavigatorWindowSettings loadNavigatorSettings(Connection connection) throws SQLException {
+        HabboNavigatorWindowSettings settings;
+
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT * FROM user_window_settings WHERE user_id = ? LIMIT 1")) {
             statement.setInt(1, this.habboInfo.getId());
             try (ResultSet nSet = statement.executeQuery()) {
                 if (nSet.next()) {
-                    this.navigatorWindowSettings = new HabboNavigatorWindowSettings(nSet);
+                    settings = new HabboNavigatorWindowSettings(nSet);
                 } else {
-                    try (PreparedStatement stmt = statement
-                            .getConnection()
-                            .prepareStatement("INSERT INTO user_window_settings (user_id) VALUES (?)")) {
+                    try (PreparedStatement stmt =
+                            connection.prepareStatement("INSERT INTO user_window_settings (user_id) VALUES (?)")) {
                         stmt.setInt(1, this.habboInfo.getId());
                         stmt.executeUpdate();
                     }
 
-                    this.navigatorWindowSettings = new HabboNavigatorWindowSettings(habboInfo.getId());
+                    settings = new HabboNavigatorWindowSettings(this.habboInfo.getId());
                 }
             }
         }
 
-        try (PreparedStatement statement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT * FROM users_navigator_settings WHERE user_id = ?")) {
+        this.forEachUserRow(
+                connection,
+                "SELECT * FROM users_navigator_settings WHERE user_id = ?",
+                row -> settings.addDisplayMode(row.getString("caption"), new HabboNavigatorPersonalDisplayMode(row)));
+
+        return settings;
+    }
+
+    private void loadFavoriteRooms(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT * FROM users_favorite_rooms WHERE user_id = ?",
+                row -> this.favoriteRooms.add(row.getInt("room_id")));
+    }
+
+    private void loadSecretRecipes(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT * FROM users_recipes WHERE user_id = ?",
+                row -> this.secretRecipes.add(row.getInt("recipe")));
+    }
+
+    private void loadCalendarRewards(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT * FROM calendar_rewards_claimed WHERE user_id = ?",
+                row -> this.calendarRewardsClaimed.add(new CalendarRewardClaimed(row)));
+    }
+
+    /** The limited furni this user bought in the last day. */
+    private void loadLtdPurchaseLog(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT catalog_item_id, timestamp FROM catalog_items_limited WHERE user_id = ? AND timestamp > ?")) {
             statement.setInt(1, this.habboInfo.getId());
-            try (ResultSet nSet = statement.executeQuery()) {
-                while (nSet.next()) {
-                    this.navigatorWindowSettings.addDisplayMode(
-                            nSet.getString("caption"), new HabboNavigatorPersonalDisplayMode(nSet));
-                }
-            }
-        }
-
-        try (PreparedStatement favoriteRoomsStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT * FROM users_favorite_rooms WHERE user_id = ?")) {
-            favoriteRoomsStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet favoriteSet = favoriteRoomsStatement.executeQuery()) {
-                while (favoriteSet.next()) {
-                    this.favoriteRooms.add(favoriteSet.getInt("room_id"));
-                }
-            }
-        }
-
-        try (PreparedStatement recipesStatement =
-                set.getStatement().getConnection().prepareStatement("SELECT * FROM users_recipes WHERE user_id = ?")) {
-            recipesStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet recipeSet = recipesStatement.executeQuery()) {
-                while (recipeSet.next()) {
-                    this.secretRecipes.add(recipeSet.getInt("recipe"));
-                }
-            }
-        }
-
-        try (PreparedStatement calendarRewardsStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT * FROM calendar_rewards_claimed WHERE user_id = ?")) {
-            calendarRewardsStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet rewardSet = calendarRewardsStatement.executeQuery()) {
-                while (rewardSet.next()) {
-                    this.calendarRewardsClaimed.add(new CalendarRewardClaimed(rewardSet));
-                }
-            }
-        }
-
-        try (PreparedStatement ltdPurchaseLogStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement(
-                        "SELECT catalog_item_id, timestamp FROM catalog_items_limited WHERE user_id = ? AND timestamp > ?")) {
-            ltdPurchaseLogStatement.setInt(1, this.habboInfo.getId());
-            ltdPurchaseLogStatement.setInt(2, Emulator.getIntUnixTimestamp() - 86400);
-            try (ResultSet ltdSet = ltdPurchaseLogStatement.executeQuery()) {
+            statement.setInt(2, Emulator.getIntUnixTimestamp() - 86400);
+            try (ResultSet ltdSet = statement.executeQuery()) {
                 while (ltdSet.next()) {
                     this.addLtdLog(ltdSet.getInt("catalog_item_id"), ltdSet.getInt("timestamp"));
                 }
             }
         }
+    }
 
-        try (PreparedStatement ignoredPlayersStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT target_id FROM users_ignored WHERE user_id = ?")) {
-            ignoredPlayersStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet ignoredSet = ignoredPlayersStatement.executeQuery()) {
-                while (ignoredSet.next()) {
-                    this.ignoredUsers.add(ignoredSet.getInt(1));
-                }
-            }
-        }
+    private void loadIgnoredUsers(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT target_id FROM users_ignored WHERE user_id = ?",
+                row -> this.ignoredUsers.add(row.getInt(1)));
+    }
 
-        try (PreparedStatement blockedPlayersStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT target_id FROM users_blocked WHERE user_id = ?")) {
-            blockedPlayersStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet blockedSet = blockedPlayersStatement.executeQuery()) {
-                while (blockedSet.next()) {
-                    this.blockedUsers.add(blockedSet.getInt(1));
-                }
-            }
-        }
+    private void loadBlockedUsers(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT target_id FROM users_blocked WHERE user_id = ?",
+                row -> this.blockedUsers.add(row.getInt(1)));
+    }
 
-        try (PreparedStatement discordStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement(
-                        "SELECT preference_version, show_habbo, share_activity, hide_in_hidden_rooms, allow_joining"
-                                + " FROM users_discord_settings WHERE user_id = ?")) {
-            discordStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet discordSet = discordStatement.executeQuery()) {
+    private void loadDiscordPreferences(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT preference_version, show_habbo, share_activity, hide_in_hidden_rooms, allow_joining"
+                        + " FROM users_discord_settings WHERE user_id = ?")) {
+            statement.setInt(1, this.habboInfo.getId());
+            try (ResultSet discordSet = statement.executeQuery()) {
                 if (discordSet.next()) {
                     this.discordPreferences = new DiscordPreferences(
                             discordSet.getInt("preference_version"),
@@ -358,39 +373,27 @@ public class HabboStats implements Runnable {
                 }
             }
         }
+    }
 
-        try (PreparedStatement wordFilterStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT word FROM users_wordfilter WHERE user_id = ?")) {
-            wordFilterStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet wordSet = wordFilterStatement.executeQuery()) {
-                while (wordSet.next()) {
-                    this.customWordFilter.add(wordSet.getString(1));
-                }
-            }
-        }
+    private void loadWordFilter(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT word FROM users_wordfilter WHERE user_id = ?",
+                row -> this.customWordFilter.add(row.getString(1)));
+    }
 
-        try (PreparedStatement loadOfferPurchaseStatement = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT * FROM users_target_offer_purchases WHERE user_id = ?")) {
-            loadOfferPurchaseStatement.setInt(1, this.habboInfo.getId());
-            try (ResultSet offerSet = loadOfferPurchaseStatement.executeQuery()) {
-                while (offerSet.next()) {
-                    this.offerCache.put(offerSet.getInt("offer_id"), new HabboOfferPurchase(offerSet));
-                }
-            }
-        }
+    private void loadOfferPurchases(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT * FROM users_target_offer_purchases WHERE user_id = ?",
+                row -> this.offerCache.put(row.getInt("offer_id"), new HabboOfferPurchase(row)));
+    }
 
-        try (PreparedStatement loadRoomsVisit = set.getStatement()
-                .getConnection()
-                .prepareStatement("SELECT DISTINCT room_id FROM room_enter_log WHERE user_id = ?")) {
-            loadRoomsVisit.setInt(1, this.habboInfo.getId());
-            try (ResultSet roomSet = loadRoomsVisit.executeQuery()) {
-                while (roomSet.next()) {
-                    this.roomsVists.add(roomSet.getInt("room_id"));
-                }
-            }
-        }
+    private void loadVisitedRooms(Connection connection) throws SQLException {
+        this.forEachUserRow(
+                connection,
+                "SELECT DISTINCT room_id FROM room_enter_log WHERE user_id = ?",
+                row -> this.roomsVists.add(row.getInt("room_id")));
     }
 
     private static HabboStats createNewStats(HabboInfo habboInfo) {

@@ -139,9 +139,10 @@ public class RoomUnit {
     }
 
     /**
-     * One tick of a walking unit. Returns false when the unit took a step, was stopped by what lies ahead or failed
-     * (its status may have changed and is sent), and true when there was nothing to do: no path, at its goal, or a
-     * plugin cancelled the step. A ridden pet returns whether its status needs sending.
+     * One tick of a walking unit. Returns false when the unit took a step, was stopped by what lies ahead or failed:
+     * {@link RoomCycleManager#cycleRoomUnit} then sends its status and skips the sit and lay checks. Returns true when
+     * there was nothing to do (no path, at its goal, a plugin cancelled the step), and the cycle goes on to those
+     * checks. A ridden pet returns whether its status needs sending.
      */
     public boolean cycle(Room room) {
         this.steppingTo = null;
@@ -207,13 +208,8 @@ public class RoomUnit {
             boolean canSitNextTile = room.canSitAt(next.x, next.y);
             boolean canLayNextTile = room.canLayAt(next.x, next.y);
 
-            if (!(this.path.isEmpty() && (canSitNextTile || canLayNextTile))) {
-                double height = next.getStackHeight() - this.currentLocation.getStackHeight();
-                if (!overrideChecks && canMoveToTile(room, next, height, canSitNextTile, canLayNextTile)) {
-                    this.path.clear();
-                    this.status.remove(RoomUnitStatus.MOVE);
-                    return false;
-                }
+            if (this.blockedAhead(room, next, overrideChecks, canSitNextTile, canLayNextTile)) {
+                return false;
             }
 
             if (canSitNextTile) {
@@ -224,24 +220,11 @@ public class RoomUnit {
                 }
             }
 
-            if (next.equals(this.goalLocation)
-                    && (next.state == RoomTileState.SIT || next.state == RoomTileState.LAY)
-                    && !overrideChecks
-                    && (item == null || item.getZ() - this.getZ() > RoomLayout.MAXIMUM_STEP_HEIGHT)) {
-                this.status.remove(RoomUnitStatus.MOVE);
+            if (this.stopsShortOfTheSeat(next, item, habbo, overrideChecks)) {
                 return false;
             }
 
             double zHeight = 0.0D;
-
-            if (habbo != null
-                    && habbo.getHabboInfo() != null
-                    && habbo.getHabboInfo().getRiding() != null
-                    && next.equals(this.goalLocation)
-                    && next.state == RoomTileState.LAY) {
-                this.status.remove(RoomUnitStatus.MOVE);
-                return false;
-            }
 
             if (habbo != null) {
                 if (habbo.getHabboInfo().getRiding() != null) {
@@ -249,56 +232,11 @@ public class RoomUnit {
                 }
             }
 
-            // The walk triggers below fire in the tick that announces the step; their conditions count this unit
-            // on the tile it steps to, as in Habbo. Behaviour observed in plus-emulator/PlusEMU f1f78291.
-            this.steppingTo = next;
-            HabboItem habboItem = room.getTopItemAt(this.getX(), this.getY());
-            if (habboItem != null) {
-                if (habboItem != item || !itemOccupiesTile(habboItem, next.x, next.y)) {
-                    habboItem.onWalkOff(this, room, new Object[] {this.getCurrentLocation(), next});
-                }
+            if (!this.walkOverFurni(room, next, item, habbo)) {
+                return false;
             }
 
-            this.tilesWalked++;
-
-            RoomUserRotation oldRotation = this.getBodyRotation();
-            this.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
-            if (item != null) {
-                if (item != habboItem || !itemOccupiesTile(item, this.getX(), this.getY())) {
-                    if (item.canWalkOn(this, room, null)) {
-                        item.onWalkOn(this, room, new Object[] {this.getCurrentLocation(), next});
-                    } else if (item instanceof ConditionalGate) {
-                        this.steppingTo = null;
-                        this.setRotation(oldRotation);
-                        this.tilesWalked--;
-                        this.setGoalLocation(this.currentLocation);
-                        this.status.remove(RoomUnitStatus.MOVE);
-                        room.sendComposer(new RoomUserStatusComposer(this).compose());
-
-                        if (habbo != null) {
-                            ((ConditionalGate) item).onRejected(this, this.getRoom(), new Object[] {});
-                        }
-                        return false;
-                    }
-                } else {
-                    item.onWalk(this, room, new Object[] {this.getCurrentLocation(), next});
-                }
-
-                zHeight += item.getZ();
-
-                if (!item.getBaseItem().allowSit() && !item.getBaseItem().allowLay()) {
-                    zHeight += Item.getCurrentHeight(item);
-                }
-            } else {
-                zHeight += room.getLayout().getHeightAtSquare(next.x, next.y);
-            }
-
-            Optional<HabboItem> stackHelper = room.getItemsAt(next).stream()
-                    .filter(i -> i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper)
-                    .findAny();
-            if (stackHelper.isPresent()) {
-                zHeight = stackHelper.get().getZ();
-            }
+            zHeight = stepHeight(room, next, item, zHeight);
 
             this.setPreviousLocation(this.getCurrentLocation());
 
@@ -324,6 +262,123 @@ public class RoomUnit {
         } finally {
             this.steppingTo = null;
         }
+    }
+
+    /**
+     * Whether the next tile cannot be stepped onto (not walkable, too high, too deep a fall); the walk then ends
+     * there. The last step onto a chair or bed is never blocked here.
+     */
+    private boolean blockedAhead(
+            Room room, RoomTile next, boolean overrideChecks, boolean canSitNextTile, boolean canLayNextTile) {
+        if (this.path.isEmpty() && (canSitNextTile || canLayNextTile)) {
+            return false;
+        }
+
+        double height = next.getStackHeight() - this.currentLocation.getStackHeight();
+        if (!overrideChecks && canMoveToTile(room, next, height, canSitNextTile, canLayNextTile)) {
+            this.path.clear();
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the unit stops in front of the seat it walks to: a sit or lay goal without a seat within one step's
+     * height, or a bed for a user riding a pet.
+     */
+    private boolean stopsShortOfTheSeat(RoomTile next, HabboItem item, Habbo habbo, boolean overrideChecks) {
+        if (next.equals(this.goalLocation)
+                && (next.state == RoomTileState.SIT || next.state == RoomTileState.LAY)
+                && !overrideChecks
+                && (item == null || item.getZ() - this.getZ() > RoomLayout.MAXIMUM_STEP_HEIGHT)) {
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        if (habbo != null
+                && habbo.getHabboInfo() != null
+                && habbo.getHabboInfo().getRiding() != null
+                && next.equals(this.goalLocation)
+                && next.state == RoomTileState.LAY) {
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Tells the furni the unit is stepping over: walk off the one it leaves, walk on (or along) the one it steps onto,
+     * and turns the unit towards the step. Returns false when a gate refuses the unit, which then stays where it is,
+     * facing as before, and has its status sent.
+     */
+    private boolean walkOverFurni(Room room, RoomTile next, HabboItem item, Habbo habbo) throws Exception {
+        // The walk triggers below fire in the tick that announces the step; their conditions count this unit
+        // on the tile it steps to, as in Habbo. Behaviour observed in plus-emulator/PlusEMU f1f78291.
+        this.steppingTo = next;
+        HabboItem habboItem = room.getTopItemAt(this.getX(), this.getY());
+        if (habboItem != null) {
+            if (habboItem != item || !itemOccupiesTile(habboItem, next.x, next.y)) {
+                habboItem.onWalkOff(this, room, new Object[] {this.getCurrentLocation(), next});
+            }
+        }
+
+        this.tilesWalked++;
+
+        RoomUserRotation oldRotation = this.getBodyRotation();
+        this.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
+        if (item == null) {
+            return true;
+        }
+
+        if (item != habboItem || !itemOccupiesTile(item, this.getX(), this.getY())) {
+            if (item.canWalkOn(this, room, null)) {
+                item.onWalkOn(this, room, new Object[] {this.getCurrentLocation(), next});
+            } else if (item instanceof ConditionalGate) {
+                this.steppingTo = null;
+                this.setRotation(oldRotation);
+                this.tilesWalked--;
+                this.setGoalLocation(this.currentLocation);
+                this.status.remove(RoomUnitStatus.MOVE);
+                room.sendComposer(new RoomUserStatusComposer(this).compose());
+
+                if (habbo != null) {
+                    ((ConditionalGate) item).onRejected(this, this.getRoom(), new Object[] {});
+                }
+                return false;
+            }
+        } else {
+            item.onWalk(this, room, new Object[] {this.getCurrentLocation(), next});
+        }
+
+        return true;
+    }
+
+    /**
+     * The height the unit stands at on the next tile, added to {@code zHeight} (one when riding): on top of the furni
+     * there (a chair or bed without its own height), or the floor. A stack helper on the tile sets it on its own.
+     */
+    private static double stepHeight(Room room, RoomTile next, HabboItem item, double zHeight) {
+        if (item != null) {
+            zHeight += item.getZ();
+
+            if (!item.getBaseItem().allowSit() && !item.getBaseItem().allowLay()) {
+                zHeight += Item.getCurrentHeight(item);
+            }
+        } else {
+            zHeight += room.getLayout().getHeightAtSquare(next.x, next.y);
+        }
+
+        Optional<HabboItem> stackHelper = room.getItemsAt(next).stream()
+                .filter(i -> i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper)
+                .findAny();
+        if (stackHelper.isPresent()) {
+            zHeight = stackHelper.get().getZ();
+        }
+
+        return zHeight;
     }
 
     /** A ridden pet goes where its rider is; returns whether its status needs sending. */
@@ -420,7 +475,6 @@ public class RoomUnit {
         }
 
         ridingUnit.setPreviousLocationZ(this.getZ());
-        this.setZ(zHeight - 1.0);
         ridingUnit.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
         ridingUnit.setPreviousLocation(this.getCurrentLocation());
         ridingUnit.setGoalLocation(this.getGoal());

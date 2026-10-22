@@ -42,7 +42,8 @@ public class RoomUserVariableManager {
     private final Room room;
     private final RoomUserVariableRepository repository;
     private final IntSupplier currentTimestamp;
-    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, VariableAssignment>> activeAssignmentsByUserId;
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>>
+            activeAssignmentsByUserId;
     private final java.util.concurrent.atomic.AtomicBoolean broadcastRequested =
             new java.util.concurrent.atomic.AtomicBoolean(false);
     /** Holders whose stored values are loaded: from restore until they leave. */
@@ -200,7 +201,7 @@ public class RoomUserVariableManager {
     }
 
     private void applyRestored(int userId, List<RoomUserVariableRepository.StoredAssignment> rows) {
-        ConcurrentHashMap<Integer, VariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, RoomVariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
         List<Integer> staleDefinitionIds = new ArrayList<>();
 
         for (RoomUserVariableRepository.StoredAssignment stored : rows) {
@@ -214,7 +215,7 @@ public class RoomUserVariableManager {
 
             int createdAt = normalizeTimestamp(stored.createdAt(), 0);
             int updatedAt = normalizeTimestamp(stored.updatedAt(), createdAt);
-            restoredAssignments.put(definitionItemId, new VariableAssignment(stored.value(), createdAt, updatedAt));
+            restoredAssignments.put(definitionItemId, new RoomVariableAssignment(stored.value(), createdAt, updatedAt));
         }
 
         for (Integer definitionItemId : staleDefinitionIds) {
@@ -319,9 +320,9 @@ public class RoomUserVariableManager {
             return changed;
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments =
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments =
                 this.activeAssignmentsByUserId.computeIfAbsent(userId, key -> new ConcurrentHashMap<>());
-        VariableAssignment existingAssignment = assignments.get(definitionItemId);
+        RoomVariableAssignment existingAssignment = assignments.get(definitionItemId);
 
         if (existingAssignment != null && !overrideExisting) {
             return false;
@@ -345,7 +346,7 @@ public class RoomUserVariableManager {
 
         if (existingAssignment == null || overwritten) {
             int now = this.currentTimestamp.getAsInt();
-            assignments.put(definitionItemId, new VariableAssignment(normalizedValue, now, now));
+            assignments.put(definitionItemId, new RoomVariableAssignment(normalizedValue, now, now));
         } else if (valueChanged) {
             existingAssignment.setValue(normalizedValue, this.currentTimestamp.getAsInt());
         }
@@ -360,7 +361,7 @@ public class RoomUserVariableManager {
 
         if (changed) {
             if (definition.isSharedAvailability()) {
-                VariableAssignment assignment = assignments.get(definitionItemId);
+                RoomVariableAssignment assignment = assignments.get(definitionItemId);
                 if (assignment != null) {
                     WiredVariableReferenceSupport.cacheSharedUserAssignment(
                             this.room.getId(),
@@ -458,13 +459,13 @@ public class RoomUserVariableManager {
             return changed;
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         if (assignments == null) {
             return false;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
 
         if (assignment == null) {
             return false;
@@ -525,7 +526,7 @@ public class RoomUserVariableManager {
             return ((WiredExtraVariableEcho) extra).getCurrentValue(this.room, userId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         if (assignments == null) {
             return 0;
@@ -544,7 +545,8 @@ public class RoomUserVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_USER, definitionItemId);
         if (derivedDefinition != null) {
-            VariableAssignment assignment = this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
+            RoomVariableAssignment assignment =
+                    this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
             return (assignment != null) ? assignment.getCreatedAt() : 0;
         }
 
@@ -559,13 +561,13 @@ public class RoomUserVariableManager {
             return ((WiredExtraVariableEcho) extra).getCreatedAt(this.room, userId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         if (assignments == null) {
             return 0;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
         return assignment != null ? assignment.getCreatedAt() : 0;
     }
 
@@ -578,7 +580,8 @@ public class RoomUserVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_USER, definitionItemId);
         if (derivedDefinition != null) {
-            VariableAssignment assignment = this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
+            RoomVariableAssignment assignment =
+                    this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
             return (assignment != null) ? assignment.getUpdatedAt() : 0;
         }
 
@@ -593,13 +596,13 @@ public class RoomUserVariableManager {
             return ((WiredExtraVariableEcho) extra).getUpdatedAt(this.room, userId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         if (assignments == null) {
             return 0;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
         return assignment != null ? assignment.getUpdatedAt() : 0;
     }
 
@@ -627,7 +630,7 @@ public class RoomUserVariableManager {
             return ((WiredExtraVariableEcho) extra).hasVariable(this.room, userId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         return assignments != null && assignments.containsKey(definitionItemId);
     }
@@ -685,7 +688,7 @@ public class RoomUserVariableManager {
             return changed;
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
 
         if (assignments == null) {
             return false;
@@ -747,10 +750,10 @@ public class RoomUserVariableManager {
         // Stored rows first, then the live values: a user loading meanwhile reads again (see restoreStored).
         this.deletePersistentAssignmentsForDefinition(definitionItemId);
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                 this.activeAssignmentsByUserId.entrySet()) {
-            ConcurrentHashMap<Integer, VariableAssignment> assignments = entry.getValue();
-            VariableAssignment assignment = assignments.remove(definitionItemId);
+            ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = entry.getValue();
+            RoomVariableAssignment assignment = assignments.remove(definitionItemId);
             if (assignment == null) continue;
 
             previousValues.put(
@@ -777,9 +780,9 @@ public class RoomUserVariableManager {
         this.deletePersistentAssignmentsForDefinition(definitionItemId);
         boolean changed = false;
 
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                 this.activeAssignmentsByUserId.entrySet()) {
-            ConcurrentHashMap<Integer, VariableAssignment> assignments = entry.getValue();
+            ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = entry.getValue();
             if (assignments.remove(definitionItemId) != null) {
                 changed = true;
             }
@@ -815,9 +818,9 @@ public class RoomUserVariableManager {
         if (!definition.isPermanentAvailability()) {
             this.deletePersistentAssignmentsForDefinition(definition.getId());
         } else {
-            for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+            for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                     this.activeAssignmentsByUserId.entrySet()) {
-                VariableAssignment assignment = entry.getValue().get(definition.getId());
+                RoomVariableAssignment assignment = entry.getValue().get(definition.getId());
 
                 if (assignment == null) continue;
 
@@ -826,9 +829,9 @@ public class RoomUserVariableManager {
         }
 
         if (definition.isSharedAvailability()) {
-            for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+            for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                     this.activeAssignmentsByUserId.entrySet()) {
-                VariableAssignment assignment = entry.getValue().get(definition.getId());
+                RoomVariableAssignment assignment = entry.getValue().get(definition.getId());
 
                 if (assignment == null) {
                     continue;
@@ -851,7 +854,7 @@ public class RoomUserVariableManager {
 
     public boolean hasAssignmentsForDefinition(int definitionItemId) {
         if (definitionItemId <= 0) return false;
-        for (ConcurrentHashMap<Integer, VariableAssignment> assignments : this.activeAssignmentsByUserId.values()) {
+        for (ConcurrentHashMap<Integer, RoomVariableAssignment> assignments : this.activeAssignmentsByUserId.values()) {
             if (assignments.containsKey(definitionItemId)) return true;
         }
         try {
@@ -903,11 +906,11 @@ public class RoomUserVariableManager {
 
         for (Integer userId : userIds) {
             List<AssignmentEntry> assignments = new ArrayList<>();
-            ConcurrentHashMap<Integer, VariableAssignment> localAssignments =
+            ConcurrentHashMap<Integer, RoomVariableAssignment> localAssignments =
                     this.activeAssignmentsByUserId.get(userId);
 
             if (localAssignments != null) {
-                for (Map.Entry<Integer, VariableAssignment> assignmentEntry : localAssignments.entrySet()) {
+                for (Map.Entry<Integer, RoomVariableAssignment> assignmentEntry : localAssignments.entrySet()) {
                     if (!definitionsById.containsKey(assignmentEntry.getKey())) {
                         continue;
                     }
@@ -1198,7 +1201,7 @@ public class RoomUserVariableManager {
         return name != null && !name.trim().isEmpty();
     }
 
-    private VariableAssignment getRawAssignment(int userId, int definitionItemId) {
+    private RoomVariableAssignment getRawAssignment(int userId, int definitionItemId) {
         if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return null;
         }
@@ -1208,7 +1211,7 @@ public class RoomUserVariableManager {
             WiredVariableReferenceSupport.SharedUserAssignment assignment =
                     WiredVariableReferenceSupport.getSharedUserAssignment((WiredExtraVariableReference) extra, userId);
             return (assignment != null)
-                    ? new VariableAssignment(
+                    ? new RoomVariableAssignment(
                             assignment.getValue(), assignment.getCreatedAt(), assignment.getUpdatedAt())
                     : null;
         }
@@ -1219,18 +1222,18 @@ public class RoomUserVariableManager {
                 return null;
             }
 
-            return new VariableAssignment(
+            return new RoomVariableAssignment(
                     echo.getCurrentValue(this.room, userId),
                     echo.getCreatedAt(this.room, userId),
                     echo.getUpdatedAt(this.room, userId));
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByUserId.get(userId);
         return (assignments != null) ? assignments.get(definitionItemId) : null;
     }
 
     private Integer getDerivedValue(int userId, WiredVariableLevelSystemSupport.DerivedDefinition derivedDefinition) {
-        VariableAssignment base = this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
+        RoomVariableAssignment base = this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId());
         if (base == null) {
             return null;
         }
@@ -1266,7 +1269,7 @@ public class RoomUserVariableManager {
         return baseValue != null && this.updateVariableValue(userId, baseId, baseValue);
     }
 
-    private Integer effectiveValue(int definitionItemId, VariableAssignment assignment) {
+    private Integer effectiveValue(int definitionItemId, RoomVariableAssignment assignment) {
         if (assignment == null) {
             return null;
         }
@@ -1313,7 +1316,7 @@ public class RoomUserVariableManager {
                     currentValue == null ? 0L : currentValue);
         }
 
-        VariableAssignment stamps = null;
+        RoomVariableAssignment stamps = null;
         boolean stampsRead = false;
 
         for (WiredVariableDefinitionInfo derivedDefinition : WiredVariableLevelSystemSupport.getDerivedDefinitions(
@@ -1399,7 +1402,7 @@ public class RoomUserVariableManager {
                 currentValue == null ? 0L : currentValue);
     }
 
-    private void upsertPersistentAssignment(int userId, int definitionItemId, VariableAssignment assignment) {
+    private void upsertPersistentAssignment(int userId, int definitionItemId, RoomVariableAssignment assignment) {
         try {
             int now = this.currentTimestamp.getAsInt();
             this.repository.upsert(
@@ -1561,43 +1564,6 @@ public class RoomUserVariableManager {
 
         public int getUpdatedAt() {
             return updatedAt;
-        }
-    }
-
-    private static class VariableAssignment {
-        private Integer value;
-        private final int createdAt;
-        private int updatedAt;
-        private int previousUpdatedAt;
-
-        public VariableAssignment(Integer value, int createdAt, int updatedAt) {
-            this.value = value;
-            this.createdAt = createdAt;
-            this.updatedAt = updatedAt;
-            this.previousUpdatedAt = updatedAt;
-        }
-
-        public Integer getValue() {
-            return value;
-        }
-
-        public void setValue(Integer value, int updatedAt) {
-            this.value = value;
-            this.previousUpdatedAt = this.updatedAt;
-            this.updatedAt = updatedAt;
-        }
-
-        public int getCreatedAt() {
-            return createdAt;
-        }
-
-        public int getUpdatedAt() {
-            return updatedAt;
-        }
-
-        /** The update time before the last value change, so a last-update-time part can compare. */
-        public int getPreviousUpdatedAt() {
-            return this.previousUpdatedAt;
         }
     }
 

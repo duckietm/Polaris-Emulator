@@ -37,7 +37,8 @@ public class RoomFurniVariableManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomFurniVariableManager.class);
 
     private final Room room;
-    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, VariableAssignment>> activeAssignmentsByFurniId;
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>>
+            activeAssignmentsByFurniId;
     private volatile boolean permanentAssignmentsLoaded;
     private final java.util.concurrent.atomic.AtomicBoolean broadcastRequested =
             new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -88,7 +89,7 @@ public class RoomFurniVariableManager {
 
                         this.activeAssignmentsByFurniId
                                 .computeIfAbsent(furniId, key -> new ConcurrentHashMap<>())
-                                .put(definitionItemId, new VariableAssignment(value, createdAt, updatedAt));
+                                .put(definitionItemId, new RoomVariableAssignment(value, createdAt, updatedAt));
                     }
                 }
             } catch (SQLException e) {
@@ -169,9 +170,9 @@ public class RoomFurniVariableManager {
 
         int furniId = furni.getId();
         Integer normalizedValue = definition.hasValue() ? value : null;
-        ConcurrentHashMap<Integer, VariableAssignment> assignments =
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments =
                 this.activeAssignmentsByFurniId.computeIfAbsent(furniId, key -> new ConcurrentHashMap<>());
-        VariableAssignment existingAssignment = assignments.get(definitionItemId);
+        RoomVariableAssignment existingAssignment = assignments.get(definitionItemId);
 
         if (existingAssignment != null && !overrideExisting) {
             return false;
@@ -191,7 +192,7 @@ public class RoomFurniVariableManager {
 
         if (existingAssignment == null || overwritten) {
             int now = Emulator.getIntUnixTimestamp();
-            assignments.put(definitionItemId, new VariableAssignment(normalizedValue, now, now));
+            assignments.put(definitionItemId, new RoomVariableAssignment(normalizedValue, now, now));
         } else if (valueChanged) {
             existingAssignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
         }
@@ -267,13 +268,13 @@ public class RoomFurniVariableManager {
             return false;
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         if (assignments == null) {
             return false;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
 
         if (assignment == null) {
             return false;
@@ -317,13 +318,13 @@ public class RoomFurniVariableManager {
             return ((WiredExtraVariableEcho) extra).getCurrentValue(this.room, furniId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         if (assignments == null) {
             return 0;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
 
         if (assignment == null || assignment.getValue() == null) {
             return 0;
@@ -343,7 +344,8 @@ public class RoomFurniVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId);
         if (derivedDefinition != null) {
-            VariableAssignment assignment = this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
+            RoomVariableAssignment assignment =
+                    this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
             return (assignment != null) ? assignment.getCreatedAt() : 0;
         }
 
@@ -352,13 +354,13 @@ public class RoomFurniVariableManager {
             return ((WiredExtraVariableEcho) extra).getCreatedAt(this.room, furniId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         if (assignments == null) {
             return 0;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
         return assignment != null ? assignment.getCreatedAt() : 0;
     }
 
@@ -373,7 +375,8 @@ public class RoomFurniVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId);
         if (derivedDefinition != null) {
-            VariableAssignment assignment = this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
+            RoomVariableAssignment assignment =
+                    this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
             return (assignment != null) ? assignment.getUpdatedAt() : 0;
         }
 
@@ -382,13 +385,13 @@ public class RoomFurniVariableManager {
             return ((WiredExtraVariableEcho) extra).getUpdatedAt(this.room, furniId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         if (assignments == null) {
             return 0;
         }
 
-        VariableAssignment assignment = assignments.get(definitionItemId);
+        RoomVariableAssignment assignment = assignments.get(definitionItemId);
         return assignment != null ? assignment.getUpdatedAt() : 0;
     }
 
@@ -413,7 +416,7 @@ public class RoomFurniVariableManager {
             return ((WiredExtraVariableEcho) extra).hasVariable(this.room, furniId);
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         return assignments != null && assignments.containsKey(definitionItemId);
     }
@@ -463,7 +466,7 @@ public class RoomFurniVariableManager {
             return changed;
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
 
         if (assignments == null) {
             return false;
@@ -507,9 +510,9 @@ public class RoomFurniVariableManager {
 
         boolean changed = false;
 
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                 this.activeAssignmentsByFurniId.entrySet()) {
-            ConcurrentHashMap<Integer, VariableAssignment> assignments = entry.getValue();
+            ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = entry.getValue();
 
             for (Integer definitionItemId : new ArrayList<>(assignments.keySet())) {
                 WiredExtraFurniVariable definition = this.getDefinition(definitionItemId);
@@ -555,10 +558,10 @@ public class RoomFurniVariableManager {
         }
 
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                 this.activeAssignmentsByFurniId.entrySet()) {
-            ConcurrentHashMap<Integer, VariableAssignment> assignments = entry.getValue();
-            VariableAssignment assignment = assignments.remove(definitionItemId);
+            ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = entry.getValue();
+            RoomVariableAssignment assignment = assignments.remove(definitionItemId);
             if (assignment == null) continue;
 
             previousValues.put(entry.getKey(), definitionInfo.hasValue() ? assignment.getValue() : null);
@@ -579,9 +582,9 @@ public class RoomFurniVariableManager {
 
         boolean changed = false;
 
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                 this.activeAssignmentsByFurniId.entrySet()) {
-            ConcurrentHashMap<Integer, VariableAssignment> assignments = entry.getValue();
+            ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = entry.getValue();
 
             if (assignments.remove(definitionItemId) != null) {
                 changed = true;
@@ -611,9 +614,9 @@ public class RoomFurniVariableManager {
         if (!definition.isPermanentAvailability()) {
             this.deletePersistentAssignmentsForDefinition(definition.getId());
         } else {
-            for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
+            for (Map.Entry<Integer, ConcurrentHashMap<Integer, RoomVariableAssignment>> entry :
                     this.activeAssignmentsByFurniId.entrySet()) {
-                VariableAssignment assignment = entry.getValue().get(definition.getId());
+                RoomVariableAssignment assignment = entry.getValue().get(definition.getId());
 
                 if (assignment == null) continue;
 
@@ -627,7 +630,8 @@ public class RoomFurniVariableManager {
     public boolean hasAssignmentsForDefinition(int definitionItemId) {
         if (definitionItemId <= 0) return false;
         this.ensurePermanentAssignmentsLoaded();
-        for (ConcurrentHashMap<Integer, VariableAssignment> assignments : this.activeAssignmentsByFurniId.values()) {
+        for (ConcurrentHashMap<Integer, RoomVariableAssignment> assignments :
+                this.activeAssignmentsByFurniId.values()) {
             if (assignments.containsKey(definitionItemId)) return true;
         }
         return false;
@@ -677,11 +681,11 @@ public class RoomFurniVariableManager {
             }
 
             List<AssignmentEntry> assignments = new ArrayList<>();
-            ConcurrentHashMap<Integer, VariableAssignment> localAssignments =
+            ConcurrentHashMap<Integer, RoomVariableAssignment> localAssignments =
                     this.activeAssignmentsByFurniId.get(furniId);
 
             if (localAssignments != null) {
-                for (Map.Entry<Integer, VariableAssignment> assignmentEntry : localAssignments.entrySet()) {
+                for (Map.Entry<Integer, RoomVariableAssignment> assignmentEntry : localAssignments.entrySet()) {
                     if (!definitionsById.containsKey(assignmentEntry.getKey())) {
                         continue;
                     }
@@ -892,7 +896,7 @@ public class RoomFurniVariableManager {
         return name != null && !name.trim().isEmpty();
     }
 
-    private VariableAssignment getRawAssignment(int furniId, int definitionItemId) {
+    private RoomVariableAssignment getRawAssignment(int furniId, int definitionItemId) {
         if (furniId <= 0 || definitionItemId <= 0) {
             return null;
         }
@@ -904,13 +908,13 @@ public class RoomFurniVariableManager {
                 return null;
             }
 
-            return new VariableAssignment(
+            return new RoomVariableAssignment(
                     echo.getCurrentValue(this.room, furniId),
                     echo.getCreatedAt(this.room, furniId),
                     echo.getUpdatedAt(this.room, furniId));
         }
 
-        ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
+        ConcurrentHashMap<Integer, RoomVariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
         return (assignments != null) ? assignments.get(definitionItemId) : null;
     }
 
@@ -928,7 +932,7 @@ public class RoomFurniVariableManager {
     }
 
     private Integer getDerivedValue(int furniId, WiredVariableLevelSystemSupport.DerivedDefinition derivedDefinition) {
-        VariableAssignment base = this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
+        RoomVariableAssignment base = this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
         if (base == null) {
             return null;
         }
@@ -963,7 +967,7 @@ public class RoomFurniVariableManager {
                 existsAfter,
                 currentValue);
 
-        VariableAssignment stamps = null;
+        RoomVariableAssignment stamps = null;
         boolean stampsRead = false;
 
         for (WiredVariableDefinitionInfo derivedDefinition : WiredVariableLevelSystemSupport.getDerivedDefinitions(
@@ -1049,7 +1053,7 @@ public class RoomFurniVariableManager {
                 currentValue == null ? 0L : currentValue);
     }
 
-    private void upsertPersistentAssignment(int furniId, int definitionItemId, VariableAssignment assignment) {
+    private void upsertPersistentAssignment(int furniId, int definitionItemId, RoomVariableAssignment assignment) {
         // A temporary furni (placed by wired) has no row, so neither do its variables.
         if (ItemManager.isTemporaryItemId(furniId)) return;
 
@@ -1249,43 +1253,6 @@ public class RoomFurniVariableManager {
 
         public int getUpdatedAt() {
             return this.updatedAt;
-        }
-    }
-
-    private static class VariableAssignment {
-        private Integer value;
-        private final int createdAt;
-        private int updatedAt;
-        private int previousUpdatedAt;
-
-        public VariableAssignment(Integer value, int createdAt, int updatedAt) {
-            this.value = value;
-            this.createdAt = createdAt;
-            this.updatedAt = updatedAt;
-            this.previousUpdatedAt = updatedAt;
-        }
-
-        public Integer getValue() {
-            return this.value;
-        }
-
-        public void setValue(Integer value, int updatedAt) {
-            this.value = value;
-            this.previousUpdatedAt = this.updatedAt;
-            this.updatedAt = updatedAt;
-        }
-
-        public int getCreatedAt() {
-            return this.createdAt;
-        }
-
-        public int getUpdatedAt() {
-            return this.updatedAt;
-        }
-
-        /** The update time before the last value change, so a last-update-time part can compare. */
-        public int getPreviousUpdatedAt() {
-            return this.previousUpdatedAt;
         }
     }
 

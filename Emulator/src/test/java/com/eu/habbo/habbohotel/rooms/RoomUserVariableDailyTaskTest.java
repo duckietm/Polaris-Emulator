@@ -69,7 +69,7 @@ class RoomUserVariableDailyTaskTest {
         RoomUserVariableManager manager = new RoomUserVariableManager(
                 room, new RoomUserVariableRepository(mock(DataSource.class)), this.clock::get);
 
-        Class<?> assignmentType = Class.forName(RoomUserVariableManager.class.getName() + "$VariableAssignment");
+        Class<?> assignmentType = RoomVariableAssignment.class;
         Constructor<?> constructor = assignmentType.getDeclaredConstructor(Integer.class, int.class, int.class);
         constructor.setAccessible(true);
         Field field = RoomUserVariableManager.class.getDeclaredField("activeAssignmentsByUserId");

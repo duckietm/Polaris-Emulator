@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.api.WiredStack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -176,7 +177,8 @@ class WiredExecutionSemanticsCompatibilityTest {
         AtomicInteger executions = new AtomicInteger();
         WiredStack stack = new WiredStack(
                 triggerItem(7008),
-                trigger(new ArrayList<>(), true),
+                // Every worker runs the trigger at once: the list it writes to must take concurrent adds.
+                trigger(new CopyOnWriteArrayList<>(), true),
                 List.of(),
                 List.of(context -> executions.incrementAndGet()));
         WiredEngine engine = engine(room, stack);

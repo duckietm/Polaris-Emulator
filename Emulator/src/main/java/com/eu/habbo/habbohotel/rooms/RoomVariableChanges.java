@@ -72,9 +72,14 @@ final class RoomVariableChanges {
 
     /**
      * Runs {@code broadcast} 50 ms from now unless one is already waiting, so a burst of changes is sent once; it is
-     * skipped when the room has unloaded in the meantime.
+     * skipped when the room has unloaded in the meantime. Without threading (the emulator is starting or stopping)
+     * nothing is scheduled and nothing is marked as waiting, so the next request still schedules one.
      */
     static void scheduleBroadcast(Room room, AtomicBoolean pending, ThreadPooling threading, Runnable broadcast) {
+        if (threading == null) {
+            return;
+        }
+
         if (pending.compareAndSet(false, true)) {
             threading.run(
                     () -> {

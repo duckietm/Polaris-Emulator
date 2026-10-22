@@ -142,10 +142,10 @@ compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 
 inspector <- WiredUserVariablesDataComposer
 
 == no threading / furni requests
-threw NullPointerException
+returned null
 
 == no threading / room requests
-threw NullPointerException
+returned null
 
 == no threading / user requests
 returned 1
@@ -284,10 +284,18 @@ returned null
 returned null
 
 == threading back / furni requests
+threading.run(task, 50)
 returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
 
 == threading back / room requests
+threading.run(task, 50)
 returned null
+-- the scheduled task runs
+compose WiredUserVariablesDataComposer(users 5 definitions / 0 holders, furni 5 definitions / 0 holders, room 4 definitions / 4 values)
+inspector <- WiredUserVariablesDataComposer
 
 == threading back / user requests
 threading.run(task, 50)

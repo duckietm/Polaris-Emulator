@@ -990,12 +990,8 @@ public class RoomUserVariableManager {
 
     public void requestBroadcast() {
         this.changeVersion.incrementAndGet();
-        com.eu.habbo.threading.ThreadPooling threading = Emulator.getThreading();
-        if (threading == null) {
-            return;
-        }
         RoomVariableChanges.scheduleBroadcast(
-                this.room, this.broadcastRequested, threading, this::broadcastSnapshotRaw);
+                this.room, this.broadcastRequested, Emulator.getThreading(), this::broadcastSnapshotRaw);
     }
 
     public void broadcastSnapshot() {

@@ -108,6 +108,33 @@ class CatalogPagesListOfferIndexTest {
         }
     }
 
+    @Test
+    void indexCarriesTheNewAdditionsFlag() {
+        Habbo habbo = mock(Habbo.class);
+        GameEnvironment environment = mock(GameEnvironment.class);
+        CatalogManager catalogManager = mock(CatalogManager.class);
+
+        when(environment.getCatalogManager()).thenReturn(catalogManager);
+        when(catalogManager.getCatalogPages(-1, habbo, CatalogPageType.NORMAL)).thenReturn(List.of());
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
+
+            ByteBuf packet = new CatalogPagesListComposer(habbo, "NORMAL", true)
+                    .compose()
+                    .get();
+            packet.skipBytes(Integer.BYTES + Short.BYTES);
+
+            skipNodeHeader(packet);
+            assertEquals(0, packet.readInt());
+            assertEquals(0, packet.readInt());
+
+            org.junit.jupiter.api.Assertions.assertTrue(packet.readBoolean(), "AIR newAdditionsAvailable");
+            assertEquals("NORMAL", readString(packet));
+            assertFalse(packet.isReadable());
+        }
+    }
+
     private static void skipNodeHeader(ByteBuf packet) {
         packet.readBoolean();
         packet.readInt();

@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
+import com.eu.habbo.habbohotel.catalog.marketplace.MarketplaceTokenService;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -70,9 +71,21 @@ public class SellItemEvent extends MessageHandler {
                 return;
             }
 
+            // With selling tokens on, the offer costs one token (AIR buy_marketplace_tokens); it comes back
+            // when the offer could not be posted.
+            MarketplaceTokenService tokens = MarketplaceTokenService.installed();
+            boolean paysToken = tokens != null && tokens.settings().enabled();
+            int userId = this.client.getHabbo().getHabboInfo().getId();
+            if (paysToken && !tokens.spend(userId, 1)) {
+                this.client.sendResponse(
+                        new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.FAILED_TECHNICAL_ERROR));
+                return;
+            }
+
             if (MarketPlace.sellItem(this.client, item, credits)) {
                 this.client.sendResponse(new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.POST_SUCCESS));
             } else {
+                if (paysToken) tokens.refund(userId, 1);
                 this.client.sendResponse(
                         new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.FAILED_TECHNICAL_ERROR));
             }

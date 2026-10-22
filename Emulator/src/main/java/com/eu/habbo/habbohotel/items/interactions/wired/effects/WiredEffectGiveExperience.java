@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import com.eu.habbo.habbohotel.earnings.EarningsCategory;
+import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -105,7 +107,9 @@ public class WiredEffectGiveExperience extends InteractionWiredEffect {
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
+            String achievementsPeriod = EarningsNotifications.period(habbo, EarningsCategory.ACHIEVEMENTS);
             habbo.getHabboStats().addAchievementScore(this.amount);
+            EarningsNotifications.afterProgress(habbo, EarningsCategory.ACHIEVEMENTS, achievementsPeriod);
         }
     }
 

@@ -47,6 +47,7 @@ public class Incoming {
     public static final int ModToolAlertEvent = 1840;
     public static final int TradeAcceptEvent = 3863;
     public static final int RequestCatalogModeEvent = 1195;
+    public static final int MarkCatalogNewAdditionsPageOpenedEvent = 2150;
     public static final int RequestUserCreditsEvent = 273;
     public static final int FriendPrivateMessageEvent = 3567;
     public static final int CloseDiceEvent = 1533;
@@ -147,6 +148,8 @@ public class Incoming {
     public static final int OpenRecycleBoxEvent = 3558;
     public static final int GuildChangeNameDescEvent = 3137;
     public static final int RequestSellItemEvent = 848;
+    // AIR 15 buy marketplace tokens (no fields), the buy button of the buy_marketplace_tokens window.
+    public static final int BuyMarketplaceTokensEvent = 1866;
     public static final int ModToolChangeRoomSettingsEvent = 3260;
     public static final int ModToolRequestUserChatlogEvent = 1391; // 203
     public static final int GuildChangeSettingsEvent = 3435;
@@ -384,6 +387,9 @@ public class Incoming {
     public static final int HotelViewRequestCommunityGoalEvent = 1145;
     public static final int HotelViewRequestConcurrentUsersEvent = 1343;
     public static final int HotelViewConcurrentUsersButtonEvent = 3872;
+    public static final int GetCommunityGoalHallOfFameEvent = 2167;
+    public static final int GetCommunityGoalEarnedPrizesEvent = 2688;
+    public static final int RedeemCommunityGoalPrizeEvent = 90;
     public static final int IgnoreRoomUserEvent = 1117;
     public static final int IgnoreUserIdEvent = 3314;
     public static final int UnIgnoreRoomUserEvent = 2061;
@@ -789,4 +795,30 @@ public class Incoming {
     // AIR 13 self donation tool (official id 2499) and community goal vote (official id 3536)
     public static final int SelfDonationEvent = 2499;
     public static final int CommunityGoalVoteEvent = 3536;
+    // AIR 15 collectibles (docs/collectibles.md). Official ids where free; the completion reward claim (2209)
+    // and the transfer fee request (875) are taken here and use 9420-9421 of the custom range.
+    public static final int GetCollectibleWalletsEvent = 3702;
+    public static final int SelectCollectibleWalletEvent = 3361;
+    public static final int GetCollectibleCollectionsEvent = 1656;
+    public static final int ClaimCollectionBonusEvent = 149;
+    public static final int ClaimCollectionRewardEvent = 9420;
+    public static final int GetCollectibleShopEvent = 1762;
+    public static final int PurchaseCollectibleEvent = 1542;
+    public static final int GetCollectibleTransferFeeEvent = 9421;
+    public static final int TransferCollectiblesEvent = 1857;
+    public static final int GetCollectibleRewardClaimsEvent = 2902;
+    public static final int ClaimCollectibleRewardsEvent = 3836;
+    public static final int OpenCollectibleRewardBoxEvent = 1489;
+    public static final int GetCollectiblesInventoryEvent = 1119;
+    public static final int GetMintableItemsEvent = 1606;
+    public static final int GetMintingEnabledEvent = 2371;
+    public static final int GetMintTokenOffersEvent = 1133;
+    public static final int GetMintTokensEvent = 2610;
+    public static final int PurchaseMintTokensEvent = 189;
+    public static final int MintCollectibleEvent = 3779;
+    public static final int RedeemEmeraldFurniEvent = 121;
+    // AIR avatar collectibles (avatar editor NFT tab, docs/collectibles.md): official ids, free here.
+    public static final int GetUserNftWardrobeEvent = 3206;
+    public static final int SaveUserNftWardrobeEvent = 133;
+    public static final int GetSelectedNftWardrobeOutfitEvent = 3810;
 }

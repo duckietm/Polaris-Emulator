@@ -328,9 +328,11 @@ public class CommandHandler {
         addCommand(new FreezeCommand());
         addCommand(new FurniDataCommand());
         addCommand(new GiftCommand());
+        addCommand(new GiveCollectibleCommand());
         addCommand(new GiveRankCommand());
         addCommand(new HabnamCommand());
         addCommand(new HandItemCommand());
+        addCommand(new EpicPopupCommand());
         addCommand(new HappyHourCommand());
         addCommand(new HideWiredCommand());
         addCommand(new HotelAlertCommand());

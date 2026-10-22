@@ -588,7 +588,11 @@ public class Outgoing {
     public static final int GameCenterAccountInfoComposer = 2893; // PRODUCTION-201611291003-338511768
     public static final int Game2WeeklySmallLeaderboardComposer = 2270; // PRODUCTION-201611291003-338511768
     public static final int BaseJumpLoadGameComposer = 3654; // PRODUCTION-201611291003-338511768
-    public static final int UnknowComposer_1427 = 3319; // PRODUCTION-201611291003-338511768
+    public static final int CommunityGoalEarnedPrizesComposer = 3319; // PRODUCTION-201611291003-338511768
+    /** @deprecated kept for the plugin ABI; use {@link #CommunityGoalEarnedPrizesComposer}. */
+    @Deprecated
+    public static final int UnknowComposer_1427 = CommunityGoalEarnedPrizesComposer;
+
     public static final int AdventCalendarDataComposer = 2531; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_152 = 3954; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_1577 = 2641; // PRODUCTION-201611291003-338511768
@@ -872,4 +876,33 @@ public class Outgoing {
     public static final int TreasureHuntUpdateComposer = 3368;
     // AIR 13 self donation tool result: the official id is free on our outgoing table.
     public static final int SelfDonationResultComposer = 2920;
+    // AIR 15 collectibles (docs/collectibles.md). Official ids where free; the collections list (3560),
+    // mint result (954), stamp balance (1155), relic list (340) and emerald convert result (3207) are taken
+    // here and use 9420-9424 of the custom range.
+    public static final int CollectibleWalletsComposer = 400;
+    public static final int CollectibleEmeraldBalanceComposer = 652;
+    public static final int CollectibleSilverBalanceComposer = 2458;
+    public static final int CollectorScoreComposer = 1789;
+    public static final int CollectibleCollectionsComposer = 9420;
+    public static final int CollectionBonusClaimResultComposer = 1048;
+    public static final int CollectionRewardClaimResultComposer = 501;
+    public static final int CollectibleShopOffersComposer = 3495;
+    public static final int CollectiblePurchaseResultComposer = 169;
+    public static final int CollectiblesInventoryComposer = 2539;
+    public static final int CollectiblesInventoryUpdateComposer = 1475;
+    public static final int CollectibleTransferFeeComposer = 3909;
+    public static final int CollectibleTransferResultComposer = 2595;
+    public static final int CollectibleRewardClaimsComposer = 3865;
+    public static final int CollectibleClaimAllResultComposer = 3720;
+    public static final int CollectibleRewardBoxOpenedComposer = 3374;
+    public static final int CollectibleRewardBoxResultComposer = 2692;
+    public static final int CollectibleMintResultComposer = 9421;
+    public static final int CollectibleMintTokensComposer = 9422;
+    public static final int CollectibleMintablesComposer = 9423;
+    public static final int CollectibleMintingEnabledComposer = 3059;
+    public static final int CollectibleMintTokenOffersComposer = 745;
+    public static final int NftEmeraldConvertResultComposer = 9424;
+    // AIR avatar collectibles (avatar editor NFT tab, docs/collectibles.md): official ids, free here.
+    public static final int UserNftWardrobeComposer = 2236;
+    public static final int SelectedNftWardrobeOutfitComposer = 350;
 }

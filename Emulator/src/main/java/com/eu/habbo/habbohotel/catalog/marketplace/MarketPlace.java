@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.earnings.EarningsCategory;
+import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -488,6 +490,8 @@ public class MarketPlace {
                                             if (offer != null) {
                                                 offer.setState(MarketPlaceState.SOLD);
                                                 offer.setSoldTimestamp(soldTimestamp);
+                                                // AIR: the sale waits in the seller's earnings window.
+                                                EarningsNotifications.newReward(habbo, EarningsCategory.MARKETPLACE);
                                             }
                                         }
                                     }

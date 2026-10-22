@@ -204,6 +204,7 @@ U|com/eu/habbo/habbohotel/commands/EmptyPetsInventoryCommand.java|CALL|getGameEn
 U|com/eu/habbo/habbohotel/commands/EmptyPetsInventoryCommand.java|CALL|getTexts|9
 U|com/eu/habbo/habbohotel/commands/EnableCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/EnableCommand.java|CALL|getTexts|2
+U|com/eu/habbo/habbohotel/commands/EpicPopupCommand.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/commands/EventCommand.java|CALL|getDate|1
 U|com/eu/habbo/habbohotel/commands/EventCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/EventCommand.java|CALL|getTexts|1
@@ -218,6 +219,7 @@ U|com/eu/habbo/habbohotel/commands/FurniDataCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getTexts|7
+U|com/eu/habbo/habbohotel/commands/GiveCollectibleCommand.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/commands/GivePrefixCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/GivePrefixCommand.java|CALL|getTexts|7
 U|com/eu/habbo/habbohotel/commands/GiveRankCommand.java|CALL|getGameEnvironment|4
@@ -401,10 +403,10 @@ U|com/eu/habbo/habbohotel/commands/UpdateYoutubePlaylistsCommand.java|CALL|getTe
 U|com/eu/habbo/habbohotel/commands/UserInfoCommand.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/commands/UserInfoCommand.java|CALL|getTexts|35
 U|com/eu/habbo/habbohotel/commands/WordQuizCommand.java|CALL|getTexts|2
-U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getConfig|2
-U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getDatabase|6
-U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getIntUnixTimestamp|4
+U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getConfig|3
+U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getDatabase|11
+U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/habbohotel/communitygoals/CommunityGoalManager.java|CALL|getIntUnixTimestamp|6
 U|com/eu/habbo/habbohotel/crafting/CraftingManager.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/crafting/CraftingManager.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/crafting/CraftingRecipe.java|CALL|getGameEnvironment|1
@@ -1198,10 +1200,15 @@ U|com/eu/habbo/messages/incoming/catalog/recycler/OpenRecycleBoxEvent.java|CALL|
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getThreading|2
+U|com/eu/habbo/messages/incoming/collectibles/SaveUserNftWardrobeEvent.java|CALL|getPluginManager|1
+U|com/eu/habbo/messages/incoming/collectibles/SaveUserNftWardrobeEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/communitygoals/CommunityGoalVoteEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/communitygoals/GetCommunityGoalEarnedPrizesEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/communitygoals/GetCommunityGoalHallOfFameEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/communitygoals/HotelViewConcurrentUsersButtonEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/communitygoals/HotelViewRequestCommunityGoalEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/communitygoals/HotelViewRequestConcurrentUsersEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/communitygoals/RedeemCommunityGoalPrizeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingAddRecipeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getThreading|1

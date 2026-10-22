@@ -2409,6 +2409,22 @@
       "fields": []
     },
     {
+      "name": "MARKETPLACE_BUY_TOKENS",
+      "direction": "client_to_server",
+      "header": 1866,
+      "java": {
+        "symbol": "BuyMarketplaceTokensEvent",
+        "className": "BuyMarketplaceTokensEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/marketplace/BuyMarketplaceTokensEvent.java"
+      },
+      "typescript": {
+        "symbol": "MARKETPLACE_BUY_TOKENS",
+        "className": "BuyMarketplaceTokensMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/marketplace/BuyMarketplaceTokensMessageComposer.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "FORWARD_TO_RANDOM_COMPETITION_ROOM",
       "direction": "client_to_server",
       "header": 865,
@@ -4758,6 +4774,22 @@
           "name": "itemId"
         }
       ]
+    },
+    {
+      "name": "MARK_CATALOG_NEW_ADDITIONS_PAGE_OPENED",
+      "direction": "client_to_server",
+      "header": 2150,
+      "java": {
+        "symbol": "MarkCatalogNewAdditionsPageOpenedEvent",
+        "className": "MarkCatalogNewAdditionsPageOpenedEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/MarkCatalogNewAdditionsPageOpenedEvent.java"
+      },
+      "typescript": {
+        "symbol": "MARK_CATALOG_NEW_ADDITIONS_PAGE_OPENED",
+        "className": "MarkCatalogNewAdditionsPageOpenedComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/MarkCatalogNewAdditionsPageOpenedComposer.ts"
+      },
+      "fields": []
     },
     {
       "name": "GET_PET_TRAINING_PANEL",
@@ -18738,7 +18770,7 @@
       "fields": [
         {
           "kind": "scalar",
-          "type": "int",
+          "type": "string",
           "name": ""
         },
         {
@@ -22297,6 +22329,923 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "REDEEM_COMMUNITY_GOAL_PRIZE",
+      "direction": "client_to_server",
+      "header": 90,
+      "java": {
+        "symbol": "RedeemCommunityGoalPrizeEvent",
+        "className": "RedeemCommunityGoalPrizeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/communitygoals/RedeemCommunityGoalPrizeEvent.java"
+      },
+      "typescript": {
+        "symbol": "REDEEM_COMMUNITY_GOAL_PRIZE",
+        "className": "RedeemCommunityGoalPrizeMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/quest/RedeemCommunityGoalPrizeMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "communityGoalId"
+        }
+      ]
+    },
+    {
+      "name": "GET_COMMUNITY_GOAL_HALL_OF_FAME",
+      "direction": "client_to_server",
+      "header": 2167,
+      "java": {
+        "symbol": "GetCommunityGoalHallOfFameEvent",
+        "className": "GetCommunityGoalHallOfFameEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/communitygoals/GetCommunityGoalHallOfFameEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COMMUNITY_GOAL_HALL_OF_FAME",
+        "className": "GetCommunityGoalHallOfFameMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/quest/GetCommunityGoalHallOfFameMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "goalCode"
+        }
+      ]
+    },
+    {
+      "name": "GET_COMMUNITY_GOAL_EARNED_PRIZES",
+      "direction": "client_to_server",
+      "header": 2688,
+      "java": {
+        "symbol": "GetCommunityGoalEarnedPrizesEvent",
+        "className": "GetCommunityGoalEarnedPrizesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/communitygoals/GetCommunityGoalEarnedPrizesEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COMMUNITY_GOAL_EARNED_PRIZES",
+        "className": "GetCommunityGoalEarnedPrizesMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/quest/GetCommunityGoalEarnedPrizesMessageComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "REDEEM_EMERALD_FURNI",
+      "direction": "client_to_server",
+      "header": 121,
+      "java": {
+        "symbol": "RedeemEmeraldFurniEvent",
+        "className": "RedeemEmeraldFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemEmeraldFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "REDEEM_EMERALD_FURNI",
+        "className": "RedeemEmeraldFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/RedeemEmeraldFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_COLLECTION_BONUS",
+      "direction": "client_to_server",
+      "header": 149,
+      "java": {
+        "symbol": "ClaimCollectionBonusEvent",
+        "className": "ClaimCollectionBonusEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/ClaimCollectionBonusEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_COLLECTION_BONUS",
+        "className": "ClaimCollectionBonusComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/ClaimCollectionBonusComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "collectionId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "PURCHASE_MINT_TOKENS",
+      "direction": "client_to_server",
+      "header": 189,
+      "java": {
+        "symbol": "PurchaseMintTokensEvent",
+        "className": "PurchaseMintTokensEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/PurchaseMintTokensEvent.java"
+      },
+      "typescript": {
+        "symbol": "PURCHASE_MINT_TOKENS",
+        "className": "PurchaseMintTokensComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/PurchaseMintTokensComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "offerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_COLLECTIBLES_INVENTORY",
+      "direction": "client_to_server",
+      "header": 1119,
+      "java": {
+        "symbol": "GetCollectiblesInventoryEvent",
+        "className": "GetCollectiblesInventoryEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectiblesInventoryEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLES_INVENTORY",
+        "className": "GetCollectiblesInventoryComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectiblesInventoryComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "GET_MINT_TOKEN_OFFERS",
+      "direction": "client_to_server",
+      "header": 1133,
+      "java": {
+        "symbol": "GetMintTokenOffersEvent",
+        "className": "GetMintTokenOffersEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetMintTokenOffersEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_MINT_TOKEN_OFFERS",
+        "className": "GetMintTokenOffersComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetMintTokenOffersComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "OPEN_COLLECTIBLE_REWARD_BOX",
+      "direction": "client_to_server",
+      "header": 1489,
+      "java": {
+        "symbol": "OpenCollectibleRewardBoxEvent",
+        "className": "OpenCollectibleRewardBoxEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/OpenCollectibleRewardBoxEvent.java"
+      },
+      "typescript": {
+        "symbol": "OPEN_COLLECTIBLE_REWARD_BOX",
+        "className": "OpenCollectibleRewardBoxComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/OpenCollectibleRewardBoxComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
+      "name": "PURCHASE_COLLECTIBLE",
+      "direction": "client_to_server",
+      "header": 1542,
+      "java": {
+        "symbol": "PurchaseCollectibleEvent",
+        "className": "PurchaseCollectibleEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/PurchaseCollectibleEvent.java"
+      },
+      "typescript": {
+        "symbol": "PURCHASE_COLLECTIBLE",
+        "className": "PurchaseCollectibleComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/PurchaseCollectibleComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "productCode"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_MINTABLE_ITEMS",
+      "direction": "client_to_server",
+      "header": 1606,
+      "java": {
+        "symbol": "GetMintableItemsEvent",
+        "className": "GetMintableItemsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetMintableItemsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_MINTABLE_ITEMS",
+        "className": "GetMintableItemsComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetMintableItemsComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "GET_COLLECTIBLE_COLLECTIONS",
+      "direction": "client_to_server",
+      "header": 1656,
+      "java": {
+        "symbol": "GetCollectibleCollectionsEvent",
+        "className": "GetCollectibleCollectionsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectibleCollectionsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLE_COLLECTIONS",
+        "className": "GetCollectibleCollectionsComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectibleCollectionsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_COLLECTIBLE_SHOP",
+      "direction": "client_to_server",
+      "header": 1762,
+      "java": {
+        "symbol": "GetCollectibleShopEvent",
+        "className": "GetCollectibleShopEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectibleShopEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLE_SHOP",
+        "className": "GetCollectibleShopComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectibleShopComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "TRANSFER_COLLECTIBLES",
+      "direction": "client_to_server",
+      "header": 1857,
+      "java": {
+        "symbol": "TransferCollectiblesEvent",
+        "className": "TransferCollectiblesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/TransferCollectiblesEvent.java"
+      },
+      "typescript": {
+        "symbol": "TRANSFER_COLLECTIBLES",
+        "className": "TransferCollectiblesComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/TransferCollectiblesComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "recipientName"
+        }
+      ]
+    },
+    {
+      "name": "GET_MINTING_ENABLED",
+      "direction": "client_to_server",
+      "header": 2371,
+      "java": {
+        "symbol": "GetMintingEnabledEvent",
+        "className": "GetMintingEnabledEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetMintingEnabledEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_MINTING_ENABLED",
+        "className": "GetMintingEnabledComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetMintingEnabledComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "GET_MINT_TOKENS",
+      "direction": "client_to_server",
+      "header": 2610,
+      "java": {
+        "symbol": "GetMintTokensEvent",
+        "className": "GetMintTokensEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetMintTokensEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_MINT_TOKENS",
+        "className": "GetMintTokensComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetMintTokensComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_COLLECTIBLE_REWARD_CLAIMS",
+      "direction": "client_to_server",
+      "header": 2902,
+      "java": {
+        "symbol": "GetCollectibleRewardClaimsEvent",
+        "className": "GetCollectibleRewardClaimsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectibleRewardClaimsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLE_REWARD_CLAIMS",
+        "className": "GetCollectibleRewardClaimsComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectibleRewardClaimsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "SELECT_COLLECTIBLE_WALLET",
+      "direction": "client_to_server",
+      "header": 3361,
+      "java": {
+        "symbol": "SelectCollectibleWalletEvent",
+        "className": "SelectCollectibleWalletEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/SelectCollectibleWalletEvent.java"
+      },
+      "typescript": {
+        "symbol": "SELECT_COLLECTIBLE_WALLET",
+        "className": "SelectCollectibleWalletComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/SelectCollectibleWalletComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_COLLECTIBLE_WALLETS",
+      "direction": "client_to_server",
+      "header": 3702,
+      "java": {
+        "symbol": "GetCollectibleWalletsEvent",
+        "className": "GetCollectibleWalletsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectibleWalletsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLE_WALLETS",
+        "className": "GetCollectibleWalletsComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectibleWalletsComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "MINT_COLLECTIBLE",
+      "direction": "client_to_server",
+      "header": 3779,
+      "java": {
+        "symbol": "MintCollectibleEvent",
+        "className": "MintCollectibleEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/MintCollectibleEvent.java"
+      },
+      "typescript": {
+        "symbol": "MINT_COLLECTIBLE",
+        "className": "MintCollectibleComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/MintCollectibleComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_COLLECTIBLE_REWARDS",
+      "direction": "client_to_server",
+      "header": 3836,
+      "java": {
+        "symbol": "ClaimCollectibleRewardsEvent",
+        "className": "ClaimCollectibleRewardsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/ClaimCollectibleRewardsEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_COLLECTIBLE_REWARDS",
+        "className": "ClaimCollectibleRewardsComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/ClaimCollectibleRewardsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_COLLECTION_REWARD",
+      "direction": "client_to_server",
+      "header": 9420,
+      "java": {
+        "symbol": "ClaimCollectionRewardEvent",
+        "className": "ClaimCollectionRewardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/ClaimCollectionRewardEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_COLLECTION_REWARD",
+        "className": "ClaimCollectionRewardComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/ClaimCollectionRewardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "collectionId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "wallet"
+        }
+      ]
+    },
+    {
+      "name": "GET_COLLECTIBLE_TRANSFER_FEE",
+      "direction": "client_to_server",
+      "header": 9421,
+      "java": {
+        "symbol": "GetCollectibleTransferFeeEvent",
+        "className": "GetCollectibleTransferFeeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetCollectibleTransferFeeEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_COLLECTIBLE_TRANSFER_FEE",
+        "className": "GetCollectibleTransferFeeComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetCollectibleTransferFeeComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "COLLECTIBLE_PURCHASE_RESULT",
+      "direction": "server_to_client",
+      "header": 169,
+      "java": {
+        "symbol": "CollectiblePurchaseResultComposer",
+        "className": "CollectiblePurchaseResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectiblePurchaseResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_PURCHASE_RESULT",
+        "className": "CollectibleResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTION_REWARD_CLAIM_RESULT",
+      "direction": "server_to_client",
+      "header": 501,
+      "java": {
+        "symbol": "CollectionRewardClaimResultComposer",
+        "className": "CollectionRewardClaimResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectionRewardClaimResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTION_REWARD_CLAIM_RESULT",
+        "className": "CollectionClaimResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectionClaimResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_EMERALD_BALANCE",
+      "direction": "server_to_client",
+      "header": 652,
+      "java": {
+        "symbol": "CollectibleEmeraldBalanceComposer",
+        "className": "CollectibleEmeraldBalanceComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleEmeraldBalanceComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_EMERALD_BALANCE",
+        "className": "CollectibleAmountParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleAmountParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTION_BONUS_CLAIM_RESULT",
+      "direction": "server_to_client",
+      "header": 1048,
+      "java": {
+        "symbol": "CollectionBonusClaimResultComposer",
+        "className": "CollectionBonusClaimResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectionBonusClaimResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTION_BONUS_CLAIM_RESULT",
+        "className": "CollectionClaimResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectionClaimResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTOR_SCORE",
+      "direction": "server_to_client",
+      "header": 1789,
+      "java": {
+        "symbol": "CollectorScoreComposer",
+        "className": "CollectorScoreComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectorScoreComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTOR_SCORE",
+        "className": "CollectorScoreParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectorScoreParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_SILVER_BALANCE",
+      "direction": "server_to_client",
+      "header": 2458,
+      "java": {
+        "symbol": "CollectibleSilverBalanceComposer",
+        "className": "CollectibleSilverBalanceComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleSilverBalanceComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_SILVER_BALANCE",
+        "className": "CollectibleAmountParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleAmountParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_TRANSFER_RESULT",
+      "direction": "server_to_client",
+      "header": 2595,
+      "java": {
+        "symbol": "CollectibleTransferResultComposer",
+        "className": "CollectibleTransferResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleTransferResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_TRANSFER_RESULT",
+        "className": "CollectibleResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_REWARD_BOX_RESULT",
+      "direction": "server_to_client",
+      "header": 2692,
+      "java": {
+        "symbol": "CollectibleRewardBoxResultComposer",
+        "className": "CollectibleRewardBoxResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleRewardBoxResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_REWARD_BOX_RESULT",
+        "className": "CollectibleResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_MINTING_ENABLED",
+      "direction": "server_to_client",
+      "header": 3059,
+      "java": {
+        "symbol": "CollectibleMintingEnabledComposer",
+        "className": "CollectibleMintingEnabledComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleMintingEnabledComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_MINTING_ENABLED",
+        "className": "CollectibleMintingEnabledParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleMintingEnabledParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_CLAIM_ALL_RESULT",
+      "direction": "server_to_client",
+      "header": 3720,
+      "java": {
+        "symbol": "CollectibleClaimAllResultComposer",
+        "className": "CollectibleClaimAllResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleClaimAllResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_CLAIM_ALL_RESULT",
+        "className": "CollectibleResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_TRANSFER_FEE",
+      "direction": "server_to_client",
+      "header": 3909,
+      "java": {
+        "symbol": "CollectibleTransferFeeComposer",
+        "className": "CollectibleTransferFeeComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleTransferFeeComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_TRANSFER_FEE",
+        "className": "CollectibleAmountParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleAmountParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_MINT_RESULT",
+      "direction": "server_to_client",
+      "header": 9421,
+      "java": {
+        "symbol": "CollectibleMintResultComposer",
+        "className": "CollectibleMintResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleMintResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_MINT_RESULT",
+        "className": "CollectibleResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "COLLECTIBLE_MINT_TOKENS",
+      "direction": "server_to_client",
+      "header": 9422,
+      "java": {
+        "symbol": "CollectibleMintTokensComposer",
+        "className": "CollectibleMintTokensComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleMintTokensComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_MINT_TOKENS",
+        "className": "CollectibleAmountParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleAmountParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SAVE_USER_NFT_WARDROBE",
+      "direction": "client_to_server",
+      "header": 133,
+      "java": {
+        "symbol": "SaveUserNftWardrobeEvent",
+        "className": "SaveUserNftWardrobeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/SaveUserNftWardrobeEvent.java"
+      },
+      "typescript": {
+        "symbol": "SAVE_USER_NFT_WARDROBE",
+        "className": "SaveUserNftWardrobeComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/SaveUserNftWardrobeComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "assetId"
+        }
+      ]
+    },
+    {
+      "name": "GET_USER_NFT_WARDROBE",
+      "direction": "client_to_server",
+      "header": 3206,
+      "java": {
+        "symbol": "GetUserNftWardrobeEvent",
+        "className": "GetUserNftWardrobeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetUserNftWardrobeEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_USER_NFT_WARDROBE",
+        "className": "GetUserNftWardrobeComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetUserNftWardrobeComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "GET_SELECTED_NFT_WARDROBE_OUTFIT",
+      "direction": "client_to_server",
+      "header": 3810,
+      "java": {
+        "symbol": "GetSelectedNftWardrobeOutfitEvent",
+        "className": "GetSelectedNftWardrobeOutfitEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/collectibles/GetSelectedNftWardrobeOutfitEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_SELECTED_NFT_WARDROBE_OUTFIT",
+        "className": "GetSelectedNftWardrobeOutfitComposer",
+        "path": "packages/communication/src/messages/outgoing/collectibles/GetSelectedNftWardrobeOutfitComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SELECTED_NFT_WARDROBE_OUTFIT",
+      "direction": "server_to_client",
+      "header": 350,
+      "java": {
+        "symbol": "SelectedNftWardrobeOutfitComposer",
+        "className": "SelectedNftWardrobeOutfitComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/SelectedNftWardrobeOutfitComposer.java"
+      },
+      "typescript": {
+        "symbol": "SELECTED_NFT_WARDROBE_OUTFIT",
+        "className": "SelectedNftWardrobeOutfitParser",
+        "path": "packages/communication/src/messages/parser/collectibles/SelectedNftWardrobeOutfitParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "NFT_EMERALD_CONVERT_RESULT",
+      "direction": "server_to_client",
+      "header": 9424,
+      "java": {
+        "symbol": "NftEmeraldConvertResultComposer",
+        "className": "NftEmeraldConvertResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/NftEmeraldConvertResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "NFT_EMERALD_CONVERT_RESULT",
+        "className": "NftEmeraldConvertResultParser",
+        "path": "packages/communication/src/messages/parser/collectibles/NftEmeraldConvertResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -22402,14 +23351,6 @@
       "header": 66,
       "symbol": "WELCOME_GIFT_CHANGE_EMAIL",
       "path": "packages/communication/src/messages/outgoing/user/WelcomeGiftChangeEmailComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 90,
-      "symbol": "REDEEM_COMMUNITY_GOAL_PRIZE",
-      "path": "packages/communication/src/messages/outgoing/quest/RedeemCommunityGoalPrizeMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -22575,33 +23516,9 @@
     {
       "direction": "client_to_server",
       "side": "typescript",
-      "header": 1866,
-      "symbol": "MARKETPLACE_BUY_TOKENS",
-      "path": "packages/communication/src/messages/outgoing/marketplace/BuyMarketplaceTokensMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
       "header": 2031,
       "symbol": "SEARCH_FAQS",
       "path": "packages/communication/src/messages/outgoing/help/SearchFaqsMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2150,
-      "symbol": "MARK_CATALOG_NEW_ADDITIONS_PAGE_OPENED",
-      "path": "packages/communication/src/messages/outgoing/catalog/MarkCatalogNewAdditionsPageOpenedComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2167,
-      "symbol": "GET_COMMUNITY_GOAL_HALL_OF_FAME",
-      "path": "packages/communication/src/messages/outgoing/quest/GetCommunityGoalHallOfFameMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -22722,14 +23639,6 @@
       "header": 2668,
       "symbol": "ROOM_AD_EVENT_TAB_VIEWED",
       "path": "packages/communication/src/messages/outgoing/navigator/RoomAdEventTabViewedComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2688,
-      "symbol": "GET_COMMUNITY_GOAL_EARNED_PRIZES",
-      "path": "packages/communication/src/messages/outgoing/quest/GetCommunityGoalEarnedPrizesMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -23098,14 +24007,6 @@
       "header": 3191,
       "symbol": "GAME_CENTER_STOP_COUNTER",
       "path": "packages/communication/src/messages/parser/game/directory/Game2StopCounterMessageParser.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 3319,
-      "symbol": "COMMUNITY_GOAL_EARNED_PRIZES",
-      "path": "packages/communication/src/messages/parser/quest/CommunityGoalEarnedPrizesMessageParser.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -28100,7 +29001,7 @@
         "className": "NavigatorLiftedParser",
         "path": "packages/communication/src/messages/parser/navigator/NavigatorLiftedParser.ts"
       },
-      "reason": "TypeScript analyzer: Packet fields delegated to external constructor NavigatorLiftedDataParser inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor NavigatorLiftedDataParser inside parse"
     },
     {
       "name": "MESSENGER_FRIENDS",
@@ -30246,5 +31147,182 @@
         "path": "packages/communication/src/messages/parser/roomevents/WiredContractContentsParser.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external serializer write inside composeInternal; TypeScript analyzer: Packet fields delegated to external reader readWiredContractDefinition inside parse"
-    }  ]
+    },
+    {
+      "name": "COMMUNITY_GOAL_EARNED_PRIZES",
+      "direction": "server_to_client",
+      "header": 3319,
+      "java": {
+        "symbol": "CommunityGoalEarnedPrizesComposer",
+        "className": "CommunityGoalEarnedPrizesComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/CommunityGoalEarnedPrizesComposer.java"
+      },
+      "typescript": {
+        "symbol": "COMMUNITY_GOAL_EARNED_PRIZES",
+        "className": "CommunityGoalEarnedPrizesMessageParser",
+        "path": "packages/communication/src/messages/parser/quest/CommunityGoalEarnedPrizesMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor PrizeData inside parse"
+    },
+    {
+      "name": "COLLECTIBLE_WALLETS",
+      "direction": "server_to_client",
+      "header": 400,
+      "java": {
+        "symbol": "CollectibleWalletsComposer",
+        "className": "CollectibleWalletsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleWalletsComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_WALLETS",
+        "className": "CollectibleWalletsParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleWalletsParser.ts"
+      },
+      "reason": "TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "COLLECTIBLE_MINT_TOKEN_OFFERS",
+      "direction": "server_to_client",
+      "header": 745,
+      "java": {
+        "symbol": "CollectibleMintTokenOffersComposer",
+        "className": "CollectibleMintTokenOffersComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleMintTokenOffersComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_MINT_TOKEN_OFFERS",
+        "className": "CollectibleMintTokenOffersParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleMintTokenOffersParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLES_INVENTORY_UPDATE",
+      "direction": "server_to_client",
+      "header": 1475,
+      "java": {
+        "symbol": "CollectiblesInventoryUpdateComposer",
+        "className": "CollectiblesInventoryUpdateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectiblesInventoryUpdateComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLES_INVENTORY_UPDATE",
+        "className": "CollectiblesInventoryUpdateParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectiblesInventoryUpdateParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer appendLong inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLES_INVENTORY",
+      "direction": "server_to_client",
+      "header": 2539,
+      "java": {
+        "symbol": "CollectiblesInventoryComposer",
+        "className": "CollectiblesInventoryComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectiblesInventoryComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLES_INVENTORY",
+        "className": "CollectiblesInventoryParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectiblesInventoryParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer appendLong inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLE_REWARD_BOX_OPENED",
+      "direction": "server_to_client",
+      "header": 3374,
+      "java": {
+        "symbol": "CollectibleRewardBoxOpenedComposer",
+        "className": "CollectibleRewardBoxOpenedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleRewardBoxOpenedComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_REWARD_BOX_OPENED",
+        "className": "CollectibleRewardBoxOpenedParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleRewardBoxOpenedParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer appendProduct inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLE_SHOP_OFFERS",
+      "direction": "server_to_client",
+      "header": 3495,
+      "java": {
+        "symbol": "CollectibleShopOffersComposer",
+        "className": "CollectibleShopOffersComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleShopOffersComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_SHOP_OFFERS",
+        "className": "CollectibleShopOffersParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleShopOffersParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLE_REWARD_CLAIMS",
+      "direction": "server_to_client",
+      "header": 3865,
+      "java": {
+        "symbol": "CollectibleRewardClaimsComposer",
+        "className": "CollectibleRewardClaimsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleRewardClaimsComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_REWARD_CLAIMS",
+        "className": "CollectibleRewardClaimsParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleRewardClaimsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "COLLECTIBLE_COLLECTIONS",
+      "direction": "server_to_client",
+      "header": 9420,
+      "java": {
+        "symbol": "CollectibleCollectionsComposer",
+        "className": "CollectibleCollectionsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleCollectionsComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_COLLECTIONS",
+        "className": "CollectibleCollectionsParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleCollectionsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "USER_NFT_WARDROBE",
+      "direction": "server_to_client",
+      "header": 2236,
+      "java": {
+        "symbol": "UserNftWardrobeComposer",
+        "className": "UserNftWardrobeComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/UserNftWardrobeComposer.java"
+      },
+      "typescript": {
+        "symbol": "USER_NFT_WARDROBE",
+        "className": "UserNftWardrobeParser",
+        "path": "packages/communication/src/messages/parser/collectibles/UserNftWardrobeParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor NftWardrobeItemData inside parse"
+    },
+    {
+      "name": "COLLECTIBLE_MINTABLES",
+      "direction": "server_to_client",
+      "header": 9423,
+      "java": {
+        "symbol": "CollectibleMintablesComposer",
+        "className": "CollectibleMintablesComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/collectibles/CollectibleMintablesComposer.java"
+      },
+      "typescript": {
+        "symbol": "COLLECTIBLE_MINTABLES",
+        "className": "CollectibleMintablesParser",
+        "path": "packages/communication/src/messages/parser/collectibles/CollectibleMintablesParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    }
+  ]
 }

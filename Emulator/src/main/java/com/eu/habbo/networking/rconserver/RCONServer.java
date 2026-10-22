@@ -7,6 +7,7 @@ import com.eu.habbo.messages.rcon.ChangeRoomOwner;
 import com.eu.habbo.messages.rcon.ChangeUsername;
 import com.eu.habbo.messages.rcon.CreateModToolTicket;
 import com.eu.habbo.messages.rcon.DisconnectUser;
+import com.eu.habbo.messages.rcon.EpicPopup;
 import com.eu.habbo.messages.rcon.ExecuteCommand;
 import com.eu.habbo.messages.rcon.ForwardUser;
 import com.eu.habbo.messages.rcon.FriendRequest;
@@ -114,6 +115,7 @@ public class RCONServer extends Server {
         this.addRCONMessage("friendrequest", FriendRequest.class);
         this.addRCONMessage("imagehotelalert", ImageHotelAlert.class);
         this.addRCONMessage("imagealertuser", ImageAlertUser.class);
+        this.addRCONMessage("epicpopup", EpicPopup.class);
         this.addRCONMessage("stalkuser", StalkUser.class);
         this.addRCONMessage("staffalert", StaffAlert.class);
         this.addRCONMessage("modticket", CreateModToolTicket.class);

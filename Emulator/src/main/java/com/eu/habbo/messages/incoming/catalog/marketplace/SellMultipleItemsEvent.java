@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
+import com.eu.habbo.habbohotel.catalog.marketplace.MarketplaceTokenService;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -101,9 +102,21 @@ public class SellMultipleItemsEvent extends MessageHandler {
             return;
         }
 
+        // With selling tokens on, every copy is its own offer and costs one token. Posting stops at the last
+        // token, and a copy that could not be posted gives its token back.
+        MarketplaceTokenService tokens = MarketplaceTokenService.installed();
+        boolean paysTokens = tokens != null && tokens.settings().enabled();
+        int userId = this.client.getHabbo().getHabboInfo().getId();
+
         int posted = 0;
         for (HabboItem item : items) {
-            if (MarketPlace.sellItem(this.client, item, credits)) posted++;
+            if (paysTokens && !tokens.spend(userId, 1)) break;
+
+            if (MarketPlace.sellItem(this.client, item, credits)) {
+                posted++;
+            } else if (paysTokens) {
+                tokens.refund(userId, 1);
+            }
         }
 
         this.client.sendResponse(new MarketplaceItemPostedComposer(

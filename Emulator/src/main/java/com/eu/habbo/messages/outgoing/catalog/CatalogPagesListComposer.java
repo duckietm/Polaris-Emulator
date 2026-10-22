@@ -25,11 +25,18 @@ public class CatalogPagesListComposer extends MessageComposer {
     private final Habbo habbo;
     private final String mode;
     private final boolean hasPermission;
+    private final boolean newAdditionsAvailable;
 
     public CatalogPagesListComposer(Habbo habbo, String mode) {
+        this(habbo, mode, false);
+    }
+
+    /** {@code newAdditionsAvailable}: the official index flag that opens the new_additions page (AIR 15). */
+    public CatalogPagesListComposer(Habbo habbo, String mode, boolean newAdditionsAvailable) {
         this.habbo = habbo;
         this.mode = mode;
         this.hasPermission = this.habbo.hasPermission(Permission.ACC_CATALOG_IDS);
+        this.newAdditionsAvailable = newAdditionsAvailable;
     }
 
     @Override
@@ -56,7 +63,7 @@ public class CatalogPagesListComposer extends MessageComposer {
                 this.append(pages.get(idx), 1, requestedType);
             }
 
-            this.response.appendBoolean(false);
+            this.response.appendBoolean(this.newAdditionsAvailable);
             this.response.appendString(this.mode);
 
             return this.response;
@@ -120,6 +127,10 @@ public class CatalogPagesListComposer extends MessageComposer {
 
     public String getMode() {
         return mode;
+    }
+
+    public boolean isNewAdditionsAvailable() {
+        return newAdditionsAvailable;
     }
 
     public boolean isHasPermission() {

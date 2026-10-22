@@ -24,7 +24,13 @@ public class ForwardToACompetitionRoomEvent extends MessageHandler {
 
         if (competition == null || roomId <= 0) return;
 
-        if (RoomCompetitionManager.getInstance().entryId(roomId, competition) <= 0) return;
+        if (RoomCompetitionManager.getInstance().entryId(roomId, competition) <= 0) {
+            // The hotel view hall of fame (CommunityGoalHallOfFameWidget) sends the user id of
+            // the player whose "go to room" icon was clicked: forward to that player's entry.
+            roomId = RoomCompetitionManager.getInstance().entryRoomId(roomId, competition);
+
+            if (roomId <= 0) return;
+        }
 
         this.client.sendResponse(new ForwardToRoomComposer(roomId));
     }

@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.rooms.promotions;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.messenger.FriendActivityNotifier;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
@@ -47,10 +48,11 @@ public class BuyRoomPromotionEvent extends MessageHandler {
                     return;
                 }
 
-                if (room.isPromoted()) {
-                    room.getPromotion().addEndTimestamp(120 * 60);
-                } else {
+                boolean newEvent = !room.isPromoted();
+                if (newEvent) {
                     room.createPromotion(title, description, categoryId);
+                } else {
+                    room.getPromotion().addEndTimestamp(120 * 60);
                 }
 
                 if (room.isPromoted()) {
@@ -64,6 +66,10 @@ public class BuyRoomPromotionEvent extends MessageHandler {
 
                     this.client.sendResponse(new PurchaseOKComposer());
                     room.sendComposer(new RoomPromotionMessageComposer(room, room.getPromotion()).compose());
+                    if (newEvent) {
+                        FriendActivityNotifier.roomEventStarted(
+                                this.client.getHabbo(), room.getPromotion().getTitle());
+                    }
 
                     if (!this.client
                             .getHabbo()

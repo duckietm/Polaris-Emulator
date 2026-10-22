@@ -28,6 +28,13 @@ public class NavigatorManager {
     public final ConcurrentHashMap<String, NavigatorFilterField> filterSettings = new ConcurrentHashMap<>();
     public final Map<String, NavigatorFilter> filters = new HashMap<>();
 
+    private static final String LIFTED_ROOMS_QUERY =
+            "SELECT l.room_id, l.area_id, l.image, l.caption, r.name AS room_name"
+                    + " FROM navigator_lifted_rooms l INNER JOIN rooms r ON r.id = l.room_id"
+                    + " WHERE l.visible = '1' ORDER BY l.order_num ASC, l.id ASC";
+
+    private volatile List<NavigatorLiftedRoom> liftedRooms = List.of();
+
     public NavigatorManager() {
         long millis = System.currentTimeMillis();
 
@@ -120,6 +127,8 @@ public class NavigatorManager {
                     LOGGER.error("Caught SQL exception", e);
                 }
             }
+
+            this.loadLiftedRooms(connection);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
@@ -132,6 +141,32 @@ public class NavigatorManager {
                     .get(Emulator.getConfig().getInt("hotel.navigator.staffpicks.categoryid"))
                     .addRoom(room);
         }
+    }
+
+    /** The rooms of the navigator's lifted list (AIR NavigatorLifted), in display order. */
+    public List<NavigatorLiftedRoom> getLiftedRooms() {
+        return this.liftedRooms;
+    }
+
+    private void loadLiftedRooms(Connection connection) {
+        try (Statement statement = connection.createStatement();
+                ResultSet set = statement.executeQuery(LIFTED_ROOMS_QUERY)) {
+            this.liftedRooms = readLiftedRooms(set);
+        } catch (SQLException e) {
+            LOGGER.error("Could not load navigator_lifted_rooms", e);
+        }
+    }
+
+    /** Reads lifted rooms from a result set; an empty caption falls back to the room's name. */
+    static List<NavigatorLiftedRoom> readLiftedRooms(ResultSet set) throws SQLException {
+        List<NavigatorLiftedRoom> rooms = new ArrayList<>();
+        while (set.next()) {
+            String caption = set.getString("caption");
+            if (caption == null || caption.isBlank()) caption = set.getString("room_name");
+            rooms.add(new NavigatorLiftedRoom(
+                    set.getInt("room_id"), set.getInt("area_id"), set.getString("image"), caption));
+        }
+        return List.copyOf(rooms);
     }
 
     public NavigatorFilterComparator comperatorForField(Method field) {

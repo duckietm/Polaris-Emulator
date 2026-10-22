@@ -3,9 +3,13 @@ package com.eu.habbo.messages.outgoing.unknown;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Map;
 
+/**
+ * AIR's BotSkillListUpdate (header 69): int bot id (the negative room id the client knows the bot by),
+ * then int count and per skill int id, string data. The client replaces the rentable bot's skills
+ * with this list and refreshes its menu.
+ */
 public class UnknownRoomDesktopComposer extends MessageComposer {
     private final int unknownInt1;
     private final Map<Integer, String> unknownMap;

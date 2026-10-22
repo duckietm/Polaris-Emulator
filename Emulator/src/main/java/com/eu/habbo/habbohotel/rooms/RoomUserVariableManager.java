@@ -978,6 +978,10 @@ public class RoomUserVariableManager {
     }
 
     public void sendSnapshot(Habbo habbo) {
+        if (habbo == null || habbo.getClient() == null || !this.room.canInspectWired(habbo)) {
+            return;
+        }
+
         RoomVariableChanges.sendSnapshot(this.room, habbo);
     }
 

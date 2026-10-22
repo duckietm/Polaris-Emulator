@@ -41,12 +41,11 @@ final class RoomVariableChanges {
         return changeKind(hasValue, true, previousValue, true, currentValue);
     }
 
-    /** Sends the user, furni and room variables of the room to one viewer, if that viewer may inspect wired. */
+    /**
+     * Sends the user, furni and room variables of the room to one viewer. The caller checks that the viewer is
+     * connected and may inspect wired, where the packet handler's authorization gate can see it.
+     */
     static void sendSnapshot(Room room, Habbo habbo) {
-        if (habbo == null || habbo.getClient() == null || !room.canInspectWired(habbo)) {
-            return;
-        }
-
         habbo.getClient()
                 .sendResponse(new WiredUserVariablesDataComposer(
                         room.getUserVariableManager().createSnapshot(),

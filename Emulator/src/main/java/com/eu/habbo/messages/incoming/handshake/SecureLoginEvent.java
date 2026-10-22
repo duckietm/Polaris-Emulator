@@ -296,15 +296,6 @@ public class SecureLoginEvent extends MessageHandler {
         try {
             habbo.setClient(this.client);
             this.client.setHabbo(habbo);
-            if (!habbo.connect()) {
-                clients().disposeClient(this.client);
-                return false;
-            }
-
-            if (habbo.getHabboInfo() == null) {
-                clients().disposeClient(this.client);
-                return false;
-            }
 
             if (habbo.getHabboInfo().getRank() == null) {
                 throw new NullPointerException(habbo.getHabboInfo().getUsername() + " has a NON EXISTING RANK!");
@@ -313,11 +304,18 @@ public class SecureLoginEvent extends MessageHandler {
             // Maintenance mode: only hotel.maintenance.min_rank and above may
             // log in. The HTTP auth API refuses earlier, but the socket login
             // is a separate door (SSO ticket, recovery token), so gate here too.
+            // Before connect(): a refused user never comes online, so friends
+            // are not told and the closed connection leaves no session to park.
             if (!MaintenanceMode.canLogin(rankIdOf(habbo))) {
                 LOGGER.info(
                         "[Maintenance] Rejected login for user id={} (rank below hotel.maintenance.min_rank)",
                         habbo.getHabboInfo().getId());
                 this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                clients().disposeClient(this.client);
+                return false;
+            }
+
+            if (!habbo.connect()) {
                 clients().disposeClient(this.client);
                 return false;
             }
@@ -334,7 +332,8 @@ public class SecureLoginEvent extends MessageHandler {
             return true;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
-            clients().disposeClient(this.client);
+            // A login that failed half way is closed, not parked for a resume.
+            clients().forceDisposeClient(this.client);
             return false;
         }
     }

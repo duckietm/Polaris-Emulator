@@ -7,8 +7,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -58,8 +58,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -109,8 +109,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -159,8 +159,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -210,6 +210,7 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
+maintenance.canLogin(3) -> true
 ann.connect() -> false
 clients.disposeClient(client)
 
@@ -222,8 +223,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -272,8 +273,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -322,8 +323,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 info.setLook(hd-180-1)
@@ -373,8 +374,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 info.setMachineID(machine-9)
 threading.run(ann)
 habbos.addHabbo(ann)
@@ -424,7 +425,6 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> false
 client <- GenericAlert(closed for maintenance)
 clients.disposeClient(client)
@@ -446,8 +446,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -490,8 +490,7 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
-clients.disposeClient(client)
+clients.forceDisposeClient(client)
 
 == fresh / saved searches already given
 client.setSsoTicket(ticket-1)
@@ -502,8 +501,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -547,8 +546,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -600,8 +599,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -659,8 +658,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -712,8 +711,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -769,8 +768,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -819,8 +818,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -869,8 +868,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -919,8 +918,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -969,8 +968,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1019,8 +1018,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1068,8 +1067,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1119,8 +1118,8 @@ clients.claimAuthenticatedSession(7, client) -> previous session
 clients.disconnectWithReason(previous session, 2)
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1170,8 +1169,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1222,8 +1221,8 @@ habbos.loadHabboById(7) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1407,8 +1406,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1497,8 +1496,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1547,8 +1546,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1599,8 +1598,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1649,8 +1648,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1700,8 +1699,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1750,8 +1749,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1800,8 +1799,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1851,8 +1850,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1902,8 +1901,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -1954,8 +1953,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2005,8 +2004,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2055,8 +2054,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2105,8 +2104,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2121,8 +2120,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2173,8 +2172,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2224,8 +2223,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2275,8 +2274,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2324,8 +2323,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2376,8 +2375,8 @@ habbos.loadHabbo(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)
@@ -2442,8 +2441,8 @@ habbos.loadHabbo(ticket1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
 client.setHabbo(ann)
-ann.connect() -> true
 maintenance.canLogin(3) -> true
+ann.connect() -> true
 threading.run(ann)
 habbos.addHabbo(ann)
 CollectibleWardrobe.load(ann)

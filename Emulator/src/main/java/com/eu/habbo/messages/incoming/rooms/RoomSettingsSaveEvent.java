@@ -199,13 +199,17 @@ public class RoomSettingsSaveEvent extends MessageHandler {
         }
 
         if (tags.length() > 0) {
-            for (String s :
+            for (String entry :
                     Emulator.getConfig().getValue("hotel.room.tags.staff").split(";")) {
-                if (tags.toString().contains(s)) {
+                // An empty entry (an empty setting, or "a;;b") is contained in every text and refused every tag.
+                String staffTag = entry.trim();
+                if (staffTag.isEmpty()) continue;
+
+                if (tags.toString().contains(staffTag)) {
                     this.client.sendResponse(new RoomEditSettingsErrorComposer(
                             room.getId(),
                             RoomEditSettingsErrorComposer.RESTRICTED_TAGS,
-                            offendingTag(uniqueTags, tag -> tag.contains(s))));
+                            offendingTag(uniqueTags, tag -> tag.contains(staffTag))));
                     return null;
                 }
             }

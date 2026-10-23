@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
+import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 
@@ -31,8 +32,11 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
 
         CatalogManager catalog = Emulator.getGameEnvironment().getCatalogManager();
         ClubOffer deal = catalog.clubOffers.get(offerId);
-        if (!this.isAccepted(deal)) return;
-        if (this.regularOf(catalog, deal) == null) return;
+        // Every refusal answers: the extend window waits for one, and silence left it hanging.
+        if (!this.isAccepted(deal) || this.regularOf(catalog, deal) == null) {
+            this.refuse();
+            return;
+        }
 
         Price price = this.priceOf(deal);
         if (price == null) {
@@ -42,7 +46,14 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
 
         if (price.days() > 0) {
             this.buy(price);
+        } else {
+            // An offer of no days gives nothing.
+            this.refuse();
         }
+    }
+
+    private void refuse() {
+        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
     }
 
     /**
@@ -102,8 +113,13 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
 
     private void buy(Price price) {
         Habbo habbo = this.client.getHabbo();
-        if (habbo.getHabboInfo().getCurrencyAmount(price.pointsType()) < price.points()) return;
-        if (habbo.getHabboInfo().getCredits() < price.credits()) return;
+        boolean notEnoughCredits = habbo.getHabboInfo().getCredits() < price.credits();
+        boolean notEnoughPoints = habbo.getHabboInfo().getCurrencyAmount(price.pointsType()) < price.points();
+        if (notEnoughCredits || notEnoughPoints) {
+            this.client.sendResponse(
+                    new NotEnoughPointsTypeComposer(notEnoughCredits, notEnoughPoints, price.pointsType()));
+            return;
+        }
 
         // Taken in one ledger mutation that no plugin event can cancel or shrink, as the catalog takes any club offer.
         int paidCredits = habbo.hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : price.credits();

@@ -1,8 +1,8 @@
 == offer / an offer outside the club
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / an unknown offer
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / the deal in the last hour counts as one day
 payment.tryTake(20 credits, 5 of 5) -> true
@@ -19,16 +19,16 @@ ann <- InventoryRefresh()
 stats.run()
 
 == offer / the deal outside its window
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / the deal while discounts are off
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / the deal without a regular offer of its length
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / the deal without a subscription
-
+ann <- AlertPurchaseUnavailable(0)
 
 == offer / the regular offer at full price
 payment.tryTake(30 credits, 0 of 5) -> true
@@ -41,13 +41,13 @@ stats.run()
 ann <- AlertPurchaseFailed(0)
 
 == price / an offer of no days
-
+ann <- AlertPurchaseUnavailable(0)
 
 == price / not enough credits
-
+ann <- NotEnoughPointsType(true, false, 5)
 
 == price / not enough points
-
+ann <- NotEnoughPointsType(false, true, 5)
 
 == price / staff with infinite credits and points
 payment.tryTake(0 credits, 0 of 5) -> true

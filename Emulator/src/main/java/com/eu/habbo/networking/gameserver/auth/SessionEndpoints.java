@@ -295,12 +295,11 @@ final class SessionEndpoints {
 
                     int userId = rs.getInt("id");
                     String stored = rs.getString("password");
+                    // Only the kind of value stored is logged: a hotel imported with plain or legacy passwords would
+                    // otherwise write the start of a real password to the log on every failed attempt.
                     String storedPreview = stored == null
                             ? "<null>"
-                            : (stored.isEmpty()
-                                    ? "<empty>"
-                                    : stored.substring(0, Math.min(7, stored.length())) + "…(" + stored.length()
-                                            + " chars)");
+                            : (stored.isEmpty() ? "<empty>" : (stored.startsWith("$2") ? "bcrypt" : "not bcrypt"));
 
                     if (stored == null || stored.isEmpty() || !checkPassword(password, stored)) {
                         LOGGER.info(

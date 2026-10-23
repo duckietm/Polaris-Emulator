@@ -31,11 +31,10 @@ public class BotSaveSettingsEvent extends MessageHandler {
     /** Skills AIR turns into data-driven buttons (in-client link, NUX proceed, navigator search). */
     private static final Set<Integer> DATA_SKILLS = Set.of(7, 8, 14);
 
-    /** How an owner action ends: with the bot menu reopened, plainly, or cut short before the bot is saved. */
+    /** How an owner action ends: with the bot menu reopened, or plainly. */
     private enum Outcome {
         REOPEN_MENU,
-        DONE,
-        ABORT
+        DONE
     }
 
     /**
@@ -84,8 +83,6 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     case Bot.ACTION_ROTATE -> rotate(room, bot);
                     default -> Outcome.DONE;
                 };
-
-        if (outcome == Outcome.ABORT) return;
 
         bot.onPostOwnerAction(settingId);
 
@@ -148,10 +145,9 @@ public class BotSaveSettingsEvent extends MessageHandler {
                 String filtered = Jsoup.parse(s).text();
                 int count = 0;
                 while (!filtered.equalsIgnoreCase(s)) {
-                    if (count >= 5) {
-                        bot.clearChat();
-                        return Outcome.ABORT;
-                    }
+                    // Text still changing after five passes is refused, and the bot keeps the chat it had: this
+                    // used to clear the chat in memory only, unsaved, so it came back after a restart.
+                    if (count >= 5) return Outcome.DONE;
                     s = filtered;
                     filtered = Jsoup.parse(s).text();
                     count++;

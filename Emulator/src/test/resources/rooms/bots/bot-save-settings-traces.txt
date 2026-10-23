@@ -10,7 +10,7 @@ bot.onPostOwnerAction(2)
 threading.run(bot)
 
 == chat / HTML nested beyond five levels
-bot.clearChat()
+bot.onPostOwnerAction(2)
 
 == chat / a delay out of range
 plugins.fire(BotSavedChat auto false, random false, delay 32767, [hi])

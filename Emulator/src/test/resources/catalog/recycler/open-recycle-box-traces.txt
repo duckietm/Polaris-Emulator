@@ -1,0 +1,91 @@
+== box / a box without a date
+ann <- RoomUserWhisper(RoomChatMessage(text:error.recycler.box.empty))
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== box / no reward comes out
+items.handleOpenRecycleBox(box) -> null
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== box / the box's tile is gone
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 24-10-2026, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== box / the reward goes to the inventory
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 24-10-2026, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== furni / a chair with a state
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 1, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== furni / a chair without a state
+ann <- RoomUserWhisper(RoomChatMessage(text:error.recycler.box.empty))
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== gate / no rights in the room
+
+
+== gate / not in a room
+
+
+== gate / rights in the room, their own box
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 24-10-2026, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== gate / someone else's box
+
+
+== gate / staff in someone's room, their own box
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 24-10-2026, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== gate / the furni is not in the room
+
+
+== gate / the owner opens their own box
+items.handleOpenRecycleBox(box) -> reward
+inventory.addItem(reward)
+ann <- AddHabboItem(reward)
+ann <- InventoryRefresh()
+ann <- PresentItemOpened(reward, 24-10-2026, true)
+room <- RemoveFloorItem(box)
+room.removeHabboItem(box)
+
+== gift / a gift already being opened
+
+
+== gift / a plain gift is unwrapped at once
+threading.run(OpenGift, 0ms) explode=false
+
+== gift / a wrapped gift explodes and waits a second
+room.updateItem(gift)
+threading.run(OpenGift, 1000ms) explode=true
+

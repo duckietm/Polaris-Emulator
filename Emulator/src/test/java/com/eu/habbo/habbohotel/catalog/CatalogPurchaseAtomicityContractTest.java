@@ -51,10 +51,12 @@ class CatalogPurchaseAtomicityContractTest {
         int create = gift.indexOf("getItemManager().createItem(userId", debit);
         assertTrue(
                 debit > -1 && create > debit, "gift payment must be reserved before recipient-owned rows are created");
-        assertTrue(gift.contains("if(!giftDelivered)"), "failed gift delivery must enter compensating cleanup");
         assertTrue(
-                gift.contains(
-                        "CatalogPaymentService.refund(this.client.getHabbo(),paidCredits,paidPointsType,paidPoints)"),
+                gift.contains("if(!attempt.delivered)this.undo(attempt);"),
+                "failed gift delivery must enter compensating cleanup");
+        assertTrue(
+                gift.contains("CatalogPaymentService.refund(this.client.getHabbo(),attempt.paidCredits,"
+                        + "attempt.paidPointsType,attempt.paidPoints)"),
                 "failed gift delivery must restore the exact reserved payment");
     }
 

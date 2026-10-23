@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
+import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -10,6 +11,7 @@ import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
+import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 
@@ -103,8 +105,13 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
         if (habbo.getHabboInfo().getCurrencyAmount(price.pointsType()) < price.points()) return;
         if (habbo.getHabboInfo().getCredits() < price.credits()) return;
 
-        if (!habbo.hasPermission(Permission.ACC_INFINITE_CREDITS)) habbo.giveCredits(-price.credits());
-        if (!habbo.hasPermission(Permission.ACC_INFINITE_POINTS)) habbo.givePoints(price.pointsType(), -price.points());
+        // Taken in one ledger mutation that no plugin event can cancel or shrink, as the catalog takes any club offer.
+        int paidCredits = habbo.hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : price.credits();
+        int paidPoints = habbo.hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : price.points();
+        if (!CatalogPaymentService.tryTake(habbo, paidCredits, price.pointsType(), paidPoints)) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
 
         if (habbo.getHabboStats().createSubscription(Subscription.HABBO_CLUB, price.seconds()) == null) {
             this.client.sendResponse(

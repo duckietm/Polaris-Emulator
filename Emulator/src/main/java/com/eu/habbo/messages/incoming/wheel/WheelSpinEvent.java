@@ -21,6 +21,8 @@ public class WheelSpinEvent extends MessageHandler {
         if (habbo == null) return;
 
         WheelManager wheel = Emulator.getGameEnvironment().getWheelManager();
+        if (!wheel.isEnabled()) return;
+
         WheelPrize prize = wheel.spin(habbo);
 
         if (prize != null) {
@@ -30,7 +32,9 @@ public class WheelSpinEvent extends MessageHandler {
         // Refresh the balance either way so the client unlocks the wheel.
         this.client.sendResponse(new WheelDataComposer(
                 wheel.getUserState(habbo.getHabboInfo().getId()),
-                wheel.getSpinCost(), wheel.getSpinCostType(), wheel.getPrizes()));
+                wheel.getSpinCost(),
+                wheel.getSpinCostType(),
+                wheel.getPrizes()));
 
         if (prize != null) {
             this.client.sendResponse(new WheelRecentWinsComposer(wheel.getRecentWins(50)));

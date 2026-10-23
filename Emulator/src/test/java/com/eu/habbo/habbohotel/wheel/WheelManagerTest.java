@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wheel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -42,13 +43,14 @@ class WheelManagerTest {
         final PreparedStatement writeStatement = mock(PreparedStatement.class);
         final Habbo habbo = mock(Habbo.class);
         final HabboInfo habboInfo = mock(HabboInfo.class);
+        final ConfigurationManager config = mock(ConfigurationManager.class);
 
         Fixture(Map<String, Integer> settings, Integer storedExtraSpins) throws SQLException {
-            ConfigurationManager config = mock(ConfigurationManager.class);
             when(config.getInt(anyString(), anyInt())).thenAnswer(call -> {
                 String key = call.getArgument(0);
                 return settings.getOrDefault(key, call.getArgument(1));
             });
+            when(config.getBoolean(anyString(), anyBoolean())).thenAnswer(call -> call.getArgument(1));
 
             Database database = mock(Database.class);
             HikariDataSource dataSource = mock(HikariDataSource.class);
@@ -188,6 +190,20 @@ class WheelManagerTest {
             assertTrue(manager.buySpin(fixture.habbo));
 
             verify(fixture.habbo).giveCredits(-50);
+        }
+    }
+
+    @Test
+    void theWheelIsOnUnlessWheelEnabledIsZeroAndASwitchCountsAtOnce() throws SQLException {
+        try (Fixture fixture = new Fixture(Map.of(), null)) {
+            WheelManager manager = new WheelManager();
+
+            assertTrue(manager.isEnabled());
+
+            // :update_config reloads the same configuration; the wheel reads the switch on every request.
+            when(fixture.config.getBoolean("wheel.enabled", true)).thenReturn(false);
+
+            assertFalse(manager.isEnabled());
         }
     }
 }

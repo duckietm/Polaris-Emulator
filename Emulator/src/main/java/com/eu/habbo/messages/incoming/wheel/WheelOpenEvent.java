@@ -19,9 +19,13 @@ public class WheelOpenEvent extends MessageHandler {
         if (habbo == null) return;
 
         WheelManager wheel = Emulator.getGameEnvironment().getWheelManager();
+        if (!wheel.isEnabled()) return;
+
         this.client.sendResponse(new WheelDataComposer(
                 wheel.getUserState(habbo.getHabboInfo().getId()),
-                wheel.getSpinCost(), wheel.getSpinCostType(), wheel.getPrizes()));
+                wheel.getSpinCost(),
+                wheel.getSpinCostType(),
+                wheel.getPrizes()));
         this.client.sendResponse(new WheelRecentWinsComposer(wheel.getRecentWins(50)));
     }
 }

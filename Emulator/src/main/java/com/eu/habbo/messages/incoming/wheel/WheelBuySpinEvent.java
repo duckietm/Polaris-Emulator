@@ -18,10 +18,14 @@ public class WheelBuySpinEvent extends MessageHandler {
         if (habbo == null) return;
 
         WheelManager wheel = Emulator.getGameEnvironment().getWheelManager();
+        if (!wheel.isEnabled()) return;
+
         wheel.buySpin(habbo); // whether or not it succeeds, resend the balance
 
         this.client.sendResponse(new WheelDataComposer(
                 wheel.getUserState(habbo.getHabboInfo().getId()),
-                wheel.getSpinCost(), wheel.getSpinCostType(), wheel.getPrizes()));
+                wheel.getSpinCost(),
+                wheel.getSpinCostType(),
+                wheel.getPrizes()));
     }
 }

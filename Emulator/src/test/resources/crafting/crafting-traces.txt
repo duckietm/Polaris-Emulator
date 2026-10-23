@@ -155,20 +155,8 @@ ann <- CraftingResult(null)
 after: inventory=[throne#22] remaining=0
 
 == secret / its ingredients and one furni more
-items.createItem(chair) -> true
-ann <- CraftingResult(recipe chair)
-stats.addRecipe(2)
-achievement(AtcgSecret)
-inventory.addItem(chair#900)
-ann <- AddHabboItem(chair#900)
-inventory.remove(rare#21)
-ann <- RemoveHabboItem(21)
-threading.runPersistence(DeleteItem(21))
-inventory.remove(throne#22)
-ann <- RemoveHabboItem(22)
-threading.runPersistence(DeleteItem(22))
-ann <- InventoryRefresh()
-after: inventory=[chair#900] remaining=0
+ann <- CraftingResult(null)
+after: inventory=[rare#21, throne#22] remaining=0
 
 == secret / its ingredients, already discovered
 items.createItem(chair) -> true

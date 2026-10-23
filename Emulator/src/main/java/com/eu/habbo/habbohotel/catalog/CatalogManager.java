@@ -310,6 +310,9 @@ public class CatalogManager {
     public final Map<Integer, ClothItem> clothing;
     public final Int2IntMap offerDefs;
     public final Int2IntMap buildersClubOfferDefs;
+    /** The base item every recycler box is made of. */
+    public static final String RECYCLER_BOX = "ecotron_box";
+
     public final Item ecotronItem;
     public final Map<Integer, CatalogLimitedConfiguration> limitedNumbers;
     private final List<Voucher> vouchers;
@@ -343,7 +346,7 @@ public class CatalogManager {
 
         if (initialize) {
             this.initialize();
-            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem("ecotron_box");
+            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem(RECYCLER_BOX);
             LOGGER.info("Catalog Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
         } else {
             this.ecotronItem = null;

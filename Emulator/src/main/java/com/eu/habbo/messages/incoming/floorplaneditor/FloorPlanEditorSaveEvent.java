@@ -347,9 +347,14 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             return layout;
         }
 
-        return Emulator.getGameEnvironment()
+        CustomRoomLayout inserted = Emulator.getGameEnvironment()
                 .getRoomManager()
                 .insertCustomLayout(room, plan.map(), plan.doorX(), plan.doorY(), plan.doorDirection());
+
+        // The same answer as a layout without a door tile, instead of a save that silently does nothing.
+        if (inserted == null) this.client.getHabbo().alert("Error");
+
+        return inserted;
     }
 
     /** Stores the new layout and settings, then reloads the room and sends everyone in it back in. */

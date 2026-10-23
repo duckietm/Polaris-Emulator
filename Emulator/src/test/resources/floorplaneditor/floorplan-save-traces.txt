@@ -328,6 +328,7 @@ ann's last floor plan save = 1700000000
 
 == layout / no custom layout could be inserted
 rooms.insertCustomLayout(room, 000|010|000, door 1,2 dir 4) -> null
+ann.alert(Error)
 
 == layout / the door tile is missing after the parse
 layout.setDoorX(1)

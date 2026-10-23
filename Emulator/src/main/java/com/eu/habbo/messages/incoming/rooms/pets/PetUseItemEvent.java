@@ -55,6 +55,8 @@ public class PetUseItemEvent extends MessageHandler {
 
         room.removeHabboItem(item);
         room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
+        // As a plant product does: the tiles under the used furni lose its height and its blocking.
+        freeTiles(room, item);
         item.setRoomId(0);
         Emulator.getGameEnvironment().getItemManager().deleteItem(item);
     }
@@ -196,6 +198,10 @@ public class PetUseItemEvent extends MessageHandler {
         room.sendComposer(new RemoveFloorItemComposer(item).compose());
         room.sendComposer(new RoomUserStatusComposer(pet.getRoomUnit()).compose());
         room.sendComposer(new PetStatusUpdateComposer(pet).compose());
+        freeTiles(room, item);
+    }
+
+    private static void freeTiles(Room room, HabboItem item) {
         room.updateTiles(room.getLayout()
                 .getTilesAt(
                         room.getLayout().getTile(item.getX(), item.getY()),

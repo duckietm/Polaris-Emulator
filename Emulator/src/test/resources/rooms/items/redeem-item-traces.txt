@@ -1,0 +1,136 @@
+== gate / a furni that is not redeemable
+
+
+== gate / a negative id
+
+
+== gate / a valid credit furni
+plugins.fire(UserCredits 50)
+transaction.commit(item 501, user 7, 50 of -1, CF_50) -> true
+wallet.applyCommitted(-1 = 150)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserCredits(ann)
+
+== gate / a wired chest named like a credit furni
+
+
+== gate / not in a room
+
+
+== gate / someone else's furni
+
+
+== gate / the furni is not in the room
+
+
+== name / CFC_200
+plugins.fire(UserCredits 200)
+transaction.commit(item 501, user 7, 200 of -1, CFC_200) -> true
+wallet.applyCommitted(-1 = 300)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserCredits(ann)
+
+== name / CFC_diamond_5
+
+
+== name / CF_
+
+
+== name / CF_-5
+
+
+== name / CF_0
+
+
+== name / CF_diamond_5
+plugins.fire(UserPoints 5 of 5)
+transaction.commit(item 501, user 7, 5 of 5, CF_diamond_5) -> true
+wallet.applyCommitted(5 = 105)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserPoints(140, 5, 5)
+
+== name / CF_x
+
+
+== name / DF_103
+
+
+== name / DF_103_12
+plugins.fire(UserPoints 12 of 103)
+transaction.commit(item 501, user 7, 12 of 103, DF_103_12) -> true
+wallet.applyCommitted(103 = 112)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserPoints(140, 12, 103)
+
+== name / DF_x_12
+
+
+== name / PF_30
+plugins.fire(UserPoints 30 of 0)
+transaction.commit(item 501, user 7, 30 of 0, PF_30) -> true
+wallet.applyCommitted(0 = 130)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserCurrency(ann)
+
+== name / PF_y
+
+
+== plugins / a listener cancels the redeem
+plugins.fire(FurnitureRedeemed 50 of -1)
+
+== plugins / a listener sees the redeem
+plugins.fire(FurnitureRedeemed 50 of -1)
+plugins.fire(UserCredits 50)
+transaction.commit(item 501, user 7, 50 of -1, CF_50) -> true
+wallet.applyCommitted(-1 = 150)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserCredits(ann)
+
+== plugins / the credit event changes the amount
+plugins.fire(UserCredits 50)
+transaction.commit(item 501, user 7, 80 of -1, CF_50) -> true
+wallet.applyCommitted(-1 = 180)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
+ann <- UserCredits(ann)
+
+== plugins / the credit event is cancelled
+plugins.fire(UserCredits 50)
+
+== plugins / the points event takes the amount to 0
+plugins.fire(UserPoints 30 of 0)
+
+== room / the furni left the room during the events
+plugins.fire(UserCredits 50)
+
+== room / the furni's tile is gone
+plugins.fire(UserCredits 50)
+transaction.commit(item 501, user 7, 50 of -1, CF_50) -> true
+wallet.applyCommitted(-1 = 150)
+room.removeHabboItem(item)
+room <- RemoveFloorItem(item)
+
+== transaction / nothing is committed
+plugins.fire(UserCredits 50)
+transaction.commit(item 501, user 7, 50 of -1, CF_50) -> false
+

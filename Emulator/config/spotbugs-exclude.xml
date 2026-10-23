@@ -512,11 +512,6 @@
         <Method name="unregisterRoom"/>
     </Match>
     <Match>
-        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
-        <Class name="com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent"/>
-        <Method name="handle"/>
-    </Match>
-    <Match>
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
         <Class name="com.eu.habbo.habbohotel.modtool.ModToolManager"/>
         <Method name="ban"/>

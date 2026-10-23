@@ -61,7 +61,7 @@ bot.onPostOwnerAction(2)
 threading.run(bot)
 
 == chat / fewer than three settings
-handle threw ArrayIndexOutOfBoundsException
+bot.onPostOwnerAction(2)
 
 == chat / lines past the length budget
 plugins.fire(BotSavedChat auto false, random false, delay 7, [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbb, ])

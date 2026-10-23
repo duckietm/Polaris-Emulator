@@ -137,6 +137,10 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
         String[] data = messageString.split(";#;");
 
+        // The last three parts are auto chat, delay and random chat; without them the packet is not a chat save
+        // (reading them threw out of the handler).
+        if (data.length < 3) return Outcome.DONE;
+
         ArrayList<String> chat = new ArrayList<>();
         int totalChatLength = 0;
         for (int i = 0; i < data.length - 3 && totalChatLength <= 120; i++) {

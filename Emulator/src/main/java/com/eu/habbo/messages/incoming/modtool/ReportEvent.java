@@ -169,6 +169,15 @@ public class ReportEvent extends MessageHandler {
                         () -> {
                             if (issue.state != ModToolTicketState.OPEN) return;
 
+                            // A reporter who left within the 30 seconds has no one to ignore or tell; the ticket is
+                            // still closed, where the missing reporter used to throw before it was.
+                            if (this.client.getHabbo() == null) {
+                                Emulator.getGameEnvironment()
+                                        .getModToolManager()
+                                        .closeTicketAsHandled(issue, null);
+                                return;
+                            }
+
                             if (cfhTopic.action == CfhActionType.AUTO_IGNORE
                                     && this.client
                                             .getHabbo()

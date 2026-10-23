@@ -10,6 +10,8 @@ import com.eu.habbo.habbohotel.modtool.ModToolTicketState;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.BullyReportedMessageComposer;
 import com.eu.habbo.messages.outgoing.modtool.HelperRequestDisabledComposer;
@@ -84,9 +86,14 @@ public class ReportEvent extends MessageHandler {
     private void reportUser(CfhTopic cfhTopic, int topic, int userId, int roomId, String message) {
         Habbo reported = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-        if (reported == null) return;
+        // The guardians judge a user who is in the hotel; anyone else is a ticket for the moderators. A report of a
+        // user who had logged out used to be dropped without a ticket or an answer.
+        HabboInfo reportedInfo = reported != null ? reported.getHabboInfo() : HabboManager.getOfflineHabboInfo(userId);
 
-        if (cfhTopic.action == CfhActionType.GUARDIANS
+        if (reportedInfo == null) return;
+
+        if (reported != null
+                && cfhTopic.action == CfhActionType.GUARDIANS
                 && Emulator.getGameEnvironment().getGuideManager().activeGuardians()) {
             this.reportToGuardians(reported, roomId);
             return;
@@ -95,8 +102,8 @@ public class ReportEvent extends MessageHandler {
         ModToolIssue issue = new ModToolIssue(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                reported.getHabboInfo().getId(),
-                reported.getHabboInfo().getUsername(),
+                reportedInfo.getId(),
+                reportedInfo.getUsername(),
                 roomId,
                 message,
                 ModToolTicketType.NORMAL);

@@ -109,7 +109,10 @@ threading.run(answer, 30000 ms)
 
 
 == user / offline
-
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
 
 == user / the reporter left before the automatic answer
 InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams").run()

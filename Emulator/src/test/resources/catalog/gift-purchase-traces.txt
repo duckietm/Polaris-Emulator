@@ -186,7 +186,7 @@ payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #0
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> false
 senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
 connection.close()
@@ -194,7 +194,7 @@ limitedConfiguration.restoreNumber(20, 7)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #1
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
@@ -206,7 +206,7 @@ payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #2
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:chair, 50, 7, )
 connection.close()
@@ -269,13 +269,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == aLimitedGiftWhoseLastNumberIsTakenMeanwhile #0
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
+senderClient.sendResponse(AlertLimitedSoldOutComposer{})
 connection.close()
-senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 stats purchasing=false lastGift=0
 
 == aLimitedHopperKeepsItsStackAndNumber #0
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:hopper, 50, 7, )
 itemManager.insertHopper(habboItem1000:hopper)
@@ -293,7 +293,7 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == aLimitedItemIsNumberedAndLogged #0
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd	sender	hd-180, 0, 0)
@@ -311,7 +311,7 @@ stats purchasing=false lastGift=1000000
 
 == aLimitedItemWithoutAConfigurationGetsOne #0
 catalogManager.createOrUpdateLimitedConfig(catalogItem)
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180, 0, 0)
@@ -328,7 +328,7 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == aLimitedTeleporterRecordsOneSaleForItsNumber #0
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:teleport, 50, 7, )
 itemManager.createItem(2, item:teleport, 50, 7, )
@@ -488,7 +488,7 @@ connection.close()
 stats purchasing=false lastGift=0
 
 == limitedItemsRespectTheDailyLimits #2
-limitedConfiguration.getNumber()
+limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
 itemManager.createItem(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:under	sender	hd-180, 0, 0)

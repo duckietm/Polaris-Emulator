@@ -53,6 +53,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -321,7 +322,15 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     Emulator.getGameEnvironment().getCatalogManager().createOrUpdateLimitedConfig(item);
         }
 
-        attempt.limitedNumber = limitedConfiguration.getNumber();
+        // The stock was counted above, but another buyer can take the last number before it is reserved here.
+        OptionalInt reservation = limitedConfiguration.pollNumber();
+        if (reservation.isEmpty()) {
+            LOGGER.debug("LTD number taken meanwhile -> itemId={}", itemId);
+            this.client.sendResponse(new AlertLimitedSoldOutComposer());
+            return false;
+        }
+
+        attempt.limitedNumber = reservation.getAsInt();
         attempt.limitedConfiguration = limitedConfiguration;
         attempt.limitedItemId = item.getId();
         attempt.limitedStack = limitedConfiguration.getTotalSet();

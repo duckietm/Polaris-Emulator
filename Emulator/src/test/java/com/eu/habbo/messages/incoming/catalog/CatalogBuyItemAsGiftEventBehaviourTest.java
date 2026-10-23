@@ -77,6 +77,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -238,6 +239,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         limitedConfiguration = traced(CatalogLimitedConfiguration.class, "limitedConfiguration");
         when(limitedConfiguration.available()).thenReturn(5);
         when(limitedConfiguration.getNumber()).thenReturn(7);
+        when(limitedConfiguration.pollNumber()).thenReturn(OptionalInt.of(7));
         when(limitedConfiguration.getTotalSet()).thenReturn(50);
 
         itemManager = traced(ItemManager.class, "itemManager");
@@ -844,6 +846,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     void aLimitedGiftWhoseLastNumberIsTakenMeanwhile() {
         makeLimited();
         when(limitedConfiguration.getNumber()).thenThrow(new NoSuchElementException());
+        when(limitedConfiguration.pollNumber()).thenReturn(OptionalInt.empty());
 
         assertGift(gift(FREE_WRAP_SPRITE, true, "taken"));
     }
@@ -1134,6 +1137,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             "run",
             "createOrUpdateLimitedConfig",
             "getNumber",
+            "pollNumber",
             "restoreNumber",
             "setExtradata",
             "needsUpdate",

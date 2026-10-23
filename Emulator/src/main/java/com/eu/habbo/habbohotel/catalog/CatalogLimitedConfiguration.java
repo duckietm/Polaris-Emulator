@@ -41,7 +41,8 @@ public class CatalogLimitedConfiguration implements Runnable {
         }
     }
 
-    OptionalInt pollNumber() {
+    /** Takes the next free number, or nothing when another buyer took the last one since it was counted. */
+    public OptionalInt pollNumber() {
         synchronized (this.limitedNumbers) {
             Integer number = this.limitedNumbers.pollFirst();
             return number == null ? OptionalInt.empty() : OptionalInt.of(number);

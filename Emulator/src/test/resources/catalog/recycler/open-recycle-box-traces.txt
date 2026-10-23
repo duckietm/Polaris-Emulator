@@ -2,11 +2,15 @@
 ann <- RoomUserWhisper(RoomChatMessage(text:error.recycler.box.empty))
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == box / no reward comes out
 items.handleOpenRecycleBox(box) -> null
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == box / the box's tile is gone
 items.handleOpenRecycleBox(box) -> reward
@@ -25,6 +29,8 @@ ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == furni / a chair with a state
 
@@ -46,6 +52,8 @@ ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == gate / someone else's box
 
@@ -58,6 +66,8 @@ ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == gate / the furni is not in the room
 
@@ -70,6 +80,8 @@ ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
+room.updateTile(tile 4,5)
+room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == gift / a gift already being opened
 

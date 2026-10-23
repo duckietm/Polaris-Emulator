@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
-import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -38,14 +37,8 @@ public class OpenRecycleBoxEvent extends MessageHandler {
             this.openGift(room, gift);
         } else if (CatalogManager.RECYCLER_BOX.equals(item.getBaseItem().getName())) {
             this.openBox(room, item);
-        } else {
-            // Any other furni is not a box: opening it would delete it with nothing in return.
-            return;
         }
-
-        if (item.getRoomId() == 0) {
-            this.refreshTile(room, item);
-        }
+        // Any other furni is not a box: opening it would delete it with nothing in return.
     }
 
     /** The room's owner, a user with rights in it, or staff who may act as any room's owner. */
@@ -88,8 +81,7 @@ public class OpenRecycleBoxEvent extends MessageHandler {
                 this.giveReward(box, reward);
             }
         }
-        room.sendComposer(new RemoveFloorItemComposer(box).compose());
-        room.removeHabboItem(box);
+        this.takeFromRoom(room, box);
     }
 
     private void giveReward(HabboItem box, HabboItem reward) {
@@ -100,18 +92,19 @@ public class OpenRecycleBoxEvent extends MessageHandler {
         this.client.sendResponse(new PresentItemOpenedComposer(reward, box.getExtradata(), true));
     }
 
-    private void refreshTile(Room room, HabboItem item) {
-        room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));
-        RoomLayout roomLayout = room.getLayout();
-        short z = (short) room.getStackHeight(item.getX(), item.getY(), true);
-        if (roomLayout != null) {
-            RoomTile roomTile = roomLayout.getTile(item.getX(), item.getY());
-            if (roomTile != null) {
-                z = roomTile.z;
-            }
-        }
-        room.sendComposer(new UpdateStackHeightComposer(
-                        item.getX(), item.getY(), z, room.getStackHeight(item.getX(), item.getY(), true))
-                .compose());
+    /**
+     * Takes the box out of the room and lowers its tile, when the tile is still there. The tile used to be refreshed
+     * only for a furni whose room id was 0, which a box still in the room never has, so its tile stayed raised.
+     */
+    private void takeFromRoom(Room room, HabboItem box) {
+        room.sendComposer(new RemoveFloorItemComposer(box).compose());
+        room.removeHabboItem(box);
+        RoomTile tile = room.getLayout().getTile(box.getX(), box.getY());
+        if (tile == null) return;
+
+        tile.setStackHeight(room.getStackHeight(box.getX(), box.getY(), false));
+        room.updateTile(tile);
+        room.sendComposer(
+                new UpdateStackHeightComposer(box.getX(), box.getY(), tile.z, tile.relativeHeight()).compose());
     }
 }

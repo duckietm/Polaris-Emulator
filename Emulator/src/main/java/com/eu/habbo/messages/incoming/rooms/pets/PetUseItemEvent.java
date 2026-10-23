@@ -46,20 +46,21 @@ public class PetUseItemEvent extends MessageHandler {
 
     /** A dye, hair dye, hair style or saddle changes the horse's look and is used up. */
     private void useOnHorse(Room room, HabboItem item, HorsePet horse) {
-        applyHorseItem(item, horse);
+        // needsUpdate also means "not saved yet": a horse that was scratched or fed carries it, and any furni used on
+        // it was then taken and deleted. Only a horse item that changed the horse is used up.
+        if (!applyHorseItem(item, horse)) return;
 
-        if (horse.needsUpdate) {
-            Emulator.getThreading().run(horse);
-            room.sendComposer(new RoomPetHorseFigureComposer(horse).compose());
+        Emulator.getThreading().run(horse);
+        room.sendComposer(new RoomPetHorseFigureComposer(horse).compose());
 
-            room.removeHabboItem(item);
-            room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
-            item.setRoomId(0);
-            Emulator.getGameEnvironment().getItemManager().deleteItem(item);
-        }
+        room.removeHabboItem(item);
+        room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
+        item.setRoomId(0);
+        Emulator.getGameEnvironment().getItemManager().deleteItem(item);
     }
 
-    private static void applyHorseItem(HabboItem item, HorsePet horse) {
+    /** Applies a horse item to the horse; false when the furni is not one. */
+    private static boolean applyHorseItem(HabboItem item, HorsePet horse) {
         String name = item.getBaseItem().getName().toLowerCase();
 
         if (name.startsWith("horse_dye")) {
@@ -104,7 +105,10 @@ public class PetUseItemEvent extends MessageHandler {
             horse.hasSaddle(true);
             horse.setSaddleItemId(item.getBaseItem().getId());
             horse.needsUpdate = true;
+        } else {
+            return false;
         }
+        return true;
     }
 
     private void useOnMonsterplant(Room room, HabboItem item, MonsterplantPet monsterplant) {

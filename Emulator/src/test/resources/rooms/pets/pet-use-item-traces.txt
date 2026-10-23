@@ -23,12 +23,6 @@ handle threw NumberFormatException
 
 
 == horse / any other furni while the horse waits to be saved
-threading.run(horse)
-room.sendComposer(RoomPetHorseFigure(horse))
-room.removeHabboItem(item)
-room.sendComposer(RemoveFloorItem(item, true))
-item.setRoomId(0)
-items.deleteItem(item)
 horse waits to be saved
 
 == horse / horse_dye_0

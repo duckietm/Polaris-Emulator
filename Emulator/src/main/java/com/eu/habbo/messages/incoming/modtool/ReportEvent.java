@@ -10,6 +10,8 @@ import com.eu.habbo.habbohotel.modtool.ModToolTicketState;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.BullyReportedMessageComposer;
 import com.eu.habbo.messages.outgoing.modtool.HelperRequestDisabledComposer;
@@ -74,135 +76,132 @@ public class ReportEvent extends MessageHandler {
         }
 
         if (userId != -1) {
-            Habbo reported = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
-
-            if (reported != null) {
-                if (cfhTopic != null
-                        && cfhTopic.action == CfhActionType.GUARDIANS
-                        && Emulator.getGameEnvironment().getGuideManager().activeGuardians()) {
-                    GuardianTicket ticket =
-                            Emulator.getGameEnvironment().getGuideManager().getOpenReportedHabboTicket(reported);
-
-                    if (ticket != null) {
-                        this.client.sendResponse(
-                                new BullyReportedMessageComposer(BullyReportedMessageComposer.ALREADY_REPORTED));
-                        return;
-                    }
-
-                    ArrayList<ModToolChatLog> chatLog =
-                            Emulator.getGameEnvironment().getModToolManager().getRoomChatlog(roomId);
-
-                    if (chatLog.isEmpty()) {
-                        this.client.sendResponse(
-                                new BullyReportedMessageComposer(BullyReportedMessageComposer.NO_CHAT));
-                        return;
-                    }
-
-                    Emulator.getGameEnvironment()
-                            .getGuideManager()
-                            .addGuardianTicket(new GuardianTicket(this.client.getHabbo(), reported, chatLog));
-
-                    this.client.sendResponse(new BullyReportedMessageComposer(BullyReportedMessageComposer.RECEIVED));
-                } else {
-                    ModToolIssue issue = new ModToolIssue(
-                            this.client.getHabbo().getHabboInfo().getId(),
-                            this.client.getHabbo().getHabboInfo().getUsername(),
-                            reported.getHabboInfo().getId(),
-                            reported.getHabboInfo().getUsername(),
-                            roomId,
-                            message,
-                            ModToolTicketType.NORMAL);
-                    issue.category = topic;
-                    new InsertModToolIssue(issue).run();
-
-                    Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
-                    Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
-                    this.client.sendResponse(new ModToolReportReceivedAlertComposer(
-                            ModToolReportReceivedAlertComposer.REPORT_RECEIVED, cfhTopic.reply));
-
-                    if (cfhTopic != null) {
-                        if (cfhTopic.action != CfhActionType.MODS) {
-                            Emulator.getThreading()
-                                    .run(
-                                            () -> {
-                                                if (issue.state == ModToolTicketState.OPEN) {
-                                                    if (cfhTopic.action == CfhActionType.AUTO_IGNORE) {
-                                                        if (ReportEvent.this
-                                                                .client
-                                                                .getHabbo()
-                                                                .getHabboStats()
-                                                                .ignoreUser(
-                                                                        ReportEvent.this.client,
-                                                                        reported.getHabboInfo()
-                                                                                .getId())) {
-                                                            ReportEvent.this.client.sendResponse(
-                                                                    new RoomUserIgnoredComposer(
-                                                                            reported, RoomUserIgnoredComposer.IGNORED));
-                                                        }
-                                                    }
-
-                                                    ReportEvent.this.client.sendResponse(
-                                                            new ModToolIssueHandledComposer(cfhTopic.reply).compose());
-                                                    Emulator.getGameEnvironment()
-                                                            .getModToolManager()
-                                                            .closeTicketAsHandled(issue, null);
-                                                }
-                                            },
-                                            30 * 1000);
-                        }
-                    }
-                }
-            }
+            this.reportUser(cfhTopic, topic, userId, roomId, message);
         } else {
-            ModToolIssue issue = new ModToolIssue(
-                    this.client.getHabbo().getHabboInfo().getId(),
-                    this.client.getHabbo().getHabboInfo().getUsername(),
-                    room != null ? room.getOwnerId() : 0,
-                    room != null ? room.getOwnerName() : "",
-                    roomId,
-                    message,
-                    ModToolTicketType.ROOM);
-            issue.category = topic;
-            new InsertModToolIssue(issue).run();
-
-            this.client.sendResponse(new ModToolReportReceivedAlertComposer(
-                    ModToolReportReceivedAlertComposer.REPORT_RECEIVED, message));
-            Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
-            Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
-
-            if (cfhTopic != null) {
-                if (cfhTopic.action != CfhActionType.MODS) {
-                    Emulator.getThreading()
-                            .run(
-                                    () -> {
-                                        if (issue.state == ModToolTicketState.OPEN) {
-                                            if (cfhTopic.action == CfhActionType.AUTO_IGNORE) {
-                                                if (ReportEvent.this
-                                                        .client
-                                                        .getHabbo()
-                                                        .getHabboStats()
-                                                        .ignoreUser(ReportEvent.this.client, issue.reportedId)) {
-                                                    Habbo reported = Emulator.getGameEnvironment()
-                                                            .getHabboManager()
-                                                            .getHabbo(issue.reportedId);
-                                                    if (reported != null) {
-                                                        ReportEvent.this.client.sendResponse(
-                                                                new RoomUserIgnoredComposer(
-                                                                        reported, RoomUserIgnoredComposer.IGNORED));
-                                                    }
-                                                }
-                                            }
-
-                                            ReportEvent.this.client.sendResponse(
-                                                    new ModToolIssueHandledComposer(cfhTopic.reply).compose());
-                                            Emulator.getGameEnvironment()
-                                                    .getModToolManager()
-                                                    .closeTicketAsHandled(issue, null);
-                                        }
-                                    },
-                                    30 * 1000);
-                }
-            }
+            this.reportRoom(cfhTopic, topic, room, roomId, message);
         }
+    }
+
+    /** A report of a user: to the guardians when the topic asks for them and some are on duty, else a ticket. */
+    private void reportUser(CfhTopic cfhTopic, int topic, int userId, int roomId, String message) {
+        Habbo reported = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+
+        // The guardians judge a user who is in the hotel; anyone else is a ticket for the moderators. A report of a
+        // user who had logged out used to be dropped without a ticket or an answer.
+        HabboInfo reportedInfo = reported != null ? reported.getHabboInfo() : HabboManager.getOfflineHabboInfo(userId);
+
+        if (reportedInfo == null) return;
+
+        if (reported != null
+                && cfhTopic.action == CfhActionType.GUARDIANS
+                && Emulator.getGameEnvironment().getGuideManager().activeGuardians()) {
+            this.reportToGuardians(reported, roomId);
+            return;
+        }
+
+        ModToolIssue issue = new ModToolIssue(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                reportedInfo.getId(),
+                reportedInfo.getUsername(),
+                roomId,
+                message,
+                ModToolTicketType.NORMAL);
+        issue.category = topic;
+        new InsertModToolIssue(issue).run();
+
+        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
+        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+        this.client.sendResponse(new ModToolReportReceivedAlertComposer(
+                ModToolReportReceivedAlertComposer.REPORT_RECEIVED, cfhTopic.reply));
+
+        this.scheduleAutomaticAnswer(cfhTopic, issue);
+    }
+
+    /** Opens a guardian case with the room's chat, unless one is open for the user or there is no chat. */
+    private void reportToGuardians(Habbo reported, int roomId) {
+        GuardianTicket ticket = Emulator.getGameEnvironment().getGuideManager().getOpenReportedHabboTicket(reported);
+
+        if (ticket != null) {
+            this.client.sendResponse(new BullyReportedMessageComposer(BullyReportedMessageComposer.ALREADY_REPORTED));
+            return;
+        }
+
+        ArrayList<ModToolChatLog> chatLog =
+                Emulator.getGameEnvironment().getModToolManager().getRoomChatlog(roomId);
+
+        if (chatLog.isEmpty()) {
+            this.client.sendResponse(new BullyReportedMessageComposer(BullyReportedMessageComposer.NO_CHAT));
+            return;
+        }
+
+        Emulator.getGameEnvironment()
+                .getGuideManager()
+                .addGuardianTicket(new GuardianTicket(this.client.getHabbo(), reported, chatLog));
+
+        this.client.sendResponse(new BullyReportedMessageComposer(BullyReportedMessageComposer.RECEIVED));
+    }
+
+    /** A report of a room opens a ticket against its owner. */
+    private void reportRoom(CfhTopic cfhTopic, int topic, Room room, int roomId, String message) {
+        ModToolIssue issue = new ModToolIssue(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                room != null ? room.getOwnerId() : 0,
+                room != null ? room.getOwnerName() : "",
+                roomId,
+                message,
+                ModToolTicketType.ROOM);
+        issue.category = topic;
+        new InsertModToolIssue(issue).run();
+
+        // The topic's reply, as a user report answers: this used to echo the reporter's own message back.
+        this.client.sendResponse(new ModToolReportReceivedAlertComposer(
+                ModToolReportReceivedAlertComposer.REPORT_RECEIVED, cfhTopic.reply));
+        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
+        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+
+        this.scheduleAutomaticAnswer(cfhTopic, issue);
+    }
+
+    /**
+     * A topic the moderators do not handle themselves is answered 30 seconds later, when the ticket is still open:
+     * the reported user is ignored for an auto-ignore topic, the topic's reply is shown and the ticket is closed.
+     */
+    private void scheduleAutomaticAnswer(CfhTopic cfhTopic, ModToolIssue issue) {
+        if (cfhTopic.action == CfhActionType.MODS) return;
+
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            if (issue.state != ModToolTicketState.OPEN) return;
+
+                            // A reporter who left within the 30 seconds has no one to ignore or tell; the ticket is
+                            // still closed, where the missing reporter used to throw before it was.
+                            if (this.client.getHabbo() == null) {
+                                Emulator.getGameEnvironment()
+                                        .getModToolManager()
+                                        .closeTicketAsHandled(issue, null);
+                                return;
+                            }
+
+                            if (cfhTopic.action == CfhActionType.AUTO_IGNORE
+                                    && this.client
+                                            .getHabbo()
+                                            .getHabboStats()
+                                            .ignoreUser(this.client, issue.reportedId)) {
+                                Habbo reported = Emulator.getGameEnvironment()
+                                        .getHabboManager()
+                                        .getHabbo(issue.reportedId);
+                                if (reported != null) {
+                                    this.client.sendResponse(
+                                            new RoomUserIgnoredComposer(reported, RoomUserIgnoredComposer.IGNORED));
+                                }
+                            }
+
+                            this.client.sendResponse(new ModToolIssueHandledComposer(cfhTopic.reply).compose());
+                            Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, null);
+                        },
+                        30 * 1000);
     }
 }

@@ -1,0 +1,143 @@
+== gate / a muted reporter
+ann <- HelperRequestDisabled()
+
+== gate / a negative user
+
+
+== gate / a ticket still open
+ann <- ReportRoomForm([pending ticket])
+
+== gate / an empty message
+
+
+== gate / an unknown topic
+
+
+== gate / no room
+
+
+== gate / no topic
+
+
+== gate / oneself
+
+
+== guardians / a new case
+guides.addGuardianTicket(GuardianTicket(ann, bob))
+ann <- BullyReported(0)
+
+== guardians / already reported
+ann <- BullyReported(3)
+
+== guardians / no chat in the room
+ann <- BullyReported(2)
+
+== guardians / none on duty
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 4 "bully").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 4 "bully")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 4 "bully")
+ann <- ModToolReportReceivedAlert(0, The guardians are on it)
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+ann <- ModToolIssueHandled(The guardians are on it)
+modtools.closeTicketAsHandled(ticket NORMAL ann->bob#8 room 50 topic 4 "bully")
+
+== room / automatically ignored
+InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 3 "bad room").run()
+ann <- ModToolReportReceivedAlert(0, We ignored them for you)
+modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
+modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+ann.ignoreUser(8)
+ann <- RoomUserIgnored(bob, 1)
+ann <- ModToolIssueHandled(We ignored them for you)
+modtools.closeTicketAsHandled(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
+
+== room / not loaded
+InsertModToolIssue(ticket ROOM ann->#0 room 50 topic 1 "bad room").run()
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
+modtools.addTicket(ticket ROOM ann->#0 room 50 topic 1 "bad room")
+modtools.updateTicketToMods(ticket ROOM ann->#0 room 50 topic 1 "bad room")
+
+== room / the reporter left before the automatic answer
+InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 2 "bad room").run()
+ann <- ModToolReportReceivedAlert(0, Read the hotel way)
+modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
+modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+modtools.closeTicketAsHandled(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
+
+== room / to the moderators
+InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 1 "bad room").run()
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
+modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 1 "bad room")
+modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 1 "bad room")
+
+== user / an automatic reply
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 2 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 2 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 2 "he spams")
+ann <- ModToolReportReceivedAlert(0, Read the hotel way)
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+ann <- ModToolIssueHandled(Read the hotel way)
+modtools.closeTicketAsHandled(ticket NORMAL ann->bob#8 room 50 topic 2 "he spams")
+
+== user / automatically ignored
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+ann <- ModToolReportReceivedAlert(0, We ignored them for you)
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+ann.ignoreUser(8)
+ann <- RoomUserIgnored(bob, 1)
+ann <- ModToolIssueHandled(We ignored them for you)
+modtools.closeTicketAsHandled(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+
+== user / handled before the automatic answer
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+ann <- ModToolReportReceivedAlert(0, We ignored them for you)
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+
+== user / nobody with that id
+
+
+== user / offline
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
+
+== user / the reporter left before the automatic answer
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+ann <- ModToolReportReceivedAlert(0, We ignored them for you)
+threading.run(answer, 30000 ms)
+-- 30 seconds later
+modtools.closeTicketAsHandled(ticket NORMAL ann->bob#8 room 50 topic 3 "he spams")
+
+== user / to the moderators
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams")
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
+
+== user / with the reporter's contact
+InsertModToolIssue(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams
+
+Reporter: Ann <a@b.c>").run()
+modtools.addTicket(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams
+
+Reporter: Ann <a@b.c>")
+modtools.updateTicketToMods(ticket NORMAL ann->bob#8 room 50 topic 1 "he spams
+
+Reporter: Ann <a@b.c>")
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
+

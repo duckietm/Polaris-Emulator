@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
@@ -25,72 +26,88 @@ public class OpenRecycleBoxEvent extends MessageHandler {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null) return;
+        if (!this.mayOpenIn(room)) return;
 
-        if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
-                || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)
-                || room.hasRights(this.client.getHabbo())) {
-            HabboItem item = room.getHabboItem(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
+        HabboItem item = room.getHabboItem(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
 
-            if (item == null) return;
-            if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
+        if (item == null) return;
+        if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
 
-            if (item instanceof InteractionGift) {
-                // The actual unwrap (OpenGift) runs async/delayed and only then
-                // removes the wrapper, so a second packet would otherwise pass
-                // the room/owner checks and double-process the gift. Claim it once.
-                if (!((InteractionGift) item).tryStartOpening()) return;
+        if (item instanceof InteractionGift gift) {
+            this.openGift(room, gift);
+        } else {
+            this.openBox(room, item);
+        }
 
-                if (item.getBaseItem().getName().contains("present_wrap")) {
-                    ((InteractionGift) item).explode = true;
-                    room.updateItem(item);
-                }
+        if (item.getRoomId() == 0) {
+            this.refreshTile(room, item);
+        }
+    }
 
-                Emulator.getThreading()
-                        .run(
-                                new OpenGift(item, this.client.getHabbo(), room),
-                                item.getBaseItem().getName().contains("present_wrap") ? 1000 : 0);
-            } else {
-                if (item.getExtradata().length() == 0) {
-                    this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
-                            Emulator.getTexts().getValue("error.recycler.box.empty"),
-                            this.client.getHabbo(),
-                            this.client.getHabbo(),
-                            RoomChatMessageBubbles.BOT)));
-                } else {
-                    HabboItem reward = Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .handleOpenRecycleBox(this.client.getHabbo(), item);
+    /** The room's owner, a user with rights in it, or staff who may act as any room's owner. */
+    private boolean mayOpenIn(Room room) {
+        Habbo habbo = this.client.getHabbo();
+        return room.getOwnerId() == habbo.getHabboInfo().getId()
+                || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
+                || room.hasRights(habbo);
+    }
 
-                    if (reward != null) {
-                        this.client
-                                .getHabbo()
-                                .getInventory()
-                                .getItemsComponent()
-                                .addItem(reward);
-                        this.client.sendResponse(new AddHabboItemComposer(reward));
-                        this.client.sendResponse(new InventoryRefreshComposer());
+    /**
+     * Hands the gift to the delayed unwrap. The actual unwrap (OpenGift) runs async/delayed and only then removes the
+     * wrapper, so a second packet would otherwise pass the room/owner checks and double-process the gift. Claim it once.
+     */
+    private void openGift(Room room, InteractionGift gift) {
+        if (!gift.tryStartOpening()) return;
 
-                        this.client.sendResponse(new PresentItemOpenedComposer(reward, item.getExtradata(), true));
-                    }
-                }
-                room.sendComposer(new RemoveFloorItemComposer(item).compose());
-                room.removeHabboItem(item);
-            }
+        boolean wrapped = gift.getBaseItem().getName().contains("present_wrap");
+        if (wrapped) {
+            gift.explode = true;
+            room.updateItem(gift);
+        }
 
-            if (item.getRoomId() == 0) {
-                room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));
-                RoomLayout roomLayout = room.getLayout();
-                short z = (short) room.getStackHeight(item.getX(), item.getY(), true);
-                if (roomLayout != null) {
-                    RoomTile roomTile = roomLayout.getTile(item.getX(), item.getY());
-                    if (roomTile != null) {
-                        z = roomTile.z;
-                    }
-                }
-                room.sendComposer(new UpdateStackHeightComposer(
-                                item.getX(), item.getY(), z, room.getStackHeight(item.getX(), item.getY(), true))
-                        .compose());
+        Emulator.getThreading().run(new OpenGift(gift, this.client.getHabbo(), room), wrapped ? 1000 : 0);
+    }
+
+    /** Turns a recycler box into its reward and takes the box out of the room. */
+    private void openBox(Room room, HabboItem box) {
+        if (box.getExtradata().length() == 0) {
+            this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                    Emulator.getTexts().getValue("error.recycler.box.empty"),
+                    this.client.getHabbo(),
+                    this.client.getHabbo(),
+                    RoomChatMessageBubbles.BOT)));
+        } else {
+            HabboItem reward =
+                    Emulator.getGameEnvironment().getItemManager().handleOpenRecycleBox(this.client.getHabbo(), box);
+
+            if (reward != null) {
+                this.giveReward(box, reward);
             }
         }
+        room.sendComposer(new RemoveFloorItemComposer(box).compose());
+        room.removeHabboItem(box);
+    }
+
+    private void giveReward(HabboItem box, HabboItem reward) {
+        this.client.getHabbo().getInventory().getItemsComponent().addItem(reward);
+        this.client.sendResponse(new AddHabboItemComposer(reward));
+        this.client.sendResponse(new InventoryRefreshComposer());
+
+        this.client.sendResponse(new PresentItemOpenedComposer(reward, box.getExtradata(), true));
+    }
+
+    private void refreshTile(Room room, HabboItem item) {
+        room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));
+        RoomLayout roomLayout = room.getLayout();
+        short z = (short) room.getStackHeight(item.getX(), item.getY(), true);
+        if (roomLayout != null) {
+            RoomTile roomTile = roomLayout.getTile(item.getX(), item.getY());
+            if (roomTile != null) {
+                z = roomTile.z;
+            }
+        }
+        room.sendComposer(new UpdateStackHeightComposer(
+                        item.getX(), item.getY(), z, room.getStackHeight(item.getX(), item.getY(), true))
+                .compose());
     }
 }

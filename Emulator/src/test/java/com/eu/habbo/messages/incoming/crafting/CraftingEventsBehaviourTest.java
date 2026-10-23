@@ -44,6 +44,7 @@ import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -413,6 +414,10 @@ class CraftingEventsBehaviourTest {
         when(set.getString("limited")).thenReturn(limited ? "1" : "0");
         when(set.getInt("remaining")).thenReturn(remaining);
         CraftingRecipe recipe = new CraftingRecipe(set);
+        // Ingredients in the order they are added, so the trace does not follow the mocks' identity hashes.
+        Field ingredients = CraftingRecipe.class.getDeclaredField("ingredients");
+        ingredients.setAccessible(true);
+        ingredients.set(recipe, new LinkedHashMap<Item, Integer>());
         this.labels.put(recipe, "recipe " + name);
         return recipe;
     }

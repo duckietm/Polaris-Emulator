@@ -1015,22 +1015,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         Habbo recipient = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
-        int recipientId = 0;
-
-        if (recipient != null) {
-            recipientId = recipient.getHabboInfo().getId();
-        } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement =
-                            connection.prepareStatement("SELECT id FROM users WHERE username = ?")) {
-                statement.setString(1, username);
-                try (ResultSet set = statement.executeQuery()) {
-                    if (set.next()) recipientId = set.getInt(1);
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception while resolving club gift recipient", e);
-            }
-        }
+        int recipientId = this.resolveClubGiftRecipientId(recipient, username);
 
         if (recipientId == 0) {
             this.client.sendResponse(new GiftReceiverNotFoundComposer());
@@ -1057,11 +1042,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
         boolean extended;
         try {
-            if (recipient != null) {
-                extended = (recipient.getHabboStats().createSubscription(subscriptionType, duration) != null);
-            } else {
-                extended = this.extendOfflineSubscription(recipientId, subscriptionType, duration);
-            }
+            extended = this.extendClub(recipient, recipientId, subscriptionType, duration);
         } catch (RuntimeException e) {
             CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, offer.getPointsType(), paidPoints);
             throw e;
@@ -1073,22 +1054,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return;
         }
 
-        if (recipient != null) {
-            recipient
-                    .getClient()
-                    .sendResponse(
-                            new UserClubComposer(recipient, subscriptionType, UserClubComposer.RESPONSE_TYPE_NORMAL));
-
-            String prefix = Emulator.getTexts().getValue("prereg.reward.you.received", "You have received:");
-            String daysWord = Emulator.getTexts().getValue("generic.days", "days");
-            String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
-            String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
-            Map<String, String> keys = new HashMap<>();
-            keys.put("display", "BUBBLE");
-            keys.put("image", "${image.library.url}notifications/gift.gif");
-            keys.put("message", prefix + " " + giftDescription);
-            recipient.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_GIFT.key, keys));
-        }
+        if (recipient != null) this.notifyClubRecipient(recipient, offer, subscriptionType);
 
         if (this.client.getHabbo().getHabboInfo().getId() != recipientId) {
             AchievementManager.progressAchievement(
@@ -1097,6 +1063,48 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         this.client.sendResponse(new PurchaseOKComposer(null));
+    }
+
+    /** The id of a club gift's recipient: the online user's, or the one stored for the name; 0 when nobody has it. */
+    private int resolveClubGiftRecipientId(Habbo recipient, String username) {
+        if (recipient != null) return recipient.getHabboInfo().getId();
+
+        int recipientId = 0;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE username = ?")) {
+            statement.setString(1, username);
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) recipientId = set.getInt(1);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception while resolving club gift recipient", e);
+        }
+        return recipientId;
+    }
+
+    /** Adds the days to the recipient's club, in memory when they are online and in the database otherwise. */
+    private boolean extendClub(Habbo recipient, int recipientId, String subscriptionType, int duration) {
+        if (recipient != null) {
+            return recipient.getHabboStats().createSubscription(subscriptionType, duration) != null;
+        }
+        return this.extendOfflineSubscription(recipientId, subscriptionType, duration);
+    }
+
+    /** Shows an online recipient their new club and what they received. */
+    private void notifyClubRecipient(Habbo recipient, ClubOffer offer, String subscriptionType) {
+        recipient
+                .getClient()
+                .sendResponse(new UserClubComposer(recipient, subscriptionType, UserClubComposer.RESPONSE_TYPE_NORMAL));
+
+        String prefix = Emulator.getTexts().getValue("prereg.reward.you.received", "You have received:");
+        String daysWord = Emulator.getTexts().getValue("generic.days", "days");
+        String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
+        String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
+        Map<String, String> keys = new HashMap<>();
+        keys.put("display", "BUBBLE");
+        keys.put("image", "${image.library.url}notifications/gift.gif");
+        keys.put("message", prefix + " " + giftDescription);
+        recipient.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_GIFT.key, keys));
     }
 
     private boolean extendOfflineSubscription(int userId, String subscriptionType, int duration) {

@@ -1,0 +1,222 @@
+== name / a limited recipe that is sold out
+ann <- AlertLimitedSoldOut()
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== name / a recipe with its ingredients
+inventory.getAndRemove(wood) -> wood#11
+inventory.getAndRemove(wood) -> wood#12
+inventory.getAndRemove(stone) -> stone#13
+items.createItem(throne) -> true
+achievement(CraftThrone)
+ann <- CraftingResult(recipe throne)
+inventory.addItem(throne#900)
+ann <- AddHabboItem(throne#900)
+achievement(Atcg)
+ann <- RemoveHabboItem(11)
+ann <- RemoveHabboItem(12)
+ann <- RemoveHabboItem(13)
+ann <- InventoryRefresh()
+threading.runPersistence(DeleteItems(stone#13, wood#11, wood#12))
+after: inventory=[throne#900] remaining=0
+
+== name / a secret recipe already discovered
+inventory.getAndRemove(rare) -> rare#21
+items.createItem(chair) -> true
+ann <- CraftingResult(recipe chair)
+inventory.addItem(chair#900)
+ann <- AddHabboItem(chair#900)
+achievement(Atcg)
+ann <- RemoveHabboItem(21)
+ann <- InventoryRefresh()
+threading.runPersistence(DeleteItems(rare#21))
+after: inventory=[chair#900] remaining=0
+
+== name / a secret recipe never discovered
+inventory.getAndRemove(rare) -> rare#21
+items.createItem(chair) -> true
+ann <- CraftingResult(recipe chair)
+inventory.addItem(chair#900)
+ann <- AddHabboItem(chair#900)
+achievement(Atcg)
+ann <- RemoveHabboItem(21)
+ann <- InventoryRefresh()
+threading.runPersistence(DeleteItems(rare#21))
+after: inventory=[chair#900] remaining=0
+
+== name / an unknown recipe
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== name / no ingredients at all
+inventory.getAndRemove(wood) -> null
+after: inventory=[] remaining=0
+
+== name / not in a room
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== name / one ingredient short
+inventory.getAndRemove(wood) -> wood#11
+inventory.getAndRemove(wood) -> null
+inventory.addItem(wood#11)
+ann <- AddHabboItem(wood#11)
+ann <- InventoryRefresh()
+after: inventory=[stone#13, wood#11] remaining=0
+
+== name / the altar is not in the room
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== name / the furni is not an altar
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== name / the last unit of a limited recipe
+inventory.getAndRemove(wood) -> wood#11
+inventory.getAndRemove(wood) -> wood#12
+inventory.getAndRemove(stone) -> stone#13
+items.createItem(throne) -> true
+achievement(CraftThrone)
+ann <- CraftingResult(recipe throne)
+inventory.addItem(throne#900)
+ann <- AddHabboItem(throne#900)
+achievement(Atcg)
+ann <- RemoveHabboItem(11)
+ann <- RemoveHabboItem(12)
+ann <- RemoveHabboItem(13)
+ann <- InventoryRefresh()
+threading.runPersistence(DeleteItems(stone#13, wood#11, wood#12))
+after: inventory=[throne#900] remaining=0
+
+== name / the last unit, and the reward is not created
+inventory.getAndRemove(wood) -> wood#11
+inventory.getAndRemove(wood) -> wood#12
+inventory.getAndRemove(stone) -> stone#13
+items.createItem(throne) -> false
+inventory.addItem(wood#11)
+ann <- AddHabboItem(wood#11)
+inventory.addItem(wood#12)
+ann <- AddHabboItem(wood#12)
+inventory.addItem(stone#13)
+ann <- AddHabboItem(stone#13)
+ann <- InventoryRefresh()
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=1
+
+== name / the reward is not created
+inventory.getAndRemove(wood) -> wood#11
+inventory.getAndRemove(wood) -> wood#12
+inventory.getAndRemove(stone) -> stone#13
+items.createItem(throne) -> false
+inventory.addItem(wood#11)
+ann <- AddHabboItem(wood#11)
+inventory.addItem(wood#12)
+ann <- AddHabboItem(wood#12)
+inventory.addItem(stone#13)
+ann <- AddHabboItem(stone#13)
+ann <- InventoryRefresh()
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== secret / a furni not in the inventory
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
+
+== secret / a limited recipe that is sold out
+ann <- AlertLimitedSoldOut()
+after: inventory=[wood#11, wood#12, stone#13] remaining=0
+
+== secret / a public recipe laid on the altar
+items.createItem(throne) -> true
+achievement(CraftThrone)
+ann <- CraftingResult(recipe throne)
+stats.addRecipe(1)
+achievement(AtcgSecret)
+inventory.addItem(throne#900)
+ann <- AddHabboItem(throne#900)
+inventory.remove(wood#11)
+ann <- RemoveHabboItem(11)
+threading.runPersistence(DeleteItem(11))
+inventory.remove(wood#12)
+ann <- RemoveHabboItem(12)
+threading.runPersistence(DeleteItem(12))
+inventory.remove(stone#13)
+ann <- RemoveHabboItem(13)
+threading.runPersistence(DeleteItem(13))
+ann <- InventoryRefresh()
+after: inventory=[throne#900] remaining=0
+
+== secret / a public recipe with one ingredient too many
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13, stone#14] remaining=0
+
+== secret / furni that match no recipe
+ann <- CraftingResult(null)
+after: inventory=[throne#22] remaining=0
+
+== secret / its ingredients and one furni more
+items.createItem(chair) -> true
+ann <- CraftingResult(recipe chair)
+stats.addRecipe(2)
+achievement(AtcgSecret)
+inventory.addItem(chair#900)
+ann <- AddHabboItem(chair#900)
+inventory.remove(rare#21)
+ann <- RemoveHabboItem(21)
+threading.runPersistence(DeleteItem(21))
+inventory.remove(throne#22)
+ann <- RemoveHabboItem(22)
+threading.runPersistence(DeleteItem(22))
+ann <- InventoryRefresh()
+after: inventory=[chair#900] remaining=0
+
+== secret / its ingredients, already discovered
+items.createItem(chair) -> true
+ann <- CraftingResult(recipe chair)
+inventory.addItem(chair#900)
+ann <- AddHabboItem(chair#900)
+inventory.remove(rare#21)
+ann <- RemoveHabboItem(21)
+threading.runPersistence(DeleteItem(21))
+ann <- InventoryRefresh()
+after: inventory=[chair#900] remaining=0
+
+== secret / its ingredients, first time
+items.createItem(chair) -> true
+ann <- CraftingResult(recipe chair)
+stats.addRecipe(2)
+achievement(AtcgSecret)
+inventory.addItem(chair#900)
+ann <- AddHabboItem(chair#900)
+inventory.remove(rare#21)
+ann <- RemoveHabboItem(21)
+threading.runPersistence(DeleteItem(21))
+ann <- InventoryRefresh()
+after: inventory=[chair#900] remaining=0
+
+== secret / no furni
+ann <- CraftingResult(null)
+after: inventory=[] remaining=0
+
+== secret / not in a room
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
+
+== secret / the furni is not an altar
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
+
+== secret / the last unit, and the reward is not created
+items.createItem(throne) -> false
+ann <- CraftingResult(null)
+after: inventory=[wood#11, wood#12, stone#13] remaining=1
+
+== secret / the reward is not created
+items.createItem(chair) -> false
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
+
+== secret / the same furni twice
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
+

@@ -111,8 +111,6 @@ ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error
 
 == furni / auto pickup on a tile that becomes void
 room.pickUpItem(chair#11, null)
-ann <- AddHabboItem(chair#11)
-ann <- InventoryRefresh()
 layout.setDoorX(0)
 layout.setDoorY(0)
 layout.setDoorDirection(2)
@@ -136,9 +134,6 @@ ann's last floor plan save = 1700000000
 == furni / auto pickup on a tile that changes height
 room.pickUpItem(chair#11, null)
 room.pickUpItem(rug#13, null)
-ann <- AddHabboItem(chair#11)
-ann <- AddHabboItem(rug#13)
-ann <- InventoryRefresh()
 layout.setDoorX(0)
 layout.setDoorY(0)
 layout.setDoorDirection(2)
@@ -161,8 +156,6 @@ ann's last floor plan save = 1700000000
 
 == furni / auto pickup on a tile the new map leaves out
 room.pickUpItem(chair#11, null)
-ann <- AddHabboItem(chair#11)
-ann <- InventoryRefresh()
 layout.setDoorX(0)
 layout.setDoorY(0)
 layout.setDoorDirection(2)
@@ -190,10 +183,6 @@ ann <- BubbleAlert(floorplan_editor.error, Too many items would be picked up (50
 room.pickUpItem(chair#11, null)
 room.pickUpItem(plant#31, null)
 room.pickUpItem(sofa#21, null)
-ann <- AddHabboItem(chair#11)
-ann <- InventoryRefresh()
-bob <- AddHabboItem(sofa#21)
-bob <- InventoryRefresh()
 layout.setDoorX(0)
 layout.setDoorY(0)
 layout.setDoorDirection(2)

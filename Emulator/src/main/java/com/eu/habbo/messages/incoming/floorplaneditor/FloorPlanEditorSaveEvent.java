@@ -14,14 +14,10 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
-import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
-import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
@@ -308,20 +304,13 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             return false;
         }
 
-        Map<Integer, ArrayList<HabboItem>> byOwner = new HashMap<>();
+        // Room.pickUpItem already hands each furni to its online owner's inventory, or destroys it when it is a
+        // Builders Club or a destroy-on-pickup furni, so nothing more is sent to the owners here.
+        Set<Integer> owners = new HashSet<>();
         for (HabboItem itm : itemsToPickup) {
             if (itm == null) continue;
-            byOwner.computeIfAbsent(itm.getUserId(), k -> new ArrayList<>()).add(itm);
+            owners.add(itm.getUserId());
             room.pickUpItem(itm, null);
-        }
-
-        for (Map.Entry<Integer, ArrayList<HabboItem>> entry : byOwner.entrySet()) {
-            Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(entry.getKey());
-            if (owner == null) continue;
-            for (HabboItem itm : entry.getValue()) {
-                owner.getClient().sendResponse(new AddHabboItemComposer(itm));
-            }
-            owner.getClient().sendResponse(new InventoryRefreshComposer());
         }
 
         LOGGER.info(
@@ -329,7 +318,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 this.client.getHabbo().getHabboInfo().getId(),
                 room.getId(),
                 itemsToPickup.size(),
-                byOwner.size());
+                owners.size());
         return true;
     }
 

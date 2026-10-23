@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.bots.BotManager;
+import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
@@ -153,11 +154,11 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     count++;
                 }
 
-                String result = Emulator.getGameEnvironment().getWordFilter().filter(s, null);
+                String result = wordFilter().filter(s, null);
 
                 if (!result.isEmpty()) {
                     if (!this.client.getHabbo().hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
-                        result = Emulator.getGameEnvironment().getWordFilter().filter(result, this.client.getHabbo());
+                        result = wordFilter().filter(result, this.client.getHabbo());
                     }
 
                     result = result.substring(
@@ -226,7 +227,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                 || name.contains("<")
                 || name.contains(">");
         if (!invalidName) {
-            String filteredName = Emulator.getGameEnvironment().getWordFilter().filter(name, null);
+            String filteredName = wordFilter().filter(name, null);
             invalidName = !name.equalsIgnoreCase(filteredName);
             if (!invalidName) {
                 BotSavedNameEvent nameEvent = new BotSavedNameEvent(bot, name);
@@ -258,7 +259,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
         // the word filter for an owner who may not skip it. It used to be stored as typed.
         motto = Jsoup.parse(motto).text();
         if (!this.client.getHabbo().hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
-            motto = Emulator.getGameEnvironment().getWordFilter().filter(motto, this.client.getHabbo());
+            motto = wordFilter().filter(motto, this.client.getHabbo());
         }
 
         bot.setMotto(motto);
@@ -276,6 +277,10 @@ public class BotSaveSettingsEvent extends MessageHandler {
         bot.needsUpdate(true);
         room.sendComposer(new RoomUserStatusComposer(bot.getRoomUnit()).compose());
         return Outcome.DONE;
+    }
+
+    private static WordFilter wordFilter() {
+        return Emulator.getGameEnvironment().getWordFilter();
     }
 
     /**

@@ -44,7 +44,7 @@ modtools.closeTicketAsHandled(ticket NORMAL ann->bob#8 room 50 topic 4 "bully")
 
 == room / automatically ignored
 InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 3 "bad room").run()
-ann <- ModToolReportReceivedAlert(0, bad room)
+ann <- ModToolReportReceivedAlert(0, We ignored them for you)
 modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
 modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
 threading.run(answer, 30000 ms)
@@ -56,13 +56,13 @@ modtools.closeTicketAsHandled(ticket ROOM ann->bob#8 room 50 topic 3 "bad room")
 
 == room / not loaded
 InsertModToolIssue(ticket ROOM ann->#0 room 50 topic 1 "bad room").run()
-ann <- ModToolReportReceivedAlert(0, bad room)
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
 modtools.addTicket(ticket ROOM ann->#0 room 50 topic 1 "bad room")
 modtools.updateTicketToMods(ticket ROOM ann->#0 room 50 topic 1 "bad room")
 
 == room / the reporter left before the automatic answer
 InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 2 "bad room").run()
-ann <- ModToolReportReceivedAlert(0, bad room)
+ann <- ModToolReportReceivedAlert(0, Read the hotel way)
 modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
 modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
 threading.run(answer, 30000 ms)
@@ -72,7 +72,7 @@ modtools.closeTicketAsHandled(ticket ROOM ann->bob#8 room 50 topic 2 "bad room")
 
 == room / to the moderators
 InsertModToolIssue(ticket ROOM ann->bob#8 room 50 topic 1 "bad room").run()
-ann <- ModToolReportReceivedAlert(0, bad room)
+ann <- ModToolReportReceivedAlert(0, Thanks, a moderator will look at it)
 modtools.addTicket(ticket ROOM ann->bob#8 room 50 topic 1 "bad room")
 modtools.updateTicketToMods(ticket ROOM ann->bob#8 room 50 topic 1 "bad room")
 

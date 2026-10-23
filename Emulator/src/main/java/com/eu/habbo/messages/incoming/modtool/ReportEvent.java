@@ -148,8 +148,9 @@ public class ReportEvent extends MessageHandler {
         issue.category = topic;
         new InsertModToolIssue(issue).run();
 
-        this.client.sendResponse(
-                new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, message));
+        // The topic's reply, as a user report answers: this used to echo the reporter's own message back.
+        this.client.sendResponse(new ModToolReportReceivedAlertComposer(
+                ModToolReportReceivedAlertComposer.REPORT_RECEIVED, cfhTopic.reply));
         Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
         Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
 

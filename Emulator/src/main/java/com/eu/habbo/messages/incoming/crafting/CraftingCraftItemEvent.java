@@ -37,7 +37,11 @@ public class CraftingCraftItemEvent extends MessageHandler {
             }
 
             Map<Integer, HabboItem> toRemove = this.takeIngredients(recipe);
-            if (toRemove == null) return;
+            if (toRemove == null) {
+                // One ingredient short: the crafting window waits for a result either way.
+                this.client.sendResponse(new CraftingResultComposer(null));
+                return;
+            }
 
             HabboItem rewardItem = Emulator.getGameEnvironment()
                     .getItemManager()

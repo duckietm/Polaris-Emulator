@@ -49,6 +49,7 @@ after: inventory=[wood#11, wood#12, stone#13] remaining=0
 
 == name / no ingredients at all
 inventory.getAndRemove(wood) -> null
+ann <- CraftingResult(null)
 after: inventory=[] remaining=0
 
 == name / not in a room
@@ -61,6 +62,7 @@ inventory.getAndRemove(wood) -> null
 inventory.addItem(wood#11)
 ann <- AddHabboItem(wood#11)
 ann <- InventoryRefresh()
+ann <- CraftingResult(null)
 after: inventory=[stone#13, wood#11] remaining=0
 
 == name / the altar is not in the room

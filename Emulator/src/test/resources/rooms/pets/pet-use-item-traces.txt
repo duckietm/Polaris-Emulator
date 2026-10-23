@@ -17,7 +17,7 @@
 
 
 == horse / a dye whose name has no number
-handle threw NumberFormatException
+
 
 == horse / any other furni
 

@@ -65,8 +65,14 @@ public class PetUseItemEvent extends MessageHandler {
     private static boolean applyHorseItem(HabboItem item, HorsePet horse) {
         String name = item.getBaseItem().getName().toLowerCase();
 
+        // A dye, hair dye or hair style carries its number as the third part of its name; one without a readable
+        // number used to throw out of the handler, now it is not a horse item.
+        if (name.startsWith("horse_dye") || name.startsWith("horse_hairdye") || name.startsWith("horse_hairstyle")) {
+            if (numberSuffix(name) == null) return false;
+        }
+
         if (name.startsWith("horse_dye")) {
-            int race = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
+            int race = numberSuffix(name);
             int raceType = (race * 4) - 2;
 
             if (race >= 13 && race <= 17) raceType = ((2 + race) * 4) + 1;
@@ -76,7 +82,7 @@ public class PetUseItemEvent extends MessageHandler {
             horse.setRace(raceType);
             horse.needsUpdate = true;
         } else if (name.startsWith("horse_hairdye")) {
-            int splittedHairdye = Integer.parseInt(name.split("_")[2]);
+            int splittedHairdye = numberSuffix(name);
             int newHairdye = 48;
 
             if (splittedHairdye == 0) {
@@ -92,7 +98,7 @@ public class PetUseItemEvent extends MessageHandler {
             horse.setHairColor(newHairdye);
             horse.needsUpdate = true;
         } else if (name.startsWith("horse_hairstyle")) {
-            int splittedHairstyle = Integer.parseInt(name.split("_")[2]);
+            int splittedHairstyle = numberSuffix(name);
             int newHairstyle = 100;
 
             if (splittedHairstyle == 0) {
@@ -199,6 +205,17 @@ public class PetUseItemEvent extends MessageHandler {
         room.sendComposer(new RoomUserStatusComposer(pet.getRoomUnit()).compose());
         room.sendComposer(new PetStatusUpdateComposer(pet).compose());
         freeTiles(room, item);
+    }
+
+    /** The number after the second "_" of a furni name ("horse_dye_3" gives 3), or null when there is none. */
+    private static Integer numberSuffix(String name) {
+        String[] parts = name.split("_");
+        if (parts.length < 3) return null;
+        try {
+            return Integer.parseInt(parts[2]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void freeTiles(Room room, HabboItem item) {

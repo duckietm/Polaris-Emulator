@@ -1063,6 +1063,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return;
         }
 
+        // A club gift starts the gift cooldown, as an item gift does; before, club gifts could follow each other
+        // without one.
+        this.client.getHabbo().getHabboStats().lastGiftTimestamp = Emulator.getIntUnixTimestamp();
+
         if (recipient != null) this.notifyClubRecipient(recipient, offer, subscriptionType);
 
         if (this.client.getHabbo().getHabboInfo().getId() != recipientId) {

@@ -123,52 +123,10 @@ client <- RoomSettingsSaved(room)
 
 
 == idle / kick too soon after sleep
-room.setName(Lounge)
-room.setDescription(A quiet room)
-room.setState(OPEN)
-room.setUsersMax(25)
-room.setCategory(3)
-room.setTags(fun;chat;)
-room.setTradeMode(2)
-room.setAllowPets(true)
-room.setAllowPetsEat(false)
-room.setAllowWalkthrough(true)
-room.setHideWall(false)
-room.setWallSize(0)
-room.setFloorSize(-1)
-room.setMuteOption(1)
-room.setKickOption(1)
-room.setBanOption(0)
-room.setChatMode(0)
-room.setChatWeight(1)
-room.setChatSpeed(1)
-room.setChatDistance(14)
-room.setChatProtection(2)
-room.setAllowUnderpass(true)
+
 
 == idle / sleep timeout too short
-room.setName(Lounge)
-room.setDescription(A quiet room)
-room.setState(OPEN)
-room.setUsersMax(25)
-room.setCategory(3)
-room.setTags(fun;chat;)
-room.setTradeMode(2)
-room.setAllowPets(true)
-room.setAllowPetsEat(false)
-room.setAllowWalkthrough(true)
-room.setHideWall(false)
-room.setWallSize(0)
-room.setFloorSize(-1)
-room.setMuteOption(1)
-room.setKickOption(1)
-room.setBanOption(0)
-room.setChatMode(0)
-room.setChatWeight(1)
-room.setChatSpeed(1)
-room.setChatDistance(14)
-room.setChatProtection(2)
-room.setAllowUnderpass(true)
+
 
 == idle / switched off, timeouts ignored
 room.setName(Lounge)
@@ -307,25 +265,13 @@ client <- RoomEditSettingsError(50, 8, )
 client <- RoomEditSettingsError(50, 7, )
 
 == options / chat distance out of range
-room.setName(Lounge)
-room.setDescription(A quiet room)
-room.setState(OPEN)
-room.setUsersMax(25)
-room.setCategory(3)
+
 
 == options / trade mode out of range
-room.setName(Lounge)
-room.setDescription(A quiet room)
-room.setState(OPEN)
-room.setUsersMax(25)
-room.setCategory(3)
+
 
 == options / wall thickness out of range
-room.setName(Lounge)
-room.setDescription(A quiet room)
-room.setState(OPEN)
-room.setUsersMax(25)
-room.setCategory(3)
+
 
 == password / 65 characters
 

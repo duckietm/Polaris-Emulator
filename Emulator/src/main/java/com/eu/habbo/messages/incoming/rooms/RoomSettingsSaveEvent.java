@@ -41,6 +41,36 @@ public class RoomSettingsSaveEvent extends MessageHandler {
             int categoryId,
             StringBuilder tags) {}
 
+    /** The trade, pet, wall, moderation and chat options, every one in range. */
+    private record RoomOptions(
+            int tradeMode,
+            boolean allowPets,
+            boolean allowPetsEat,
+            boolean allowWalkthrough,
+            boolean hideWall,
+            int wallSize,
+            int floorSize,
+            int muteOption,
+            int kickOption,
+            int banOption,
+            int chatMode,
+            int chatWeight,
+            int chatSpeed,
+            int chatDistance,
+            int chatProtection) {}
+
+    /** The pet, door tile and idle settings newer clients send last, the timeouts in range. */
+    private record IdleSettings(
+            boolean muteAllPets,
+            boolean leaveOnDoorTileEnabled,
+            boolean sleepEnabled,
+            int sleepTimeoutSeconds,
+            boolean autokickEnabled,
+            int autokickTimeoutSeconds) {}
+
+    /** The fields newer clients add at the end; null where the client left them out. */
+    private record RoomExtras(Boolean allowUnderpass, IdleSettings idle) {}
+
     @Override
     public void handle() throws Exception {
         int roomId = this.packet.readInt();
@@ -49,15 +79,23 @@ public class RoomSettingsSaveEvent extends MessageHandler {
 
         if (room == null || !room.isOwner(this.client.getHabbo())) return;
 
+        // The whole packet is read and checked before the room is touched: a refused field used to leave the
+        // fields before it written into the room, unsaved and unannounced.
         RoomBasics basics = this.readBasics(room);
 
         if (basics == null) return;
 
+        RoomOptions options = this.readOptions();
+
+        if (options == null) return;
+
+        RoomExtras extras = this.readExtras();
+
+        if (extras == null) return;
+
         boolean enforceCategory = this.applyBasics(room, basics);
-
-        if (!this.readAndApplyOptions(room, basics.tags())) return;
-
-        if (!this.readAndApplyExtras(room)) return;
+        this.applyOptions(room, basics.tags(), options);
+        this.applyExtras(room, extras);
 
         this.announce(room, enforceCategory);
     }
@@ -219,8 +257,8 @@ public class RoomSettingsSaveEvent extends MessageHandler {
         return enforceCategory;
     }
 
-    /** Reads the trade, pet, wall, moderation and chat options and writes them with the tags; false when one is out of range. */
-    private boolean readAndApplyOptions(Room room, StringBuilder tags) {
+    /** Reads the trade, pet, wall, moderation and chat options; null when one is out of range. */
+    private RoomOptions readOptions() {
         int tradeMode = this.packet.readInt();
         boolean allowPets = this.packet.readBoolean();
         boolean allowPetsEat = this.packet.readBoolean();
@@ -248,61 +286,94 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 || !isInRange(chatSpeed, 0, MAX_OPTION_LEVEL)
                 || !isInRange(chatDistance, MIN_CHAT_DISTANCE, MAX_CHAT_DISTANCE)
                 || !isInRange(chatProtection, 0, MAX_OPTION_LEVEL)) {
-            return false;
+            return null;
         }
 
+        return new RoomOptions(
+                tradeMode,
+                allowPets,
+                allowPetsEat,
+                allowWalkthrough,
+                hideWall,
+                wallSize,
+                floorSize,
+                muteOption,
+                kickOption,
+                banOption,
+                chatMode,
+                chatWeight,
+                chatSpeed,
+                chatDistance,
+                chatProtection);
+    }
+
+    private void applyOptions(Room room, StringBuilder tags, RoomOptions options) {
         room.setTags(tags.toString());
-        room.setTradeMode(tradeMode);
-        room.setAllowPets(allowPets);
-        room.setAllowPetsEat(allowPetsEat);
-        room.setAllowWalkthrough(allowWalkthrough);
-        room.setHideWall(hideWall);
-        room.setWallSize(wallSize);
-        room.setFloorSize(floorSize);
-        room.setMuteOption(muteOption);
-        room.setKickOption(kickOption);
-        room.setBanOption(banOption);
-        room.setChatMode(chatMode);
-        room.setChatWeight(chatWeight);
-        room.setChatSpeed(chatSpeed);
-        room.setChatDistance(chatDistance);
-        room.setChatProtection(chatProtection);
-        return true;
+        room.setTradeMode(options.tradeMode());
+        room.setAllowPets(options.allowPets());
+        room.setAllowPetsEat(options.allowPetsEat());
+        room.setAllowWalkthrough(options.allowWalkthrough());
+        room.setHideWall(options.hideWall());
+        room.setWallSize(options.wallSize());
+        room.setFloorSize(options.floorSize());
+        room.setMuteOption(options.muteOption());
+        room.setKickOption(options.kickOption());
+        room.setBanOption(options.banOption());
+        room.setChatMode(options.chatMode());
+        room.setChatWeight(options.chatWeight());
+        room.setChatSpeed(options.chatSpeed());
+        room.setChatDistance(options.chatDistance());
+        room.setChatProtection(options.chatProtection());
     }
 
     /**
      * The fields newer clients add at the end: underpass, then the pet, door tile and idle settings. Older clients
-     * leave them out. False when an idle timeout is out of range.
+     * leave them out. Null when an idle timeout is out of range.
      */
-    private boolean readAndApplyExtras(Room room) {
-        if (this.packet.bytesAvailable() > 0) {
-            room.setAllowUnderpass(this.packet.readBoolean());
+    private RoomExtras readExtras() {
+        Boolean allowUnderpass = this.packet.bytesAvailable() > 0 ? this.packet.readBoolean() : null;
+
+        if (this.packet.bytesAvailable() <= 0) return new RoomExtras(allowUnderpass, null);
+
+        boolean muteAllPets = this.packet.readBoolean();
+        boolean leaveOnDoorTileEnabled = this.packet.readBoolean();
+        boolean idleSleepEnabled = this.packet.readBoolean();
+        int idleSleepTimeoutSeconds = this.packet.readInt();
+        boolean idleAutokickEnabled = this.packet.readBoolean();
+        int idleAutokickTimeoutSeconds = this.packet.readInt();
+
+        if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
+                || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
+                || (idleSleepEnabled
+                        && idleAutokickEnabled
+                        && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
+            return null;
         }
 
-        if (this.packet.bytesAvailable() > 0) {
-            boolean muteAllPets = this.packet.readBoolean();
-            boolean leaveOnDoorTileEnabled = this.packet.readBoolean();
-            boolean idleSleepEnabled = this.packet.readBoolean();
-            int idleSleepTimeoutSeconds = this.packet.readInt();
-            boolean idleAutokickEnabled = this.packet.readBoolean();
-            int idleAutokickTimeoutSeconds = this.packet.readInt();
+        return new RoomExtras(
+                allowUnderpass,
+                new IdleSettings(
+                        muteAllPets,
+                        leaveOnDoorTileEnabled,
+                        idleSleepEnabled,
+                        idleSleepTimeoutSeconds,
+                        idleAutokickEnabled,
+                        idleAutokickTimeoutSeconds));
+    }
 
-            if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
-                    || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
-                    || (idleSleepEnabled
-                            && idleAutokickEnabled
-                            && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
-                return false;
-            }
+    private void applyExtras(Room room, RoomExtras extras) {
+        if (extras.allowUnderpass() != null) room.setAllowUnderpass(extras.allowUnderpass());
 
-            room.setMuteAllPets(muteAllPets);
-            room.setLeaveOnDoorTileEnabled(leaveOnDoorTileEnabled);
-            room.setIdleSleepEnabled(idleSleepEnabled);
-            room.setIdleSleepTimeoutSeconds(idleSleepEnabled ? idleSleepTimeoutSeconds : 0);
-            room.setIdleAutokickEnabled(idleAutokickEnabled);
-            room.setIdleAutokickTimeoutSeconds(idleAutokickEnabled ? idleAutokickTimeoutSeconds : 0);
-        }
-        return true;
+        IdleSettings idle = extras.idle();
+
+        if (idle == null) return;
+
+        room.setMuteAllPets(idle.muteAllPets());
+        room.setLeaveOnDoorTileEnabled(idle.leaveOnDoorTileEnabled());
+        room.setIdleSleepEnabled(idle.sleepEnabled());
+        room.setIdleSleepTimeoutSeconds(idle.sleepEnabled() ? idle.sleepTimeoutSeconds() : 0);
+        room.setIdleAutokickEnabled(idle.autokickEnabled());
+        room.setIdleAutokickTimeoutSeconds(idle.autokickEnabled() ? idle.autokickTimeoutSeconds() : 0);
     }
 
     /** Marks the room for saving and tells everyone in it and the owner about the new settings. */

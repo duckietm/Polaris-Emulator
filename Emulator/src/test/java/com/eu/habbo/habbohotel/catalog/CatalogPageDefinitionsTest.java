@@ -95,8 +95,15 @@ class CatalogPageDefinitionsTest {
     @Test
     void everyLayoutWritesOnlyItsCodeImagesAndTexts() throws Exception {
         java.util.List<String> broken = new java.util.ArrayList<>();
-        for (java.util.Map.Entry<String, Class<? extends CatalogPage>> entry :
-                CatalogManager.pageDefinitions.entrySet()) {
+        // The optional layouts are only registered when the catalog starts with the feature enabled.
+        java.util.Map<String, Class<? extends CatalogPage>> layouts =
+                new java.util.TreeMap<>(CatalogManager.pageDefinitions);
+        layouts.put("recycler", com.eu.habbo.habbohotel.catalog.layouts.RecyclerLayout.class);
+        layouts.put("recycler_info", com.eu.habbo.habbohotel.catalog.layouts.RecyclerInfoLayout.class);
+        layouts.put("recycler_prizes", com.eu.habbo.habbohotel.catalog.layouts.RecyclerPrizesLayout.class);
+        layouts.put("marketplace", com.eu.habbo.habbohotel.catalog.layouts.MarketplaceLayout.class);
+        layouts.put("marketplace_own_items", com.eu.habbo.habbohotel.catalog.layouts.MarketplaceOwnItems.class);
+        for (java.util.Map.Entry<String, Class<? extends CatalogPage>> entry : layouts.entrySet()) {
             CatalogPage page;
             try {
                 page = entry.getValue().getConstructor(ResultSet.class).newInstance(pageRow(entry.getKey()));

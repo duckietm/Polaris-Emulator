@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.ItemManager;
+import com.eu.habbo.habbohotel.items.RecycleBoxOpening;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
@@ -88,6 +89,7 @@ class OpenRecycleBoxEventBehaviourTest {
     private int itemOwner;
     private boolean alreadyOpening;
     private boolean rewardInside;
+    private boolean openingFails;
     private boolean tileThere;
 
     private GameClient client;
@@ -198,6 +200,10 @@ class OpenRecycleBoxEventBehaviourTest {
         this.rewardInside = false;
         this.open("box / no reward comes out", ITEM_ID);
 
+        this.fresh(Kind.BOX, "ecotron_box", "24-10-2026");
+        this.openingFails = true;
+        this.open("box / the opening fails", ITEM_ID);
+
         this.fresh(Kind.BOX, "ecotron_box", "");
         this.open("box / a box without a date", ITEM_ID);
 
@@ -230,6 +236,7 @@ class OpenRecycleBoxEventBehaviourTest {
         this.itemOwner = OPENER_ID;
         this.alreadyOpening = false;
         this.rewardInside = true;
+        this.openingFails = false;
         this.tileThere = true;
 
         Item base = mock(Item.class);
@@ -250,10 +257,14 @@ class OpenRecycleBoxEventBehaviourTest {
         when(this.item.getY()).thenReturn((short) 5);
 
         HabboItem reward = mock(HabboItem.class, withSettings().name("reward"));
-        when(this.itemManager.handleOpenRecycleBox(any(), any())).thenAnswer(i -> {
-            this.record("items.handleOpenRecycleBox(" + this.label(i.getArgument(1)) + ") -> "
-                    + (this.rewardInside ? "reward" : "null"));
-            return this.rewardInside ? reward : null;
+        when(this.itemManager.openRecycleBox(any(), any())).thenAnswer(i -> {
+            RecycleBoxOpening opening = this.openingFails
+                    ? RecycleBoxOpening.FAILED
+                    : this.rewardInside
+                            ? new RecycleBoxOpening(RecycleBoxOpening.Result.OPENED, reward)
+                            : RecycleBoxOpening.EMPTY;
+            this.record("items.openRecycleBox(" + this.label(i.getArgument(1)) + ") -> " + opening.result());
+            return opening;
         });
 
         RoomTile tile = new RoomTile((short) 4, (short) 5, (short) 1, RoomTileState.OPEN, true);

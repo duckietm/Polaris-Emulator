@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.recycler;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
+import com.eu.habbo.habbohotel.items.RecycleBoxOpening;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
@@ -65,20 +66,24 @@ public class OpenRecycleBoxEvent extends MessageHandler {
         Emulator.getThreading().run(new OpenGift(gift, this.client.getHabbo(), room), wrapped ? 1000 : 0);
     }
 
-    /** Turns a recycler box into its reward and takes the box out of the room. */
+    /**
+     * Turns a recycler box into its reward and takes the box out of the room. Whether the box held a prize is decided
+     * by its prize row, in the same transaction that deletes it; a failed opening leaves the box where it was.
+     */
     private void openBox(Room room, HabboItem box) {
-        if (box.getExtradata().length() == 0) {
-            this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
-                    Emulator.getTexts().getValue("error.recycler.box.empty"),
-                    this.client.getHabbo(),
-                    this.client.getHabbo(),
-                    RoomChatMessageBubbles.BOT)));
-        } else {
-            HabboItem reward =
-                    Emulator.getGameEnvironment().getItemManager().handleOpenRecycleBox(this.client.getHabbo(), box);
+        RecycleBoxOpening opening =
+                Emulator.getGameEnvironment().getItemManager().openRecycleBox(this.client.getHabbo(), box);
 
-            if (reward != null) {
-                this.giveReward(box, reward);
+        switch (opening.result()) {
+            case OPENED -> this.giveReward(box, opening.reward());
+            case EMPTY ->
+                this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                        Emulator.getTexts().getValue("error.recycler.box.empty"),
+                        this.client.getHabbo(),
+                        this.client.getHabbo(),
+                        RoomChatMessageBubbles.BOT)));
+            case FAILED -> {
+                return;
             }
         }
         this.takeFromRoom(room, box);

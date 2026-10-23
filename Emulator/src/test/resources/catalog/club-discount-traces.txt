@@ -1,0 +1,75 @@
+== offer / an offer outside the club
+
+
+== offer / an unknown offer
+
+
+== offer / the deal in the last hour counts as one day
+ann.giveCredits(-20)
+ann.givePoints(-5 of 5)
+stats.createSubscription(HABBO_CLUB, 2678400s) -> hc
+ann <- PurchaseOK(null)
+ann <- InventoryRefresh()
+stats.run()
+
+== offer / the deal inside its window
+ann.giveCredits(-20)
+ann.givePoints(-5 of 5)
+stats.createSubscription(HABBO_CLUB, 2678400s) -> hc
+ann <- PurchaseOK(null)
+ann <- InventoryRefresh()
+stats.run()
+
+== offer / the deal outside its window
+
+
+== offer / the deal while discounts are off
+
+
+== offer / the deal without a regular offer of its length
+
+
+== offer / the deal without a subscription
+
+
+== offer / the regular offer at full price
+ann.giveCredits(-30)
+ann.givePoints(0 of 5)
+stats.createSubscription(HABBO_CLUB, 2678400s) -> hc
+ann <- PurchaseOK(null)
+ann <- InventoryRefresh()
+stats.run()
+
+== price / a negative price
+ann <- AlertPurchaseFailed(0)
+
+== price / an offer of no days
+
+
+== price / not enough credits
+
+
+== price / not enough points
+
+
+== price / staff with infinite credits and points
+stats.createSubscription(HABBO_CLUB, 2678400s) -> hc
+ann <- PurchaseOK(null)
+ann <- InventoryRefresh()
+stats.run()
+
+== price / the payment cannot be taken
+ann.giveCredits(-20)
+ann.givePoints(-5 of 5)
+stats.createSubscription(HABBO_CLUB, 2678400s) -> hc
+ann <- PurchaseOK(null)
+ann <- InventoryRefresh()
+stats.run()
+
+== price / the subscription is not created
+ann.giveCredits(-20)
+ann.givePoints(-5 of 5)
+stats.createSubscription(HABBO_CLUB, 2678400s) -> null
+ann <- AlertPurchaseFailed(0)
+handle threw Exception: Unable to create or extend subscription
+

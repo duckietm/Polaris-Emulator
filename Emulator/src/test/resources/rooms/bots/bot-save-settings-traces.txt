@@ -145,7 +145,7 @@ ann <- BotForceOpenContextMenu(-12)
 threading.run(bot)
 
 == motto / a filtered word
-bot.setMotto(so rude)
+bot.setMotto(so ****)
 bot.needsUpdate(true)
 room.sendComposer(RoomUsers(bot))
 bot.onPostOwnerAction(9)
@@ -162,7 +162,7 @@ threading.run(bot)
 bot.onPostOwnerAction(9)
 
 == motto / with a tag
-bot.setMotto(<b>hi</b>)
+bot.setMotto(hi)
 bot.needsUpdate(true)
 room.sendComposer(RoomUsers(bot))
 bot.onPostOwnerAction(9)

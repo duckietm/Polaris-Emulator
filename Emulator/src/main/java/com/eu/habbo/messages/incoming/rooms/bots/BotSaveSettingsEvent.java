@@ -254,6 +254,13 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
         if (motto.length() > config.getInt("motto.max_length", 38)) return Outcome.DONE;
 
+        // The motto is shown to everyone in the room, so it is cleaned as a chat line is: the text of any HTML, and
+        // the word filter for an owner who may not skip it. It used to be stored as typed.
+        motto = Jsoup.parse(motto).text();
+        if (!this.client.getHabbo().hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
+            motto = Emulator.getGameEnvironment().getWordFilter().filter(motto, this.client.getHabbo());
+        }
+
         bot.setMotto(motto);
         bot.needsUpdate(true);
         room.sendComposer(new RoomUsersComposer(bot).compose());

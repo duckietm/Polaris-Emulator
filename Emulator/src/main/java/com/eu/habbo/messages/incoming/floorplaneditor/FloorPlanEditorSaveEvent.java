@@ -108,12 +108,13 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
         StringJoiner errors = new StringJoiner("<br />");
         String map = this.packet.readString();
 
-        if (map == null || map.length() > MAXIMUM_FLOORPLAN_SIZE) {
+        // readString never returns null: a short packet reads as an empty string.
+        if (map.length() > MAXIMUM_FLOORPLAN_SIZE) {
             LOGGER.warn(
                     "Floorplan save rejected (oversize): user={} room={} mapLen={}",
                     this.client.getHabbo().getHabboInfo().getId(),
                     room.getId(),
-                    map == null ? 0 : map.length());
+                    map.length());
             return null;
         }
 

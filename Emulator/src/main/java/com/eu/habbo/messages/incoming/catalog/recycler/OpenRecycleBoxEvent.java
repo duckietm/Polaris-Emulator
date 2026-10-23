@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.recycler;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
@@ -35,8 +36,11 @@ public class OpenRecycleBoxEvent extends MessageHandler {
 
         if (item instanceof InteractionGift gift) {
             this.openGift(room, gift);
-        } else {
+        } else if (CatalogManager.RECYCLER_BOX.equals(item.getBaseItem().getName())) {
             this.openBox(room, item);
+        } else {
+            // Any other furni is not a box: opening it would delete it with nothing in return.
+            return;
         }
 
         if (item.getRoomId() == 0) {

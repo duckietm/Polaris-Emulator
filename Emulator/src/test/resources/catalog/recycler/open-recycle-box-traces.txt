@@ -27,18 +27,10 @@ room <- RemoveFloorItem(box)
 room.removeHabboItem(box)
 
 == furni / a chair with a state
-items.handleOpenRecycleBox(box) -> reward
-inventory.addItem(reward)
-ann <- AddHabboItem(reward)
-ann <- InventoryRefresh()
-ann <- PresentItemOpened(reward, 1, true)
-room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+
 
 == furni / a chair without a state
-ann <- RoomUserWhisper(RoomChatMessage(text:error.recycler.box.empty))
-room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+
 
 == gate / no rights in the room
 

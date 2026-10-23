@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.catalog.layouts;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -19,7 +18,5 @@ public class RecyclerLayout extends CatalogPage {
         message.appendString(super.getTeaserImage());
         message.appendInt(1);
         message.appendString(super.getTextOne());
-        message.appendInt(-1);
-        message.appendBoolean(false);
     }
 }

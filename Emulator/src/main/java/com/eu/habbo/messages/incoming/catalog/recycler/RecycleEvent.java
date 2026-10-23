@@ -35,7 +35,10 @@ public class RecycleEvent extends MessageHandler {
             Set<HabboItem> items = new HashSet<>();
 
             int count = this.packet.readInt();
-            if (count != CatalogRuntimeConfigurationComposer.getRecyclerSlotCount()) return;
+            if (count != CatalogRuntimeConfigurationComposer.getRecyclerSlotCount()) {
+                this.fail();
+                return;
+            }
 
             ItemsComponent itemsComponent =
                     this.client.getHabbo().getInventory().getItemsComponent();
@@ -44,7 +47,10 @@ public class RecycleEvent extends MessageHandler {
                 HabboItem item = itemsComponent.getHabboItem(
                         BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
 
-                if (item == null) return;
+                if (item == null) {
+                    this.fail();
+                    return;
+                }
 
                 if (item.getBaseItem().allowRecyle()) {
                     items.add(item);
@@ -52,12 +58,12 @@ public class RecycleEvent extends MessageHandler {
             }
 
             if (items.size() != count) {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                this.fail();
                 return;
             }
 
             if (!itemsComponent.takeHabboItemsAtomically(items)) {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                this.fail();
                 return;
             }
 
@@ -68,7 +74,7 @@ public class RecycleEvent extends MessageHandler {
                 Item prize = Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize();
 
                 if (prize == null) {
-                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                    this.fail();
                     return;
                 }
 
@@ -76,13 +82,13 @@ public class RecycleEvent extends MessageHandler {
                         .getItemManager()
                         .handleRecycle(this.client.getHabbo(), prize.getId() + "");
                 if (reward == null) {
-                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                    this.fail();
                     return;
                 }
 
                 itemsComponent.addItem(reward);
                 if (itemsComponent.getHabboItem(reward.getId()) != reward) {
-                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                    this.fail();
                     return;
                 }
 
@@ -116,5 +122,11 @@ public class RecycleEvent extends MessageHandler {
         } else {
             this.client.sendResponse(new RecyclerCompleteComposer(RecyclerCompleteComposer.RECYCLING_CLOSED));
         }
+    }
+
+    /** The purchase alert, and AIR's recycler finished FAILED so the client stops waiting and keeps its slots. */
+    private void fail() {
+        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+        this.client.sendResponse(new RecyclerCompleteComposer(RecyclerCompleteComposer.RECYCLING_FAILED));
     }
 }

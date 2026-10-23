@@ -50,6 +50,13 @@ public class CraftingCraftItemEvent extends MessageHandler {
                 return;
             }
 
+            // The unit is taken before the reward exists, so two crafters cannot both pass for the last one.
+            if (recipe.isLimited() && !recipe.decrease()) {
+                this.restoreItems(toRemove);
+                this.client.sendResponse(new AlertLimitedSoldOutComposer());
+                return;
+            }
+
             HabboItem rewardItem = Emulator.getGameEnvironment()
                     .getItemManager()
                     .createItem(this.client.getHabbo().getHabboInfo().getId(), recipe.getReward(), 0, 0, "");
@@ -61,6 +68,7 @@ public class CraftingCraftItemEvent extends MessageHandler {
 
             // Reward creation failed after we already pulled the ingredients —
             // restore them so the craft isn't a silent item sink.
+            if (recipe.isLimited()) recipe.increase();
             this.restoreItems(toRemove);
         }
 
@@ -102,10 +110,6 @@ public class CraftingCraftItemEvent extends MessageHandler {
     }
 
     private void complete(CraftingRecipe recipe, HabboItem rewardItem, Map<Integer, HabboItem> toRemove) {
-        if (recipe.isLimited()) {
-            recipe.decrease();
-        }
-
         if (!recipe.getAchievement().isEmpty()) {
             AchievementManager.progressAchievement(
                     this.client.getHabbo(),

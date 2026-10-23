@@ -61,7 +61,8 @@ public class CraftingCraftSecretEvent extends MessageHandler {
             CraftingRecipe recipe = altar.getRecipe(items);
 
             if (recipe != null) {
-                if (!recipe.canBeCrafted()) {
+                // The unit is taken before the reward exists, so two crafters cannot both pass for the last one.
+                if (!recipe.canBeCrafted() || (recipe.isLimited() && !recipe.decrease())) {
                     this.client.sendResponse(new AlertLimitedSoldOutComposer());
                     return;
                 }
@@ -74,6 +75,8 @@ public class CraftingCraftSecretEvent extends MessageHandler {
                     this.complete(recipe, rewardItem, habboItems);
                     return;
                 }
+
+                if (recipe.isLimited()) recipe.increase();
             }
         }
 
@@ -93,10 +96,6 @@ public class CraftingCraftSecretEvent extends MessageHandler {
 
     /** Hands out the reward, records a first discovery and consumes the furni laid on the altar. */
     private void complete(CraftingRecipe recipe, HabboItem rewardItem, Set<HabboItem> habboItems) {
-        if (recipe.isLimited()) {
-            recipe.decrease();
-        }
-
         if (!recipe.getAchievement().isEmpty()) {
             AchievementManager.progressAchievement(
                     this.client.getHabbo(),

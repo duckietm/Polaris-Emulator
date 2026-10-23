@@ -193,12 +193,8 @@ bot.onPostOwnerAction(5)
 threading.run(bot)
 
 == name / empty
-plugins.fire(BotSavedName )
-bot.setName()
-bot.needsUpdate(true)
-room.sendComposer(RoomUserNameChanged(40, 40, ))
+ann <- BotError(4)
 bot.onPostOwnerAction(5)
-threading.run(bot)
 
 == name / too long
 ann <- BotError(4)

@@ -220,8 +220,11 @@ public class BotSaveSettingsEvent extends MessageHandler {
     /** Renames the bot; a name too long, with a tag or one the word filter changes is refused. */
     private Outcome rename(Room room, Bot bot) {
         String name = this.packet.readString();
-        boolean invalidName =
-                name.length() > BotManager.MAXIMUM_NAME_LENGTH || name.contains("<") || name.contains(">");
+        // A blank name is refused too: it used to leave the bot without a name above its head.
+        boolean invalidName = name.isBlank()
+                || name.length() > BotManager.MAXIMUM_NAME_LENGTH
+                || name.contains("<")
+                || name.contains(">");
         if (!invalidName) {
             String filteredName = Emulator.getGameEnvironment().getWordFilter().filter(name, null);
             invalidName = !name.equalsIgnoreCase(filteredName);

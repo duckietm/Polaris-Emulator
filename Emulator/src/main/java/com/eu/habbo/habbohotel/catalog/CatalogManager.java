@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.catalog;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.catalog.layouts.BadgeDisplayLayout;
@@ -119,9 +120,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1128,22 +1131,29 @@ public class CatalogManager {
         return true;
     }
 
-    public Item getRandomRecyclerPrize() {
-        int level = 1;
+    /** The highest recycler rarity level: 6 = mythic, 5 = legendary, ..., 1 = common. */
+    public static final int RECYCLER_MAX_RARITY = 6;
 
-        if (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.5")) + 1
-                == Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.5")) {
-            level = 5;
-        } else if (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.4")) + 1
-                == Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.4")) {
-            level = 4;
-        } else if (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.3")) + 1
-                == Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.3")) {
-            level = 3;
-        } else if (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.2")) + 1
-                == Emulator.getConfig().getInt("hotel.ecotron.rarity.chance.2")) {
-            level = 2;
+    /**
+     * The rarity of one recycle: levels {@link #RECYCLER_MAX_RARITY} down to 2 are tried in turn, each with a 1 in N
+     * chance ({@code hotel.ecotron.rarity.chance.N}); a level without a chance (0 or unset) is skipped, and when none
+     * hits the prize is level 1.
+     */
+    static int drawRecyclerRarity(IntUnaryOperator chanceForLevel, IntUnaryOperator nextInt) {
+        for (int level = RECYCLER_MAX_RARITY; level >= 2; level--) {
+            int chance = chanceForLevel.applyAsInt(level);
+
+            if (chance > 0 && nextInt.applyAsInt(chance) + 1 == chance) return level;
         }
+
+        return 1;
+    }
+
+    public Item getRandomRecyclerPrize() {
+        ConfigurationManager config = Emulator.getConfig();
+        Random random = Emulator.getRandom();
+        int level = drawRecyclerRarity(
+                rarity -> config.getInt("hotel.ecotron.rarity.chance." + rarity, 0), random::nextInt);
 
         synchronized (this.prizes) {
             Set<Item> levelPrizes = this.prizes.get(level);

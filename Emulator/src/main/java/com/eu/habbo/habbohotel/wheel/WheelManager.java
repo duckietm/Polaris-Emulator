@@ -1,12 +1,10 @@
 package com.eu.habbo.habbohotel.wheel;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,14 +17,15 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WheelManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WheelManager.class);
     private static final int RECENT_KEEP = 50;
     private static final int SECONDS_PER_DAY = 86400;
 
-    public static final Set<String> VALID_PRIZE_TYPES = Set.of(
-            "credits", "points", "spin", "item", "badge", "nothing");
+    public static final Set<String> VALID_PRIZE_TYPES = Set.of("credits", "points", "spin", "item", "badge", "nothing");
     public static final int MAX_PRIZES_PER_SAVE = 64;
     public static final int MAX_STRING_LEN = 64;
     public static final int MAX_PRIZE_AMOUNT = 1_000_000;
@@ -40,10 +39,12 @@ public class WheelManager {
     private int freeSpinsPerDay = 1;
     private int spinCost = 50;
     private int spinCostType = 5;
+    private ConfigurationManager config;
 
     private final ConcurrentHashMap<Integer, Long> lastSpinAt = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, WheelUserState> userStateCache = new ConcurrentHashMap<>();
-    private final java.util.concurrent.CopyOnWriteArrayList<WheelRecentWin> recentWinsCache = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final java.util.concurrent.CopyOnWriteArrayList<WheelRecentWin> recentWinsCache =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
 
     public WheelManager() {
         long millis = System.currentTimeMillis();
@@ -58,9 +59,20 @@ public class WheelManager {
     }
 
     private void loadSettings() {
-        this.freeSpinsPerDay = Emulator.getConfig().getInt("wheel.free_spins_per_day", 1);
-        this.spinCost = Emulator.getConfig().getInt("wheel.spin_cost", 50);
-        this.spinCostType = Emulator.getConfig().getInt("wheel.spin_cost_type", 5);
+        ConfigurationManager configuration = Emulator.getConfig();
+
+        this.config = configuration;
+        this.freeSpinsPerDay = configuration.getInt("wheel.free_spins_per_day", 1);
+        this.spinCost = configuration.getInt("wheel.spin_cost", 50);
+        this.spinCostType = configuration.getInt("wheel.spin_cost_type", 5);
+    }
+
+    /**
+     * {@code wheel.enabled}: 0 turns the fortune wheel off, players can no longer open it, spin or buy spins. Read on
+     * every request, so {@code :update_config} switches it at once.
+     */
+    public boolean isEnabled() {
+        return this.config == null || this.config.getBoolean("wheel.enabled", true);
     }
 
     private void loadPrizes() {
@@ -68,8 +80,9 @@ public class WheelManager {
         this.totalWeight = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM wheel_prizes WHERE enabled = 1 ORDER BY sort_order ASC, id ASC");
-             ResultSet set = statement.executeQuery()) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM wheel_prizes WHERE enabled = 1 ORDER BY sort_order ASC, id ASC");
+                ResultSet set = statement.executeQuery()) {
             while (set.next()) {
                 WheelPrize prize = new WheelPrize(set);
                 this.prizes.add(prize);
@@ -113,7 +126,8 @@ public class WheelManager {
         boolean exists = false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT free_spins, extra_spins, last_reset FROM wheel_user_state WHERE user_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT free_spins, extra_spins, last_reset FROM wheel_user_state WHERE user_id = ?")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
@@ -144,9 +158,9 @@ public class WheelManager {
 
     private void persistUserState(int userId, WheelUserState state) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO wheel_user_state (user_id, free_spins, extra_spins, last_reset) VALUES (?, ?, ?, ?) " +
-                             "ON DUPLICATE KEY UPDATE free_spins = VALUES(free_spins), extra_spins = VALUES(extra_spins), last_reset = VALUES(last_reset)")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO wheel_user_state (user_id, free_spins, extra_spins, last_reset) VALUES (?, ?, ?, ?) "
+                                + "ON DUPLICATE KEY UPDATE free_spins = VALUES(free_spins), extra_spins = VALUES(extra_spins), last_reset = VALUES(last_reset)")) {
             statement.setInt(1, userId);
             statement.setInt(2, state.freeSpins);
             statement.setInt(3, state.extraSpins);
@@ -179,7 +193,8 @@ public class WheelManager {
 
         WheelPrize prize = this.pickWeighted();
         if (prize == null) {
-            if (usedFree) state.freeSpins++; else state.extraSpins++;
+            if (usedFree) state.freeSpins++;
+            else state.extraSpins++;
             return null;
         }
 
@@ -245,7 +260,9 @@ public class WheelManager {
 
         Set<HabboItem> items = new HashSet<>();
         for (int i = 0; i < quantity; i++) {
-            HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), base, 0, 0, "");
+            HabboItem item = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(habbo.getHabboInfo().getId(), base, 0, 0, "");
             if (item != null) items.add(item);
         }
 
@@ -256,9 +273,7 @@ public class WheelManager {
 
     private void recordWin(Habbo habbo, WheelPrize prize) {
         WheelRecentWin win = new WheelRecentWin(
-                habbo.getHabboInfo().getUsername(),
-                habbo.getHabboInfo().getLook(),
-                prize.label);
+                habbo.getHabboInfo().getUsername(), habbo.getHabboInfo().getLook(), prize.label);
 
         this.recentWinsCache.add(0, win);
         while (this.recentWinsCache.size() > RECENT_KEEP) {
@@ -297,14 +312,13 @@ public class WheelManager {
     private void loadRecentWins() {
         this.recentWinsCache.clear();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT username, look, prize_label FROM wheel_recent_wins ORDER BY id DESC LIMIT ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT username, look, prize_label FROM wheel_recent_wins ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, RECENT_KEEP);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     this.recentWinsCache.add(new WheelRecentWin(
-                            set.getString("username"),
-                            set.getString("look"),
-                            set.getString("prize_label")));
+                            set.getString("username"), set.getString("look"), set.getString("prize_label")));
                 }
             }
         } catch (SQLException e) {
@@ -340,7 +354,8 @@ public class WheelManager {
      * wheel layout matches what the admin sees. Returns the effective row id,
      * or {@code 0} if the write failed.
      */
-    public int savePrize(int id, String type, String value, int amount, int pointsType, int weight, String label, int sortOrder) {
+    public int savePrize(
+            int id, String type, String value, int amount, int pointsType, int weight, String label, int sortOrder) {
         String safeType = (type != null && VALID_PRIZE_TYPES.contains(type)) ? type : "nothing";
         String safeValue = truncate(value, MAX_STRING_LEN);
         String safeLabel = truncate(label, MAX_STRING_LEN);
@@ -350,8 +365,8 @@ public class WheelManager {
 
         if (id > 0) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE wheel_prizes SET type = ?, value = ?, amount = ?, points_type = ?, weight = ?, label = ?, sort_order = ?, enabled = 1 WHERE id = ?")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE wheel_prizes SET type = ?, value = ?, amount = ?, points_type = ?, weight = ?, label = ?, sort_order = ?, enabled = 1 WHERE id = ?")) {
                 statement.setString(1, safeType);
                 statement.setString(2, safeValue);
                 statement.setInt(3, safeAmount);
@@ -369,9 +384,9 @@ public class WheelManager {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO wheel_prizes (type, value, amount, points_type, weight, label, enabled, sort_order) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
-                     Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO wheel_prizes (type, value, amount, points_type, weight, label, enabled, sort_order) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, safeType);
             statement.setString(2, safeValue);
             statement.setInt(3, safeAmount);
@@ -410,7 +425,7 @@ public class WheelManager {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+                PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             statement.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Failed to disable removed wheel prizes", e);

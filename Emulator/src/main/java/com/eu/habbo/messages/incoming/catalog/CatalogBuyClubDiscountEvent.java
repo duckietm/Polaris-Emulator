@@ -100,7 +100,7 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
         }
     }
 
-    private void buy(Price price) throws Exception {
+    private void buy(Price price) {
         Habbo habbo = this.client.getHabbo();
         if (habbo.getHabboInfo().getCurrencyAmount(price.pointsType()) < price.points()) return;
         if (habbo.getHabboInfo().getCredits() < price.credits()) return;
@@ -114,9 +114,11 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
         }
 
         if (habbo.getHabboStats().createSubscription(Subscription.HABBO_CLUB, price.seconds()) == null) {
+            // Paid for nothing otherwise: the price goes back before the buyer is told.
+            CatalogPaymentService.refund(habbo, paidCredits, price.pointsType(), paidPoints);
             this.client.sendResponse(
                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-            throw new Exception("Unable to create or extend subscription");
+            return;
         }
 
         this.client.sendResponse(new PurchaseOKComposer(null));

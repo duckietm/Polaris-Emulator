@@ -63,6 +63,6 @@ ann <- AlertPurchaseUnavailable(0)
 == price / the subscription is not created
 payment.tryTake(20 credits, 5 of 5) -> true
 stats.createSubscription(HABBO_CLUB, 2678400s) -> null
+payment.refund(20 credits, 5 of 5)
 ann <- AlertPurchaseFailed(0)
-handle threw Exception: Unable to create or extend subscription
 

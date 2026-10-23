@@ -32,16 +32,8 @@ threading.runPersistence(DeleteItems(rare#21))
 after: inventory=[chair#900] remaining=0
 
 == name / a secret recipe never discovered
-inventory.getAndRemove(rare) -> rare#21
-items.createItem(chair) -> true
-ann <- CraftingResult(recipe chair)
-inventory.addItem(chair#900)
-ann <- AddHabboItem(chair#900)
-achievement(Atcg)
-ann <- RemoveHabboItem(21)
-ann <- InventoryRefresh()
-threading.runPersistence(DeleteItems(rare#21))
-after: inventory=[chair#900] remaining=0
+ann <- CraftingResult(null)
+after: inventory=[rare#21] remaining=0
 
 == name / an unknown recipe
 ann <- CraftingResult(null)

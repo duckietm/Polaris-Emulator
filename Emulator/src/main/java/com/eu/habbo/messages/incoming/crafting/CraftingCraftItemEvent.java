@@ -30,6 +30,13 @@ public class CraftingCraftItemEvent extends MessageHandler {
 
         CraftingRecipe recipe = altar.getRecipe(this.packet.readString());
 
+        // A secret recipe is listed, and so crafted by name, only once it was discovered on the altar.
+        if (recipe != null
+                && recipe.isSecret()
+                && !this.client.getHabbo().getHabboStats().hasRecipe(recipe.getId())) {
+            recipe = null;
+        }
+
         if (recipe != null) {
             if (!recipe.canBeCrafted()) {
                 this.client.sendResponse(new AlertLimitedSoldOutComposer());

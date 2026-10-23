@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.crafting;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -41,6 +40,11 @@ public class CraftingRecipe {
         }
 
         return false;
+    }
+
+    /** Gives back a unit taken with {@link #decrease()} for a craft that did not complete. */
+    public synchronized void increase() {
+        this.remaining++;
     }
 
     public void addIngredient(Item item, int amount) {

@@ -29,8 +29,7 @@ class CraftingCraftSecretContractTest {
     void rejectsDuplicateIngredientItemsBeforeRecipeLookup() throws Exception {
         String source = source().replaceAll("\\s+", "");
 
-        int setDeclaration =
-                source.indexOf("Set<HabboItem>habboItems=Collections.newSetFromMap(newIdentityHashMap<>())");
+        int setDeclaration = source.indexOf("Set<HabboItem>habboItems=newLinkedHashSet<>()");
         int duplicateGuard = source.indexOf("habboItem==null||!habboItems.add(habboItem)", setDeclaration);
         int recipeLookup = source.indexOf("CraftingReciperecipe=altar.getRecipe(items)", duplicateGuard);
 

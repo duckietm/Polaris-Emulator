@@ -382,11 +382,14 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 plan.rows().length,
                 plan.width());
 
+        // The id is kept before the unload: a room that does not load back still sends everyone to it, so nobody is
+        // left in a room that is gone.
+        int roomId = room.getId();
         Collection<Habbo> habbos = new ArrayList<>(room.getUserCount());
         habbos.addAll(room.getHabbos());
         Emulator.getGameEnvironment().getRoomManager().unloadRoom(room);
-        room = Emulator.getGameEnvironment().getRoomManager().loadRoom(room.getId());
-        ServerMessage message = new ForwardToRoomComposer(room.getId()).compose();
+        Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
+        ServerMessage message = new ForwardToRoomComposer(roomId).compose();
         for (Habbo habbo : habbos) {
             habbo.getClient().sendResponse(message);
         }

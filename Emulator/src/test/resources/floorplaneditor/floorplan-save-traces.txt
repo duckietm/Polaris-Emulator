@@ -367,7 +367,8 @@ room.setWallHeight(5)
 room.save()
 rooms.unloadRoom(room)
 rooms.loadRoom(50) -> null
-handle threw NullPointerException
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
 ann's last floor plan save = 1700000000
 
 == map / a character outside letters and digits

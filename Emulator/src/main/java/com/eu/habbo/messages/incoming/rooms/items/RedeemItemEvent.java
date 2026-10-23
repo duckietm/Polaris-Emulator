@@ -158,22 +158,22 @@ public class RedeemItemEvent extends MessageHandler {
         });
         if (walletMutation == null) return;
 
-        if (!this.takeFromRoom(room, item)) return;
+        this.takeFromRoom(room, item);
 
+        // The currency is already committed: the owner is told the new balance even when the furni's tile is gone.
         publishCurrencyGrant(currencyGrant);
     }
 
-    /** Takes the redeemed furni out of the room and lowers its tile; false when the tile is gone. */
-    private boolean takeFromRoom(Room room, HabboItem item) {
+    /** Takes the redeemed furni out of the room and lowers its tile, when the tile is still there. */
+    private void takeFromRoom(Room room, HabboItem item) {
         room.removeHabboItem(item);
         room.sendComposer(new RemoveFloorItemComposer(item).compose());
         RoomTile t = room.getLayout().getTile(item.getX(), item.getY());
-        if (t == null) return false;
+        if (t == null) return;
 
         t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
         room.updateTile(t);
         room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
-        return true;
     }
 
     private PreparedCurrencyGrant prepareCurrencyGrant(int currencyType, int amount) {

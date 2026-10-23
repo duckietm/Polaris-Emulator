@@ -129,6 +129,7 @@ transaction.commit(item 501, user 7, 50 of -1, CF_50) -> true
 wallet.applyCommitted(-1 = 150)
 room.removeHabboItem(item)
 room <- RemoveFloorItem(item)
+ann <- UserCredits(ann)
 
 == transaction / nothing is committed
 plugins.fire(UserCredits 50)

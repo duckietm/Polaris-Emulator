@@ -397,13 +397,13 @@ public class CatalogManager {
             version = this.catalogVersion.get();
             if (isCurrent(current, version)) return current;
 
-            // CatalogPage.getChildPages() is a plain HashMap, mutated without a monitor by
-            // CatalogAdminCacheSync.reparentPage/detachDeletedPage. A build that races one of
-            // those admin edits can throw ConcurrentModificationException while iterating and
-            // sorting a page's children. Retry a few times against the latest version instead of
-            // surfacing a transient admin-edit race to whichever reader happened to trigger the
-            // rebuild; if it keeps failing, something is genuinely wrong and the last exception
-            // is rethrown.
+            // CatalogPage.getChildPages() is a concurrent map, so the admin edits in
+            // CatalogAdminCacheSync.reparentPage/detachDeletedPage no longer break a build. A
+            // plugin that edits another catalog collection in place can still throw
+            // ConcurrentModificationException while a build walks it. Retry a few times against
+            // the latest version instead of surfacing that transient race to whichever reader
+            // happened to trigger the rebuild; if it keeps failing, something is genuinely wrong
+            // and the last exception is rethrown.
             ConcurrentModificationException lastFailure = null;
             for (int attempt = 0; attempt < 3; attempt++) {
                 version = this.catalogVersion.get();

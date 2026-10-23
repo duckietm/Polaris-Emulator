@@ -288,9 +288,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         // Gift fully delivered; commit cooldown and clear refund tracking so the cleanup can't double-refund.
-        this.client.getHabbo().getHabboStats().lastGiftTimestamp = Emulator.getIntUnixTimestamp();
+        int now = Emulator.getIntUnixTimestamp();
+        this.client.getHabbo().getHabboStats().lastGiftTimestamp = now;
         if (item.isLimited()) {
-            this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
+            this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), now);
         }
         attempt.delivered = true;
         attempt.paidCredits = 0;

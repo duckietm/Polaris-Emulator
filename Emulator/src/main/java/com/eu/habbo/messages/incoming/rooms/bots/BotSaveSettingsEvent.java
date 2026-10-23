@@ -161,7 +161,12 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     }
 
                     result = result.substring(
-                            0, Math.min(BotManager.MAXIMUM_CHAT_LENGTH - totalChatLength, result.length()));
+                            0,
+                            Math.max(0, Math.min(BotManager.MAXIMUM_CHAT_LENGTH - totalChatLength, result.length())));
+                    // A line that reaches the bot once the length budget is spent is cut to nothing; it used to be
+                    // kept as an empty chat line.
+                    if (result.isEmpty()) continue;
+
                     chat.add(result);
                     totalChatLength += result.length();
                 }

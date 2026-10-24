@@ -4,8 +4,10 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.unknown.TalentTrackEmailFailedComposer;
 import com.eu.habbo.messages.outgoing.unknown.TalentTrackEmailVerifiedComposer;
+import com.eu.habbo.networking.gameserver.auth.AvailabilityCache;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -16,6 +18,14 @@ import org.slf4j.LoggerFactory;
  * account e-mail. A rejection is reported with {@code ChangeEmailResult} (1815) and the codes
  * {@code TalentTrackController.setEmailErrorStatus} renders; on success the client is refreshed
  * with a new {@code EmailStatus} (612).
+ *
+ * <p>The dialog has no password field, so this packet can only ever <em>set</em> the address of an
+ * account that has none — the talent-track task it exists for. Replacing an address that is already
+ * on the account is what {@code /api/auth/change-email} is for, and that endpoint asks for the
+ * current password: without that rule, anyone holding a live session (a stolen SSO ticket, a shared
+ * PC) could point the account at their own inbox and then take it over for good through
+ * {@code /forgot-password}. Operators who accept that risk can set
+ * {@code hotel.email.change.requires_password=0}.
  */
 public class ChangeEmailEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeEmailEvent.class);
@@ -42,14 +52,23 @@ public class ChangeEmailEvent extends MessageHandler {
     public void handle() throws Exception {
         String mail = this.packet.readString();
 
+        String currentMail = this.client.getHabbo().getHabboInfo().getMail();
+
         if (!Emulator.getConfig().getBoolean("hotel.email.change.enabled", true)) {
-            // No error code says "not allowed"; the client hides the button when allowChange is false.
-            this.client.sendResponse(new TalentTrackEmailVerifiedComposer(
-                    this.client.getHabbo().getHabboInfo().getMail() == null
-                            ? ""
-                            : this.client.getHabbo().getHabboInfo().getMail(),
-                    this.client.getHabbo().getHabboInfo().isMailVerified(),
-                    false));
+            this.refuseWithoutErrorCode(currentMail);
+            return;
+        }
+
+        // Replacing an address the account already has needs the password, which
+        // only the HTTP endpoint can ask for.
+        if (currentMail != null
+                && !currentMail.trim().isEmpty()
+                && Emulator.getConfig().getBoolean("hotel.email.change.requires_password", true)) {
+            LOGGER.info(
+                    "Refused in-game e-mail change for user {}: the account already has an address, "
+                            + "so the change must go through /api/auth/change-email",
+                    this.client.getHabbo().getHabboInfo().getId());
+            this.refuseWithoutErrorCode(currentMail);
             return;
         }
 
@@ -73,22 +92,49 @@ public class ChangeEmailEvent extends MessageHandler {
         this.client.getHabbo().getHabboInfo().setMail(normalized);
         this.client.getHabbo().getHabboInfo().setMailVerified(false);
 
+        // The availability answers for both addresses are now stale: without this,
+        // check-email keeps claiming the new address is free for a minute.
+        if (currentMail != null && !currentMail.trim().isEmpty()) {
+            AvailabilityCache.invalidateEmail(currentMail);
+        }
+        AvailabilityCache.invalidateEmail(normalized);
+
         this.client.sendResponse(new TalentTrackEmailFailedComposer(RESULT_OK));
         this.client.sendResponse(new TalentTrackEmailVerifiedComposer(normalized, false, true));
     }
 
+    /** The client hides the change button when allowChange is false; no error code says "not allowed". */
+    private void refuseWithoutErrorCode(String currentMail) {
+        this.client.sendResponse(new TalentTrackEmailVerifiedComposer(
+                currentMail == null ? "" : currentMail,
+                this.client.getHabbo().getHabboInfo().isMailVerified(),
+                false));
+    }
+
+    /** False when the address belongs to another account, or the write failed. */
     private boolean persist(String mail) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE users SET mail = ?, mail_verified = '0' WHERE id = ? LIMIT 1")) {
-            statement.setString(1, mail);
-            statement.setInt(2, this.client.getHabbo().getHabboInfo().getId());
-            return statement.executeUpdate() > 0;
+        int userId = this.client.getHabbo().getHabboInfo().getId();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            // users.mail has no unique index, and /forgot-password resolves an
+            // address with LIMIT 1: two accounts sharing one address means the
+            // reset mail can be answered for the wrong one.
+            try (PreparedStatement taken =
+                    connection.prepareStatement("SELECT id FROM users WHERE mail = ? AND id <> ? LIMIT 1")) {
+                taken.setString(1, mail);
+                taken.setInt(2, userId);
+                try (ResultSet rs = taken.executeQuery()) {
+                    if (rs.next()) return false;
+                }
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE users SET mail = ?, mail_verified = '0' WHERE id = ? LIMIT 1")) {
+                statement.setString(1, mail);
+                statement.setInt(2, userId);
+                return statement.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
-            LOGGER.error(
-                    "Failed to change the e-mail of user {}",
-                    this.client.getHabbo().getHabboInfo().getId(),
-                    e);
+            LOGGER.error("Failed to change the e-mail of user {}", userId, e);
             return false;
         }
     }

@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +40,22 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
-    private static final ConcurrentHashMap<String, Long> NONCE_CACHE = new ConcurrentHashMap<>();
     private static final long MAX_REQUEST_SKEW_MS = 90_000L;
     private static final long NONCE_TTL_MS = 2 * 60 * 1000L;
+    // A replay cache fed by unauthenticated requests is a memory target: an
+    // unbounded map of free-length nonces is heap an attacker controls, and the
+    // full scan it needed on every request was I/O they controlled too. Caffeine
+    // bounds both, evicting by size and by the TTL the replay window needs.
+    private static final int MAX_NONCE_ENTRIES = 100_000;
+    private static final int MIN_NONCE_LENGTH = 16;
+    private static final int MAX_NONCE_LENGTH = 128;
+    private static final java.util.regex.Pattern NONCE_RE =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9+/=_.:-]{" + MIN_NONCE_LENGTH + "," + MAX_NONCE_LENGTH + "}$");
+    private static final com.github.benmanes.caffeine.cache.Cache<String, Boolean> NONCE_CACHE =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .maximumSize(MAX_NONCE_ENTRIES)
+                    .expireAfterWrite(java.time.Duration.ofMillis(NONCE_TTL_MS))
+                    .build();
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -263,10 +275,14 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             throw new IllegalArgumentException("Missing secure request nonce.");
         }
 
-        cleanupExpiredNonces(now);
+        // Bound the nonce before it is ever stored: the client mints 16 random
+        // bytes, so anything longer only exists to fill the replay cache.
+        if (!NONCE_RE.matcher(nonce).matches()) {
+            throw new IllegalArgumentException("Secure request nonce malformed.");
+        }
 
         String replayKey = secureContext.derivedFingerprint() + ':' + nonce;
-        if (NONCE_CACHE.putIfAbsent(replayKey, now + NONCE_TTL_MS) != null) {
+        if (NONCE_CACHE.asMap().putIfAbsent(replayKey, Boolean.TRUE) != null) {
             throw new IllegalArgumentException("Secure request replay detected.");
         }
 
@@ -280,9 +296,14 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
                 || method == HttpMethod.DELETE;
     }
 
-    private static void cleanupExpiredNonces(long now) {
-        if (NONCE_CACHE.size() < 512) return;
-        NONCE_CACHE.entrySet().removeIf(entry -> entry.getValue() < now);
+    /** Visible for tests: a fresh replay window per case. */
+    static void clearNonceCacheForTests() {
+        NONCE_CACHE.invalidateAll();
+    }
+
+    /** Visible for tests: whether a nonce is shaped like one the client mints. */
+    static boolean isNonceAcceptable(String nonce) {
+        return nonce != null && NONCE_RE.matcher(nonce).matches();
     }
 
     private static void enqueueContext(ChannelHandlerContext ctx, SecureApiContext context) {

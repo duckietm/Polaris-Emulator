@@ -125,10 +125,10 @@ public class WiredVariableApiHandler extends ChannelInboundHandlerAdapter {
                 && !ipHeader.isEmpty()
                 && req.headers().contains(ipHeader)
                 && AuthHttpUtil.shouldHonorForwardedHeader(ctx, ipHeader)) {
-            String value = req.headers().get(ipHeader);
-            if (value != null && !value.isBlank()) {
-                int comma = value.indexOf(',');
-                return (comma > 0 ? value.substring(0, comma) : value).trim();
+            String forwarded =
+                    AuthHttpUtil.resolveForwardedClientIp(req.headers().get(ipHeader));
+            if (!forwarded.isEmpty()) {
+                return forwarded;
             }
         }
         String websocketIp = ctx.channel().attr(GameServerAttributes.WS_IP).get();

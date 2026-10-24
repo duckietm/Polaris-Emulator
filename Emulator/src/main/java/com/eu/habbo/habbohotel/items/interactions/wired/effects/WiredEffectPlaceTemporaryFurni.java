@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionCrackable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionEffectGate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGuildGate;
@@ -185,6 +186,12 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect
             // A Wired box cannot be a template, as in Habbo (a copy would save its settings to a row it does not
             // have). Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.
             if (item instanceof InteractionWired) {
+                throw new WiredSaveException(FURNI_CAN_NOT_BE_CLONED);
+            }
+            // Nor can a crackable: the copies have no database row, but breaking one
+            // still ran the reward path, so a repeater over a cheap egg minted real
+            // furni into an inventory for free.
+            if (item instanceof InteractionCrackable) {
                 throw new WiredSaveException(FURNI_CAN_NOT_BE_CLONED);
             }
             next.add(new Snapshot(

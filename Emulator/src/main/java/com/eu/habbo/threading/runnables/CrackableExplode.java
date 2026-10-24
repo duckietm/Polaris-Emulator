@@ -36,6 +36,13 @@ public class CrackableExplode implements Runnable {
             return;
         }
 
+        // A temporary copy (the "place furni" wired) has no database row and no owner:
+        // breaking one must not mint the reward furni. Second line of defence - saving
+        // a crackable as that box's template is refused too.
+        if (this.habboItem.isTemporary()) {
+            return;
+        }
+
         if (!this.habboItem.resetable()) {
             this.room.removeHabboItem(this.habboItem);
             this.room.sendComposer(new RemoveFloorItemComposer(this.habboItem, true).compose());
@@ -45,13 +52,24 @@ public class CrackableExplode implements Runnable {
             this.habboItem.reset(this.room);
         }
 
-        Item rewardItem = Emulator.getGameEnvironment().getItemManager().getCrackableReward(this.habboItem.getBaseItem().getId());
+        Item rewardItem = Emulator.getGameEnvironment()
+                .getItemManager()
+                .getCrackableReward(this.habboItem.getBaseItem().getId());
 
         if (rewardItem != null) {
-            HabboItem newItem = Emulator.getGameEnvironment().getItemManager().createItem(this.habboItem.allowAnyone() ? this.habbo.getHabboInfo().getId() : this.habboItem.getUserId(), rewardItem, 0, 0, "");
+            HabboItem newItem = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(
+                            this.habboItem.allowAnyone()
+                                    ? this.habbo.getHabboInfo().getId()
+                                    : this.habboItem.getUserId(),
+                            rewardItem,
+                            0,
+                            0,
+                            "");
 
             if (newItem != null) {
-                //Add to inventory in case if isn't possible place the item or in case is wall item
+                // Add to inventory in case if isn't possible place the item or in case is wall item
                 if (this.toInventory || newItem.getBaseItem().getType() == FurnitureType.WALL) {
                     this.habbo.getInventory().getItemsComponent().addItem(newItem);
                     this.habbo.getClient().sendResponse(new AddHabboItemComposer(newItem));
@@ -64,7 +82,9 @@ public class CrackableExplode implements Runnable {
                     newItem.needsUpdate(true);
                     this.room.addHabboItem(newItem);
                     this.room.updateItem(newItem);
-                    this.room.sendComposer(new AddFloorItemComposer(newItem, this.room.getFurniOwnerNames().get(newItem.getUserId())).compose());
+                    this.room.sendComposer(new AddFloorItemComposer(
+                                    newItem, this.room.getFurniOwnerNames().get(newItem.getUserId()))
+                            .compose());
                 }
             }
         }

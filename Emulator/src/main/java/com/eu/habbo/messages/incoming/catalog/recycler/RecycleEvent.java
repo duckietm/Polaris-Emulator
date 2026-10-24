@@ -52,7 +52,9 @@ public class RecycleEvent extends MessageHandler {
                     return;
                 }
 
-                if (item.getBaseItem().allowRecyle()) {
+                // A rented item is on loan: recycling it turns a few credits of rent
+                // into a real prize. The count check below then fails the request.
+                if (item.getBaseItem().allowRecyle() && !item.hasRentPeriod()) {
                     items.add(item);
                 }
             }

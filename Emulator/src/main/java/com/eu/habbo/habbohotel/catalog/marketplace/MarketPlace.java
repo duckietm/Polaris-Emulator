@@ -543,7 +543,10 @@ public class MarketPlace {
     public static boolean sellItem(GameClient client, HabboItem item, int price) {
         if (item == null || client == null) return false;
 
-        if (!item.getBaseItem().allowMarketplace() || !isValidListingPrice(price)) return false;
+        // A rented item expires back to the hotel: listing it sells a loan.
+        if (!item.getBaseItem().allowMarketplace() || item.hasRentPeriod() || !isValidListingPrice(price)) {
+            return false;
+        }
 
         MarketPlaceItemOfferedEvent event = new MarketPlaceItemOfferedEvent(client.getHabbo(), item, price);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {

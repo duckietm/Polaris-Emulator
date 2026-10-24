@@ -154,6 +154,9 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         }
         if (com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership.isWebApiItem(item))
             return false;
+        // A rented item is on loan and expires back to the hotel, so it cannot be
+        // handed to someone else through a chest either.
+        if (item.hasRentPeriod()) return false;
         return item.getBaseItem().allowTrade();
     }
 

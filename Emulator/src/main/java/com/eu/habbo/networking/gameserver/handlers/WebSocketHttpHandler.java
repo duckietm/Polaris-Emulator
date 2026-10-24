@@ -8,12 +8,17 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.ReferenceCountUtil;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.URI;
 
 public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketHttpHandler.class);
@@ -34,10 +39,10 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     private boolean handleHttpRequest(ChannelHandlerContext ctx, HttpMessage req) {
         if (req instanceof FullHttpRequest fullRequest
                 && E2eSessionProbe.tryHandle(
-                fullRequest,
-                ctx,
-                Emulator.getGameServer().getGameClientManager(),
-                Emulator.getConfig().getBoolean("e2e.enabled", false))) {
+                        fullRequest,
+                        ctx,
+                        Emulator.getGameServer().getGameClientManager(),
+                        Emulator.getConfig().getBoolean("e2e.enabled", false))) {
             return false;
         }
 
@@ -58,14 +63,15 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
 
         String whitelist = Emulator.getConfig().getValue("ws.whitelist", "localhost");
         if (!isWhitelisted(origin, whitelist.split(","))) {
-            LOGGER.warn("WebSocket upgrade rejected — origin '{}' not in ws.whitelist='{}'",
-                    req.headers().get(ORIGIN_HEADER), whitelist);
+            LOGGER.warn(
+                    "WebSocket upgrade rejected — origin '{}' not in ws.whitelist='{}'",
+                    req.headers().get(ORIGIN_HEADER),
+                    whitelist);
 
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1,
                     HttpResponseStatus.FORBIDDEN,
-                    Unpooled.wrappedBuffer("Origin forbidden".getBytes(java.nio.charset.StandardCharsets.UTF_8))
-            );
+                    Unpooled.wrappedBuffer("Origin forbidden".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
             response.headers().set("Vary", "Origin");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             return false;
@@ -78,11 +84,12 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
         String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
         // Only honour the forwarded-IP header from a trusted reverse proxy,
         // otherwise the game-session IP (used for bans/rate-limits) is spoofable.
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && AuthHttpUtil.shouldHonorForwardedHeader(ctx, ipHeader)) {
-            String ip = req.headers().get(ipHeader);
-            if (ip != null && !ip.isEmpty()) {
-                int comma = ip.indexOf(',');
-                ctx.channel().attr(GameServerAttributes.WS_IP).set((comma > 0 ? ip.substring(0, comma) : ip).trim());
+        if (!ipHeader.isEmpty()
+                && req.headers().contains(ipHeader)
+                && AuthHttpUtil.shouldHonorForwardedHeader(ctx, ipHeader)) {
+            String ip = AuthHttpUtil.resolveForwardedClientIp(req.headers().get(ipHeader));
+            if (!ip.isEmpty()) {
+                ctx.channel().attr(GameServerAttributes.WS_IP).set(ip);
             }
         }
     }

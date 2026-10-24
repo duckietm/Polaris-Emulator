@@ -34,6 +34,26 @@ final class RoomDirectory {
         this.track(room);
     }
 
+    /**
+     * Registers a room unless an instance of that id is already active.
+     *
+     * <p>{@link #register} replaces whatever was there, which is what a reload wants but
+     * not what two threads loading the same room want: the loser's instance stays alive,
+     * keeps ticking and keeps saving state nobody can see.
+     *
+     * @return the active instance - the one just registered, or the one already there
+     */
+    Room registerIfAbsent(Room room) {
+        Room existing = this.activeRooms.putIfAbsent(room.getId(), room);
+        if (existing != null) {
+            return existing;
+        }
+
+        room.setOwnerChangeListener(this::ownerChanged);
+        this.track(room);
+        return room;
+    }
+
     void track(Room room) {
         if (this.roomsByOwner
                 .computeIfAbsent(room.getOwnerId(), ignored -> ConcurrentHashMap.newKeySet())

@@ -131,6 +131,24 @@ catalog.purchaseItem(recent purchases page, offer chair, count 1, "", free false
 returned
 purchasing flag false
 
+== offer / from recent purchases, offer no longer in the catalog
+LtdRaffleManager.enter(null) -> false
+catalog.purchaseItem(recent purchases page, null, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / from recent purchases, page above the buyer's rank
+LtdRaffleManager.enter(null) -> false
+catalog.purchaseItem(recent purchases page, null, count 1, "", free false)
+returned
+purchasing flag false
+
+== offer / from recent purchases, page since disabled
+LtdRaffleManager.enter(null) -> false
+catalog.purchaseItem(recent purchases page, null, count 1, "", free false)
+returned
+purchasing flag false
+
 == offer / handed to the catalog
 LtdRaffleManager.enter(offer chair) -> false
 catalog.purchaseItem(page, offer chair, count 2, "extra", free false)

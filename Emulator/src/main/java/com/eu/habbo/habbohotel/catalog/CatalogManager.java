@@ -2433,10 +2433,13 @@ public class CatalogManager {
             }
 
             Map<Integer, EffectsComponent.HabboEffect> effects = new HashMap<>();
+            // The offer says how long its effect lasts (catalog_items.extradata, 0 for
+            // permanent); the legacy path at purchaseEffect already honours it.
+            int effectDuration = item.getEffectDuration();
             for (Map.Entry<Integer, Integer> requested : requestedEffects.entrySet()) {
                 for (int count = 0; count < requested.getValue(); count++) {
                     EffectsComponent.HabboEffect effect = EffectsComponent.persistEffect(
-                            connection, habbo.getHabboInfo().getId(), requested.getKey(), 86400);
+                            connection, habbo.getHabboInfo().getId(), requested.getKey(), effectDuration);
                     effects.put(requested.getKey(), effect);
                 }
             }

@@ -93,9 +93,16 @@ final class RoomItemOwnershipService {
         this.registry.register(item);
     }
 
-    void remove(HabboItem item) {
+    /**
+     * Takes an item out of the room.
+     *
+     * @return whether this call is the one that removed it. Two threads can reach the same
+     *     item - a pickup, a room eviction and a consumer such as a seed or a pet box - and
+     *     only one of them may go on to delete the row and hand out what the item turns into.
+     */
+    boolean remove(HabboItem item) {
         if (item == null) {
-            return;
+            return false;
         }
 
         boolean trackedBuildersClubItem = BuildersClubRoomSupport.isTrackedItem(item.getId());
@@ -122,6 +129,8 @@ final class RoomItemOwnershipService {
             }
             BuildersClubRoomSupport.sendPlacementStatusForPool(this.room, trackedUserId);
         }
+
+        return removed != null;
     }
 
     int uniqueItemCount(int userId) {

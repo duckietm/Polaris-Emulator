@@ -126,6 +126,13 @@ public class ToggleFloorItemEvent extends MessageHandler {
                     return;
                 }
 
+                // Claim the seed before anything is created from it: a pickup or a room
+                // eviction racing this used to leave the seed alive in an inventory while
+                // its row was already deleted, so it could be placed and grown again.
+                if (!room.claimItem(item)) {
+                    return;
+                }
+
                 Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(item.getId()));
 
                 boolean isRare = item.getBaseItem().getName().contains("rare");
@@ -150,7 +157,6 @@ public class ToggleFloorItemEvent extends MessageHandler {
                                 room.getLayout().getTile(item.getX(), item.getY()),
                                 rarity);
                 room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
-                room.removeHabboItem(item);
                 room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));
                 room.placePet(pet, item.getX(), item.getY(), item.getZ(), item.getRotation());
                 pet.cycle();

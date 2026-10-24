@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.unknown.TalentTrackEmailFailedComposer;
 import com.eu.habbo.messages.outgoing.unknown.TalentTrackEmailVerifiedComposer;
@@ -53,8 +54,9 @@ public class ChangeEmailEvent extends MessageHandler {
         String mail = this.packet.readString();
 
         String currentMail = this.client.getHabbo().getHabboInfo().getMail();
+        ConfigurationManager config = Emulator.getConfig();
 
-        if (!Emulator.getConfig().getBoolean("hotel.email.change.enabled", true)) {
+        if (!config.getBoolean("hotel.email.change.enabled", true)) {
             this.refuseWithoutErrorCode(currentMail);
             return;
         }
@@ -63,7 +65,7 @@ public class ChangeEmailEvent extends MessageHandler {
         // only the HTTP endpoint can ask for.
         if (currentMail != null
                 && !currentMail.trim().isEmpty()
-                && Emulator.getConfig().getBoolean("hotel.email.change.requires_password", true)) {
+                && config.getBoolean("hotel.email.change.requires_password", true)) {
             LOGGER.info(
                     "Refused in-game e-mail change for user {}: the account already has an address, "
                             + "so the change must go through /api/auth/change-email",

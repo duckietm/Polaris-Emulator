@@ -251,6 +251,15 @@ public class RoomManager {
         this.roomSearchService.invalidate();
     }
 
+    /** @see RoomDirectory#registerIfAbsent(Room) */
+    Room registerActiveRoomIfAbsent(Room room) {
+        Room active = this.roomDirectory.registerIfAbsent(room);
+        if (active == room) {
+            this.roomSearchService.invalidate();
+        }
+        return active;
+    }
+
     public void loadRoomModels() {
         this.roomModelRepository.reload();
     }
@@ -475,14 +484,20 @@ public class RoomManager {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     room = new Room(set, this.roomDependencies());
-                    if (loadData) {
-                        room.loadData();
-                    }
                 }
             }
 
             if (room != null) {
-                this.registerActiveRoom(room);
+                // Register before the contents are loaded, and let the first registration
+                // win: two entries arriving together used to build two Room objects for
+                // one id, with the loser left ticking and saving state nobody could see.
+                Room active = this.registerActiveRoomIfAbsent(room);
+                if (active != room) {
+                    room = active;
+                }
+                if (loadData) {
+                    this.ensureRoomDataLoaded(room);
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

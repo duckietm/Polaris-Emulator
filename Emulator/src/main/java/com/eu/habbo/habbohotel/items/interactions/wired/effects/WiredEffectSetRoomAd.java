@@ -1,12 +1,16 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.navigation.EventCategory;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -14,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -60,6 +65,14 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
             return;
         }
 
+        // createPromotion also pushes the end timestamp to now + 2 hours and writes the
+        // row synchronously, so a repeater used to renew the promotion - and INSERT ...
+        // ON DUPLICATE - twice a second, forever. A promotion that is already running
+        // is left alone; the box starts the next one once it has lapsed.
+        if (room.getPromotionManager().isPromoted()) {
+            return;
+        }
+
         room.getPromotionManager().createPromotion(this.caption, this.description, this.category);
     }
 
@@ -87,14 +100,21 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        // A room ad is value out of nothing: BuyRoomPromotionEvent charges credits and
+        // points for the same two hours this box grants for free, and the title it
+        // writes is shown across the whole hotel.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
         int[] params = settings.getIntParams();
-        this.category = (params.length > 0) ? clampCategory(params[0]) : DEFAULT_CATEGORY;
+        this.category = (params.length > 0) ? resolveCategory(params[0]) : DEFAULT_CATEGORY;
 
         String raw = settings.getStringParam();
         raw = (raw == null) ? "" : raw;
         String[] parts = raw.split("\t", -1);
-        this.caption = clampText(parts.length > 0 ? parts[0] : "", maxCaptionLength());
-        this.description = clampText(parts.length > 1 ? parts[1] : "", maxDescriptionLength());
+        this.caption = filter(clampText(parts.length > 0 ? parts[0] : "", maxCaptionLength()), gameClient);
+        this.description = filter(clampText(parts.length > 1 ? parts[1] : "", maxDescriptionLength()), gameClient);
 
         int delay = settings.getDelay();
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY)) {
@@ -107,6 +127,34 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
 
     private static int clampCategory(int value) {
         return Math.max(MIN_CATEGORY, Math.min(MAX_CATEGORY, value));
+    }
+
+    /**
+     * A category the navigator actually offers. Clamping to 0..50 accepted ids that
+     * exist nowhere, which the client then cannot render; the purchase path picks from
+     * the same list this checks against.
+     */
+    private static int resolveCategory(int value) {
+        int clamped = clampCategory(value);
+        if (clamped == DEFAULT_CATEGORY) return DEFAULT_CATEGORY;
+
+        for (EventCategory category : NewNavigatorEventCategoriesComposer.CATEGORIES) {
+            if (category != null && category.getId() == clamped && category.isVisible()) {
+                return clamped;
+            }
+        }
+        return DEFAULT_CATEGORY;
+    }
+
+    /** The same word filter the purchased promotion text goes through. */
+    private static String filter(String value, GameClient gameClient) {
+        if (value == null || value.isEmpty()) return "";
+
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+        if (environment == null || environment.getWordFilter() == null) {
+            return value;
+        }
+        return environment.getWordFilter().filter(value, gameClient == null ? null : gameClient.getHabbo());
     }
 
     private static String clampText(String value, int maxLength) {

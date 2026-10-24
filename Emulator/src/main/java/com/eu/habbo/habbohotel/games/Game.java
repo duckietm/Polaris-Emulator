@@ -35,6 +35,26 @@ public abstract class Game implements Runnable {
     private int startTime;
     private int endTime;
 
+    /**
+     * Which run() chain is the live one.
+     *
+     * <p>A game re-schedules itself ({@code run(this, 1000)}) and stops only when it finds
+     * the state IDLE. stop() sets IDLE, but a tick scheduled before that is already in the
+     * queue: if initialise() and start() come first - a wired control clock sending STOP
+     * then START, which a repeater can do twice a second - that tick wakes to a RUNNING
+     * game and carries on, while start() has begun a chain of its own. The chains add up
+     * without limit, each one cycling the game again per second, until the pool is full.
+     *
+     * <p>start() bumps this, and a tick scheduled by an older chain exits instead of
+     * running.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger generation =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    private static com.eu.habbo.threading.ThreadPooling threading() {
+        return Emulator.getThreading();
+    }
+
     public Game(
             Class<? extends GameTeam> gameTeamClazz,
             Class<? extends GamePlayer> gamePlayerClazz,
@@ -116,6 +136,7 @@ public abstract class Game implements Runnable {
 
     public void start() {
         this.isRunning = false;
+        this.generation.incrementAndGet();
         this.state = GameState.RUNNING;
         this.startTime = Emulator.getIntUnixTimestamp();
 
@@ -241,6 +262,25 @@ public abstract class Game implements Runnable {
         }
     }
 
+    /**
+     * Schedules this game's next tick, as part of the chain the caller belongs to.
+     *
+     * <p>A tick whose chain has been replaced by a later start() is dropped, so only one
+     * chain is ever live. Use this instead of scheduling the game directly.
+     */
+    protected void scheduleTick(int millis) {
+        int chain = this.generation.get();
+        threading()
+                .run(
+                        () -> {
+                            if (this.generation.get() != chain) {
+                                return;
+                            }
+                            this.run();
+                        },
+                        millis);
+    }
+
     public void stop() {
         this.state = GameState.IDLE;
 
@@ -279,7 +319,7 @@ public abstract class Game implements Runnable {
         teamsCopy.putAll(this.teams);
 
         for (Map.Entry<GameTeamColors, GameTeam> teamEntry : teamsCopy.entrySet()) {
-            Emulator.getThreading().runPersistence(new SaveScoreForTeam(teamEntry.getValue(), this));
+            threading().runPersistence(new SaveScoreForTeam(teamEntry.getValue(), this));
         }
     }
 

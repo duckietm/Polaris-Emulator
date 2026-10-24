@@ -121,6 +121,12 @@ final class RuntimeLifecycle {
                     "drain persistence executor",
                     () -> services.persistenceExecutor().shutDown());
         }
+        // The chat, command and error logs are written in batches by CleanerThread every
+        // 30 seconds, and nothing flushed them on the way out: up to half a minute of
+        // them went missing on every shutdown. Still before the database closes.
+        if (services.databaseLogger() != null) {
+            run("flush database logger", () -> services.databaseLogger().save());
+        }
         run("save configuration", () -> {
             if (canPersistConfiguration()) {
                 services.configuration().saveToDatabase();

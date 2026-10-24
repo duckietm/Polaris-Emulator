@@ -72,19 +72,7 @@ final class RoomItemPlacementService {
         if (habbo.getHabboStats().isRentingSpace()) {
             HabboItem rentSpace = this.facade.getHabboItem(habbo.getHabboStats().rentedItemId);
             if (rentSpace != null) {
-                if (!this.mayTenantMove(item, habbo)) {
-                    return FurnitureMovementError.NO_RIGHTS;
-                }
-                if (!insideRental(rentSpace, item, tile.x, tile.y, rotation)) {
-                    return FurnitureMovementError.NO_RIGHTS;
-                }
-                // Where it stands now counts too: otherwise the destination check alone
-                // let a tenant drag a furni in from the rest of the room.
-                if (this.isInThisRoom(item)
-                        && !insideRental(rentSpace, item, item.getX(), item.getY(), item.getRotation())) {
-                    return FurnitureMovementError.NO_RIGHTS;
-                }
-                return FurnitureMovementError.NONE;
+                return tenantMoveInRental(rentSpace, item, habbo, tile, rotation, this.isInThisRoom(item));
             }
         }
 
@@ -92,7 +80,7 @@ final class RoomItemPlacementService {
             InteractionBuildArea buildArea = (InteractionBuildArea) area;
             if (buildArea.inSquare(tile)
                     && buildArea.isBuilder(habbo.getHabboInfo().getUsername())) {
-                if (!this.mayTenantMove(item, habbo)) {
+                if (!mayTenantMove(item, habbo)) {
                     return FurnitureMovementError.NO_RIGHTS;
                 }
                 RoomTile origin = this.room.getLayout() == null
@@ -105,6 +93,28 @@ final class RoomItemPlacementService {
             }
         }
         return FurnitureMovementError.NO_RIGHTS;
+    }
+
+    /**
+     * What a tenant of a rented space may do with one furni.
+     *
+     * @param itemIsInRoom whether the furni already stands in this room, rather than coming
+     *     out of the tenant's inventory
+     */
+    static FurnitureMovementError tenantMoveInRental(
+            HabboItem rentSpace, HabboItem item, Habbo habbo, RoomTile tile, int rotation, boolean itemIsInRoom) {
+        if (!mayTenantMove(item, habbo)) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        if (!insideRental(rentSpace, item, tile.x, tile.y, rotation)) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        // Where it stands now counts too: otherwise the destination check alone let a
+        // tenant drag a furni in from the rest of the room.
+        if (itemIsInRoom && !insideRental(rentSpace, item, item.getX(), item.getY(), item.getRotation())) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        return FurnitureMovementError.NONE;
     }
 
     private boolean isInThisRoom(HabboItem item) {
@@ -120,7 +130,7 @@ final class RoomItemPlacementService {
      * A tenant moves their own furni, and not the kinds {@code RoomPlaceItemEvent}
      * already refuses to let them place at all.
      */
-    private boolean mayTenantMove(HabboItem item, Habbo habbo) {
+    static boolean mayTenantMove(HabboItem item, Habbo habbo) {
         if (item.getUserId() != habbo.getHabboInfo().getId()) {
             return false;
         }

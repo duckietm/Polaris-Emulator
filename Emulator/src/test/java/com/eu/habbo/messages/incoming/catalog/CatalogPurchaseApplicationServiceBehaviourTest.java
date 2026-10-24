@@ -112,6 +112,7 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
     private int credits = 1000;
     private int points = 100;
     private CatalogItem recentPurchase;
+    private CatalogPage recentOfferPage;
 
     private GameClient client;
     private Habbo habbo;
@@ -173,6 +174,13 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
 
         this.catalog = mock(CatalogManager.class);
         setField(CatalogManager.class, this.catalog, "clubOffers", new LinkedHashMap<Integer, ClubOffer>());
+        // Buying again from "recent purchases" re-reads the live offer and the page that
+        // sells it, instead of trusting the instance the buyer's session remembers.
+        when(this.catalog.getCatalogItem(anyInt()))
+                .thenAnswer(i -> this.recentPurchase != null && this.recentPurchase.getId() == i.<Integer>getArgument(0)
+                        ? this.recentPurchase
+                        : null);
+        when(this.catalog.getCatalogPage(anyInt())).thenAnswer(i -> this.recentOfferPage);
         doAnswer(i -> this.record("catalog.purchaseItem(" + this.label(i.getArgument(0)) + ", "
                         + this.label(i.getArgument(1)) + ", count " + i.getArgument(3) + ", \""
                         + String.valueOf((Object) i.getArgument(4)).replace("\n", "\\n") + "\", free "
@@ -330,8 +338,23 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         this.buy("offer / not on the page", 5, 77, "", 1);
 
         this.recentPurchase = chair;
+        this.recentOfferPage = this.normalPage(0, chair);
         this.page = this.recentPage();
         this.buy("offer / from recent purchases", 5, 40, "", 1);
+
+        // The page that sells the offer is re-checked, not the recent-purchases page the
+        // buyer is looking at: a page since disabled, or above their rank, refuses.
+        CatalogPage disabled = this.normalPage(0, chair);
+        when(disabled.isEnabled()).thenReturn(false);
+        this.recentOfferPage = disabled;
+        this.buy("offer / from recent purchases, page since disabled", 5, 40, "", 1);
+
+        CatalogPage staffOnly = this.normalPage(7, chair);
+        this.recentOfferPage = staffOnly;
+        this.buy("offer / from recent purchases, page above the buyer's rank", 5, 40, "", 1);
+
+        this.recentOfferPage = null;
+        this.buy("offer / from recent purchases, offer no longer in the catalog", 5, 40, "", 1);
 
         this.page = this.normalPage(0, chair);
         this.raffleTakesIt = true;
@@ -425,6 +448,7 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         when(item.getPoints()).thenReturn(points);
         when(item.getPointsType()).thenReturn(5);
         when(item.getBaseItems()).thenReturn(new LinkedHashSet<>(Arrays.asList(baseItems)));
+        when(item.getPageId()).thenReturn(5);
         return item;
     }
 
@@ -446,6 +470,7 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         for (CatalogItem item : items) {
             if (item != null) map.put(item.getId(), item);
         }
+        when(page.isEnabled()).thenReturn(true);
         when(page.getRank()).thenReturn(rank);
         when(page.getId()).thenReturn(5);
         when(page.getCaption()).thenReturn("Shop");

@@ -383,9 +383,9 @@ final class CatalogPurchaseApplicationService {
     private CatalogItem resolveOffer(CatalogPage page, int itemId) {
         CatalogItem item;
 
-        if (page instanceof RecentPurchasesLayout)
-            item = this.client.getHabbo().getHabboStats().getRecentPurchase(itemId);
-        else item = page.getCatalogItem(itemId);
+        if (page instanceof RecentPurchasesLayout) {
+            item = this.resolveRecentPurchase(itemId);
+        } else item = page.getCatalogItem(itemId);
 
         if (item == null && !(page instanceof RecentPurchasesLayout)) {
             for (CatalogItem candidate : page.getCatalogItems().values()) {
@@ -406,6 +406,42 @@ final class CatalogPurchaseApplicationService {
         }
 
         return item;
+    }
+
+    /**
+     * An offer bought again from "recent purchases".
+     *
+     * <p>The buyer's recent list holds the {@link CatalogItem} instance as it was when they
+     * bought it, and the page that sells it is never looked at again. Buying through this page
+     * therefore used to ignore everything the offer's real page says now: a page since disabled
+     * or hidden, its minimum rank, its club requirement - and the price, which was charged from
+     * the stale cached instance. The live offer is re-read by id and its own page re-checked
+     * with the same policy a direct purchase goes through.
+     *
+     * @return the live offer, or null when it or its page no longer allows this buyer
+     */
+    private CatalogItem resolveRecentPurchase(int itemId) {
+        CatalogItem remembered = this.client.getHabbo().getHabboStats().getRecentPurchase(itemId);
+        if (remembered == null) return null;
+
+        CatalogManager catalogManager = this.environment.getCatalogManager();
+        CatalogItem live = catalogManager.getCatalogItem(remembered.getId());
+        if (live == null) return null;
+
+        CatalogPage offerPage = catalogManager.getCatalogPage(live.getPageId());
+        if (!CatalogPageAccessPolicy.canAccess(
+                offerPage,
+                this.client.getHabbo().getHabboInfo().getRank().getId(),
+                this.client.getHabbo().getHabboStats().hasActiveClub())) {
+            LOGGER.warn(
+                    "Purchase refused for user {}: recent offer {} lives on page {}, which they may not use",
+                    this.buyerId(),
+                    itemId,
+                    live.getPageId());
+            return null;
+        }
+
+        return live;
     }
 
     /**

@@ -95,7 +95,55 @@ final class CameraUrlFetcher {
             OutputStream out = socket.getOutputStream();
             out.write(request.getBytes(StandardCharsets.ISO_8859_1));
             out.flush();
-            return readResponse(socket.getInputStream(), options.fetchMaxBytes());
+            return readResponse(deadlineStream(socket.getInputStream(), options), options.fetchMaxBytes());
+        }
+    }
+
+    /**
+     * Caps the whole read, not each read call.
+     *
+     * <p>{@code soTimeout} only bounds the wait for the <em>next</em> bytes, and the render
+     * deadline was checked before a fetch, never during one. A server that answers with one
+     * byte every soTimeout minus a little therefore held a camera worker for as long as it
+     * liked - two of them by default, with a queue of sixteen, so the camera and every hotel
+     * thumbnail behind it stayed busy. The sprite name comes out of the client's scene.
+     *
+     * <p>The ceiling is the fetch budget of the render ({@code fetchBudgetMs}), and the
+     * render's own deadline when it has one, whichever comes first.
+     */
+    private static InputStream deadlineStream(InputStream in, CameraRenderOptions options) {
+        long ceiling = System.nanoTime() + Math.max(0L, options.fetchBudgetMs()) * 1_000_000L;
+        if (options.deadlineNanos() != 0L && options.deadlineNanos() - ceiling < 0) {
+            ceiling = options.deadlineNanos();
+        }
+        return new DeadlineInputStream(in, ceiling);
+    }
+
+    /** An input stream that stops reading once a wall-clock deadline has passed. */
+    static final class DeadlineInputStream extends java.io.FilterInputStream {
+        private final long deadlineNanos;
+
+        DeadlineInputStream(InputStream in, long deadlineNanos) {
+            super(in);
+            this.deadlineNanos = deadlineNanos;
+        }
+
+        private void checkDeadline() throws IOException {
+            if (System.nanoTime() - this.deadlineNanos > 0) {
+                throw new IOException("camera sprite fetch ran past its time budget");
+            }
+        }
+
+        @Override
+        public int read() throws IOException {
+            this.checkDeadline();
+            return super.read();
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            this.checkDeadline();
+            return super.read(buffer, offset, length);
         }
     }
 

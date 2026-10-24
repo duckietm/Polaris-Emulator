@@ -533,6 +533,15 @@ public class RoomItemManager {
         this.ownership.remove(item);
     }
 
+    /**
+     * Removes an item from the room and reports whether this call is the one that did it.
+     *
+     * @see RoomItemOwnershipService#remove(HabboItem)
+     */
+    public boolean claimHabboItem(HabboItem item) {
+        return this.ownership.remove(item);
+    }
+
     // ==================== ITEM UPDATES ====================
 
     /**

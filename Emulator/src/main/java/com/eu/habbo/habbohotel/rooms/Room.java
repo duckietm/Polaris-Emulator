@@ -1523,6 +1523,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.itemManager.removeHabboItem(item);
     }
 
+    /** @see RoomItemManager#claimHabboItem(HabboItem) */
+    public boolean claimItem(HabboItem item) {
+        return this.itemManager.claimHabboItem(item);
+    }
+
     public Set<HabboItem> getFloorItems() {
         return this.itemManager.getFloorItems();
     }

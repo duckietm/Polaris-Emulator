@@ -24,6 +24,41 @@ public class ClothingValidationManager {
 
     private static final Figuredata FIGUREDATA = new Figuredata();
 
+    /** {@code users.look} is varchar(256): a longer figure makes every profile write fail. */
+    public static final int MAX_FIGURE_LENGTH = 256;
+
+    /** figuredata defines around a dozen set types; this only has to be an upper bound. */
+    private static final int MAX_FIGURE_PARTS = 24;
+
+    /** One part: a two-letter set type and its colour/model numbers, e.g. {@code hr-115-42}. */
+    private static final Pattern FIGURE_PART = Pattern.compile("^[a-zA-Z]{2}(-\\d{1,6}){1,5}$");
+
+    /**
+     * Whether a figure string is shaped like a figure at all — checked for every incoming look,
+     * including when figuredata validation is off (the default), because the damage a malformed
+     * one does is structural rather than cosmetic: anything past 256 characters makes the single
+     * {@code UPDATE users SET motto, online, look, ...} of {@code HabboInfo.run()} fail for the
+     * rest of the session, so motto, home room, backgrounds and {@code online=0} on logout are
+     * all silently lost, and the string is broadcast to every client in the room as it arrived.
+     *
+     * <p>This is deliberately structural only: which parts a user may actually wear is
+     * {@link #validateLook} territory and needs figuredata loaded.
+     */
+    public static boolean isStructurallyValidFigure(String figure) {
+        if (figure == null) return false;
+
+        String trimmed = figure.trim();
+        if (trimmed.isEmpty() || trimmed.length() > MAX_FIGURE_LENGTH) return false;
+
+        String[] parts = trimmed.split("\\.", -1);
+        if (parts.length > MAX_FIGURE_PARTS) return false;
+
+        for (String part : parts) {
+            if (!FIGURE_PART.matcher(part).matches()) return false;
+        }
+        return true;
+    }
+
     /**
      * Parses the new figuredata.xml file
      * @param newUrl URI of figuredata.xml file. Can be a file path or URL

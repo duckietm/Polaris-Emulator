@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.users.HabboGender;
@@ -19,12 +20,12 @@ public class UserSaveLookEvent extends MessageHandler {
     public void handle() throws Exception {
         String genderCode = this.packet.readString();
         HabboGender gender;
+        TextsManager texts = Emulator.getTexts();
 
         try {
             gender = HabboGender.valueOf(genderCode);
         } catch (IllegalArgumentException e) {
-            String message = Emulator.getTexts()
-                    .getValue("scripter.warning.look.gender")
+            String message = texts.getValue("scripter.warning.look.gender")
                     .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
                     .replace("%gender%", genderCode);
             ScripterManager.scripterDetected(this.client, message);
@@ -33,6 +34,22 @@ public class UserSaveLookEvent extends MessageHandler {
         }
 
         String look = this.packet.readString();
+
+        // Checked even when figuredata validation is off (the default): a figure
+        // longer than users.look breaks every later profile write for the session,
+        // and the raw string is broadcast to the whole room.
+        if (!ClothingValidationManager.isStructurallyValidFigure(look)) {
+            String message = texts.getValueQuietly(
+                            "scripter.warning.look.figure",
+                            "%username% tried to script an invalid figure of %length% characters")
+                    .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
+                    .replace("%length%", String.valueOf(look == null ? 0 : look.length()));
+            ScripterManager.scripterDetected(this.client, message);
+            LOGGER.info(message);
+            // Re-sync the client, which already shows the look it just sent.
+            this.client.sendResponse(new UpdateUserLookComposer(this.client.getHabbo()));
+            return;
+        }
 
         UserSavedLookEvent lookEvent = new UserSavedLookEvent(this.client.getHabbo(), gender, look);
         Emulator.getPluginManager().fireEvent(lookEvent);

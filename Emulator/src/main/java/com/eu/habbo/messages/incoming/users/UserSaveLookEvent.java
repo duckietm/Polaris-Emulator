@@ -34,6 +34,23 @@ public class UserSaveLookEvent extends MessageHandler {
 
         String look = this.packet.readString();
 
+        // Checked even when figuredata validation is off (the default): a figure
+        // longer than users.look breaks every later profile write for the session,
+        // and the raw string is broadcast to the whole room.
+        if (!ClothingValidationManager.isStructurallyValidFigure(look)) {
+            String message = Emulator.getTexts()
+                    .getValueQuietly(
+                            "scripter.warning.look.figure",
+                            "%username% tried to script an invalid figure of %length% characters")
+                    .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
+                    .replace("%length%", String.valueOf(look == null ? 0 : look.length()));
+            ScripterManager.scripterDetected(this.client, message);
+            LOGGER.info(message);
+            // Re-sync the client, which already shows the look it just sent.
+            this.client.sendResponse(new UpdateUserLookComposer(this.client.getHabbo()));
+            return;
+        }
+
         UserSavedLookEvent lookEvent = new UserSavedLookEvent(this.client.getHabbo(), gender, look);
         Emulator.getPluginManager().fireEvent(lookEvent);
         if (lookEvent.isCancelled()) return;

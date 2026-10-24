@@ -452,7 +452,8 @@ public class ModToolManager {
         return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) seconds;
     }
 
-    static int banExpiry(int now, int duration) {
+    /** An absolute expiry timestamp from a length in seconds, kept inside an int. */
+    public static int banExpiry(int now, int duration) {
         long expiry = (long) now + duration;
 
         return expiry > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expiry;

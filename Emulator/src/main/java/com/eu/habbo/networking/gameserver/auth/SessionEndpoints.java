@@ -268,6 +268,19 @@ final class SessionEndpoints {
             return;
         }
 
+        // The per-IP throttle alone is cleared by any successful login, so the
+        // account being guessed carries its own counter and backoff.
+        if (AuthRateLimiter.isAccountLocked(username)) {
+            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
+            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", username, ip, secs);
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many attempts. Try again in " + secs + "s."));
+            return;
+        }
+
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             if (ip != null && !ip.isEmpty()) {
                 AuthHttpUtil.BanInfo ipBan = lookupIpBan(conn, ip);
@@ -285,6 +298,7 @@ final class SessionEndpoints {
                     if (!rs.next()) {
                         LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
                         AuthRateLimiter.recordFailure(ip);
+                        AuthRateLimiter.recordAccountFailure(username);
                         sendJson(
                                 ctx,
                                 req,
@@ -308,6 +322,7 @@ final class SessionEndpoints {
                                 username,
                                 storedPreview);
                         AuthRateLimiter.recordFailure(ip);
+                        AuthRateLimiter.recordAccountFailure(username);
                         sendJson(
                                 ctx,
                                 req,
@@ -323,13 +338,13 @@ final class SessionEndpoints {
                                 userId,
                                 accountBan.type,
                                 accountBan.expiresAt);
-                        AuthRateLimiter.recordSuccess(ip);
+                        AuthRateLimiter.recordSuccess(ip, username);
                         sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(accountBan));
                         return;
                     }
 
                     if (!passesMaintenanceGate(ctx, req, rs.getInt("rank"), "auth/login", userId)) {
-                        AuthRateLimiter.recordSuccess(ip);
+                        AuthRateLimiter.recordSuccess(ip, username);
                         return;
                     }
 
@@ -356,7 +371,7 @@ final class SessionEndpoints {
                         }
                     }
 
-                    AuthRateLimiter.recordSuccess(ip);
+                    AuthRateLimiter.recordSuccess(ip, username);
 
                     JsonObject ok = new JsonObject();
                     ok.addProperty("ssoTicket", ssoTicket);

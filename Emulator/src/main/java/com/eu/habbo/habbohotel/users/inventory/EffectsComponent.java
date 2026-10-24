@@ -69,8 +69,12 @@ public class EffectsComponent {
 
     public static HabboEffect persistEffect(Connection connection, int userId, int effectId, int duration)
             throws SQLException {
+        // duration 0 means permanent: a timed copy bought afterwards must add to the
+        // stack without turning the permanent effect into a 24-hour one, which is what
+        // a plain VALUES(duration) did.
         String upsert = "INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, 1, ?) "
-                + "ON DUPLICATE KEY UPDATE total = LEAST(total + 1, 100), duration = VALUES(duration)";
+                + "ON DUPLICATE KEY UPDATE total = LEAST(total + 1, 100), "
+                + "duration = IF(duration = 0, 0, VALUES(duration))";
         try (PreparedStatement statement = connection.prepareStatement(upsert)) {
             statement.setInt(1, userId);
             statement.setInt(2, effectId);

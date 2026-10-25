@@ -418,24 +418,34 @@ public class HabboManager {
     }
 
     public void giveCredits(int userId, int credits) {
+        this.applyCredits(
+                userId, credits, "system.habbo_manager", EconomyOperationId.create("credits:" + userId), userId);
+    }
+
+    /** Grants or takes credits from a user online or not, with who did it and why; false when nothing changed. */
+    public boolean applyCredits(int userId, int credits, String reason, String operationId, Integer actorId) {
+        if (credits == 0) return false;
+
         Habbo habbo = this.getHabbo(userId);
         if (habbo != null) {
-            habbo.giveCredits(credits, "system.habbo_manager");
-        } else {
-            try {
-                EconomyLedger.execute(new EconomyOperation(
-                        EconomyOperationId.create("credits:" + userId),
-                        userId,
-                        userId,
-                        credits > 0 ? "credit_grant" : "credit_debit",
-                        "system.habbo_manager",
-                        EconomyLedger.CREDITS,
-                        credits,
-                        null,
-                        "offline"));
-            } catch (Exception e) {
-                LOGGER.error("Unable to apply audited offline credit mutation for user {}", userId, e);
-            }
+            return habbo.applyCredits(credits, reason, operationId, actorId);
+        }
+
+        try {
+            EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    userId,
+                    actorId,
+                    credits > 0 ? "credit_grant" : "credit_debit",
+                    reason,
+                    EconomyLedger.CREDITS,
+                    credits,
+                    null,
+                    "offline"));
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Unable to apply audited offline credit mutation for user {}", userId, e);
+            return false;
         }
     }
 

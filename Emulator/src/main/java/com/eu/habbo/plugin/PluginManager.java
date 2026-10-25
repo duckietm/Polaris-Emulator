@@ -6,6 +6,7 @@ import com.eu.habbo.core.Easter;
 import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.tag.TagGame;
 import com.eu.habbo.habbohotel.items.interactions.games.football.InteractionFootballGate;
+import com.eu.habbo.habbohotel.users.RoomLookOverride;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.eu.habbo.messages.PacketManager;
@@ -347,6 +348,9 @@ public class PluginManager {
                     InteractionFootballGate.class.getMethod("onUserDisconnectEvent", UserDisconnectEvent.class));
             this.methods.add(InteractionFootballGate.class.getMethod("onUserExitRoomEvent", UserExitRoomEvent.class));
             this.methods.add(InteractionFootballGate.class.getMethod("onUserSavedLookEvent", UserSavedLookEvent.class));
+            this.methods.add(RoomLookOverride.class.getMethod("onUserExitRoomEvent", UserExitRoomEvent.class));
+            this.methods.add(RoomLookOverride.class.getMethod("onUserDisconnectEvent", UserDisconnectEvent.class));
+            this.methods.add(RoomLookOverride.class.getMethod("onUserSavedLookEvent", UserSavedLookEvent.class));
             this.methods.add(
                     PluginManager.class.getMethod("globalOnConfigurationUpdated", EmulatorConfigUpdatedEvent.class));
             this.methods.add(WiredHighscoreManager.class.getMethod("onEmulatorLoaded", EmulatorLoadedEvent.class));

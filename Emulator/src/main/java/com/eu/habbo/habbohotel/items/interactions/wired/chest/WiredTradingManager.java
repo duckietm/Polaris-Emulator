@@ -679,8 +679,16 @@ public class WiredTradingManager {
             int room = storeFailure(chests, furniPayment, creditPayment);
             if (room != ChestTransactionFailures.NONE) return room;
 
-            List<Integer> consumed = pay(habbo, negotiation, chests, furniPayment, creditPayment);
-            negotiation.session().consume(consumed);
+            Payment payment = pay(habbo, negotiation, chests, furniPayment, creditPayment);
+
+            // Paid in part (a chest or the database refused some of it): the reward used to be handed out
+            // anyway, and what was not taken went back to the player when the table closed. Now what
+            // reached a chest comes back too, and nothing is given.
+            if (payment.consumed().size() != furniPayment.size() + creditPayment.size()) {
+                this.refundDeposits(habbo, payment);
+                return ChestTransactionFailures.TRADE_CANCELLED;
+            }
+            negotiation.session().consume(payment.consumed());
 
             List<Term> given =
                     WiredChestPayouts.give(habbo, this.room, chests, reward, this.earningsCategory(negotiation));
@@ -766,14 +774,35 @@ public class WiredTradingManager {
         return ChestTransactionFailures.NONE;
     }
 
-    /** Move a payment off the table into the chests. Returns the item ids that left the table. */
-    private List<Integer> pay(
+    /** What a payment moved: every item id that left the table, and the furni ids each chest took. */
+    record Payment(List<Integer> consumed, Map<InteractionWiredChest, List<Integer>> furniByChest) {}
+
+    /** Gives back the furni a partly paid contract left in its chests. */
+    private void refundDeposits(Habbo habbo, Payment payment) {
+        for (Map.Entry<InteractionWiredChest, List<Integer>> deposit :
+                payment.furniByChest().entrySet()) {
+            List<Integer> ids = deposit.getValue();
+            ChestWithdrawals.furni(
+                    habbo,
+                    deposit.getKey(),
+                    this.room,
+                    storage -> storage.removeFurniByInventoryIds(ids),
+                    ChestTransactionLog.SOURCE_USER);
+        }
+    }
+
+    /**
+     * Move a payment off the table into the chests. The credit furni are redeemed last and only once all
+     * the furni went in, so a partial payment never leaves coins behind that cannot be handed back.
+     */
+    private Payment pay(
             Habbo habbo,
             Negotiation negotiation,
             List<InteractionWiredChest> chests,
             List<HabboItem> furni,
             List<HabboItem> credits) {
         List<Integer> consumed = new ArrayList<>();
+        Map<InteractionWiredChest, List<Integer>> furniByChest = new LinkedHashMap<>();
         int userId = habbo.getHabboInfo().getId();
 
         List<HabboItem> remaining = new ArrayList<>(furni);
@@ -785,13 +814,14 @@ public class WiredTradingManager {
             for (HabboItem item : accepted) {
                 negotiation.vault().release(item.getId());
                 consumed.add(item.getId());
+                furniByChest.computeIfAbsent(chest, key -> new ArrayList<>()).add(item.getId());
             }
             remaining.removeAll(accepted);
             if (!accepted.isEmpty()) this.afterDeposit(chest, habbo, accepted.size(), 0, accepted);
         }
 
         int coins = credits.stream().mapToInt(ChestAirWire::creditValue).sum();
-        if (coins > 0) {
+        if (coins > 0 && remaining.isEmpty()) {
             for (InteractionWiredChest chest : chests) {
                 if (chest.chestKind() != ChestStorage.KIND_CURRENCY) continue;
                 if (chest.redeemCreditFurni(userId, credits, coins)) {
@@ -804,7 +834,7 @@ public class WiredTradingManager {
                 }
             }
         }
-        return consumed;
+        return new Payment(consumed, furniByChest);
     }
 
     /**
@@ -876,7 +906,9 @@ public class WiredTradingManager {
             int room = storeFailure(chests, furni, credits);
             if (room != ChestTransactionFailures.NONE) return room;
 
-            negotiation.session().consume(pay(habbo, negotiation, chests, furni, credits));
+            negotiation
+                    .session()
+                    .consume(pay(habbo, negotiation, chests, furni, credits).consumed());
             return ChestTransactionFailures.NONE;
         });
 

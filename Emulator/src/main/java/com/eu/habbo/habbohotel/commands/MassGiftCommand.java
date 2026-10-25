@@ -3,16 +3,17 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class MassGiftCommand extends Command {
     public MassGiftCommand() {
@@ -85,6 +86,19 @@ public class MassGiftCommand extends Command {
                     .getGiftWrappingSnapshot()
                     .furniture();
 
+            ItemManager items = Emulator.getGameEnvironment().getItemManager();
+            Random random = Emulator.getRandom();
+
+            if (CommandGifts.pickWrapper(giftFurniture, items, random) == null) {
+                gameClient
+                        .getHabbo()
+                        .whisperLocalizedOrDefault(
+                                "commands.error.cmd_gift.failed",
+                                "The gift could not be sent.",
+                                RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             Emulator.getThreading().run(() -> {
                 for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment()
                         .getHabboManager()
@@ -92,23 +106,18 @@ public class MassGiftCommand extends Command {
                         .entrySet()) {
                     Habbo habbo = set.getValue();
 
-                    HabboItem item =
-                            Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
+                    // One user's failure no longer ends the loop for everyone after them, in silence.
+                    Item giftItem = CommandGifts.pickWrapper(giftFurniture, items, random);
 
-                    Item giftItem = Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .getItem((Integer) giftFurniture.values()
-                                    .toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]);
+                    if (!CommandGifts.send(
+                            items, baseItem, giftItem, habbo.getHabboInfo().getUsername(), finalMessage)) {
+                        continue;
+                    }
 
-                    String extraData = "1\t" + item.getId();
-                    extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";
-
-                    Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .createGift(habbo.getHabboInfo().getUsername(), giftItem, extraData, 0, 0);
-
-                    habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                    habbo.getClient().sendResponse(giftNotificiationMessage);
+                    if (habbo.getClient() != null) {
+                        habbo.getClient().sendResponse(new InventoryRefreshComposer());
+                        habbo.getClient().sendResponse(giftNotificiationMessage);
+                    }
                 }
             });
 

@@ -3,14 +3,15 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredRewardAlertComposer;
 import java.util.Map;
+import java.util.Random;
 
 public class RoomGiftCommand extends Command {
     public RoomGiftCommand() {
@@ -76,19 +77,27 @@ public class RoomGiftCommand extends Command {
                     .getGiftWrappingSnapshot()
                     .furniture();
 
+            ItemManager items = Emulator.getGameEnvironment().getItemManager();
+            Random random = Emulator.getRandom();
+
+            if (CommandGifts.pickWrapper(giftFurniture, items, random) == null) {
+                gameClient
+                        .getHabbo()
+                        .whisperLocalizedOrDefault(
+                                "commands.error.cmd_gift.failed",
+                                "The gift could not be sent.",
+                                RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             for (Habbo habbo :
                     gameClient.getHabbo().getHabboInfo().getCurrentRoom().getHabbos()) {
-                HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
+                Item giftItem = CommandGifts.pickWrapper(giftFurniture, items, random);
 
-                Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer)
-                        giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]);
-
-                String extraData = "1\t" + item.getId();
-                extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";
-
-                Emulator.getGameEnvironment()
-                        .getItemManager()
-                        .createGift(habbo.getHabboInfo().getUsername(), giftItem, extraData, 0, 0);
+                if (!CommandGifts.send(
+                        items, baseItem, giftItem, habbo.getHabboInfo().getUsername(), finalMessage)) {
+                    continue;
+                }
 
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 

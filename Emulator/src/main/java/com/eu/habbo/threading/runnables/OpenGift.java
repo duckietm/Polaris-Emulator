@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +35,17 @@ public class OpenGift implements Runnable {
     @Override
     public void run() {
         try {
+            // The gift has to still be in this room: removed or picked up since the open was scheduled,
+            // delivering its contents would leave the wrapper and the contents both.
+            if (this.room.getHabboItem(this.item.getId()) != this.item) {
+                return;
+            }
+
             HabboItem inside = null;
 
             Collection<HabboItem> items = ((InteractionGift) this.item).loadItems();
+            // An item that no longer loads is skipped instead of failing the whole gift.
+            items.removeIf(Objects::isNull);
             for (HabboItem i : items) {
                 if (inside == null) inside = i;
 

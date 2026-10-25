@@ -57,6 +57,11 @@ public class InteractionGift extends HabboItem {
         return this.opening.compareAndSet(false, true);
     }
 
+    /** Whether an unwrap of this gift has been scheduled; the gift may not be picked up meanwhile. */
+    public boolean isOpening() {
+        return this.opening.get();
+    }
+
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
         // serverMessage.appendInt(this.colorId * 1000 + this.ribbonId);

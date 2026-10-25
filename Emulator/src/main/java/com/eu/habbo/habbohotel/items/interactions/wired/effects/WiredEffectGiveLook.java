@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.RoomLookOverride;
 import com.eu.habbo.habbohotel.users.clothingvalidation.ClothingValidationManager;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -105,10 +106,14 @@ public class WiredEffectGiveLook extends InteractionWiredEffect {
             if (habbo == null || habbo.getHabboInfo() == null) continue;
 
             String gender = habbo.getHabboInfo().getGender().name();
-            String validated = ClothingValidationManager.validateLook(this.figure, gender);
+            // Validated against the target's own club membership and wardrobe: the plain check stripped the
+            // club parts of a member, and handed back the raw string when the figure data was not loaded.
+            String validated = ClothingValidationManager.validateLook(habbo, this.figure, gender);
             if (validated == null || validated.isEmpty()) continue;
 
-            habbo.getHabboInfo().setLook(validated);
+            // The look lasts while the user stays in the room: it used to be saved with the profile, so a
+            // trap room replaced the outfit of everyone who walked in for good.
+            RoomLookOverride.apply(habbo, validated);
             if (habbo.getClient() != null) {
                 habbo.getClient().sendResponse(new UpdateUserLookComposer(habbo));
             }

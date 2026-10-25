@@ -47,6 +47,7 @@ public class GameClient {
     private boolean handshakeFinished;
     private String machineId = "";
     private String ssoTicket = "";
+    private final AtomicBoolean ssoTicketExchanged = new AtomicBoolean();
     private String releaseVersion = "";
 
     // These values are written during capability negotiation and read by packet
@@ -128,7 +129,17 @@ public class GameClient {
         return this.ssoTicket;
     }
 
+    /**
+     * Claims the one exchange of this client's SSO ticket for an access token. The ticket is gone from
+     * the database once the client logs in, and the token endpoint then finds it here: answering every
+     * time turned a leaked ticket into unlimited access tokens.
+     */
+    public boolean claimSsoTicketExchange() {
+        return this.ssoTicketExchanged.compareAndSet(false, true);
+    }
+
     public void setSsoTicket(String ssoTicket) {
+        this.ssoTicketExchanged.set(false);
         this.ssoTicket = ssoTicket != null ? ssoTicket : "";
     }
 

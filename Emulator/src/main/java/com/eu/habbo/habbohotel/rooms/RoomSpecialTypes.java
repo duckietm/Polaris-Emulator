@@ -75,20 +75,25 @@ public class RoomSpecialTypes {
     private final ConcurrentHashMap<Integer, HabboItem> specialItemsById = new ConcurrentHashMap<>();
 
     public RoomSpecialTypes() {
-        this.banzaiTeleporters = new HashMap<>(0);
-        this.nests = new HashMap<>(0);
-        this.petDrinks = new HashMap<>(0);
-        this.petFoods = new HashMap<>(0);
-        this.petToys = new HashMap<>(0);
-        this.petTrees = new HashMap<>(0);
+        // Concurrent maps: game cycles, wired and packet threads read and change these at once, and
+        // several paths iterated a HashMap without its lock (ConcurrentModificationException or a
+        // corrupted map mid-game).
+        this.banzaiTeleporters = new ConcurrentHashMap<>();
+        this.nests = new ConcurrentHashMap<>();
+        this.petDrinks = new ConcurrentHashMap<>();
+        this.petFoods = new ConcurrentHashMap<>();
+        this.petToys = new ConcurrentHashMap<>();
+        this.petTrees = new ConcurrentHashMap<>();
+        // Rollers stay a HashMap: plugins rely on the live map accepting null values, and every
+        // first-party read and change of it already holds its monitor (see rollerSnapshot).
         this.rollers = new HashMap<>(0);
 
-        this.gameScoreboards = new HashMap<>(0);
-        this.gameGates = new HashMap<>(0);
-        this.gameTimers = new HashMap<>(0);
+        this.gameScoreboards = new ConcurrentHashMap<>();
+        this.gameGates = new ConcurrentHashMap<>();
+        this.gameTimers = new ConcurrentHashMap<>();
 
-        this.freezeExitTile = new HashMap<>(0);
-        this.undefined = new HashMap<>(0);
+        this.freezeExitTile = new ConcurrentHashMap<>();
+        this.undefined = new ConcurrentHashMap<>();
         this.cycleTasks = ConcurrentHashMap.newKeySet();
     }
 
@@ -868,10 +873,13 @@ public class RoomSpecialTypes {
     }
 
     public InteractionFreezeExitTile getRandomFreezeExitTile() {
-        synchronized (this.freezeExitTile) {
-            return (InteractionFreezeExitTile)
-                    this.freezeExitTile.values().toArray()[Emulator.getRandom().nextInt(this.freezeExitTile.size())];
+        // One snapshot for both the pick and its bound: the size read separately could disagree with
+        // the array, and an empty room threw from nextInt(0).
+        Object[] tiles = this.freezeExitTile.values().toArray();
+        if (tiles.length == 0) {
+            return null;
         }
+        return (InteractionFreezeExitTile) tiles[Emulator.getRandom().nextInt(tiles.length)];
     }
 
     public void addFreezeExitTile(InteractionFreezeExitTile freezeExitTile) {

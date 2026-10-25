@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.RoomUserPetComposer;
+import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
@@ -1393,6 +1394,35 @@ public class RoomManager {
         return this.roomSearchService.popularRoomsByCategory(count);
     }
 
+    /**
+     * The id of the room named exactly {@code name}, unless it is invisible; 0 when there is none. Only
+     * the id is read: the name lookup used to run an unescaped LIKE and build and register up to 25 rooms
+     * per request, and it answered with invisible rooms too.
+     */
+    public int findVisibleRoomIdByName(String name) {
+        for (Room room : this.activeRooms.values()) {
+            if (room.getState() != RoomState.INVISIBLE && room.getName().equalsIgnoreCase(name)) {
+                return room.getId();
+            }
+        }
+
+        try {
+            return SqlQueries.queryOne(
+                            "SELECT id FROM rooms WHERE name = ? AND state <> 'invisible' ORDER BY id LIMIT 1",
+                            set -> set.getInt("id"),
+                            name)
+                    .orElse(0);
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return 0;
+        }
+    }
+
+    /** {@code text} for a LIKE pattern: % and _ match themselves instead of anything. */
+    static String escapeLike(String text) {
+        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
     public ArrayList<Room> getRoomsWithName(String name) {
         ArrayList<Room> rooms = new ArrayList<>();
 
@@ -1417,7 +1447,7 @@ public class RoomManager {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT users.username AS owner_name, rooms.* FROM rooms INNER JOIN users ON owner_id = users.id WHERE name LIKE ? ORDER BY id DESC LIMIT 25")) {
-            statement.setString(1, "%" + name + "%");
+            statement.setString(1, "%" + escapeLike(name) + "%");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     if (this.activeRooms.containsKey(set.getInt("id"))) continue;
@@ -1462,7 +1492,7 @@ public class RoomManager {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT users.username AS owner_name, rooms.* FROM rooms INNER JOIN users ON rooms.owner_id = users.id WHERE name LIKE ? AND guild_id != 0 ORDER BY id DESC LIMIT 25")) {
-            statement.setString(1, "%" + name + "%");
+            statement.setString(1, "%" + escapeLike(name) + "%");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     if (this.activeRooms.containsKey(set.getInt("id"))) continue;

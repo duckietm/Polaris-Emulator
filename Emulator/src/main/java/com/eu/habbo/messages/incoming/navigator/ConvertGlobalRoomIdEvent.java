@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.navigator;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 
@@ -27,14 +26,9 @@ public class ConvertGlobalRoomIdEvent extends MessageHandler {
         int roomId = asRoomId(target);
 
         if (roomId <= 0) {
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoomsWithName(target).stream()
-                    .filter(candidate -> candidate.getName().equalsIgnoreCase(target))
-                    .findFirst()
-                    .orElse(null);
+            roomId = Emulator.getGameEnvironment().getRoomManager().findVisibleRoomIdByName(target);
 
-            if (room == null) return;
-
-            roomId = room.getId();
+            if (roomId <= 0) return;
         }
 
         this.client.sendResponse(new ForwardToRoomComposer(roomId));

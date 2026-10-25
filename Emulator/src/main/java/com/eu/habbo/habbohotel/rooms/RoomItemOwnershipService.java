@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPlant;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -206,6 +207,12 @@ final class RoomItemOwnershipService {
      */
     private boolean pickUp(HabboItem item, Habbo picker, boolean sendRemoveComposer) {
         if (item == null) {
+            return false;
+        }
+
+        // A gift being unwrapped stays in the room until OpenGift takes it out: picked up in the
+        // meantime, its contents were delivered and the wrapper stayed in the inventory as well.
+        if (item instanceof InteractionGift gift && gift.isOpening()) {
             return false;
         }
 

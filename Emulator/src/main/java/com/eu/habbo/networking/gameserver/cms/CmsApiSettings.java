@@ -20,10 +20,11 @@ import org.slf4j.LoggerFactory;
  * restarting.
  *
  * <p>The table is a simple {@code key}/{@code value} store, read into a short-lived
- * cache. Any key missing from the table — or the whole table being absent (for
- * example before the migration has run) or the database being briefly unavailable
- * — falls back to the value registered in {@link Emulator#getConfig()}, which
- * carries the built-in defaults. That keeps the API working safely at all times
+ * cache. Any key missing from the table — or the whole table being unreadable
+ * before it was ever read — falls back to the value registered in
+ * {@link Emulator#getConfig()}, which carries the built-in defaults. Once the table
+ * has been read, a failed refresh keeps the last snapshot: falling back to the
+ * defaults for a database blip would swap the keys and loosen the limits. That keeps the API working safely at all times
  * and means a fresh row only ever tightens or overrides a default, never breaks
  * startup.
  *
@@ -107,14 +108,16 @@ public final class CmsApiSettings {
             if (this.loaded && this.clockMillis.getAsLong() - this.loadedAt <= this.ttlMillis) {
                 return this.cache;
             }
-            Map<String, String> reloaded;
             try {
-                reloaded = this.loader.get();
+                Map<String, String> reloaded = this.loader.get();
+                this.cache = reloaded == null ? Map.of() : reloaded;
             } catch (Exception e) {
-                LOGGER.warn("[cms-api] could not load {} settings; using config defaults", TABLE, e);
-                reloaded = Map.of();
+                if (this.loaded) {
+                    LOGGER.warn("[cms-api] could not refresh {} settings; keeping the previous ones", TABLE, e);
+                } else {
+                    LOGGER.warn("[cms-api] could not load {} settings; using config defaults", TABLE, e);
+                }
             }
-            this.cache = reloaded == null ? Map.of() : reloaded;
             this.loadedAt = this.clockMillis.getAsLong();
             this.loaded = true;
             return this.cache;
@@ -134,9 +137,9 @@ public final class CmsApiSettings {
                 map.put(result.getString("key"), result.getString("value"));
             }
         } catch (Exception e) {
-            // Missing table (pre-migration) or a transient DB blip — fall back to
-            // config defaults rather than failing the request.
-            LOGGER.debug("[cms-api] {} not readable; using config defaults", TABLE, e);
+            // Missing table (pre-migration) or a transient DB blip: the caller keeps
+            // what it had, or the config defaults on the first read.
+            throw new IllegalStateException(TABLE + " not readable", e);
         }
         return map;
     }

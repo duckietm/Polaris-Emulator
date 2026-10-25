@@ -348,6 +348,7 @@ public class CmsApiHandler extends ChannelInboundHandlerAdapter {
         }
         CmsApiKeyStore store = CmsApiKeyStore.parse(rawKeys);
         CmsApiAuthenticator authenticator = new CmsApiAuthenticator(store, skew, ttl, Emulator::getIntUnixTimestamp);
+        authenticator.inheritNonces(current == null ? null : current.authenticator());
         AUTH_SNAPSHOT.set(new AuthSnapshot(rawKeys, skew, ttl, authenticator));
         return authenticator;
     }

@@ -31,6 +31,10 @@ class WiredUserVariableUpdateEventTest {
     @Test
     void legacyFourIntegersStillUpdateCustomVariablesWithCreatorOrigin() throws Exception {
         Fixture fixture = new Fixture();
+        // The user is in the room: an absent user's value is only the definition owner's to change.
+        Habbo present = mock(Habbo.class);
+        when(present.getRoomUnit()).thenReturn(mock(RoomUnit.class));
+        when(fixture.room.getHabbo(9)).thenReturn(present);
         doAnswer(invocation -> {
                     assertEquals(WiredVariableChangeOrigin.CREATOR_TOOLS, WiredVariableChangeOrigin.current());
                     return true;

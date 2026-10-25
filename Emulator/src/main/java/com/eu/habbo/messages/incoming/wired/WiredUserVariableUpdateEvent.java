@@ -69,7 +69,12 @@ public class WiredUserVariableUpdateEvent extends MessageHandler {
                 return;
             }
 
-            RoomWiredVariableWrites.update(room, targetType, targetId, definitionItemId, value);
+            if (targetType == RoomWiredVariableWrites.TARGET_FURNI
+                    || targetType == RoomWiredVariableWrites.TARGET_ROOM
+                    || RoomWiredVariableWrites.mayManageUser(
+                            room, this.client.getHabbo(), targetId, definitionItemId)) {
+                RoomWiredVariableWrites.update(room, targetType, targetId, definitionItemId, value);
+            }
             if (targetType == WiredEffectGiveVariable.TARGET_FURNI) {
                 room.getFurniVariableManager().sendSnapshot(this.client.getHabbo());
             } else if (targetType == TARGET_ROOM) {

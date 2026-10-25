@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredVariableClearPolicy;
 
 /**
  * The value writes of the wired creator tools (variable manage and update), shared by the wired
@@ -28,6 +30,16 @@ public final class RoomWiredVariableWrites {
         }
         return UserVariableHolders.isInRoom(room, targetId)
                 && room.getUserVariableManager().assignVariable(targetId, definitionItemId, value, true);
+    }
+
+    /**
+     * Whether this editor may change or remove a user's value of the variable. A user in the room is
+     * the editor's to manage; one who is not - offline included - only the definition's owner may reach,
+     * as the clear-all policy already decides. Changing and removing used to reach any user id.
+     */
+    public static boolean mayManageUser(Room room, Habbo editor, int targetId, int definitionItemId) {
+        return UserVariableHolders.isInRoom(room, targetId)
+                || WiredVariableClearPolicy.canClear(room, editor, definitionItemId);
     }
 
     /** Changes the value of a variable the holder already has. */

@@ -53,6 +53,11 @@ public class EmptyInventoryCommand extends Command {
                     ? Emulator.getGameEnvironment().getHabboManager().getHabbo(params[2])
                     : gameClient.getHabbo();
 
+            // Emptying another user's inventory is a moderation action on them: never on a higher rank.
+            if (CommandTargetGuard.refuse(gameClient.getHabbo(), habbo)) {
+                return true;
+            }
+
             if (habbo != null) {
                 List<HabboItem> items = new ArrayList<>(
                         habbo.getInventory().getItemsComponent().getItems().values());
@@ -60,15 +65,10 @@ public class EmptyInventoryCommand extends Command {
                 Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(items));
 
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
+                // The target's own (now empty) inventory: the moderator's used to be sent to them.
                 habbo.getClient()
                         .sendResponse(new InventoryItemsComposer(
-                                0,
-                                1,
-                                gameClient
-                                        .getHabbo()
-                                        .getInventory()
-                                        .getItemsComponent()
-                                        .getItems()));
+                                0, 1, habbo.getInventory().getItemsComponent().getItems()));
 
                 gameClient
                         .getHabbo()

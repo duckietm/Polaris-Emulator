@@ -386,12 +386,14 @@ public class SubscriptionHabboClub extends Subscription {
                         int totalPayout = set.getInt("total_payout");
                         String currency = set.getString("currency");
 
-                        if (claimPayDay(habbo, totalPayout, currency)) {
-                            try (PreparedStatement stm2 =
-                                    connection.prepareStatement("UPDATE logs_hc_payday SET claimed = 1 WHERE id = ?")) {
-                                stm2.setInt(1, logId);
-                                stm2.execute();
-                            }
+                        // Claim the row before paying anything. The payout used to come
+                        // first and the row was marked afterwards with no condition, so
+                        // two sessions of the same account reading the same unclaimed
+                        // row each paid it out.
+                        if (!claimPayDayRow(connection, logId)) continue;
+
+                        if (!claimPayDay(habbo, totalPayout, currency)) {
+                            releasePayDayRow(connection, logId);
                         }
                     } catch (Exception e) {
                         SubscriptionManager.LOGGER.error(
@@ -402,6 +404,28 @@ public class SubscriptionHabboClub extends Subscription {
 
         } catch (SQLException e) {
             SubscriptionManager.LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    /**
+     * Takes one payday row, if it is still unclaimed.
+     *
+     * @return whether this caller is the one that claimed it
+     */
+    private static boolean claimPayDayRow(Connection connection, int logId) throws SQLException {
+        try (PreparedStatement statement =
+                connection.prepareStatement("UPDATE logs_hc_payday SET claimed = 1 WHERE id = ? AND claimed = 0")) {
+            statement.setInt(1, logId);
+            return statement.executeUpdate() == 1;
+        }
+    }
+
+    /** Puts a claimed row back when the payout itself did not happen. */
+    private static void releasePayDayRow(Connection connection, int logId) throws SQLException {
+        try (PreparedStatement statement =
+                connection.prepareStatement("UPDATE logs_hc_payday SET claimed = 0 WHERE id = ?")) {
+            statement.setInt(1, logId);
+            statement.executeUpdate();
         }
     }
 

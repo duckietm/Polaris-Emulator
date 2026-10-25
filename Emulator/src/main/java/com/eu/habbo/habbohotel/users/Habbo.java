@@ -380,10 +380,18 @@ public class Habbo implements Runnable {
     }
 
     public void giveCredits(int credits, String reason, String operationId, Integer actorId) {
-        if (credits == 0) return;
+        this.applyCredits(credits, reason, operationId, actorId);
+    }
+
+    /**
+     * Applies a credit grant or debit and says whether it happened: a plugin can cancel it and the ledger refuses a
+     * negative balance or an overflow, and callers that report the change must not report one that did not happen.
+     */
+    public boolean applyCredits(int credits, String reason, String operationId, Integer actorId) {
+        if (credits == 0) return false;
 
         UserCreditsEvent event = new UserCreditsEvent(this, credits);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return false;
 
         try {
             LedgerWalletMutation.execute(
@@ -403,10 +411,11 @@ public class Habbo implements Runnable {
                     "Unable to apply audited credit mutation for user {}",
                     this.getHabboInfo().getId(),
                     exception);
-            return;
+            return false;
         }
 
         if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
+        return true;
     }
 
     public boolean tryTakeCredits(int credits) {
@@ -480,10 +489,15 @@ public class Habbo implements Runnable {
     }
 
     public void givePoints(int type, int points, String reason, String operationId, Integer actorId) {
-        if (points == 0) return;
+        this.applyPoints(type, points, reason, operationId, actorId);
+    }
+
+    /** {@link #applyCredits} for an activity-point currency. */
+    public boolean applyPoints(int type, int points, String reason, String operationId, Integer actorId) {
+        if (points == 0) return false;
 
         UserPointsEvent event = new UserPointsEvent(this, points, type);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return false;
 
         try {
             LedgerWalletMutation.execute(
@@ -503,7 +517,7 @@ public class Habbo implements Runnable {
                     "Unable to apply audited currency mutation for user {}",
                     this.getHabboInfo().getId(),
                     exception);
-            return;
+            return false;
         }
         if (this.client != null) {
             if (event.type == 0) this.client.sendResponse(new UserCurrencyComposer(this));
@@ -511,6 +525,7 @@ public class Habbo implements Runnable {
                 this.client.sendResponse(new UserPointsComposer(
                         this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
         }
+        return true;
     }
 
     public boolean tryTakePoints(int type, int points) {

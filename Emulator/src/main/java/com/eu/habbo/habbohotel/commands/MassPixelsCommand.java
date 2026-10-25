@@ -4,12 +4,13 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.util.Map;
 
 public class MassPixelsCommand extends Command {
     public MassPixelsCommand() {
-        super("cmd_massduckets", Emulator.getTexts().getValue("commands.keys.cmd_massduckets").split(";"));
+        super(
+                "cmd_massduckets",
+                Emulator.getTexts().getValue("commands.keys.cmd_massduckets").split(";"));
     }
 
     @Override
@@ -20,23 +21,39 @@ public class MassPixelsCommand extends Command {
             try {
                 amount = Integer.parseInt(params[1]);
             } catch (Exception e) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_massduckets.invalid_amount"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_massduckets.invalid_amount"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             if (amount != 0) {
-                for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
+                int staffId = gameClient.getHabbo().getHabboInfo().getId();
+                for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment()
+                        .getHabboManager()
+                        .getOnlineHabbos()
+                        .entrySet()) {
                     Habbo habbo = set.getValue();
 
-                    habbo.givePixels(amount);
+                    if (!CommandEconomy.points(habbo, 0, amount, "cmd_massduckets", staffId)) continue;
 
                     if (habbo.getHabboInfo().getCurrentRoom() != null)
-                        habbo.whisper(Emulator.getTexts().getValue("commands.generic.cmd_duckets.received").replace("%amount%", amount + ""), RoomChatMessageBubbles.ALERT);
+                        habbo.whisper(
+                                Emulator.getTexts()
+                                        .getValue("commands.generic.cmd_duckets.received")
+                                        .replace("%amount%", amount + ""),
+                                RoomChatMessageBubbles.ALERT);
                 }
             }
             return true;
         }
-        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_massduckets.invalid_amount"), RoomChatMessageBubbles.ALERT);
+        gameClient
+                .getHabbo()
+                .whisper(
+                        Emulator.getTexts().getValue("commands.error.cmd_massduckets.invalid_amount"),
+                        RoomChatMessageBubbles.ALERT);
         return true;
     }
 }

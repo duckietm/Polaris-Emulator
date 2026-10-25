@@ -28,6 +28,9 @@ public final class UserPermissionOverrides {
     /** A full cache looks for old rows at most this often; between sweeps a miss only makes room for one row. */
     private static final long SWEEP_MS = 60 * 1000L;
 
+    /** How long a user whose overrides could not be read waits before the next attempt. */
+    static final long RETRY_MS = 10 * 1000L;
+
     public record UserOverride(
             String key, PermissionSetting setting, int expiresAt, String reason, int createdBy, String createdByName) {
         /** Permanent (0) or not yet expired. */
@@ -38,7 +41,10 @@ public final class UserPermissionOverrides {
 
     private record Loaded(Map<String, UserOverride> byKey, long loadedAt) {}
 
+    private static final Loaded EMPTY = new Loaded(Map.of(), Long.MIN_VALUE);
+
     private final ConcurrentHashMap<Integer, Loaded> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long> failedAt = new ConcurrentHashMap<>();
     private final IntFunction<List<UserOverride>> loader;
     private final LongSupplier millis;
     private final IntSupplier now;
@@ -96,6 +102,7 @@ public final class UserPermissionOverrides {
 
     public void invalidate(int userId) {
         this.cache.remove(userId);
+        this.failedAt.remove(userId);
     }
 
     private Loaded loaded(int userId) {
@@ -106,8 +113,27 @@ public final class UserPermissionOverrides {
             return loaded;
         }
 
+        Long failed = this.failedAt.get(userId);
+        if (failed != null && time - failed < RETRY_MS && time >= failed) {
+            return loaded != null ? loaded : EMPTY;
+        }
+
+        List<UserOverride> rows;
+        try {
+            rows = this.loader.apply(userId);
+        } catch (RuntimeException e) {
+            // A database error used to cache an empty list for five minutes: a temporary ban (trade = 0 as a
+            // sanction) stopped applying. The last values read stay; with none, nothing is cached and the next
+            // attempt waits a little, so a broadcast does not run a query per user while the database is down.
+            this.failedAt.put(userId, time);
+            LOGGER.error("Failed to load permission overrides of user {}", userId, e);
+            return loaded != null ? loaded : EMPTY;
+        }
+
+        this.failedAt.remove(userId);
+
         Map<String, UserOverride> byKey = new HashMap<>();
-        for (UserOverride override : this.loader.apply(userId)) {
+        for (UserOverride override : rows) {
             byKey.put(override.key(), override);
         }
 
@@ -191,8 +217,7 @@ public final class UserPermissionOverrides {
                             rs.getString("created_by_name")),
                     userId);
         } catch (SqlQueries.DataAccessException e) {
-            LOGGER.error("Failed to load permission overrides of user {}", userId, e);
-            return List.of();
+            throw new IllegalStateException("user_permission_overrides not readable", e);
         }
     }
 

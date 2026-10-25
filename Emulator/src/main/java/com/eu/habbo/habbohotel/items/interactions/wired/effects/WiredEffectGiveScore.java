@@ -55,7 +55,7 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
             Game game = room.getGame(habbo.getHabboInfo().getCurrentGame());
 
             // Habbo gives no score while no game is running (also between a game's end and the next start).
-            if (game == null || game.state != GameState.RUNNING) continue;
+            if (game == null || game.getState() != GameState.RUNNING) continue;
 
             if (habbo.getHabboInfo().getGamePlayer() != null
                     && this.scored.tryCount(game, habbo.getHabboInfo().getId(), this.timesPerGame)) {

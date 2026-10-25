@@ -29,7 +29,8 @@ public class RoomUserMuteEvent extends MessageHandler {
             return;
         }
 
-        if (room.hasRights(this.client.getHabbo())
+        // The room's mute setting decides which non-staff users may mute.
+        if (room.getRightsManager().canMute(this.client.getHabbo())
                 || this.client.getHabbo().hasPermission("cmd_mute")
                 || this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
             Habbo habbo = room.getHabbo(userId);

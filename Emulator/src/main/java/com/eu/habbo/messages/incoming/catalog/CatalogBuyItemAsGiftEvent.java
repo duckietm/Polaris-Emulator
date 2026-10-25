@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageAccessPolicy;
 import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
+import com.eu.habbo.habbohotel.catalog.LtdRaffleManager;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubLoyaltyLayout;
@@ -229,6 +230,14 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
         GiftPrice price = this.priceGift(item, request.itemId(), paidWrap);
         if (price == null) return;
+
+        // With the LTD raffle on, a limited offer is collected and drawn rather than sold
+        // to whoever clicks first - but this path reserved a number directly, so buying it
+        // as a gift, to an alt or to oneself, skipped the draw and took a copy at once.
+        if (item.isLimited() && LtdRaffleManager.isEnabled()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
 
         if (item.isLimited() && !this.reserveLimitedNumber(item, request.itemId(), attempt)) return;
 

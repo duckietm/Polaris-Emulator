@@ -56,11 +56,12 @@ public class SayCommand extends Command {
             }
         }
 
-        target.getHabboInfo()
-                .getCurrentRoom()
-                .sendComposer(new RoomUserTalkComposer(
-                                new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL))
-                        .compose());
+        // The line goes through the room's word filter, judged on the moderator who wrote it, and into
+        // the room chat log with their name: it used to reach the room unfiltered and unrecorded.
+        RoomChatMessage chat = new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL);
+        chat.filterWrittenBy(gameClient.getHabbo());
+        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTalkComposer(chat).compose());
+        chat.logWrittenBy(gameClient.getHabbo(), "say");
         gameClient
                 .getHabbo()
                 .whisper(

@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.core.DatabaseLoggable;
 import com.eu.habbo.habbohotel.games.GamePlayer;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
+import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.ChatStyleRepository;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -91,7 +92,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         this.bubble = resolveSpeakerBubble(this.bubble, this.habbo);
         this.roomUnitId = this.habbo.getRoomUnit().getId();
         this.unfilteredMessage = this.message;
-        this.timestamp = Emulator.getIntUnixTimestamp();
+        this.timestamp = now();
 
         this.checkEmotion();
 
@@ -331,12 +332,11 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             }
         }
 
-        if (Emulator.getConfig().getBoolean("hotel.wordfilter.enabled")
-                && Emulator.getConfig().getBoolean("hotel.wordfilter.rooms")) {
+        if (roomWordFilterEnabled()) {
             if (!this.habbo.hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
-                if (!Emulator.getGameEnvironment().getWordFilter().autoReportCheck(this)) {
-                    if (!Emulator.getGameEnvironment().getWordFilter().hideMessageCheck(this.message)) {
-                        Emulator.getGameEnvironment().getWordFilter().filter(this, this.habbo);
+                if (!wordFilter().autoReportCheck(this)) {
+                    if (!wordFilter().hideMessageCheck(this.message)) {
+                        wordFilter().filter(this, this.habbo);
                         return;
                     }
                 } else {
@@ -351,6 +351,54 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
                 this.message = "";
             }
         }
+    }
+
+    /**
+     * The room word filter for a line someone else wrote and a command puts in this user's mouth, such
+     * as :say or :shout. It is judged on the author: their filter permission, their word filter events.
+     * It never auto-reports or mutes the user who is made to speak, who did not write it.
+     */
+    public void filterWrittenBy(Habbo author) {
+        if (!roomWordFilterEnabled() || author.hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
+            return;
+        }
+
+        if (wordFilter().hideMessageCheck(this.message)) {
+            this.message = "";
+            return;
+        }
+
+        wordFilter().filter(this, author);
+    }
+
+    /**
+     * Logs a line a command put in this user's mouth, under this user and with the author's name and
+     * the command appended, so the room chat log shows who really wrote it. Follows the same
+     * save-room-chats setting as ordinary talk.
+     */
+    public void logWrittenBy(Habbo author, String command) {
+        if (!SAVE_ROOM_CHATS) {
+            return;
+        }
+
+        RoomChatMessage logged = new RoomChatMessage(this);
+        logged.unfilteredMessage = this.unfilteredMessage + " [:" + command + " "
+                + author.getHabboInfo().getUsername() + "]";
+        logged.timestamp = now();
+        logged.run();
+    }
+
+    private static boolean roomWordFilterEnabled() {
+        return Emulator.getConfig().getBoolean("hotel.wordfilter.enabled")
+                && Emulator.getConfig().getBoolean("hotel.wordfilter.rooms");
+    }
+
+    private static WordFilter wordFilter() {
+        return Emulator.getGameEnvironment().getWordFilter();
+    }
+
+    private static int now() {
+        return Emulator.getIntUnixTimestamp();
     }
 
     @Override

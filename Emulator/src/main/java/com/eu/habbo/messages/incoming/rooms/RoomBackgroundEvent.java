@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -23,7 +24,9 @@ public class RoomBackgroundEvent extends MessageHandler {
         if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)) {
             HabboItem item = room.getHabboItem(itemId);
 
-            if (item == null) return;
+            // Only a toner takes a colour: any other furni's state (a gate, a trophy, a stack helper)
+            // was overwritten with one by anyone holding rights.
+            if (!(item instanceof InteractionBackgroundToner)) return;
 
             int hue = this.packet.readInt();
             int saturation = this.packet.readInt();
@@ -34,9 +37,10 @@ public class RoomBackgroundEvent extends MessageHandler {
 
             if (event.isCancelled()) return;
 
-            hue = event.hue % 256;
-            saturation = event.saturation % 256;
-            brightness = event.brightness % 256;
+            // floorMod: a negative value from the packet stays in 0-255 instead of going negative.
+            hue = Math.floorMod(event.hue, 256);
+            saturation = Math.floorMod(event.saturation, 256);
+            brightness = Math.floorMod(event.brightness, 256);
 
             item.setExtradata(item.getExtradata().split(":")[0] + ":" + hue + ":" + saturation + ":" + brightness);
             item.needsUpdate(true);

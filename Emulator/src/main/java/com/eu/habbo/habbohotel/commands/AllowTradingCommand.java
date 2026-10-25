@@ -3,6 +3,8 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.users.UserPerksComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,6 +41,12 @@ public class AllowTradingCommand extends Command {
                 || option.equalsIgnoreCase(Emulator.getTexts().getValue("generic.no"))) {
             final boolean enabled = option.equalsIgnoreCase(Emulator.getTexts().getValue("generic.yes"));
             final Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
+            final HabboInfo target = habbo != null ? habbo.getHabboInfo() : HabboManager.getOfflineHabboInfo(username);
+
+            // A trade lock is a sanction: never set or lifted on a higher rank, online or not.
+            if (CommandTargetGuard.refuse(gameClient.getHabbo(), target)) {
+                return true;
+            }
 
             if (habbo != null) {
                 if (!enabled) {

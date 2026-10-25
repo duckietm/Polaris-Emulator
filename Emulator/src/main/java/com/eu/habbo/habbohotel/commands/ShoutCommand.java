@@ -9,26 +9,46 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserShoutComposer;
 
 public class ShoutCommand extends Command {
     public ShoutCommand() {
-        super("cmd_shout", Emulator.getTexts().getValue("commands.keys.cmd_shout").split(";"));
+        super(
+                "cmd_shout",
+                Emulator.getTexts().getValue("commands.keys.cmd_shout").split(";"));
     }
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         if (params.length < 2) {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_shout.forgot_username"), RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts().getValue("commands.error.cmd_shout.forgot_username"),
+                            RoomChatMessageBubbles.ALERT);
             return true;
         }
 
         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(params[1]);
 
         if (target == null) {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_shout.user_not_found"), RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts().getValue("commands.error.cmd_shout.user_not_found"),
+                            RoomChatMessageBubbles.ALERT);
             return true;
         } else {
             if (target.getHabboInfo().getCurrentRoom() == null) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_shout.hotel_view").replace("%user%", params[1]), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts()
+                                        .getValue("commands.error.cmd_shout.hotel_view")
+                                        .replace("%user%", params[1]),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
+        }
+
+        if (CommandTargetGuard.refuse(gameClient.getHabbo(), target)) {
+            return true;
         }
 
         StringBuilder message = new StringBuilder();
@@ -38,8 +58,20 @@ public class ShoutCommand extends Command {
             }
         }
 
-        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserShoutComposer(new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL)).compose());
-        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_shout").replace("%user%", params[1]).replace("%message%", message.toString()), RoomChatMessageBubbles.ALERT);
+        // The line goes through the room's word filter, judged on the moderator who wrote it, and into
+        // the room chat log with their name: it used to reach the room unfiltered and unrecorded.
+        RoomChatMessage chat = new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL);
+        chat.filterWrittenBy(gameClient.getHabbo());
+        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserShoutComposer(chat).compose());
+        chat.logWrittenBy(gameClient.getHabbo(), "shout");
+        gameClient
+                .getHabbo()
+                .whisper(
+                        Emulator.getTexts()
+                                .getValue("commands.succes.cmd_shout")
+                                .replace("%user%", params[1])
+                                .replace("%message%", message.toString()),
+                        RoomChatMessageBubbles.ALERT);
         return true;
     }
 }

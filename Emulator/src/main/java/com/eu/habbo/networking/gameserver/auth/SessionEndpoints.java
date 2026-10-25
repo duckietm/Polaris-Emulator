@@ -168,7 +168,7 @@ final class SessionEndpoints {
                 } else {
                     com.eu.habbo.habbohotel.gameclients.GameClient online =
                             Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
-                    if (online != null && online.getHabbo() != null) {
+                    if (online != null && online.getHabbo() != null && online.claimSsoTicketExchange()) {
                         userId = online.getHabbo().getHabboInfo().getId();
                         username = online.getHabbo().getHabboInfo().getUsername();
                     }

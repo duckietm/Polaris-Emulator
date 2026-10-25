@@ -15,12 +15,18 @@ import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -41,6 +47,12 @@ public class WiredHighscoreManager {
     private static final DayOfWeek lastDayOfWeek =
             DayOfWeek.of(((firstDayOfWeek.getValue() + 5) % DayOfWeek.values().length) + 1);
     public static ScheduledFuture<?> midnightUpdater = null;
+
+    // Every write to items_highscore_data goes through one thread, in the order it was asked for. On the
+    // shared pool two rewrites of the same board ran side by side and left duplicate or lost rows that
+    // came back at the next start.
+    private final ExecutorService writer = Executors.newSingleThreadExecutor(
+            Thread.ofPlatform().daemon().name("Polaris-Highscores", 0).factory());
 
     public void load() {
         long millis = System.currentTimeMillis();
@@ -69,11 +81,116 @@ public class WiredHighscoreManager {
             midnightUpdater.cancel(true);
         }
 
+        // Writes already asked for still reach the database.
+        this.writer.shutdown();
+        try {
+            this.writer.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         this.data.clear();
     }
 
+    /** Runs a database write after every write asked for before it. */
+    void write(Runnable write) {
+        try {
+            this.writer.execute(() -> {
+                try {
+                    write.run();
+                } catch (RuntimeException e) {
+                    LOGGER.error("Highscore write failed", e);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            LOGGER.warn("Highscore write dropped: the highscore manager is shutting down");
+        }
+    }
+
+    /**
+     * Adds points to the row these users hold on the board, or files a new row for them. The row is
+     * found and changed under the board's lock and only that row is written: the give-points box used to
+     * copy the board without the lock, add to its copy and rewrite the whole board, so concurrent games
+     * and boxes lost each other's points, and the sum could overflow.
+     */
+    public void addScore(int itemId, List<Integer> userIds, int amount, int timestamp) {
+        List<WiredHighscoreDataEntry> list =
+                this.data.computeIfAbsent(itemId, k -> Collections.synchronizedList(new ArrayList<>()));
+        WiredHighscoreDataEntry previous = null;
+        WiredHighscoreDataEntry updated;
+
+        synchronized (list) {
+            Set<Integer> wanted = new HashSet<>(userIds);
+            int index = -1;
+            for (int i = 0; i < list.size(); i++) {
+                WiredHighscoreDataEntry entry = list.get(i);
+                if (entry != null && new HashSet<>(entry.getUserIds()).equals(wanted)) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index < 0) {
+                updated = new WiredHighscoreDataEntry(itemId, userIds, amount, true, timestamp);
+                list.add(updated);
+            } else {
+                previous = list.get(index);
+                updated = new WiredHighscoreDataEntry(
+                        itemId, previous.getUserIds(), saturatedSum(previous.getScore(), amount), true, timestamp);
+                list.set(index, updated);
+            }
+        }
+
+        WiredHighscoreDataEntry row = updated;
+        WiredHighscoreDataEntry replaced = previous;
+        this.write(() -> {
+            try (Connection connection = connection()) {
+                if (replaced == null) {
+                    insert(connection, row);
+                    return;
+                }
+                try (PreparedStatement update = connection.prepareStatement(
+                        "UPDATE `items_highscore_data` SET `score` = ?, `timestamp` = ? WHERE `item_id` = ? AND `user_ids` = ? AND `score` = ? LIMIT 1")) {
+                    update.setInt(1, row.getScore());
+                    update.setInt(2, row.getTimestamp());
+                    update.setInt(3, row.getItemId());
+                    update.setString(4, joinUserIds(replaced.getUserIds()));
+                    update.setInt(5, replaced.getScore());
+                    if (update.executeUpdate() == 0) {
+                        insert(connection, row);
+                    }
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        });
+    }
+
+    /** Every query of this class opens its connection here. */
+    private static Connection connection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /** {@code a + b}, held at the int limits instead of wrapping around. */
+    static int saturatedSum(int a, int b) {
+        long sum = (long) a + b;
+        return sum > Integer.MAX_VALUE ? Integer.MAX_VALUE : (sum < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) sum);
+    }
+
+    private static void insert(Connection connection, WiredHighscoreDataEntry entry) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
+            statement.setInt(1, entry.getItemId());
+            statement.setString(2, joinUserIds(entry.getUserIds()));
+            statement.setInt(3, entry.getScore());
+            statement.setInt(4, entry.isWin() ? 1 : 0);
+            statement.setInt(5, entry.getTimestamp());
+            statement.execute();
+        }
+    }
+
     private void loadHighscoreData() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM items_highscore_data")) {
             statement.setFetchSize(1000);
             try (ResultSet set = statement.executeQuery()) {
@@ -102,17 +219,9 @@ public class WiredHighscoreManager {
                 .computeIfAbsent(entry.getItemId(), k -> Collections.synchronizedList(new ArrayList<>()))
                 .add(entry);
 
-        Emulator.getThreading().run(() -> {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
-                statement.setInt(1, entry.getItemId());
-                statement.setString(2, joinUserIds(entry.getUserIds()));
-                statement.setInt(3, entry.getScore());
-                statement.setInt(4, entry.isWin() ? 1 : 0);
-                statement.setInt(5, entry.getTimestamp());
-
-                statement.execute();
+        this.write(() -> {
+            try (Connection connection = connection()) {
+                insert(connection, entry);
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
@@ -228,8 +337,8 @@ public class WiredHighscoreManager {
         List<WiredHighscoreDataEntry> stored = Collections.synchronizedList(new ArrayList<>(entries));
         this.data.put(itemId, stored);
 
-        Emulator.getThreading().run(() -> {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+        this.write(() -> {
+            try (Connection connection = connection()) {
                 try (PreparedStatement delete =
                         connection.prepareStatement("DELETE FROM `items_highscore_data` WHERE `item_id` = ?")) {
                     delete.setInt(1, itemId);

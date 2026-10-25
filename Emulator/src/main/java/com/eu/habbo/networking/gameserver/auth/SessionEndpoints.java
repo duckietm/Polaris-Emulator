@@ -569,7 +569,34 @@ final class SessionEndpoints {
         }
     }
 
+    /** The least time between two reset mails for the same account. */
+    static final long RESET_RESEND_SECONDS = 120L;
+
+    static final long RESET_TOKEN_LIFETIME_SECONDS = 60L * 60L;
+
+    /**
+     * Whether a reset mail went out for this account so recently that another would only flood the
+     * inbox. A token lives an hour from when it was sent, so its expiry says when that was.
+     */
+    static boolean resetSentRecently(Timestamp expiresAt, long now) {
+        if (expiresAt == null) return false;
+
+        long sentAt = expiresAt.toInstant().getEpochSecond() - RESET_TOKEN_LIFETIME_SECONDS;
+        return now - sentAt < RESET_RESEND_SECONDS;
+    }
+
     static void handleForgot(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        // Unlimited, this mailed any address as often as asked and kept replacing the account's token.
+        if (!AuthRateLimiter.tryProbe(ip)) {
+            long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many requests. Try again in " + secs + "s."));
+            return;
+        }
+
         String email = readString(body, "email").trim();
 
         if (!EMAIL_RE.matcher(email).matches()) {
@@ -590,8 +617,23 @@ final class SessionEndpoints {
                 if (rs.next()) {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
+                    long now = Instant.now().getEpochSecond();
+
+                    // One mail per account every two minutes, whatever the address asking: the same
+                    // answer goes back either way, so nothing tells whether the address has an account.
+                    try (PreparedStatement last =
+                            conn.prepareStatement("SELECT expires_at FROM password_resets WHERE user_id = ? LIMIT 1")) {
+                        last.setInt(1, userId);
+                        try (ResultSet previous = last.executeQuery()) {
+                            if (previous.next() && resetSentRecently(previous.getTimestamp("expires_at"), now)) {
+                                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                                return;
+                            }
+                        }
+                    }
+
                     String token = mintResetToken();
-                    long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
+                    long expiresAt = now + RESET_TOKEN_LIFETIME_SECONDS;
 
                     try (PreparedStatement ins = conn.prepareStatement(
                             "INSERT INTO password_resets (user_id, token, expires_at, created_ip) "

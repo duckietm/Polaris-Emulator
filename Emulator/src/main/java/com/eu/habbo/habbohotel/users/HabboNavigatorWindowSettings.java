@@ -3,18 +3,25 @@ package com.eu.habbo.habbohotel.users;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.navigation.DisplayMode;
 import com.eu.habbo.habbohotel.navigation.ListMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HabboNavigatorWindowSettings {
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboNavigatorWindowSettings.class);
+    /**
+     * The longest category name kept and the most categories per user. The name comes straight from the client: a
+     * script sending random names made a connection and an insert per packet, and grew this map without limit.
+     */
+    public static final int MAX_CATEGORY_LENGTH = 64;
+
+    public static final int MAX_CATEGORIES = 50;
+
     public final Map<String, HabboNavigatorPersonalDisplayMode> displayModes = new HashMap<>(2);
     private final int userId;
     public int x = 100;
@@ -46,10 +53,21 @@ public class HabboNavigatorWindowSettings {
         return this.displayModes.containsKey(category);
     }
 
+    public static boolean acceptsCategory(String category) {
+        return category != null && !category.isBlank() && category.length() <= MAX_CATEGORY_LENGTH;
+    }
+
     public void insertDisplayMode(String category, ListMode listMode, DisplayMode displayMode) {
+        if (!acceptsCategory(category)) return;
+
         if (!this.displayModes.containsKey(category)) {
+            if (this.displayModes.size() >= MAX_CATEGORIES) return;
+
+            // One row per user and category (the key is (user_id, caption)); an existing row is updated.
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("INSERT INTO users_navigator_settings (user_id, caption, list_type, display) VALUES (?, ?, ?, ?)")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "INSERT INTO users_navigator_settings (user_id, caption, list_type, display) VALUES (?, ?, ?, ?)"
+                                    + " ON DUPLICATE KEY UPDATE list_type = VALUES(list_type), display = VALUES(display)")) {
                 statement.setInt(1, this.userId);
                 statement.setString(2, category);
                 statement.setString(3, listMode.name().toLowerCase());
@@ -108,7 +126,8 @@ public class HabboNavigatorWindowSettings {
     }
 
     public void save(Connection connection) {
-        try (PreparedStatement statement = connection.prepareStatement("UPDATE users_navigator_settings SET list_type = ?, display = ? WHERE user_id = ? AND caption = ? LIMIT 1")) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE users_navigator_settings SET list_type = ?, display = ? WHERE user_id = ? AND caption = ? LIMIT 1")) {
             for (Map.Entry<String, HabboNavigatorPersonalDisplayMode> set : this.displayModes.entrySet()) {
                 statement.setString(1, set.getValue().listMode.name().toLowerCase());
                 statement.setString(2, set.getValue().displayMode.name().toLowerCase());

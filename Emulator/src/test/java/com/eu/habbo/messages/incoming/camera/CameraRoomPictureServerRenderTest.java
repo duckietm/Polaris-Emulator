@@ -1,7 +1,7 @@
 package com.eu.habbo.messages.incoming.camera;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -67,6 +67,7 @@ class CameraRoomPictureServerRenderTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        CameraQuota.reset();
         this.stats = mock(HabboStats.class);
         Field cache = HabboStats.class.getField("cache");
         cache.setAccessible(true);
@@ -177,7 +178,7 @@ class CameraRoomPictureServerRenderTest {
         verify(this.info).setPhotoTimestamp(NOW);
         assertTrue(Files.isRegularFile(this.dir.resolve("photos/1_" + NOW + ".png")));
         assertTrue(Files.isRegularFile(this.dir.resolve("photos/1_" + NOW + "_small.png")));
-        assertEquals(1, this.stats.cache.get("camera_daily_count"));
+        assertEquals(1, CameraQuota.dailyCount(1, NOW));
     }
 
     @Test
@@ -199,7 +200,7 @@ class CameraRoomPictureServerRenderTest {
 
         verify(this.habbo).alert("text:camera.error.creation");
         verify(this.client, never()).sendResponse(any(MessageComposer.class));
-        assertFalse(this.stats.cache.containsKey("camera_render_cooldown"), "a refusal does not cost the cooldown");
+        assertNull(CameraQuota.lastAttempt(1), "a refusal does not cost the cooldown");
     }
 
     @Test
@@ -225,7 +226,7 @@ class CameraRoomPictureServerRenderTest {
         this.send(scene(ROOM));
         verify(this.habbo).alert("text:camera.error.creation");
 
-        this.stats.cache.clear();
+        CameraQuota.reset();
         this.send(png());
         verify(this.client).sendResponse(argThat((MessageComposer composer) -> composer instanceof CameraURLComposer));
         assertTrue(Files.isRegularFile(this.dir.resolve("uploads/1_" + NOW + ".png")));
@@ -269,7 +270,7 @@ class CameraRoomPictureServerRenderTest {
         this.send(scene(ROOM));
 
         verify(this.habbo).alert("text:camera.render.busy");
-        assertFalse(this.stats.cache.containsKey("camera_render_cooldown"));
+        assertNull(CameraQuota.lastAttempt(1));
         release.countDown();
     }
 }

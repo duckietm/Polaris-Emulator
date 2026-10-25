@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.imaging.camera.CameraPhotoFiles;
 import com.eu.habbo.imaging.camera.CameraRenderException;
 import com.eu.habbo.imaging.camera.CameraRenderMode;
@@ -44,8 +43,6 @@ public class CameraRoomPictureEvent extends MessageHandler {
     public static int MAX_IMAGE_HEIGHT = 320;
     public static int MAX_DAILY_RENDERS = 50;
 
-    static final String COOLDOWN_KEY = "camera_render_cooldown";
-
     private ByteBuf image = null;
 
     @Override
@@ -67,11 +64,13 @@ public class CameraRoomPictureEvent extends MessageHandler {
         }
 
         HabboInfo habboInfo = habbo.getHabboInfo();
-        HabboStats habboStats = habbo.getHabboStats();
         int timestamp = Emulator.getIntUnixTimestamp();
 
-        if (habboStats.cache.containsKey(COOLDOWN_KEY)) {
-            int cameraTimestamp = (Integer) habboStats.cache.get(COOLDOWN_KEY);
+        int userId = habboInfo.getId();
+        Integer lastAttempt = CameraQuota.lastAttempt(userId);
+
+        if (lastAttempt != null) {
+            int cameraTimestamp = lastAttempt;
             if (timestamp - cameraTimestamp < CAMERA_RENDER_DELAY) {
                 String alertMessage = text("camera.wait", null)
                         .replace("%seconds%", Integer.toString(CAMERA_RENDER_DELAY - (timestamp - cameraTimestamp)));
@@ -86,7 +85,7 @@ public class CameraRoomPictureEvent extends MessageHandler {
             }
         }
 
-        int dailyRenderCount = getDailyRenderCount(habboStats, timestamp);
+        int dailyRenderCount = CameraQuota.dailyCount(userId, timestamp);
         if (dailyRenderCount >= MAX_DAILY_RENDERS) {
             habbo.alert(text("camera.daily.limit", "You have reached the daily photo limit. Try again tomorrow."));
             return;
@@ -94,14 +93,14 @@ public class CameraRoomPictureEvent extends MessageHandler {
         Room room = habboInfo.getCurrentRoom();
         if (room == null) return;
 
-        habboStats.cache.put(COOLDOWN_KEY, timestamp);
+        CameraQuota.markAttempt(userId, timestamp);
 
         int count = this.packet.readInt();
         if (count <= 0
                 || count > MAX_IMAGE_BYTES
                 || count > this.packet.getBuffer().readableBytes()) {
             LOGGER.warn("User {} attempted camera upload with invalid size: {} bytes", habboInfo.getUsername(), count);
-            habboStats.cache.remove(COOLDOWN_KEY);
+            // The cooldown stays: giving it back let an invalid 400 KB payload be retried at once, without end.
             handleImageProcessingError(habbo);
             return;
         }
@@ -120,23 +119,20 @@ public class CameraRoomPictureEvent extends MessageHandler {
         switch (decision) {
             case STORE_UPLOAD -> {
                 String url = this.storeUpload(habbo, habboInfo, room, timestamp, config);
-                if (url == null) {
-                    habboStats.cache.remove(COOLDOWN_KEY);
-                    return;
-                }
-                incrementDailyRenderCount(habboStats, timestamp, dailyRenderCount);
+                if (url == null) return;
+                CameraQuota.recordPhoto(userId, timestamp);
                 this.client.sendResponse(new CameraURLComposer(url));
             }
             case RENDER -> {
                 if (!this.submitServerRender(service, habbo, habboInfo, room, timestamp)) {
-                    habboStats.cache.remove(COOLDOWN_KEY);
+                    CameraQuota.refundAttempt(userId);
                     return;
                 }
-                incrementDailyRenderCount(habboStats, timestamp, dailyRenderCount);
+                CameraQuota.recordPhoto(userId, timestamp);
             }
             default -> {
                 logRefusal(decision, habboInfo.getUsername(), mode, "photo");
-                habboStats.cache.remove(COOLDOWN_KEY);
+                CameraQuota.refundAttempt(userId);
                 handleImageProcessingError(habbo);
             }
         }
@@ -387,25 +383,6 @@ public class CameraRoomPictureEvent extends MessageHandler {
                 }
             }
         }
-    }
-
-    private int getDailyRenderCount(HabboStats stats, int currentTimestamp) {
-        if (!stats.cache.containsKey("camera_daily_count") || !stats.cache.containsKey("camera_daily_reset")) {
-            return 0;
-        }
-        int resetTimestamp = (Integer) stats.cache.get("camera_daily_reset");
-        // Reset counter if more than 24 hours have passed
-        if (currentTimestamp - resetTimestamp >= 86400) {
-            return 0;
-        }
-        return (Integer) stats.cache.get("camera_daily_count");
-    }
-
-    private void incrementDailyRenderCount(HabboStats stats, int currentTimestamp, int currentCount) {
-        if (currentCount == 0) {
-            stats.cache.put("camera_daily_reset", currentTimestamp);
-        }
-        stats.cache.put("camera_daily_count", currentCount + 1);
     }
 
     private void handleImageProcessingError(Habbo habbo) {

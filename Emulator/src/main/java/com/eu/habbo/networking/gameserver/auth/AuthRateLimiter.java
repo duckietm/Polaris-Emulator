@@ -1,19 +1,23 @@
 package com.eu.habbo.networking.gameserver.auth;
 
 import com.eu.habbo.Emulator;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class AuthRateLimiter {
 
-    private static final Map<String, AtomicReference<State>> STATE = new ConcurrentHashMap<>();
-    private static final Map<String, AtomicReference<ProbeState>> PROBE_STATE = new ConcurrentHashMap<>();
+    // Every table is keyed by what unauthenticated traffic sends, so each one is capped: the sweep below
+    // only drops expired entries, and a flood inside one window used to grow them without limit.
+    private static final int MAX_ENTRIES = 100_000;
+
+    private static final Map<String, AtomicReference<State>> STATE = bounded();
+    private static final Map<String, AtomicReference<ProbeState>> PROBE_STATE = bounded();
 
     // Guessing one account's password is throttled per account as well as per IP:
     // an IP-only counter is cleared by any successful login, so four guesses at a
     // staff account plus one login to the attacker's own account repeats forever.
-    private static final Map<String, AtomicReference<AccountState>> ACCOUNT_STATE = new ConcurrentHashMap<>();
+    private static final Map<String, AtomicReference<AccountState>> ACCOUNT_STATE = bounded();
     private static final int MAX_BACKOFF_DOUBLINGS = 4;
 
     // Both maps are keyed by client IP and reachable by unauthenticated traffic.
@@ -25,6 +29,15 @@ public final class AuthRateLimiter {
     private static volatile long lastSweepMillis = 0L;
 
     private AuthRateLimiter() {}
+
+    private static <V> Map<String, V> bounded() {
+        return Caffeine.newBuilder().maximumSize(MAX_ENTRIES).<String, V>build().asMap();
+    }
+
+    /** Counters are kept per client bucket: an IPv6 client is its /64, see {@link ClientAddressBucket}. */
+    private static String bucket(String ip) {
+        return ClientAddressBucket.of(ip);
+    }
 
     private static void maybeSweep(long now) {
         if (STATE.size() < SWEEP_THRESHOLD
@@ -55,7 +68,7 @@ public final class AuthRateLimiter {
     public static boolean isLocked(String ip) {
         if (!isEnabled() || ip == null || ip.isEmpty()) return false;
 
-        AtomicReference<State> ref = STATE.get(ip);
+        AtomicReference<State> ref = STATE.get(bucket(ip));
         if (ref == null) return false;
 
         State current = ref.get();
@@ -63,7 +76,7 @@ public final class AuthRateLimiter {
     }
 
     public static long secondsUntilUnlock(String ip) {
-        AtomicReference<State> ref = STATE.get(ip);
+        AtomicReference<State> ref = STATE.get(bucket(ip));
         if (ref == null) return 0;
 
         State current = ref.get();
@@ -82,7 +95,7 @@ public final class AuthRateLimiter {
         int maxAttempts = configInt("login.ratelimit.max_attempts", 5);
         long lockoutMs = configInt("login.ratelimit.lockout_sec", 120) * 1000L;
 
-        STATE.computeIfAbsent(ip, k -> new AtomicReference<>(new State(0, 0L, 0L)))
+        STATE.computeIfAbsent(bucket(ip), k -> new AtomicReference<>(new State(0, 0L, 0L)))
                 .updateAndGet(prev -> {
                     if (prev == null || (now - prev.windowStartMillis) > windowMs) {
                         return new State(1, now, 0L);
@@ -96,7 +109,7 @@ public final class AuthRateLimiter {
 
     public static void recordSuccess(String ip) {
         if (ip == null || ip.isEmpty()) return;
-        STATE.remove(ip);
+        STATE.remove(bucket(ip));
     }
 
     /**
@@ -203,7 +216,7 @@ public final class AuthRateLimiter {
         int maxAttempts = configInt("login.probe.max_attempts", 20);
 
         ProbeState next = PROBE_STATE
-                .computeIfAbsent(ip, k -> new AtomicReference<>(new ProbeState(0, now)))
+                .computeIfAbsent(bucket(ip), k -> new AtomicReference<>(new ProbeState(0, now)))
                 .updateAndGet(prev -> {
                     if (prev == null || (now - prev.windowStartMillis) > windowMs) {
                         return new ProbeState(1, now);
@@ -215,7 +228,7 @@ public final class AuthRateLimiter {
     }
 
     public static long secondsUntilProbeReset(String ip) {
-        AtomicReference<ProbeState> ref = PROBE_STATE.get(ip);
+        AtomicReference<ProbeState> ref = PROBE_STATE.get(bucket(ip));
         if (ref == null) return 0;
         ProbeState current = ref.get();
         if (current == null) return 0;

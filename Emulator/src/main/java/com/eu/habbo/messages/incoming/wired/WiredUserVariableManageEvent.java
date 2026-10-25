@@ -65,7 +65,12 @@ public class WiredUserVariableManageEvent extends MessageHandler {
             }
 
             if (action == ACTION_REMOVE) {
-                RoomWiredVariableWrites.remove(room, targetType, targetId, definitionItemId);
+                if (targetType == RoomWiredVariableWrites.TARGET_FURNI
+                        || targetType == RoomWiredVariableWrites.TARGET_ROOM
+                        || RoomWiredVariableWrites.mayManageUser(
+                                room, this.client.getHabbo(), targetId, definitionItemId)) {
+                    RoomWiredVariableWrites.remove(room, targetType, targetId, definitionItemId);
+                }
             } else {
                 RoomWiredVariableWrites.assign(room, targetType, targetId, definitionItemId, value);
             }

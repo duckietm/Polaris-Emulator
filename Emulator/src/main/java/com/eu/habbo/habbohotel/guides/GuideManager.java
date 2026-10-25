@@ -172,6 +172,38 @@ public class GuideManager {
         return null;
     }
 
+    /**
+     * The tour the user takes part in that is still going on. An ended tour stays listed until its recommendation
+     * or the cleanup, and the chat and the report used to keep working on it - messages to the former helper, and
+     * a moderation ticket for every report packet.
+     */
+    public GuideTour getActiveGuideTourByHabbo(Habbo habbo) {
+        synchronized (this.activeTours) {
+            for (GuideTour tour : this.activeTours) {
+                if (!tour.isEnded() && (tour.getHelper() == habbo || tour.getNoob() == habbo)) {
+                    return tour;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Ends a tour that one side reported: one report per tour, and the helper is free again. */
+    public boolean endReportedSession(GuideTour tour) {
+        synchronized (this.activeTours) {
+            synchronized (this.activeHelpers) {
+                if (tour.isEnded()) return false;
+
+                tour.end();
+
+                if (tour.getHelper() != null) this.activeHelpers.put(tour.getHelper(), false);
+
+                return true;
+            }
+        }
+    }
+
     public GuideTour getGuideTourByHabbo(Habbo habbo) {
         synchronized (this.activeTours) {
             for (GuideTour tour : this.activeTours) {

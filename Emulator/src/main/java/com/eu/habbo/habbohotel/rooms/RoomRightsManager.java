@@ -18,13 +18,16 @@ import com.eu.habbo.messages.outgoing.rooms.RoomRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserUnbannedComposer;
 import com.eu.habbo.plugin.events.users.UserRightsTakenEvent;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMaps;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -48,7 +51,12 @@ public class RoomRightsManager {
     private final Int2IntMap mutedHabbos;
 
     public RoomRightsManager(Room room) {
-        this(room, null, new IntOpenHashSet(), new Int2ObjectOpenHashMap<>(), new Int2IntOpenHashMap());
+        this(
+                room,
+                null,
+                IntSets.synchronize(new IntOpenHashSet()),
+                Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>()),
+                Int2IntMaps.synchronize(new Int2IntOpenHashMap()));
     }
 
     RoomRightsManager(Room room, IntList legacyRights, Int2ObjectMap<RoomBan> bannedHabbos, Int2IntMap mutedHabbos) {
@@ -86,11 +94,13 @@ public class RoomRightsManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        synchronized (this) {
-            if (this.legacyRights != null) {
+        if (this.legacyRights != null) {
+            synchronized (this.legacyRights) {
                 this.legacyRights.clear();
                 this.legacyRights.addAll(loaded);
-            } else {
+            }
+        } else {
+            synchronized (this.rights) {
                 this.rights.clear();
                 this.rights.addAll(loaded);
             }
@@ -222,10 +232,8 @@ public class RoomRightsManager {
      * Gives rights to a user by ID.
      */
     public void giveRights(int userId) {
-        if (this.rights.contains(userId)) {
-            return;
-        }
-
+        // add answers false when the user already has rights, atomically: a separate contains check
+        // let two threads both add and both insert a room_rights row.
         if (this.rights.add(userId)) {
             try {
                 SqlQueries.update(
@@ -293,7 +301,7 @@ public class RoomRightsManager {
      * Removes all rights from the room.
      */
     public void removeAllRights() {
-        for (int userId : rights) {
+        for (int userId : this.rights.toIntArray()) {
             this.room.getItemManager().ejectUserFurni(userId);
         }
 

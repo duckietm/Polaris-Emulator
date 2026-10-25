@@ -794,15 +794,35 @@ public class ModToolManager {
         return false;
     }
 
+    /** Lifts a user's active bans with no rank check, for callers that have made their own. */
     public boolean unban(String username) {
+        return this.unban(username, null);
+    }
+
+    /**
+     * Lifts the active bans of a user that {@code moderator} may lift: their own, those of a lower
+     * rank, a peer's when the moderator holds the highest rank, and those with no staff member
+     * recorded. Without that, any rank allowed to unban lifted a ban an administrator had placed. A
+     * null moderator lifts every active ban. The "unbanned" note is a bound parameter: the localized
+     * text used to be concatenated into the statement.
+     */
+    public boolean unban(String username, Habbo moderator) {
+        int now = Emulator.getIntUnixTimestamp();
+        int moderatorId = moderator == null ? 0 : moderator.getHabboInfo().getId();
+        int moderatorRankId = moderator == null
+                ? Integer.MAX_VALUE
+                : moderator.getHabboInfo().getRank().getId();
+        int highestLiftableRankId =
+                moderator == null || isCoreRank(moderatorRankId) ? moderatorRankId : moderatorRankId - 1;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE bans INNER JOIN users ON bans.user_id = users.id SET ban_expire = ?, ban_reason = CONCAT('"
-                                + Emulator.getTexts().getValue("unbanned")
-                                + ": ', ban_reason) WHERE users.username = ? AND ban_expire > ?")) {
-            statement.setInt(1, Emulator.getIntUnixTimestamp());
-            statement.setString(2, username);
-            statement.setInt(3, Emulator.getIntUnixTimestamp());
+                PreparedStatement statement = connection.prepareStatement(UNBAN_SQL)) {
+            statement.setInt(1, now);
+            statement.setString(2, Emulator.getTexts().getValue("unbanned"));
+            statement.setString(3, username);
+            statement.setInt(4, now);
+            statement.setInt(5, moderatorId);
+            statement.setInt(6, highestLiftableRankId);
             statement.execute();
             return statement.getUpdateCount() > 0;
         } catch (SQLException e) {
@@ -811,6 +831,12 @@ public class ModToolManager {
 
         return false;
     }
+
+    static final String UNBAN_SQL = "UPDATE bans INNER JOIN users ON bans.user_id = users.id"
+            + " LEFT JOIN users staff ON staff.id = bans.user_staff_id"
+            + " SET bans.ban_expire = ?, bans.ban_reason = CONCAT(?, ': ', bans.ban_reason)"
+            + " WHERE users.username = ? AND bans.ban_expire > ?"
+            + " AND (staff.id IS NULL OR staff.id = ? OR staff.`rank` <= ?)";
 
     public void pickTicket(ModToolIssue issue, Habbo habbo) {
         issue.modId = habbo.getHabboInfo().getId();

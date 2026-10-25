@@ -45,10 +45,10 @@ public class HousekeepingUnbanUserEvent extends HousekeepingHandler {
             return;
         }
 
-        // ModToolManager.unban only takes a username; the SQL UPDATE
-        // happens against active bans (ban_expire > now), so calling it
+        // The UPDATE only touches active bans (ban_expire > now) the operator may lift, so calling it
         // on a never-banned user is a benign no-op that returns false.
-        boolean cleared = Emulator.getGameEnvironment().getModToolManager().unban(info.getUsername());
+        boolean cleared =
+                Emulator.getGameEnvironment().getModToolManager().unban(info.getUsername(), this.client.getHabbo());
 
         if (cleared) {
             com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(

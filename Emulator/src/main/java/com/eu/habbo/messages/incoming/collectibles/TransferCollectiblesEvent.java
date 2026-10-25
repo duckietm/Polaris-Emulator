@@ -42,6 +42,14 @@ public class TransferCollectiblesEvent extends MessageHandler {
 
         String recipientName = this.packet.readString();
 
+        // Handing every collectible to another account is a trade, so a user the mod
+        // tools have trade locked cannot do it either - this path had no such check, and
+        // was a way around the sanction.
+        if (!habbo.getHabboStats().allowTrade()) {
+            this.client.sendResponse(new CollectibleTransferResultComposer(FAILED));
+            return;
+        }
+
         CollectiblesSettings settings = CollectiblesSupport.settings();
         CollectiblesService service = CollectiblesSupport.service(settings);
         if (service == null) return;

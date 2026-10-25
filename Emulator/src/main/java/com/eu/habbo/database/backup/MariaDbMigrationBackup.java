@@ -3,9 +3,6 @@ package com.eu.habbo.database.backup;
 import com.eu.habbo.core.ConfigurationManager;
 import com.google.gson.Gson;
 import com.zaxxer.hikari.HikariDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,12 +39,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class MariaDbMigrationBackup implements MigrationBackup {
     private static final Logger LOGGER = LoggerFactory.getLogger(MariaDbMigrationBackup.class);
-    private static final DateTimeFormatter STAMP = DateTimeFormatter
-            .ofPattern("yyyyMMdd'T'HHmmssSSS'Z'")
-            .withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter STAMP =
+            DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS'Z'").withZone(ZoneOffset.UTC);
     private static final int MAX_STDERR_BYTES = 16 * 1024;
     private static final Gson GSON = new Gson();
 
@@ -56,26 +54,19 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
     private final ProcessStarter processStarter;
     private final Clock clock;
 
-    public MariaDbMigrationBackup(
-            DatabaseBackupOptions options,
-            DatabaseBackupRequest request) {
+    public MariaDbMigrationBackup(DatabaseBackupOptions options, DatabaseBackupRequest request) {
         this(options, request, command -> new ProcessBuilder(command).start(), Clock.systemUTC());
     }
 
     MariaDbMigrationBackup(
-            DatabaseBackupOptions options,
-            DatabaseBackupRequest request,
-            ProcessStarter processStarter,
-            Clock clock) {
+            DatabaseBackupOptions options, DatabaseBackupRequest request, ProcessStarter processStarter, Clock clock) {
         this.options = java.util.Objects.requireNonNull(options, "options");
         this.request = java.util.Objects.requireNonNull(request, "request");
         this.processStarter = java.util.Objects.requireNonNull(processStarter, "processStarter");
         this.clock = java.util.Objects.requireNonNull(clock, "clock");
     }
 
-    public static MigrationBackup resolve(
-            ConfigurationManager config,
-            HikariDataSource migrationDataSource) {
+    public static MigrationBackup resolve(ConfigurationManager config, HikariDataSource migrationDataSource) {
         DatabaseBackupOptions options = DatabaseBackupOptions.resolve(config);
         if (!options.enabled()) return MigrationBackup.disabled();
         return new MariaDbMigrationBackup(
@@ -107,11 +98,7 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             Files.createDirectories(options.directory());
             credentials = Files.createTempFile(options.directory(), ".polaris-db-backup-", ".cnf");
             harden(credentials);
-            Files.writeString(
-                    credentials,
-                    optionFile(),
-                    StandardCharsets.UTF_8,
-                    StandardOpenOption.TRUNCATE_EXISTING);
+            Files.writeString(credentials, optionFile(), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
 
             String baseName = artifactBaseName(pending);
             archive = options.directory().resolve(baseName + ".sql.gz");
@@ -126,8 +113,7 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             ProcessResult result = collect(process, archivePart);
             if (result.exitCode() != 0) {
                 throw new MigrationBackupException(
-                        "mariadb-dump failed with exit code " + result.exitCode()
-                                + diagnostic(result.stderr()));
+                        "mariadb-dump failed with exit code " + result.exitCode() + diagnostic(result.stderr()));
             }
             if (result.uncompressedBytes() == 0) {
                 throw new MigrationBackupException("mariadb-dump produced an empty backup");
@@ -181,8 +167,7 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             if (manifestCreated) deleteQuietly(manifest);
             if (checksumCreated) deleteQuietly(checksum);
             if (archiveCreated) deleteQuietly(archive);
-            throw new MigrationBackupException(
-                    "Unable to create the required database migration backup", error);
+            throw new MigrationBackupException("Unable to create the required database migration backup", error);
         } finally {
             deleteQuietly(credentials);
             deleteQuietly(archivePart);
@@ -235,9 +220,8 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
                 stop(process);
                 stdout.cancel(true);
                 stderr.cancel(true);
-                throw new MigrationBackupException(
-                        "mariadb-dump exceeded the configured timeout of "
-                                + options.timeout().toSeconds() + " seconds");
+                throw new MigrationBackupException("mariadb-dump exceeded the configured timeout of "
+                        + options.timeout().toSeconds() + " seconds");
             }
             try {
                 long bytes = stdout.get(10, TimeUnit.SECONDS);
@@ -260,7 +244,10 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
         return List.of(
                 options.executable(),
                 "--defaults-extra-file=" + credentials,
-                "--lock-all-tables",
+                // A consistent snapshot of the InnoDB tables without a global read lock. --lock-all-tables held the
+                // whole database - usually shared with the CMS - for the length of the dump, and needs the RELOAD
+                // privilege that a hotel's database user often lacks, so the dump and the start-up failed.
+                "--single-transaction",
                 "--quick",
                 "--routines",
                 "--events",
@@ -312,11 +299,11 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
     private void pruneOldBackups() throws IOException {
         List<Path> archives;
         try (var stream = Files.list(options.directory())) {
-            archives = stream
-                    .filter(Files::isRegularFile)
+            archives = stream.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().startsWith("polaris-"))
                     .filter(path -> path.getFileName().toString().endsWith(".sql.gz"))
-                    .sorted(Comparator.comparing(MariaDbMigrationBackup::modifiedAt).reversed())
+                    .sorted(Comparator.comparing(MariaDbMigrationBackup::modifiedAt)
+                            .reversed())
                     .toList();
         }
         for (Path expired : archives.stream().skip(options.retentionCount()).toList()) {
@@ -329,9 +316,13 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
     private static long compress(InputStream source, Path target) throws IOException {
         long total = 0;
         byte[] buffer = new byte[64 * 1024];
+        // The file is restricted before the first byte of the dump reaches it: it used to get the default
+        // permissions and be restricted only once complete, readable meanwhile by any local user.
+        Files.createFile(target);
+        harden(target);
         try (InputStream input = source;
-             OutputStream file = Files.newOutputStream(target, StandardOpenOption.CREATE_NEW);
-             GZIPOutputStream gzip = new GZIPOutputStream(file, 64 * 1024)) {
+                OutputStream file = Files.newOutputStream(target, StandardOpenOption.WRITE);
+                GZIPOutputStream gzip = new GZIPOutputStream(file, 64 * 1024)) {
             int read;
             while ((read = input.read(buffer)) != -1) {
                 gzip.write(buffer, 0, read);
@@ -393,9 +384,8 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
     private static void harden(Path path) throws IOException {
         IOException posixFailure = null;
         try {
-            Files.setPosixFilePermissions(path, Set.of(
-                    PosixFilePermission.OWNER_READ,
-                    PosixFilePermission.OWNER_WRITE));
+            Files.setPosixFilePermissions(
+                    path, Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
             return;
         } catch (IOException error) {
             posixFailure = error;
@@ -414,8 +404,8 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
                     .build();
             view.setAcl(List.of(ownerOnly));
         } catch (IOException | UnsupportedOperationException error) {
-            IOException failure = new IOException(
-                    "Unable to restrict database backup artifact permissions: " + path, error);
+            IOException failure =
+                    new IOException("Unable to restrict database backup artifact permissions: " + path, error);
             if (posixFailure != null) failure.addSuppressed(posixFailure);
             throw failure;
         }
@@ -443,6 +433,5 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
         Process start(List<String> command) throws IOException;
     }
 
-    private record ProcessResult(int exitCode, long uncompressedBytes, String stderr) {
-    }
+    private record ProcessResult(int exitCode, long uncompressedBytes, String stderr) {}
 }

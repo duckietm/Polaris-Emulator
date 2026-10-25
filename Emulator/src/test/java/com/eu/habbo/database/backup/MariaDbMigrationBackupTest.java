@@ -1,7 +1,9 @@
 package com.eu.habbo.database.backup;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,11 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MariaDbMigrationBackupTest {
     @TempDir
@@ -32,10 +31,10 @@ class MariaDbMigrationBackupTest {
     @Test
     void writesAtomicCompressedBackupChecksumAndManifestWithoutLeakingPassword() throws Exception {
         List<List<String>> commands = new ArrayList<>();
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
-        DatabaseBackupRequest request = new DatabaseBackupRequest(
-                "db.internal", 3307, "polaris_prod", "polaris", "very-secret-password");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
+        DatabaseBackupRequest request =
+                new DatabaseBackupRequest("db.internal", 3307, "polaris_prod", "polaris", "very-secret-password");
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 request,
@@ -58,7 +57,9 @@ class MariaDbMigrationBackupTest {
         String command = String.join(" ", commands.getFirst());
         assertFalse(command.contains("very-secret-password"));
         assertTrue(commands.getFirst().get(1).startsWith("--defaults-extra-file="));
-        assertTrue(command.contains("--lock-all-tables"));
+        // No global read lock: it blocked the shared database and needs the RELOAD privilege.
+        assertTrue(command.contains("--single-transaction"));
+        assertFalse(command.contains("--lock-all-tables"));
         assertTrue(command.contains("--routines"));
         assertTrue(command.contains("--events"));
         assertTrue(command.contains("--triggers"));
@@ -75,17 +76,16 @@ class MariaDbMigrationBackupTest {
     void failureDeletesPartialArtifactsAndKeepsExistingBackups() throws Exception {
         Path existing = tempDir.resolve("polaris-old.sql.gz");
         Files.writeString(existing, "keep");
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
                 command -> FakeProcess.failure(2, "access denied"),
                 Clock.systemUTC());
 
-        MigrationBackupException error = assertThrows(
-                MigrationBackupException.class,
-                () -> backup.beforeMigrations(migrations()));
+        MigrationBackupException error =
+                assertThrows(MigrationBackupException.class, () -> backup.beforeMigrations(migrations()));
 
         assertTrue(error.getMessage().contains("access denied"));
         assertTrue(Files.exists(existing));
@@ -102,8 +102,8 @@ class MariaDbMigrationBackupTest {
             Files.writeString(Path.of(archive + ".json"), "{}");
             Files.setLastModifiedTime(archive, java.nio.file.attribute.FileTime.fromMillis(index));
         }
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 2, Duration.ofSeconds(30), "mariadb-dump");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 2, Duration.ofSeconds(30), "mariadb-dump");
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
@@ -119,11 +119,10 @@ class MariaDbMigrationBackupTest {
 
     @Test
     void nameCollisionNeverDeletesOrOverwritesAnExistingBackup() throws Exception {
-        Path existing = tempDir.resolve(
-                "polaris-polaris-20260718T204512000Z-before-v28-v29.sql.gz");
+        Path existing = tempDir.resolve("polaris-polaris-20260718T204512000Z-before-v28-v29.sql.gz");
         Files.writeString(existing, "existing-backup");
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
@@ -138,8 +137,8 @@ class MariaDbMigrationBackupTest {
 
     @Test
     void timeoutStopsTheDumpAndRemovesCredentialsAndPartialOutput() throws Exception {
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(1), "mariadb-dump");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(1), "mariadb-dump");
         FakeProcess process = FakeProcess.timeout();
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
@@ -147,9 +146,8 @@ class MariaDbMigrationBackupTest {
                 command -> process,
                 Clock.systemUTC());
 
-        MigrationBackupException error = assertThrows(
-                MigrationBackupException.class,
-                () -> backup.beforeMigrations(migrations()));
+        MigrationBackupException error =
+                assertThrows(MigrationBackupException.class, () -> backup.beforeMigrations(migrations()));
 
         assertTrue(error.getMessage().contains("timeout"));
         assertTrue(process.destroyed);
@@ -161,8 +159,7 @@ class MariaDbMigrationBackupTest {
     @Test
     void missingExplicitExecutableFailsBeforeLaunchWithRemedies() throws Exception {
         String executable = tempDir.resolve("tools").resolve("mariadb-dump").toString();
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(30), executable);
+        DatabaseBackupOptions options = new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(30), executable);
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
@@ -171,9 +168,8 @@ class MariaDbMigrationBackupTest {
                 },
                 Clock.systemUTC());
 
-        MigrationBackupException error = assertThrows(
-                MigrationBackupException.class,
-                () -> backup.beforeMigrations(migrations()));
+        MigrationBackupException error =
+                assertThrows(MigrationBackupException.class, () -> backup.beforeMigrations(migrations()));
 
         assertTrue(error.getMessage().contains(executable));
         assertTrue(error.getMessage().contains("MariaDB client tools"));
@@ -185,10 +181,9 @@ class MariaDbMigrationBackupTest {
 
     @Test
     void unresolvableCommandLaunchFailureExplainsRemedies() {
-        DatabaseBackupOptions options = new DatabaseBackupOptions(
-                true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
-        IOException launchFailure = new IOException(
-                "Cannot run program \"mariadb-dump\": CreateProcess error=2");
+        DatabaseBackupOptions options =
+                new DatabaseBackupOptions(true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
+        IOException launchFailure = new IOException("Cannot run program \"mariadb-dump\": CreateProcess error=2");
         MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
                 options,
                 new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
@@ -197,9 +192,8 @@ class MariaDbMigrationBackupTest {
                 },
                 Clock.systemUTC());
 
-        MigrationBackupException error = assertThrows(
-                MigrationBackupException.class,
-                () -> backup.beforeMigrations(migrations()));
+        MigrationBackupException error =
+                assertThrows(MigrationBackupException.class, () -> backup.beforeMigrations(migrations()));
 
         assertTrue(error.getMessage().contains("'mariadb-dump'"));
         assertTrue(error.getMessage().contains("MariaDB client tools"));
@@ -214,7 +208,9 @@ class MariaDbMigrationBackupTest {
 
     private List<Path> files(String suffix) throws Exception {
         try (var stream = Files.list(tempDir)) {
-            return stream.filter(path -> path.getFileName().toString().endsWith(suffix)).sorted().toList();
+            return stream.filter(path -> path.getFileName().toString().endsWith(suffix))
+                    .sorted()
+                    .toList();
         }
     }
 

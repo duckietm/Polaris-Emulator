@@ -4,14 +4,18 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
+import com.eu.habbo.threading.ThreadPooling;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +32,7 @@ public class BadgesComponent {
         Set<HabboBadge> badgesList = new HashSet<>();
         Set<String> staffBadges =
                 Emulator.getGameEnvironment().getPermissionsManager().getStaffBadges();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement =
                         connection.prepareStatement("SELECT * FROM users_badges WHERE user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
@@ -71,13 +75,13 @@ public class BadgesComponent {
 
             badge.setSlot(0);
             badge.needsUpdate(true);
-            Emulator.getThreading().run(badge);
+            threading().run(badge);
         }
     }
 
     public static ArrayList<HabboBadge> getBadgesOfflineHabbo(int userId) {
         ArrayList<HabboBadge> badgesList = new ArrayList<>();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT * FROM users_badges WHERE slot_id > 0 AND user_id = ? ORDER BY slot_id ASC")) {
             statement.setInt(1, userId);
@@ -90,6 +94,62 @@ public class BadgesComponent {
             LOGGER.error("Caught SQL exception", e);
         }
         return badgesList;
+    }
+
+    // users_badges.badge_code is varchar(32). A longer or odd code failed every insert while the badge was still
+    // added in memory and shown to the client: a ghost badge gone at the next login.
+    private static final Pattern BADGE_CODE = Pattern.compile("[A-Za-z0-9_]{1,32}");
+
+    public static boolean isValidBadgeCode(String code) {
+        return code != null && BADGE_CODE.matcher(code).matches();
+    }
+
+    /**
+     * Gives a badge to many users on the persistence pool, one connection for all, each badge handed to its user only
+     * once its row exists. The badge commands used to insert one row per user online synchronously on the thread
+     * handling the chat, and to show the badge even when the insert failed.
+     */
+    public static void grantBadge(Collection<Habbo> habbos, String code, BiConsumer<Habbo, HabboBadge> granted) {
+        if (!isValidBadgeCode(code) || habbos == null || habbos.isEmpty()) return;
+
+        threading().runPersistence(() -> grantBadgeNow(habbos, code, granted));
+    }
+
+    static int grantBadgeNow(Collection<Habbo> habbos, String code, BiConsumer<Habbo, HabboBadge> granted) {
+        int count = 0;
+
+        try (Connection connection = connection()) {
+            for (Habbo habbo : habbos) {
+                if (habbo == null
+                        || habbo.getInventory() == null
+                        || habbo.getInventory().getBadgesComponent() == null
+                        || habbo.getInventory().getBadgesComponent().hasBadge(code)) {
+                    continue;
+                }
+
+                HabboBadge badge = new HabboBadge(0, code, 0, habbo);
+
+                try {
+                    badge.insert(connection);
+                } catch (SQLException e) {
+                    LOGGER.error(
+                            "Could not give badge {} to user {}",
+                            code,
+                            habbo.getHabboInfo().getId(),
+                            e);
+                    continue;
+                }
+
+                habbo.getInventory().getBadgesComponent().addBadge(badge);
+                count++;
+
+                if (granted != null) granted.accept(habbo, badge);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return count;
     }
 
     public static HabboBadge createBadge(String code, Habbo habbo) {
@@ -105,7 +165,7 @@ public class BadgesComponent {
      * column's collation keeps the match case-insensitive, as {@link #removeBadge(String)} is.
      */
     public static void deleteBadge(int userId, String badge) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE users_badges FROM users_badges WHERE user_id = ? AND badge_code = ?")) {
             statement.setInt(1, userId);
@@ -187,5 +247,13 @@ public class BadgesComponent {
         synchronized (this.badges) {
             this.badges.clear();
         }
+    }
+
+    private static Connection connection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    private static ThreadPooling threading() {
+        return Emulator.getThreading();
     }
 }

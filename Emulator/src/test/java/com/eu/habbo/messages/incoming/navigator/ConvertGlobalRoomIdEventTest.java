@@ -23,7 +23,8 @@ class ConvertGlobalRoomIdEventTest {
         String handler = source("com/eu/habbo/messages/incoming/navigator/ConvertGlobalRoomIdEvent.java");
 
         assertTrue(handler.contains("NavigatorInputGuard.normalizeSearch(this.packet.readString())"));
-        assertTrue(handler.contains("candidate.getName().equalsIgnoreCase(target)"));
+        assertTrue(
+                handler.contains("findVisibleRoomIdByName(target)"), "the exact-name match now lives in RoomManager");
         assertTrue(handler.contains("new ForwardToRoomComposer(roomId)"));
         assertTrue(handler.contains("return 1000;"));
     }

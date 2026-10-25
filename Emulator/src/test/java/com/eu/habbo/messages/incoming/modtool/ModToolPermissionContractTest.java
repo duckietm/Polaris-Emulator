@@ -1,12 +1,11 @@
 package com.eu.habbo.messages.incoming.modtool;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class ModToolPermissionContractTest {
     private static final List<String> STAFF_ONLY_HANDLERS = List.of(
@@ -30,8 +29,7 @@ class ModToolPermissionContractTest {
             "ModToolSanctionBanEvent.java",
             "ModToolSanctionMuteEvent.java",
             "ModToolSanctionTradeLockEvent.java",
-            "ModToolWarnEvent.java"
-    );
+            "ModToolWarnEvent.java");
 
     @Test
     void staffOnlyModToolHandlersRequireSupportToolPermission() throws Exception {
@@ -39,7 +37,8 @@ class ModToolPermissionContractTest {
 
         for (String handler : STAFF_ONLY_HANDLERS) {
             String source = Files.readString(base.resolve(handler));
-            assertTrue(source.contains("hasPermission(Permission.ACC_SUPPORTTOOL)"),
+            assertTrue(
+                    source.contains("hasPermission(Permission.ACC_SUPPORTTOOL)"),
                     handler + " must require ACC_SUPPORTTOOL before exposing moderator actions or private logs");
         }
     }
@@ -54,36 +53,48 @@ class ModToolPermissionContractTest {
                 "ModToolSanctionTradeLockEvent.java",
                 "ModToolIssueDefaultSanctionEvent.java")) {
             String source = Files.readString(base.resolve(handler));
-            assertTrue(source.contains("ModToolManager.canModerateTarget"),
+            assertTrue(
+                    source.contains("ModToolManager.canModerateTarget"),
                     handler + " must enforce the modtool target rank ceiling before applying sanctions");
         }
 
         String manager = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/modtool/ModToolManager.java"));
-        assertTrue(manager.contains("!canModerateTarget(moderator, target.getHabboInfo().getId())"),
+        assertTrue(
+                manager.contains("!canModerateTarget(moderator, target.getHabboInfo().getId())"),
                 "ModToolManager.alert must refuse alerts/warnings against protected targets");
-        assertTrue(manager.contains("targetRankId < moderatorRankId"),
+        assertTrue(
+                manager.contains("targetRankId < moderatorRankId"),
                 "non-core moderators must only target lower-ranked users");
-        assertTrue(manager.contains("isCoreRank(moderatorRankId) && targetRankId <= moderatorRankId"),
+        assertTrue(
+                manager.contains("isCoreRank(moderatorRankId) && targetRankId <= moderatorRankId"),
                 "highest/core moderators should be allowed to target peer ranks");
-        assertTrue(manager.contains("private static boolean isCoreRank(int rankId)"),
+        assertTrue(
+                manager.contains("private static boolean isCoreRank(int rankId)"),
                 "core-rank detection should be centralized in ModToolManager");
     }
 
     @Test
     void managerEntryPointsShareTargetAndRoomOwnerGuards() throws Exception {
         String manager = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/modtool/ModToolManager.java"));
-        String sanctions = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/modtool/ModToolSanctions.java"));
-        String defaultSanction = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolIssueDefaultSanctionEvent.java"));
+        String sanctions =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/modtool/ModToolSanctions.java"));
+        String defaultSanction = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolIssueDefaultSanctionEvent.java"));
 
-        assertTrue(manager.contains("!canModerateTarget(moderator, targetUserId)"),
+        assertTrue(
+                manager.contains("!canModerateTarget(moderator, targetUserId)"),
                 "ModToolManager.ban must use the central target-rank guard for offline and online users");
-        assertTrue(manager.contains("!canModerateTarget(moderator, h.getHabboInfo().getId())"),
-                "IP and machine fan-out bans must skip protected peer-or-higher ranked sessions");
-        assertTrue(manager.contains("!canModerateTarget(moderator, room.getOwnerId())"),
+        assertTrue(
+                manager.contains("id == targetUserId || id == moderatorId || !canModerateTarget(moderator, id)"),
+                "IP and machine fan-out bans must skip the target, the moderator and protected peer-or-higher ranked sessions");
+        assertTrue(
+                manager.contains("!canModerateTarget(moderator, room.getOwnerId())"),
                 "ModToolManager.roomAction must refuse mutations on rooms owned by protected ranks");
-        assertTrue(sanctions.contains("!ModToolManager.canModerateTarget(self, habboId)"),
+        assertTrue(
+                sanctions.contains("!ModToolManager.canModerateTarget(self, habboId)"),
                 "ModToolSanctions.run must guard every sanction path before writing or applying it");
-        assertTrue(defaultSanction.contains("if (issue == null)"),
+        assertTrue(
+                defaultSanction.contains("if (issue == null)"),
                 "default sanctions must tolerate stale or missing ticket ids");
     }
 
@@ -99,13 +110,14 @@ class ModToolPermissionContractTest {
                 "ModToolSanctionAlertEvent.java",
                 "ModToolSanctionBanEvent.java",
                 "ModToolSanctionMuteEvent.java",
-                "ModToolSanctionTradeLockEvent.java"
-        )) {
+                "ModToolSanctionTradeLockEvent.java")) {
             String source = Files.readString(base.resolve(handler));
 
-            assertTrue(source.contains("ModToolInputGuard.normalize"),
+            assertTrue(
+                    source.contains("ModToolInputGuard.normalize"),
                     handler + " must normalize staff-supplied text before use");
-            assertTrue(source.contains("ModToolInputGuard.isSafeMessage"),
+            assertTrue(
+                    source.contains("ModToolInputGuard.isSafeMessage"),
                     handler + " must reject empty or oversized staff-supplied text");
         }
     }
@@ -125,11 +137,11 @@ class ModToolPermissionContractTest {
                 "ModToolSanctionAlertEvent.java",
                 "ModToolSanctionBanEvent.java",
                 "ModToolSanctionMuteEvent.java",
-                "ModToolSanctionTradeLockEvent.java"
-        )) {
+                "ModToolSanctionTradeLockEvent.java")) {
             String source = Files.readString(base.resolve(handler));
 
-            assertTrue(source.contains("ModToolTicketGuard.isPositiveId"),
+            assertTrue(
+                    source.contains("ModToolTicketGuard.isPositiveId"),
                     handler + " must reject zero or negative client-provided ids before manager/database lookups");
         }
     }

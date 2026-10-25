@@ -25,6 +25,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.ints.IntSets;
@@ -51,12 +52,24 @@ public class RoomRightsManager {
     private final Int2IntMap mutedHabbos;
 
     public RoomRightsManager(Room room) {
-        this(
-                room,
-                null,
-                IntSets.synchronize(new IntOpenHashSet()),
-                Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>()),
-                Int2IntMaps.synchronize(new Int2IntOpenHashMap()));
+        this(room, null, IntSets.synchronize(new IntOpenHashSet()), newBanMap(), newMuteMap());
+    }
+
+    /*
+     * A room's bans, mutes and rights are changed from packet threads, the room cycle and the
+     * loaders at once: each is a synchronized view, whose lock is the view itself, the one the
+     * existing synchronized blocks on these collections already take.
+     */
+    static Int2ObjectMap<RoomBan> newBanMap() {
+        return Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+    }
+
+    static Int2IntMap newMuteMap() {
+        return Int2IntMaps.synchronize(new Int2IntOpenHashMap());
+    }
+
+    static IntList newRightsList() {
+        return IntLists.synchronize(new IntArrayList());
     }
 
     RoomRightsManager(Room room, IntList legacyRights, Int2ObjectMap<RoomBan> bannedHabbos, Int2IntMap mutedHabbos) {

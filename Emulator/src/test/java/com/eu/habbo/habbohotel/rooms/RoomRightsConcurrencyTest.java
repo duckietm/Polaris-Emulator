@@ -65,12 +65,14 @@ class RoomRightsConcurrencyTest {
 
     @Test
     void theRoomHoldsSynchronizedCollections() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/Room.java"));
+        String room = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/Room.java"));
 
-        assertEquals(
-                2, count(source, "this.bannedHabbos = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());"));
-        assertEquals(2, count(source, "this.mutedHabbos = Int2IntMaps.synchronize(new Int2IntOpenHashMap());"));
-        assertEquals(2, count(source, "this.rights = IntLists.synchronize(new IntArrayList());"));
+        assertEquals(2, count(room, "this.bannedHabbos = RoomRightsManager.newBanMap();"));
+        assertEquals(2, count(room, "this.mutedHabbos = RoomRightsManager.newMuteMap();"));
+        assertEquals(2, count(room, "this.rights = RoomRightsManager.newRightsList();"));
+        assertTrue(RoomRightsManager.newBanMap().getClass().getSimpleName().startsWith("Synchronized"));
+        assertTrue(RoomRightsManager.newMuteMap().getClass().getSimpleName().startsWith("Synchronized"));
+        assertTrue(RoomRightsManager.newRightsList().getClass().getSimpleName().startsWith("Synchronized"));
     }
 
     @Test

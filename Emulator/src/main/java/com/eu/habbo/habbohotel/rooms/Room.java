@@ -19,14 +19,9 @@ import com.eu.habbo.plugin.events.rooms.RoomUnloadedEvent;
 import com.eu.habbo.plugin.events.rooms.RoomUnloadingEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMaps;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import it.unimi.dsi.fastutil.ints.IntLists;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.sql.Connection;
@@ -270,10 +265,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.id = id;
         this.ownerId = ownerId;
         this.userCountPersistence = this.createUserCountPersistence();
-        this.bannedHabbos = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+        this.bannedHabbos = RoomRightsManager.newBanMap();
         this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
-        this.mutedHabbos = Int2IntMaps.synchronize(new Int2IntOpenHashMap());
-        this.rights = IntLists.synchronize(new IntArrayList());
+        this.mutedHabbos = RoomRightsManager.newMuteMap();
+        this.rights = RoomRightsManager.newRightsList();
         this.userVotes = new ArrayList<>();
         this.initializeManagers(new RoomChatManager(this, RoomChatManager.DEFAULT_MUTE_TIME_SECONDS, this.mutedHabbos));
         this.loader = this.createLoader();
@@ -336,7 +331,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.buildersClubTrialLocked = initial.buildersClubTrialLocked();
         this.buildersClubOriginalState = initial.buildersClubOriginalState();
 
-        this.bannedHabbos = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+        this.bannedHabbos = RoomRightsManager.newBanMap();
 
         try (Connection connection = this.dependencies.database().openConnection()) {
             // Load bans eagerly (needed for entry check before loadData)
@@ -366,9 +361,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             this.moodlightData.put(data.getId(), data);
         }
 
-        this.mutedHabbos = Int2IntMaps.synchronize(new Int2IntOpenHashMap());
+        this.mutedHabbos = RoomRightsManager.newMuteMap();
 
-        this.rights = IntLists.synchronize(new IntArrayList());
+        this.rights = RoomRightsManager.newRightsList();
         this.userVotes = new ArrayList<>();
 
         // Initialize managers

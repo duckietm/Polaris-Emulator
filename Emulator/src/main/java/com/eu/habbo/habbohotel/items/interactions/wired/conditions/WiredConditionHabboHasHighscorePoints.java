@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredComparison;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -86,7 +87,7 @@ public class WiredConditionHabboHasHighscorePoints extends InteractionWiredCondi
                 continue;
             }
             boolean matched =
-                    this.matchesTarget(this.bestScore(habbo.getHabboInfo().getId()));
+                    this.matchesTarget(this.bestScore(room, habbo.getHabboInfo().getId()));
             if (this.quantifier == QUANTIFIER_ALL) {
                 if (!matched) return false;
                 anyMatched = true;
@@ -102,16 +103,25 @@ public class WiredConditionHabboHasHighscorePoints extends InteractionWiredCondi
         return WiredComparison.compare(best, this.points, this.comparison);
     }
 
-    private int bestScore(int userId) {
+    /**
+     * The user's best score on the selected boards of this room. Any furni id used to be accepted, so a
+     * board of another room answered as an oracle of its scores; and the shared entry list was walked
+     * without its lock while a game ending elsewhere added to it.
+     */
+    int bestScore(Room room, int userId) {
         int best = 0;
         for (Integer boardId : this.boardIds) {
+            if (!(room.getHabboItem(boardId) instanceof InteractionWiredHighscore)) continue;
+
             List<WiredHighscoreDataEntry> entries = this.scores.apply(boardId);
             if (entries == null) continue;
-            for (WiredHighscoreDataEntry entry : entries) {
-                if (entry != null
-                        && entry.getUserIds() != null
-                        && entry.getUserIds().contains(userId)) {
-                    best = Math.max(best, entry.getScore());
+            synchronized (entries) {
+                for (WiredHighscoreDataEntry entry : entries) {
+                    if (entry != null
+                            && entry.getUserIds() != null
+                            && entry.getUserIds().contains(userId)) {
+                        best = Math.max(best, entry.getScore());
+                    }
                 }
             }
         }

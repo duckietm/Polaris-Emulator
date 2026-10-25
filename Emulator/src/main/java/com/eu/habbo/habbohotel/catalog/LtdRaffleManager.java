@@ -105,11 +105,21 @@ public final class LtdRaffleManager {
 
             if (habbo == null || habbo.getClient() == null) continue;
 
-            boolean won = index < copies;
+            boolean won = false;
 
             try {
-                if (won) {
+                if (copies > 0) {
+                    // purchaseItem reports nothing: when the buyer cannot pay, or their
+                    // inventory is full, it answers them itself and returns. A winner was
+                    // announced regardless and the copy was lost to the draw. A copy that
+                    // was really sold is gone from the limited pool, so the pool says
+                    // whether this entrant won - and a failed purchase hands the copy on
+                    // to the next entrant instead of wasting it.
+                    int before = configuration.available();
                     catalogManager.purchaseItem(raffle.page, raffle.item, habbo, 1, "", false);
+                    won = configuration.available() < before;
+
+                    if (won) copies--;
                 }
             } catch (Exception e) {
                 LOGGER.error(

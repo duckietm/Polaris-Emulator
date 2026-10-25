@@ -17,6 +17,7 @@ import com.eu.habbo.plugin.events.games.GameHabboLeaveEvent;
 import com.eu.habbo.plugin.events.games.GameStartedEvent;
 import com.eu.habbo.plugin.events.games.GameStoppedEvent;
 import com.eu.habbo.threading.runnables.SaveScoreForTeam;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -156,6 +157,17 @@ public abstract class Game implements Runnable {
         }
     }
 
+    /** The points the players scored themselves, without what wired boxes gave them. */
+    static int playedPoints(Collection<GameTeam> teams) {
+        int points = 0;
+        for (GameTeam team : teams) {
+            for (GamePlayer player : team.getMembers()) {
+                points += Math.max(0, player.getScoreAchievementValue());
+            }
+        }
+        return points;
+    }
+
     public void onEnd() {
         this.endTime = Emulator.getIntUnixTimestamp();
 
@@ -164,12 +176,16 @@ public abstract class Game implements Runnable {
         int totalPointsGained =
                 this.teams.values().stream().mapToInt(GameTeam::getTotalScore).sum();
 
+        // The author's experience counts the points players scored themselves: the team total also holds
+        // what Give Score boxes handed out, so an owner playing alone with a repeater earned unbounded
+        // achievement progress.
         Habbo roomOwner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.room.getOwnerId());
-        if (roomOwner != null) {
+        int playedPoints = playedPoints(this.teams.values());
+        if (roomOwner != null && playedPoints > 0) {
             AchievementManager.progressAchievement(
                     roomOwner,
                     Emulator.getGameEnvironment().getAchievementManager().getAchievement("GameAuthorExperience"),
-                    totalPointsGained);
+                    playedPoints);
         }
 
         GameTeam winningTeam = null;
@@ -187,8 +203,9 @@ public abstract class Game implements Runnable {
 
                 Habbo winner = player.getHabbo();
                 if (winner != null) {
+                    // The winner's experience, which went to the room owner instead.
                     AchievementManager.progressAchievement(
-                            roomOwner,
+                            winner,
                             Emulator.getGameEnvironment()
                                     .getAchievementManager()
                                     .getAchievement("GamePlayerExperience"));

@@ -26,14 +26,21 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpMessage) {
-            if (!handleHttpRequest(ctx, (HttpMessage) msg)) {
+        boolean upgrade = false;
+        if (msg instanceof HttpMessage request) {
+            if (!handleHttpRequest(ctx, request)) {
                 ReferenceCountUtil.release(msg);
                 return;
             }
+            upgrade = isWebSocketUpgrade(request);
         }
         super.channelRead(ctx, msg);
-        ctx.pipeline().remove(this);
+
+        // Only an accepted upgrade ends the HTTP phase. Leaving after the first request of any kind let
+        // the next keep-alive request skip the Origin check and keep the forwarded IP of the first one.
+        if (upgrade) {
+            ctx.pipeline().remove(this);
+        }
     }
 
     private boolean handleHttpRequest(ChannelHandlerContext ctx, HttpMessage req) {
@@ -84,14 +91,15 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
         String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
         // Only honour the forwarded-IP header from a trusted reverse proxy,
         // otherwise the game-session IP (used for bans/rate-limits) is spoofable.
+        // Read again for every request: a proxy reuses one connection for several clients, so an IP kept
+        // from an earlier request belonged to someone else.
+        String ip = "";
         if (!ipHeader.isEmpty()
                 && req.headers().contains(ipHeader)
                 && AuthHttpUtil.shouldHonorForwardedHeader(ctx, ipHeader)) {
-            String ip = AuthHttpUtil.resolveForwardedClientIp(req.headers().get(ipHeader));
-            if (!ip.isEmpty()) {
-                ctx.channel().attr(GameServerAttributes.WS_IP).set(ip);
-            }
+            ip = AuthHttpUtil.resolveForwardedClientIp(req.headers().get(ipHeader));
         }
+        ctx.channel().attr(GameServerAttributes.WS_IP).set(ip.isEmpty() ? null : ip);
     }
 
     private static boolean isWebSocketUpgrade(HttpMessage req) {

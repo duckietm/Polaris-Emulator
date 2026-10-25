@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
 
     public static final WiredEffectType type = WiredEffectType.SET_ALTITUDE;
 
-    private final List<HabboItem> items = new ArrayList<>();
+    private final List<HabboItem> items = new CopyOnWriteArrayList<>();
     private int operator = OPERATOR_SET;
     private double altitude = 0.0D;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;

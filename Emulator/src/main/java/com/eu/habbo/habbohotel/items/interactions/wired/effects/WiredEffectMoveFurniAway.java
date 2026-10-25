@@ -26,15 +26,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.FLEE;
 
-    private Set<HabboItem> items = new LinkedHashSet<>();
+    private Set<HabboItem> items = new CopyOnWriteArraySet<>();
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectMoveFurniAway(ResultSet set, Item baseItem) throws SQLException {
@@ -185,7 +185,7 @@ public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
         String wiredData = set.getString("wired_data");
 
         if (wiredData.startsWith("{")) {

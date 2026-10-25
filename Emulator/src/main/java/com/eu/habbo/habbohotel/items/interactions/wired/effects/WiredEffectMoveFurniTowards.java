@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 /**
@@ -51,14 +51,14 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
 
     public WiredEffectMoveFurniTowards(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
         this.lastDirections = new LinkedHashMap<>();
     }
 
     public WiredEffectMoveFurniTowards(
             int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
         this.lastDirections = new LinkedHashMap<>();
     }
 
@@ -331,7 +331,7 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
         String wiredData = set.getString("wired_data");
 
         if (wiredData.startsWith("{")) {

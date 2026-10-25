@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 public class WiredEffectTriggerStacks extends InteractionWiredEffect {
@@ -35,13 +36,13 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
     public WiredEffectTriggerStacks(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     public WiredEffectTriggerStacks(
             int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     @Override
@@ -204,7 +205,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
         String wiredData = set.getString("wired_data");
 
         JsonData jsonData = WiredMovementPayloadGuard.fromJson(wiredData, JsonData.class);

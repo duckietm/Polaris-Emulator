@@ -37,8 +37,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -614,48 +616,32 @@ public class ModToolManager {
         // target is parked cannot be resumed.
         SessionResumeManager.getInstance().disposeGhostSession(targetUserId);
 
-        if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER)
-                && target != null
-                && !ban.ip.equals("offline")) {
-            for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip)) {
-                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
-
-                ban = new ModToolBan(
-                        h.getHabboInfo().getId(),
-                        h != null ? h.getHabboInfo().getIpLogin() : "offline",
-                        h != null ? h.getClient().getMachineId() : "offline",
-                        moderator.getHabboInfo().getId(),
-                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
-                        reason,
-                        type,
-                        cfhTopic);
-                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
-                Emulator.getThreading().run(ban);
-                bans.add(ban);
-                Emulator.getGameServer()
-                        .getGameClientManager()
-                        .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
+        // The other accounts on the same address or machine, each banned once: never the target again,
+        // never the moderator (the highest rank passes canModerateTarget for itself), never an account
+        // reached through both the address and the machine twice, and no more than
+        // MAX_SHARED_ACCOUNT_BANS of them - behind a proxy every online user shares one address.
+        if (target != null) {
+            Set<Habbo> sharing = new LinkedHashSet<>();
+            if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER) && !ban.ip.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip));
             }
-        }
+            if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER) && !ban.machineId.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getHabbosWithMachineId(ban.machineId));
+            }
 
-        if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER)
-                && target != null
-                && !ban.machineId.equals("offline")) {
-            for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithMachineId(ban.machineId)) {
-                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
-
-                ban = new ModToolBan(
+            for (Habbo h : sharedAccountsToBan(sharing, targetUserId, moderator)) {
+                ModToolBan shared = new ModToolBan(
                         h.getHabboInfo().getId(),
-                        h != null ? h.getHabboInfo().getIpLogin() : "offline",
-                        h != null ? h.getClient().getMachineId() : "offline",
+                        h.getHabboInfo().getIpLogin(),
+                        h.getClient() != null ? h.getClient().getMachineId() : "offline",
                         moderator.getHabboInfo().getId(),
-                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
+                        ban.expireDate,
                         reason,
                         type,
                         cfhTopic);
-                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
-                Emulator.getThreading().run(ban);
-                bans.add(ban);
+                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, shared));
+                Emulator.getThreading().run(shared);
+                bans.add(shared);
                 Emulator.getGameServer()
                         .getGameClientManager()
                         .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
@@ -663,6 +649,31 @@ public class ModToolManager {
         }
 
         return bans;
+    }
+
+    /** The most accounts one ban carries over to through a shared address or machine. */
+    static final int MAX_SHARED_ACCOUNT_BANS = 50;
+
+    /**
+     * The accounts sharing the banned one's address or machine that the ban carries over to: not the
+     * target, not the moderator, only ranks the moderator may moderate, and at most
+     * {@link #MAX_SHARED_ACCOUNT_BANS}.
+     */
+    static List<Habbo> sharedAccountsToBan(Collection<Habbo> sharing, int targetUserId, Habbo moderator) {
+        int moderatorId = moderator.getHabboInfo().getId();
+        List<Habbo> accounts = new ArrayList<>();
+
+        for (Habbo h : sharing) {
+            if (accounts.size() >= MAX_SHARED_ACCOUNT_BANS) break;
+            if (h == null) continue;
+
+            int id = h.getHabboInfo().getId();
+            if (id == targetUserId || id == moderatorId || !canModerateTarget(moderator, id)) continue;
+
+            accounts.add(h);
+        }
+
+        return accounts;
     }
 
     public static boolean canModerateTarget(Habbo moderator, int targetUserId) {

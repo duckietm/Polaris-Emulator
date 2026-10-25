@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomChatType;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.ChatStyleRepository;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -81,6 +82,32 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
         }
     }
 
+    /**
+     * The bubble this box may speak in, judged on its editor the way a user's own chat is: a banned
+     * bubble, a catalog style the editor does not own, or a bubble behind a permission they lack falls
+     * back to the wired bubble. The message is sent without a speaking Habbo, so the checks chat applies
+     * at send time were all skipped, and an owner could make a visitor say anything in the staff or
+     * ambassador bubble.
+     */
+    static int allowedBubble(int style, Habbo editor) {
+        int fallback = RoomChatMessageBubbles.WIRED.getType();
+        RoomChatMessageBubbles bubble = RoomChatMessageBubbles.getBubble(style);
+        if (bubble == null || bubble.getType() != style) return fallback;
+        if (editor == null) return fallback;
+
+        if (!bubble.getPermission().isEmpty() && !editor.hasPermission(bubble.getPermission())) return fallback;
+        if (editor.hasPermission(Permission.ACC_ANYCHATCOLOR)) return style;
+
+        for (Integer banned : RoomChatMessage.BANNED_BUBBLES) {
+            if (banned == style) return fallback;
+        }
+        if (ChatStyleRepository.isPurchasable(style)
+                && !ChatStyleRepository.owns(editor.getHabboInfo().getId(), style)) {
+            return fallback;
+        }
+        return style;
+    }
+
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         String message = settings.getStringParam();
@@ -90,7 +117,8 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
         this.visibilitySelection = (params.length > 0 && params[0] == VISIBILITY_ALL_ROOM_USERS)
                 ? VISIBILITY_ALL_ROOM_USERS
                 : VISIBILITY_SOURCE_USERS;
-        this.bubbleStyle = (params.length > 1) ? params[1] : RoomChatMessageBubbles.WIRED.getType();
+        this.bubbleStyle = allowedBubble(
+                (params.length > 1) ? params[1] : RoomChatMessageBubbles.WIRED.getType(), gameClient.getHabbo());
         this.bubbleWidthOverride = RoomChatMessage.normalizeBubbleWidthOverride(
                 (params.length > 2) ? params[2] : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
 

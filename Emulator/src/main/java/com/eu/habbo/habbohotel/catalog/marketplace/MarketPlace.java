@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class MarketPlace {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlace.class);
     private static final String PURCHASE_OFFER_SQL = """
-            SELECT item_id, user_id, price, state
+            SELECT item_id, user_id, price, state, timestamp
             FROM marketplace_items
             WHERE id = ? LIMIT 1
             """;
@@ -403,7 +403,18 @@ public class MarketPlace {
                                     }
 
                                     int price = MarketPlace.calculateCommision(rawPrice);
-                                    if (set.getInt("state") != 1) {
+                                    // An offer past the listing window no longer appears in
+                                    // the marketplace and its furni can be redeemed by the
+                                    // seller, but it stays state = 1: buying one by id used
+                                    // to work. An offer of the buyer's own was never
+                                    // refused either, which moved credits to themselves
+                                    // minus the commission.
+                                    boolean expired = set.getInt("timestamp")
+                                            < Emulator.getIntUnixTimestamp()
+                                                    - MarketplaceOffersQuery.LISTING_WINDOW_SECONDS;
+                                    boolean ownOffer = set.getInt("user_id")
+                                            == client.getHabbo().getHabboInfo().getId();
+                                    if (set.getInt("state") != 1 || expired || ownOffer) {
                                         sendErrorMessage(client, set.getInt("item_id"), offerId);
                                     } else if ((MARKETPLACE_CURRENCY == 0
                                                     && price

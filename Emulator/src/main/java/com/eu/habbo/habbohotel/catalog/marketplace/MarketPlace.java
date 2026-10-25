@@ -619,7 +619,7 @@ public class MarketPlace {
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
-                    if (removeUser(offer)) {
+                    if (removeUser(offer, client.getHabbo().getHabboInfo().getId())) {
                         client.getHabbo().getInventory().removeMarketplaceOffer(offer);
                         credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
                         offer.needsUpdate(true);
@@ -638,12 +638,23 @@ public class MarketPlace {
         }
     }
 
-    private static boolean removeUser(MarketPlaceOffer offer) {
+    /**
+     * Takes a sold offer's proceeds, once.
+     *
+     * <p>The update carried no condition beyond the id, so two sessions of the same
+     * seller could each claim the same sold offer and each be paid for it. Keyed on the
+     * seller and the sold state, only the first one gets the row - and an offer that is
+     * not this user's, or not sold, is never claimable at all.
+     *
+     * @return whether this caller is the one that claimed it
+     */
+    private static boolean removeUser(MarketPlaceOffer offer, int sellerId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("UPDATE marketplace_items SET user_id = ? WHERE id = ?")) {
-            statement.setInt(1, -1);
-            statement.setInt(2, offer.getOfferId());
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE marketplace_items SET user_id = -1 WHERE id = ? AND user_id = ? AND state = ?")) {
+            statement.setInt(1, offer.getOfferId());
+            statement.setInt(2, sellerId);
+            statement.setInt(3, MarketPlaceState.SOLD.getState());
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

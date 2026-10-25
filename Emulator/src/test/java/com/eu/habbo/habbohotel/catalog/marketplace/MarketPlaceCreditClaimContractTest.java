@@ -1,11 +1,10 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class MarketPlaceCreditClaimContractTest {
     private static String marketPlaceSource() throws Exception {
@@ -17,17 +16,23 @@ class MarketPlaceCreditClaimContractTest {
         String source = marketPlaceSource();
         int getCreditsStart = source.indexOf("public static void getCredits");
         int payoutRangeGuard = source.indexOf("claimable > Integer.MAX_VALUE", getCreditsStart);
-        int removeUserCall = source.indexOf("removeUser(offer)", getCreditsStart);
-        int creditAccumulator = source.indexOf("credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice())", getCreditsStart);
+        // The claim now also names the seller it is claiming for; the order it has to
+        // keep is the same.
+        int removeUserCall = source.indexOf("removeUser(offer,", getCreditsStart);
+        int creditAccumulator = source.indexOf(
+                "credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice())", getCreditsStart);
         int inventoryRemoval = source.indexOf("removeMarketplaceOffer(offer)", getCreditsStart);
 
         assertTrue(getCreditsStart > -1, "MarketPlace.getCredits must exist");
-        assertTrue(payoutRangeGuard > getCreditsStart && payoutRangeGuard < removeUserCall,
+        assertTrue(
+                payoutRangeGuard > getCreditsStart && payoutRangeGuard < removeUserCall,
                 "Unrepresentable aggregate payouts must be rejected before any offer is claimed");
         assertTrue(removeUserCall > -1, "Sold marketplace offers must be detached in the database");
-        assertTrue(removeUserCall < creditAccumulator,
+        assertTrue(
+                removeUserCall < creditAccumulator,
                 "Credits must not be granted until the sold offer is detached from the seller in the database");
-        assertTrue(removeUserCall < inventoryRemoval,
+        assertTrue(
+                removeUserCall < inventoryRemoval,
                 "The in-memory sold offer should remain claimable if the database detach fails");
     }
 
@@ -35,7 +40,8 @@ class MarketPlaceCreditClaimContractTest {
     void detachFailureIsObservableByCaller() throws Exception {
         String source = marketPlaceSource();
 
-        assertTrue(source.contains("private static boolean removeUser"),
+        assertTrue(
+                source.contains("private static boolean removeUser"),
                 "removeUser must report whether the marketplace ownership update succeeded");
     }
 }

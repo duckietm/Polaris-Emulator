@@ -19,13 +19,15 @@ import com.eu.habbo.plugin.events.games.GameStoppedEvent;
 import com.eu.habbo.threading.runnables.SaveScoreForTeam;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class Game implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Game.class);
-    protected final Map<GameTeamColors, GameTeam> teams = new HashMap<>();
+    // Concurrent: several paths iterate the teams without the lock while players join and leave.
+    protected final Map<GameTeamColors, GameTeam> teams = new ConcurrentHashMap<>();
     protected final Room room;
     private final Class<? extends GameTeam> gameTeamClazz;
     private final Class<? extends GamePlayer> gamePlayerClazz;

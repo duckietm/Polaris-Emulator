@@ -64,8 +64,8 @@ class TeleportEntryRefusalTest {
         String source = Files.readString(
                 Path.of("src/main/java/com/eu/habbo/threading/runnables/teleport/TeleportActionThree.java"));
 
-        int check = source.indexOf("!mayEnter(this.client.getHabbo(), targetRoom)");
-        int leave = source.indexOf("this.room.removeHabbo(this.client.getHabbo(), false);");
+        int check = source.indexOf("!mayEnter(this.habbo, targetRoom)");
+        int leave = source.indexOf("this.room.removeHabbo(this.habbo, false);");
 
         assertTrue(check > 0 && check < leave, "the entry is decided before the user leaves the room");
     }

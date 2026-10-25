@@ -354,7 +354,9 @@ public class HabboManager {
         try {
             SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
         } catch (SqlQueries.DataAccessException e) {
-            LOGGER.error("Caught SQL exception", e);
+            // Nothing else may change when the rank was not stored: ending a temporary rank after a failed update
+            // dropped its timer and logged a return that never happened, and the user kept the rank for good.
+            throw new Exception("Could not store rank " + rankId + " for user " + userId, e);
         }
 
         // A rank given any other way ends a temporary rank, so it is not undone later.

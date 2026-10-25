@@ -87,7 +87,9 @@ public final class TemporaryRanks {
                         .getHabboManager()
                         .setRank(row.userId(), backTo, PermissionAuditLog.SYSTEM, "system", VIA_ENDED);
             } catch (Exception e) {
+                // The timer stays, so the next sweep tries again.
                 LOGGER.error("Failed to end the temporary rank of user {}", row.userId(), e);
+                continue;
             }
 
             clear(row.userId());

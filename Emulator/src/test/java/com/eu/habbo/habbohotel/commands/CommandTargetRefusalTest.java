@@ -27,13 +27,25 @@ import org.mockito.MockedStatic;
 /**
  * Commands that act on another user went around the central rank guard: a lower rank could empty
  * an admin's inventory or take their badges (offline too), and the emptied user was sent the
- * moderator's inventory. Every such command now asks {@link CommandTargetGuard#refuse}.
+ * moderator's inventory. :control, :freeze, :summon, :say, :shout, :allow_trading and the
+ * bot and pet :empty commands let a lower rank drive, freeze, move, speak for or trade-lock an
+ * admin. Every such command now asks {@link CommandTargetGuard#refuse}.
  */
 class CommandTargetRefusalTest {
 
     private static final Path COMMANDS = Path.of("src/main/java/com/eu/habbo/habbohotel/commands");
 
-    private static final List<String> GUARDED = List.of("EmptyInventoryCommand.java", "TakeBadgeCommand.java");
+    private static final List<String> GUARDED = List.of(
+            "AllowTradingCommand.java",
+            "ControlCommand.java",
+            "EmptyBotsInventoryCommand.java",
+            "EmptyInventoryCommand.java",
+            "EmptyPetsInventoryCommand.java",
+            "FreezeCommand.java",
+            "SayCommand.java",
+            "ShoutCommand.java",
+            "SummonCommand.java",
+            "TakeBadgeCommand.java");
 
     private static Habbo habbo(int id, int rankId) {
         Rank rank = mock(Rank.class);

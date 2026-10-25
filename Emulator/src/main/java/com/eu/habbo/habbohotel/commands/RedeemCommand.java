@@ -1,128 +1,159 @@
 package com.eu.habbo.habbohotel.commands;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
+import com.eu.habbo.messages.incoming.rooms.items.RedeemItemTransaction;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
+import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
+import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
+import com.eu.habbo.plugin.events.furniture.FurnitureRedeemedEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RedeemCommand extends Command {
     public RedeemCommand() {
-        super(
-                "cmd_redeem",
-                Emulator.getTexts().getValue("commands.keys.cmd_redeem").split(";"));
+        super("cmd_redeem", text("commands.keys.cmd_redeem").split(";"));
     }
+
+    /** Every text lookup in one place, so the file reaches the global accessor once. */
+    private static String text(String key) {
+        return Emulator.getTexts().getValue(key);
+    }
+
+    /** One redeemable furni and what it is worth. */
+    private record Redeemable(HabboItem item, int currencyType, int amount) {}
 
     @Override
     public boolean handle(final GameClient gameClient, String[] params) throws Exception {
-        if (gameClient.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(gameClient.getHabbo())
-                != null) {
-            gameClient.getHabbo().whisperLocalized("generic.cannot_do_that", RoomChatMessageBubbles.ALERT);
+        Habbo habbo = gameClient.getHabbo();
+
+        if (habbo.getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(habbo) != null) {
+            habbo.whisperLocalized("generic.cannot_do_that", RoomChatMessageBubbles.ALERT);
             return true;
         }
-        List<HabboItem> items = new ArrayList<>();
 
-        int credits = 0;
-        int pixels = 0;
+        List<Redeemable> redeemables = collect(habbo);
 
-        Map<Integer, Integer> points = new HashMap<>();
-
-        for (HabboItem item :
-                gameClient.getHabbo().getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (item.getBaseItem().getName().startsWith("CF_")
-                    || item.getBaseItem().getName().startsWith("CFC_")
-                    || item.getBaseItem().getName().startsWith("DF_")
-                    || item.getBaseItem().getName().startsWith("PF_")) {
-                if (item.getUserId() == gameClient.getHabbo().getHabboInfo().getId()) {
-                    boolean redeemable = false;
-                    if ((item.getBaseItem().getName().startsWith("CF_")
-                                    || item.getBaseItem().getName().startsWith("CFC_"))
-                            && !item.getBaseItem().getName().contains("_diamond_")) {
-                        Integer amount =
-                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
-                        if (amount != null) {
-                            Integer total = addRedeemValue(credits, amount);
-                            if (total != null) {
-                                credits = total;
-                                redeemable = true;
-                            }
-                        }
-
-                    } else if (item.getBaseItem().getName().startsWith("PF_")) {
-                        Integer amount =
-                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
-                        if (amount != null) {
-                            Integer total = addRedeemValue(pixels, amount);
-                            if (total != null) {
-                                pixels = total;
-                                redeemable = true;
-                            }
-                        }
-                    } else if (item.getBaseItem().getName().startsWith("DF_")) {
-                        Integer pointsType =
-                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
-                        Integer pointsAmount =
-                                parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
-
-                        if (pointsType != null
-                                && pointsAmount != null
-                                && addRedeemPoints(points, pointsType, pointsAmount)) {
-                            redeemable = true;
-                        }
-                    } else if (item.getBaseItem().getName().startsWith("CF_diamond_")) {
-                        Integer pointsAmount =
-                                parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
-
-                        if (pointsAmount != null && addRedeemPoints(points, 5, pointsAmount)) {
-                            redeemable = true;
-                        }
-                    }
-
-                    if (redeemable) {
-                        items.add(item);
-                    }
+        // Every furni is deleted and paid for in one transaction, the same one the redeem
+        // packet uses. The command used to hand over all the currency first and queue the
+        // deletes for later, so a failure in between - or a shutdown - left the user with
+        // the credits and the furni both.
+        Map<Integer, Integer> redeemed = new LinkedHashMap<>();
+        for (Redeemable redeemable : redeemables) {
+            EconomyMutationResult mutation = LedgerWalletMutation.coordinated(habbo, () -> {
+                EconomyMutationResult result = RedeemItemTransaction.commit(
+                        redeemable.item().getId(),
+                        habbo.getHabboInfo().getId(),
+                        redeemable.currencyType(),
+                        redeemable.amount(),
+                        redeemable.item().getBaseItem().getName());
+                if (result != null) {
+                    LedgerWalletMutation.applyCommitted(habbo, redeemable.currencyType(), result.balanceAfter());
                 }
-            }
+                return result;
+            });
+
+            if (mutation == null) continue;
+
+            habbo.getInventory().getItemsComponent().removeHabboItem(redeemable.item());
+            addRedeemPoints(redeemed, redeemable.currencyType(), redeemable.amount());
         }
 
-        List<HabboItem> deleted = new ArrayList<>();
-        for (HabboItem item : items) {
-            gameClient.getHabbo().getInventory().getItemsComponent().removeHabboItem(item);
-            deleted.add(item);
+        if (redeemed.isEmpty()) {
+            habbo.whisper(text("generic.redeemed"), RoomChatMessageBubbles.ALERT);
+            return true;
         }
-
-        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(deleted));
 
         gameClient.sendResponse(new InventoryRefreshComposer());
-        gameClient.getHabbo().giveCredits(credits);
-        gameClient.getHabbo().givePixels(pixels);
+        this.publishBalances(gameClient, redeemed);
+        habbo.whisper(describe(redeemed), RoomChatMessageBubbles.ALERT);
 
-        final String[] message = {Emulator.getTexts().getValue("generic.redeemed")};
+        return true;
+    }
 
-        message[0] += Emulator.getTexts().getValue("generic.credits");
-        message[0] += ": " + credits;
+    /** The user's own redeemable furni, each with the currency and amount its name carries. */
+    private static List<Redeemable> collect(Habbo habbo) {
+        List<Redeemable> redeemables = new ArrayList<>();
 
-        if (pixels > 0) {
-            message[0] += ", " + Emulator.getTexts().getValue("generic.pixels");
-            message[0] += ": " + pixels + "";
-        }
+        for (HabboItem item : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
+            if (item.getUserId() != habbo.getHabboInfo().getId()) continue;
 
-        if (!points.isEmpty()) {
-            for (Map.Entry<Integer, Integer> entry : points.entrySet()) {
-                gameClient.getHabbo().givePoints(entry.getKey(), entry.getValue());
-                message[0] += " ," + Emulator.getTexts().getValue("seasonal.name." + entry.getKey()) + ": "
-                        + entry.getValue();
+            String name = item.getBaseItem().getName();
+
+            if ((name.startsWith("CF_") || name.startsWith("CFC_")) && !name.contains("_diamond_")) {
+                add(redeemables, item, FurnitureRedeemedEvent.CREDITS, parsePositiveRedeemValue(name, 1));
+            } else if (name.startsWith("PF_")) {
+                add(redeemables, item, FurnitureRedeemedEvent.PIXELS, parsePositiveRedeemValue(name, 1));
+            } else if (name.startsWith("DF_")) {
+                Integer pointsType = parsePositiveRedeemValue(name, 1);
+                if (pointsType != null) {
+                    add(redeemables, item, pointsType, parsePositiveRedeemValue(name, 2));
+                }
+            } else if (name.startsWith("CF_diamond_")) {
+                add(redeemables, item, FurnitureRedeemedEvent.DIAMONDS, parsePositiveRedeemValue(name, 2));
             }
         }
 
-        gameClient.getHabbo().whisper(message[0], RoomChatMessageBubbles.ALERT);
+        return redeemables;
+    }
 
-        return true;
+    private static void add(List<Redeemable> redeemables, HabboItem item, int currencyType, Integer amount) {
+        if (amount == null) return;
+
+        redeemables.add(new Redeemable(item, currencyType, amount));
+    }
+
+    /** Tells the client the balances the commits changed. */
+    private void publishBalances(GameClient gameClient, Map<Integer, Integer> redeemed) {
+        Habbo habbo = gameClient.getHabbo();
+
+        for (Map.Entry<Integer, Integer> entry : redeemed.entrySet()) {
+            int currencyType = entry.getKey();
+
+            if (currencyType == FurnitureRedeemedEvent.CREDITS) {
+                gameClient.sendResponse(new UserCreditsComposer(habbo));
+            } else if (currencyType == FurnitureRedeemedEvent.PIXELS) {
+                gameClient.sendResponse(new UserCurrencyComposer(habbo));
+            } else {
+                gameClient.sendResponse(new UserPointsComposer(
+                        habbo.getHabboInfo().getCurrencyAmount(currencyType), entry.getValue(), currencyType));
+            }
+        }
+    }
+
+    /** "Redeemed ... credits: 10, duckets: 5", from what actually committed. */
+    private static String describe(Map<Integer, Integer> redeemed) {
+        StringBuilder message = new StringBuilder(text("generic.redeemed"));
+
+        Integer credits = redeemed.get(FurnitureRedeemedEvent.CREDITS);
+        message.append(text("generic.credits")).append(": ").append(credits == null ? 0 : credits);
+
+        Integer pixels = redeemed.get(FurnitureRedeemedEvent.PIXELS);
+        if (pixels != null && pixels > 0) {
+            message.append(", ").append(text("generic.pixels")).append(": ").append(pixels);
+        }
+
+        for (Map.Entry<Integer, Integer> entry : redeemed.entrySet()) {
+            int currencyType = entry.getKey();
+            if (currencyType == FurnitureRedeemedEvent.CREDITS || currencyType == FurnitureRedeemedEvent.PIXELS) {
+                continue;
+            }
+
+            message.append(" ,")
+                    .append(text("seasonal.name." + currencyType))
+                    .append(": ")
+                    .append(entry.getValue());
+        }
+
+        return message.toString();
     }
 
     static Integer parsePositiveRedeemValue(String itemName, int index) {

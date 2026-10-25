@@ -3,6 +3,7 @@ package com.eu.habbo.networking.gameserver.cms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.command.CommandRegistry;
 import com.eu.habbo.messages.command.CommandResult;
+import com.eu.habbo.networking.gameserver.auth.AuthHttpUtil;
 import com.eu.habbo.networking.gameserver.auth.CidrRange;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -21,6 +22,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
@@ -104,6 +106,11 @@ public class CmsApiHandler extends ChannelInboundHandlerAdapter {
                 BASE_PATH,
                 keys,
                 config.getValue("cms.api.allowed", "127.0.0.1;::1"));
+        if (isLoopbackAllowed(config.getValue("cms.api.allowed", "127.0.0.1;::1"))) {
+            LOGGER.warn("CMS API admits loopback: behind a local reverse proxy, forward the client address "
+                    + "(X-Forwarded-For) and X-Forwarded-Proto, so rate limits apply per client and "
+                    + "cms.api.require_tls still holds");
+        }
         if (keys == 0) {
             LOGGER.warn("CMS API is enabled but cms.api.keys is empty (set it in the emulator_api table); "
                     + "requests will be rejected until a key is added");
@@ -156,11 +163,13 @@ public class CmsApiHandler extends ChannelInboundHandlerAdapter {
             sendEnvelope(ctx, req, HttpResponseStatus.FORBIDDEN, 1, "forbidden");
             return;
         }
-        if (CmsApiSettings.get().getBoolean("cms.api.require_tls", false) && !isSecure(ctx) && !isLoopback(ip)) {
+        if (CmsApiSettings.get().getBoolean("cms.api.require_tls", false)
+                && !isSecure(ctx)
+                && !isTlsExempt(ip, req.headers())) {
             sendEnvelope(ctx, req, HttpResponseStatus.FORBIDDEN, 1, "tls required");
             return;
         }
-        if (!acquirePermit(ip)) {
+        if (!acquirePermit(rateLimitKey(ip, req.headers()))) {
             sendEnvelope(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, 1, "rate limited");
             return;
         }
@@ -214,6 +223,12 @@ public class CmsApiHandler extends ChannelInboundHandlerAdapter {
             return;
         }
         CmsApiKey key = auth.key();
+        // One bucket per key too: the address bucket is shared by everything a proxy forwards without
+        // naming the client, and a key's budget should not depend on where its requests come from.
+        if (!acquirePermit("key:" + key.keyId())) {
+            sendEnvelope(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, 1, "rate limited");
+            return;
+        }
 
         if (path.equals(COMMANDS_PATH)) {
             sendCommandList(ctx, req, key);
@@ -431,6 +446,50 @@ public class CmsApiHandler extends ChannelInboundHandlerAdapter {
             return addr.getAddress().getHostAddress();
         }
         return "";
+    }
+
+    /** Whether a proxy put a client address on this request. */
+    static boolean isForwarded(HttpHeaders headers) {
+        return headers.contains("X-Forwarded-For") || headers.contains("X-Real-IP") || headers.contains("Forwarded");
+    }
+
+    /**
+     * A loopback peer is the CMS on the same host, exempt from cms.api.require_tls - unless it is a local
+     * reverse proxy forwarding someone else, which then has to say the client used https.
+     */
+    static boolean isTlsExempt(String peerIp, HttpHeaders headers) {
+        if (!isLoopback(peerIp)) {
+            return false;
+        }
+        if (!isForwarded(headers)) {
+            return true;
+        }
+        String proto = headers.get("X-Forwarded-Proto", "");
+        int comma = proto.indexOf(',');
+        return "https".equalsIgnoreCase((comma >= 0 ? proto.substring(0, comma) : proto).trim());
+    }
+
+    /**
+     * The rate-limit bucket of a request: its peer, or the client a local proxy forwarded, so one client
+     * behind the proxy cannot spend the budget of every other one.
+     */
+    static String rateLimitKey(String peerIp, HttpHeaders headers) {
+        if (!isLoopback(peerIp) || !isForwarded(headers)) {
+            return peerIp;
+        }
+        String forwarded =
+                headers.contains("X-Forwarded-For") ? headers.get("X-Forwarded-For") : headers.get("X-Real-IP");
+        String client = AuthHttpUtil.resolveForwardedClientIp(forwarded);
+        return client.isEmpty() ? peerIp : "fwd:" + client;
+    }
+
+    private static boolean isLoopbackAllowed(String allowed) {
+        for (String entry : allowed.split(";")) {
+            if (isLoopback(entry.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isLoopback(String ip) {

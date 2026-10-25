@@ -920,6 +920,22 @@ public class CatalogManager {
             return;
         }
 
+        // Resolve what the voucher hands out before using it up. A voucher pointing at a
+        // catalogue offer that no longer exists was claimed first and then delivered
+        // nothing, silently: the code was spent and the user got nothing for it.
+        CatalogItem voucherItem = null;
+        if (voucher.catalogItemId > 0) {
+            voucherItem = this.getCatalogItem(voucher.catalogItemId);
+            if (voucherItem == null) {
+                LOGGER.warn(
+                        "Voucher {} points at catalog item {}, which does not exist; refusing it unspent",
+                        voucher.code,
+                        voucher.catalogItemId);
+                client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+                return;
+            }
+        }
+
         Voucher.ClaimResult claimResult =
                 voucher.claimForUser(habbo.getHabboInfo().getId());
         switch (claimResult) {
@@ -949,11 +965,8 @@ public class CatalogManager {
             client.getHabbo().giveCredits(voucher.credits);
         }
 
-        if (voucher.catalogItemId > 0) {
-            CatalogItem item = this.getCatalogItem(voucher.catalogItemId);
-            if (item != null) {
-                this.purchaseItem(null, item, client.getHabbo(), 1, "", true);
-            }
+        if (voucherItem != null) {
+            this.purchaseItem(null, voucherItem, client.getHabbo(), 1, "", true);
         }
 
         client.sendResponse(new RedeemVoucherOKComposer());

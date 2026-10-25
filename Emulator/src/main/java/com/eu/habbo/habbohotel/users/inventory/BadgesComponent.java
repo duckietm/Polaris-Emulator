@@ -99,10 +99,15 @@ public class BadgesComponent {
         return badge;
     }
 
+    /**
+     * Deletes one badge code of a user. The code is compared with {@code =}: it used to go to a
+     * {@code LIKE} unescaped, so a code of {@code %} deleted every badge an offline user had. The
+     * column's collation keeps the match case-insensitive, as {@link #removeBadge(String)} is.
+     */
     public static void deleteBadge(int userId, String badge) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "DELETE users_badges FROM users_badges WHERE user_id = ? AND badge_code LIKE ?")) {
+                        "DELETE users_badges FROM users_badges WHERE user_id = ? AND badge_code = ?")) {
             statement.setInt(1, userId);
             statement.setString(2, badge);
             statement.execute();

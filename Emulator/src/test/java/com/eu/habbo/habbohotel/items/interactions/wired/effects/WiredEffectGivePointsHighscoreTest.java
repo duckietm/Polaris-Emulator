@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -24,7 +26,6 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.google.gson.JsonParser;
 import java.sql.ResultSet;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 /**
@@ -70,20 +70,9 @@ class WiredEffectGivePointsHighscoreTest {
 
             effect.execute(ctx);
 
-            ArgumentCaptor<WiredHighscoreDataEntry> written = ArgumentCaptor.forClass(WiredHighscoreDataEntry.class);
-            verify(manager, org.mockito.Mockito.times(2)).addHighscoreData(written.capture());
-
-            assertEquals(
-                    List.of(101, 202),
-                    written.getAllValues().stream()
-                            .map(WiredHighscoreDataEntry::getItemId)
-                            .toList(),
-                    "one entry per board, in room order");
-
-            WiredHighscoreDataEntry first = written.getAllValues().get(0);
-            assertEquals(List.of(77), first.getUserIds());
-            assertEquals(25, first.getScore());
-            assertTrue(first.isWin(), "a most-wins board reads one firing as one win");
+            // One row per board for the resolved users, added to under the board's lock by the manager.
+            verify(manager).addScore(eq(101), eq(List.of(77)), eq(25), anyInt());
+            verify(manager).addScore(eq(202), eq(List.of(77)), eq(25), anyInt());
         }
     }
 
@@ -105,7 +94,7 @@ class WiredEffectGivePointsHighscoreTest {
 
             effect.execute(ctx);
 
-            verify(manager, never()).addHighscoreData(any());
+            verify(manager, never()).addScore(anyInt(), any(), anyInt(), anyInt());
         }
     }
 
@@ -123,7 +112,7 @@ class WiredEffectGivePointsHighscoreTest {
 
             effect.execute(context(room));
 
-            verify(manager, never()).addHighscoreData(any());
+            verify(manager, never()).addScore(anyInt(), any(), anyInt(), anyInt());
         }
     }
 
@@ -230,11 +219,6 @@ class WiredEffectGivePointsHighscoreTest {
         when(room.getHabbo(unit)).thenReturn(standingThere);
 
         WiredHighscoreManager manager = mock(WiredHighscoreManager.class);
-        // The same person already has ten on this board -- listed as a one-element team, which is
-        // how the resolver hands a single user over.
-        when(manager.getEntriesForItemId(101))
-                .thenReturn(
-                        new java.util.ArrayList<>(List.of(new WiredHighscoreDataEntry(101, List.of(77), 10, true, 1))));
 
         try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class);
                 MockedStatic<WiredSourceUtil> sources = mockStatic(WiredSourceUtil.class)) {
@@ -244,15 +228,12 @@ class WiredEffectGivePointsHighscoreTest {
                     .thenReturn(List.of(unit));
 
             effect.execute(ctx);
+            effect.execute(ctx);
 
-            verify(manager, never()).addHighscoreData(any());
-
-            ArgumentCaptor<List<WiredHighscoreDataEntry>> saved = ArgumentCaptor.captor();
-            verify(manager).setEntriesForItemId(org.mockito.ArgumentMatchers.eq(101), saved.capture());
-
-            assertEquals(1, saved.getValue().size(), "the board keeps one row for this person");
-            assertEquals(20, saved.getValue().get(0).getScore(), "ten already there plus ten given");
-            assertEquals(List.of(77), saved.getValue().get(0).getUserIds());
+            // The box asks the manager to add; finding the row and adding to it under the board's lock
+            // is the manager's (WiredHighscoreAddScoreTest), so the box never rewrites the board itself.
+            verify(manager, org.mockito.Mockito.times(2)).addScore(eq(101), eq(List.of(77)), eq(10), anyInt());
+            verify(manager, never()).setEntriesForItemId(anyInt(), any());
         }
     }
 }

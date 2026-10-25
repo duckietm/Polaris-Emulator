@@ -114,6 +114,9 @@ final class SessionEndpoints {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
                 return;
             }
+            if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
+                return;
+            }
 
             String ssoTicket = mintSsoTicket();
             Timestamp ssoExpiry = newSsoTicketExpiry();
@@ -177,6 +180,10 @@ final class SessionEndpoints {
                     return;
                 }
 
+                if (refuseBanned(ctx, req, conn, userId, ip, null)) {
+                    return;
+                }
+
                 if (!passesMaintenanceGate(ctx, req, lookupRank(conn, userId), "auth/sso-token", userId)) {
                     return;
                 }
@@ -215,6 +222,9 @@ final class SessionEndpoints {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
                 return;
             }
+            if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
+                return;
+            }
             JsonObject ok = new JsonObject();
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
@@ -227,6 +237,31 @@ final class SessionEndpoints {
             LOGGER.error("Refresh failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    /**
+     * Refuses a session to a banned account or address, as the password login does, and ends what the
+     * user still holds: the remember family the token belongs to and every access token. A remember
+     * token used to go on minting tickets and access tokens for its thirty days after a ban.
+     */
+    static boolean refuseBanned(
+            ChannelHandlerContext ctx, FullHttpRequest req, Connection conn, int userId, String ip, String rememberJwt)
+            throws SQLException {
+        AuthHttpUtil.BanInfo ban = lookupAccountBan(conn, userId);
+        if (ban == null && ip != null && !ip.isEmpty()) {
+            ban = lookupIpBan(conn, ip);
+        }
+        if (ban == null) {
+            return false;
+        }
+
+        LOGGER.info("[auth/session] ban hit userId={} type={} expires={}", userId, ban.type, ban.expiresAt);
+        if (rememberJwt != null) {
+            RememberJwtService.revokeFromToken(conn, rememberJwt);
+        }
+        AccessTokenService.revokeAll(conn, userId);
+        sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(ban));
+        return true;
     }
 
     private static JsonObject maintenancePayload() {

@@ -9,11 +9,12 @@ public class JukeBoxRemoveSoundTrackEvent extends MessageHandler {
     public void handle() throws Exception {
         int index = this.packet.readInt();
 
+        // Adding a disc needs rights; removing one did not, so any visitor emptied the playlist and
+        // sent every disc back to its owner.
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-        if (room == null) return;
+        if (room == null || !room.hasRights(this.client.getHabbo())) return;
 
-        if (index < 0 || index >= room.getTraxManager().getSongs().size())
-            return;
+        if (index < 0 || index >= room.getTraxManager().getSongs().size()) return;
 
         InteractionMusicDisc musicDisc = room.getTraxManager().getSongs().get(index);
 

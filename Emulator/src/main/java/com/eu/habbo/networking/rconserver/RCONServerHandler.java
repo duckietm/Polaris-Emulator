@@ -8,6 +8,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.handler.codec.TooLongFrameException;
+import io.netty.handler.codec.json.JsonObjectDecoder;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import org.slf4j.Logger;
@@ -79,6 +82,32 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
         } finally {
             data.release();
         }
+    }
+
+    /** Splits the stream into whole JSON objects, refusing one larger than the payload limit. */
+    static JsonObjectDecoder framer() {
+        return new JsonObjectDecoder(maxPayloadBytes());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof TooLongFrameException) {
+            LOGGER.warn("Rejected oversized RCON payload (max {} bytes)", maxPayloadBytes());
+            writeAndClose(
+                    ctx,
+                    RconResponse.error(com.eu.habbo.messages.rcon.RCONMessage.STATUS_ERROR, "payload too large")
+                            .toJson(GSON));
+            return;
+        }
+        if (cause instanceof CorruptedFrameException) {
+            writeAndClose(
+                    ctx,
+                    RconResponse.error(com.eu.habbo.messages.rcon.RCONMessage.STATUS_ERROR, "invalid request")
+                            .toJson(GSON));
+            return;
+        }
+        LOGGER.error("RCON connection error", cause);
+        ctx.close();
     }
 
     static int maxPayloadBytes() {

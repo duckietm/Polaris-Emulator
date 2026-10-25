@@ -11,7 +11,6 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModeratorActionResultComposer;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
 
 public class ModToolSanctionMuteEvent extends MessageHandler {
@@ -53,44 +52,27 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
 
                     if (modToolSanctionItems != null && !modToolSanctionItemsHashMap.isEmpty()) {
                         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
+                        ModToolSanctionLevelItem modToolSanctionLevelItem =
+                                modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
-                        if (item.probationTimestamp > 0 && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
-                            ModToolSanctionLevelItem modToolSanctionLevelItem =
-                                    modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
+                        // The mute ends this many hours from now, as a unix timestamp in seconds.
+                        // Hours used to be turned into seconds and added to milliseconds, so a
+                        // one-hour mute ended after about three and a half seconds.
+                        int muteDurationTimestamp = modToolSanctionLevelItem == null
+                                ? 0
+                                : ModToolManager.banExpiry(
+                                        Emulator.getIntUnixTimestamp(),
+                                        ModToolManager.hoursToSeconds(modToolSanctionLevelItem.sanctionHourLength));
 
-                            int muteDurationTimestamp = Math.toIntExact(new Date(System.currentTimeMillis()
-                                                    + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60))
-                                            .getTime()
-                                    / 1000);
-
-                            modToolSanctions.run(
-                                    userId,
-                                    this.client.getHabbo(),
-                                    item.sanctionLevel,
-                                    cfhTopic,
-                                    message,
-                                    0,
-                                    true,
-                                    muteDurationTimestamp);
-                        } else {
-                            ModToolSanctionLevelItem modToolSanctionLevelItem =
-                                    modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
-
-                            int muteDurationTimestamp = Math.toIntExact(new Date(System.currentTimeMillis()
-                                                    + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60))
-                                            .getTime()
-                                    / 1000);
-
-                            modToolSanctions.run(
-                                    userId,
-                                    this.client.getHabbo(),
-                                    item.sanctionLevel,
-                                    cfhTopic,
-                                    message,
-                                    0,
-                                    true,
-                                    muteDurationTimestamp);
-                        }
+                        modToolSanctions.run(
+                                userId,
+                                this.client.getHabbo(),
+                                item.sanctionLevel,
+                                cfhTopic,
+                                message,
+                                0,
+                                true,
+                                muteDurationTimestamp);
                     } else {
                         modToolSanctions.run(userId, this.client.getHabbo(), 0, cfhTopic, message, 0, false, 0);
                     }

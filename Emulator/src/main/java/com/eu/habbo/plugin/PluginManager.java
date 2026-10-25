@@ -3,6 +3,7 @@ package com.eu.habbo.plugin;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.core.Easter;
+import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.tag.TagGame;
 import com.eu.habbo.habbohotel.items.interactions.games.football.InteractionFootballGate;
@@ -22,6 +23,7 @@ import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.eu.habbo.threading.runnables.RoomTrashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -186,10 +188,13 @@ public class PluginManager {
                         plugin.configuration = pluginConfigurtion;
                         plugin.classLoader = urlClassLoader;
                         plugin.stream = stream;
+                        // Registered only once it started: a plugin whose onEnable threw stayed listed half
+                        // set up, its handlers and permission checks live.
+                        plugin.onEnable();
                         this.plugins.add(plugin);
                         retainPluginResources = true;
-                        plugin.onEnable();
                     } catch (Exception e) {
+                        CommandHandler.removeCommandsLoadedBy(urlClassLoader);
                         LOGGER.error("Could not load plugin {}!", pluginConfigurtion.name);
                         LOGGER.error("Caught exception", e);
                     }
@@ -201,6 +206,16 @@ public class PluginManager {
                     closeRejectedPluginResources(stream, urlClassLoader, file.getName());
                 }
             }
+        }
+    }
+
+    private static void closeQuietly(Closeable resource, String pluginName) {
+        if (resource == null) return;
+
+        try {
+            resource.close();
+        } catch (IOException e) {
+            LOGGER.error("Failed to release a resource of plugin {}", pluginName, e);
         }
     }
 
@@ -300,12 +315,13 @@ public class PluginManager {
 
                 try {
                     p.onDisable();
-                    p.stream.close();
-                    p.classLoader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Caught exception", e);
                 } catch (Exception ex) {
                     LOGGER.error("Failed to disable {} because of an exception.", p.configuration.name, ex);
+                } finally {
+                    // Released even when onDisable threw: the class loader stayed in memory and the jar locked.
+                    CommandHandler.removeCommandsLoadedBy(p.classLoader);
+                    closeQuietly(p.stream, p.configuration.name);
+                    closeQuietly(p.classLoader, p.configuration.name);
                 }
             }
         }

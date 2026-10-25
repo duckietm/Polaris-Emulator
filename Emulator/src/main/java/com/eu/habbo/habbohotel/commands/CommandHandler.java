@@ -52,6 +52,18 @@ public class CommandHandler {
         commands.put(command.getClass().getName(), command);
     }
 
+    /**
+     * Drops the commands whose classes a plugin's class loader defined. They stayed in this map after the plugin was
+     * unloaded or failed to start, still runnable, and kept its class loader - and on Windows its jar - alive.
+     */
+    public static int removeCommandsLoadedBy(ClassLoader loader) {
+        if (loader == null) return 0;
+
+        int before = commands.size();
+        commands.values().removeIf(command -> command.getClass().getClassLoader() == loader);
+        return before - commands.size();
+    }
+
     public static void addCommand(Class<? extends Command> command) {
         try {
             // command.getConstructor().setAccessible(true);

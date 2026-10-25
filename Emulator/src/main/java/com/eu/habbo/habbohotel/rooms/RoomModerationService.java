@@ -34,7 +34,8 @@ final class RoomModerationService {
         if (room == null) {
             return;
         }
-        if (rights != null && !room.hasRights(rights)) {
+        // The room's ban setting decides who may ban: holding rights was enough even with "owner only".
+        if (rights != null && !room.getRightsManager().canBan(rights)) {
             return;
         }
         if (room.getOwnerId() == userId) {

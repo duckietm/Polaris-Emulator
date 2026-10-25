@@ -161,6 +161,45 @@ public class RoomRightsManager {
                         && this.room.getCurrentHabbos().containsKey(userId));
     }
 
+    /** Room moderation settings, as the room settings window saves them. */
+    static final int MODERATION_OWNER_ONLY = 0;
+
+    static final int MODERATION_RIGHTS_HOLDERS = 1;
+    static final int MODERATION_EVERYONE = 2;
+
+    /** Whether the room's kick setting lets this user kick: the owner, rights holders, or everyone. */
+    public boolean canKick(Habbo habbo) {
+        return this.allowedBy(this.room.getKickOption(), habbo, true);
+    }
+
+    /** Whether the room's mute setting lets this user mute: the owner, or rights holders too. */
+    public boolean canMute(Habbo habbo) {
+        return this.allowedBy(this.room.getMuteOption(), habbo, false);
+    }
+
+    /** Whether the room's ban setting lets this user ban: the owner, or rights holders too. */
+    public boolean canBan(Habbo habbo) {
+        return this.allowedBy(this.room.getBanOption(), habbo, false);
+    }
+
+    /**
+     * The owner (and staff who own any room) always may. Holding rights used to be enough whatever the
+     * setting, so "owner only" never applied. Mute and ban offer no "everyone" level: a stored 2 counts
+     * as rights holders for them.
+     */
+    private boolean allowedBy(int option, Habbo habbo, boolean everyoneAllowed) {
+        if (habbo == null) {
+            return false;
+        }
+        if (this.isOwner(habbo)) {
+            return true;
+        }
+        if (option >= MODERATION_EVERYONE && everyoneAllowed) {
+            return true;
+        }
+        return option >= MODERATION_RIGHTS_HOLDERS && this.hasRights(habbo);
+    }
+
     /**
      * Checks whether a user (by id) owns the room or holds persistent rights,
      * without needing an online {@link Habbo}. Does not consider the transient

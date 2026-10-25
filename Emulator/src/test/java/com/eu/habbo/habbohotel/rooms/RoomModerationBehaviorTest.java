@@ -49,7 +49,9 @@ class RoomModerationBehaviorTest {
         RoomManager manager = new RoomManager(false);
         Room room = activeRoom(manager, 41, 7);
         Habbo moderator = mock(Habbo.class);
-        when(room.hasRights(moderator)).thenReturn(false);
+        RoomRightsManager rights = mock(RoomRightsManager.class);
+        when(rights.canBan(moderator)).thenReturn(false);
+        when(room.getRightsManager()).thenReturn(rights);
 
         manager.banUserFromRoom(moderator, 8, 41, RoomManager.RoomBanTypes.RWUAM_BAN_USER_HOUR);
         manager.banUserFromRoom(null, 7, 41, RoomManager.RoomBanTypes.RWUAM_BAN_USER_HOUR);

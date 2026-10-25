@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,8 +18,13 @@ final class RoomBanLoader {
 
     private RoomBanLoader() {}
 
+    /**
+     * Replaces the room's active bans with the stored ones. They are read first and swapped in under
+     * the map's lock: clearing up front left the room with no bans while the query ran, and a ban
+     * placed meanwhile from another thread raced the refill.
+     */
     static void load(Connection connection, Room room, Int2ObjectMap<RoomBan> bannedHabbos) {
-        bannedHabbos.clear();
+        Int2ObjectMap<RoomBan> loaded = new Int2ObjectOpenHashMap<>();
 
         try (PreparedStatement statement = connection.prepareStatement(ACTIVE_BANS_QUERY)) {
             statement.setInt(1, room.currentUnixTimestamp());
@@ -26,13 +32,19 @@ final class RoomBanLoader {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     int userId = set.getInt("user_id");
-                    if (!bannedHabbos.containsKey(userId)) {
-                        bannedHabbos.put(userId, new RoomBan(set));
+                    if (!loaded.containsKey(userId)) {
+                        loaded.put(userId, new RoomBan(set));
                     }
                 }
             }
         } catch (SQLException exception) {
             LOGGER.error("Caught SQL exception", exception);
+            return;
+        }
+
+        synchronized (bannedHabbos) {
+            bannedHabbos.clear();
+            bannedHabbos.putAll(loaded);
         }
     }
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.imageio.ImageIO;
@@ -33,6 +34,7 @@ public class GuildBadgeGenerator {
     private final Function<String, BufferedImage> composer;
     private final ThreadPoolExecutor executor;
     private final Set<String> pending = ConcurrentHashMap.newKeySet();
+    private final AtomicBoolean missingFolderLogged = new AtomicBoolean(false);
 
     public GuildBadgeGenerator(Supplier<File> outputFolder, Function<String, BufferedImage> composer, int queueSize) {
         this.outputFolder = outputFolder;
@@ -55,10 +57,30 @@ public class GuildBadgeGenerator {
         return new File(folder, badge + ".png");
     }
 
-    /** Queues a badge; false when it is not a badge code or the queue is full. */
+    /**
+     * True when the output folder ({@code imager.location.output.badges}) exists. While it does not, nothing is
+     * queued and the missing folder is logged once, not once per badge.
+     */
+    public boolean outputReady() {
+        File folder = this.outputFolder.get();
+        if (folder != null && folder.isDirectory()) {
+            this.missingFolderLogged.set(false);
+            return true;
+        }
+        if (folder != null && this.missingFolderLogged.compareAndSet(false, true)) {
+            LOGGER.error(
+                    "[Badge Imager] Output folder {} (imager.location.output.badges) does not exist; no guild badge"
+                            + " images are written until it does. Create it or fix the setting, then type"
+                            + " :update_guildparts.",
+                    folder.getAbsolutePath());
+        }
+        return false;
+    }
+
+    /** Queues a badge; false when it is not a badge code, the output folder is missing or the queue is full. */
     public boolean submit(String badge) {
         File file = this.outputFile(badge);
-        if (file == null) {
+        if (file == null || !this.outputReady()) {
             return false;
         }
         if (file.isFile() || !this.pending.add(badge)) {
@@ -77,7 +99,7 @@ public class GuildBadgeGenerator {
     /** Queues a badge, waiting while the queue is full (for the backfill thread, never a network thread). */
     public boolean submitWaiting(String badge) throws InterruptedException {
         while (!this.submit(badge)) {
-            if (this.outputFile(badge) == null) {
+            if (this.outputFile(badge) == null || !this.outputReady()) {
                 return false;
             }
             Thread.sleep(50);
@@ -112,8 +134,7 @@ public class GuildBadgeGenerator {
                 return;
             }
             File folder = file.getParentFile();
-            if (!folder.isDirectory()) {
-                LOGGER.error("[Badge Imager] Output folder {} does not exist", folder);
+            if (!this.outputReady()) {
                 return;
             }
 

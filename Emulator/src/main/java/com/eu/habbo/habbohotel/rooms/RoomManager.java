@@ -986,7 +986,9 @@ public class RoomManager {
                 visibleHabbos = event.visibleHabbos;
             }
 
+            // The newcomer is already in the room: its own entry and status come once, with the others below.
             for (Habbo habboToSendEnter : habbosToSendEnter) {
+                if (habboToSendEnter == habbo) continue;
                 GameClient client = habboToSendEnter.getClient();
                 if (client != null) {
                     client.sendResponse(new RoomUsersComposer(habbo).compose());

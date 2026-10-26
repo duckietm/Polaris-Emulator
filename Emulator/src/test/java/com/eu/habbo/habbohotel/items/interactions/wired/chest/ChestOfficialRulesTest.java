@@ -184,4 +184,23 @@ class ChestOfficialRulesTest {
                         com.eu.habbo.messages.outgoing.rooms.items.ChestOpenComposer.class));
         verify(visitor.getClient(), never()).sendResponse(any(MessageComposer.class));
     }
+
+    @Test
+    void aPlayerWhoMayNotTradeIsRefusedADepositWithReasonEight() {
+        Habbo locked = habbo(OWNER);
+        com.eu.habbo.habbohotel.users.HabboStats stats = mock(com.eu.habbo.habbohotel.users.HabboStats.class);
+        when(locked.getHabboStats()).thenReturn(stats);
+        InteractionWiredChestCurrency chest = currencyChest();
+
+        assertEquals(
+                ChestTransactionFailures.USER_CANT_TRADE, ChestTransactionFailures.depositRefusal(chest, locked, true));
+        chest.getContents().setAccessDonate(true);
+        assertEquals(
+                ChestTransactionFailures.USER_CANT_TRADE,
+                ChestTransactionFailures.depositRefusal(chest, locked, false));
+        assertFalse(ChestTransactionFailures.countsOnMonitor(ChestTransactionFailures.USER_CANT_TRADE));
+
+        when(stats.allowTrade()).thenReturn(true);
+        assertEquals(ChestTransactionFailures.NONE, ChestTransactionFailures.depositRefusal(chest, locked, false));
+    }
 }

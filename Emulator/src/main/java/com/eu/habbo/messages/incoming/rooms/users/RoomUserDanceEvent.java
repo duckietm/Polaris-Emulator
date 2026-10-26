@@ -14,6 +14,8 @@ public class RoomUserDanceEvent extends MessageHandler {
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
 
         int danceId = this.packet.readInt();
+        if (RoomUserInputGuard.isClubOnlyDance(danceId)
+                && !this.client.getHabbo().getHabboStats().hasActiveClub()) return;
         if (danceId >= 0 && danceId <= 4) {
             if (this.client.getHabbo().getRoomUnit().isInRoom()) {
 

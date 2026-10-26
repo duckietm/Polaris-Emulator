@@ -91,6 +91,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.util.DefaultAttributeMap;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -848,6 +849,8 @@ class SecureLoginEventBehaviourTest {
         GameClient client = mock(GameClient.class, withSettings().name(name));
         this.labels.put(client, name);
         Channel channel = mock(Channel.class);
+        DefaultAttributeMap attributes = new DefaultAttributeMap();
+        when(channel.attr(any())).thenAnswer(i -> attributes.attr(i.getArgument(0)));
         when(channel.isOpen()).thenAnswer(i -> this.channelOpen);
         when(channel.close()).thenAnswer(i -> this.record(name + ".channel.close()"));
         when(client.getChannel()).thenReturn(channel);

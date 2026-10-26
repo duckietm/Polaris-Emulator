@@ -515,6 +515,7 @@ FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#TOO_MANY_OFFERS:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#TRADE_CANCELLED:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#USER_CANCELLED:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#USER_CANT_TRADE:int
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#countsOnMonitor(int):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#depositRefusal(com.eu.habbo.habbohotel.users.HabboItem,com.eu.habbo.habbohotel.users.Habbo,boolean):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#fromSession(int):int throws -

@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
+import com.eu.habbo.messages.outgoing.inventory.InventoryUpdateItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemsComposer;
@@ -258,7 +259,10 @@ final class RoomItemOwnershipService {
         if (owner != null) {
             owner.getInventory().getItemsComponent().addItem(item);
             owner.getClient().sendResponse(new AddHabboItemComposer(item));
-            owner.getClient().sendResponse(new InventoryRefreshComposer());
+            // Habbo sends the picker the item itself; an item returned to its absent owner keeps the reload.
+            owner.getClient()
+                    .sendResponse(
+                            owner == picker ? new InventoryUpdateItemComposer(item) : new InventoryRefreshComposer());
         }
         Emulator.getThreading().run(item);
 

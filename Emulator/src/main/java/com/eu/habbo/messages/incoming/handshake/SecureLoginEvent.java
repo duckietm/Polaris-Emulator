@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.eu.habbo.habbohotel.achievements.TalentTrackType;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
@@ -58,6 +59,8 @@ import com.eu.habbo.messages.outgoing.users.UserClothesComposer;
 import com.eu.habbo.messages.outgoing.users.UserClubComposer;
 import com.eu.habbo.messages.outgoing.users.UserHomeRoomComposer;
 import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
+import com.eu.habbo.networking.gameserver.GameServerAttributes;
+import com.eu.habbo.networking.gameserver.auth.GameConnectionLimits;
 import com.eu.habbo.plugin.events.users.UserLoginEvent;
 import com.eu.habbo.resilience.RuntimeResilienceController;
 import com.eu.habbo.resilience.RuntimeResilienceRuntime;
@@ -100,7 +103,8 @@ public class SecureLoginEvent extends MessageHandler {
      * admission. Returns false when the connection was turned away.
      */
     private boolean connectionAccepted() {
-        if (Emulator.getConfig().getBoolean("encryption.forced", false)
+        ConfigurationManager config = Emulator.getConfig();
+        if (config.getBoolean("encryption.forced", false)
                 && Emulator.getCrypto().isEnabled()
                 && !this.client.isHandshakeFinished()) {
             clients().disposeClient(this.client);
@@ -108,8 +112,7 @@ public class SecureLoginEvent extends MessageHandler {
             return false;
         }
 
-        String allowedReleases =
-                Emulator.getConfig().getValue("client.release.allowed", ClientReleaseGuard.DEFAULT_ALLOWED_RELEASES);
+        String allowedReleases = config.getValue("client.release.allowed", ClientReleaseGuard.DEFAULT_ALLOWED_RELEASES);
         if (!ClientReleaseGuard.isAllowed(this.client.getReleaseVersion(), allowedReleases)) {
             LOGGER.warn(
                     "Rejected client release '{}' (allowed: '{}')", this.client.getReleaseVersion(), allowedReleases);
@@ -161,6 +164,15 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
+        String visitor =
+                this.client.getChannel().attr(GameServerAttributes.VISITOR).get();
+        GameConnectionLimits limits = GameConnectionLimits.shared();
+        if (limits.isLoginBlocked(visitor, System.currentTimeMillis())) {
+            clients().disposeClient(this.client);
+            LOGGER.warn("Refused a ticket login from {}: too many failed logins", visitor);
+            return;
+        }
+
         // Store SSO ticket on client for grace period tracking
         this.client.setSsoTicket(sso);
         this.disposeEarlierConnection(sso);
@@ -175,6 +187,8 @@ public class SecureLoginEvent extends MessageHandler {
         }
 
         if (habbo == null) {
+            limits.recordFailedLogin(
+                    visitor, GameConnectionLimits.Settings.from(Emulator.getConfig()), System.currentTimeMillis());
             clients().disposeClient(this.client);
             LOGGER.warn("Someone tried to login with a non-existing SSO token! Closed connection...");
             return;

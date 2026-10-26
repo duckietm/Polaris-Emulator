@@ -695,11 +695,17 @@ public class RoomUnit {
 
         if (goalLocation != null && !noReset) {
             boolean isWalking = this.hasStatus(RoomUnitStatus.MOVE);
+            RoomTile previousGoal = this.goalLocation;
+            Deque<RoomTile> previousPath = this.path;
             this.goalLocation = goalLocation;
             this.findPath(); // /< Quadral: this is where we start formulating a path
-            if (!this.path.isEmpty()) {
+            boolean foundRoute = this.path != previousPath && !this.path.isEmpty();
+            if (foundRoute) {
                 this.tilesWalked = isWalking ? this.tilesWalked : 0;
                 this.cmdSit = false;
+            } else if (isWalking && previousPath != null && !previousPath.isEmpty()) {
+                // Habbo ignores a goal with no route while the unit walks: the walk goes on to its old goal.
+                this.goalLocation = previousGoal;
             } else {
                 this.goalLocation = this.currentLocation;
             }

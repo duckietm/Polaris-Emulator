@@ -30,6 +30,8 @@ public class RoomUserActionEvent extends MessageHandler {
 
             int action = this.packet.readInt();
             if (!RoomUserInputGuard.isValidAction(action)) return;
+            if (RoomUserInputGuard.isClubOnlyAction(action)
+                    && !this.client.getHabbo().getHabboStats().hasActiveClub()) return;
 
             int wiredAction = WiredUserActionType.NONE;
 

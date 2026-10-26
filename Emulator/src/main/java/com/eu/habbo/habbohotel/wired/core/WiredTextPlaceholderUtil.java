@@ -110,8 +110,11 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = variableExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = replaceWithBudget(
-                            resolvedText, placeholderToken, buildVariableReplacement(ctx, variableExtra));
+                    String replacement = buildVariableReplacement(ctx, variableExtra);
+                    // null: the variable's box was picked up meanwhile, and the placeholder stays as written.
+                    if (replacement != null) {
+                        resolvedText = replaceWithBudget(resolvedText, placeholderToken, replacement);
+                    }
                     replacementCount++;
                 }
 
@@ -446,6 +449,7 @@ public final class WiredTextPlaceholderUtil {
     }
 
     private static String buildVariableReplacement(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        if (definitionPickedUp(ctx.room(), extra)) return null;
         WiredArrayVariableDefinition arrayDefinition = extra.getArrayDefinition(ctx.room());
         if (arrayDefinition != null) return buildArrayReplacement(ctx, extra, arrayDefinition);
         List<String> values =
@@ -465,6 +469,21 @@ public final class WiredTextPlaceholderUtil {
         }
 
         return values.get(0);
+    }
+
+    /**
+     * Whether the variable the output shows lost its box: a delayed message then leaves the placeholder as written
+     * (observed on AIR WIN63-202610201032). An imported or referenced variable still has a definition.
+     */
+    private static boolean definitionPickedUp(Room room, WiredExtraTextOutputVariable extra) {
+        int id = extra.getVariableItemId();
+        if (room == null || id <= 0 || room.getHabboItem(id) != null) return false;
+        if (extra.getTargetType() == WiredExtraTextOutputVariable.TARGET_CONTEXT) {
+            return WiredContextVariableSupport.getDefinitionInfo(room, id) == null;
+        }
+        return room.getUserVariableManager().getDefinitionInfo(id) == null
+                && room.getFurniVariableManager().getDefinitionInfo(id) == null
+                && room.getRoomVariableManager().getDefinitionInfo(id) == null;
     }
 
     private static String buildArrayReplacement(

@@ -394,6 +394,21 @@ public class RoomChatManager {
 
         trimTrailingWhitespace(roomChatMessage);
 
+        // The line's wired runs first: its one flash, then its Show Message texts, then the speaker's own line (or
+        // the echo of a hidden one), then the texts of stacks its signals reached (observed on AIR
+        // WIN63-202610151745).
+        boolean runsWired = chatType != RoomChatType.WHISPER && !ignoreWired && !roomChatMessage.isCommand;
+        if (runsWired) {
+            WiredBoxFlashes.runSayPass(() -> WiredManager.triggerUserSays(
+                    habbo.getHabboInfo().getCurrentRoom(),
+                    habbo.getRoomUnit(),
+                    wiredSayMessage,
+                    chatType.ordinal(),
+                    roomChatMessage.getBubble() != null
+                            ? roomChatMessage.getBubble().getType()
+                            : -1));
+        }
+
         // Send chat based on type
         if (chatType == RoomChatType.WHISPER) {
             this.handleWhisper(habbo, roomChatMessage, prefixMessage, clearPrefixMessage);
@@ -413,15 +428,8 @@ public class RoomChatManager {
             }
         }
 
-        if (chatType != RoomChatType.WHISPER && !ignoreWired && !roomChatMessage.isCommand) {
-            WiredManager.triggerUserSays(
-                    habbo.getHabboInfo().getCurrentRoom(),
-                    habbo.getRoomUnit(),
-                    wiredSayMessage,
-                    chatType.ordinal(),
-                    roomChatMessage.getBubble() != null
-                            ? roomChatMessage.getBubble().getType()
-                            : -1);
+        if (runsWired) {
+            WiredBoxFlashes.releaseAfterSpeaker();
         }
 
         // Notify bots and talking furniture

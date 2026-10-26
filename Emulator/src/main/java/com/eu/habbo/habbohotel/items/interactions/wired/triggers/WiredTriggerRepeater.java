@@ -27,6 +27,9 @@ import java.util.List;
  * </p>
  */
 public class WiredTriggerRepeater extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
+    /** Shared with the short repeater, which ticks through the same reset. */
+    final WiredRepeaterPhase phase = new WiredRepeaterPhase();
+
     public static final WiredTriggerType type = WiredTriggerType.PERIODICALLY;
     public static final int DEFAULT_DELAY = 10 * 500; // 5 seconds default
     private static final int STEP_MS = 500;
@@ -137,8 +140,9 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
         long elapsedMs = tickCount * tickIntervalMs;
 
         // Fire when elapsed time is a multiple of repeatTime
-        if (elapsedMs % this.repeatTime == 0) {
-            long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
+        if (this.phase.shouldFire(
+                elapsedMs % this.repeatTime == 0, room.getCycleTimestamp(), currentTime, this.repeatTime)) {
             if (this.getRoomId() != 0
                     && room.isLoaded()
                     && WiredManager.isTriggerExecutionAllowed(room, this, currentTime)) {
@@ -149,7 +153,7 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
 
     @Override
     public void resetTimer() {
-        // No-op - using global tick count, no local state to reset
+        this.phase.reset(System.currentTimeMillis());
     }
 
     @Override

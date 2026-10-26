@@ -61,7 +61,8 @@ public final class WiredLeaderboardService implements WiredTickable {
     private long changeVersion = -1;
     private long lastRefreshMs;
     private long lastPushSlot = -1;
-    private int roomRevision;
+    // Habbo counts one revision per room from 1, so the first saved board shows revision 2 (AIR WIN63-202610201032).
+    private int roomRevision = 1;
 
     public WiredLeaderboardService(int roomId) {
         this.roomId = roomId;

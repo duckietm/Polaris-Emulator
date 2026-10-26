@@ -21,8 +21,10 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
@@ -177,6 +179,25 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra impleme
 
     public String getIcon() {
         return this.icon;
+    }
+
+    /**
+     * Every variable box on this tile that fits the source, lowest first: one fx box draws each of them, under its
+     * one config (observed on AIR WIN63-202610151745: two user variables on a boss bar's tile each got a status).
+     */
+    public List<InteractionWiredExtra> getShownVariableBoxes(Room room) {
+        List<InteractionWiredExtra> shown = new ArrayList<>();
+        if (room == null || room.getRoomSpecialTypes() == null) return shown;
+
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(this.getX(), this.getY());
+        if (extras == null || extras.isEmpty()) return shown;
+
+        for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
+            if (this.isUserFx() ? extra instanceof WiredExtraUserVariable : extra instanceof WiredExtraFurniVariable) {
+                shown.add(extra);
+            }
+        }
+        return shown;
     }
 
     /** The variable box on this tile that fits the source, null when there is none. */

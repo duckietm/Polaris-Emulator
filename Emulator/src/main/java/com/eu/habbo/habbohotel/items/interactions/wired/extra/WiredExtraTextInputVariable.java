@@ -114,7 +114,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra implement
         message.appendInt(this.getId());
         message.appendString(this.capturerName);
         message.appendInt(1);
-        message.appendInt(this.getDisplayType(room) == DISPLAY_TEXTUAL ? 1 : 0);
+        message.appendInt(this.displayType == DISPLAY_TEXTUAL ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -194,8 +194,12 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra implement
         String capturedValue = rawValue != null ? rawValue : "";
         String normalizedValue = capturedValue.trim();
 
-        if (this.getDisplayType(room) == DISPLAY_TEXTUAL) {
-            return WiredVariableTextConnectorSupport.toValue(room, this.variableItemId, capturedValue);
+        // Text mode captures connector labels only: without a connector it captures nothing (observed on AIR),
+        // it does not fall back to numbers.
+        if (this.displayType == DISPLAY_TEXTUAL) {
+            return canUseTextualDisplay(room, this.variableItemId)
+                    ? WiredVariableTextConnectorSupport.toValue(room, this.variableItemId, capturedValue)
+                    : null;
         }
 
         if (normalizedValue.isEmpty()) {

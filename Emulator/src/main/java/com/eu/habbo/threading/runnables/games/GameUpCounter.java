@@ -32,18 +32,18 @@ public class GameUpCounter implements Runnable {
             return;
         }
 
-        int tickDelayMs = (int) timer.getNextTickDelayMs();
-        timer.advanceCounterInMs(tickDelayMs);
+        long tickDelayMs = timer.getNextTickDelayMs();
+        timer.advanceCounterMs(tickDelayMs);
         // Every tick, whole or half second: a trigger set to X.5 seconds used to wait forever.
         WiredManager.triggerClockCounter(room, timer);
 
-        if (timer.getCurrentTimeInMs() < timer.getMaximumTimeInMs()) {
+        if (timer.getCurrentTimeMs() < timer.getMaximumTimeMs()) {
             if (timer.tryActivateTimerThread()) {
                 this.chain = timer.getTimerChain();
                 Emulator.getThreading().run(this, timer.getNextTickDelayMs());
             }
         } else {
-            timer.setCurrentTimeInMs(timer.getMaximumTimeInMs());
+            timer.setCurrentTimeMs(timer.getMaximumTimeMs());
             timer.endGame(room);
             WiredManager.triggerGameEnds(room);
         }

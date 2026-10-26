@@ -231,8 +231,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         for (String line : value.split("\n")) {
             int index = line.indexOf('=');
             if (index <= 0 || !line.substring(0, index).trim().equals("_")) continue;
-            String label = line.substring(index + 1).trim();
-            if (!label.isEmpty()) fallback = label;
+            // "_=" alone is an empty fallback, still a fallback; "_=a=b" keeps "a=b".
+            fallback = line.substring(index + 1).trim();
         }
         return fallback;
     }

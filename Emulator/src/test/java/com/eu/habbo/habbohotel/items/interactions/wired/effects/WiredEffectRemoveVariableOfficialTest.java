@@ -116,9 +116,8 @@ class WiredEffectRemoveVariableOfficialTest {
     }
 
     @Test
-    void canMoveFreelyCannotBeSavedOnAUser() {
-        org.junit.jupiter.api.Assertions.assertThrows(
-                com.eu.habbo.messages.incoming.wired.WiredSaveException.class,
-                () -> saved(new int[] {WiredValueVariable.TARGET_USER}, "internal:@can_move_freely"));
+    void aFurniVariableOnAUserTargetSavesAndRemovesNothing() throws Exception {
+        // AIR saves a variable of another kind than the target; the box then removes nothing.
+        saved(new int[] {WiredValueVariable.TARGET_USER}, "internal:@can_move_freely");
     }
 }

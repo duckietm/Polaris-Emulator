@@ -106,6 +106,12 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra
         int nextTargetType = normalizeTargetType(WiredVariableTargets.fromOfficial(
                 (intParams.length > 1) ? intParams[1] : WiredVariableTargets.OFFICIAL_USER));
         String nextVariableToken = normalizeVariableToken(stringData[0]);
+        boolean multiple = intParams.length > 0 && intParams[0] != 0;
+        // The name comes first: even the box's frame (no name, no variable) is refused for its name (AIR).
+        String refusal = WiredPlaceholderNameRules.refusal(stringData[1], multiple, stringData[2]);
+        if (refusal != null) {
+            throw new WiredSaveException(refusal);
+        }
 
         if (nextVariableToken.isEmpty()) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
@@ -145,10 +151,10 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra
         this.targetType = nextTargetType;
         this.setVariableToken(nextVariableToken);
         this.displayType = (intParams.length > 2 && intParams[2] == 1) ? DISPLAY_TEXTUAL : DISPLAY_NUMERIC;
-        this.placeholderType = (intParams.length > 0 && intParams[0] == 1) ? TYPE_MULTIPLE : TYPE_SINGLE;
+        this.placeholderType = multiple ? TYPE_MULTIPLE : TYPE_SINGLE;
         this.userSource = normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         this.furniSource = nextFurniSource;
-        this.placeholderName = normalizePlaceholderName(stringData[1]);
+        this.placeholderName = WiredPlaceholderNameRules.storedName(stringData[1]);
         this.delimiter = normalizeDelimiter(stringData[2]);
         this.arrayAddress = nextArrayData.address;
         this.arrayAddressConfigured = arrayDefinition != null;

@@ -374,6 +374,147 @@ class WiredDelayedSchedulerTest {
         }
     }
 
+    @Test
+    void aChainWhoseUserLeftStillRunsTheEffectsThatDoNotNeedThem() {
+        Room room = occupiedRoom(80);
+        RoomUnit actor = mock(RoomUnit.class);
+        when(room.getRoomUnits()).thenReturn(Set.of(actor));
+        WiredContext context = context(room, actor);
+        IWiredEffect actorRequired = new IWiredEffect() {
+            @Override
+            public void execute(WiredContext ignored) {}
+
+            @Override
+            public boolean requiresActor() {
+                return true;
+            }
+        };
+        IWiredEffect toggle = ignored -> {};
+        List<Runnable> tasks = new ArrayList<>();
+        List<List<IWiredEffect>> ran = new ArrayList<>();
+        WiredDelayedScheduler scheduler = new WiredDelayedScheduler(
+                (task, delayMs) -> {
+                    tasks.add(task);
+                    return () -> true;
+                },
+                () -> 2_000L,
+                (ignoredRoom, format, arguments) -> {},
+                ignoredId -> room);
+
+        scheduler.scheduleOrderedBatch(
+                List.of(actorRequired, toggle),
+                context,
+                4,
+                2_000L,
+                diagnostics(),
+                "fixture",
+                12,
+                resolved -> ran.add(resolved.effects()));
+
+        // The user leaves and the room empties: the chain is not dropped, only the effect that needs the user.
+        when(room.getRoomUnits()).thenReturn(Set.of());
+        when(room.getHabbos()).thenReturn(List.of());
+        tasks.getFirst().run();
+
+        assertEquals(List.of(List.of(toggle)), ran);
+    }
+
+    @Test
+    void aDelayPausedByTheWiredDisablerEndsLaterByThePause() {
+        int roomId = 81;
+        Room room = occupiedRoom(roomId);
+        AtomicLong clock = new AtomicLong(0L);
+        List<Runnable> tasks = new ArrayList<>();
+        List<Long> delays = new ArrayList<>();
+        AtomicInteger executions = new AtomicInteger();
+        WiredDelayedScheduler scheduler = new WiredDelayedScheduler(
+                (task, delayMs) -> {
+                    tasks.add(task);
+                    delays.add(delayMs);
+                    return () -> true;
+                },
+                clock::get,
+                (ignoredRoom, format, arguments) -> {},
+                ignoredId -> room);
+        try {
+            // 10 pulses (5 s) from 0; the disabler is on from 1.0 s to 3.5 s: five room ticks, 2.5 s.
+            scheduler.scheduleEffect(
+                    ignored -> {},
+                    context(room, null),
+                    10,
+                    0L,
+                    diagnostics(),
+                    "fixture",
+                    13,
+                    executions::incrementAndGet);
+            for (long tick = 1_000L; tick < 3_500L; tick += 500L) {
+                WiredDisablerPauses.onRoomTick(roomId, true);
+            }
+            WiredDisablerPauses.onRoomTick(roomId, false);
+
+            clock.set(5_000L);
+            tasks.get(0).run();
+            assertEquals(0, executions.get(), "not at 5.0 s");
+            assertEquals(2_500L, delays.get(1));
+
+            clock.set(7_500L);
+            tasks.get(1).run();
+            assertEquals(1, executions.get(), "at 7.5 s");
+        } finally {
+            WiredDisablerPauses.forgetRoom(roomId);
+        }
+    }
+
+    @Test
+    void aDelayThatEndsWhileTheDisablerIsOnWaitsAndThenRunsItsRemainder() {
+        int roomId = 82;
+        Room room = occupiedRoom(roomId);
+        AtomicLong clock = new AtomicLong(0L);
+        List<Runnable> tasks = new ArrayList<>();
+        AtomicInteger executions = new AtomicInteger();
+        WiredDelayedScheduler scheduler = new WiredDelayedScheduler(
+                (task, delayMs) -> {
+                    tasks.add(task);
+                    return () -> true;
+                },
+                clock::get,
+                (ignoredRoom, format, arguments) -> {},
+                ignoredId -> room);
+        try {
+            // 4 pulses (2 s) from 0; the disabler is on from 0.5 s to 5.5 s.
+            scheduler.scheduleEffect(
+                    ignored -> {},
+                    context(room, null),
+                    4,
+                    0L,
+                    diagnostics(),
+                    "fixture",
+                    14,
+                    executions::incrementAndGet);
+            for (long tick = 500L; tick < 2_000L; tick += 500L) {
+                WiredDisablerPauses.onRoomTick(roomId, true);
+            }
+            clock.set(2_000L);
+            WiredDisablerPauses.onRoomTick(roomId, true);
+            tasks.getLast().run();
+            assertEquals(0, executions.get(), "paused");
+            for (long tick = 2_500L; tick < 5_500L; tick += 500L) {
+                WiredDisablerPauses.onRoomTick(roomId, true);
+            }
+            WiredDisablerPauses.onRoomTick(roomId, false);
+
+            clock.set(5_500L);
+            tasks.getLast().run();
+            clock.set(6_500L);
+            assertEquals(0, executions.get(), "not when the disabler goes off");
+            clock.set(7_000L);
+            tasks.getLast().run();
+            assertEquals(1, executions.get(), "at 7.0 s");
+        } finally {
+            WiredDisablerPauses.forgetRoom(roomId);
+        }
+    }
+
     private static WiredContext context(Room room, RoomUnit actor) {
         WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.CUSTOM, room);
         if (actor != null) {

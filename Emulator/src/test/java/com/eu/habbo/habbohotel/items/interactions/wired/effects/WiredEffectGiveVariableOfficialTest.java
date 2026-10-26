@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -26,7 +25,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
-import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -115,10 +113,9 @@ class WiredEffectGiveVariableOfficialTest {
     }
 
     @Test
-    void fromAVariableNeedsTheReferenceVariable() {
-        assertThrows(
-                WiredSaveException.class,
-                () -> saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 1, -10, 0}, "40"));
+    void fromAVariableWithoutTheReferenceStillSaves() throws Exception {
+        // AIR saves a variable box with an empty reference slot; it then gives nothing.
+        saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 1, -10, 0}, "40");
     }
 
     private static HabboItem item(int id) {

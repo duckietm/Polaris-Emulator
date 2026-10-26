@@ -3,7 +3,6 @@ package com.eu.habbo.habbohotel.wired.arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -32,7 +31,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredServices;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredState;
-import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,12 +149,13 @@ class WiredVariableAssignmentParityTest {
             assertTrue(give.saveData(
                     new WiredSettings(new int[] {1, 0, 42, 0, 0, -10, 0}, "internal:@effect", new int[0], 0), null));
             assertTrue(remove.saveData(new WiredSettings(new int[] {1}, "internal:@has_rights", new int[0], 0), null));
-            assertThrows(
-                    WiredSaveException.class,
-                    () -> give.saveData(new WiredSettings(new int[] {0}, "internal:@effect", new int[0], 0), null));
-            assertThrows(
-                    WiredSaveException.class,
-                    () -> remove.saveData(new WiredSettings(new int[] {1}, "internal:@effect", new int[0], 0), null));
+            // A variable of another kind than the target saves (AIR) and does nothing.
+            WiredEffectGiveVariable otherGive = new WiredEffectGiveVariable(13, 1, null, "", 0, 0);
+            otherGive.setRoomId(7);
+            WiredEffectRemoveVariable otherRemove = new WiredEffectRemoveVariable(14, 1, null, "", 0, 0);
+            otherRemove.setRoomId(7);
+            assertTrue(otherGive.saveData(new WiredSettings(new int[] {0}, "internal:@effect", new int[0], 0), null));
+            assertTrue(otherRemove.saveData(new WiredSettings(new int[] {1}, "internal:@effect", new int[0], 0), null));
         }
         String saved = give.getWiredData();
         WiredEffectGiveVariable reopened = new WiredEffectGiveVariable(12, 1, null, "", 0, 0);

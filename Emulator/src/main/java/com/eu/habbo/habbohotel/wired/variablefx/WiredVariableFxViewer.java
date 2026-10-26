@@ -2,8 +2,10 @@ package com.eu.habbo.habbohotel.wired.variablefx;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * What one player in the room has been sent: the statuses their client is showing, by
@@ -13,6 +15,8 @@ import java.util.Map;
 public final class WiredVariableFxViewer {
     private final Map<WiredVariableFxStatus.Key, String> sent = new HashMap<>();
     private boolean synced;
+    /** The holders the viewer had statuses for at the last flush. */
+    private Set<String> readyHolders = Set.of();
 
     /** A batch to send: the statuses that changed (or are new) and the keys that went away. */
     public record Batch(
@@ -30,12 +34,18 @@ public final class WiredVariableFxViewer {
         return this.sent.size();
     }
 
-    /**
-     * Works out what differs from what the viewer was last sent and remembers the new state. A
-     * status the viewer never had is delivered as "initialize" (drawn without the change
-     * animation); the viewer's first batch is a sync rather than a set of changes.
-     */
+    /** {@link #diff(Map, Set)} with no config resent. */
     public Batch diff(Map<WiredVariableFxStatus.Key, WiredVariableFxStatus> wanted) {
+        return this.diff(wanted, Set.of());
+    }
+
+    /**
+     * Works out what differs from what the viewer was last sent and remembers the new state. As in Habbo (observed
+     * on AIR): the first batch initializes everything; a status of a holder the viewer already had is a change, not
+     * an initialize; a holder new to the viewer is initialized; and a box saved again (its config resent) sends every
+     * status of it again, initialized.
+     */
+    public Batch diff(Map<WiredVariableFxStatus.Key, WiredVariableFxStatus> wanted, Set<Integer> resentConfigs) {
         List<WiredVariableFxStatus.Key> removed = new ArrayList<>();
         for (WiredVariableFxStatus.Key key : this.sent.keySet()) {
             if (!wanted.containsKey(key)) removed.add(key);
@@ -44,20 +54,31 @@ public final class WiredVariableFxViewer {
             this.sent.remove(key);
         }
 
+        boolean initializeAll = !this.synced || !resentConfigs.isEmpty();
         List<WiredVariableFxStatus> updates = new ArrayList<>();
+        Set<String> holders = new HashSet<>();
         for (Map.Entry<WiredVariableFxStatus.Key, WiredVariableFxStatus> entry : wanted.entrySet()) {
+            WiredVariableFxStatus.Key key = entry.getKey();
+            String holder = holderOf(key);
+            holders.add(holder);
             String signature = entry.getValue().signature();
-            String previous = this.sent.get(entry.getKey());
+            String previous = this.sent.get(key);
+            boolean resent = resentConfigs.contains(key.configId());
 
-            if (previous != null && previous.equals(signature)) continue;
+            if (!resent && previous != null && previous.equals(signature)) continue;
 
-            this.sent.put(entry.getKey(), signature);
-            updates.add(entry.getValue().withInitialize(previous == null));
+            this.sent.put(key, signature);
+            boolean initialize = !this.synced || resent || !this.readyHolders.contains(holder);
+            updates.add(entry.getValue().withInitialize(initialize));
         }
 
-        boolean initializeAll = !this.synced;
+        this.readyHolders = holders;
         this.synced = true;
 
         return new Batch(initializeAll, updates, removed);
+    }
+
+    private static String holderOf(WiredVariableFxStatus.Key key) {
+        return (key.userEntity() ? "u" : "f") + key.entityId();
     }
 }

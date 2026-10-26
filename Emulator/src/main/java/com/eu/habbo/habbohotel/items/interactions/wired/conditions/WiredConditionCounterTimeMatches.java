@@ -286,7 +286,7 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     }
 
     private boolean matchesCounter(InteractionGameUpCounter counter, int targetTimeInMs) {
-        int currentTimeInMs = counter.getCurrentTimeInMs();
+        long currentTimeInMs = counter.getCurrentTimeMs();
 
         switch (this.comparison) {
             case COMPARISON_LESS:

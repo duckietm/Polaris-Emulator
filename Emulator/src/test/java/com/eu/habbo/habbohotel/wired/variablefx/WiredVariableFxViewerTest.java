@@ -91,4 +91,32 @@ class WiredVariableFxViewerTest {
         assertEquals(1, viewer.diff(wanted(withExtra)).updates().size());
         assertTrue(viewer.diff(wanted(withExtra)).isEmpty());
     }
+
+    @Test
+    void aVariableGivenToAHolderTheViewerHasIsAChangeNotAnInitialize() {
+        WiredVariableFxViewer viewer = new WiredVariableFxViewer();
+        viewer.diff(wanted(status(HP, 50)));
+
+        // XP is new to the viewer, but its holder (user 5) is not: AIR sends it without initialize.
+        WiredVariableFxViewer.Batch batch = viewer.diff(wanted(status(HP, 50), status(XP, 3)));
+
+        assertEquals(1, batch.updates().size());
+        assertFalse(batch.updates().get(0).initialize());
+        assertFalse(batch.initializeAll());
+    }
+
+    @Test
+    void aBoxSavedAgainSendsAllItsStatusesInitialized() {
+        WiredVariableFxViewer viewer = new WiredVariableFxViewer();
+        viewer.diff(wanted(status(HP, 50), status(XP, 7)));
+
+        WiredVariableFxViewer.Batch batch =
+                viewer.diff(wanted(status(HP, 50), status(XP, 7)), java.util.Set.of(HP.configId()));
+
+        assertTrue(batch.initializeAll());
+        assertEquals(
+                List.of(HP),
+                batch.updates().stream().map(WiredVariableFxStatus::key).toList());
+        assertTrue(batch.updates().get(0).initialize());
+    }
 }

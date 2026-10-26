@@ -88,6 +88,9 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect
         if (this.targetType == TARGET_GLOBAL) {
             return;
         }
+        if (WiredPointerVariableSupport.ignoredWithoutDelay(room, this.getDelay(), this.variableItemId)) {
+            return;
+        }
 
         if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
             if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
@@ -329,44 +332,10 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect
         int nextVariableItemId = parseVariableItemId(variableText);
         String nextInternalKey = normalizeInternalKey(variableText);
         boolean internal = variableText != null && variableText.trim().startsWith("internal:");
+        // Habbo saves the box with any variable, or none: one no box defines, of another kind or read-only is
+        // stored, and the box then removes nothing (observed on AIR WIN63-202610201032).
         if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-        }
-
-        if (!internal) {
-
-            if (nextVariableItemId <= 0) {
-                throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
-            }
-
-            switch (nextTargetType) {
-                case TARGET_USER:
-                    WiredVariableDefinitionInfo userDefinition =
-                            room.getUserVariableManager().getDefinitionInfo(nextVariableItemId);
-                    if (userDefinition == null || userDefinition.isReadOnly()) {
-                        throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-                    }
-                    break;
-                case TARGET_FURNI:
-                    WiredVariableDefinitionInfo furniDefinition =
-                            room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
-                    if (furniDefinition == null || furniDefinition.isReadOnly()) {
-                        throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-                    }
-                    break;
-                case TARGET_GLOBAL:
-                    // Saved like Give Variable on a global: the box then removes nothing.
-                    break;
-                case TARGET_CONTEXT:
-                    WiredVariableDefinitionInfo contextDefinition =
-                            WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
-                    if (contextDefinition == null || contextDefinition.isReadOnly()) {
-                        throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-                    }
-                    break;
-                default:
-                    throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-            }
+            nextInternalKey = "";
         }
 
         this.selectedFurni.clear();

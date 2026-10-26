@@ -23,9 +23,9 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(Darn it, darn)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, bobba it, bobba, 0, 0)
+WiredManager.triggerUserSays(room, unit, bobba it, bobba, 0, 0)
 speaker <- Talk(bobba it, bobba)
 listener <- Talk(bobba it, bobba)
-WiredManager.triggerUserSays(room, unit, bobba it, bobba, 0, 0)
 returned
 line "bobba it, bobba" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -37,9 +37,9 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(darn it)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, darn it, 0, 0)
+WiredManager.triggerUserSays(room, unit, darn it, 0, 0)
 speaker <- Talk(darn it)
 listener <- Talk(darn it)
-WiredManager.triggerUserSays(room, unit, darn it, 0, 0)
 returned
 line "darn it" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -70,9 +70,9 @@ room.unIdle(second)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 second <- Talk(hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 second chat counter 4, muted count 0, singing false
@@ -84,10 +84,10 @@ room.unIdle(third)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 second <- Talk(hello)
 third <- Talk(hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 third chat counter 4, muted count 0, singing false
@@ -116,9 +116,9 @@ room.unIdle(owner)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 owner <- Talk(hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 owner chat counter 0, muted count 0, singing false
@@ -129,8 +129,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
-speaker <- Talk(hello)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
 returned
 line "hello" command false delivered true
 speaker chat counter 0, muted count 0, singing false
@@ -141,8 +141,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
-speaker <- Talk(hello)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -185,8 +185,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
-speaker <- Talk(hello)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -202,8 +202,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
-speaker <- Talk(hello)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
 returned
 line "hello" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -247,13 +247,13 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 speaker <- Shout(hello)
 facing <- Shout(hello)
 facing turns its head WEST
 threading.run(task, 2000)
 away <- Shout(hello)
 walking <- Shout(hello)
-WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -265,13 +265,13 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 facing <- Talk(hello)
 facing turns its head WEST
 threading.run(task, 2000)
 away <- Talk(hello)
 walking <- Talk(hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -282,8 +282,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
-speaker <- Talk(hello)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
+speaker <- Talk(hello)
 bot.onUserSay(hello)
 room <- Talk(text:parrot.message.1)
 parrot.onClick
@@ -318,9 +318,9 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 listener <- Talk(hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -360,13 +360,13 @@ room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
 plugin event UsernameTalkEvent
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- PluginPrefix
 speaker <- Talk(hello)
 speaker <- NameChanged(speaker)
 near <- PluginPrefix
 near <- Talk(hello)
 near <- NameChanged(speaker)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -378,6 +378,7 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 speaker <- NameChanged(speaker)
 speaker <- Shout(hello)
 speaker <- NameChanged(speaker)
@@ -387,7 +388,6 @@ near <- NameChanged(speaker)
 old chat <- Shout(hello)
 old chat turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -399,6 +399,7 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- NameChanged(speaker)
 speaker <- Talk(hello)
 speaker <- NameChanged(speaker)
@@ -408,7 +409,6 @@ near <- NameChanged(speaker)
 old chat <- Talk(hello)
 old chat turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -435,12 +435,12 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(HELLO)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, HELLO, 1, 0)
+WiredManager.triggerUserSays(room, unit, HELLO, 1, 0)
 speaker <- Shout(HELLO)
 near <- Shout(HELLO)
 far <- Shout(HELLO)
 far turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit, HELLO, 1, 0)
 returned
 line "HELLO" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -452,11 +452,11 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 far <- Talk(hello)
 far turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -468,12 +468,12 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(   )
 WiredManager.shouldSuppressUserSaysOutput(room, unit,    , 0, 0)
+WiredManager.triggerUserSays(room, unit,    , 0, 0)
 speaker <- Talk( )
 near <- Talk( )
 far with rights <- Talk( )
 far with rights turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit,    , 0, 0)
 returned
 line " " command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -485,12 +485,12 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello   )
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello   , 0, 0)
+WiredManager.triggerUserSays(room, unit, hello   , 0, 0)
 speaker <- Talk(hello)
 near <- Talk(hello)
 far with rights <- Talk(hello)
 far with rights turns its head NORTH_WEST
 threading.run(task, 2000)
-WiredManager.triggerUserSays(room, unit, hello   , 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -502,10 +502,10 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
+WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 speaker <- Shout(hello)
 inside <- Shout(hello)
 staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
-WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -517,10 +517,10 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(hello)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
+WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 inside <- Talk(hello)
 staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
-WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -576,8 +576,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(secret)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, secret, 1, 0)
-speaker <- Whisper(secret)
 WiredManager.triggerUserSays(room, unit, secret, 1, 0)
+speaker <- Whisper(secret)
 returned
 line "secret" command false delivered false
 speaker chat counter 2, muted count 0, singing false
@@ -589,8 +589,8 @@ room.unIdle(speaker)
 room <- Typing(unit)
 CommandHandler.handleChatCommand(secret)
 WiredManager.shouldSuppressUserSaysOutput(room, unit, secret, 0, 0)
-speaker <- Whisper(secret)
 WiredManager.triggerUserSays(room, unit, secret, 0, 0)
+speaker <- Whisper(secret)
 returned
 line "secret" command false delivered false
 speaker chat counter 1, muted count 0, singing false

@@ -85,6 +85,9 @@ public final class WiredTextPlaceholderContext {
             }
         }
 
+        // Listed in name order, not stack order (observed on AIR: ptr, cx, ev, ct, nv lists as ct, cx, ev, nv, ptr).
+        placeholders.sort(java.util.Comparator.naturalOrder());
+        capturers.sort(java.util.Comparator.naturalOrder());
         return new Names(placeholders, capturers);
     }
 

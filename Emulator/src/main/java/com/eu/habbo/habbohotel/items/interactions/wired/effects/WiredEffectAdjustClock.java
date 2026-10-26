@@ -69,6 +69,11 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         }
     }
 
+    /** Whether this box sets the clock, rather than increasing or decreasing it. */
+    public boolean isSet() {
+        return this.operator == OPERATOR_SET;
+    }
+
     @Deprecated
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {

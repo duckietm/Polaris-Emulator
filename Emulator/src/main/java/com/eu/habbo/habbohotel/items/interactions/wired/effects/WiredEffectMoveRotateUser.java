@@ -48,6 +48,10 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
 
     @Override
     public void execute(WiredContext ctx) {
+        WiredUserMovementHelper.joiningFiringMovements(() -> this.moveAndTurn(ctx));
+    }
+
+    private void moveAndTurn(WiredContext ctx) {
         Room room = ctx.room();
         WiredMovementPhysics movementPhysics = WiredMoveCarryHelper.getUserMovementPhysics(room, this, ctx);
         int jumpStrength = WiredMoveCarryHelper.getUserJumpStrength(room, this, ctx);

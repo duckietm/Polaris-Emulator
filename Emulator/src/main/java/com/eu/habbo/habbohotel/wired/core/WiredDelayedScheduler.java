@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -159,7 +160,24 @@ final class WiredDelayedScheduler {
         long elapsedSinceTrigger = Math.max(0L, this.clock.getAsLong() - snapshot.triggerTime());
         long remainingDelayMs = Math.max(0L, delayMs - elapsedSinceTrigger);
 
-        Runnable delayedWork = () -> {
+        int roomId = snapshot.roomId();
+        long pausedAtSchedule = WiredDisablerPauses.pausedMs(roomId);
+        long dueAt = this.clock.getAsLong() + remainingDelayMs;
+
+        DelayedStep delayedWork = () -> {
+            // Paused by a Wired Disabler: the delay waits it out and ends later by the time it was paused, so one that
+            // would have ended during the pause does not run the moment the disabler goes off.
+            if (WiredDisablerPauses.isPaused(roomId)) {
+                return WiredDisablerPauses.ROOM_TICK_MS;
+            }
+            long paused = WiredDisablerPauses.pausedMs(roomId) - pausedAtSchedule;
+            if (paused > 0) {
+                long now = this.clock.getAsLong();
+                if (now < dueAt + paused) {
+                    return dueAt + paused - now;
+                }
+            }
+
             Room room = null;
             try {
                 room = this.roomResolver.resolve(snapshot.roomId());
@@ -171,15 +189,21 @@ final class WiredDelayedScheduler {
                         sourceId,
                         ignored);
             }
-            if (room == null || !room.isLoaded() || room.getHabbos().isEmpty()) {
-                return;
+            // The chain keeps running when its user left or the room emptied; only an unload ends it.
+            if (room == null || !room.isLoaded()) {
+                return DONE;
             }
             var resolved = snapshot.resolve(room);
-            if (resolved.isEmpty() || !prepareDelayedExecution(resolved.get())) {
-                return;
+            if (resolved.isEmpty()) {
+                return DONE;
+            }
+            WiredDelayedExecutionSnapshot.Resolved runnable = withoutActorWork(resolved.get());
+            if (runnable.effects().isEmpty()) {
+                return DONE;
             }
 
-            work.run(resolved.get());
+            work.run(runnable);
+            return DONE;
         };
 
         PendingTask pendingTask = new PendingTask(delayedWork, roomDiagnostics);
@@ -192,7 +216,7 @@ final class WiredDelayedScheduler {
                 return;
             }
 
-            ScheduledTask scheduledTask = this.taskScheduler.schedule(pendingTask::run, remainingDelayMs);
+            ScheduledTask scheduledTask = this.book(pendingTask, remainingDelayMs);
             if (scheduledTask == null) {
                 pendingTask.cancel();
                 this.diagnostics.log(context.room(), "Delayed scheduler rejected work during shutdown");
@@ -212,13 +236,37 @@ final class WiredDelayedScheduler {
         }
     }
 
-    private static boolean prepareDelayedExecution(WiredDelayedExecutionSnapshot.Resolved resolved) {
+    /**
+     * The effects that can still run: one that needs the user who left resolves to nobody and does nothing, the
+     * rest of its chain still runs.
+     */
+    private static WiredDelayedExecutionSnapshot.Resolved withoutActorWork(
+            WiredDelayedExecutionSnapshot.Resolved resolved) {
+        if (resolved.context().hasActor()) {
+            return resolved;
+        }
+        List<IWiredEffect> runnable = new ArrayList<>(resolved.effects().size());
         for (IWiredEffect effect : resolved.effects()) {
-            if (effect != null && effect.requiresActor() && !resolved.context().hasActor()) {
-                return false;
+            if (effect != null && !effect.requiresActor()) {
+                runnable.add(effect);
             }
         }
-        return true;
+        return runnable.size() == resolved.effects().size()
+                ? resolved
+                : new WiredDelayedExecutionSnapshot.Resolved(resolved.context(), List.copyOf(runnable));
+    }
+
+    /** One wake of a delayed task: {@link #DONE}, or the milliseconds to wait before it wakes again. */
+    @FunctionalInterface
+    private interface DelayedStep {
+        long run();
+    }
+
+    private static final long DONE = -1L;
+
+    /** The one place a delayed task is handed to the executor: its first wake and every wake after a pause. */
+    private ScheduledTask book(PendingTask task, long delayMs) {
+        return this.taskScheduler.schedule(task::run, delayMs);
     }
 
     int shutdown() {
@@ -235,12 +283,12 @@ final class WiredDelayedScheduler {
     }
 
     private final class PendingTask implements Runnable {
-        private final Runnable work;
+        private final DelayedStep work;
         private final WiredRoomDiagnostics roomDiagnostics;
         private final AtomicInteger state = new AtomicInteger(TASK_PENDING);
         private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>();
 
-        private PendingTask(Runnable work, WiredRoomDiagnostics roomDiagnostics) {
+        private PendingTask(DelayedStep work, WiredRoomDiagnostics roomDiagnostics) {
             this.work = work;
             this.roomDiagnostics = roomDiagnostics;
         }
@@ -259,12 +307,35 @@ final class WiredDelayedScheduler {
                 return;
             }
 
-            pendingTasks.remove(this);
+            long again = DONE;
             try {
-                this.work.run();
+                again = this.work.run();
             } finally {
-                this.state.set(TASK_COMPLETED);
-                this.roomDiagnostics.completeDelayedEvent();
+                if (again < 0 || !this.rebook(again)) {
+                    pendingTasks.remove(this);
+                    this.state.set(TASK_COMPLETED);
+                    this.roomDiagnostics.completeDelayedEvent();
+                }
+            }
+        }
+
+        /** Books the next wake of a paused delay; false when the scheduler no longer takes work. */
+        private boolean rebook(long delayMs) {
+            if (!accepting.get()) {
+                return false;
+            }
+            this.state.set(TASK_PENDING);
+            try {
+                ScheduledTask next = book(this, delayMs);
+                if (next == null) {
+                    this.state.set(TASK_RUNNING);
+                    return false;
+                }
+                this.attach(next);
+                return true;
+            } catch (RuntimeException exception) {
+                this.state.set(TASK_RUNNING);
+                return false;
             }
         }
 

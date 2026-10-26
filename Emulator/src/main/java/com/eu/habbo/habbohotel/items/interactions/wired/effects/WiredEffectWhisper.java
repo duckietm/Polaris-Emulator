@@ -13,9 +13,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
@@ -291,7 +293,8 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
             if (shownToRoom && ctx.room() != null) {
                 Bot speaker = sourceBot(ctx.room(), sourceUsers);
                 if (speaker != null) {
-                    speaker.talk(buildMessage(ctx, null));
+                    String said = buildMessage(ctx, null);
+                    WiredBoxFlashes.sendAfterFlash(() -> speaker.talk(said), reachedBySignal(ctx));
                     return;
                 }
             }
@@ -314,13 +317,22 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                 }
 
                 String msg = buildMessage(ctx, (sharedSourceHabbo != null) ? sharedSourceHabbo : habbo);
-                habbo.getClient().sendResponse(new RoomUserWhisperComposer(this.chatMessage(msg, habbo.getRoomUnit())));
+                RoomUserWhisperComposer whisper =
+                        new RoomUserWhisperComposer(this.chatMessage(msg, habbo.getRoomUnit()));
+                // The text follows the pass's flashes and movements; one a say reached through a signal follows the
+                // speaker's own line (observed on AIR WIN63-202610151745).
+                var client = habbo.getClient();
+                WiredBoxFlashes.sendAfterFlash(() -> client.sendResponse(whisper), reachedBySignal(ctx));
 
                 if (habbo.getRoomUnit().isIdle()) {
                     habbo.getRoomUnit().getRoom().unIdle(habbo);
                 }
             }
         }
+    }
+
+    private static boolean reachedBySignal(WiredContext ctx) {
+        return ctx.event() != null && ctx.event().getType() == WiredEvent.Type.SIGNAL_RECEIVED;
     }
 
     /** Habbo shows at most ten wired messages in any five seconds per room and drops the rest. */

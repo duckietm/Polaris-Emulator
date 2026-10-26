@@ -38,6 +38,14 @@ public final class WiredPointerVariableSupport {
         return pointer(room, itemId) != null;
     }
 
+    /**
+     * Whether a box without a delay is pointed at a pointer: Habbo then writes nothing through it and reads no value
+     * from it (observed on AIR); a delayed box resolves the pointer when it runs.
+     */
+    public static boolean ignoredWithoutDelay(Room room, int delay, int itemId) {
+        return delay <= 0 && itemId > 0 && isPointer(room, itemId);
+    }
+
     /** The room's named pointers listed under an official variable target, by name and then id. */
     public static List<WiredExtraPointerVariable> pointers(Room room, int officialTarget) {
         List<WiredExtraPointerVariable> result = new ArrayList<>();

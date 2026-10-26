@@ -1415,7 +1415,7 @@ public final class WiredManager {
         getTickService().resetRoomTimers(room);
 
         room.setLastTimerReset(Emulator.getIntUnixTimestamp());
-        WiredRoomTime.markTimersReset(room, System.currentTimeMillis());
+        WiredRoomTime.scheduleTimersReset(room, room.getCycleTimestamp(), System.currentTimeMillis());
     }
 
     // ========== Effect Execution ==========

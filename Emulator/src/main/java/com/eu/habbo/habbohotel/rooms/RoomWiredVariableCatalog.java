@@ -164,11 +164,15 @@ public final class RoomWiredVariableCatalog {
                     !readOnly && variableTarget != TARGET_GLOBAL && variableType != TYPE_SUB,
                     hasValue,
                     !readOnly && hasValue,
-                    !requiresExecutionContext,
+                    // A context variable's changes cannot be intercepted (observed on AIR).
+                    !requiresExecutionContext && variableTarget != TARGET_CONTEXT,
                     false,
                     requiresExecutionContext,
-                    timestamped(variableType, variableTarget, requiresExecutionContext),
-                    timestamped(variableType, variableTarget, requiresExecutionContext),
+                    variableTarget == TARGET_CONTEXT && variableType == TYPE_CREATED
+                            || timestamped(variableType, variableTarget, requiresExecutionContext),
+                    variableTarget == TARGET_CONTEXT && variableType == TYPE_CREATED
+                            ? hasValue
+                            : timestamped(variableType, variableTarget, requiresExecutionContext),
                     textConnected,
                     readOnly,
                     textConnector,

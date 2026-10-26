@@ -495,7 +495,47 @@ public final class WiredMoveCarryHelper {
             return null;
         }
 
-        return new WiredMovementsComposer(movements).compose();
+        return new WiredMovementsComposer(furniFirst(movements)).compose();
+    }
+
+    /**
+     * The order one WiredMovements lists a tick's moves in: the furni, then the users, then the turns, each kept in
+     * the order it was collected (observed on AIR WIN63-202610201032).
+     */
+    static List<WiredMovementsComposer.MovementData> furniFirst(List<WiredMovementsComposer.MovementData> movements) {
+        List<WiredMovementsComposer.MovementData> ordered = new ArrayList<>(movements.size());
+        for (int rank = 0; rank < 3; rank++) {
+            for (WiredMovementsComposer.MovementData movement : movements) {
+                if (orderRank(movement) == rank) {
+                    ordered.add(movement);
+                }
+            }
+        }
+        return ordered;
+    }
+
+    private static int orderRank(WiredMovementsComposer.MovementData movement) {
+        return switch (movement.getType()) {
+            case WiredMovementsComposer.TYPE_USER_MOVE -> 1;
+            case WiredMovementsComposer.TYPE_USER_DIRECTION -> 2;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Adds user moves to the open collection, so they go out in the firing's one WiredMovements.
+     *
+     * @return false when no collection is open; the caller then sends them itself
+     */
+    public static boolean collectIfOpen(List<WiredMovementsComposer.MovementData> movements) {
+        List<WiredMovementsComposer.MovementData> collected = COLLECTED_MOVEMENTS.get();
+        if (collected == null) {
+            return false;
+        }
+        for (WiredMovementsComposer.MovementData movement : movements) {
+            collect(collected, movement);
+        }
+        return true;
     }
 
     /** Adds a movement to the collection, remembering which firing moved the furni. */

@@ -25,6 +25,8 @@ import java.util.List;
  * 1000 bytes ({@code wiredfurni.params.link.message_too_large}).
  */
 public class WiredEffectSendLinkMessage extends WiredEffectSendLinkBase {
+    private static final String NO_TEXT = "null";
+
     public static final WiredEffectType type = WiredEffectType.SEND_LINK_MESSAGE;
     public static final int FROM_TRIGGER = 0;
     public static final int CUSTOM_MESSAGE = 1;
@@ -54,9 +56,10 @@ public class WiredEffectSendLinkMessage extends WiredEffectSendLinkBase {
             text = WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, this.message);
         } else {
             WiredEvent.Type eventType = ctx.eventType();
+            // From the trigger: its text, or the literal "null" for a trigger without text (observed on AIR).
             text = (eventType == WiredEvent.Type.USER_SAYS || eventType == WiredEvent.Type.LINK_MESSAGE_RECEIVED)
-                    ? ctx.event().getText().orElse("")
-                    : "";
+                    ? ctx.event().getText().orElse(NO_TEXT)
+                    : NO_TEXT;
         }
         return WiredLinkPayload.message(text);
     }

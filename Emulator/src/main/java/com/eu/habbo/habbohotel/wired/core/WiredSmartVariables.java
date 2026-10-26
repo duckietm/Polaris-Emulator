@@ -223,7 +223,8 @@ final class WiredSmartVariables {
      * has left.
      */
     static int clockPulses(InteractionGameTimer clock) {
-        if (clock instanceof InteractionGameUpCounter counter) return counter.getCurrentTimeInMs() / PULSE_MS;
+        if (clock instanceof InteractionGameUpCounter counter)
+            return (int) Math.min(Integer.MAX_VALUE, counter.getCurrentTimeMs() / PULSE_MS);
         return Math.max(0, clock.getTimeNow()) * 2;
     }
 

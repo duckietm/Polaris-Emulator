@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredDisablerPauses;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
@@ -57,6 +58,7 @@ public class RoomCycleManager {
     private void cycleWithCoalescedFlushes() {
         this.cycleOdd = !this.cycleOdd;
         this.cycleTimestamp = System.currentTimeMillis();
+        WiredDisablerPauses.onRoomTick(this.room.getId(), RoomWiredDisableSupport.isWiredDisabled(this.room));
         final boolean[] foundRightHolder = {false};
 
         boolean loaded = this.room.isLoaded();

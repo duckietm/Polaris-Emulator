@@ -96,6 +96,37 @@ class WiredEffectChangeVariableValueFlashTest {
         assertEquals("3", next.apply("2"));
     }
 
+    @Test
+    void aChangeThatOnlyLowersShowsTheLowerState() throws Exception {
+        Room room = mock(Room.class);
+        RoomVariableManager roomVariables = mock(RoomVariableManager.class);
+        WiredVariableDefinitionInfo info = mock(WiredVariableDefinitionInfo.class);
+        when(info.hasValue()).thenReturn(true);
+        when(roomVariables.getDefinitionInfo(50)).thenReturn(info);
+        when(roomVariables.getCurrentValue(50)).thenReturn(3);
+        when(room.getRoomVariableManager()).thenReturn(roomVariables);
+        RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
+        InteractionWiredExtra definition = mock(InteractionWiredExtra.class);
+        when(room.getRoomSpecialTypes()).thenReturn(specialTypes);
+        when(specialTypes.getExtra(50)).thenReturn(definition);
+        RoomWiredRuntime runtime = mock(RoomWiredRuntime.class);
+        WiredBoxFlashes flashes = mock(WiredBoxFlashes.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        when(runtime.getBoxFlashes()).thenReturn(flashes);
+        WiredEffectChangeVariableValue box = load(
+                room,
+                "{\"destinationTargetType\":3,\"destinationVariableToken\":\"custom:50\",\"destinationVariableItemId\":50,"
+                        + "\"operation\":0,\"referenceMode\":0,\"referenceConstantValue\":2}");
+        WiredContext ctx = mock(WiredContext.class);
+        when(ctx.room()).thenReturn(room);
+
+        box.execute(ctx);
+
+        UnaryOperator<String> next = capturedFlip(flashes, definition);
+        assertEquals("4", next.apply("6"));
+        assertEquals("5", next.apply("4"));
+    }
+
     @SuppressWarnings("unchecked")
     private static UnaryOperator<String> capturedFlip(WiredBoxFlashes flashes, InteractionWiredExtra box) {
         ArgumentCaptor<UnaryOperator<String>> next = ArgumentCaptor.forClass(UnaryOperator.class);

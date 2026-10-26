@@ -55,16 +55,20 @@ public enum WiredArrayNumericOperation {
             case ADD -> current + reference;
             case SUBTRACT -> current - reference;
             case MULTIPLY -> current * reference;
-            case DIVIDE -> reference == 0L ? current : current / reference;
+            // By 0: the bound of the value's sign, 0 for 0 (observed on AIR).
+            case DIVIDE ->
+                reference == 0L
+                        ? current > 0 ? Long.MAX_VALUE : current < 0 ? Long.MIN_VALUE : 0L
+                        : current / reference;
             case POWER -> (long) Math.pow(current, reference);
-            case MODULO -> reference == 0L ? current : current % reference;
+            case MODULO -> reference == 0L ? 0L : current % reference;
             case MIN -> Math.min(current, reference);
             case MAX -> Math.max(current, reference);
             case RANDOM_UPPER_BOUND ->
                 reference <= 0L
                         ? 0L
-                        : ThreadLocalRandom.current()
-                                .nextLong(reference == Long.MAX_VALUE ? Long.MAX_VALUE : reference + 1L);
+                        // 0 to n-1: the bound itself is never drawn (AIR).
+                        : ThreadLocalRandom.current().nextLong(reference);
             case ABSOLUTE -> Math.abs(current);
             case BITWISE_AND -> current & reference;
             case BITWISE_OR -> current | reference;

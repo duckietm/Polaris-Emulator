@@ -62,7 +62,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHab
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboOwnsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboWearsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasTag | CONDITION | type=NOT_USER_TAG | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable | CONDITION | type=NOT_HAS_VAR | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable | CONDITION | type=NOT_HAS_VAR | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInGroup | CONDITION | type=NOT_ACTOR_IN_GROUP | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInTeam | CONDITION | type=NOT_ACTOR_IN_TEAM | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotMatchStatePosition | CONDITION | type=NOT_MATCH_SSHOT | operator=AND | evaluate=true

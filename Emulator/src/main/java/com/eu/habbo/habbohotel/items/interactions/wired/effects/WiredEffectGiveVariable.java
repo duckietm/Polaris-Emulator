@@ -103,6 +103,12 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
         if (this.targetType == TARGET_GLOBAL || (this.variableItemId <= 0 && this.internalVariableKey.isEmpty())) {
             return;
         }
+        if (WiredPointerVariableSupport.ignoredWithoutDelay(room, this.getDelay(), this.variableItemId)
+                || (this.fromVariable
+                        && WiredPointerVariableSupport.ignoredWithoutDelay(
+                                room, this.getDelay(), this.referenceVariableId))) {
+            return;
+        }
 
         Integer shared = null;
         if (this.fromVariable && !this.sameHolder) {
@@ -434,14 +440,14 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
             variableText = tab < 0 ? text : text.substring(0, tab);
             nextReferenceVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
         }
-        if (nextFromVariable && nextReferenceVariableId <= 0) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
-        }
+        // Habbo saves a variable box with any variable, or none, in either slot: a reference that is missing, a
+        // variable of another kind or one no box defines is stored, and the box then changes nothing (observed on
+        // AIR WIN63-202610201032).
         int nextVariableItemId = parseVariableItemId(variableText);
         String nextInternalKey = normalizeInternalKey(variableText);
         boolean internal = variableText.trim().startsWith("internal:");
         if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
+            nextInternalKey = "";
         }
 
         if (!internal && nextTargetType != TARGET_GLOBAL) {
@@ -452,37 +458,6 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
                 if (room.getUserVariableManager().hasDefinition(legacyItemId)) {
                     nextVariableItemId = legacyItemId;
                     nextTargetType = TARGET_USER;
-                }
-            }
-
-            // No variable chosen yet: Habbo saves the box, and it does nothing until one is (5a3c7a05).
-            boolean chosen = nextVariableItemId > 0;
-
-            WiredVariableDefinitionInfo userDefinitionInfo = (chosen && nextTargetType == TARGET_USER)
-                    ? room.getUserVariableManager().getDefinitionInfo(nextVariableItemId)
-                    : null;
-
-            if (chosen
-                    && nextTargetType == TARGET_USER
-                    && (userDefinitionInfo == null || userDefinitionInfo.isReadOnly())) {
-                throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-            }
-
-            if (chosen && nextTargetType == TARGET_FURNI) {
-                WiredVariableDefinitionInfo furniDefinitionInfo =
-                        room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
-
-                if (furniDefinitionInfo == null || furniDefinitionInfo.isReadOnly()) {
-                    throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-                }
-            }
-
-            if (chosen && nextTargetType == TARGET_CONTEXT) {
-                WiredVariableDefinitionInfo contextDefinitionInfo =
-                        WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
-
-                if (contextDefinitionInfo == null || contextDefinitionInfo.isReadOnly()) {
-                    throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
             }
         }

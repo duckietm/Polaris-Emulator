@@ -37,18 +37,20 @@ class WiredEffectChangeVariableValueArithmeticTest {
     }
 
     @Test
-    void divisionTruncatesTowardZeroAndLeavesTheValueOnAZeroDivisor() {
+    void divisionTruncatesTowardZeroAndAZeroDivisorGivesTheBoundOfTheSign() {
         assertEquals(3, applyOperation(OP_DIV, 7, 2));
         assertEquals(-3, applyOperation(OP_DIV, -7, 2));
-        assertEquals(7, applyOperation(OP_DIV, 7, 0));
+        assertEquals(Integer.MAX_VALUE, applyOperation(OP_DIV, 7, 0));
+        assertEquals(Integer.MIN_VALUE, applyOperation(OP_DIV, -7, 0));
+        assertEquals(0, applyOperation(OP_DIV, 0, 0));
         assertEquals(Integer.MIN_VALUE, applyOperation(OP_DIV, Integer.MIN_VALUE, -1));
     }
 
     @Test
-    void theRemainderTakesTheSignOfTheValueAndLeavesItOnAZeroDivisor() {
+    void theRemainderTakesTheSignOfTheValueAndAZeroDivisorGivesZero() {
         assertEquals(1, applyOperation(OP_MOD, 7, 3));
         assertEquals(-1, applyOperation(OP_MOD, -7, 3));
-        assertEquals(7, applyOperation(OP_MOD, 7, 0));
+        assertEquals(0, applyOperation(OP_MOD, 7, 0));
         assertEquals(0, applyOperation(OP_MOD, Integer.MIN_VALUE, -1));
     }
 

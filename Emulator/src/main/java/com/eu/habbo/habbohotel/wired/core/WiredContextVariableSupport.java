@@ -173,7 +173,9 @@ public final class WiredContextVariableSupport {
         if (ctx == null) return null;
 
         WiredExtraVariableEcho echo = contextEcho(ctx.room(), definitionItemId);
-        return echo != null ? echo.readContextValue(ctx) : ctx.contextVariables().getValue(definitionItemId);
+        return echo != null
+                ? echo.readContextValue(ctx)
+                : ctx.contextVariables().getValue(definitionItemId);
     }
 
     /** The echo with this id when it echoes a context variable (AIR's echo of the running stack's context). */
@@ -188,7 +190,9 @@ public final class WiredContextVariableSupport {
 
     private static List<WiredExtraVariableEcho> contextEchoes(Room room) {
         List<WiredExtraVariableEcho> echoes = new ArrayList<>();
-        if (room == null || room.getRoomSpecialTypes() == null || room.getRoomSpecialTypes().getExtras() == null) {
+        if (room == null
+                || room.getRoomSpecialTypes() == null
+                || room.getRoomSpecialTypes().getExtras() == null) {
             return echoes;
         }
 
@@ -215,6 +219,9 @@ public final class WiredContextVariableSupport {
             long previousValue,
             long currentValue) {
         if (ctx == null || room == null) return;
+        // Habbo raises Variable Changed for a context variable only when it is removed: a Give or Change of one fires
+        // nothing, whether the trigger picked the variable or its box (observed on AIR).
+        if (!deleted) return;
         WiredManager.handleEvent(WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
                 .actor(ctx.actor().orElse(null))
                 .variableTargetType(2)

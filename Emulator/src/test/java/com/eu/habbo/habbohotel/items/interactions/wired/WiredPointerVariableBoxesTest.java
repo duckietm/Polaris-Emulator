@@ -125,7 +125,27 @@ class WiredPointerVariableBoxesTest {
     private WiredEffectChangeVariableValue change(String json) throws Exception {
         WiredEffectChangeVariableValue box = new WiredEffectChangeVariableValue(20, 1, null, "", 0, 0);
         box.loadWiredData(data(json), this.room);
+        // A delayed box resolves its pointers when it runs; without a delay Habbo ignores them.
+        delay(box, 1);
         return box;
+    }
+
+    @Test
+    void withoutADelayAChangeThroughAPointerChangesNothing() throws Exception {
+        WiredEffectChangeVariableValue destination = change(
+                "{\"destinationTargetType\":3,\"destinationVariableToken\":\"custom:9\",\"destinationVariableItemId\":9,"
+                        + "\"operation\":1,\"referenceMode\":0,\"referenceConstantValue\":4}");
+        delay(destination, 0);
+        destination.execute(stack(TARGET));
+
+        WiredEffectChangeVariableValue reference = change(
+                "{\"destinationTargetType\":3,\"destinationVariableToken\":\"custom:50\",\"destinationVariableItemId\":50,"
+                        + "\"operation\":0,\"referenceMode\":1,\"referenceTargetType\":3,"
+                        + "\"referenceVariableToken\":\"custom:9\",\"referenceVariableItemId\":9}");
+        delay(reference, 0);
+        reference.execute(stack(OTHER));
+
+        verify(this.roomVariables, never()).updateVariableValue(anyInt(), anyInt());
     }
 
     @Test
@@ -171,6 +191,7 @@ class WiredPointerVariableBoxesTest {
                 data("{\"variableItemId\":8,\"targetType\":1,\"overrideExisting\":true,\"initialValue\":6,"
                         + "\"userSource\":0,\"furniSource\":" + WiredSourceUtil.SOURCE_SELECTOR + "}"),
                 this.room);
+        delay(box, 1);
         HabboItem item = mock(HabboItem.class);
         when(item.getId()).thenReturn(77);
 
@@ -230,5 +251,13 @@ class WiredPointerVariableBoxesTest {
                     assertThrows(WiredTriggerSaveException.class, () -> trigger.saveData(settings, null));
             assertEquals("wiredfurni.error.variables.requires_execution_context", refused.getMessage());
         }
+    }
+
+    private static void delay(Object box, int pulses) throws Exception {
+        java.lang.reflect.Method setDelay =
+                com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect.class.getDeclaredMethod(
+                        "setDelay", int.class);
+        setDelay.setAccessible(true);
+        setDelay.invoke(box, pulses);
     }
 }

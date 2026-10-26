@@ -29,6 +29,8 @@ class WiredVariableDefinitionFlashTest {
         assertEquals("6", WiredVariableDefinitionFlash.nextState("7", WiredVariableDefinitionFlash.KIND_GIVEN));
         assertEquals("2", WiredVariableDefinitionFlash.nextState("7", WiredVariableDefinitionFlash.KIND_CHANGED));
         assertEquals("3", WiredVariableDefinitionFlash.nextState("2", WiredVariableDefinitionFlash.KIND_CHANGED));
+        assertEquals("4", WiredVariableDefinitionFlash.nextState("3", WiredVariableDefinitionFlash.KIND_LOWERED));
+        assertEquals("5", WiredVariableDefinitionFlash.nextState("4", WiredVariableDefinitionFlash.KIND_LOWERED));
         assertEquals("8", WiredVariableDefinitionFlash.nextState("2", WiredVariableDefinitionFlash.KIND_REMOVED));
         assertEquals("9", WiredVariableDefinitionFlash.nextState("8", WiredVariableDefinitionFlash.KIND_REMOVED));
         // A change that kept the value: give shows 6, then 0, then 1.

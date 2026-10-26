@@ -72,7 +72,7 @@ class WiredLeaderboardServiceTest {
                 List.of(1, 2),
                 first.stream().map(WiredLeaderboardDescriptor::overlayId).toList());
         assertEquals(
-                List.of(1, 2),
+                List.of(2, 3),
                 first.stream().map(WiredLeaderboardDescriptor::revision).toList());
         assertEquals(1, WiredLeaderboardService.overlayIdOf(room, earlier));
         assertEquals(2, WiredLeaderboardService.overlayIdOf(room, later));
@@ -83,7 +83,7 @@ class WiredLeaderboardServiceTest {
         List<WiredLeaderboardDescriptor> second = service.descriptors();
         assertEquals(1, second.size());
         assertEquals(1, second.get(0).overlayId());
-        assertEquals(3, second.get(0).revision());
+        assertEquals(4, second.get(0).revision());
     }
 
     @Test

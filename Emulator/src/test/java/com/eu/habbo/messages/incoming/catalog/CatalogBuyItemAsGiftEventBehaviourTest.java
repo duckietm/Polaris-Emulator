@@ -23,6 +23,8 @@ import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
+import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ClubBuyLayout;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
@@ -47,6 +49,7 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
 import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
+import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.catalog.GiftConfigurationComposer;
@@ -73,6 +76,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -125,6 +130,8 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     private boolean recipientOnline = true;
     private boolean recipientInDatabase = true;
     private int recipientBadgeCount = 0;
+    private boolean subscriptionCreated = true;
+    private boolean offlineSubscriptionActive = false;
     private int nextItemId = 1000;
 
     private GameClient client;
@@ -132,6 +139,8 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     private HabboInfo senderInfo;
     private HabboStats senderStats;
     private Habbo recipient;
+    private HabboInfo recipientInfo;
+    private HabboStats recipientStats;
     private GameClient recipientClient;
     private BadgesComponent recipientBadges;
     private BadgesComponent senderBadges;
@@ -182,11 +191,15 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         HabboInventory recipientInventory = mock(HabboInventory.class);
         when(recipientInventory.getBadgesComponent()).thenReturn(recipientBadges);
         when(recipientInventory.getItemsComponent()).thenReturn(traced(ItemsComponent.class, "recipientItems"));
-        HabboInfo recipientInfo = mock(HabboInfo.class);
+        recipientInfo = mock(HabboInfo.class);
         when(recipientInfo.getId()).thenReturn(RECIPIENT_ID);
         when(recipientInfo.getUsername()).thenReturn("friend");
+        recipientStats = traced(HabboStats.class, "recipientStats");
+        when(recipientStats.createSubscription(anyString(), anyInt()))
+                .thenAnswer(call -> subscriptionCreated ? mock(Subscription.class, "subscription") : null);
         recipient = traced(Habbo.class, "recipient");
         when(recipient.getHabboInfo()).thenReturn(recipientInfo);
+        when(recipient.getHabboStats()).thenReturn(recipientStats);
         when(recipient.getInventory()).thenReturn(recipientInventory);
         when(recipient.getClient()).thenReturn(recipientClient);
         when(recipientClient.getHabbo()).thenReturn(recipient);
@@ -226,6 +239,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         limitedConfiguration = traced(CatalogLimitedConfiguration.class, "limitedConfiguration");
         when(limitedConfiguration.available()).thenReturn(5);
         when(limitedConfiguration.getNumber()).thenReturn(7);
+        when(limitedConfiguration.pollNumber()).thenReturn(OptionalInt.of(7));
         when(limitedConfiguration.getTotalSet()).thenReturn(50);
 
         itemManager = traced(ItemManager.class, "itemManager");
@@ -276,6 +290,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         connection = traced(Connection.class, "connection");
         when(connection.prepareStatement(anyString())).thenAnswer(call -> statement(call.getArgument(0)));
+        when(connection.prepareStatement(anyString(), anyInt())).thenAnswer(call -> statement(call.getArgument(0)));
         HikariDataSource dataSource = mock(HikariDataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
         Database database = mock(Database.class);
@@ -753,6 +768,110 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "closed page"));
     }
 
+    @Test
+    void aClubGiftExtendsTheRecipientsClub() throws Exception {
+        clubPage(11, ClubBuyLayout.class);
+        clubOffer(404, ClubOffer.WINDOW_HABBO_CLUB, false, false);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "online"));
+
+        reset();
+        recipientOnline = false;
+        offlineSubscriptionActive = true;
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "offline, a running club"));
+
+        reset();
+        offlineSubscriptionActive = false;
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "offline, no club"));
+
+        reset();
+        recipientOnline = true;
+        subscriptionCreated = false;
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "not extended"));
+
+        reset();
+        subscriptionCreated = true;
+        permissions.add(Permission.ACC_INFINITE_CREDITS);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "infinite credits"));
+
+        reset();
+        permissions.clear();
+        clubPage(12, BuildersClubFrontPageLayout.class);
+        clubOffer(405, ClubOffer.WINDOW_BUILDERS_CLUB, true, false);
+        assertGift(giftOf(12, 405, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "builders club"));
+    }
+
+    @Test
+    void aClubGiftIsRefused() throws Exception {
+        clubPage(11, ClubBuyLayout.class);
+        ClubOffer offer = clubOffer(404, ClubOffer.WINDOW_HABBO_CLUB, false, false);
+        when(offer.isGiftable()).thenReturn(false);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "not giftable"));
+
+        reset();
+        clubPage(13, BuildersClubAddonsLayout.class);
+        clubOffer(406, ClubOffer.WINDOW_BUILDERS_CLUB_ADDONS, false, true);
+        assertGift(giftOf(13, 406, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "builders club addon"));
+
+        reset();
+        clubOffer(407, ClubOffer.WINDOW_BUILDERS_CLUB, true, false);
+        assertGift(giftOf(11, 407, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "offer of another window"));
+
+        reset();
+        offer = clubOffer(404, ClubOffer.WINDOW_HABBO_CLUB, false, false);
+        when(offer.getCredits()).thenReturn(5000);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "not enough credits"));
+
+        reset();
+        when(offer.getCredits()).thenReturn(-1);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "negative price"));
+
+        reset();
+        when(offer.getCredits()).thenReturn(25);
+        recipientOnline = false;
+        recipientInDatabase = false;
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "nobody"));
+
+        reset();
+        recipientOnline = true;
+        when(recipientInfo.getId()).thenReturn(SENDER_ID);
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "to oneself"));
+
+        reset();
+        when(recipientInfo.getId()).thenReturn(RECIPIENT_ID);
+        tryTakeResult = false;
+        assertGift(giftOf(11, 404, FREE_WRAP_SPRITE, COLOR, RIBBON, true, "payment refused"));
+    }
+
+    @Test
+    void aLimitedGiftWhoseLastNumberIsTakenMeanwhile() {
+        makeLimited();
+        when(limitedConfiguration.getNumber()).thenThrow(new NoSuchElementException());
+        when(limitedConfiguration.pollNumber()).thenReturn(OptionalInt.empty());
+
+        assertGift(gift(FREE_WRAP_SPRITE, true, "taken"));
+    }
+
+    private void clubPage(int pageId, Class<? extends CatalogPage> layout) {
+        CatalogPage clubPage = mock(layout);
+        when(clubPage.isEnabled()).thenReturn(true);
+        when(clubPage.isVisible()).thenReturn(true);
+        pages.put(pageId, clubPage);
+    }
+
+    private ClubOffer clubOffer(int offerId, int windowId, boolean buildersClub, boolean addon) {
+        ClubOffer offer = mock(ClubOffer.class, withSettings().name("clubOffer" + offerId));
+        when(offer.belongsToWindow(anyInt())).thenAnswer(call -> call.<Integer>getArgument(0) == windowId);
+        when(offer.isGiftable()).thenReturn(true);
+        when(offer.isBuildersClubSubscription()).thenReturn(buildersClub);
+        when(offer.isBuildersClubAddon()).thenReturn(addon);
+        when(offer.getCredits()).thenReturn(25);
+        when(offer.getPoints()).thenReturn(0);
+        when(offer.getPointsType()).thenReturn(0);
+        when(offer.getDays()).thenReturn(31);
+        clubOffers.put(offerId, offer);
+        return offer;
+    }
+
     // ---------------------------------------------------------------- the driver
 
     private String[] gift(int sprite, boolean showName, String message) {
@@ -980,6 +1099,10 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             } else if (sql.startsWith("SELECT COUNT(*)")) {
                 when(set.next()).thenReturn(true);
                 when(set.getInt("c")).thenReturn(recipientBadgeCount);
+            } else if (sql.startsWith("SELECT id, duration FROM users_subscriptions")) {
+                when(set.next()).thenReturn(offlineSubscriptionActive);
+                when(set.getInt("id")).thenReturn(31);
+                when(set.getInt("duration")).thenReturn(86_400);
             }
 
             return statement;
@@ -1009,9 +1132,12 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             "setString",
             "execute",
             "executeQuery",
+            "executeUpdate",
+            "createSubscription",
             "run",
             "createOrUpdateLimitedConfig",
             "getNumber",
+            "pollNumber",
             "restoreNumber",
             "setExtradata",
             "needsUpdate",

@@ -114,6 +114,9 @@ final class SessionEndpoints {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
                 return;
             }
+            if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
+                return;
+            }
 
             String ssoTicket = mintSsoTicket();
             Timestamp ssoExpiry = newSsoTicketExpiry();
@@ -165,7 +168,7 @@ final class SessionEndpoints {
                 } else {
                     com.eu.habbo.habbohotel.gameclients.GameClient online =
                             Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
-                    if (online != null && online.getHabbo() != null) {
+                    if (online != null && online.getHabbo() != null && online.claimSsoTicketExchange()) {
                         userId = online.getHabbo().getHabboInfo().getId();
                         username = online.getHabbo().getHabboInfo().getUsername();
                     }
@@ -174,6 +177,10 @@ final class SessionEndpoints {
                 if (userId <= 0 || username == null) {
                     AuthRateLimiter.recordFailure(ip);
                     sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
+                    return;
+                }
+
+                if (refuseBanned(ctx, req, conn, userId, ip, null)) {
                     return;
                 }
 
@@ -215,6 +222,9 @@ final class SessionEndpoints {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
                 return;
             }
+            if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
+                return;
+            }
             JsonObject ok = new JsonObject();
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
@@ -227,6 +237,31 @@ final class SessionEndpoints {
             LOGGER.error("Refresh failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    /**
+     * Refuses a session to a banned account or address, as the password login does, and ends what the
+     * user still holds: the remember family the token belongs to and every access token. A remember
+     * token used to go on minting tickets and access tokens for its thirty days after a ban.
+     */
+    static boolean refuseBanned(
+            ChannelHandlerContext ctx, FullHttpRequest req, Connection conn, int userId, String ip, String rememberJwt)
+            throws SQLException {
+        AuthHttpUtil.BanInfo ban = lookupAccountBan(conn, userId);
+        if (ban == null && ip != null && !ip.isEmpty()) {
+            ban = lookupIpBan(conn, ip);
+        }
+        if (ban == null) {
+            return false;
+        }
+
+        LOGGER.info("[auth/session] ban hit userId={} type={} expires={}", userId, ban.type, ban.expiresAt);
+        if (rememberJwt != null) {
+            RememberJwtService.revokeFromToken(conn, rememberJwt);
+        }
+        AccessTokenService.revokeAll(conn, userId);
+        sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(ban));
+        return true;
     }
 
     private static JsonObject maintenancePayload() {
@@ -268,6 +303,19 @@ final class SessionEndpoints {
             return;
         }
 
+        // The per-IP throttle alone is cleared by any successful login, so the
+        // account being guessed carries its own counter and backoff.
+        if (AuthRateLimiter.isAccountLocked(username)) {
+            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
+            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", username, ip, secs);
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many attempts. Try again in " + secs + "s."));
+            return;
+        }
+
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             if (ip != null && !ip.isEmpty()) {
                 AuthHttpUtil.BanInfo ipBan = lookupIpBan(conn, ip);
@@ -285,6 +333,7 @@ final class SessionEndpoints {
                     if (!rs.next()) {
                         LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
                         AuthRateLimiter.recordFailure(ip);
+                        AuthRateLimiter.recordAccountFailure(username);
                         sendJson(
                                 ctx,
                                 req,
@@ -295,12 +344,11 @@ final class SessionEndpoints {
 
                     int userId = rs.getInt("id");
                     String stored = rs.getString("password");
+                    // Only the kind of value stored is logged: a hotel imported with plain or legacy passwords would
+                    // otherwise write the start of a real password to the log on every failed attempt.
                     String storedPreview = stored == null
                             ? "<null>"
-                            : (stored.isEmpty()
-                                    ? "<empty>"
-                                    : stored.substring(0, Math.min(7, stored.length())) + "…(" + stored.length()
-                                            + " chars)");
+                            : (stored.isEmpty() ? "<empty>" : (stored.startsWith("$2") ? "bcrypt" : "not bcrypt"));
 
                     if (stored == null || stored.isEmpty() || !checkPassword(password, stored)) {
                         LOGGER.info(
@@ -309,6 +357,7 @@ final class SessionEndpoints {
                                 username,
                                 storedPreview);
                         AuthRateLimiter.recordFailure(ip);
+                        AuthRateLimiter.recordAccountFailure(username);
                         sendJson(
                                 ctx,
                                 req,
@@ -324,13 +373,13 @@ final class SessionEndpoints {
                                 userId,
                                 accountBan.type,
                                 accountBan.expiresAt);
-                        AuthRateLimiter.recordSuccess(ip);
+                        AuthRateLimiter.recordSuccess(ip, username);
                         sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(accountBan));
                         return;
                     }
 
                     if (!passesMaintenanceGate(ctx, req, rs.getInt("rank"), "auth/login", userId)) {
-                        AuthRateLimiter.recordSuccess(ip);
+                        AuthRateLimiter.recordSuccess(ip, username);
                         return;
                     }
 
@@ -357,7 +406,7 @@ final class SessionEndpoints {
                         }
                     }
 
-                    AuthRateLimiter.recordSuccess(ip);
+                    AuthRateLimiter.recordSuccess(ip, username);
 
                     JsonObject ok = new JsonObject();
                     ok.addProperty("ssoTicket", ssoTicket);
@@ -520,7 +569,34 @@ final class SessionEndpoints {
         }
     }
 
+    /** The least time between two reset mails for the same account. */
+    static final long RESET_RESEND_SECONDS = 120L;
+
+    static final long RESET_TOKEN_LIFETIME_SECONDS = 60L * 60L;
+
+    /**
+     * Whether a reset mail went out for this account so recently that another would only flood the
+     * inbox. A token lives an hour from when it was sent, so its expiry says when that was.
+     */
+    static boolean resetSentRecently(Timestamp expiresAt, long now) {
+        if (expiresAt == null) return false;
+
+        long sentAt = expiresAt.toInstant().getEpochSecond() - RESET_TOKEN_LIFETIME_SECONDS;
+        return now - sentAt < RESET_RESEND_SECONDS;
+    }
+
     static void handleForgot(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        // Unlimited, this mailed any address as often as asked and kept replacing the account's token.
+        if (!AuthRateLimiter.tryProbe(ip)) {
+            long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many requests. Try again in " + secs + "s."));
+            return;
+        }
+
         String email = readString(body, "email").trim();
 
         if (!EMAIL_RE.matcher(email).matches()) {
@@ -541,8 +617,23 @@ final class SessionEndpoints {
                 if (rs.next()) {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
+                    long now = Instant.now().getEpochSecond();
+
+                    // One mail per account every two minutes, whatever the address asking: the same
+                    // answer goes back either way, so nothing tells whether the address has an account.
+                    try (PreparedStatement last =
+                            conn.prepareStatement("SELECT expires_at FROM password_resets WHERE user_id = ? LIMIT 1")) {
+                        last.setInt(1, userId);
+                        try (ResultSet previous = last.executeQuery()) {
+                            if (previous.next() && resetSentRecently(previous.getTimestamp("expires_at"), now)) {
+                                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                                return;
+                            }
+                        }
+                    }
+
                     String token = mintResetToken();
-                    long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
+                    long expiresAt = now + RESET_TOKEN_LIFETIME_SECONDS;
 
                     try (PreparedStatement ins = conn.prepareStatement(
                             "INSERT INTO password_resets (user_id, token, expires_at, created_ip) "

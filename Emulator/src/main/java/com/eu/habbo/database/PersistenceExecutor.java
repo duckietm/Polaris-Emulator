@@ -21,10 +21,12 @@ public final class PersistenceExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PersistenceExecutor.class);
     private static final int DEFAULT_QUEUE_CAPACITY = 2_048;
     private static final int RECENT_FAILURE_CAPACITY = 64;
+    private static final long DEFAULT_SUBMISSION_TIMEOUT_MILLIS = 5_000L;
 
     private final PersistenceOperationMonitor operationMonitor =
             new PersistenceOperationMonitor(RECENT_FAILURE_CAPACITY);
     private final int queueCapacity;
+    private final long submissionTimeoutNanos;
     private final AtomicInteger highWaterMark = new AtomicInteger();
     private final AtomicLong saturationCount = new AtomicLong();
     private final AtomicLong totalSubmissionWaitNanos = new AtomicLong();
@@ -33,6 +35,14 @@ public final class PersistenceExecutor {
     private final AtomicBoolean accepting = new AtomicBoolean(true);
 
     public PersistenceExecutor(int threads, int queueCapacity) {
+        this(threads, queueCapacity, DEFAULT_SUBMISSION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @param submissionTimeout how long a caller waits for room in a full queue before the task is
+     *     rejected: an unbounded wait froze every packet thread for as long as the database was slow.
+     */
+    PersistenceExecutor(int threads, int queueCapacity, long submissionTimeout, TimeUnit unit) {
         if (threads < 1) {
             throw new IllegalArgumentException("threads must be positive");
         }
@@ -41,6 +51,7 @@ public final class PersistenceExecutor {
         }
 
         this.queueCapacity = queueCapacity;
+        this.submissionTimeoutNanos = Math.max(0L, unit.toNanos(submissionTimeout));
         ThreadFactory platformThreadFactory =
                 Thread.ofPlatform().name("Polaris-JDBC-", 0).factory();
         ThreadFactory threadFactory = task -> platformThreadFactory.newThread(() -> {
@@ -157,15 +168,22 @@ public final class PersistenceExecutor {
 
         if (!terminated) {
             List<Runnable> queued = this.executor.shutdownNow();
-            for (Runnable task : queued) {
-                task.run();
-            }
             if (!interrupted) {
                 try {
                     terminated = this.executor.awaitTermination(Math.max(0L, timeout), unit);
                 } catch (InterruptedException exception) {
                     interrupted = true;
                 }
+            }
+            // The queued writes run only once no worker is left: run beside a worker still busy, an
+            // older queued UPDATE could land after a newer one for the same row.
+            if (terminated) {
+                for (Runnable task : queued) {
+                    task.run();
+                }
+            } else if (!queued.isEmpty()) {
+                LOGGER.error(
+                        "Persistence executor left {} queued tasks unrun: workers were still active", queued.size());
             }
         }
 
@@ -193,7 +211,12 @@ public final class PersistenceExecutor {
 
         long startedAt = System.nanoTime();
         try {
-            executor.getQueue().put(task);
+            if (!executor.getQueue().offer(task, this.submissionTimeoutNanos, TimeUnit.NANOSECONDS)) {
+                LOGGER.error(
+                        "Persistence queue stayed full for {} ms; a task was rejected so the caller is not held",
+                        TimeUnit.NANOSECONDS.toMillis(this.submissionTimeoutNanos));
+                throw new RejectedExecutionException("Persistence queue stayed full");
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new RejectedExecutionException("Interrupted while waiting for persistence capacity", exception);

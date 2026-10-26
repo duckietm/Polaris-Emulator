@@ -124,10 +124,9 @@ public final class RuntimeResilienceController {
             this.consecutiveDegraded = 0;
             return;
         }
-        if (this.state == State.CRITICAL) {
-            return;
-        }
-
+        // From CRITICAL, sustained DEGRADED pressure steps down to DEGRADED. CRITICAL used to ignore
+        // it, so only an unbroken run of HEALTHY samples could leave, and a load that stayed merely
+        // degraded after a short spike kept rejecting logins indefinitely.
         this.consecutiveDegraded++;
         if (this.consecutiveDegraded >= this.thresholds.degradedConsecutive()) {
             transitionTo(State.DEGRADED);

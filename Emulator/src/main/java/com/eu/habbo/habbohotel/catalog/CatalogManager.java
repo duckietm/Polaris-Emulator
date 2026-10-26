@@ -310,6 +310,9 @@ public class CatalogManager {
     public final Map<Integer, ClothItem> clothing;
     public final Int2IntMap offerDefs;
     public final Int2IntMap buildersClubOfferDefs;
+    /** The base item every recycler box is made of. */
+    public static final String RECYCLER_BOX = "ecotron_box";
+
     public final Item ecotronItem;
     public final Map<Integer, CatalogLimitedConfiguration> limitedNumbers;
     private final List<Voucher> vouchers;
@@ -343,7 +346,7 @@ public class CatalogManager {
 
         if (initialize) {
             this.initialize();
-            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem("ecotron_box");
+            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem(RECYCLER_BOX);
             LOGGER.info("Catalog Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
         } else {
             this.ecotronItem = null;
@@ -394,13 +397,13 @@ public class CatalogManager {
             version = this.catalogVersion.get();
             if (isCurrent(current, version)) return current;
 
-            // CatalogPage.getChildPages() is a plain HashMap, mutated without a monitor by
-            // CatalogAdminCacheSync.reparentPage/detachDeletedPage. A build that races one of
-            // those admin edits can throw ConcurrentModificationException while iterating and
-            // sorting a page's children. Retry a few times against the latest version instead of
-            // surfacing a transient admin-edit race to whichever reader happened to trigger the
-            // rebuild; if it keeps failing, something is genuinely wrong and the last exception
-            // is rethrown.
+            // CatalogPage.getChildPages() is a concurrent map, so the admin edits in
+            // CatalogAdminCacheSync.reparentPage/detachDeletedPage no longer break a build. A
+            // plugin that edits another catalog collection in place can still throw
+            // ConcurrentModificationException while a build walks it. Retry a few times against
+            // the latest version instead of surfacing that transient race to whichever reader
+            // happened to trigger the rebuild; if it keeps failing, something is genuinely wrong
+            // and the last exception is rethrown.
             ConcurrentModificationException lastFailure = null;
             for (int attempt = 0; attempt < 3; attempt++) {
                 version = this.catalogVersion.get();
@@ -917,6 +920,22 @@ public class CatalogManager {
             return;
         }
 
+        // Resolve what the voucher hands out before using it up. A voucher pointing at a
+        // catalogue offer that no longer exists was claimed first and then delivered
+        // nothing, silently: the code was spent and the user got nothing for it.
+        CatalogItem voucherItem = null;
+        if (voucher.catalogItemId > 0) {
+            voucherItem = this.getCatalogItem(voucher.catalogItemId);
+            if (voucherItem == null) {
+                LOGGER.warn(
+                        "Voucher {} points at catalog item {}, which does not exist; refusing it unspent",
+                        voucher.code,
+                        voucher.catalogItemId);
+                client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+                return;
+            }
+        }
+
         Voucher.ClaimResult claimResult =
                 voucher.claimForUser(habbo.getHabboInfo().getId());
         switch (claimResult) {
@@ -946,11 +965,8 @@ public class CatalogManager {
             client.getHabbo().giveCredits(voucher.credits);
         }
 
-        if (voucher.catalogItemId > 0) {
-            CatalogItem item = this.getCatalogItem(voucher.catalogItemId);
-            if (item != null) {
-                this.purchaseItem(null, item, client.getHabbo(), 1, "", true);
-            }
+        if (voucherItem != null) {
+            this.purchaseItem(null, voucherItem, client.getHabbo(), 1, "", true);
         }
 
         client.sendResponse(new RedeemVoucherOKComposer());
@@ -2430,10 +2446,13 @@ public class CatalogManager {
             }
 
             Map<Integer, EffectsComponent.HabboEffect> effects = new HashMap<>();
+            // The offer says how long its effect lasts (catalog_items.extradata, 0 for
+            // permanent); the legacy path at purchaseEffect already honours it.
+            int effectDuration = item.getEffectDuration();
             for (Map.Entry<Integer, Integer> requested : requestedEffects.entrySet()) {
                 for (int count = 0; count < requested.getValue(); count++) {
                     EffectsComponent.HabboEffect effect = EffectsComponent.persistEffect(
-                            connection, habbo.getHabboInfo().getId(), requested.getKey(), 86400);
+                            connection, habbo.getHabboInfo().getId(), requested.getKey(), effectDuration);
                     effects.put(requested.getKey(), effect);
                 }
             }

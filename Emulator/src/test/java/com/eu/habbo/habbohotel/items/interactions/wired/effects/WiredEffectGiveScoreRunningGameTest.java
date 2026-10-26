@@ -30,7 +30,7 @@ class WiredEffectGiveScoreRunningGameTest {
         HabboInfo info = mock(HabboInfo.class);
         GamePlayer player = mock(GamePlayer.class);
         Game game = mock(Game.class);
-        game.state = GameState.IDLE;
+        when(game.getState()).thenReturn(GameState.IDLE);
         when(room.getHabbo(unit)).thenReturn(habbo);
         when(habbo.getHabboInfo()).thenReturn(info);
         when(info.getCurrentGame()).thenAnswer(invocation -> WiredGame.class);
@@ -41,7 +41,7 @@ class WiredEffectGiveScoreRunningGameTest {
         box.execute(context(room, unit));
         verify(player, never()).addScore(anyInt(), anyBoolean());
 
-        game.state = GameState.RUNNING;
+        when(game.getState()).thenReturn(GameState.RUNNING);
         box.execute(context(room, unit));
         verify(player).addScore(anyInt(), anyBoolean());
     }

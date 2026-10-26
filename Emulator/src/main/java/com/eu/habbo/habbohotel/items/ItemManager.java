@@ -455,7 +455,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadItemsManagerEvent;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -1651,51 +1650,19 @@ public class ItemManager {
         return item;
     }
 
+    /** The reward of opening {@code box}, or null when nothing came out; see {@link #openRecycleBox}. */
     public HabboItem handleOpenRecycleBox(Habbo habbo, HabboItem box) {
-        Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(box.getId()));
-        HabboItem item = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("SELECT * FROM items_presents WHERE item_id = ? LIMIT 1")) {
-            statement.setInt(1, box.getId());
-            try (ResultSet rewardSet = statement.executeQuery()) {
-                if (rewardSet.next()) {
-                    try (PreparedStatement preparedStatement = connection.prepareStatement(
-                            "INSERT INTO items (user_id, item_id) VALUES(?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                        preparedStatement.setInt(1, habbo.getHabboInfo().getId());
-                        preparedStatement.setInt(2, rewardSet.getInt("base_item_reward"));
-                        preparedStatement.execute();
+        return this.openRecycleBox(habbo, box).reward();
+    }
 
-                        try (ResultSet set = preparedStatement.getGeneratedKeys()) {
-                            if (set.next()) {
-                                try (PreparedStatement request =
-                                        connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
-                                    request.setInt(1, set.getInt(1));
-
-                                    try (ResultSet resultSet = request.executeQuery()) {
-                                        if (resultSet.next()) {
-                                            try (PreparedStatement deleteStatement = connection.prepareStatement(
-                                                    "DELETE FROM items_presents WHERE item_id = ? LIMIT 1")) {
-                                                deleteStatement.setInt(1, box.getId());
-                                                deleteStatement.execute();
-
-                                                item = this.loadHabboItem(resultSet);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+    /** Opens a recycler box in one transaction; a failure leaves the box where it was. */
+    public RecycleBoxOpening openRecycleBox(Habbo habbo, HabboItem box) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            return RecycleBoxOpening.open(connection, this, habbo.getHabboInfo().getId(), box);
+        } catch (SQLException | RuntimeException e) {
+            LOGGER.error("Opening recycler box {} failed", box.getId(), e);
+            return RecycleBoxOpening.FAILED;
         }
-
-        return item;
     }
 
     public void insertTeleportPair(int itemOneId, int itemTwoId) {

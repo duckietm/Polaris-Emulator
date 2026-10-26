@@ -26,19 +26,26 @@ public class SubscriptionScheduler extends Scheduler {
      */
     public void reloadConfig() {
         if (Emulator.getConfig().getBoolean("subscriptions.scheduler.enabled", true)) {
-            if (this.disposed) {
-                this.disposed = false;
-                this.run();
-            }
+            this.restart();
         } else {
-            this.disposed = true;
+            this.setDisposed(true);
         }
     }
 
     @Override
-    public void run() {
-        super.run();
+    protected void tick() {
+        this.expireSubscriptions();
+    }
 
+    /**
+     * Retires every subscription of every online user whose time has run out, and pays
+     * the HC payday when it is due.
+     *
+     * <p>Separate from {@link #tick()} so it can be driven directly: the base class only
+     * ticks an enabled scheduler, and this work is also what the RCON and command paths
+     * race against.
+     */
+    public void expireSubscriptions() {
         for (Map.Entry<Integer, Habbo> map : Emulator.getGameEnvironment()
                 .getHabboManager()
                 .getOnlineHabbos()
@@ -74,13 +81,5 @@ public class SubscriptionScheduler extends Scheduler {
                 && SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE < Emulator.getIntUnixTimestamp()) {
             SubscriptionHabboClub.executePayDay();
         }
-    }
-
-    public boolean isDisposed() {
-        return this.disposed;
-    }
-
-    public void setDisposed(boolean disposed) {
-        this.disposed = disposed;
     }
 }

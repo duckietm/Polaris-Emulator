@@ -34,7 +34,7 @@ public class ModToolSanctions {
     }
 
     private void loadSanctionLevels() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM sanction_levels")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -52,6 +52,36 @@ public class ModToolSanctions {
         }
     }
 
+    /** Every query of this class opens its connection here. */
+    private static Connection connection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    private static int now() {
+        return Emulator.getIntUnixTimestamp();
+    }
+
+    /**
+     * The level that follows {@code lastLevel}, held at the highest level configured below it: a user
+     * already at the top level stays there instead of reaching a level that does not exist. Null only
+     * when no level at or below the next one is configured at all.
+     */
+    static ModToolSanctionLevelItem nextLevel(Map<Integer, ModToolSanctionLevelItem> levels, int lastLevel) {
+        int wanted = lastLevel + 1;
+        ModToolSanctionLevelItem exact = levels.get(wanted);
+        if (exact != null) {
+            return exact;
+        }
+
+        ModToolSanctionLevelItem highest = null;
+        for (ModToolSanctionLevelItem level : levels.values()) {
+            if (level.sanctionLevel <= wanted && (highest == null || level.sanctionLevel > highest.sanctionLevel)) {
+                highest = level;
+            }
+        }
+        return highest;
+    }
+
     public ModToolSanctionLevelItem getSanctionLevelItem(int sanctionLevel) {
         return this.sanctionLevelsHashmap.get(sanctionLevel);
     }
@@ -62,7 +92,7 @@ public class ModToolSanctions {
      */
     public Map<Integer, ArrayList<ModToolSanctionItem>> getSanctions(int habboId) {
         Map<Integer, ArrayList<ModToolSanctionItem>> sanctions = new HashMap<>();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement =
                         connection.prepareStatement("SELECT * FROM sanctions WHERE habbo_id = ? ORDER BY id ASC")) {
             statement.setInt(1, habboId);
@@ -96,7 +126,7 @@ public class ModToolSanctions {
             int tradeLockedUntil,
             boolean isMuted,
             int muteDuration) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO sanctions (habbo_id, sanction_level, probation_timestamp, reason, trade_locked_until, is_muted, mute_duration) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             statement.setInt(1, habboId);
@@ -114,7 +144,7 @@ public class ModToolSanctions {
     }
 
     public void updateSanction(int rowId, int probationTimestamp) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement =
                         connection.prepareStatement("UPDATE sanctions SET probation_timestamp = ? WHERE id = ?")) {
             statement.setInt(1, probationTimestamp);
@@ -127,7 +157,7 @@ public class ModToolSanctions {
     }
 
     public void updateTradeLockedUntil(int rowId, int tradeLockedUntil) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement =
                         connection.prepareStatement("UPDATE sanctions SET trade_locked_until = ? WHERE id = ?")) {
             statement.setInt(1, tradeLockedUntil);
@@ -140,7 +170,7 @@ public class ModToolSanctions {
     }
 
     public void updateMuteDuration(int rowId, int muteDuration) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = connection();
                 PreparedStatement statement =
                         connection.prepareStatement("UPDATE sanctions SET mute_duration = ? WHERE id = ?")) {
             statement.setInt(1, muteDuration);
@@ -165,36 +195,41 @@ public class ModToolSanctions {
             return;
         }
 
-        sanctionLevel++;
-
-        ModToolSanctionLevelItem sanctionLevelItem = getSanctionLevelItem(sanctionLevel);
+        // A user past the last configured level used to reach a level that does not exist, and the
+        // sanction threw before anything was applied.
+        ModToolSanctionLevelItem sanctionLevelItem = nextLevel(this.sanctionLevelsHashmap, sanctionLevel);
+        if (sanctionLevelItem == null) {
+            LOGGER.warn(
+                    "No sanction level is configured after level {}; user {} was not sanctioned",
+                    sanctionLevel,
+                    habboId);
+            return;
+        }
 
         insertSanction(
                 habboId,
-                sanctionLevel,
+                sanctionLevelItem.sanctionLevel,
                 buildProbationTimestamp(sanctionLevelItem),
                 reason,
                 tradeLockedUntil,
                 isMuted,
                 muteDuration);
 
-        runSanctionBasedOnLevel(sanctionLevelItem, habboId, reason, cfhTopic, self, muteDuration);
+        Habbo habbo = runSanctionBasedOnLevel(sanctionLevelItem, habboId, reason, cfhTopic, self, muteDuration);
 
-        Emulator.getPluginManager()
-                .fireEvent(new SanctionEvent(
-                        self, Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId), sanctionLevel));
+        Emulator.getPluginManager().fireEvent(new SanctionEvent(self, habbo, sanctionLevelItem.sanctionLevel));
     }
 
     private int buildProbationTimestamp(ModToolSanctionLevelItem sanctionLevelItem) {
-        return ModToolManager.banExpiry(
-                Emulator.getIntUnixTimestamp(), ModToolManager.daysToSeconds(sanctionLevelItem.sanctionProbationDays));
+        return ModToolManager.banExpiry(now(), ModToolManager.daysToSeconds(sanctionLevelItem.sanctionProbationDays));
     }
 
     public int getProbationDays(ModToolSanctionLevelItem sanctionLevelItem) {
         return sanctionLevelItem.sanctionProbationDays;
     }
 
-    private void runSanctionBasedOnLevel(
+    /** Runs the level's sanction and answers the target when they are online, null otherwise. */
+    private Habbo runSanctionBasedOnLevel(
             ModToolSanctionLevelItem sanctionLevelItem,
             int habboId,
             String reason,
@@ -213,7 +248,10 @@ public class ModToolSanctions {
 
         switch (sanctionLevelItem.sanctionType) {
             case "ALERT":
-                habbo.alert(reason);
+                // An offline user has nobody to alert; the sanction row is their record.
+                if (habbo != null) {
+                    habbo.alert(reason);
+                }
                 break;
             case "BAN":
                 Emulator.getGameEnvironment()
@@ -227,10 +265,31 @@ public class ModToolSanctions {
                                 cfhTopic);
                 break;
             case "MUTE":
-                habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false);
+                int seconds = muteDurationSeconds <= 0 ? 3600 : muteDurationSeconds;
+                if (habbo != null) {
+                    habbo.mute(seconds, false);
+                } else {
+                    muteOffline(habboId, seconds);
+                }
                 break;
             default:
                 break;
+        }
+
+        return habbo;
+    }
+
+    /** Extends an offline user's mute in their settings row, where the next login reads it. */
+    private static void muteOffline(int habboId, int seconds) {
+        try (Connection connection = connection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users_settings SET mute_end_timestamp = LEAST(GREATEST(mute_end_timestamp, ?) + ?, 2147483647) WHERE user_id = ? LIMIT 1")) {
+            statement.setInt(1, now());
+            statement.setInt(2, seconds);
+            statement.setInt(3, habboId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
     }
 

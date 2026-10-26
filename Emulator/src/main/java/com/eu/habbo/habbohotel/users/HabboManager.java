@@ -354,7 +354,9 @@ public class HabboManager {
         try {
             SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
         } catch (SqlQueries.DataAccessException e) {
-            LOGGER.error("Caught SQL exception", e);
+            // Nothing else may change when the rank was not stored: ending a temporary rank after a failed update
+            // dropped its timer and logged a return that never happened, and the user kept the rank for good.
+            throw new Exception("Could not store rank " + rankId + " for user " + userId, e);
         }
 
         // A rank given any other way ends a temporary rank, so it is not undone later.
@@ -418,24 +420,34 @@ public class HabboManager {
     }
 
     public void giveCredits(int userId, int credits) {
+        this.applyCredits(
+                userId, credits, "system.habbo_manager", EconomyOperationId.create("credits:" + userId), userId);
+    }
+
+    /** Grants or takes credits from a user online or not, with who did it and why; false when nothing changed. */
+    public boolean applyCredits(int userId, int credits, String reason, String operationId, Integer actorId) {
+        if (credits == 0) return false;
+
         Habbo habbo = this.getHabbo(userId);
         if (habbo != null) {
-            habbo.giveCredits(credits, "system.habbo_manager");
-        } else {
-            try {
-                EconomyLedger.execute(new EconomyOperation(
-                        EconomyOperationId.create("credits:" + userId),
-                        userId,
-                        userId,
-                        credits > 0 ? "credit_grant" : "credit_debit",
-                        "system.habbo_manager",
-                        EconomyLedger.CREDITS,
-                        credits,
-                        null,
-                        "offline"));
-            } catch (Exception e) {
-                LOGGER.error("Unable to apply audited offline credit mutation for user {}", userId, e);
-            }
+            return habbo.applyCredits(credits, reason, operationId, actorId);
+        }
+
+        try {
+            EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    userId,
+                    actorId,
+                    credits > 0 ? "credit_grant" : "credit_debit",
+                    reason,
+                    EconomyLedger.CREDITS,
+                    credits,
+                    null,
+                    "offline"));
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Unable to apply audited offline credit mutation for user {}", userId, e);
+            return false;
         }
     }
 

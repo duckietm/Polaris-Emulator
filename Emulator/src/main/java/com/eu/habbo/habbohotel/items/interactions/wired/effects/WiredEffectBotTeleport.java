@@ -23,9 +23,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class WiredEffectBotTeleport extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_TELEPORT;
@@ -37,12 +37,12 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect implements Wi
 
     public WiredEffectBotTeleport(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     public WiredEffectBotTeleport(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     /**
@@ -211,7 +211,7 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect implements Wi
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new LinkedHashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
 
         String wiredData = set.getString("wired_data");
 

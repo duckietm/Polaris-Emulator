@@ -99,4 +99,31 @@ class GuildBadgeGeneratorTest {
         }
         generator.shutdown();
     }
+
+    @Test
+    void queuesNothingWhileTheOutputFolderIsMissing() throws Exception {
+        AtomicInteger drawn = new AtomicInteger();
+        File missing = this.folder.resolve("album1584").toFile();
+        GuildBadgeGenerator generator = new GuildBadgeGenerator(
+                () -> missing,
+                code -> {
+                    drawn.incrementAndGet();
+                    return badge();
+                },
+                10);
+
+        assertFalse(generator.outputReady());
+        assertFalse(generator.submit("b001034"));
+        // The backfill gives up instead of waiting for room in the queue.
+        assertFalse(generator.submitWaiting("b001035"));
+        assertEquals(0, generator.pendingCount());
+
+        // Once the folder exists, badges are written again.
+        assertTrue(missing.mkdir());
+        assertTrue(generator.submit("b001034"));
+        assertTrue(generator.awaitIdle(5000));
+        assertTrue(new File(missing, "b001034.png").isFile());
+        assertEquals(1, drawn.get());
+        generator.shutdown();
+    }
 }

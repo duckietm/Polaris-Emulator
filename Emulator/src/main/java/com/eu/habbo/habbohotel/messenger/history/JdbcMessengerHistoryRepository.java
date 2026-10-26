@@ -12,6 +12,17 @@ import javax.sql.DataSource;
 public final class JdbcMessengerHistoryRepository implements MessengerHistoryRepository {
     private static final int CLEANUP_BATCH_SIZE = 1000;
 
+    /**
+     * Users whose legacy private chatlogs have already been brought across. A repository
+     * is built per call, so this is shared; the backfill is idempotent, so an eviction
+     * only costs one extra run.
+     */
+    private static final com.github.benmanes.caffeine.cache.Cache<Integer, Boolean> MIGRATED_USERS =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .maximumSize(50_000)
+                    .expireAfterWrite(java.time.Duration.ofHours(12))
+                    .build();
+
     private final DataSource dataSource;
 
     public JdbcMessengerHistoryRepository(DataSource dataSource) {
@@ -152,7 +163,34 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
         }
     }
 
+    /**
+     * Brings a user's pre-messenger_conversations private chatlogs across, once.
+     *
+     * <p>This used to run on every {@code listConversations} call - so on every console
+     * open and every "mark as read" - and it is the heaviest thing here: an
+     * {@code INSERT ... SELECT ... GROUP BY} over all of that user's rows in
+     * {@code chatlogs_private}, which is MyISAM and takes a table lock, followed by an
+     * {@code INSERT IGNORE ... SELECT} whose {@code SUBSTRING_INDEX(direct_key, ...)}
+     * conditions cannot use an index and so scan {@code messenger_conversations} twice.
+     *
+     * <p>The backfill is idempotent, so remembering who has had it is enough; a bounded
+     * cache means an entry evicted after a long uptime only costs one extra run.
+     */
     private void ensureLegacyDirectConversations(int userId) {
+        if (MIGRATED_USERS.asMap().putIfAbsent(userId, Boolean.TRUE) != null) {
+            return;
+        }
+
+        try {
+            this.runLegacyBackfill(userId);
+        } catch (RuntimeException exception) {
+            // Not migrated after all: let the next call try again.
+            MIGRATED_USERS.invalidate(userId);
+            throw exception;
+        }
+    }
+
+    private void runLegacyBackfill(int userId) {
         String conversationsSql = """
                 INSERT INTO messenger_conversations (type, direct_key, created_at, updated_at)
                 SELECT 'direct',

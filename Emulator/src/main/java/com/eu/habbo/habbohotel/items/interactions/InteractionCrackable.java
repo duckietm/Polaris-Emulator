@@ -113,6 +113,11 @@ public class InteractionCrackable extends HabboItem {
     public void onTick(Habbo habbo, Room room) {
         if (this.cracked) return;
 
+        // A temporary copy placed by the "place furni" wired has no database row and no
+        // owner: cracking one handed out the reward furni and, on the way, the HC or
+        // Builders Club subscription below.
+        if (this.isTemporary()) return;
+
         if (this.allowAnyone() || this.getUserId() == habbo.getHabboInfo().getId()) {
             CrackableReward rewardData = Emulator.getGameEnvironment()
                     .getItemManager()

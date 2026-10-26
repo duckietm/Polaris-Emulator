@@ -276,6 +276,22 @@ public class ChestStorage {
         return removed;
     }
 
+    /** Remove the stored rows with these inventory ids, keeping the aggregate entries in sync. Atomic. */
+    synchronized List<ChestFurniStoredItem> removeFurniByInventoryIds(java.util.Collection<Integer> inventoryIds) {
+        List<ChestFurniStoredItem> removed = new ArrayList<>();
+        if (inventoryIds == null || inventoryIds.isEmpty()) return removed;
+
+        var it = this.furniItems.iterator();
+        while (it.hasNext()) {
+            ChestFurniStoredItem item = it.next();
+            if (!inventoryIds.contains(item.inventoryId)) continue;
+            removed.add(item);
+            it.remove();
+            this.take(KIND_FURNI, item.baseItemId, 1);
+        }
+        return removed;
+    }
+
     /** Floor-item shortcut for legacy withdraw wire [baseItemId, amount]. */
     public synchronized List<ChestFurniStoredItem> removeFurniByBaseItemId(int baseItemId, int amount) {
         return removeFurniByType(false, baseItemId, "", amount);

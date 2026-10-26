@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.crafting;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -70,7 +69,6 @@ public class CraftingAltar {
         return foundRecepies;
     }
 
-
     public void addRecipe(CraftingRecipe recipe) {
         this.recipes.put(recipe.getId(), recipe);
     }
@@ -89,12 +87,18 @@ public class CraftingAltar {
         return null;
     }
 
+    /**
+     * The recipe made of exactly these furni. A furni the recipe does not use rules it out: crafting consumes every
+     * furni laid on the altar, so a looser match destroyed the extra ones.
+     */
     public CraftingRecipe getRecipe(Map<Item, Integer> items) {
         for (Map.Entry<Integer, CraftingRecipe> set : this.recipes.entrySet()) {
             CraftingRecipe recipe = set.getValue();
+            if (recipe.getIngredients().size() != items.size()) continue;
 
             for (Map.Entry<Item, Integer> entry : recipe.getIngredients().entrySet()) {
-                if (!(items.containsKey(entry.getKey()) && items.get(entry.getKey()).equals(entry.getValue()))) {
+                if (!(items.containsKey(entry.getKey())
+                        && items.get(entry.getKey()).equals(entry.getValue()))) {
                     recipe = null;
                     break;
                 }
@@ -112,7 +116,8 @@ public class CraftingAltar {
         List<CraftingRecipe> recipeList = new ArrayList<>();
 
         for (Map.Entry<Integer, CraftingRecipe> set : this.recipes.entrySet()) {
-            if (!set.getValue().isSecret() || habbo.getHabboStats().hasRecipe(set.getValue().getId())) {
+            if (!set.getValue().isSecret()
+                    || habbo.getHabboStats().hasRecipe(set.getValue().getId())) {
                 recipeList.add(set.getValue());
             }
         }

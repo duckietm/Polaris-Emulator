@@ -3,11 +3,11 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
@@ -87,19 +87,23 @@ public class GiftCommand extends Command {
 
             final String finalMessage = message.toString();
 
-            HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
-
+            ItemManager items = Emulator.getGameEnvironment().getItemManager();
             Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment()
                     .getCatalogManager()
                     .getGiftWrappingSnapshot()
                     .furniture();
-            Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer)
-                    giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]);
+            Item giftItem = CommandGifts.pickWrapper(giftFurniture, items, Emulator.getRandom());
 
-            String extraData = "1\t" + item.getId();
-            extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";
-
-            Emulator.getGameEnvironment().getItemManager().createGift(username, giftItem, extraData, 0, 0);
+            // The wrapper is checked before anything is created, and the content goes again if the gift fails.
+            if (!CommandGifts.send(items, baseItem, giftItem, username, finalMessage)) {
+                gameClient
+                        .getHabbo()
+                        .whisperLocalizedOrDefault(
+                                "commands.error.cmd_gift.failed",
+                                "The gift could not be sent.",
+                                RoomChatMessageBubbles.ALERT);
+                return true;
+            }
 
             gameClient
                     .getHabbo()
@@ -107,7 +111,7 @@ public class GiftCommand extends Command {
                             Emulator.getTexts()
                                     .getValue("commands.succes.cmd_gift")
                                     .replace("%username%", username)
-                                    .replace("%itemname%", item.getBaseItem().getName()),
+                                    .replace("%itemname%", baseItem.getName()),
                             RoomChatMessageBubbles.ALERT);
 
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(habboInfo.getId());

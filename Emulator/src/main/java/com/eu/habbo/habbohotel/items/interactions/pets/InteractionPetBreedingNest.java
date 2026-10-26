@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.pets;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
@@ -25,6 +26,10 @@ import java.sql.SQLException;
 public class InteractionPetBreedingNest extends HabboItem {
     public Pet petOne = null;
     public Pet petTwo = null;
+
+    /** Set once, by the confirmation that actually starts breeding this nest. */
+    private final java.util.concurrent.atomic.AtomicBoolean breeding =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
 
     public InteractionPetBreedingNest(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -257,9 +262,34 @@ public class InteractionPetBreedingNest extends HabboItem {
             return;
         }
 
+        // Only the two owners are asked to confirm (requestBreedingConfirmation sends
+        // the dialog to them alone): without this, any visitor who saw a full nest
+        // could confirm it, be handed the offspring and destroy the nest furni.
+        int confirmingUserId = habbo.getHabboInfo().getId();
+        if (this.petOne.getUserId() != confirmingUserId && this.petTwo.getUserId() != confirmingUserId) {
+            habbo.getClient().sendResponse(new PetBreedingFailedComposer(this.getId(), CONFIRM_RESULT_PETS_MISSING));
+            return;
+        }
+
+        // "1" is the state requestBreedingConfirmation put the nest in. Anything else
+        // means nobody was asked, or breeding already started.
+        if (!"1".equals(this.getExtradata())) {
+            habbo.getClient().sendResponse(new PetBreedingFailedComposer(this.getId(), CONFIRM_RESULT_NO_NEST));
+            return;
+        }
+
         String trimmedName = name == null ? "" : name.trim();
         if (trimmedName.isEmpty() || trimmedName.length() > MAX_NAME_LENGTH) {
             habbo.getClient().sendResponse(new PetBreedingFailedComposer(this.getId(), CONFIRM_RESULT_NAME_INVALID));
+            return;
+        }
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        trimmedName = environment.getWordFilter().filter(trimmedName, habbo);
+
+        // The parents are only released by the runnable 2 seconds from now, so a
+        // second confirmation inside that window used to pass every check above
+        // again: another offspring, and a second delete of the same nest row.
+        if (!this.breeding.compareAndSet(false, true)) {
             return;
         }
 
@@ -277,7 +307,7 @@ public class InteractionPetBreedingNest extends HabboItem {
         Emulator.getThreading()
                 .run(
                         () -> {
-                            Pet offspring = Emulator.getGameEnvironment()
+                            Pet offspring = environment
                                     .getPetManager()
                                     .createPet(
                                             petOne.getPetData().getOffspringType(),
@@ -305,9 +335,7 @@ public class InteractionPetBreedingNest extends HabboItem {
                             habbo.getClient()
                                     .sendResponse(new NestBreedingSuccessComposer(
                                             offspring.getId(),
-                                            Emulator.getGameEnvironment()
-                                                    .getPetManager()
-                                                    .getRarityForOffspring(offspring)));
+                                            environment.getPetManager().getRarityForOffspring(offspring)));
 
                             if (box.getBaseItem().getName().startsWith("pet_breeding_")) {
                                 String boxType = box.getBaseItem().getName().replace("pet_breeding_", "");
@@ -315,9 +343,7 @@ public class InteractionPetBreedingNest extends HabboItem {
                                         boxType.substring(0, 1).toUpperCase() + boxType.substring(1) + "Breeder";
                                 AchievementManager.progressAchievement(
                                         habbo,
-                                        Emulator.getGameEnvironment()
-                                                .getAchievementManager()
-                                                .getAchievement(achievement));
+                                        environment.getAchievementManager().getAchievement(achievement));
                             }
                         },
                         2000);

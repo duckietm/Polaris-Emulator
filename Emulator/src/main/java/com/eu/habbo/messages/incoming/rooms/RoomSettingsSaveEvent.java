@@ -31,244 +31,368 @@ public class RoomSettingsSaveEvent extends MessageHandler {
     private static final int MIN_CHAT_DISTANCE = 1;
     private static final int MAX_CHAT_DISTANCE = 99;
 
+    /** The name, description, door, capacity, category and tags the packet starts with, every check passed. */
+    private record RoomBasics(
+            String name,
+            String description,
+            RoomState state,
+            String password,
+            int usersMax,
+            int categoryId,
+            StringBuilder tags) {}
+
+    /** The trade, pet, wall, moderation and chat options, every one in range. */
+    private record RoomOptions(
+            int tradeMode,
+            boolean allowPets,
+            boolean allowPetsEat,
+            boolean allowWalkthrough,
+            boolean hideWall,
+            int wallSize,
+            int floorSize,
+            int muteOption,
+            int kickOption,
+            int banOption,
+            int chatMode,
+            int chatWeight,
+            int chatSpeed,
+            int chatDistance,
+            int chatProtection) {}
+
+    /** The pet, door tile and idle settings newer clients send last, the timeouts in range. */
+    private record IdleSettings(
+            boolean muteAllPets,
+            boolean leaveOnDoorTileEnabled,
+            boolean sleepEnabled,
+            int sleepTimeoutSeconds,
+            boolean autokickEnabled,
+            int autokickTimeoutSeconds) {}
+
+    /** The fields newer clients add at the end; null where the client left them out. */
+    private record RoomExtras(Boolean allowUnderpass, IdleSettings idle) {}
+
     @Override
     public void handle() throws Exception {
         int roomId = this.packet.readInt();
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
-        if (room != null) {
-            if (room.isOwner(this.client.getHabbo())) {
-                String name = this.packet.readString();
+        if (room == null || !room.isOwner(this.client.getHabbo())) return;
 
-                if (name.trim().isEmpty() || name.length() > 60) {
-                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.ROOM_NAME_MISSING, ""));
-                    return;
-                }
+        // The whole packet is read and checked before the room is touched: a refused field used to leave the
+        // fields before it written into the room, unsaved and unannounced.
+        RoomBasics basics = this.readBasics(room);
 
-                if (!Emulator.getGameEnvironment()
-                        .getWordFilter()
-                        .filter(name, this.client.getHabbo())
-                        .equals(name)) {
-                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.ROOM_NAME_BADWORDS, ""));
-                    return;
-                }
+        if (basics == null) return;
 
-                String description = this.packet.readString();
+        RoomOptions options = this.readOptions();
 
-                if (description.length() > 255) {
-                    return;
-                }
+        if (options == null) return;
 
-                if (!Emulator.getGameEnvironment()
-                        .getWordFilter()
-                        .filter(description, this.client.getHabbo())
-                        .equals(description)) {
-                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.ROOM_DESCRIPTION_BADWORDS, ""));
-                    return;
-                }
+        RoomExtras extras = this.readExtras();
 
-                int stateId = this.packet.readInt();
-                if (stateId < 0 || stateId >= RoomState.values().length) {
-                    return;
-                }
-                RoomState state = RoomState.values()[stateId];
+        if (extras == null) return;
 
-                String password = this.packet.readString();
-                if (password == null || password.length() > MAX_ROOM_PASSWORD_LENGTH) {
-                    return;
-                }
-                if (state == RoomState.PASSWORD
-                        && password.isEmpty()
-                        && (room.getPassword() == null || room.getPassword().isEmpty())) {
-                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.PASSWORD_REQUIRED, ""));
-                    return;
-                }
+        boolean enforceCategory = this.applyBasics(room, basics);
+        this.applyOptions(room, basics.tags(), options);
+        this.applyExtras(room, extras);
 
-                int usersMax = this.packet.readInt();
-                if (!isInRange(usersMax, MIN_USERS_MAX, MAX_USERS_MAX)) {
-                    return;
-                }
+        this.announce(room, enforceCategory);
+    }
 
-                int categoryId = this.packet.readInt();
-                StringBuilder tags = new StringBuilder();
-                Set<String> uniqueTags = new LinkedHashSet<>();
-                int count = this.packet.readInt();
-                if (count < 0 || count > MAX_TAGS) {
-                    return;
-                }
-                for (int i = 0; i < count; i++) {
-                    String tag = this.packet.readString();
+    /** Reads and checks the fields up to the tags; null once the packet is refused, with an answer where it has one. */
+    private RoomBasics readBasics(Room room) {
+        String name = this.packet.readString();
 
-                    // The client marks the tag field whose text equals the info string (AIR RoomSettingsCtrl).
-                    if (tag.length() > 15) {
-                        this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                                room.getId(), RoomEditSettingsErrorComposer.TAGS_TOO_LONG, tag));
-                        return;
-                    }
-                    if (!uniqueTags.contains(tag)) {
-                        uniqueTags.add(tag);
-                        tags.append(tag).append(";");
-                    }
-                }
+        if (name.trim().isEmpty() || name.length() > 60) {
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.ROOM_NAME_MISSING, ""));
+            return null;
+        }
 
-                WordFilter wordFilter = Emulator.getGameEnvironment().getWordFilter();
-                if (!wordFilter.filter(tags.toString(), this.client.getHabbo()).contentEquals(tags)) {
-                    String badTag = offendingTag(
-                            uniqueTags,
-                            tag -> !wordFilter
-                                    .filter(tag, this.client.getHabbo())
-                                    .equals(tag));
-                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                            room.getId(), RoomEditSettingsErrorComposer.ROOM_TAGS_BADWWORDS, badTag));
-                    return;
-                }
+        if (!Emulator.getGameEnvironment()
+                .getWordFilter()
+                .filter(name, this.client.getHabbo())
+                .equals(name)) {
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.ROOM_NAME_BADWORDS, ""));
+            return null;
+        }
 
-                if (tags.length() > 0) {
-                    for (String s : Emulator.getConfig()
-                            .getValue("hotel.room.tags.staff")
-                            .split(";")) {
-                        if (tags.toString().contains(s)) {
-                            this.client.sendResponse(new RoomEditSettingsErrorComposer(
-                                    room.getId(),
-                                    RoomEditSettingsErrorComposer.RESTRICTED_TAGS,
-                                    offendingTag(uniqueTags, tag -> tag.contains(s))));
-                            return;
-                        }
-                    }
-                }
+        String description = this.packet.readString();
 
-                room.setName(name);
-                room.setDescription(description);
-                room.setState(state);
-                if (!password.isEmpty()) room.setPassword(password);
-                room.setUsersMax(usersMax);
+        if (description.length() > 255) {
+            return null;
+        }
 
-                // Official flow: a room saved without a usable category keeps
-                // its old one and the client is told to pick a valid category
-                // (RoomCategoryUpdateMessage 3896 -> enforce category dialog).
-                boolean enforceCategory = false;
-                if (Emulator.getGameEnvironment().getRoomManager().hasCategory(categoryId, this.client.getHabbo()))
-                    room.setCategory(categoryId);
-                else {
-                    RoomCategory category =
-                            Emulator.getGameEnvironment().getRoomManager().getCategory(categoryId);
-                    enforceCategory = true;
+        if (!Emulator.getGameEnvironment()
+                .getWordFilter()
+                .filter(description, this.client.getHabbo())
+                .equals(description)) {
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.ROOM_DESCRIPTION_BADWORDS, ""));
+            return null;
+        }
 
-                    if (category == null) {
-                        LOGGER.info(
-                                "Room {} saved without a valid category ({}) by {}; enforcing a category choice",
-                                room.getId(),
-                                categoryId,
-                                this.client.getHabbo().getHabboInfo().getUsername());
-                    } else {
-                        String message = Emulator.getTexts()
-                                .getValue("scripter.warning.roomsettings.category.permission")
-                                .replace(
-                                        "%username%",
-                                        this.client.getHabbo().getHabboInfo().getUsername())
-                                .replace(
-                                        "%category%",
-                                        Emulator.getGameEnvironment()
-                                                        .getRoomManager()
-                                                        .getCategory(categoryId) + "");
-                        ScripterManager.scripterDetected(this.client, message);
-                        LOGGER.info(message);
-                    }
-                }
+        int stateId = this.packet.readInt();
+        if (stateId < 0 || stateId >= RoomState.values().length) {
+            return null;
+        }
+        RoomState state = RoomState.values()[stateId];
 
-                int tradeMode = this.packet.readInt();
-                boolean allowPets = this.packet.readBoolean();
-                boolean allowPetsEat = this.packet.readBoolean();
-                boolean allowWalkthrough = this.packet.readBoolean();
-                boolean hideWall = this.packet.readBoolean();
-                int wallSize = this.packet.readInt();
-                int floorSize = this.packet.readInt();
-                int muteOption = this.packet.readInt();
-                int kickOption = this.packet.readInt();
-                int banOption = this.packet.readInt();
-                int chatMode = this.packet.readInt();
-                int chatWeight = this.packet.readInt();
-                int chatSpeed = this.packet.readInt();
-                int chatDistance = this.packet.readInt();
-                int chatProtection = this.packet.readInt();
+        String password = this.packet.readString();
+        if (password == null || password.length() > MAX_ROOM_PASSWORD_LENGTH) {
+            return null;
+        }
+        if (state == RoomState.PASSWORD
+                && password.isEmpty()
+                && (room.getPassword() == null || room.getPassword().isEmpty())) {
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.PASSWORD_REQUIRED, ""));
+            return null;
+        }
 
-                if (!isInRange(tradeMode, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(wallSize, MIN_WALL_OR_FLOOR_SIZE, MAX_WALL_OR_FLOOR_SIZE)
-                        || !isInRange(floorSize, MIN_WALL_OR_FLOOR_SIZE, MAX_WALL_OR_FLOOR_SIZE)
-                        || !isInRange(muteOption, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(kickOption, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(banOption, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(chatMode, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(chatWeight, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(chatSpeed, 0, MAX_OPTION_LEVEL)
-                        || !isInRange(chatDistance, MIN_CHAT_DISTANCE, MAX_CHAT_DISTANCE)
-                        || !isInRange(chatProtection, 0, MAX_OPTION_LEVEL)) {
-                    return;
-                }
+        int usersMax = this.packet.readInt();
+        if (!isInRange(usersMax, MIN_USERS_MAX, MAX_USERS_MAX)) {
+            return null;
+        }
 
-                room.setTags(tags.toString());
-                room.setTradeMode(tradeMode);
-                room.setAllowPets(allowPets);
-                room.setAllowPetsEat(allowPetsEat);
-                room.setAllowWalkthrough(allowWalkthrough);
-                room.setHideWall(hideWall);
-                room.setWallSize(wallSize);
-                room.setFloorSize(floorSize);
-                room.setMuteOption(muteOption);
-                room.setKickOption(kickOption);
-                room.setBanOption(banOption);
-                room.setChatMode(chatMode);
-                room.setChatWeight(chatWeight);
-                room.setChatSpeed(chatSpeed);
-                room.setChatDistance(chatDistance);
-                room.setChatProtection(chatProtection);
+        int categoryId = this.packet.readInt();
+        StringBuilder tags = this.readTags(room);
 
-                if (this.packet.bytesAvailable() > 0) {
-                    room.setAllowUnderpass(this.packet.readBoolean());
-                }
+        if (tags == null) return null;
 
-                if (this.packet.bytesAvailable() > 0) {
-                    boolean muteAllPets = this.packet.readBoolean();
-                    boolean leaveOnDoorTileEnabled = this.packet.readBoolean();
-                    boolean idleSleepEnabled = this.packet.readBoolean();
-                    int idleSleepTimeoutSeconds = this.packet.readInt();
-                    boolean idleAutokickEnabled = this.packet.readBoolean();
-                    int idleAutokickTimeoutSeconds = this.packet.readInt();
+        return new RoomBasics(name, description, state, password, usersMax, categoryId, tags);
+    }
 
-                    if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
-                            || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
-                            || (idleSleepEnabled
-                                    && idleAutokickEnabled
-                                    && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
-                        return;
-                    }
+    /** The tags, each once, joined by ";"; null once a tag is refused. */
+    private StringBuilder readTags(Room room) {
+        StringBuilder tags = new StringBuilder();
+        Set<String> uniqueTags = new LinkedHashSet<>();
+        int count = this.packet.readInt();
+        if (count < 0 || count > MAX_TAGS) {
+            return null;
+        }
+        for (int i = 0; i < count; i++) {
+            String tag = this.packet.readString();
 
-                    room.setMuteAllPets(muteAllPets);
-                    room.setLeaveOnDoorTileEnabled(leaveOnDoorTileEnabled);
-                    room.setIdleSleepEnabled(idleSleepEnabled);
-                    room.setIdleSleepTimeoutSeconds(idleSleepEnabled ? idleSleepTimeoutSeconds : 0);
-                    room.setIdleAutokickEnabled(idleAutokickEnabled);
-                    room.setIdleAutokickTimeoutSeconds(idleAutokickEnabled ? idleAutokickTimeoutSeconds : 0);
-                }
-
-                room.setNeedsUpdate(true);
-
-                room.sendComposer(new RoomThicknessComposer(room).compose());
-                room.sendComposer(new RoomChatSettingsComposer(room).compose());
-                room.sendComposer(new RoomSettingsUpdatedComposer(room).compose());
-                this.client.sendResponse(new RoomSettingsSavedComposer(room));
-                if (enforceCategory) {
-                    this.client.sendResponse(new RoomCategoryUpdateMessageComposer(
-                            RoomCategoryUpdateMessageComposer.SELECTION_ROOM_SETTINGS));
-                }
-                // TODO Find packet for update room name.
+            // The client marks the tag field whose text equals the info string (AIR RoomSettingsCtrl).
+            if (tag.length() > 15) {
+                this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                        room.getId(), RoomEditSettingsErrorComposer.TAGS_TOO_LONG, tag));
+                return null;
+            }
+            if (!uniqueTags.contains(tag)) {
+                uniqueTags.add(tag);
+                tags.append(tag).append(";");
             }
         }
+
+        WordFilter wordFilter = Emulator.getGameEnvironment().getWordFilter();
+        if (!wordFilter.filter(tags.toString(), this.client.getHabbo()).contentEquals(tags)) {
+            String badTag = offendingTag(
+                    uniqueTags,
+                    tag -> !wordFilter.filter(tag, this.client.getHabbo()).equals(tag));
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.ROOM_TAGS_BADWWORDS, badTag));
+            return null;
+        }
+
+        if (tags.length() > 0) {
+            for (String entry :
+                    Emulator.getConfig().getValue("hotel.room.tags.staff").split(";")) {
+                // An empty entry (an empty setting, or "a;;b") is contained in every text and refused every tag.
+                String staffTag = entry.trim();
+                if (staffTag.isEmpty()) continue;
+
+                if (tags.toString().contains(staffTag)) {
+                    this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                            room.getId(),
+                            RoomEditSettingsErrorComposer.RESTRICTED_TAGS,
+                            offendingTag(uniqueTags, tag -> tag.contains(staffTag))));
+                    return null;
+                }
+            }
+        }
+
+        return tags;
+    }
+
+    /** Writes the basics into the room; true when the client has to be asked for another category afterwards. */
+    private boolean applyBasics(Room room, RoomBasics basics) {
+        room.setName(basics.name());
+        room.setDescription(basics.description());
+        room.setState(basics.state());
+        if (!basics.password().isEmpty()) room.setPassword(basics.password());
+        room.setUsersMax(basics.usersMax());
+
+        int categoryId = basics.categoryId();
+
+        // Official flow: a room saved without a usable category keeps
+        // its old one and the client is told to pick a valid category
+        // (RoomCategoryUpdateMessage 3896 -> enforce category dialog).
+        boolean enforceCategory = false;
+        if (Emulator.getGameEnvironment().getRoomManager().hasCategory(categoryId, this.client.getHabbo()))
+            room.setCategory(categoryId);
+        else {
+            RoomCategory category =
+                    Emulator.getGameEnvironment().getRoomManager().getCategory(categoryId);
+            enforceCategory = true;
+
+            if (category == null) {
+                LOGGER.info(
+                        "Room {} saved without a valid category ({}) by {}; enforcing a category choice",
+                        room.getId(),
+                        categoryId,
+                        this.client.getHabbo().getHabboInfo().getUsername());
+            } else {
+                String message = Emulator.getTexts()
+                        .getValue("scripter.warning.roomsettings.category.permission")
+                        .replace(
+                                "%username%",
+                                this.client.getHabbo().getHabboInfo().getUsername())
+                        .replace(
+                                "%category%",
+                                Emulator.getGameEnvironment().getRoomManager().getCategory(categoryId) + "");
+                ScripterManager.scripterDetected(this.client, message);
+                LOGGER.info(message);
+            }
+        }
+        return enforceCategory;
+    }
+
+    /** Reads the trade, pet, wall, moderation and chat options; null when one is out of range. */
+    private RoomOptions readOptions() {
+        int tradeMode = this.packet.readInt();
+        boolean allowPets = this.packet.readBoolean();
+        boolean allowPetsEat = this.packet.readBoolean();
+        boolean allowWalkthrough = this.packet.readBoolean();
+        boolean hideWall = this.packet.readBoolean();
+        int wallSize = this.packet.readInt();
+        int floorSize = this.packet.readInt();
+        int muteOption = this.packet.readInt();
+        int kickOption = this.packet.readInt();
+        int banOption = this.packet.readInt();
+        int chatMode = this.packet.readInt();
+        int chatWeight = this.packet.readInt();
+        int chatSpeed = this.packet.readInt();
+        int chatDistance = this.packet.readInt();
+        int chatProtection = this.packet.readInt();
+
+        if (!isInRange(tradeMode, 0, MAX_OPTION_LEVEL)
+                || !isInRange(wallSize, MIN_WALL_OR_FLOOR_SIZE, MAX_WALL_OR_FLOOR_SIZE)
+                || !isInRange(floorSize, MIN_WALL_OR_FLOOR_SIZE, MAX_WALL_OR_FLOOR_SIZE)
+                || !isInRange(muteOption, 0, MAX_OPTION_LEVEL)
+                || !isInRange(kickOption, 0, MAX_OPTION_LEVEL)
+                || !isInRange(banOption, 0, MAX_OPTION_LEVEL)
+                || !isInRange(chatMode, 0, MAX_OPTION_LEVEL)
+                || !isInRange(chatWeight, 0, MAX_OPTION_LEVEL)
+                || !isInRange(chatSpeed, 0, MAX_OPTION_LEVEL)
+                || !isInRange(chatDistance, MIN_CHAT_DISTANCE, MAX_CHAT_DISTANCE)
+                || !isInRange(chatProtection, 0, MAX_OPTION_LEVEL)) {
+            return null;
+        }
+
+        return new RoomOptions(
+                tradeMode,
+                allowPets,
+                allowPetsEat,
+                allowWalkthrough,
+                hideWall,
+                wallSize,
+                floorSize,
+                muteOption,
+                kickOption,
+                banOption,
+                chatMode,
+                chatWeight,
+                chatSpeed,
+                chatDistance,
+                chatProtection);
+    }
+
+    private void applyOptions(Room room, StringBuilder tags, RoomOptions options) {
+        room.setTags(tags.toString());
+        room.setTradeMode(options.tradeMode());
+        room.setAllowPets(options.allowPets());
+        room.setAllowPetsEat(options.allowPetsEat());
+        room.setAllowWalkthrough(options.allowWalkthrough());
+        room.setHideWall(options.hideWall());
+        room.setWallSize(options.wallSize());
+        room.setFloorSize(options.floorSize());
+        room.setMuteOption(options.muteOption());
+        room.setKickOption(options.kickOption());
+        room.setBanOption(options.banOption());
+        room.setChatMode(options.chatMode());
+        room.setChatWeight(options.chatWeight());
+        room.setChatSpeed(options.chatSpeed());
+        room.setChatDistance(options.chatDistance());
+        room.setChatProtection(options.chatProtection());
+    }
+
+    /**
+     * The fields newer clients add at the end: underpass, then the pet, door tile and idle settings. Older clients
+     * leave them out. Null when an idle timeout is out of range.
+     */
+    private RoomExtras readExtras() {
+        Boolean allowUnderpass = this.packet.bytesAvailable() > 0 ? this.packet.readBoolean() : null;
+
+        if (this.packet.bytesAvailable() <= 0) return new RoomExtras(allowUnderpass, null);
+
+        boolean muteAllPets = this.packet.readBoolean();
+        boolean leaveOnDoorTileEnabled = this.packet.readBoolean();
+        boolean idleSleepEnabled = this.packet.readBoolean();
+        int idleSleepTimeoutSeconds = this.packet.readInt();
+        boolean idleAutokickEnabled = this.packet.readBoolean();
+        int idleAutokickTimeoutSeconds = this.packet.readInt();
+
+        if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
+                || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
+                || (idleSleepEnabled
+                        && idleAutokickEnabled
+                        && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
+            return null;
+        }
+
+        return new RoomExtras(
+                allowUnderpass,
+                new IdleSettings(
+                        muteAllPets,
+                        leaveOnDoorTileEnabled,
+                        idleSleepEnabled,
+                        idleSleepTimeoutSeconds,
+                        idleAutokickEnabled,
+                        idleAutokickTimeoutSeconds));
+    }
+
+    private void applyExtras(Room room, RoomExtras extras) {
+        if (extras.allowUnderpass() != null) room.setAllowUnderpass(extras.allowUnderpass());
+
+        IdleSettings idle = extras.idle();
+
+        if (idle == null) return;
+
+        room.setMuteAllPets(idle.muteAllPets());
+        room.setLeaveOnDoorTileEnabled(idle.leaveOnDoorTileEnabled());
+        room.setIdleSleepEnabled(idle.sleepEnabled());
+        room.setIdleSleepTimeoutSeconds(idle.sleepEnabled() ? idle.sleepTimeoutSeconds() : 0);
+        room.setIdleAutokickEnabled(idle.autokickEnabled());
+        room.setIdleAutokickTimeoutSeconds(idle.autokickEnabled() ? idle.autokickTimeoutSeconds() : 0);
+    }
+
+    /** Marks the room for saving and tells everyone in it and the owner about the new settings. */
+    private void announce(Room room, boolean enforceCategory) {
+        room.setNeedsUpdate(true);
+
+        room.sendComposer(new RoomThicknessComposer(room).compose());
+        room.sendComposer(new RoomChatSettingsComposer(room).compose());
+        room.sendComposer(new RoomSettingsUpdatedComposer(room).compose());
+        this.client.sendResponse(new RoomSettingsSavedComposer(room));
+        if (enforceCategory) {
+            this.client.sendResponse(
+                    new RoomCategoryUpdateMessageComposer(RoomCategoryUpdateMessageComposer.SELECTION_ROOM_SETTINGS));
+        }
+        // TODO Find packet for update room name.
     }
 
     /** First tag the predicate rejects, or "" when none does on its own. */

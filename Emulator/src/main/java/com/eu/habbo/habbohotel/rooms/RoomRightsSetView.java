@@ -16,41 +16,60 @@ final class RoomRightsSetView extends AbstractIntSet {
         this.rights = rights;
     }
 
+    /**
+     * Every operation holds the list's lock, the same one a synchronized fastutil list uses: the
+     * contains-then-add used to let two threads both add a user, and the caller then inserted a
+     * second room_rights row.
+     */
     @Override
     public boolean add(int userId) {
-        if (this.rights.contains(userId)) {
-            return false;
+        synchronized (this.rights) {
+            if (this.rights.contains(userId)) {
+                return false;
+            }
+            return this.rights.add(userId);
         }
-        return this.rights.add(userId);
     }
 
     @Override
     public boolean contains(int userId) {
-        return this.rights.contains(userId);
+        synchronized (this.rights) {
+            return this.rights.contains(userId);
+        }
     }
 
     @Override
     public boolean remove(int userId) {
-        boolean removed = false;
-        while (this.rights.rem(userId)) {
-            removed = true;
+        synchronized (this.rights) {
+            boolean removed = false;
+            while (this.rights.rem(userId)) {
+                removed = true;
+            }
+            return removed;
         }
-        return removed;
     }
 
     @Override
     public void clear() {
-        this.rights.clear();
+        synchronized (this.rights) {
+            this.rights.clear();
+        }
     }
 
     @Override
     public int size() {
-        return new IntOpenHashSet(this.rights).size();
+        return this.snapshot().size();
+    }
+
+    private IntOpenHashSet snapshot() {
+        synchronized (this.rights) {
+            return new IntOpenHashSet(this.rights);
+        }
     }
 
     @Override
     public IntIterator iterator() {
-        IntIterator snapshot = new IntOpenHashSet(this.rights).iterator();
+        IntIterator snapshot = this.snapshot().iterator();
         return new IntIterator() {
             private int current;
             private boolean removable;

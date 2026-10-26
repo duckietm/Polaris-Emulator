@@ -92,4 +92,27 @@ class CmsApiSettingsTest {
 
         assertEquals(300, settings.getInt("cms.api.timestamp.skew.seconds", 300));
     }
+
+    @Test
+    void aFailedRefreshKeepsThePreviousSnapshot() {
+        long[] now = {0L};
+        boolean[] down = {false};
+        CmsApiSettings settings = new CmsApiSettings(
+                () -> {
+                    if (down[0]) {
+                        throw new RuntimeException("db down");
+                    }
+                    return Map.of("cms.api.keys", "cms|secret|*", "cms.api.rate_limit.limit_for_period", "10");
+                },
+                ECHO_DEFAULT,
+                1000,
+                (LongSupplier) () -> now[0]);
+        assertEquals("cms|secret|*", settings.getValue("cms.api.keys", ""));
+
+        down[0] = true;
+        now[0] = 1500;
+
+        assertEquals("cms|secret|*", settings.getValue("cms.api.keys", ""), "the keys are not swapped for defaults");
+        assertEquals(10, settings.getInt("cms.api.rate_limit.limit_for_period", 120), "nor the limits loosened");
+    }
 }

@@ -41,6 +41,12 @@ public class TakeBadgeCommand extends Command {
             String badge = params[2];
 
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
+            HabboInfo target = habbo != null ? habbo.getHabboInfo() : HabboManager.getOfflineHabboInfo(username);
+
+            // Online or not, a badge is never taken from a higher rank.
+            if (CommandTargetGuard.refuse(gameClient.getHabbo(), target)) {
+                return true;
+            }
 
             if (habbo != null) {
                 HabboBadge b = habbo.getInventory().getBadgesComponent().removeBadge(badge);
@@ -70,13 +76,7 @@ public class TakeBadgeCommand extends Command {
                 }
             }
 
-            int userId = 0;
-
-            if (habbo != null) userId = habbo.getHabboInfo().getId();
-            else {
-                HabboInfo habboInfo = HabboManager.getOfflineHabboInfo(username);
-                if (habboInfo != null) userId = habboInfo.getId();
-            }
+            int userId = target == null ? 0 : target.getId();
 
             if (userId > 0) {
                 gameClient

@@ -1,0 +1,235 @@
+== chat / HTML is reduced to its text
+plugins.fire(BotSavedChat auto false, random false, delay 7, [bold])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(7)
+bot.clearChat()
+bot.addChatLines([bold])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / HTML nested beyond five levels
+bot.onPostOwnerAction(2)
+
+== chat / a delay out of range
+plugins.fire(BotSavedChat auto false, random false, delay 32767, [hi])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(32767)
+bot.clearChat()
+bot.addChatLines([hi])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / a delay that is not a number
+plugins.fire(BotSavedChat auto false, random false, delay 7, [hi])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(7)
+bot.clearChat()
+bot.addChatLines([hi])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / a filtered word
+plugins.fire(BotSavedChat auto false, random false, delay 7, [you are ****])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(7)
+bot.clearChat()
+bot.addChatLines([you are ****])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / a plugin cancels it
+plugins.fire(BotSavedChat auto false, random false, delay 7, [hi])
+bot.onPostOwnerAction(2)
+
+== chat / an owner who may skip the filter
+plugins.fire(BotSavedChat auto false, random false, delay 7, [you are ****])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(7)
+bot.clearChat()
+bot.addChatLines([you are ****])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / fewer than three settings
+bot.onPostOwnerAction(2)
+
+== chat / lines past the length budget
+plugins.fire(BotSavedChat auto false, random false, delay 7, [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbb])
+bot.setChatAuto(false)
+bot.setChatRandom(false)
+bot.setChatDelay(7)
+bot.clearChat()
+bot.addChatLines([aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbb])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== chat / over the packet limit
+bot.onPostOwnerAction(2)
+
+== chat / two lines, auto, random, delay 9
+plugins.fire(BotSavedChat auto true, random true, delay 9, [hello, how are you])
+bot.setChatAuto(true)
+bot.setChatRandom(true)
+bot.setChatDelay(9)
+bot.clearChat()
+bot.addChatLines([hello, how are you])
+bot.needsUpdate(true)
+bot.onPostOwnerAction(2)
+threading.run(bot)
+
+== dance / back to no dance
+botUnit.setDanceType(NONE)
+room.sendComposer(RoomUserDance(botUnit))
+bot.needsUpdate(true)
+bot.onPostOwnerAction(4)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== dance / the next dance
+botUnit.setDanceType(HAB_HOP)
+room.sendComposer(RoomUserDance(botUnit))
+bot.needsUpdate(true)
+bot.onPostOwnerAction(4)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== gate / an action the bot does not offer
+
+
+== gate / not in a room
+
+
+== gate / someone else's room
+
+
+== gate / staff in someone else's room
+bot.setCanWalk(false)
+bot.needsUpdate(true)
+bot.onPostOwnerAction(3)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== gate / the bot is not in the room
+
+
+== gate / too soon after the last action
+
+
+== look / a plugin cancels it
+plugins.fire(BotSavedLook hd-600-1, F, 33)
+bot.onPostOwnerAction(1)
+
+== look / copies the owner's look
+plugins.fire(BotSavedLook hd-600-1, F, 33)
+bot.setFigure(hd-600-1)
+bot.setGender(F)
+bot.setEffect(33, -1)
+bot.needsUpdate(true)
+bot.onPostOwnerAction(1)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== motto / a filtered word
+bot.setMotto(so ****)
+bot.needsUpdate(true)
+room.sendComposer(RoomUsers(bot))
+bot.onPostOwnerAction(9)
+threading.run(bot)
+
+== motto / a new motto
+bot.setMotto(Ask me anything)
+bot.needsUpdate(true)
+room.sendComposer(RoomUsers(bot))
+bot.onPostOwnerAction(9)
+threading.run(bot)
+
+== motto / too long
+bot.onPostOwnerAction(9)
+
+== motto / with a tag
+bot.setMotto(hi)
+bot.needsUpdate(true)
+room.sendComposer(RoomUsers(bot))
+bot.onPostOwnerAction(9)
+threading.run(bot)
+
+== name / a filtered word
+ann <- BotError(4)
+bot.onPostOwnerAction(5)
+
+== name / a new name
+plugins.fire(BotSavedName Robbie)
+bot.setName(Robbie)
+bot.needsUpdate(true)
+room.sendComposer(RoomUserNameChanged(40, 40, Robbie))
+bot.onPostOwnerAction(5)
+threading.run(bot)
+
+== name / a plugin cancels it
+plugins.fire(BotSavedName Robbie)
+bot.onPostOwnerAction(5)
+
+== name / a plugin renames it
+plugins.fire(BotSavedName Robbie)
+bot.setName(Plugged)
+bot.needsUpdate(true)
+room.sendComposer(RoomUserNameChanged(40, 40, Plugged))
+bot.onPostOwnerAction(5)
+threading.run(bot)
+
+== name / empty
+ann <- BotError(4)
+bot.onPostOwnerAction(5)
+
+== name / too long
+ann <- BotError(4)
+bot.onPostOwnerAction(5)
+
+== name / with a tag
+ann <- BotError(4)
+bot.onPostOwnerAction(5)
+
+== rotate / two steps further
+botUnit.setRotation(EAST)
+bot.needsUpdate(true)
+room.sendComposer(RoomUserStatus(botUnit))
+bot.onPostOwnerAction(11)
+threading.run(bot)
+
+== walk / switched off
+bot.setCanWalk(false)
+bot.needsUpdate(true)
+bot.onPostOwnerAction(3)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== walk / switched on
+bot.setCanWalk(true)
+bot.needsUpdate(true)
+bot.onPostOwnerAction(3)
+ann <- BotSkillListUpdate(-12, {1=, 2=, 3=, 4=, 5=, 9=, 11=})
+ann <- BotForceOpenContextMenu(-12)
+threading.run(bot)
+
+== walk / without reopening the menu
+bot.setCanWalk(false)
+bot.needsUpdate(true)
+bot.onPostOwnerAction(3)
+threading.run(bot)
+

@@ -21,7 +21,9 @@ public class TradeOfferItemEvent extends MessageHandler {
                 .getItemsComponent()
                 .getHabboItem(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
 
-        if (item == null || !item.getBaseItem().allowTrade()) return;
+        // A rented item is only on loan: it expires back to the hotel, so trading it
+        // away sells something the renter does not own.
+        if (item == null || !item.getBaseItem().allowTrade() || item.hasRentPeriod()) return;
 
         trade.offerItem(this.client.getHabbo(), item);
     }

@@ -1,5 +1,6 @@
 package com.eu.habbo.networking.gameserver.wired;
 
+import com.eu.habbo.networking.gameserver.auth.ClientAddressBucket;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
@@ -8,7 +9,8 @@ import java.util.function.LongSupplier;
 /**
  * Flood protection for the variables web API: requests per client address before authentication,
  * a lockout after repeated failed authentications, requests per key and variable writes per room.
- * Every table is bounded and expires, so a flood of addresses or keys cannot grow memory.
+ * Every table is bounded and expires, so a flood of addresses or keys cannot grow memory. An IPv6
+ * client is counted by its /64, which it can rotate through for free.
  */
 final class WiredApiLimits {
     private static final int MAX_ENTRIES = 16_384;
@@ -48,14 +50,15 @@ final class WiredApiLimits {
 
     /** Refuses a client address that failed authentication too often. */
     void checkNotBlocked(String ip) {
-        Long until = this.blockedUntil.getIfPresent(ip);
+        Long until = this.blockedUntil.getIfPresent(ClientAddressBucket.of(ip));
         long now = this.clockMillis.getAsLong();
         if (until != null && until > now) {
             throw WiredApiException.rateLimited(ceilSeconds(until - now), -1);
         }
     }
 
-    void recordAuthFailure(String ip, WiredApiSettings settings) {
+    void recordAuthFailure(String address, WiredApiSettings settings) {
+        String ip = ClientAddressBucket.of(address);
         long now = this.clockMillis.getAsLong();
         FixedWindow window = this.authFailures.get(ip, ignored -> new FixedWindow());
         if (!window.tryAcquire(now, settings.authFailMax(), settings.authFailWindowMs(), 1)
@@ -66,7 +69,8 @@ final class WiredApiLimits {
     }
 
     Window acquireIp(String ip, WiredApiSettings settings) {
-        return this.acquire(this.perIp, ip, settings, settings.perIp(), settings.perIpWindowMs(), 1);
+        return this.acquire(
+                this.perIp, ClientAddressBucket.of(ip), settings, settings.perIp(), settings.perIpWindowMs(), 1);
     }
 
     Window acquireKey(String keyId, WiredApiSettings settings) {

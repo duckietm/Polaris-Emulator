@@ -1,5 +1,6 @@
 package com.eu.habbo.imaging.camera.render;
 
+import com.eu.habbo.networking.gameserver.auth.CidrRange;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,7 +96,55 @@ final class CameraUrlFetcher {
             OutputStream out = socket.getOutputStream();
             out.write(request.getBytes(StandardCharsets.ISO_8859_1));
             out.flush();
-            return readResponse(socket.getInputStream(), options.fetchMaxBytes());
+            return readResponse(deadlineStream(socket.getInputStream(), options), options.fetchMaxBytes());
+        }
+    }
+
+    /**
+     * Caps the whole read, not each read call.
+     *
+     * <p>{@code soTimeout} only bounds the wait for the <em>next</em> bytes, and the render
+     * deadline was checked before a fetch, never during one. A server that answers with one
+     * byte every soTimeout minus a little therefore held a camera worker for as long as it
+     * liked - two of them by default, with a queue of sixteen, so the camera and every hotel
+     * thumbnail behind it stayed busy. The sprite name comes out of the client's scene.
+     *
+     * <p>The ceiling is the fetch budget of the render ({@code fetchBudgetMs}), and the
+     * render's own deadline when it has one, whichever comes first.
+     */
+    private static InputStream deadlineStream(InputStream in, CameraRenderOptions options) {
+        long ceiling = System.nanoTime() + Math.max(0L, options.fetchBudgetMs()) * 1_000_000L;
+        if (options.deadlineNanos() != 0L && options.deadlineNanos() - ceiling < 0) {
+            ceiling = options.deadlineNanos();
+        }
+        return new DeadlineInputStream(in, ceiling);
+    }
+
+    /** An input stream that stops reading once a wall-clock deadline has passed. */
+    static final class DeadlineInputStream extends java.io.FilterInputStream {
+        private final long deadlineNanos;
+
+        DeadlineInputStream(InputStream in, long deadlineNanos) {
+            super(in);
+            this.deadlineNanos = deadlineNanos;
+        }
+
+        private void checkDeadline() throws IOException {
+            if (System.nanoTime() - this.deadlineNanos > 0) {
+                throw new IOException("camera sprite fetch ran past its time budget");
+            }
+        }
+
+        @Override
+        public int read() throws IOException {
+            this.checkDeadline();
+            return super.read();
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            this.checkDeadline();
+            return super.read(buffer, offset, length);
         }
     }
 
@@ -127,12 +176,59 @@ final class CameraUrlFetcher {
         return addresses[0];
     }
 
+    /**
+     * Special-purpose ranges (RFC 6890) a scene must not reach. InetAddress alone misses IPv6 unique-local fc00::/7
+     * (isSiteLocal covers only fec0::/10), CGNAT 100.64.0.0/10 - which holds cloud metadata such as 100.100.100.200
+     * - 0.0.0.0/8, 198.18.0.0/15 and the NAT64 prefix, so a sprite URL could make blind requests to internal services.
+     */
+    private static final List<CidrRange> SPECIAL_RANGES = List.of(
+                    "0.0.0.0/8",
+                    "10.0.0.0/8",
+                    "100.64.0.0/10",
+                    "127.0.0.0/8",
+                    "169.254.0.0/16",
+                    "172.16.0.0/12",
+                    "192.0.0.0/24",
+                    "192.0.2.0/24",
+                    "192.88.99.0/24",
+                    "192.168.0.0/16",
+                    "198.18.0.0/15",
+                    "198.51.100.0/24",
+                    "203.0.113.0/24",
+                    "224.0.0.0/4",
+                    "240.0.0.0/4",
+                    "::/128",
+                    "::1/128",
+                    "64:ff9b::/96",
+                    "64:ff9b:1::/48",
+                    "100::/64",
+                    "2001::/23",
+                    "2001:db8::/32",
+                    "2002::/16",
+                    "fc00::/7",
+                    "fe80::/10",
+                    "fec0::/10",
+                    "ff00::/8")
+            .stream()
+            .map(CidrRange::parse)
+            .toList();
+
     static boolean isInternal(InetAddress address) {
-        return address.isAnyLocalAddress()
+        if (address.isAnyLocalAddress()
                 || address.isLoopbackAddress()
                 || address.isLinkLocalAddress()
                 || address.isSiteLocalAddress()
-                || address.isMulticastAddress();
+                || address.isMulticastAddress()) {
+            return true;
+        }
+
+        byte[] raw = address.getAddress();
+
+        for (CidrRange range : SPECIAL_RANGES) {
+            if (range != null && range.contains(raw)) return true;
+        }
+
+        return false;
     }
 
     private Socket connect(InetAddress address, int port, String host, boolean https, CameraRenderOptions options)

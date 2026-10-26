@@ -89,7 +89,7 @@ public final class RememberJwtService {
     public static RotationResult issueForNewFamily(Connection conn, int userId, String username, String ip)
             throws SQLException {
         String familyId = UUID.randomUUID().toString();
-        long now = Emulator.getIntUnixTimestamp();
+        long now = now();
         long expiresAt = now + familyTtlSeconds();
         UserIdentity identity = loadUserIdentity(conn, userId);
         if (identity == null) throw new SQLException("Remember-token user does not exist: " + userId);
@@ -112,7 +112,7 @@ public final class RememberJwtService {
     public static int peekUserId(String jwt) {
         try {
             ParsedJwt parsed = verifyAndParse(jwt);
-            if (parsed.exp <= Emulator.getIntUnixTimestamp()) return 0;
+            if (parsed.exp <= now()) return 0;
             return parsed.userId;
         } catch (Exception e) {
             return 0;
@@ -128,7 +128,7 @@ public final class RememberJwtService {
             return null;
         }
 
-        long now = Emulator.getIntUnixTimestamp();
+        long now = now();
         if (parsed.exp <= now) return null;
 
         UserIdentity identity;
@@ -209,14 +209,49 @@ public final class RememberJwtService {
         return new RotationResult(newJwt, parsed.userId, identity.username, newExpiresAt);
     }
 
+    /**
+     * Ends the remember family of a token that is still the live one, and answers its user; 0 for anything
+     * else. Only the signature used to be checked, so an old token - expired, rotated past or already
+     * revoked - kept naming its user, and the logout that trusts this id disconnected that user and revoked
+     * their access tokens every time it was replayed.
+     */
     public static int revokeFromToken(Connection conn, String jwt) {
         try {
             ParsedJwt p = verifyAndParse(jwt);
+            long now = now();
+            if (p.exp <= now) return 0;
+
+            UserIdentity identity = loadUserIdentity(conn, p.userId);
+            if (identity == null || !p.credential.equals(credentialBinding(p.userId, identity.passwordHash))) {
+                return 0;
+            }
+
+            try (PreparedStatement sel = conn.prepareStatement(
+                    "SELECT current_version, revoked, expires_at FROM users_remember_families WHERE family_id = ? AND user_id = ? LIMIT 1")) {
+                sel.setString(1, p.familyId);
+                sel.setInt(2, p.userId);
+                try (ResultSet rs = sel.executeQuery()) {
+                    if (!isLiveFamily(rs, p.version, now)) return 0;
+                }
+            }
+
             revokeFamilyById(conn, p.familyId);
             return p.userId;
         } catch (Exception ignored) {
             return 0;
         }
+    }
+
+    /** Whether the family row exists, is neither revoked nor expired, and is at this token's version. */
+    static boolean isLiveFamily(ResultSet family, int version, long now) throws SQLException {
+        return family.next()
+                && family.getInt("revoked") == 0
+                && family.getLong("expires_at") > now
+                && family.getInt("current_version") == version;
+    }
+
+    private static long now() {
+        return Emulator.getIntUnixTimestamp();
     }
 
     public static void revokeAllForUser(Connection conn, int userId) throws SQLException {

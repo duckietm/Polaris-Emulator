@@ -16,7 +16,7 @@ class ExactUsernameMatchTest {
     void unbanMatchesTheUsernameExactly() throws Exception {
         String source = source("modtool/ModToolManager.java");
 
-        assertTrue(source.contains("WHERE users.username = ? AND ban_expire > ?"));
+        assertTrue(source.contains("WHERE users.username = ? AND bans.ban_expire > ?"));
         assertFalse(source.contains("users.username LIKE ? AND ban_expire"), "_ and % in a name are wildcards in LIKE");
     }
 

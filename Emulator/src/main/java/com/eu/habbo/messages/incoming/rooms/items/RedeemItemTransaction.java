@@ -10,13 +10,19 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class RedeemItemTransaction {
+/**
+ * Deleting a redeemable furni and crediting what it is worth, in one transaction.
+ *
+ * <p>Shared by the redeem packet and the :redeem command: both have to be all or
+ * nothing, or a failure between the two leaves the furni and the currency.
+ */
+public final class RedeemItemTransaction {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedeemItemTransaction.class);
     private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1";
 
     private RedeemItemTransaction() {}
 
-    static EconomyMutationResult commit(int itemId, int userId, int currencyType, int amount, String itemName) {
+    public static EconomyMutationResult commit(int itemId, int userId, int currencyType, int amount, String itemName) {
         if (itemId <= 0 || userId <= 0 || amount <= 0) return null;
 
         Connection connection = null;

@@ -7,8 +7,16 @@ import com.eu.habbo.networking.gameserver.ExecutionBackpressureStatus;
 import com.eu.habbo.threading.ThreadPooling;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
+import java.lang.management.MemoryUsage;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -105,14 +113,53 @@ public final class RuntimeResilienceRuntime {
         if (threading == null || !(threading.getService() instanceof ScheduledThreadPoolExecutor executor)) {
             return new RuntimePressureSampler.QueueReading(0, capacity);
         }
-        return new RuntimePressureSampler.QueueReading(executor.getQueue().size(), capacity);
+        return new RuntimePressureSampler.QueueReading(overdueTasks(executor.getQueue()), capacity);
+    }
+
+    /**
+     * The scheduled tasks already due but not yet run. The whole queue also holds every task booked
+     * for later, so a hotel with many timers read as permanently backed up.
+     */
+    static int overdueTasks(Collection<Runnable> queue) {
+        int overdue = 0;
+        for (Runnable task : queue) {
+            if (!(task instanceof Delayed delayed) || delayed.getDelay(TimeUnit.NANOSECONDS) <= 0L) {
+                overdue++;
+            }
+        }
+        return overdue;
     }
 
     private static double memoryUtilization() {
         Runtime runtime = Runtime.getRuntime();
-        long max = runtime.maxMemory();
-        long used = runtime.totalMemory() - runtime.freeMemory();
-        return max <= 0L ? 0D : (double) used / max;
+        List<MemoryUsage> afterCollection = new ArrayList<>();
+        for (MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans()) {
+            if (pool.getType() == MemoryType.HEAP) {
+                afterCollection.add(pool.getCollectionUsage());
+            }
+        }
+        return heapUtilization(afterCollection, runtime.maxMemory(), runtime.totalMemory() - runtime.freeMemory());
+    }
+
+    /**
+     * Heap use as measured after the last collection of each heap pool. The live figure counts
+     * garbage not yet collected, so it crossed the degraded threshold between collections on a healthy
+     * hotel. Before any collection has run the live figure is all there is.
+     */
+    static double heapUtilization(List<MemoryUsage> afterCollection, long max, long liveUsed) {
+        if (max <= 0L) {
+            return 0D;
+        }
+
+        long used = 0L;
+        boolean collected = false;
+        for (MemoryUsage usage : afterCollection) {
+            if (usage != null && usage.getUsed() > 0L) {
+                used += usage.getUsed();
+                collected = true;
+            }
+        }
+        return (double) (collected ? used : liveUsed) / max;
     }
 
     private static RuntimeResilienceService inactiveService() {

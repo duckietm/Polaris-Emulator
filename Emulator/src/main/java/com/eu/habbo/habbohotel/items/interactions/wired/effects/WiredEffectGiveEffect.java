@@ -1,11 +1,14 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -60,6 +63,8 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             if (!this.appliesTo(roomUnit)) continue;
+            // An effect reserved for a higher rank (staff, ambassador) is not put on a user below it.
+            if (blockedFor(this.effectId, room.getHabbo(roomUnit))) continue;
 
             room.giveEffect(roomUnit, this.effectId, Integer.MAX_VALUE);
             // Effects off in the room, or a rider: the effect did not change, so no priority is kept.
@@ -67,6 +72,23 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
                 roomUnit.setWiredEffect(this.effectId, this.priority);
             }
         }
+    }
+
+    /**
+     * Whether the effect is reserved for a rank above this user's, as :enable and the effect packet
+     * already check: the box used to let a room owner dress themselves or visitors as staff.
+     */
+    static boolean blockedFor(int effectId, Habbo habbo) {
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+
+        return environment != null
+                && habbo != null
+                && habbo.getHabboInfo() != null
+                && habbo.getHabboInfo().getRank() != null
+                && environment
+                        .getPermissionsManager()
+                        .isEffectBlocked(
+                                effectId, habbo.getHabboInfo().getRank().getId());
     }
 
     boolean appliesTo(RoomUnit roomUnit) {
@@ -89,7 +111,12 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
         int[] params = settings.getIntParams();
         if (params.length < 1) throw new WiredSaveException("Invalid effect");
 
-        this.effectId = clamp(params[0], 0, MAX_EFFECT_ID);
+        int effectId = clamp(params[0], 0, MAX_EFFECT_ID);
+        if (gameClient != null && blockedFor(effectId, gameClient.getHabbo())) {
+            throw new WiredSaveException("This effect is reserved for a higher rank");
+        }
+
+        this.effectId = effectId;
         this.priority = clamp(params.length > 1 ? params[1] : DEFAULT_PRIORITY, 0, 2);
         this.effectType = (params.length > 2 && params[2] == TYPE_KEEP_OWN) ? TYPE_KEEP_OWN : TYPE_REPLACE;
         this.userSource = WiredUtilityPayloadGuard.userSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));

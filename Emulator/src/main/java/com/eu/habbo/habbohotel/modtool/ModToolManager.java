@@ -37,8 +37,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -452,7 +454,8 @@ public class ModToolManager {
         return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) seconds;
     }
 
-    static int banExpiry(int now, int duration) {
+    /** An absolute expiry timestamp from a length in seconds, kept inside an int. */
+    public static int banExpiry(int now, int duration) {
         long expiry = (long) now + duration;
 
         return expiry > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expiry;
@@ -613,48 +616,32 @@ public class ModToolManager {
         // target is parked cannot be resumed.
         SessionResumeManager.getInstance().disposeGhostSession(targetUserId);
 
-        if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER)
-                && target != null
-                && !ban.ip.equals("offline")) {
-            for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip)) {
-                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
-
-                ban = new ModToolBan(
-                        h.getHabboInfo().getId(),
-                        h != null ? h.getHabboInfo().getIpLogin() : "offline",
-                        h != null ? h.getClient().getMachineId() : "offline",
-                        moderator.getHabboInfo().getId(),
-                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
-                        reason,
-                        type,
-                        cfhTopic);
-                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
-                Emulator.getThreading().run(ban);
-                bans.add(ban);
-                Emulator.getGameServer()
-                        .getGameClientManager()
-                        .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
+        // The other accounts on the same address or machine, each banned once: never the target again,
+        // never the moderator (the highest rank passes canModerateTarget for itself), never an account
+        // reached through both the address and the machine twice, and no more than
+        // MAX_SHARED_ACCOUNT_BANS of them - behind a proxy every online user shares one address.
+        if (target != null) {
+            Set<Habbo> sharing = new LinkedHashSet<>();
+            if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER) && !ban.ip.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip));
             }
-        }
+            if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER) && !ban.machineId.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getHabbosWithMachineId(ban.machineId));
+            }
 
-        if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER)
-                && target != null
-                && !ban.machineId.equals("offline")) {
-            for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithMachineId(ban.machineId)) {
-                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
-
-                ban = new ModToolBan(
+            for (Habbo h : sharedAccountsToBan(sharing, targetUserId, moderator)) {
+                ModToolBan shared = new ModToolBan(
                         h.getHabboInfo().getId(),
-                        h != null ? h.getHabboInfo().getIpLogin() : "offline",
-                        h != null ? h.getClient().getMachineId() : "offline",
+                        h.getHabboInfo().getIpLogin(),
+                        h.getClient() != null ? h.getClient().getMachineId() : "offline",
                         moderator.getHabboInfo().getId(),
-                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
+                        ban.expireDate,
                         reason,
                         type,
                         cfhTopic);
-                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
-                Emulator.getThreading().run(ban);
-                bans.add(ban);
+                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, shared));
+                Emulator.getThreading().run(shared);
+                bans.add(shared);
                 Emulator.getGameServer()
                         .getGameClientManager()
                         .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
@@ -662,6 +649,31 @@ public class ModToolManager {
         }
 
         return bans;
+    }
+
+    /** The most accounts one ban carries over to through a shared address or machine. */
+    static final int MAX_SHARED_ACCOUNT_BANS = 50;
+
+    /**
+     * The accounts sharing the banned one's address or machine that the ban carries over to: not the
+     * target, not the moderator, only ranks the moderator may moderate, and at most
+     * {@link #MAX_SHARED_ACCOUNT_BANS}.
+     */
+    static List<Habbo> sharedAccountsToBan(Collection<Habbo> sharing, int targetUserId, Habbo moderator) {
+        int moderatorId = moderator.getHabboInfo().getId();
+        List<Habbo> accounts = new ArrayList<>();
+
+        for (Habbo h : sharing) {
+            if (accounts.size() >= MAX_SHARED_ACCOUNT_BANS) break;
+            if (h == null) continue;
+
+            int id = h.getHabboInfo().getId();
+            if (id == targetUserId || id == moderatorId || !canModerateTarget(moderator, id)) continue;
+
+            accounts.add(h);
+        }
+
+        return accounts;
     }
 
     public static boolean canModerateTarget(Habbo moderator, int targetUserId) {
@@ -793,15 +805,35 @@ public class ModToolManager {
         return false;
     }
 
+    /** Lifts a user's active bans with no rank check, for callers that have made their own. */
     public boolean unban(String username) {
+        return this.unban(username, null);
+    }
+
+    /**
+     * Lifts the active bans of a user that {@code moderator} may lift: their own, those of a lower
+     * rank, a peer's when the moderator holds the highest rank, and those with no staff member
+     * recorded. Without that, any rank allowed to unban lifted a ban an administrator had placed. A
+     * null moderator lifts every active ban. The "unbanned" note is a bound parameter: the localized
+     * text used to be concatenated into the statement.
+     */
+    public boolean unban(String username, Habbo moderator) {
+        int now = Emulator.getIntUnixTimestamp();
+        int moderatorId = moderator == null ? 0 : moderator.getHabboInfo().getId();
+        int moderatorRankId = moderator == null
+                ? Integer.MAX_VALUE
+                : moderator.getHabboInfo().getRank().getId();
+        int highestLiftableRankId =
+                moderator == null || isCoreRank(moderatorRankId) ? moderatorRankId : moderatorRankId - 1;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE bans INNER JOIN users ON bans.user_id = users.id SET ban_expire = ?, ban_reason = CONCAT('"
-                                + Emulator.getTexts().getValue("unbanned")
-                                + ": ', ban_reason) WHERE users.username = ? AND ban_expire > ?")) {
-            statement.setInt(1, Emulator.getIntUnixTimestamp());
-            statement.setString(2, username);
-            statement.setInt(3, Emulator.getIntUnixTimestamp());
+                PreparedStatement statement = connection.prepareStatement(UNBAN_SQL)) {
+            statement.setInt(1, now);
+            statement.setString(2, Emulator.getTexts().getValue("unbanned"));
+            statement.setString(3, username);
+            statement.setInt(4, now);
+            statement.setInt(5, moderatorId);
+            statement.setInt(6, highestLiftableRankId);
             statement.execute();
             return statement.getUpdateCount() > 0;
         } catch (SQLException e) {
@@ -810,6 +842,12 @@ public class ModToolManager {
 
         return false;
     }
+
+    static final String UNBAN_SQL = "UPDATE bans INNER JOIN users ON bans.user_id = users.id"
+            + " LEFT JOIN users staff ON staff.id = bans.user_staff_id"
+            + " SET bans.ban_expire = ?, bans.ban_reason = CONCAT(?, ': ', bans.ban_reason)"
+            + " WHERE users.username = ? AND bans.ban_expire > ?"
+            + " AND (staff.id IS NULL OR staff.id = ? OR staff.`rank` <= ?)";
 
     public void pickTicket(ModToolIssue issue, Habbo habbo) {
         issue.modId = habbo.getHabboInfo().getId();

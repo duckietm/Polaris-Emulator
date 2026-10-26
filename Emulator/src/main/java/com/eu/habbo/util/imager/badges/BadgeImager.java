@@ -34,6 +34,8 @@ public class BadgeImager {
     private final GuildBadgeGenerator generator;
     private final AtomicBoolean backfillRunning = new AtomicBoolean(false);
     private volatile Supplier<List<String>> guildBadges;
+    /** False until the badge parts load (reload()); a disabled imager queues and backfills nothing. */
+    private volatile boolean loaded;
 
     public BadgeImager() {
         this.generator = new GuildBadgeGenerator(
@@ -140,6 +142,17 @@ public class BadgeImager {
     }
 
     public synchronized boolean reload() {
+        this.loaded = this.loadParts();
+
+        if (this.loaded) {
+            // New or changed parts: draw every guild badge that has no image yet (delete images to redraw them).
+            this.backfill();
+        }
+
+        return this.loaded;
+    }
+
+    private boolean loadParts() {
         String folder = config().getValue("imager.location.badgeparts", "");
         this.partsFolder = folder;
         if (folder == null || folder.isEmpty()) {
@@ -148,7 +161,9 @@ public class BadgeImager {
         }
         File file = new File(folder);
         if (!file.exists()) {
-            LOGGER.error("BadgeImager output folder: {} does not exist!", folder);
+            LOGGER.error(
+                    "[Badge Imager] Badge parts folder {} (imager.location.badgeparts) does not exist!",
+                    file.getAbsolutePath());
             return false;
         }
 
@@ -173,9 +188,6 @@ public class BadgeImager {
             LOGGER.error("Caught exception", e);
             return false;
         }
-
-        // New or changed parts: draw every guild badge that has no image yet (delete images to redraw them).
-        this.backfill();
 
         return true;
     }
@@ -280,6 +292,9 @@ public class BadgeImager {
 
     /** Queues a badge image; false when the code is not a valid badge of this hotel or the queue is full. */
     public boolean generate(String badge) {
+        if (!this.loaded) {
+            return false;
+        }
         if (!this.isValidBadge(badge)) {
             LOGGER.warn("Not generating guild badge with a malformed or unknown code: {}", badge);
             return false;
@@ -302,7 +317,8 @@ public class BadgeImager {
     public void backfill() {
         if (!config().getBoolean("imager.internal.enabled")
                 || !config().getBoolean("imager.badges.backfill", true)
-                || outputFolder() == null
+                || !this.loaded
+                || !this.generator.outputReady()
                 || !this.backfillRunning.compareAndSet(false, true)) {
             return;
         }

@@ -7,14 +7,15 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
-
 import java.util.List;
 
 public class IPBanCommand extends Command {
-    public final static int TEN_YEARS = 315569260;
+    public static final int TEN_YEARS = 315569260;
 
     public IPBanCommand() {
-        super("cmd_ip_ban", Emulator.getTexts().getValue("commands.keys.cmd_ip_ban").split(";"));
+        super(
+                "cmd_ip_ban",
+                Emulator.getTexts().getValue("commands.keys.cmd_ip_ban").split(";"));
     }
 
     @Override
@@ -43,29 +44,45 @@ public class IPBanCommand extends Command {
         int count = 0;
         if (habbo != null) {
             if (habbo == gameClient.getHabbo().getHabboInfo()) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ip_ban.ban_self"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_ip_ban.ban_self"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
-            List<?> bans = Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
+            // One ban: it already carries over to the other accounts online on the same address. Banning
+            // each of them again repeated that for every one, n squared rows, events and disconnects.
+            List<?> bans = Emulator.getGameEnvironment()
+                    .getModToolManager()
+                    .ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
             count += bans != null ? bans.size() : 0;
-            for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(habbo.getIpLogin())) {
-                if (h != null) {
-                    bans = Emulator.getGameEnvironment().getModToolManager().ban(h.getHabboInfo().getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
-                    count += bans != null ? bans.size() : 0;
-                }
-            }
         } else {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.user_offline"), RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts().getValue("commands.error.cmd_ban.user_offline"),
+                            RoomChatMessageBubbles.ALERT);
             return true;
         }
 
-        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_ip_ban").replace("%count%", count + ""), RoomChatMessageBubbles.ALERT);
+        gameClient
+                .getHabbo()
+                .whisper(
+                        Emulator.getTexts()
+                                .getValue("commands.succes.cmd_ip_ban")
+                                .replace("%count%", count + ""),
+                        RoomChatMessageBubbles.ALERT);
 
         return true;
     }

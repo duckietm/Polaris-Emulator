@@ -1,0 +1,226 @@
+== gate / a horse dye on a pet that is not a horse
+
+
+== gate / not in a room
+
+
+== gate / someone else's furni
+
+
+== gate / someone else's pet
+
+
+== gate / the furni is not in the room
+
+
+== gate / the pet is not in the room
+
+
+== horse / a dye whose name has no number
+
+
+== horse / any other furni
+
+
+== horse / any other furni while the horse waits to be saved
+horse waits to be saved
+
+== horse / horse_dye_0
+horse.setRace(0)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_dye_15
+horse.setRace(69)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_dye_3
+horse.setRace(10)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairdye_0
+horse.setHairColor(-1)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairdye_1
+horse.setHairColor(1)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairdye_14
+horse.setHairColor(82)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairdye_5
+horse.setHairColor(53)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairstyle_0
+horse.setHairStyle(-1)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_hairstyle_7
+horse.setHairStyle(107)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== horse / horse_saddle1
+horse.hasSaddle(true)
+horse.setSaddleItemId(4000)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item, true))
+room.updateTiles([tile 4,5])
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== plant / a horse dye on a plant
+
+
+== plant / fertiliser on a growing plant
+plant.setCreated(1699994600)
+unit.clearStatus()
+plant.cycle()
+unit.setStatus(GESTURE, spd)
+unit.setStatus(GROW_4, )
+threading.run(plant)
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item))
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+room.updateTiles([tile 4,5])
+unit.removeStatus(GESTURE)
+plant.cycle()
+threading.runPersistence(QueryDeleteHabboItem(501))
+
+== plant / fertiliser on a grown plant
+
+
+== plant / rebreed 2 on a rare grown plant
+plant.setCanBreed(true)
+unit.clearStatus()
+unit.setStatus(GESTURE, reb)
+threading.run(plant)
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item))
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+room.updateTiles([tile 4,5])
+unit.removeStatus(GESTURE)
+threading.runPersistence(QueryDeleteHabboItem(501))
+
+== plant / rebreed 3 on an epic grown plant
+plant.setCanBreed(true)
+unit.clearStatus()
+unit.setStatus(GESTURE, reb)
+threading.run(plant)
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item))
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+room.updateTiles([tile 4,5])
+unit.removeStatus(GESTURE)
+threading.runPersistence(QueryDeleteHabboItem(501))
+
+== plant / rebreed of the wrong rarity
+
+
+== plant / rebreed on a common grown plant
+plant.setCanBreed(true)
+unit.clearStatus()
+unit.setStatus(GESTURE, reb)
+threading.run(plant)
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item))
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+room.updateTiles([tile 4,5])
+unit.removeStatus(GESTURE)
+threading.runPersistence(QueryDeleteHabboItem(501))
+
+== plant / rebreed on a dead plant
+
+
+== plant / rebreed on a plant that can already breed
+
+
+== plant / revival on a dead plant
+plant.revive()
+unit.clearStatus()
+unit.setStatus(GESTURE, rev)
+threading.run(plant)
+room.removeHabboItem(item)
+room.sendComposer(RemoveFloorItem(item))
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+room.updateTiles([tile 4,5])
+progressAchievement(achievement MonsterPlantHealer)
+unit.removeStatus(GESTURE)
+threading.runPersistence(QueryDeleteHabboItem(501))
+plant sends a packet update
+
+== plant / revival on a living plant
+
+

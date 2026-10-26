@@ -3,48 +3,59 @@ package com.eu.habbo.threading.runnables.teleport;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleportTile;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.threading.runnables.HabboItemNewState;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class TeleportActionFive implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TeleportActionFive.class);
 
     private final HabboItem currentTeleport;
     private final Room room;
-    private final GameClient client;
+    private final Habbo habbo;
 
     public TeleportActionFive(HabboItem currentTeleport, Room room, GameClient client) {
+        this(currentTeleport, room, client == null ? null : client.getHabbo());
+    }
+
+    public TeleportActionFive(HabboItem currentTeleport, Room room, Habbo habbo) {
         this.currentTeleport = currentTeleport;
-        this.client = client;
+        this.habbo = habbo;
         this.room = room;
     }
 
     @Override
     public void run() {
-        RoomUnit unit = this.client.getHabbo().getRoomUnit();
+        TeleportChain.run(this.habbo, this.currentTeleport, this.room, this::step);
+    }
+
+    private void step() {
+        RoomUnit unit = this.habbo.getRoomUnit();
 
         unit.isLeavingTeleporter = false;
         unit.isTeleporting = false;
         unit.setCanWalk(true);
 
-        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != this.room) {
-            this.client.getHabbo().getHabboInfo().setLoadingRoom(0);
+        if (this.habbo.getHabboInfo().getCurrentRoom() != this.room) {
+            this.habbo.getHabboInfo().setLoadingRoom(0);
             return;
         }
 
-        //if (!(this.currentTeleport instanceof InteractionTeleportTile))
+        // if (!(this.currentTeleport instanceof InteractionTeleportTile))
 
         if (this.room.getLayout() == null || this.currentTeleport == null) return;
 
-        RoomTile currentLocation = this.room.getLayout().getTile(this.currentTeleport.getX(), this.currentTeleport.getY());
+        RoomTile currentLocation =
+                this.room.getLayout().getTile(this.currentTeleport.getX(), this.currentTeleport.getY());
         RoomTile tile = this.room.getLayout().getTileInFront(currentLocation, this.currentTeleport.getRotation());
 
         if (tile != null) {
@@ -53,9 +64,12 @@ class TeleportActionFive implements Runnable {
                 unit.setCanLeaveRoomByDoor(true);
                 WiredFreezeUtil.restoreWalkState(unit);
 
-                Emulator.getThreading().run(() -> {
-                    unit.isLeavingTeleporter = false;
-                }, 300);
+                Emulator.getThreading()
+                        .run(
+                                () -> {
+                                    unit.isLeavingTeleporter = false;
+                                },
+                                300);
             });
 
             unit.setCanLeaveRoomByDoor(false);
@@ -74,9 +88,11 @@ class TeleportActionFive implements Runnable {
 
         HabboItem teleportTile = this.room.getTopItemAt(unit.getX(), unit.getY());
 
-        if (teleportTile != null && teleportTile instanceof InteractionTeleportTile && teleportTile != this.currentTeleport) {
+        if (teleportTile != null
+                && teleportTile instanceof InteractionTeleportTile
+                && teleportTile != this.currentTeleport) {
             try {
-                teleportTile.onWalkOn(unit, this.room, new Object[]{});
+                teleportTile.onWalkOn(unit, this.room, new Object[] {});
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
             }

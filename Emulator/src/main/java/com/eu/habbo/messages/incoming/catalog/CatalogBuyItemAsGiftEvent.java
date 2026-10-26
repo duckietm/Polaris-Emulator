@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageAccessPolicy;
 import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
+import com.eu.habbo.habbohotel.catalog.LtdRaffleManager;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubLoyaltyLayout;
@@ -53,6 +54,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,277 +77,328 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         return "catalog.purchase";
     }
 
+    /** One gift request as the packet carries it, the message already cut and filtered. */
+    private record GiftRequest(
+            int pageId,
+            int itemId,
+            String extraData,
+            String username,
+            String message,
+            int spriteId,
+            int color,
+            int ribbonId,
+            boolean showName) {}
+
+    /**
+     * What a gift has taken so far, so a gift that fails half way can be undone: the payment, the limited number it
+     * reserved and the items it created.
+     */
+    private static final class GiftAttempt {
+        private int paidCredits;
+        private int paidPoints;
+        private int paidPointsType;
+        private CatalogLimitedConfiguration limitedConfiguration;
+        private int limitedItemId;
+        private int limitedNumber;
+        private int limitedStack;
+        private final Set<HabboItem> createdItems = new HashSet<>();
+        private boolean delivered;
+    }
+
     @Override
     public void handle() throws Exception {
         if (Emulator.getIntUnixTimestamp() - this.client.getHabbo().getHabboStats().lastGiftTimestamp
-                >= CatalogManager.PURCHASE_COOLDOWN) {
-            if (ShutdownEmulator.timestamp > 0) {
-                LOGGER.debug("emulator closing");
-                this.client.sendResponse(new HotelWillCloseInMinutesComposer(
-                        (ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
+                < CatalogManager.PURCHASE_COOLDOWN) {
+            LOGGER.debug("cooldown blocked purchase");
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
+        if (ShutdownEmulator.timestamp > 0) {
+            LOGGER.debug("emulator closing");
+            this.client.sendResponse(new HotelWillCloseInMinutesComposer(
+                    (ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
+            this.client.sendResponse(
+                    new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+            return;
+        }
+
+        synchronized (this.client.getHabbo().getHabboStats()) {
+            if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
+                LOGGER.debug("isPurchasingFurniture already true");
                 this.client.sendResponse(
                         new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                 return;
             }
+            this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
+        }
 
-            synchronized (this.client.getHabbo().getHabboStats()) {
-                if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
-                    LOGGER.debug("isPurchasingFurniture already true");
-                    this.client.sendResponse(
-                            new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                    return;
-                }
-                this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
-            }
+        GiftAttempt attempt = new GiftAttempt();
 
-            int paidCredits = 0;
-            int paidPoints = 0;
-            int paidPointsType = 0;
-            CatalogLimitedConfiguration reservedLimitedConfiguration = null;
-            int reservedLimitedItemId = 0;
-            int reservedLimitedNumber = 0;
-            Set<HabboItem> createdGiftItems = new HashSet<>();
-            boolean giftDelivered = false;
-
-            try {
-                int pageId = this.packet.readInt();
-                int itemId = this.packet.readInt();
-                String extraData = this.packet.readString();
-                if (extraData.length() > EXTRADATA_MAX) extraData = extraData.substring(0, EXTRADATA_MAX);
-                String username = this.packet.readString();
-                if (username.length() > USERNAME_MAX) username = username.substring(0, USERNAME_MAX);
-                int messageMax = Emulator.getConfig().getInt("hotel.gifts.length.max", 300);
-                String rawMessage = this.packet.readString();
-                if (rawMessage.length() > messageMax) rawMessage = rawMessage.substring(0, messageMax);
-                String message =
-                        Emulator.getGameEnvironment().getWordFilter().filter(rawMessage, this.client.getHabbo());
-                int spriteId = this.packet.readInt();
-                int color = this.packet.readInt();
-                int ribbonId = this.packet.readInt();
-                boolean showName = this.packet.readBoolean();
-
-                // Only staff may hide who sent a gift; the client offers it to them alone.
-                if (!showName && !this.client.getHabbo().hasPermission(GIFT_HIDE_SENDER)) showName = true;
-
-                LOGGER.debug(
-                        "Gift request: pageId={}, itemId={}, spriteId={}, color={}, ribbonId={}",
-                        pageId,
-                        itemId,
-                        spriteId,
-                        color,
-                        ribbonId);
-
-                int userId = 0;
-
-                CatalogPage clubGiftPage = Emulator.getGameEnvironment()
-                        .getCatalogManager()
-                        .catalogPages
-                        .get(pageId);
-                if (this.isClubOfferPage(clubGiftPage)) {
-                    if (!this.canAccessPage(clubGiftPage)) {
-                        this.client.sendResponse(
-                                new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                        return;
-                    }
-                    this.handleClubOfferGift(clubGiftPage, itemId, username);
-                    return;
-                }
-
-                CatalogManager.GiftWrappingSnapshot giftWrapping =
-                        Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
-                Map<Integer, Integer> giftWrappers = giftWrapping.wrappers();
-                Map<Integer, Integer> giftFurniture = giftWrapping.furniture();
-
-                Item giftItem = this.resolveGiftWrapItem(spriteId, color, ribbonId, giftWrappers, giftFurniture);
-                if (giftItem == null) return;
-
-                try (Connection connection =
-                        Emulator.getDatabase().getDataSource().getConnection()) {
-                    Habbo habbo =
-                            Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
-
-                    userId = this.resolveRecipientId(connection, habbo, username);
-
-                    if (userId == 0) {
-                        LOGGER.debug("receiver not found -> {}", username);
-                        this.client.sendResponse(new GiftReceiverNotFoundComposer());
-                        return;
-                    }
-
-                    CatalogItem item = this.findGiftableItem(pageId, itemId);
-                    if (item == null) return;
-
-                    GiftPrice price = this.priceGift(item, itemId, giftWrappers.containsKey(spriteId));
-                    if (price == null) return;
-
-                    int totalCredits = price.credits();
-                    int totalPoints = price.points();
-
-                    CatalogLimitedConfiguration limitedConfiguration = null;
-                    int limitedStack = 0;
-                    int limitedNumber = 0;
-
-                    if (item.isLimited()) {
-                        // A limited item without a configuration yet gets one below; asking the missing one
-                        // for its stock used to end the gift in a NullPointerException.
-                        limitedConfiguration = Emulator.getGameEnvironment()
-                                .getCatalogManager()
-                                .getLimitedConfig(item);
-
-                        if (limitedConfiguration != null && limitedConfiguration.available() == 0) {
-                            LOGGER.debug("LTD available=0 -> itemId={}", itemId);
-                            this.client.sendResponse(new AlertLimitedSoldOutComposer());
-                            return;
-                        }
-
-                        if (this.exceedsDailyLimitedLimits(item)) return;
-
-                        if (limitedConfiguration == null) {
-                            limitedConfiguration = Emulator.getGameEnvironment()
-                                    .getCatalogManager()
-                                    .createOrUpdateLimitedConfig(item);
-                        }
-
-                        limitedNumber = limitedConfiguration.getNumber();
-                        reservedLimitedConfiguration = limitedConfiguration;
-                        reservedLimitedItemId = item.getId();
-                        reservedLimitedNumber = limitedNumber;
-                        limitedStack = limitedConfiguration.getTotalSet();
-                    }
-
-                    Set<HabboItem> itemsList = createdGiftItems;
-
-                    boolean badgeFound = this.recipientHasBadge(connection, habbo, userId, item);
-
-                    if (badgeFound) {
-                        LOGGER.debug("receiver already has badge");
-                        this.client.sendResponse(
-                                new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.ALREADY_HAVE_BADGE));
-                        return;
-                    }
-
-                    if (this.rejectsUnsupportedGift(item)) return;
-
-                    int chargeCredits =
-                            this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : totalCredits;
-                    boolean hasInfinitePoints = item.getPointsType() == 0
-                            ? this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_PIXELS)
-                            : this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS);
-                    int chargePoints = hasInfinitePoints ? 0 : totalPoints;
-                    if (!CatalogPaymentService.tryTake(
-                            this.client.getHabbo(), chargeCredits, item.getPointsType(), chargePoints)) {
-                        this.client.sendResponse(
-                                new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-                        return;
-                    }
-                    paidCredits = chargeCredits;
-                    paidPoints = chargePoints;
-                    paidPointsType = item.getPointsType();
-
-                    if (!this.createGiftContents(
-                            item,
-                            habbo,
-                            userId,
-                            connection,
-                            extraData,
-                            badgeFound,
-                            limitedStack,
-                            limitedNumber,
-                            itemsList)) {
-                        return;
-                    }
-
-                    String giftData = this.buildGiftData(itemsList, color, ribbonId, showName, message);
-                    if (giftData == null) return;
-
-                    HabboItem gift = Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .createGift(username, giftItem, giftData, 0, 0);
-
-                    if (gift == null) {
-                        LOGGER.debug("createGift returned null");
-                        this.client.sendResponse(
-                                new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                        return;
-                    }
-                    createdGiftItems.add(gift);
-
-                    if (limitedConfiguration != null) {
-                        // One number, one sale, as a purchase for oneself records it: both halves of a teleporter
-                        // carry the same number, and the box carries none. The first item created is the one sold.
-                        HabboItem limitedItem = null;
-                        for (HabboItem itm : itemsList) {
-                            if (itm == null) {
-                                // Trip the catch path so the deduction is refunded.
-                                throw new IllegalStateException("null item before limitedSold()");
-                            }
-                            if (itm == gift) continue;
-                            if (limitedItem == null || itm.getId() < limitedItem.getId()) limitedItem = itm;
-                        }
-                        if (limitedItem != null) {
-                            limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), limitedItem);
-                        }
-                    }
-
-                    if (this.client.getHabbo().getHabboInfo().getId() != userId) {
-                        AchievementManager.progressAchievement(
-                                this.client.getHabbo(),
-                                Emulator.getGameEnvironment()
-                                        .getAchievementManager()
-                                        .getAchievement("GiftGiver"));
-                    }
-
-                    this.deliverToRecipient(habbo, gift, showName);
-
-                    if (this.client.getHabbo().getHabboInfo().getId() != userId) {
-                        AchievementManager.progressAchievement(
-                                userId,
-                                Emulator.getGameEnvironment()
-                                        .getAchievementManager()
-                                        .getAchievement("GiftReceiver"));
-                    }
-
-                    // Gift fully delivered; commit cooldown and clear refund tracking so the catch block can't
-                    // double-refund.
-                    this.client.getHabbo().getHabboStats().lastGiftTimestamp = Emulator.getIntUnixTimestamp();
-                    if (item.isLimited()) {
-                        this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
-                    }
-                    giftDelivered = true;
-                    paidCredits = 0;
-                    paidPoints = 0;
-
-                    this.client.sendResponse(new PurchaseOKComposer(item));
-                }
-            } catch (Exception e) {
-                LOGGER.error("Exception caught", e);
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-            } finally {
-                try {
-                    if (!giftDelivered) {
-                        for (HabboItem createdItem : createdGiftItems) {
-                            if (createdItem != null)
-                                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
-                        }
-                        if (reservedLimitedConfiguration != null && reservedLimitedNumber > 0) {
-                            // Return the reserved number to the pool, as a failed purchase for oneself does,
-                            // so a failed gift neither shrinks the stock nor keeps the number marked as sold.
-                            reservedLimitedConfiguration.restoreNumber(reservedLimitedItemId, reservedLimitedNumber);
-                        }
-                        if (paidCredits > 0 || paidPoints > 0) {
-                            CatalogPaymentService.refund(
-                                    this.client.getHabbo(), paidCredits, paidPointsType, paidPoints);
-                        }
-                    }
-                } finally {
-                    synchronized (this.client.getHabbo().getHabboStats()) {
-                        this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
-                    }
-                }
-            }
-        } else {
-            LOGGER.debug("cooldown blocked purchase");
+        try {
+            this.sendGift(attempt);
+        } catch (Exception e) {
+            LOGGER.error("Exception caught", e);
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+        } finally {
+            try {
+                if (!attempt.delivered) this.undo(attempt);
+            } finally {
+                synchronized (this.client.getHabbo().getHabboStats()) {
+                    this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
+                }
+            }
+        }
+    }
+
+    private GiftRequest readRequest() {
+        int pageId = this.packet.readInt();
+        int itemId = this.packet.readInt();
+        String extraData = this.packet.readString();
+        if (extraData.length() > EXTRADATA_MAX) extraData = extraData.substring(0, EXTRADATA_MAX);
+        String username = this.packet.readString();
+        if (username.length() > USERNAME_MAX) username = username.substring(0, USERNAME_MAX);
+        int messageMax = Emulator.getConfig().getInt("hotel.gifts.length.max", 300);
+        String rawMessage = this.packet.readString();
+        if (rawMessage.length() > messageMax) rawMessage = rawMessage.substring(0, messageMax);
+        String message = Emulator.getGameEnvironment().getWordFilter().filter(rawMessage, this.client.getHabbo());
+        int spriteId = this.packet.readInt();
+        int color = this.packet.readInt();
+        int ribbonId = this.packet.readInt();
+        boolean showName = this.packet.readBoolean();
+
+        // Only staff may hide who sent a gift; the client offers it to them alone.
+        if (!showName && !this.client.getHabbo().hasPermission(GIFT_HIDE_SENDER)) showName = true;
+
+        return new GiftRequest(pageId, itemId, extraData, username, message, spriteId, color, ribbonId, showName);
+    }
+
+    /** Reads the request and sends either a club offer or a wrapped item. */
+    private void sendGift(GiftAttempt attempt) throws Exception {
+        GiftRequest request = this.readRequest();
+
+        LOGGER.debug(
+                "Gift request: pageId={}, itemId={}, spriteId={}, color={}, ribbonId={}",
+                request.pageId(),
+                request.itemId(),
+                request.spriteId(),
+                request.color(),
+                request.ribbonId());
+
+        CatalogPage clubGiftPage =
+                Emulator.getGameEnvironment().getCatalogManager().catalogPages.get(request.pageId());
+        if (this.isClubOfferPage(clubGiftPage)) {
+            if (!this.canAccessPage(clubGiftPage)) {
+                this.client.sendResponse(
+                        new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return;
+            }
+            this.handleClubOfferGift(clubGiftPage, request.itemId(), request.username());
+            return;
+        }
+
+        CatalogManager.GiftWrappingSnapshot giftWrapping =
+                Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
+        Map<Integer, Integer> giftWrappers = giftWrapping.wrappers();
+        Map<Integer, Integer> giftFurniture = giftWrapping.furniture();
+
+        Item giftItem = this.resolveGiftWrapItem(
+                request.spriteId(), request.color(), request.ribbonId(), giftWrappers, giftFurniture);
+        if (giftItem == null) return;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.sendItemGift(connection, request, giftItem, giftWrappers.containsKey(request.spriteId()), attempt);
+        }
+    }
+
+    /** Checks, charges, creates and delivers a wrapped item; every refusal is answered before it returns. */
+    private void sendItemGift(
+            Connection connection, GiftRequest request, Item giftItem, boolean paidWrap, GiftAttempt attempt)
+            throws Exception {
+        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(request.username());
+
+        int userId = this.resolveRecipientId(connection, habbo, request.username());
+
+        if (userId == 0) {
+            LOGGER.debug("receiver not found -> {}", request.username());
+            this.client.sendResponse(new GiftReceiverNotFoundComposer());
+            return;
+        }
+
+        CatalogItem item = this.findGiftableItem(request.pageId(), request.itemId());
+        if (item == null) return;
+
+        GiftPrice price = this.priceGift(item, request.itemId(), paidWrap);
+        if (price == null) return;
+
+        // With the LTD raffle on, a limited offer is collected and drawn rather than sold
+        // to whoever clicks first - but this path reserved a number directly, so buying it
+        // as a gift, to an alt or to oneself, skipped the draw and took a copy at once.
+        if (item.isLimited() && LtdRaffleManager.isEnabled()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
+
+        if (item.isLimited() && !this.reserveLimitedNumber(item, request.itemId(), attempt)) return;
+
+        boolean badgeFound = this.recipientHasBadge(connection, habbo, userId, item);
+
+        if (badgeFound) {
+            LOGGER.debug("receiver already has badge");
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.ALREADY_HAVE_BADGE));
+            return;
+        }
+
+        if (this.rejectsUnsupportedGift(item)) return;
+
+        if (!this.charge(item, price, attempt)) return;
+
+        if (!this.createGiftContents(
+                item,
+                habbo,
+                userId,
+                connection,
+                request.extraData(),
+                badgeFound,
+                attempt.limitedStack,
+                attempt.limitedNumber,
+                attempt.createdItems)) {
+            return;
+        }
+
+        String giftData = this.buildGiftData(
+                attempt.createdItems, request.color(), request.ribbonId(), request.showName(), request.message());
+        if (giftData == null) return;
+
+        HabboItem gift =
+                Emulator.getGameEnvironment().getItemManager().createGift(request.username(), giftItem, giftData, 0, 0);
+
+        if (gift == null) {
+            LOGGER.debug("createGift returned null");
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+        attempt.createdItems.add(gift);
+
+        this.recordLimitedSale(item, gift, attempt);
+
+        if (this.client.getHabbo().getHabboInfo().getId() != userId) {
+            AchievementManager.progressAchievement(
+                    this.client.getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("GiftGiver"));
+        }
+
+        this.deliverToRecipient(habbo, gift, request.showName());
+
+        if (this.client.getHabbo().getHabboInfo().getId() != userId) {
+            AchievementManager.progressAchievement(
+                    userId,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("GiftReceiver"));
+        }
+
+        // Gift fully delivered; commit cooldown and clear refund tracking so the cleanup can't double-refund.
+        int now = Emulator.getIntUnixTimestamp();
+        this.client.getHabbo().getHabboStats().lastGiftTimestamp = now;
+        if (item.isLimited()) {
+            this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), now);
+        }
+        attempt.delivered = true;
+        attempt.paidCredits = 0;
+        attempt.paidPoints = 0;
+
+        this.client.sendResponse(new PurchaseOKComposer(item));
+    }
+
+    /**
+     * Takes a number of a limited item for the gift, creating its limited configuration when it has none yet. False
+     * once the sender has been told the item is sold out or over a daily limit.
+     */
+    private boolean reserveLimitedNumber(CatalogItem item, int itemId, GiftAttempt attempt) {
+        // A limited item without a configuration yet gets one below; asking the missing one
+        // for its stock used to end the gift in a NullPointerException.
+        CatalogLimitedConfiguration limitedConfiguration =
+                Emulator.getGameEnvironment().getCatalogManager().getLimitedConfig(item);
+
+        if (limitedConfiguration != null && limitedConfiguration.available() == 0) {
+            LOGGER.debug("LTD available=0 -> itemId={}", itemId);
+            this.client.sendResponse(new AlertLimitedSoldOutComposer());
+            return false;
+        }
+
+        if (this.exceedsDailyLimitedLimits(item)) return false;
+
+        if (limitedConfiguration == null) {
+            limitedConfiguration =
+                    Emulator.getGameEnvironment().getCatalogManager().createOrUpdateLimitedConfig(item);
+        }
+
+        // The stock was counted above, but another buyer can take the last number before it is reserved here.
+        OptionalInt reservation = limitedConfiguration.pollNumber();
+        if (reservation.isEmpty()) {
+            LOGGER.debug("LTD number taken meanwhile -> itemId={}", itemId);
+            this.client.sendResponse(new AlertLimitedSoldOutComposer());
+            return false;
+        }
+
+        attempt.limitedNumber = reservation.getAsInt();
+        attempt.limitedConfiguration = limitedConfiguration;
+        attempt.limitedItemId = item.getId();
+        attempt.limitedStack = limitedConfiguration.getTotalSet();
+        return true;
+    }
+
+    /** Takes the price from the sender, nothing of a currency they have without limit; false once refused. */
+    private boolean charge(CatalogItem item, GiftPrice price, GiftAttempt attempt) {
+        int chargeCredits = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : price.credits();
+        boolean hasInfinitePoints = item.getPointsType() == 0
+                ? this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_PIXELS)
+                : this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS);
+        int chargePoints = hasInfinitePoints ? 0 : price.points();
+        if (!CatalogPaymentService.tryTake(this.client.getHabbo(), chargeCredits, item.getPointsType(), chargePoints)) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return false;
+        }
+        attempt.paidCredits = chargeCredits;
+        attempt.paidPoints = chargePoints;
+        attempt.paidPointsType = item.getPointsType();
+        return true;
+    }
+
+    /**
+     * One number, one sale, as a purchase for oneself records it: both halves of a teleporter carry the same number,
+     * and the box carries none. The first item created is the one sold.
+     */
+    private void recordLimitedSale(CatalogItem item, HabboItem gift, GiftAttempt attempt) {
+        if (attempt.limitedConfiguration == null) return;
+
+        HabboItem limitedItem = null;
+        for (HabboItem itm : attempt.createdItems) {
+            if (itm == null) {
+                // Trip the catch path so the deduction is refunded.
+                throw new IllegalStateException("null item before limitedSold()");
+            }
+            if (itm == gift) continue;
+            if (limitedItem == null || itm.getId() < limitedItem.getId()) limitedItem = itm;
+        }
+        if (limitedItem != null) {
+            attempt.limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), limitedItem);
+        }
+    }
+
+    /** Deletes what a failed gift created, returns its limited number and refunds what it took. */
+    private void undo(GiftAttempt attempt) {
+        for (HabboItem createdItem : attempt.createdItems) {
+            if (createdItem != null)
+                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+        }
+        if (attempt.limitedConfiguration != null && attempt.limitedNumber > 0) {
+            // Return the reserved number to the pool, as a failed purchase for oneself does,
+            // so a failed gift neither shrinks the stock nor keeps the number marked as sold.
+            attempt.limitedConfiguration.restoreNumber(attempt.limitedItemId, attempt.limitedNumber);
+        }
+        if (attempt.paidCredits > 0 || attempt.paidPoints > 0) {
+            CatalogPaymentService.refund(
+                    this.client.getHabbo(), attempt.paidCredits, attempt.paidPointsType, attempt.paidPoints);
         }
     }
 
@@ -981,22 +1034,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         Habbo recipient = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
-        int recipientId = 0;
-
-        if (recipient != null) {
-            recipientId = recipient.getHabboInfo().getId();
-        } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement =
-                            connection.prepareStatement("SELECT id FROM users WHERE username = ?")) {
-                statement.setString(1, username);
-                try (ResultSet set = statement.executeQuery()) {
-                    if (set.next()) recipientId = set.getInt(1);
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception while resolving club gift recipient", e);
-            }
-        }
+        int recipientId = this.resolveClubGiftRecipientId(recipient, username);
 
         if (recipientId == 0) {
             this.client.sendResponse(new GiftReceiverNotFoundComposer());
@@ -1023,11 +1061,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
         boolean extended;
         try {
-            if (recipient != null) {
-                extended = (recipient.getHabboStats().createSubscription(subscriptionType, duration) != null);
-            } else {
-                extended = this.extendOfflineSubscription(recipientId, subscriptionType, duration);
-            }
+            extended = this.extendClub(recipient, recipientId, subscriptionType, duration);
         } catch (RuntimeException e) {
             CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, offer.getPointsType(), paidPoints);
             throw e;
@@ -1039,22 +1073,11 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return;
         }
 
-        if (recipient != null) {
-            recipient
-                    .getClient()
-                    .sendResponse(
-                            new UserClubComposer(recipient, subscriptionType, UserClubComposer.RESPONSE_TYPE_NORMAL));
+        // A club gift starts the gift cooldown, as an item gift does; before, club gifts could follow each other
+        // without one.
+        this.client.getHabbo().getHabboStats().lastGiftTimestamp = Emulator.getIntUnixTimestamp();
 
-            String prefix = Emulator.getTexts().getValue("prereg.reward.you.received", "You have received:");
-            String daysWord = Emulator.getTexts().getValue("generic.days", "days");
-            String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
-            String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
-            Map<String, String> keys = new HashMap<>();
-            keys.put("display", "BUBBLE");
-            keys.put("image", "${image.library.url}notifications/gift.gif");
-            keys.put("message", prefix + " " + giftDescription);
-            recipient.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_GIFT.key, keys));
-        }
+        if (recipient != null) this.notifyClubRecipient(recipient, offer, subscriptionType);
 
         if (this.client.getHabbo().getHabboInfo().getId() != recipientId) {
             AchievementManager.progressAchievement(
@@ -1063,6 +1086,48 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         this.client.sendResponse(new PurchaseOKComposer(null));
+    }
+
+    /** The id of a club gift's recipient: the online user's, or the one stored for the name; 0 when nobody has it. */
+    private int resolveClubGiftRecipientId(Habbo recipient, String username) {
+        if (recipient != null) return recipient.getHabboInfo().getId();
+
+        int recipientId = 0;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE username = ?")) {
+            statement.setString(1, username);
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) recipientId = set.getInt(1);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception while resolving club gift recipient", e);
+        }
+        return recipientId;
+    }
+
+    /** Adds the days to the recipient's club, in memory when they are online and in the database otherwise. */
+    private boolean extendClub(Habbo recipient, int recipientId, String subscriptionType, int duration) {
+        if (recipient != null) {
+            return recipient.getHabboStats().createSubscription(subscriptionType, duration) != null;
+        }
+        return this.extendOfflineSubscription(recipientId, subscriptionType, duration);
+    }
+
+    /** Shows an online recipient their new club and what they received. */
+    private void notifyClubRecipient(Habbo recipient, ClubOffer offer, String subscriptionType) {
+        recipient
+                .getClient()
+                .sendResponse(new UserClubComposer(recipient, subscriptionType, UserClubComposer.RESPONSE_TYPE_NORMAL));
+
+        String prefix = Emulator.getTexts().getValue("prereg.reward.you.received", "You have received:");
+        String daysWord = Emulator.getTexts().getValue("generic.days", "days");
+        String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
+        String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
+        Map<String, String> keys = new HashMap<>();
+        keys.put("display", "BUBBLE");
+        keys.put("image", "${image.library.url}notifications/gift.gif");
+        keys.put("message", prefix + " " + giftDescription);
+        recipient.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_GIFT.key, keys));
     }
 
     private boolean extendOfflineSubscription(int userId, String subscriptionType, int duration) {

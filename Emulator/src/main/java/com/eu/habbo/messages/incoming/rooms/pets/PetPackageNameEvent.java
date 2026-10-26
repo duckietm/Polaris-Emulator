@@ -42,6 +42,13 @@ public class PetPackageNameEvent extends MessageHandler {
                             return;
                         }
 
+                        // Claim the box before a pet is created from it: a pickup or a room
+                        // eviction racing this used to leave the box alive in an inventory
+                        // while its row was already deleted, so it could be opened again.
+                        if (!room.claimItem(item)) {
+                            return;
+                        }
+
                         Pet pet = null;
                         PetManager petManager = Emulator.getGameEnvironment().getPetManager();
 
@@ -84,7 +91,6 @@ public class PetPackageNameEvent extends MessageHandler {
                             pet.getRoomUnit().setLocation(tile);
                             pet.getRoomUnit().setZ(item.getZ());
                             Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(item.getId()));
-                            room.removeHabboItem(item);
                             room.sendComposer(new RemoveFloorItemComposer(item).compose());
                             room.updateTile(tile);
                             room.sendComposer(
@@ -92,6 +98,9 @@ public class PetPackageNameEvent extends MessageHandler {
                                             .compose());
                             item.setUserId(0);
                         } else {
+                            // No pet matched this box after all: give the claim back so the
+                            // furni stays in the room instead of vanishing until a reload.
+                            room.addHabboItem(item);
                             this.client.sendResponse(
                                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                         }

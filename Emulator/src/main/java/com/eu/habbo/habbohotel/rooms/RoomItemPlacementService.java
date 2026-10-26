@@ -1,10 +1,17 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
+import com.eu.habbo.habbohotel.items.interactions.InteractionCannon;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoomAds;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
@@ -65,20 +72,7 @@ final class RoomItemPlacementService {
         if (habbo.getHabboStats().isRentingSpace()) {
             HabboItem rentSpace = this.facade.getHabboItem(habbo.getHabboStats().rentedItemId);
             if (rentSpace != null) {
-                boolean insideRental = RoomLayout.squareInSquare(
-                        RoomLayout.getRectangle(
-                                rentSpace.getX(),
-                                rentSpace.getY(),
-                                rentSpace.getBaseItem().getWidth(),
-                                rentSpace.getBaseItem().getLength(),
-                                rentSpace.getRotation()),
-                        RoomLayout.getRectangle(
-                                tile.x,
-                                tile.y,
-                                item.getBaseItem().getWidth(),
-                                item.getBaseItem().getLength(),
-                                rotation));
-                return insideRental ? FurnitureMovementError.NONE : FurnitureMovementError.NO_RIGHTS;
+                return tenantMoveInRental(rentSpace, item, habbo, tile, rotation, this.isInThisRoom(item));
             }
         }
 
@@ -86,10 +80,86 @@ final class RoomItemPlacementService {
             InteractionBuildArea buildArea = (InteractionBuildArea) area;
             if (buildArea.inSquare(tile)
                     && buildArea.isBuilder(habbo.getHabboInfo().getUsername())) {
+                if (!mayTenantMove(item, habbo)) {
+                    return FurnitureMovementError.NO_RIGHTS;
+                }
+                RoomTile origin = this.room.getLayout() == null
+                        ? null
+                        : this.room.getLayout().getTile(item.getX(), item.getY());
+                if (this.isInThisRoom(item) && (origin == null || !buildArea.inSquare(origin))) {
+                    return FurnitureMovementError.NO_RIGHTS;
+                }
                 return FurnitureMovementError.NONE;
             }
         }
         return FurnitureMovementError.NO_RIGHTS;
+    }
+
+    /**
+     * What a tenant of a rented space may do with one furni.
+     *
+     * @param itemIsInRoom whether the furni already stands in this room, rather than coming
+     *     out of the tenant's inventory
+     */
+    static FurnitureMovementError tenantMoveInRental(
+            HabboItem rentSpace, HabboItem item, Habbo habbo, RoomTile tile, int rotation, boolean itemIsInRoom) {
+        if (!mayTenantMove(item, habbo)) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        if (!insideRental(rentSpace, item, tile.x, tile.y, rotation)) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        // Where it stands now counts too: otherwise the destination check alone let a
+        // tenant drag a furni in from the rest of the room.
+        if (itemIsInRoom && !insideRental(rentSpace, item, item.getX(), item.getY(), item.getRotation())) {
+            return FurnitureMovementError.NO_RIGHTS;
+        }
+        return FurnitureMovementError.NONE;
+    }
+
+    private boolean isInThisRoom(HabboItem item) {
+        return this.facade.getHabboItem(item.getId()) != null;
+    }
+
+    /**
+     * Whether someone with no rights in the room - a tenant of a rented space, a named
+     * builder of a build area - may move this particular furni.
+     *
+     * <p>Only the destination tile used to be checked, so anyone renting a space could
+     * drag someone else's furni, a rare included, across the room into their own square.
+     * A tenant moves their own furni, and not the kinds {@code RoomPlaceItemEvent}
+     * already refuses to let them place at all.
+     */
+    static boolean mayTenantMove(HabboItem item, Habbo habbo) {
+        if (item.getUserId() != habbo.getHabboInfo().getId()) {
+            return false;
+        }
+        return !isTenantRestrictedType(item);
+    }
+
+    /** The same kinds {@code RoomPlaceItemEvent} keeps out of a rental or build area. */
+    private static boolean isTenantRestrictedType(HabboItem item) {
+        return item instanceof InteractionRoller
+                || item instanceof InteractionStackHelper
+                || item instanceof InteractionStackWalkHelper
+                || item instanceof InteractionWired
+                || item instanceof InteractionBackgroundToner
+                || item instanceof InteractionRoomAds
+                || item instanceof InteractionCannon
+                || item instanceof InteractionPuzzleBox
+                || item.getBaseItem().getType() == FurnitureType.WALL;
+    }
+
+    private static boolean insideRental(HabboItem rentSpace, HabboItem item, int x, int y, int rotation) {
+        return RoomLayout.squareInSquare(
+                RoomLayout.getRectangle(
+                        rentSpace.getX(),
+                        rentSpace.getY(),
+                        rentSpace.getBaseItem().getWidth(),
+                        rentSpace.getBaseItem().getLength(),
+                        rentSpace.getRotation()),
+                RoomLayout.getRectangle(
+                        x, y, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation));
     }
 
     FurnitureMovementError furnitureFitsAt(RoomTile tile, HabboItem item, int rotation, boolean checkForUnits) {

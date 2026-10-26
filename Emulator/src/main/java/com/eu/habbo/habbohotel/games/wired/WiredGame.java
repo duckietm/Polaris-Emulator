@@ -14,7 +14,10 @@ public class WiredGame extends Game {
     public static final int BLUE_EFFECT_ID = 224;
     public static final int YELLOW_EFFECT_ID = 225;
     public static final int GREEN_EFFECT_ID = 226;
-    public GameState state = GameState.RUNNING;
+
+    // No state field of its own: one used to shadow Game.state, which stayed IDLE, so Give Score and
+    // Give Score to Team (reading Game.state) never scored for Wired teams, while getState() answered
+    // RUNNING forever and every timer stop ran onEnd again, saving the scores each time.
 
     public WiredGame(Room room) {
         super(GameTeam.class, GamePlayer.class, room, false);
@@ -48,12 +51,7 @@ public class WiredGame extends Game {
 
     @Override
     public void stop() {
-        this.state = GameState.RUNNING;
-    }
-
-    @Override
-    public GameState getState() {
-        return GameState.RUNNING;
+        this.state = GameState.IDLE;
     }
 
     private int getEffectId(GameTeamColors teamColor) {

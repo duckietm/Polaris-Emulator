@@ -46,7 +46,7 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
         for (Game game : room.getGames()) {
-            if (game != null && game.state.equals(GameState.RUNNING)) {
+            if (game != null && game.getState() == GameState.RUNNING) {
                 GameTeam team = game.getTeam(this.teamColor);
 
                 if (team != null && this.scored.tryCount(game, this.teamColor, this.timesPerGame)) {

@@ -103,9 +103,11 @@ class SubscriptionRewardCoordinationTest {
                                 .handle(client, new String[] {"sub", "reward_user", Subscription.HABBO_CLUB, "remove"});
                     }
                     case EXPIRY -> {
+                        // The sweep itself, not run(): the scheduler's run() only starts
+                        // its chain of ticks, and an enabled one would need the threading
+                        // pool this test does not stand up.
                         SubscriptionScheduler scheduler = mock(SubscriptionScheduler.class, CALLS_REAL_METHODS);
-                        scheduler.setDisposed(true);
-                        scheduler.run();
+                        scheduler.expireSubscriptions();
                     }
                 }
             } catch (Throwable exception) {

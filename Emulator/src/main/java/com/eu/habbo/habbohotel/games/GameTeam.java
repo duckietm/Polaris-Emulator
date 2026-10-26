@@ -1,50 +1,46 @@
 package com.eu.habbo.habbohotel.games;
 
 import com.eu.habbo.habbohotel.users.Habbo;
-
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GameTeam {
 
     public final GameTeamColors teamColor;
+    // Concurrent: the game cycle iterates the members while a player leaving removes them from a
+    // packet thread, which threw ConcurrentModificationException and left the game stuck.
     private final Set<GamePlayer> members;
-    private int teamScore;
-
+    private final AtomicInteger teamScore = new AtomicInteger();
 
     public GameTeam(GameTeamColors teamColor) {
         this.teamColor = teamColor;
 
-        this.members = new HashSet<>();
+        this.members = ConcurrentHashMap.newKeySet();
     }
-
 
     public void initialise() {
         for (GamePlayer player : this.members) {
             player.reset();
         }
 
-        this.teamScore = 0;
+        this.teamScore.set(0);
     }
-
 
     public void reset() {
         this.members.clear();
     }
 
-
     public void addTeamScore(int teamScore) {
-        this.teamScore += teamScore;
+        this.teamScore.addAndGet(teamScore);
     }
-
 
     public int getTeamScore() {
-        return this.teamScore;
+        return this.teamScore.get();
     }
 
-
     public synchronized int getTotalScore() {
-        int score = this.teamScore;
+        int score = this.teamScore.get();
 
         for (GamePlayer player : this.members) {
             score += player.getScore();
@@ -53,13 +49,11 @@ public class GameTeam {
         return score;
     }
 
-
     public void addMember(GamePlayer gamePlayer) {
         synchronized (this.members) {
             this.members.add(gamePlayer);
         }
     }
-
 
     public void removeMember(GamePlayer gamePlayer) {
         synchronized (this.members) {
@@ -71,7 +65,8 @@ public class GameTeam {
         for (GamePlayer player : this.members) {
             if (player == null || player.getHabbo() == null) continue;
 
-            if (player.getHabbo().getHabboInfo().getGamePlayer() != null) player.getHabbo().getHabboInfo().getGamePlayer().reset();
+            if (player.getHabbo().getHabboInfo().getGamePlayer() != null)
+                player.getHabbo().getHabboInfo().getGamePlayer().reset();
             player.getHabbo().getHabboInfo().setCurrentGame(null);
             player.getHabbo().getHabboInfo().setGamePlayer(null);
         }
@@ -86,14 +81,12 @@ public class GameTeam {
             player.reset();
         }
 
-        this.teamScore = 0;
+        this.teamScore.set(0);
     }
-
 
     public Set<GamePlayer> getMembers() {
         return this.members;
     }
-
 
     public boolean isMember(Habbo habbo) {
         for (GamePlayer p : this.members) {
@@ -104,7 +97,6 @@ public class GameTeam {
 
         return false;
     }
-
 
     @Deprecated
     public GamePlayer getPlayerForHabbo(Habbo habbo) {

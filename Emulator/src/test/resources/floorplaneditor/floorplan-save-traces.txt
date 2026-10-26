@@ -1,0 +1,465 @@
+== fields / a client without wall height or auto pickup
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(-1)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== fields / door above the map
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.entry_tile_outside_map})
+
+== fields / door direction out of range
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.invalid_entry_tile_direction})
+
+== fields / door on a void tile
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.entry_not_on_tile})
+
+== fields / door outside the map
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.entry_tile_outside_map})
+
+== fields / every field out of range
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.entry_not_on_tile}<br />${notification.floorplan_editor.error.message.invalid_entry_tile_direction}<br />${notification.floorplan_editor.error.message.invalid_wall_thickness}<br />${notification.floorplan_editor.error.message.invalid_floor_thickness}<br />${notification.floorplan_editor.error.message.invalid_walls_fixed_height})
+
+== fields / floor thickness out of range
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.invalid_floor_thickness})
+
+== fields / one floor tile, check enabled
+layout.setDoorX(1)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(x0x|xxx|xxx)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== fields / only void tiles, check disabled
+layout.setDoorX(1)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(x0x|xxx|xxx)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== fields / only void tiles, check enabled
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.effective_height_is_0}<br />${notification.floorplan_editor.error.message.entry_not_on_tile})
+
+== fields / the lowest values in range
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(0)
+layout.setHeightmap(000|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(-2)
+room.setFloorSize(-2)
+room.setWallHeight(-1)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== fields / wall height out of range
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.invalid_walls_fixed_height})
+
+== fields / wall thickness out of range
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.invalid_wall_thickness})
+
+== furni / auto pickup on a tile that becomes void
+room.pickUpItem(chair#11, null)
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|00x)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== furni / auto pickup on a tile that changes height
+room.pickUpItem(chair#11, null)
+room.pickUpItem(rug#13, null)
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|001)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== furni / auto pickup on a tile the new map leaves out
+room.pickUpItem(chair#11, null)
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(00|00)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== furni / auto pickup over the cap
+ann <- BubbleAlert(floorplan_editor.error, Too many items would be picked up (501 > 500). Remove some furniture manually and save again.)
+
+== furni / auto pickup returns furni to every owner, online or not
+room.pickUpItem(chair#11, null)
+room.pickUpItem(plant#31, null)
+room.pickUpItem(sofa#21, null)
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|x00|0xx)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== furni / on a tile that becomes void
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.change_blocked_by_room_item} (2, 2))
+
+== furni / on a tile that changes height
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.change_blocked_by_room_item} (2, 2))
+
+== furni / on a tile that keeps its height
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== furni / on a tile the new map leaves out
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.change_blocked_by_room_item} (2, 2))
+
+== furni / the first blocking tile is reported
+ann <- BubbleAlert(floorplan_editor.error, ${notification.floorplan_editor.error.message.change_blocked_by_room_item} (1, 1))
+
+== gate / no floor plan editor permission
+ann <- GenericAlert(text floorplan.permission)
+
+== gate / not in a room
+
+
+== gate / saved again when the cooldown is over
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== gate / saved again within the cooldown
+ann <- BubbleAlert(floorplan_editor.error, Please wait a few seconds before saving again.)
+
+== gate / someone else's room
+
+
+== gate / staff saves someone else's room
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== layout / a custom layout is updated in place
+layout.setDoorX(1)
+layout.setDoorY(2)
+layout.setDoorDirection(4)
+layout.setHeightmap(000|010|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(-1)
+room.setFloorSize(1)
+room.setWallHeight(5)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== layout / a default layout gets a custom one
+rooms.insertCustomLayout(room, 000|010|000, door 1,2 dir 4) -> inserted layout
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(inserted layout)
+room.setWallSize(-1)
+room.setFloorSize(1)
+room.setWallHeight(5)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== layout / no custom layout could be inserted
+rooms.insertCustomLayout(room, 000|010|000, door 1,2 dir 4) -> null
+ann.alert(Error)
+
+== layout / the door tile is missing after the parse
+layout.setDoorX(1)
+layout.setDoorY(2)
+layout.setDoorDirection(4)
+layout.setHeightmap(000|010|000)
+layout.parse()
+ann.alert(Error)
+layout.needsUpdate(false)
+rooms.unloadRoom(room)
+
+== layout / the room does not load back
+layout.setDoorX(1)
+layout.setDoorY(2)
+layout.setDoorDirection(4)
+layout.setHeightmap(000|010|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(-1)
+room.setFloorSize(1)
+room.setWallHeight(5)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> null
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== map / a character outside letters and digits
+
+
+== map / a first row wider than the width limit
+
+
+== map / a larger map than the room
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(0000|0000|0000|0000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== map / a trailing row break is dropped
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(000|000|000|)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== map / an empty first row
+
+
+== map / an upper case X is a void tile
+layout.setDoorX(1)
+layout.setDoorY(1)
+layout.setDoorDirection(2)
+layout.setHeightmap(x00|000|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== map / letters are heights from 10
+layout.setDoorX(0)
+layout.setDoorY(0)
+layout.setDoorDirection(2)
+layout.setHeightmap(0a0|0z0|000)
+layout.parse()
+layout.needsUpdate(true)
+threading.run(layout)
+room.setHasCustomLayout(true)
+room.setNeedsUpdate(true)
+room.setLayout(layout)
+room.setWallSize(0)
+room.setFloorSize(0)
+room.setWallHeight(3)
+room.save()
+rooms.unloadRoom(room)
+rooms.loadRoom(50) -> reloaded room
+ann <- ForwardToRoom(50)
+bob <- ForwardToRoom(50)
+ann's last floor plan save = 1700000000
+
+== map / longer than the size limit
+
+
+== map / more rows than the width limit
+
+
+== map / rows of different widths
+
+

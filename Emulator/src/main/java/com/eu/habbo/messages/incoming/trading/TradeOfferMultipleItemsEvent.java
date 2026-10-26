@@ -32,7 +32,8 @@ public class TradeOfferMultipleItemsEvent extends MessageHandler {
         for (int itemId : itemIds) {
             HabboItem item =
                     this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
-            if (item == null || !item.getBaseItem().allowTrade()) return;
+            // A rented item is only on loan; see TradeOfferItemEvent.
+            if (item == null || !item.getBaseItem().allowTrade() || item.hasRentPeriod()) return;
 
             items.add(item);
         }

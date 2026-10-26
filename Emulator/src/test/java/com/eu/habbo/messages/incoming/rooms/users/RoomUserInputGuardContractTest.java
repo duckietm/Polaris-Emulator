@@ -56,7 +56,7 @@ class RoomUserInputGuardContractTest {
         int userRead = source.indexOf("int userId = this.packet.readInt()");
         int idGuard = source.indexOf("RoomUserInputGuard.isPositiveId(userId)", userRead);
         int targetLookup = source.indexOf("room.getHabbo(userId)", idGuard);
-        int permissionCheck = source.indexOf("room.hasRights(this.client.getHabbo())", targetLookup);
+        int permissionCheck = source.indexOf("room.getRightsManager().canKick(this.client.getHabbo())", targetLookup);
         int event = source.indexOf("new UserKickEvent", permissionCheck);
         int kick = source.indexOf("room.kickHabbo(target, true)", event);
 

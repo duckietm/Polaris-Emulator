@@ -148,7 +148,9 @@ public class RCONServer extends Server {
         this.serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(new RCONServerHandler());
+                // One TCP read is not one request: a long command arrives in several segments, and a
+                // fast client may send its object in pieces. Frame on the JSON object itself.
+                ch.pipeline().addLast(RCONServerHandler.framer(), new RCONServerHandler());
             }
         });
     }

@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.promotions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomPromotion;
@@ -19,7 +20,7 @@ public class UpdateRoomPromotionEvent extends MessageHandler {
                 RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_PROMOTION_TITLE_LENGTH);
         String promotionDescription = RoomItemInputGuard.trimToMax(
                 this.packet.readString(), RoomItemInputGuard.MAX_PROMOTION_DESCRIPTION_LENGTH);
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(id);
+        Room room = environment().getRoomManager().getRoom(id);
 
         // A refusal used to be silence. The client has a sentence for each of these.
         if (room == null) {
@@ -37,13 +38,19 @@ public class UpdateRoomPromotionEvent extends MessageHandler {
 
         if (roomPromotion != null) {
 
-            roomPromotion.setTitle(promotionName);
-            roomPromotion.setDescription(promotionDescription);
+            // Shown hotel-wide, so filtered like the purchase.
+            roomPromotion.setTitle(environment().getWordFilter().filter(promotionName, this.client.getHabbo()));
+            roomPromotion.setDescription(
+                    environment().getWordFilter().filter(promotionDescription, this.client.getHabbo()));
 
             roomPromotion.needsUpdate = true;
             roomPromotion.save();
 
             room.sendComposer(new RoomPromotionMessageComposer(room, roomPromotion).compose());
         }
+    }
+
+    private static GameEnvironment environment() {
+        return Emulator.getGameEnvironment();
     }
 }

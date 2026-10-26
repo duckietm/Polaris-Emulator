@@ -10,8 +10,8 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,8 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPage.class);
 
     protected final IntList offerIds = new IntArrayList();
-    protected final Map<Integer, CatalogPage> childPages = new HashMap<>();
+    // Admin edits add and remove children while readers copy them to build the read index.
+    protected final Map<Integer, CatalogPage> childPages = new ConcurrentHashMap<>();
     private final Int2ObjectMap<CatalogItem> catalogItems = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
     private final ArrayList<Integer> included = new ArrayList<>();
     protected int id;

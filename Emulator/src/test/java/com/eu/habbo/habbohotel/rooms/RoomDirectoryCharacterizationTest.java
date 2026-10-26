@@ -33,6 +33,28 @@ class RoomDirectoryCharacterizationTest {
     }
 
     @Test
+    void theFirstRegistrationOfAnIdWins() {
+        RoomManager manager = new RoomManager(false);
+        Room first = new Room(41, 7);
+        Room second = new Room(41, 7);
+
+        assertSame(first, manager.registerActiveRoomIfAbsent(first));
+        // Two entries loading the same room together must end up on one instance: the
+        // loser used to replace the winner and keep ticking in the background.
+        assertSame(first, manager.registerActiveRoomIfAbsent(second));
+        assertSame(first, manager.getRoom(41));
+    }
+
+    @Test
+    void registeringAnIdNobodyHoldsReturnsThatRoom() {
+        RoomManager manager = new RoomManager(false);
+        Room room = new Room(42, 7);
+
+        assertSame(room, manager.registerActiveRoomIfAbsent(room));
+        assertSame(room, manager.getRoom(42));
+    }
+
+    @Test
     void uncachingRemovesTheRoomFromLegacyLookup() {
         RoomManager manager = new RoomManager(false);
         Room room = new Room(41, 7);

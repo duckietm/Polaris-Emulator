@@ -18,6 +18,13 @@ import com.eu.habbo.messages.outgoing.friends.MessengerReadCursorComposer;
  * marks their own messages as read.
  */
 public final class MarkConsoleReadEvent extends MessageHandler {
+
+    /** It resolves the conversation through the same heavy listing the console open does. */
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() {
         int peerId = packet.readInt();

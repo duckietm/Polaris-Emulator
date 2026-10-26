@@ -18,13 +18,17 @@ import com.eu.habbo.messages.outgoing.rooms.RoomRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserUnbannedComposer;
 import com.eu.habbo.plugin.events.users.UserRightsTakenEvent;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMaps;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -48,7 +52,24 @@ public class RoomRightsManager {
     private final Int2IntMap mutedHabbos;
 
     public RoomRightsManager(Room room) {
-        this(room, null, new IntOpenHashSet(), new Int2ObjectOpenHashMap<>(), new Int2IntOpenHashMap());
+        this(room, null, IntSets.synchronize(new IntOpenHashSet()), newBanMap(), newMuteMap());
+    }
+
+    /*
+     * A room's bans, mutes and rights are changed from packet threads, the room cycle and the
+     * loaders at once: each is a synchronized view, whose lock is the view itself, the one the
+     * existing synchronized blocks on these collections already take.
+     */
+    static Int2ObjectMap<RoomBan> newBanMap() {
+        return Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+    }
+
+    static Int2IntMap newMuteMap() {
+        return Int2IntMaps.synchronize(new Int2IntOpenHashMap());
+    }
+
+    static IntList newRightsList() {
+        return IntLists.synchronize(new IntArrayList());
     }
 
     RoomRightsManager(Room room, IntList legacyRights, Int2ObjectMap<RoomBan> bannedHabbos, Int2IntMap mutedHabbos) {
@@ -86,11 +107,13 @@ public class RoomRightsManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        synchronized (this) {
-            if (this.legacyRights != null) {
+        if (this.legacyRights != null) {
+            synchronized (this.legacyRights) {
                 this.legacyRights.clear();
                 this.legacyRights.addAll(loaded);
-            } else {
+            }
+        } else {
+            synchronized (this.rights) {
                 this.rights.clear();
                 this.rights.addAll(loaded);
             }
@@ -161,6 +184,45 @@ public class RoomRightsManager {
                         && this.room.getCurrentHabbos().containsKey(userId));
     }
 
+    /** Room moderation settings, as the room settings window saves them. */
+    static final int MODERATION_OWNER_ONLY = 0;
+
+    static final int MODERATION_RIGHTS_HOLDERS = 1;
+    static final int MODERATION_EVERYONE = 2;
+
+    /** Whether the room's kick setting lets this user kick: the owner, rights holders, or everyone. */
+    public boolean canKick(Habbo habbo) {
+        return this.allowedBy(this.room.getKickOption(), habbo, true);
+    }
+
+    /** Whether the room's mute setting lets this user mute: the owner, or rights holders too. */
+    public boolean canMute(Habbo habbo) {
+        return this.allowedBy(this.room.getMuteOption(), habbo, false);
+    }
+
+    /** Whether the room's ban setting lets this user ban: the owner, or rights holders too. */
+    public boolean canBan(Habbo habbo) {
+        return this.allowedBy(this.room.getBanOption(), habbo, false);
+    }
+
+    /**
+     * The owner (and staff who own any room) always may. Holding rights used to be enough whatever the
+     * setting, so "owner only" never applied. Mute and ban offer no "everyone" level: a stored 2 counts
+     * as rights holders for them.
+     */
+    private boolean allowedBy(int option, Habbo habbo, boolean everyoneAllowed) {
+        if (habbo == null) {
+            return false;
+        }
+        if (this.isOwner(habbo)) {
+            return true;
+        }
+        if (option >= MODERATION_EVERYONE && everyoneAllowed) {
+            return true;
+        }
+        return option >= MODERATION_RIGHTS_HOLDERS && this.hasRights(habbo);
+    }
+
     /**
      * Checks whether a user (by id) owns the room or holds persistent rights,
      * without needing an online {@link Habbo}. Does not consider the transient
@@ -183,10 +245,8 @@ public class RoomRightsManager {
      * Gives rights to a user by ID.
      */
     public void giveRights(int userId) {
-        if (this.rights.contains(userId)) {
-            return;
-        }
-
+        // add answers false when the user already has rights, atomically: a separate contains check
+        // let two threads both add and both insert a room_rights row.
         if (this.rights.add(userId)) {
             try {
                 SqlQueries.update(
@@ -254,7 +314,7 @@ public class RoomRightsManager {
      * Removes all rights from the room.
      */
     public void removeAllRights() {
-        for (int userId : rights) {
+        for (int userId : this.rights.toIntArray()) {
             this.room.getItemManager().ejectUserFurni(userId);
         }
 

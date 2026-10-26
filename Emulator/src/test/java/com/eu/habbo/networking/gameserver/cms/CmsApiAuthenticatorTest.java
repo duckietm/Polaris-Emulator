@@ -56,6 +56,22 @@ class CmsApiAuthenticatorTest {
     }
 
     @Test
+    void aRebuiltAuthenticatorStillRejectsANonceSeenBefore() {
+        CmsApiAuthenticator before = authenticatorAt(1000);
+        String sig = sign("cms-main", "1000", "n1", BODY);
+        assertEquals(
+                CmsApiAuthenticator.Status.OK,
+                before.authenticate("cms-main", "1000", "n1", sig, BODY).status());
+
+        CmsApiAuthenticator after = authenticatorAt(1000);
+        after.inheritNonces(before);
+
+        assertEquals(
+                CmsApiAuthenticator.Status.REPLAY,
+                after.authenticate("cms-main", "1000", "n1", sig, BODY).status());
+    }
+
+    @Test
     void rejectsATamperedBody() {
         CmsApiAuthenticator auth = authenticatorAt(1000);
         String sig = sign("cms-main", "1000", "n1", BODY);

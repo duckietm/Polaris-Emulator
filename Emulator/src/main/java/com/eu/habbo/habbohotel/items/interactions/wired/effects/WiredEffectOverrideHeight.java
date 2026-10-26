@@ -19,8 +19,9 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Puts the selected furni at a height you type, or gives them their stacking height back.
@@ -45,20 +46,20 @@ public class WiredEffectOverrideHeight extends InteractionWiredEffect {
     private static final int MODE_RELEASE = 1;
     private static final double THOUSANDTHS = 1000.0D;
 
-    private final HashSet<HabboItem> items;
+    private final Set<HabboItem> items;
     private int height = 0;
     private int mode = MODE_SET;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectOverrideHeight(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new HashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     public WiredEffectOverrideHeight(
             int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new HashSet<>();
+        this.items = new CopyOnWriteArraySet<>();
     }
 
     @Override

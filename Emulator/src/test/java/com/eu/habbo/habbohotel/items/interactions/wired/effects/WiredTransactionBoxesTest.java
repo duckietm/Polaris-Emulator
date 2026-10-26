@@ -40,6 +40,13 @@ class WiredTransactionBoxesTest {
         return settings;
     }
 
+    /** Initiate with its chests from a selector: a save with picked chests must pick one (require_chests). */
+    private static WiredSettings initSettings(String[] variableIds, int... params) {
+        WiredSettings settings = settings(variableIds, params);
+        settings.setFurniSourceTypes(new int[] {200});
+        return settings;
+    }
+
     private static WiredEffectInitTransaction init() {
         return new WiredEffectInitTransaction(1, 1, base(), "", 0, 0);
     }
@@ -48,7 +55,7 @@ class WiredTransactionBoxesTest {
     void initiateSavesAndSendsBackTheOfficialInts() throws Exception {
         WiredEffectInitTransaction box = init();
 
-        box.saveData(settings(new String[] {"42"}, 1, 7, 1, -20, 1, 600), null);
+        box.saveData(initSettings(new String[] {"42"}, 1, 7, 1, -20, 1, 600), null);
 
         assertArrayEquals(
                 new int[] {1, 7, 1, -20, 1, 600},
@@ -61,14 +68,14 @@ class WiredTransactionBoxesTest {
     void initiateHoldsItsIntsToTheOfficialRanges() throws Exception {
         WiredEffectInitTransaction box = init();
 
-        box.saveData(settings(new String[0], 5, 9_000, 1, 3, 1, 5), null);
+        box.saveData(initSettings(new String[0], 5, 9_000, 1, 3, 1, 5), null);
 
         // An unknown mode is normal, the multiplier at most 500, no variable without an id, the target global,
         // the timeout at least 30 seconds.
         assertArrayEquals(new int[] {0, 500, 0, -10, 1, 30}, box.officialParams());
         assertArrayEquals(new String[0], box.officialVariableIds());
 
-        box.saveData(settings(new String[0], 2, 0, 0, -10, 0, 99_999), null);
+        box.saveData(initSettings(new String[0], 2, 0, 0, -10, 0, 99_999), null);
         assertArrayEquals(new int[] {2, 1, 0, -10, 0, 3600}, box.officialParams());
         assertEquals(0, box.negotiationTimeout(), "no timeout: the negotiation never lapses");
     }
@@ -76,16 +83,16 @@ class WiredTransactionBoxesTest {
     @Test
     void initiateKeepsItsChestsAndContractsOnTheirOwnPickLists() throws Exception {
         WiredEffectInitTransaction box = init();
-        WiredSettings settings = settings(new String[0], 0, 1, 0, -10, 0, 300);
+        WiredSettings settings = initSettings(new String[0], 0, 1, 0, -10, 0, 300);
         settings.setFurniIds(new int[] {11, 12});
         settings.setFurniIds2(new int[] {21});
-        settings.setFurniSourceTypes(new int[] {100, 101, 200});
+        settings.setFurniSourceTypes(new int[] {200, 101, 200});
         settings.setUserSourceTypes(new int[] {0, 200});
 
         box.saveData(settings, null);
 
         assertArrayEquals(new int[] {21}, box.officialFurniIds2());
-        assertArrayEquals(new int[] {100, 101, 200}, box.officialFurniSources());
+        assertArrayEquals(new int[] {200, 101, 200}, box.officialFurniSources());
         assertArrayEquals(new int[] {0, 200}, box.officialUserSources());
 
         WiredEffectInitTransaction reloaded = init();
@@ -121,15 +128,15 @@ class WiredTransactionBoxesTest {
         when(room.getRoomVariableManager()).thenReturn(variables);
         WiredContext ctx = WiredEffectTestFixtures.context(room);
 
-        box.saveData(settings(new String[0], 0, 8, 0, -10, 0, 300), null);
+        box.saveData(initSettings(new String[0], 0, 8, 0, -10, 0, 300), null);
         assertEquals(ContractMultiplier.NONE, box.multiplierFor(ctx, ctx.room()), "normal ignores the value");
 
-        box.saveData(settings(new String[0], 1, 8, 0, -10, 0, 300), null);
+        box.saveData(initSettings(new String[0], 1, 8, 0, -10, 0, 300), null);
         assertEquals(new ContractMultiplier(ContractMultiplier.MODE_FIXED, 8), box.multiplierFor(ctx, ctx.room()));
         assertEquals(8, WiredEffectInitTransaction.rewardRuns(box.multiplierFor(ctx, ctx.room())));
 
         // A variable the room does not have runs the contract once.
-        box.saveData(settings(new String[] {"9"}, 2, 1, 1, -10, 0, 300), null);
+        box.saveData(initSettings(new String[] {"9"}, 2, 1, 1, -10, 0, 300), null);
         assertEquals(new ContractMultiplier(ContractMultiplier.MODE_AUTO, 1), box.multiplierFor(ctx, ctx.room()));
         assertEquals(1, WiredEffectInitTransaction.rewardRuns(new ContractMultiplier(ContractMultiplier.MODE_AUTO, 9)));
 
@@ -275,5 +282,16 @@ class WiredTransactionBoxesTest {
         List<Integer> out = new java.util.ArrayList<>();
         array.forEach(element -> out.add(element.getAsInt()));
         return out;
+    }
+
+    @Test
+    void picksWithoutAChestAreRefusedAsOnAir() {
+        Room room = mock(Room.class);
+        when(room.getHabboItem(6)).thenReturn(mock(InteractionWiredChestCurrency.class));
+        when(room.getHabboItem(5)).thenReturn(mock(InteractionWiredContract.class));
+
+        assertFalse(WiredEffectInitTransaction.picksAChest(room, new int[0]));
+        assertFalse(WiredEffectInitTransaction.picksAChest(room, new int[] {5}));
+        assertTrue(WiredEffectInitTransaction.picksAChest(room, new int[] {5, 6}));
     }
 }

@@ -36,7 +36,8 @@ final class WiredScorePerGame {
         return true;
     }
 
+    /** 0 or less is unlimited; more than the most AIR allows is stored as that most (10). */
     static int normalize(int times) {
-        return (times <= 0 || times > MAX_TIMES) ? UNLIMITED : times;
+        return (times <= 0) ? UNLIMITED : Math.min(times, MAX_TIMES);
     }
 }

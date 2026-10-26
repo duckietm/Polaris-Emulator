@@ -107,6 +107,20 @@ buyer <- AlertPurchaseUnavailable(0)
 returned
 purchasing flag false
 
+== loyalty vip / offer of the credits window
+buyer <- AlertPurchaseFailed(0)
+returned
+purchasing flag false
+
+== loyalty vip / offer paid in points
+CatalogPaymentService.tryTake(credits 0, type 5, points 50) -> true
+stats.createSubscription(HABBO_CLUB, 2678400s) -> created
+buyer <- PurchaseOK(null)
+buyer <- InventoryRefresh()
+stats.run()
+returned
+purchasing flag false
+
 == offer / bot inventory full
 buyer alerted "<error.bots.max.inventory 25>"
 buyer <- AlertPurchaseUnavailable(0)

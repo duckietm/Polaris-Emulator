@@ -161,6 +161,21 @@ public final class ChestTransactionFailures {
     }
 
     /** Tell the player the transaction failed and why. */
+    /**
+     * AIR: a chest give skips a user who may not trade and tells them so (fail 8), without a wired error dialog or
+     * Transaction Failed; the others are still given. True when this user was skipped.
+     */
+    public static boolean skipsNonTrader(Habbo habbo) {
+        if (habbo == null
+                || habbo.getHabboStats() == null
+                || habbo.getHabboStats().allowTrade()) {
+            return false;
+        }
+
+        send(habbo, USER_CANT_TRADE);
+        return true;
+    }
+
     public static void send(Habbo habbo, int reason) {
         if (habbo == null || habbo.getClient() == null || reason == NONE) return;
 

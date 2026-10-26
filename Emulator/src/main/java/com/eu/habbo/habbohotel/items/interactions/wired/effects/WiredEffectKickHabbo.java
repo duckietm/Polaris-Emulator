@@ -77,14 +77,14 @@ public class WiredEffectKickHabbo extends InteractionWiredEffect {
                 continue;
             }
 
-            room.giveEffect(habbo, 4, 2);
+            // AIR always whispers the kicked user first, an empty line when the box has no message, in the wired
+            // style, then shows the kick effect.
+            String message = WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, this.message);
+            habbo.getClient()
+                    .sendResponse(new RoomUserWhisperComposer(
+                            new RoomChatMessage(message, habbo, habbo, RoomChatMessageBubbles.WIRED)));
 
-            if (!this.message.isEmpty()) {
-                String message = WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, this.message);
-                habbo.getClient()
-                        .sendResponse(new RoomUserWhisperComposer(
-                                new RoomChatMessage(message, habbo, habbo, RoomChatMessageBubbles.ALERT)));
-            }
+            room.giveEffect(habbo, 4, 2);
 
             Emulator.getThreading().run(new RoomUnitKick(habbo, room, true), 2000);
         }

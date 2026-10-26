@@ -28,6 +28,7 @@ import com.eu.habbo.habbohotel.catalog.LtdRaffleManager;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ClubBuyLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.LoyaltyVipBuyLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RoomBundleLayout;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
@@ -318,6 +319,11 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         this.buy("club / a purchase already running", 8, 30, "", 1);
         this.stats.isPurchasingFurniture = false;
 
+        this.page = this.clubPage(LoyaltyVipBuyLayout.class);
+        this.clubOffer(36, 31, 0, 50, 5, ClubOffer.WINDOW_LOYALTY_VIP, false, false);
+        this.buy("loyalty vip / offer paid in points", 8, 36, "", 1);
+        this.buy("loyalty vip / offer of the credits window", 8, 30, "", 1);
+
         this.page = this.clubPage(BuildersClubFrontPageLayout.class);
         this.clubOffer(34, 31, 25, 0, 5, ClubOffer.WINDOW_BUILDERS_CLUB, true, false);
         this.buy("builders club / subscription", 8, 34, "", 1);
@@ -505,7 +511,11 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         when(offer.getCredits()).thenReturn(credits);
         when(offer.getPoints()).thenReturn(points);
         when(offer.getPointsType()).thenReturn(pointsType);
-        when(offer.belongsToWindow(anyInt())).thenAnswer(i -> i.<Integer>getArgument(0) == window);
+        // A Habbo Club offer of window 1 is also on the club_buy window 0, as ClubOffer does.
+        when(offer.belongsToWindow(anyInt())).thenAnswer(i -> {
+            int asked = i.<Integer>getArgument(0);
+            return asked == window || (window == ClubOffer.WINDOW_HABBO_CLUB && asked == ClubOffer.WINDOW_CLUB_BUY);
+        });
         when(offer.isBuildersClubSubscription()).thenReturn(builders);
         when(offer.isBuildersClubAddon()).thenReturn(addon);
         this.catalog.clubOffers.put(id, offer);

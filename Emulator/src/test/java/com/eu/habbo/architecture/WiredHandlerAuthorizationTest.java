@@ -52,6 +52,8 @@ class WiredHandlerAuthorizationTest {
             "WiredFurniRuntimeStatePolicy.java",
             "WiredUserInspectMovePolicy.java",
             "WiredSaveException.java",
+            // An exception type (a save dropped without an answer), not a handler.
+            "WiredSaveDroppedException.java",
             "WiredTriggerSaveException.java",
             // Gameplay trigger, not a configuration change: any visitor may click another
             // visitor, exactly as the official client does. It reads no wired configuration

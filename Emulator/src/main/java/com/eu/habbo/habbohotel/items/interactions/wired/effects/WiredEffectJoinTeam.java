@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.wired.WiredSaveDroppedException;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -234,7 +235,8 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
                 (settings.getIntParams().length > 2) ? normalizeJoinMode(settings.getIntParams()[2]) : MODE_CHOSEN;
         int userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
-        if (team < 1 || team > 4) throw new WiredSaveException("Team is invalid");
+        // AIR drops a save naming no team without an answer.
+        if (team < 1 || team > 4) throw new WiredSaveDroppedException("Team is invalid");
 
         int delay = settings.getDelay();
 

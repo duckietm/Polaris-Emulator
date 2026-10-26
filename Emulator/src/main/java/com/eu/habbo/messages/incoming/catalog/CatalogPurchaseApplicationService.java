@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubLoyaltyLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ClubBuyLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.LoyaltyVipBuyLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RoomBundleLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.VipBuyLayout;
@@ -511,6 +512,7 @@ final class CatalogPurchaseApplicationService {
     private boolean isClubOfferPage(CatalogPage page) {
         return page instanceof ClubBuyLayout
                 || page instanceof VipBuyLayout
+                || page instanceof LoyaltyVipBuyLayout
                 || page instanceof BuildersClubFrontPageLayout
                 || page instanceof BuildersClubAddonsLayout
                 || page instanceof BuildersClubLoyaltyLayout;
@@ -523,6 +525,14 @@ final class CatalogPurchaseApplicationService {
 
         if (page instanceof BuildersClubFrontPageLayout || page instanceof BuildersClubLoyaltyLayout) {
             return ClubOffer.WINDOW_BUILDERS_CLUB;
+        }
+
+        if (page instanceof LoyaltyVipBuyLayout) {
+            return ClubOffer.WINDOW_LOYALTY_VIP;
+        }
+
+        if (page instanceof ClubBuyLayout) {
+            return ClubOffer.WINDOW_CLUB_BUY;
         }
 
         return ClubOffer.WINDOW_HABBO_CLUB;

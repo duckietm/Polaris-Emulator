@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.bots;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatManager;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -64,6 +65,7 @@ public class Bot implements Runnable {
     private boolean needsUpdate;
 
     private transient int followingHabboId;
+    private transient volatile int followGeneration;
 
     public Bot(int id, String name, String motto, String figure, HabboGender gender, int ownerId, String ownerName) {
         this.id = id;
@@ -263,6 +265,8 @@ public class Bot implements Runnable {
             this.room.botChat(
                     new RoomUserTalkComposer(this.chatMessage(event.message, bubbleWidthOverride, hideUsername))
                             .compose());
+            // AIR: avatars in the room turn their heads toward a bot that speaks aloud.
+            RoomChatManager.turnHeadsTowardSpeaker(this.room, this.roomUnit);
 
             if (message.equals("o/") || message.equals("_o/")) {
                 this.room.sendComposer(new RoomUserActionComposer(this.roomUnit, RoomUserAction.WAVE).compose());
@@ -287,6 +291,8 @@ public class Bot implements Runnable {
             this.room.botChat(
                     new RoomUserShoutComposer(this.chatMessage(event.message, bubbleWidthOverride, hideUsername))
                             .compose());
+            // AIR: avatars in the room turn their heads toward a bot that speaks aloud.
+            RoomChatManager.turnHeadsTowardSpeaker(this.room, this.roomUnit);
 
             if (message.equals("o/") || message.equals("_o/")) {
                 this.room.sendComposer(new RoomUserActionComposer(this.roomUnit, RoomUserAction.WAVE).compose());
@@ -522,8 +528,14 @@ public class Bot implements Runnable {
         return this.followingHabboId;
     }
 
+    /** Bumped on every new follow, so only the newest follow loop keeps running. */
+    public int getFollowGeneration() {
+        return this.followGeneration;
+    }
+
     public void startFollowingHabbo(Habbo habbo) {
         this.followingHabboId = habbo.getHabboInfo().getId();
+        this.followGeneration++;
 
         Emulator.getThreading()
                 .run(new BotFollowHabbo(this, habbo, habbo.getHabboInfo().getCurrentRoom()));

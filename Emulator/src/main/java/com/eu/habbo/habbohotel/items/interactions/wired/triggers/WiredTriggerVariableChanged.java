@@ -441,10 +441,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
     }
 
     private boolean hasAnyEnabledOption() {
-        return this.createdEnabled
-                || this.deletedEnabled
-                || (this.valueChangedEnabled
-                        && (this.increasedEnabled || this.decreasedEnabled || this.unchangedEnabled));
+        // AIR saves "value changed" with no kind ticked too; the box then never fires for a change.
+        return this.createdEnabled || this.deletedEnabled || this.valueChangedEnabled;
     }
 
     private boolean isValidDefinition(Room room) {

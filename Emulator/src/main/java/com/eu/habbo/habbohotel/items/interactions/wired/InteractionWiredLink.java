@@ -75,6 +75,25 @@ public class InteractionWiredLink extends InteractionDefault {
         return item instanceof InteractionWiredLink;
     }
 
+    public static final String REQUIRE_LINK_FURNI = "wiredfurni.error.require_link_furni";
+
+    /**
+     * AIR refuses a link box's picks when one of them is a furni that is not a Link; an id that names no furni is
+     * not checked.
+     */
+    public static void refuseNonLinkPicks(Room room, int[] furniIds) {
+        if (room == null || furniIds == null) {
+            return;
+        }
+
+        for (int id : furniIds) {
+            HabboItem item = room.getHabboItem(id);
+            if (item != null && !isLink(item)) {
+                throw new WiredSaveRefusedException(REQUIRE_LINK_FURNI);
+            }
+        }
+    }
+
     /** Habbo's Link lights up when a message goes through it: its state flips, as an antenna's does. */
     public void pulse(Room room) {
         if (room == null || this.getBaseItem() == null || this.getBaseItem().getStateCount() <= 1) {

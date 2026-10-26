@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWithdrawals;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
@@ -85,7 +86,7 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
 
         for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
-            if (habbo == null) continue;
+            if (habbo == null || ChestTransactionFailures.skipsNonTrader(habbo)) continue;
 
             // The stored items themselves leave the chests, in the box's order, until the amount is
             // reached or the chests are empty.

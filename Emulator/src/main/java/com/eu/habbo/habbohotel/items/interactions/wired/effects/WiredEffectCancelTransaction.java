@@ -80,10 +80,9 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect impleme
         if (cancelled || !this.legacySignal) return;
 
         RoomTile tile = room.getLayout().getTile(this.getX(), this.getY());
-        WiredEvent.Builder builder =
-                WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room)
-                        .sourceItem(this)
-                        .transactionFailureReason(ChestTransactionFailures.TRADE_CANCELLED);
+        WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room)
+                .sourceItem(this)
+                .transactionFailureReason(ChestTransactionFailures.TRADE_CANCELLED);
         if (tile != null) builder.tile(tile);
         ctx.actor().ifPresent(builder::actor);
 
@@ -143,6 +142,19 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect impleme
         this.matchCriteria = normalizeMatch(params.length > 0 ? params[0] : MATCH_SPECIFIC_CONTRACT);
         this.contractSource = WiredChestTargets.normalizeChestSource(settings.furniSource(0, DEFAULT_CONTRACT_SOURCE));
 
+        // AIR accepts only contracts (and the Custom Contract add-on) as picks; one no longer in the room is not
+        // checked.
+        Room room = this.getRoom();
+        if (room != null && settings.getFurniIds() != null) {
+            for (int id : settings.getFurniIds()) {
+                HabboItem picked = room.getHabboItem(id);
+                // The Custom Contract add-on is a contract too.
+                if (picked != null && !(picked instanceof InteractionWiredContract)) {
+                    throw new WiredSaveException(REQUIRE_CONTRACTS);
+                }
+            }
+        }
+
         this.contractIds.clear();
         if (settings.getFurniIds() != null) {
             for (int id : settings.getFurniIds()) {
@@ -153,6 +165,8 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect impleme
         this.setDelay(settings.getDelay());
         return true;
     }
+
+    static final String REQUIRE_CONTRACTS = "wiredfurni.error.require_contracts";
 
     @Override
     public String getWiredData() {

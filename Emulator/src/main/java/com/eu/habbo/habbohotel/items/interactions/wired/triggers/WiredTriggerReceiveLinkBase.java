@@ -73,6 +73,7 @@ public abstract class WiredTriggerReceiveLinkBase extends InteractionWiredTrigge
         if (room == null && WiredPlatform.gameEnvironment() != null) {
             room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
         }
+        InteractionWiredLink.refuseNonLinkPicks(room, settings.getFurniIds());
         this.links.clear();
         if (room == null) return;
         for (int id : settings.getFurniIds()) {

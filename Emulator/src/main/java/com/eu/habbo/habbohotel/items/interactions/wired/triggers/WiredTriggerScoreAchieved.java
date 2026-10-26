@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
+import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -12,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+import java.lang.ref.WeakReference;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -20,6 +22,10 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
     static final int MAX_SCORE = 1_000_000;
     private int score = 0;
     private int teamType = GameTeamColors.NONE.type;
+    /** The round this box already fired in: AIR's Score Achieved fires once per game round. */
+    private WeakReference<Game> spentGame = new WeakReference<>(null);
+
+    private int spentRound = Integer.MIN_VALUE;
 
     public WiredTriggerScoreAchieved(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -40,19 +46,44 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
             return false;
         }
 
-        if (this.teamType == GameTeamColors.NONE.type) {
-            return true;
-        }
+        Habbo habbo =
+                event.getActor().map(unit -> event.getRoom().getHabbo(unit)).orElse(null);
 
-        if (!event.getActor().isPresent()) {
+        if (this.teamType != GameTeamColors.NONE.type
+                && (habbo == null
+                        || habbo.getHabboInfo().getGamePlayer() == null
+                        || habbo.getHabboInfo().getGamePlayer().getTeamColor().type != this.teamType)) {
             return false;
         }
 
-        Habbo habbo = event.getRoom().getHabbo(event.getActor().get());
+        return this.spendRound(gameOf(event.getRoom(), habbo));
+    }
 
-        return habbo != null
-                && habbo.getHabboInfo().getGamePlayer() != null
-                && habbo.getHabboInfo().getGamePlayer().getTeamColor().type == this.teamType;
+    /**
+     * The first team over the threshold uses the box up for the rest of the round, even when a condition then stops
+     * the stack; a new game start (or a save with another score or team) makes it fire again.
+     */
+    synchronized boolean spendRound(Game game) {
+        if (game == null) {
+            return true;
+        }
+
+        if (this.spentGame.get() == game && this.spentRound == game.getStartTime()) {
+            return false;
+        }
+
+        this.spentGame = new WeakReference<>(game);
+        this.spentRound = game.getStartTime();
+        return true;
+    }
+
+    private static Game gameOf(Room room, Habbo habbo) {
+        if (room == null || habbo == null || habbo.getHabboInfo() == null) {
+            return null;
+        }
+
+        Class<? extends Game> current = habbo.getHabboInfo().getCurrentGame();
+        return current == null ? null : room.getGame(current);
     }
 
     @Deprecated
@@ -124,10 +155,18 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.score = clampScore(settings.getIntParams()[0]);
-        this.teamType = (settings.getIntParams().length > 1)
+        int score = clampScore(settings.getIntParams()[0]);
+        int teamType = (settings.getIntParams().length > 1)
                 ? normalizeTeamType(settings.getIntParams()[1])
                 : GameTeamColors.NONE.type;
+        if (score != this.score || teamType != this.teamType) {
+            synchronized (this) {
+                this.spentGame = new WeakReference<>(null);
+                this.spentRound = Integer.MIN_VALUE;
+            }
+        }
+        this.score = score;
+        this.teamType = teamType;
         return true;
     }
 

@@ -63,9 +63,8 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         int[] intParams = settings.getIntParams();
         String[] stringData = splitStringData(settings.getStringParam());
         boolean multiple = intParams.length > 0 && intParams[0] != 0;
-        // A box left on its frame (no name, one name written) saves as it is; anything else must be a valid name.
-        boolean frame = stringData[0].isEmpty() && !multiple;
-        String refusal = frame ? null : WiredPlaceholderNameRules.refusal(stringData[0], multiple, stringData[1]);
+        // AIR refuses an empty name too, also on the box's first frame.
+        String refusal = WiredPlaceholderNameRules.refusal(stringData[0], multiple, stringData[1]);
         if (refusal != null) {
             throw new WiredSaveException(refusal);
         }
@@ -75,7 +74,7 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
                 settings.getFurniSourceTypes().length > 0
                         ? settings.getFurniSourceTypes()[0]
                         : WiredSourceUtil.SOURCE_TRIGGER);
-        this.placeholderName = frame ? "" : WiredPlaceholderNameRules.storedName(stringData[0]);
+        this.placeholderName = WiredPlaceholderNameRules.storedName(stringData[0]);
         this.delimiter = normalizeDelimiter(stringData[1], MAX_DELIMITER_LENGTH);
         this.items.clear();
 

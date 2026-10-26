@@ -103,6 +103,10 @@ public abstract class WiredEffectSendLinkBase extends InteractionWiredEffect imp
         if (room == null && WiredPlatform.gameEnvironment() != null) {
             room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
         }
+        int source = settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED);
+        if (source != WiredSourceUtil.SOURCE_SELECTOR) {
+            InteractionWiredLink.refuseNonLinkPicks(room, furniIds);
+        }
         List<HabboItem> picked = new ArrayList<>();
         if (room != null) {
             for (int id : furniIds) {
@@ -110,7 +114,6 @@ public abstract class WiredEffectSendLinkBase extends InteractionWiredEffect imp
                 if (InteractionWiredLink.isLink(item)) picked.add(item);
             }
         }
-        int source = settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED);
         this.endpointSource = source == WiredSourceUtil.SOURCE_SELECTOR
                 ? WiredSourceUtil.SOURCE_SELECTOR
                 : WiredSourceUtil.SOURCE_SELECTED;

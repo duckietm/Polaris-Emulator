@@ -26,6 +26,8 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, bobba it, bobba, 0, 0)
 WiredManager.triggerUserSays(room, unit, bobba it, bobba, 0, 0)
 speaker <- Talk(bobba it, bobba)
 listener <- Talk(bobba it, bobba)
+listener turns its head NORTH_WEST
+threading.run(task, 5000)
 returned
 line "bobba it, bobba" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -40,6 +42,8 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, darn it, 0, 0)
 WiredManager.triggerUserSays(room, unit, darn it, 0, 0)
 speaker <- Talk(darn it)
 listener <- Talk(darn it)
+listener turns its head NORTH_WEST
+threading.run(task, 5000)
 returned
 line "darn it" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -251,7 +255,7 @@ WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 speaker <- Shout(hello)
 facing <- Shout(hello)
 facing turns its head WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 away <- Shout(hello)
 walking <- Shout(hello)
 returned
@@ -269,7 +273,7 @@ WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 facing <- Talk(hello)
 facing turns its head WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 away <- Talk(hello)
 walking <- Talk(hello)
 returned
@@ -321,6 +325,8 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 listener <- Talk(hello)
+listener turns its head NORTH_WEST
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -367,6 +373,8 @@ speaker <- NameChanged(speaker)
 near <- PluginPrefix
 near <- Talk(hello)
 near <- NameChanged(speaker)
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -385,9 +393,11 @@ speaker <- NameChanged(speaker)
 near <- NameChanged(speaker)
 near <- Shout(hello)
 near <- NameChanged(speaker)
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 old chat <- Shout(hello)
 old chat turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -406,9 +416,11 @@ speaker <- NameChanged(speaker)
 near <- NameChanged(speaker)
 near <- Talk(hello)
 near <- NameChanged(speaker)
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 old chat <- Talk(hello)
 old chat turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -438,9 +450,11 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, HELLO, 1, 0)
 WiredManager.triggerUserSays(room, unit, HELLO, 1, 0)
 speaker <- Shout(HELLO)
 near <- Shout(HELLO)
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 far <- Shout(HELLO)
 far turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line "HELLO" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -456,7 +470,7 @@ WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 far <- Talk(hello)
 far turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -471,9 +485,11 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit,    , 0, 0)
 WiredManager.triggerUserSays(room, unit,    , 0, 0)
 speaker <- Talk( )
 near <- Talk( )
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 far with rights <- Talk( )
 far with rights turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line " " command false delivered true
 speaker chat counter 2, muted count 0, singing false
@@ -488,9 +504,11 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, hello   , 0, 0)
 WiredManager.triggerUserSays(room, unit, hello   , 0, 0)
 speaker <- Talk(hello)
 near <- Talk(hello)
+near turns its head NORTH_WEST
+threading.run(task, 5000)
 far with rights <- Talk(hello)
 far with rights turns its head NORTH_WEST
-threading.run(task, 2000)
+threading.run(task, 5000)
 returned
 line "hello" command false delivered true
 speaker chat counter 1, muted count 0, singing false
@@ -505,6 +523,8 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 1, 0)
 WiredManager.triggerUserSays(room, unit, hello, 1, 0)
 speaker <- Shout(hello)
 inside <- Shout(hello)
+inside turns its head NORTH_WEST
+threading.run(task, 5000)
 staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
 returned
 line "hello" command false delivered true
@@ -520,6 +540,8 @@ WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 0, 0)
 WiredManager.triggerUserSays(room, unit, hello, 0, 0)
 speaker <- Talk(hello)
 inside <- Talk(hello)
+inside turns its head NORTH_WEST
+threading.run(task, 5000)
 staff outside <- Whisper([text:hotel.room.tent.prefix] hello)
 returned
 line "hello" command false delivered true
@@ -565,6 +587,8 @@ room <- Typing(unit)
 CommandHandler.handleChatCommand(secret)
 speaker <- Talk(secret)
 listener <- Talk(secret)
+listener turns its head NORTH_WEST
+threading.run(task, 5000)
 returned
 line "secret" command false delivered true
 speaker chat counter 3, muted count 0, singing false

@@ -282,17 +282,16 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         if (this.message.length() > 0) {
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
 
-            // A message shown to the whole room is one message of the room's budget.
             boolean shownToRoom = this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS;
-            if (shownToRoom && !admitMessage(ctx.room())) {
-                return;
-            }
 
-            // A message shown to everyone whose source is a bot is said aloud by that bot, as in Habbo.
-            // Behaviour observed in plus-emulator/PlusEMU a8523821, reimplemented.
+            // A message shown to everyone whose source is a bot is said aloud by that bot, as in Habbo; one chat line
+            // for the room, so it uses the room's budget. Behaviour observed in plus-emulator/PlusEMU a8523821.
             if (shownToRoom && ctx.room() != null) {
                 Bot speaker = sourceBot(ctx.room(), sourceUsers);
                 if (speaker != null) {
+                    if (!admitMessage(ctx.room(), null)) {
+                        return;
+                    }
                     String said = buildMessage(ctx, null);
                     WiredBoxFlashes.sendAfterFlash(() -> speaker.talk(said), reachedBySignal(ctx));
                     return;
@@ -312,7 +311,8 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                     continue;
                 }
 
-                if (!shownToRoom && !admitMessage(ctx.room())) {
+                // AIR: every receiver has their own budget, whoever's stack sends; one out of budget is skipped.
+                if (!admitMessage(ctx.room(), habbo.getRoomUnit())) {
                     continue;
                 }
 
@@ -335,13 +335,13 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         return ctx.event() != null && ctx.event().getType() == WiredEvent.Type.SIGNAL_RECEIVED;
     }
 
-    /** Habbo shows at most ten wired messages in any five seconds per room and drops the rest. */
-    private static boolean admitMessage(Room room) {
+    /** AIR shows a user at most 10 wired messages in any 5 s and 40 in any 30 s, and drops the rest. */
+    private static boolean admitMessage(Room room, RoomUnit receiver) {
         if (room == null || room.getWiredRuntime() == null) {
             return true;
         }
 
-        return room.getWiredRuntime().getMessageBudget().tryAdmit(System.currentTimeMillis());
+        return room.getWiredRuntime().getMessageBudget(receiver).tryAdmit(System.currentTimeMillis());
     }
 
     @Deprecated

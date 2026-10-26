@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.guides.GuideSessionPartnerIsPlayingComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -53,6 +54,9 @@ public class WiredEffectLeaveTeam extends InteractionWiredEffect {
                 if (game != null) {
                     game.removeHabbo(habbo);
                 }
+            } else if (habbo.getClient() != null) {
+                // AIR tells the user they are not playing even when they were in no team.
+                habbo.getClient().sendResponse(new GuideSessionPartnerIsPlayingComposer(false));
             }
         }
     }

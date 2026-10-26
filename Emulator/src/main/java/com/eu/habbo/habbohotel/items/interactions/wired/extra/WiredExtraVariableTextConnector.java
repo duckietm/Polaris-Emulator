@@ -5,6 +5,8 @@ import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -15,6 +17,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -23,7 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
+public class WiredExtraVariableTextConnector extends InteractionWiredExtra implements WiredLargePayload {
     public static final int CODE = 79;
     public static final int MAX_MAPPING_LENGTH = 1000;
     public static final int MAX_MAPPING_LINES = 30;
@@ -57,8 +60,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         if (settings.getIntParams().length > 0) {
             config.fieldId = settings.getIntParams()[0];
         }
+        refuseOversizedText(config.mappingsText);
         String mappingsText = normalizeMappingsText(config.mappingsText);
-        validateMappingsText(mappingsText);
         // As in Habbo, only the valid lines are kept, one per number in number order.
         mappingsText = storedMappingsText(mappingsText);
 
@@ -245,24 +248,14 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         return value.replace("\r", "");
     }
 
-    private static void validateMappingsText(String value) throws WiredSaveException {
-        if (value == null || value.isEmpty()) {
-            return;
-        }
-
-        if (value.length() > MAX_MAPPING_LENGTH) {
-            throw new WiredSaveException("Variable text connector can contain at most 1000 characters.");
-        }
-
-        int lineCount = 1;
-        for (int i = 0; i < value.length(); i++) {
-            if (value.charAt(i) == '\n') {
-                lineCount++;
-            }
-        }
-
-        if (lineCount > MAX_MAPPING_LINES) {
-            throw new WiredSaveException("Variable text connector can contain at most 30 lines.");
+    /**
+     * AIR refuses more than 1000 UTF-8 bytes of text as sent (the {@code _=} line included), with any number of
+     * lines; the stored text stays as it was.
+     */
+    static void refuseOversizedText(String value) {
+        if (value != null && value.getBytes(StandardCharsets.UTF_8).length > MAX_MAPPING_LENGTH) {
+            throw new WiredSaveRefusedException(
+                    "wiredfurni.error.too_much_text", Map.of("limit", String.valueOf(MAX_MAPPING_LENGTH)));
         }
     }
 

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWithdrawals;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
@@ -83,7 +84,7 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
 
         for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
-            if (habbo == null) continue;
+            if (habbo == null || ChestTransactionFailures.skipsNonTrader(habbo)) continue;
 
             // Taken from the chests in order until the amount is reached or they are empty.
             int remaining = everything ? Integer.MAX_VALUE : resolved;

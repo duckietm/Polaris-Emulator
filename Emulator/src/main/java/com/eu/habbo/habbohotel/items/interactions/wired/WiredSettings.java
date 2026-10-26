@@ -17,6 +17,9 @@ public class WiredSettings {
     private int quantifierCode;
     private boolean selectorFilter;
     private boolean selectorInvert;
+    private int rawPickCount = -1;
+    private int rawPickCount2 = -1;
+    private Integer rawDelay;
 
     public WiredSettings(int[] intParams, String stringParam, int[] furniIds, int stuffTypeSelectionCode, int delay) {
         this.furniIds = furniIds;
@@ -60,6 +63,29 @@ public class WiredSettings {
 
     public void setIntParams(int[] intParams) {
         this.intParams = intParams;
+    }
+
+    /** How many furni ids the first pick list carried on the wire, repeats included; -1 when not read. */
+    public int getRawPickCount() {
+        return this.rawPickCount;
+    }
+
+    public int getRawPickCount2() {
+        return this.rawPickCount2;
+    }
+
+    public void setRawPickCounts(int first, int second) {
+        this.rawPickCount = first;
+        this.rawPickCount2 = second;
+    }
+
+    /** The delay an action save carried before it was clamped; null for other saves. */
+    public Integer getRawDelay() {
+        return this.rawDelay;
+    }
+
+    public void setRawDelay(Integer rawDelay) {
+        this.rawDelay = rawDelay;
     }
 
     public int getDelay() {

@@ -59,9 +59,9 @@ class RoomChatMessageWiredTeamBubbleTest {
     }
 
     @Test
-    void banzaiAndFreezeTeamsKeepThePickedStyle() {
-        assertEquals(4, resolve(BattleBanzaiGame.class, GameTeamColors.RED, 4).getType());
-        assertEquals(4, resolve(FreezeGame.class, GameTeamColors.BLUE, 4).getType());
+    void banzaiAndFreezeTeamsTalkInTheTeamBubbleAsOnAir() {
+        assertSame(RoomChatMessageBubbles.WIRED_TEAM_RED, resolve(BattleBanzaiGame.class, GameTeamColors.RED, 4));
+        assertSame(RoomChatMessageBubbles.WIRED_TEAM_BLUE, resolve(FreezeGame.class, GameTeamColors.BLUE, 4));
     }
 
     @Test
@@ -72,7 +72,7 @@ class RoomChatMessageWiredTeamBubbleTest {
     @Test
     void aClientCannotAskForATeamStyle() {
         assertSame(RoomChatMessageBubbles.NORMAL, resolve(null, null, 131));
-        assertSame(RoomChatMessageBubbles.NORMAL, resolve(BattleBanzaiGame.class, GameTeamColors.RED, 130));
+        assertSame(RoomChatMessageBubbles.NORMAL, resolve(null, null, 130));
     }
 
     @Test

@@ -705,9 +705,32 @@ public class RoomChatManager {
         }
     }
 
+    /** How long a listener looks at the speaker before the head returns to the body (AIR: 5 s). */
+    static final long HEAD_TURN_MS = 5000L;
+
+    private static final String HEAD_TURN_TOKEN = "chat.head_turn.token";
+
+    /**
+     * Turns the heads of the avatars in the room toward a bot that speaks aloud, as they turn toward a talking user
+     * (AIR). Bots and pets do not turn.
+     */
+    public static void turnHeadsTowardSpeaker(Room room, RoomUnit speaker) {
+        if (room == null || speaker == null) {
+            return;
+        }
+
+        for (Habbo habbo : room.getHabbos()) {
+            RoomUnit listener = habbo.getRoomUnit();
+            if (listener != null && listener != speaker) {
+                turnHeadTowardSpeaker(listener, speaker);
+            }
+        }
+    }
+
     private static void turnHeadTowardSpeaker(RoomUnit roomUnit, RoomUnit speaker) {
         if (roomUnit.isWalking()
                 || roomUnit.hasStatus(RoomUnitStatus.MOVE)
+                || roomUnit.hasStatus(RoomUnitStatus.SIT)
                 || roomUnit.hasStatus(RoomUnitStatus.LAY)
                 || roomUnit.isIdle()
                 || roomUnit.isInvisible()) {
@@ -727,22 +750,28 @@ public class RoomChatManager {
         roomUnit.setHeadRotation(targetRotation);
         roomUnit.statusUpdate(true);
 
-        // Schedule head reset after 2 seconds
+        // The head goes back 5 s later, unless a later line turned it again meanwhile (the later line wins).
+        Object token = new Object();
+        roomUnit.getCacheable().put(HEAD_TURN_TOKEN, token);
         Emulator.getThreading()
                 .run(
                         () -> {
-                            if (roomUnit.isInRoom() && !roomUnit.isWalking() && !roomUnit.isIdle()) {
+                            if (roomUnit.getCacheable().get(HEAD_TURN_TOKEN) == token
+                                    && roomUnit.isInRoom()
+                                    && !roomUnit.isWalking()
+                                    && roomUnit.getHeadRotation() == targetRotation) {
                                 roomUnit.setHeadRotation(roomUnit.getBodyRotation());
                                 roomUnit.statusUpdate(true);
                             }
                         },
-                        2000);
+                        HEAD_TURN_MS);
     }
 
     /**
-     * Head rotation a listener turns to when someone speaks, or null when the head stays put:
-     * the speaker stands on the listener's tile (no direction) or is outside peripheral vision
-     * (more than 1 rotation step from the body).
+     * Head rotation a listener turns to when someone speaks, or null when the head stays put. AIR: a speaker more
+     * than 2 steps from the body's direction is out of view; at 2 steps the head turns one step toward them, at 1 it
+     * looks straight at them, straight ahead it stays with the body. A speaker on the listener's tile has no
+     * direction.
      */
     static RoomUserRotation headRotationTowardSpeaker(
             int listenerX, int listenerY, int bodyRotation, int speakerX, int speakerY) {
@@ -750,12 +779,14 @@ public class RoomChatManager {
             return null;
         }
 
-        RoomUserRotation targetRotation =
-                RoomUserRotation.values()[Rotation.Calculate(listenerX, listenerY, speakerX, speakerY)];
-        if (RoomUserRotation.rotationDistance(bodyRotation, targetRotation.getValue()) > 1) {
+        int target = Rotation.Calculate(listenerX, listenerY, speakerX, speakerY);
+        // Signed steps from the body to the speaker, -4..3.
+        int steps = Math.floorMod(target - bodyRotation + 4, 8) - 4;
+        if (Math.abs(steps) > 2) {
             return null;
         }
-        return targetRotation;
+
+        return RoomUserRotation.values()[Math.floorMod(bodyRotation + Integer.signum(steps), 8)];
     }
 
     /**

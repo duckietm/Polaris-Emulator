@@ -9,9 +9,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -19,8 +17,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import com.eu.habbo.threading.runnables.RoomUnitGiveHanditem;
-import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -119,41 +115,29 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect implement
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return;
 
-        List<Bot> bots = this.resolveBots(ctx, room);
-        if (bots.isEmpty()) return;
-
-        // Every resolved user is served, by every bot the source names; the box used to serve the
-        // first user only and gave up entirely when two bots shared the name.
+        List<RoomUnit> users = new ArrayList<>();
         for (RoomUnit roomUnit : targets) {
-            Habbo habbo = room.getHabbo(roomUnit);
-            if (habbo == null) continue;
-
-            for (Bot bot : bots) {
-                this.serve(room, bot, roomUnit);
-            }
+            if (room.getHabbo(roomUnit) != null) users.add(roomUnit);
         }
-    }
+        if (users.isEmpty()) return;
 
-    private void serve(Room room, Bot bot, RoomUnit roomUnit) {
-        List<Runnable> tasks = new ArrayList<>();
-        tasks.add(new RoomUnitGiveHanditem(roomUnit, room, this.itemId));
-        tasks.add(new RoomUnitGiveHanditem(bot.getRoomUnit(), room, 0));
-        tasks.add(() -> {
-            if (roomUnit.getRoom() != null
-                    && roomUnit.getRoom().getId() == room.getId()
-                    && roomUnit.getCurrentLocation().distance(bot.getRoomUnit().getCurrentLocation()) < 2) {
-                WiredManager.triggerBotReachedHabbo(room, bot.getRoomUnit(), roomUnit);
+        List<Bot> bots = this.resolveBots(ctx, room);
+
+        // AIR: with no bot the users simply get the item.
+        if (bots.isEmpty()) {
+            for (RoomUnit user : users) {
+                BotHandItemDelivery.giveHandItem(room, user, this.itemId);
             }
-        });
-
-        RoomTile tile = bot.getRoomUnit().getClosestAdjacentTile(roomUnit.getX(), roomUnit.getY(), true);
-
-        if (tile != null) {
-            bot.getRoomUnit().setGoalLocation(tile);
+            return;
         }
 
-        Emulator.getThreading().run(new RoomUnitGiveHanditem(bot.getRoomUnit(), room, this.itemId));
-        Emulator.getThreading().run(new RoomUnitWalkToLocation(bot.getRoomUnit(), tile, room, tasks, tasks));
+        // AIR pairs bot i with user i (round the users again when there are more bots).
+        for (int index = 0; index < bots.size(); index++) {
+            Bot bot = bots.get(index);
+            if (bot.getRoomUnit() != null) {
+                BotHandItemDelivery.start(room, bot.getRoomUnit(), users.get(index % users.size()), this.itemId);
+            }
+        }
     }
 
     @Deprecated

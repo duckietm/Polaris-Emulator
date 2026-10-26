@@ -11,13 +11,18 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSaveGate;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredEffectSaveDataEvent extends MessageHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSaveDataEvent.class);
+
     @Override
     public void handle() throws Exception {
         int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
@@ -48,8 +53,14 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         return;
                     }
 
+                    // AIR drops a save with more than 20 picks without an answer; a repeated pick is kept once.
+                    if (WiredSaveGate.dropsSilently(settings)) return;
+                    WiredSaveGate.keepPicksOnce(settings);
+
                     String sourceRefusal = WiredSourceSaveRules.apply(effect != null ? effect : extra, settings, room);
                     if (sourceRefusal != null) throw new WiredSaveException(sourceRefusal);
+                    String delayRefusal = WiredSaveGate.delayRefusal(settings);
+                    if (delayRefusal != null) throw new WiredSaveRefusedException(delayRefusal);
                     boolean saved;
 
                     if (effect != null) {
@@ -83,6 +94,9 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(
                                 new UpdateFailedComposer("There was an error while saving that effect"));
                     }
+                } catch (WiredSaveDroppedException dropped) {
+                    // Dropped without an answer, as AIR's server does.
+                    LOGGER.debug("Wired save of item {} dropped: {}", itemId, dropped.getMessage());
                 } catch (WiredSaveRefusedException refused) {
                     this.client.sendResponse(new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));
                 } catch (WiredSaveException e) {

@@ -163,7 +163,8 @@ public class BotManager {
                 }
 
                 RoomUnit roomUnit = new RoomUnit();
-                roomUnit.setRotation(RoomUserRotation.SOUTH);
+                // AIR: a placed bot faces direction 2.
+                roomUnit.setRotation(RoomUserRotation.EAST);
                 roomUnit.setLocation(location);
 
                 double stackHeight = room.getTopHeightAt(location.x, location.y);

@@ -73,13 +73,15 @@ public class WiredEffectBotClothes extends InteractionWiredEffect implements Wir
         String splitBy = "\t";
         if (!dataString.contains(splitBy)) throw new WiredSaveException("Malformed data string");
 
-        String[] data = dataString.split(Pattern.quote(splitBy));
+        // AIR saves "name\t" with no figure too (stored empty; it then dresses nobody).
+        String[] data = dataString.split(Pattern.quote(splitBy), -1);
 
         if (data.length != 2) throw new WiredSaveException("Malformed data string. Invalid data length");
 
         // The look goes straight onto the bot and out to everyone in the room; a malformed one is
         // refused here rather than broadcast.
-        if (!RoomItemInputGuard.isValidFigure(data[1])) throw new WiredSaveException("Invalid figure");
+        if (!data[1].isEmpty() && !RoomItemInputGuard.isValidFigure(data[1]))
+            throw new WiredSaveException("Invalid figure");
 
         // Official: "name\tfigure", no int params; the bots are user slot 0.
         this.botSource =

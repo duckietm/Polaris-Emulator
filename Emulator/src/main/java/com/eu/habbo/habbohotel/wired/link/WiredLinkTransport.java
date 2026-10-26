@@ -44,9 +44,12 @@ public final class WiredLinkTransport {
     public static final String MAX_HOPS_SETTING = "wired.link.max_hops";
     public static final String SENDS_PER_SECOND_SETTING = "wired.link.sends_per_second";
     public static final String RECEIVES_PER_SECOND_SETTING = "wired.link.receives_per_second";
-    public static final int DEFAULT_MAX_HOPS = 3;
-    public static final int DEFAULT_SENDS_PER_SECOND = 10;
-    public static final int DEFAULT_RECEIVES_PER_SECOND = 20;
+    /** AIR lets a receive-and-resend chain run 10 times in all. */
+    public static final int DEFAULT_MAX_HOPS = 10;
+    /** High enough that a 10-run chain over several Links is not cut by the per-second limits. */
+    public static final int DEFAULT_SENDS_PER_SECOND = 50;
+
+    public static final int DEFAULT_RECEIVES_PER_SECOND = 100;
     /** The most Links one send reaches. */
     public static final int MAX_RECEIVERS = 50;
 

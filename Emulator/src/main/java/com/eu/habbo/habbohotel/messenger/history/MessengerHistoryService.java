@@ -8,8 +8,10 @@ public final class MessengerHistoryService {
     public static final int HABBICON_MESSAGE = 4;
     public static final int DEFAULT_RETENTION_DAYS = 30;
     public static final int DEFAULT_MAX_MESSAGES = 500;
-    public static final int DEFAULT_PAGE_SIZE = 500;
-    public static final int MAX_PAGE_SIZE = 500;
+    /** A history page holds at most 50 messages: the client's MessengerHistoryParser refuses a longer page. */
+    public static final int DEFAULT_PAGE_SIZE = 50;
+
+    public static final int MAX_PAGE_SIZE = 50;
 
     private final MessengerHistoryRepository repository;
     private final int retentionDays;

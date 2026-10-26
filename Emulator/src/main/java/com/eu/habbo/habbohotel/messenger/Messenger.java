@@ -134,7 +134,7 @@ public class Messenger {
     public static void makeFriendRequest(int userFrom, int userTo) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO messenger_friendrequests (user_to_id, user_from_id) VALUES (?, ?)")) {
+                        "INSERT IGNORE INTO messenger_friendrequests (user_to_id, user_from_id) VALUES (?, ?)")) {
             statement.setInt(1, userTo);
             statement.setInt(2, userFrom);
             statement.executeUpdate();
@@ -277,6 +277,24 @@ public class Messenger {
         return buddy;
     }
 
+    /**
+     * The pending requests as the database has them now. The set was only filled at login, so answered requests came
+     * back and new ones were missing whenever the client asked for the list again.
+     */
+    public void reloadFriendRequests(Habbo habbo) {
+        synchronized (this.friendRequests) {
+            this.friendRequests.clear();
+            this.loadFriendRequests(habbo);
+        }
+    }
+
+    /** Friends that count toward the friend limit: the Staff Chat entry (id -1) takes no slot. */
+    public int countedFriends() {
+        int staffChat = this.friends.containsKey(StaffChatBuddy.BUDDY_ID) ? 1 : 0;
+
+        return this.friends.size() - staffChat;
+    }
+
     public void loadFriendRequests(Habbo habbo) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -373,13 +391,30 @@ public class Messenger {
     }
 
     // TODO Needs redesign. userFrom is redundant.
+    /**
+     * userTo accepts the request userFrom sent. Only that incoming request counts: deleting in both directions let a
+     * user "accept" their own outgoing request and become friends with someone who never agreed. A reverse request
+     * (both asked each other) goes too, once the incoming one is found.
+     */
     public void acceptFriendRequest(int userFrom, int userTo) {
-        int count = this.deleteFriendRequests(userFrom, userTo);
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement incoming = connection.prepareStatement(
+                    "DELETE FROM messenger_friendrequests WHERE user_to_id = ? AND user_from_id = ?")) {
+                incoming.setInt(1, userTo);
+                incoming.setInt(2, userFrom);
 
-        if (count > 0) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO messenger_friendships (user_one_id, user_two_id, friends_since) VALUES (?, ?, ?)")) {
+                if (incoming.executeUpdate() <= 0) return;
+            }
+
+            try (PreparedStatement reverse = connection.prepareStatement(
+                    "DELETE FROM messenger_friendrequests WHERE user_to_id = ? AND user_from_id = ?")) {
+                reverse.setInt(1, userFrom);
+                reverse.setInt(2, userTo);
+                reverse.executeUpdate();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT IGNORE INTO messenger_friendships (user_one_id, user_two_id, friends_since) VALUES (?, ?, ?)")) {
                 statement.setInt(1, userFrom);
                 statement.setInt(2, userTo);
                 statement.setInt(3, Emulator.getIntUnixTimestamp());
@@ -389,44 +424,42 @@ public class Messenger {
                 statement.setInt(2, userFrom);
                 statement.setInt(3, Emulator.getIntUnixTimestamp());
                 statement.execute();
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return;
+        }
+
+        Habbo habboTo = Emulator.getGameServer().getGameClientManager().getHabbo(userTo);
+        Habbo habboFrom = Emulator.getGameServer().getGameClientManager().getHabbo(userFrom);
+
+        if (habboTo != null && habboFrom != null) {
+            MessengerBuddy to =
+                    new MessengerBuddy(habboFrom, habboTo.getHabboInfo().getId());
+            MessengerBuddy from =
+                    new MessengerBuddy(habboTo, habboFrom.getHabboInfo().getId());
+
+            habboTo.getMessenger().friends.putIfAbsent(habboFrom.getHabboInfo().getId(), to);
+            habboFrom.getMessenger().friends.putIfAbsent(habboTo.getHabboInfo().getId(), from);
+
+            if (Emulator.getPluginManager()
+                    .fireEvent(new UserAcceptFriendRequestEvent(habboTo, from))
+                    .isCancelled()) {
+                // Undo the friendship on both sides (this removed the accepting user's own id before).
+                habboTo.getMessenger().removeBuddy(userFrom);
+                habboFrom.getMessenger().removeBuddy(userTo);
+                unfriend(userFrom, userTo);
+                return;
             }
 
-            Habbo habboTo = Emulator.getGameServer().getGameClientManager().getHabbo(userTo);
-            Habbo habboFrom = Emulator.getGameServer().getGameClientManager().getHabbo(userFrom);
-
-            if (habboTo != null && habboFrom != null) {
-                MessengerBuddy to =
-                        new MessengerBuddy(habboFrom, habboTo.getHabboInfo().getId());
-                MessengerBuddy from =
-                        new MessengerBuddy(habboTo, habboFrom.getHabboInfo().getId());
-
-                habboTo.getMessenger()
-                        .friends
-                        .putIfAbsent(habboFrom.getHabboInfo().getId(), to);
-                habboFrom
-                        .getMessenger()
-                        .friends
-                        .putIfAbsent(habboTo.getHabboInfo().getId(), from);
-
-                if (Emulator.getPluginManager()
-                        .fireEvent(new UserAcceptFriendRequestEvent(habboTo, from))
-                        .isCancelled()) {
-                    this.removeBuddy(userTo);
-                    return;
-                }
-
-                habboTo.getClient().sendResponse(new UpdateFriendComposer(habboTo, to, 1));
-                habboFrom.getClient().sendResponse(new UpdateFriendComposer(habboFrom, from, 1));
-            } else if (habboTo != null) {
-                habboTo.getClient()
-                        .sendResponse(new UpdateFriendComposer(habboTo, this.loadFriend(habboTo, userFrom), 1));
-            } else if (habboFrom != null) {
-                habboFrom
-                        .getClient()
-                        .sendResponse(new UpdateFriendComposer(habboFrom, this.loadFriend(habboFrom, userTo), 1));
-            }
+            habboTo.getClient().sendResponse(new UpdateFriendComposer(habboTo, to, 1));
+            habboFrom.getClient().sendResponse(new UpdateFriendComposer(habboFrom, from, 1));
+        } else if (habboTo != null) {
+            habboTo.getClient().sendResponse(new UpdateFriendComposer(habboTo, this.loadFriend(habboTo, userFrom), 1));
+        } else if (habboFrom != null) {
+            habboFrom
+                    .getClient()
+                    .sendResponse(new UpdateFriendComposer(habboFrom, this.loadFriend(habboFrom, userTo), 1));
         }
     }
 

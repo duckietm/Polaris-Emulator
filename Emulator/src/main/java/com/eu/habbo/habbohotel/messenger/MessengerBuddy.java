@@ -1,19 +1,19 @@
 package com.eu.habbo.habbohotel.messenger;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.friends.FriendChatMessageComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessengerBuddy implements Runnable, ISerialize {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessengerBuddy.class);
@@ -146,9 +146,13 @@ public class MessengerBuddy implements Runnable, ISerialize {
         Emulator.getThreading().run(this);
     }
 
-    public int getCategoryId() { return this.categoryId; }
+    public int getCategoryId() {
+        return this.categoryId;
+    }
 
-    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
+    }
 
     public boolean inRoom() {
         Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(this.id);
@@ -171,7 +175,9 @@ public class MessengerBuddy implements Runnable, ISerialize {
     @Override
     public void run() {
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE messenger_friendships SET relation = ? WHERE user_one_id = ? AND user_two_id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE messenger_friendships SET relation = ? WHERE user_one_id = ? AND user_two_id = ?")) {
             statement.setInt(1, this.relation);
             statement.setInt(2, this.userOne);
             statement.setInt(3, this.id);
@@ -191,12 +197,26 @@ public class MessengerBuddy implements Runnable, ISerialize {
         Message chatMessage = new Message(from.getHabboInfo().getId(), this.id, message);
 
         if (WordFilter.ENABLED_FRIENDCHAT) {
-            chatMessage.setMessage(Emulator.getGameEnvironment().getWordFilter().filter(chatMessage.getMessage(), from));
+            chatMessage.setMessage(
+                    Emulator.getGameEnvironment().getWordFilter().filter(chatMessage.getMessage(), from));
+        }
+
+        // The console text goes into the conversation history too, as the messenger packet stores it: text that only
+        // reached chatlogs_private disappeared from the history once the conversation held a Habbicon, and its read
+        // receipts never worked. A failure here must not stop the delivery.
+        try {
+            MessengerHistoryServices.create()
+                    .sendMessage(0, from.getHabboInfo().getId(), this.id, 0, chatMessage.getMessage(), null);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Could not store console message history", exception);
         }
 
         Emulator.getThreading().run(chatMessage);
 
-        if (habbo == null || !habbo.isOnline() || habbo.getClient() == null || !habbo.getClient().getChannel().isOpen()) {
+        if (habbo == null
+                || !habbo.isOnline()
+                || habbo.getClient() == null
+                || !habbo.getClient().getChannel().isOpen()) {
             return this.storeOfflineMessage(chatMessage);
         }
 
@@ -229,11 +249,11 @@ public class MessengerBuddy implements Runnable, ISerialize {
         message.appendString(this.username);
         message.appendInt(this.gender.equals(HabboGender.M) ? 0 : 1);
         message.appendBoolean(visibleOnline);
-        message.appendBoolean(visibleOnline && visibleInRoom); //IN ROOM
+        message.appendBoolean(visibleOnline && visibleInRoom); // IN ROOM
         message.appendString(this.look);
         message.appendInt(this.categoryId); // Friends category ID
         message.appendString(this.motto);
-        message.appendString(""); //Last seen as DATETIMESTRING
+        message.appendString(""); // Last seen as DATETIMESTRING
         message.appendString(""); // Realname or Facebookame as String
         message.appendBoolean(true); // Offline messaging.
         message.appendBoolean(false);

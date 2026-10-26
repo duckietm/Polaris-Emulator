@@ -28,6 +28,11 @@ public final class RankLimits {
         return raise(base, rankOf(habbo), Limit.FRIENDS);
     }
 
+    /** The friend limit of a user who is not loaded: their stored max_friends, raised by their rank. */
+    public static int friends(int maxFriends, Rank rank) {
+        return raise(maxFriends > 0 ? maxFriends : Messenger.MAXIMUM_FRIENDS, rank, Limit.FRIENDS);
+    }
+
     /** The friend limits the messenger shows: without and with Habbo Club. */
     public static int friendsShown(Habbo habbo, boolean club) {
         return raise(club ? Messenger.MAXIMUM_FRIENDS_HC : Messenger.MAXIMUM_FRIENDS, rankOf(habbo), Limit.FRIENDS);

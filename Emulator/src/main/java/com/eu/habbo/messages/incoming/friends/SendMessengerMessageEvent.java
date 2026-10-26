@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.friends;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.messenger.Message;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
@@ -8,6 +9,7 @@ import com.eu.habbo.habbohotel.messenger.StaffChatBuddy;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryService;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.habbohotel.messenger.history.MessengerStoredMessage;
+import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.MessengerMessageAckComposer;
@@ -27,6 +29,7 @@ public final class SendMessengerMessageEvent extends MessageHandler {
         int type = packet.readInt();
         String message = FriendInputGuard.normalizeMessage(packet.readString());
         String metadata = packet.readString();
+        GameEnvironment environment = Emulator.getGameEnvironment();
         int senderId = client.getHabbo().getHabboInfo().getId();
         boolean hasStaffChat = client.getHabbo().hasPermission(StaffChatBuddy.PERMISSION_KEY);
 
@@ -45,6 +48,18 @@ public final class SendMessengerMessageEvent extends MessageHandler {
                     return;
                 }
             }
+            MessengerHistoryService history = MessengerHistoryServices.create();
+            if (conversationId > 0) {
+                // A stored conversation stays open after an unfriend: every other member must still be a friend.
+                for (int memberId : history.listActiveMemberIds(conversationId, senderId)) {
+                    if (memberId != senderId && client.getHabbo().getMessenger().getFriend(memberId) == null)
+                        throw new SecurityException("not friends");
+                }
+            }
+            // The console packet filters every line (MessengerBuddy.onMessageReceivedWithDeliveryStatus); so does this
+            // one.
+            if (type == TEXT_MESSAGE && WordFilter.ENABLED_FRIENDCHAT)
+                message = environment.getWordFilter().filter(message, client.getHabbo());
             HabbiconService.Item habbicon = null;
             if (type == MessengerHistoryService.HABBICON_MESSAGE) {
                 habbicon = client.getHabbo().getHabbiconService().load(senderId).requireItem(Integer.parseInt(message));
@@ -52,21 +67,18 @@ public final class SendMessengerMessageEvent extends MessageHandler {
                     throw new SecurityException("Habbicon is not owned");
                 }
             }
-            MessengerHistoryService history = MessengerHistoryServices.create();
             MessengerStoredMessage stored =
                     history.sendMessage(conversationId, senderId, recipientId, type, message, metadata);
             client.sendResponse(new MessengerMessageAckComposer(confirmationId, stored));
             if (conversationId <= 0) {
                 new Message(senderId, recipientId, habbicon == null ? message : ":" + habbicon.name() + ":").run();
-                Habbo recipient =
-                        Emulator.getGameEnvironment().getHabboManager().getHabbo(recipientId);
+                Habbo recipient = environment.getHabboManager().getHabbo(recipientId);
                 if (recipient != null && recipient.getClient() != null)
                     recipient.getClient().sendResponse(new MessengerMessageComposer(stored));
             } else {
                 for (int memberId : history.listActiveMemberIds(conversationId, senderId)) {
                     if (memberId == senderId) continue;
-                    Habbo member =
-                            Emulator.getGameEnvironment().getHabboManager().getHabbo(memberId);
+                    Habbo member = environment.getHabboManager().getHabbo(memberId);
                     if (member != null && member.getClient() != null)
                         member.getClient().sendResponse(new MessengerMessageComposer(stored));
                 }

@@ -2,6 +2,8 @@ package com.eu.habbo.messages;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -12,6 +14,8 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
+import com.eu.habbo.habbohotel.messenger.Messenger;
+import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryService;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.habbohotel.messenger.history.MessengerStoredMessage;
@@ -167,6 +171,10 @@ class HabbiconRequestTest {
         var stored = new MessengerStoredMessage(10, 9, 1, 4, "61", "", 100);
         when(history.sendMessage(9, 1, 0, 4, "61", "")).thenReturn(stored);
         when(history.listActiveMemberIds(9, 1)).thenReturn(List.of(1, 2));
+        // A stored conversation may only be written to while the other member is still a friend.
+        Messenger messenger = new Messenger();
+        messenger.addBuddy(new MessengerBuddy(2, "receiver", "", (short) 0, 1));
+        when(habbo.getMessenger()).thenReturn(messenger);
         try (var histories = mockStatic(MessengerHistoryServices.class);
                 var emulator = mockStatic(Emulator.class)) {
             when(habbo.getHabbiconService()).thenReturn(service);
@@ -190,6 +198,48 @@ class HabbiconRequestTest {
                 verify(sender).sendResponse(any(MessengerMessageAckComposer.class));
                 verify(recipient).sendResponse(any(MessengerMessageComposer.class));
                 verify(sender, never()).sendResponse(any(MessengerMessageFailedComposer.class));
+            } finally {
+                buffer.release();
+            }
+        }
+    }
+
+    @Test
+    void storedConversationWithAFormerFriendIsRefused() throws Exception {
+        MessengerHistoryService history = mock(MessengerHistoryService.class);
+        GameEnvironment environment = mock(GameEnvironment.class);
+        GameClient sender = mock(GameClient.class);
+        Habbo habbo = mock(Habbo.class);
+        HabboInfo info = mock(HabboInfo.class);
+        HabboStats stats = mock(HabboStats.class);
+        when(sender.getHabbo()).thenReturn(habbo);
+        when(habbo.getHabboInfo()).thenReturn(info);
+        when(habbo.getHabboStats()).thenReturn(stats);
+        when(habbo.getMessenger()).thenReturn(new Messenger());
+        when(info.getId()).thenReturn(1);
+        when(stats.allowTalk()).thenReturn(true);
+        when(history.listActiveMemberIds(9, 1)).thenReturn(List.of(1, 2));
+        try (var histories = mockStatic(MessengerHistoryServices.class);
+                var emulator = mockStatic(Emulator.class)) {
+            histories.when(MessengerHistoryServices::create).thenReturn(history);
+            emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
+            ServerMessage message = new ServerMessage();
+            message.init(4902);
+            message.appendInt(9);
+            message.appendInt(0);
+            message.appendInt(124);
+            message.appendInt(0);
+            message.appendString("hi");
+            message.appendString("");
+            var buffer = message.get();
+            try {
+                buffer.skipBytes(6);
+                SendMessengerMessageEvent event = new SendMessengerMessageEvent();
+                event.client = sender;
+                event.packet = new ClientMessage(4902, buffer);
+                event.handle();
+                verify(sender).sendResponse(any(MessengerMessageFailedComposer.class));
+                verify(history, never()).sendMessage(anyLong(), anyInt(), anyInt(), anyInt(), any(), any());
             } finally {
                 buffer.release();
             }

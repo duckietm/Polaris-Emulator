@@ -77,14 +77,14 @@ public class FriendRequestEvent extends MessageHandler {
         }
 
         // You can only have x friends
-        if (this.client.getHabbo().getMessenger().getFriends().size() >= RankLimits.friends(this.client.getHabbo())
+        if (this.client.getHabbo().getMessenger().countedFriends() >= RankLimits.friends(this.client.getHabbo())
                 && !this.client.getHabbo().hasPermission("acc_infinite_friends")) {
             this.client.sendResponse(new FriendRequestErrorComposer(FriendRequestErrorComposer.FRIEND_LIST_OWN_FULL));
             return;
         }
 
         // Check if targets friendlist is full
-        if (targetHabbo.getMessenger().getFriends().size() >= RankLimits.friends(targetHabbo)
+        if (targetHabbo.getMessenger().countedFriends() >= RankLimits.friends(targetHabbo)
                 && !targetHabbo.hasPermission("acc_infinite_friends")) {
             this.client.sendResponse(
                     new FriendRequestErrorComposer(FriendRequestErrorComposer.FRIEND_LIST_TARGET_FULL));
@@ -99,7 +99,8 @@ public class FriendRequestEvent extends MessageHandler {
             return;
         }
 
-        if (targetHabbo.isOnline()) {
+        // A user read from the database with a stale online flag has no client.
+        if (targetHabbo.isOnline() && targetHabbo.getClient() != null) {
             targetHabbo.getClient().sendResponse(new FriendRequestComposer(this.client.getHabbo()));
         }
 

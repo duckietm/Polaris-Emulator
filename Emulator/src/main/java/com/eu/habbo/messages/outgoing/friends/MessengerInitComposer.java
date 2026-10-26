@@ -24,8 +24,10 @@ public class MessengerInitComposer extends MessageComposer {
             this.response.appendInt(1337);
             this.response.appendInt(Integer.MAX_VALUE);
         } else {
+            // AIR MessengerInitParser: the user's own limit (the one the server enforces), the normal limit and the
+            // Habbo Club limit. The first was the normal limit, so a Club member's client stopped at 200 of 500.
+            this.response.appendInt(RankLimits.friends(this.habbo));
             this.response.appendInt(RankLimits.friendsShown(this.habbo, false));
-            this.response.appendInt(1337);
             this.response.appendInt(RankLimits.friendsShown(this.habbo, true));
         }
         if (!this.habbo.getHabboInfo().getMessengerCategories().isEmpty()) {

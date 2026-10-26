@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.quests;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.quests.ActiveDailyTasksComposer;
 import com.eu.habbo.messages.outgoing.quests.DailyTaskUpdatedComposer;
@@ -217,8 +220,15 @@ public class DailyTaskManager {
                 repeats,
                 status,
                 secondsLeftToday(),
-                List.of(new ActiveDailyTasksComposer.Reward(
-                        0, task.getRewardType(), task.getRewardExtra(), task.getRewardAmount())));
+                List.of(QuestRewards.dailyTaskRewardWire(
+                        task.getRewardType(), task.getRewardExtra(), task.getRewardAmount(), this::lookupItem)));
+    }
+
+    private Item lookupItem(String name) {
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+        return (environment == null || environment.getItemManager() == null)
+                ? null
+                : environment.getItemManager().getItem(name);
     }
 
     public List<ActiveDailyTasksComposer.Task> activeTasks(Habbo habbo) {

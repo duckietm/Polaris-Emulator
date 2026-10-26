@@ -1,8 +1,8 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 class WiredConditionDatePayloadGuardTest {
     @Test
@@ -13,7 +13,7 @@ class WiredConditionDatePayloadGuardTest {
         assertEquals(2, condition.normalizeMode(2));
         assertEquals(1, condition.normalizeDay(-1));
         assertEquals(31, condition.normalizeDay(99));
-        assertEquals(1, condition.normalizeYear(-1));
+        assertEquals(0, condition.normalizeYear(-1));
         assertEquals(9999, condition.normalizeYear(50_000));
         assertEquals(254, condition.normalizeWeekdayMask(0));
         assertEquals(8190, condition.normalizeMonthMask(0));

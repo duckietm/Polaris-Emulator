@@ -170,7 +170,7 @@ class RoomConfigurationFurniTest {
 
         assertTrue(pickup.contains("RoomConfigurationFurniSupport.onControllerRemoved(this.room, item);"));
         assertTrue(drop.indexOf("RoomHanditemBlockSupport.isHanditemBlocked(room)") < drop.indexOf("setHandItem(0)"));
-        assertTrue(toggle.contains("queueSpeed.stepMode(room, this.toggleType != TOGGLE_TYPE_PREVIOUS)"));
+        assertTrue(toggle.contains("queueSpeed.wiredStepMode(room, this.toggleType != TOGGLE_TYPE_PREVIOUS)"));
     }
 
     private static String source(String path) throws Exception {

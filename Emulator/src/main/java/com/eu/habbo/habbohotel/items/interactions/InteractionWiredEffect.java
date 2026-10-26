@@ -256,8 +256,26 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
         return result;
     }
 
+    /** Every furni a furni selector inverts over, as AIR does: floor and wall furni, wired boxes included. */
+    protected LinkedHashSet<HabboItem> getSelectableItems(Room room, WiredContext ctx) {
+        LinkedHashSet<HabboItem> result = this.getSelectableFloorItems(room, ctx);
+        if (room != null) {
+            room.getWallItems().forEach(item -> {
+                if (item != null) {
+                    result.add(item);
+                }
+            });
+        }
+
+        return result;
+    }
+
+    /**
+     * Whether furni selectors keep wired boxes. AIR's always do (Furni In Area over a box stack selects every box),
+     * so this is true; plugins may still override it.
+     */
     protected boolean includeWiredTargets(WiredContext ctx) {
-        return ctx != null && ctx.includeWiredSelectorItems();
+        return true;
     }
 
     protected <T> LinkedHashSet<T> toLinkedHashSet(Iterable<T> values) {

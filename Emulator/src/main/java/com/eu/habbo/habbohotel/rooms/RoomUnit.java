@@ -13,6 +13,8 @@ import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredUserActionType;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
@@ -163,7 +165,10 @@ public class RoomUnit {
                 return true;
             }
 
-            this.clearWalkingStatuses();
+            // AIR: the first step off a seat or a bed is the user's "stand" action.
+            if (this.clearWalkingStatuses() && this.roomUnitType == RoomUnitType.USER) {
+                WiredManager.triggerUserPerformsAction(room, this, WiredUserActionType.STAND, -1);
+            }
 
             if (this.path == null || this.path.isEmpty()) {
                 return true;
@@ -426,16 +431,19 @@ public class RoomUnit {
         return true;
     }
 
-    /** Drops sit, move, lay and every other status a step ends. */
-    private void clearWalkingStatuses() {
+    /** Drops sit, move, lay and every other status a step ends; true when the unit sat or lay. */
+    private boolean clearWalkingStatuses() {
+        boolean postured = false;
         if (this.status.remove(RoomUnitStatus.SIT) != null) {
             this.statusUpdate = true;
+            postured = true;
         }
         if (this.status.remove(RoomUnitStatus.MOVE) != null) {
             this.statusUpdate = true;
         }
         if (this.status.remove(RoomUnitStatus.LAY) != null) {
             this.statusUpdate = true;
+            postured = true;
         }
 
         for (Map.Entry<RoomUnitStatus, String> set : this.status.entrySet()) {
@@ -443,6 +451,7 @@ public class RoomUnit {
                 this.status.remove(set.getKey());
             }
         }
+        return postured;
     }
 
     /** Wakes an idle user who walks, then lets plugins cancel the step; returns whether one did. */

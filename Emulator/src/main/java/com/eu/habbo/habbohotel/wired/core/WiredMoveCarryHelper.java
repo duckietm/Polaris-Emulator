@@ -1553,8 +1553,9 @@ public final class WiredMoveCarryHelper {
     }
 
     /**
-     * The movement curve outranks a projectile's own curve; the overshoot is the projectile's
-     * either way. Returns the jump strength the furni flies with, 0 for none.
+     * A projectile with a curve outranks the movement curve add-on for the furni it moves, as AIR does; a
+     * projectile without one leaves the movement curve in charge. The overshoot is the projectile's either way.
+     * Returns the jump strength the furni flies with, 0 for none.
      */
     private static int sendMoveStyleHint(
             Room room,
@@ -1563,6 +1564,14 @@ public final class WiredMoveCarryHelper {
             WiredContext ctx,
             WiredExtraProjectile projectile,
             int overshoot) {
+        int curveStrength = (projectile != null) ? projectile.getCurveStrength() : 0;
+
+        if (curveStrength != 0) {
+            WiredMoveStyleHelper.broadcast(
+                    room, List.of(movingItem.getId()), WiredMoveStyleHelper.STYLE_JUMP, curveStrength, overshoot);
+            return curveStrength;
+        }
+
         Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null) {
             return 0;
@@ -1578,14 +1587,9 @@ public final class WiredMoveCarryHelper {
             }
         }
 
-        int curveStrength = (projectile != null) ? projectile.getCurveStrength() : 0;
         WiredMoveStyleHelper.broadcast(
-                room,
-                List.of(movingItem.getId()),
-                (curveStrength != 0) ? WiredMoveStyleHelper.STYLE_JUMP : WiredMoveStyleHelper.STYLE_LINEAR,
-                curveStrength,
-                overshoot);
-        return curveStrength;
+                room, List.of(movingItem.getId()), WiredMoveStyleHelper.STYLE_LINEAR, 0, overshoot);
+        return 0;
     }
 
     private static Collection<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {

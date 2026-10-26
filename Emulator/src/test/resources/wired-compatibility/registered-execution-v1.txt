@@ -7,7 +7,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurn
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir | CONDITION | type=ACTOR_DIR | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCheckArray | CONDITION | type=CHECK_ARRAY | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems | CONDITION | type=CHEST_HAS_ITEMS | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionDateRangeActive | CONDITION | type=DATE_RANGE | operator=AND | evaluate=false

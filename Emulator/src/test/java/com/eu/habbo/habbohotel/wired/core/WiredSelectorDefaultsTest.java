@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersHandItem;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,6 +22,7 @@ class WiredSelectorDefaultsTest {
     private static RoomUnit holding(int handItem) {
         RoomUnit unit = mock(RoomUnit.class);
         when(unit.getHandItem()).thenReturn(handItem);
+        when(unit.getRoomUnitType()).thenReturn(RoomUnitType.USER);
         return unit;
     }
 

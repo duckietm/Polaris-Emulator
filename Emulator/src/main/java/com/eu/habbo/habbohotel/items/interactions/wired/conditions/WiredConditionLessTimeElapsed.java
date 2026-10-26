@@ -29,8 +29,15 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
-        // Half-seconds since the timers were reset, counted in milliseconds rather than whole seconds.
-        return WiredRoomTime.millisSinceTimerReset(ctx.room(), System.currentTimeMillis()) / 500.0 < this.cycles;
+        // AIR counts whole pulses since the reset and compares them with the value the editor sent
+        // (Less Than: <=); the box stores that value minus one.
+        return pulsesSinceReset(WiredRoomTime.millisSinceTimerReset(ctx.room(), System.currentTimeMillis()))
+                <= this.cycles + 1;
+    }
+
+    /** Whole 500 ms pulses in an elapsed time; a negative time counts as none. */
+    static long pulsesSinceReset(long millis) {
+        return Math.max(0L, millis) / 500L;
     }
 
     @Deprecated

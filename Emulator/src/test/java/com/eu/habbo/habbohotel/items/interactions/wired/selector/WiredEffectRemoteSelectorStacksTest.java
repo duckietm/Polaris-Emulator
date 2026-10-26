@@ -77,4 +77,37 @@ class WiredEffectRemoteSelectorStacksTest {
         assertEquals(Set.of(this.chair), this.run(0, 10, 20));
         assertEquals(Set.of(), this.run(1, 10, 20));
     }
+
+    private WiredEffectRemoteSelector remoteAt(int id, int x, int y, int... picks) {
+        WiredEffectRemoteSelector remote = new WiredEffectRemoteSelector(id, 1, mock(Item.class), "", 0, 0);
+        remote.setX((short) x);
+        remote.setY((short) y);
+        remote.saveData(new WiredSettings(new int[] {0, 0}, "", picks, 0), null);
+        when(this.room.getHabboItem(id)).thenReturn(remote);
+        return remote;
+    }
+
+    @Test
+    void aRemoteSelectionInAPickedStackRunsToo() {
+        HabboItem triggerC = trigger(40, 3, 3);
+        when(this.room.getHabboItem(40)).thenReturn(triggerC);
+        WiredEffectRemoteSelector nested = this.remoteAt(41, 3, 3, 10);
+        when(this.room.getItemsAt(3, 3)).thenReturn(new LinkedHashSet<>(List.of(triggerC, nested)));
+
+        assertEquals(Set.of(this.chair), this.run(0, 40));
+    }
+
+    @Test
+    void twoRemotesPickingEachOtherStop() {
+        HabboItem triggerD = trigger(50, 4, 4);
+        HabboItem triggerE = trigger(60, 5, 5);
+        when(this.room.getHabboItem(50)).thenReturn(triggerD);
+        when(this.room.getHabboItem(60)).thenReturn(triggerE);
+        WiredEffectRemoteSelector d = this.remoteAt(51, 4, 4, 60);
+        WiredEffectRemoteSelector e = this.remoteAt(61, 5, 5, 50, 10);
+        when(this.room.getItemsAt(4, 4)).thenReturn(new LinkedHashSet<>(List.of(triggerD, d)));
+        when(this.room.getItemsAt(5, 5)).thenReturn(new LinkedHashSet<>(List.of(triggerE, e)));
+
+        assertEquals(Set.of(this.chair), this.run(0, 50));
+    }
 }

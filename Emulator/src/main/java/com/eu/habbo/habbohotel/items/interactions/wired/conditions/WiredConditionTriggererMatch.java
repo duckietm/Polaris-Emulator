@@ -218,7 +218,8 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
             }
 
             resolved = resolved.stream()
-                    .filter(roomUnit -> normalizedName.equalsIgnoreCase(this.getRoomUnitName(ctx.room(), roomUnit)))
+                    .filter(roomUnit ->
+                            namesMatch(normalizedName, this.getRoomUnitName(ctx.room(), roomUnit), roomUnit))
                     .collect(Collectors.toList());
         }
 
@@ -233,7 +234,11 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
         }
 
         Habbo habbo = room.getHabbo(normalizedName);
-        if (habbo != null && habbo.getRoomUnit() != null) {
+        // A user's name matches with its case, as AIR does; bots and pets ignore it.
+        if (habbo != null
+                && habbo.getRoomUnit() != null
+                && habbo.getHabboInfo() != null
+                && normalizedName.equals(habbo.getHabboInfo().getUsername())) {
             result.add(habbo.getRoomUnit());
         }
 
@@ -270,6 +275,17 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition impl
 
     private boolean matchesEntityType(RoomUnit roomUnit) {
         return roomUnit != null && (roomUnit.getRoomUnitType().getTypeId() & this.entityType) != 0;
+    }
+
+    /** A user's name is compared with its case, a bot's or pet's without, as AIR does. */
+    static boolean namesMatch(String wanted, String name, RoomUnit roomUnit) {
+        if (name == null) {
+            return false;
+        }
+
+        return roomUnit != null && roomUnit.getRoomUnitType() == RoomUnitType.USER
+                ? wanted.equals(name)
+                : wanted.equalsIgnoreCase(name);
     }
 
     private String getRoomUnitName(Room room, RoomUnit roomUnit) {

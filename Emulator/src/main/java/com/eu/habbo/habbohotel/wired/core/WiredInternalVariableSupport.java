@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.BuildersClubPalette;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
@@ -423,11 +424,12 @@ public final class WiredInternalVariableSupport {
                     BuildersClubPalette.BLUE -> BuildersClubPalette.read(item, normalized);
             case String smart
             when WiredSmartVariables.isFurniKey(smart) -> WiredSmartVariables.readFurniValue(item, smart);
-            // A wall item's id is negative, as AIR picks it.
+            // A wall item's id is negative, as AIR picks it; a Builders Club floor furni's is the id the client
+            // knows it by.
             case "@id" ->
                 (item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL)
                         ? -item.getId()
-                        : item.getId();
+                        : BuildersClubItemIds.toWire(item.getId());
             case "@class_id" ->
                 (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
             // The height it has now: a multi-height furni's current setting, not its base height.
@@ -638,7 +640,7 @@ public final class WiredInternalVariableSupport {
         if (event == null || !event.isScalarVariableChange()) return null;
         return switch (key) {
             case "@event.variable_update.box_id" ->
-                ctx.triggerItem() == null ? null : (long) ctx.triggerItem().getId();
+                ctx.triggerItem() == null ? null : (long) BuildersClubItemIds.toWire(ctx.triggerItem());
             case "@event.variable_update.change_type" ->
                 event.isVariableCreated() ? 0L : event.isVariableDeleted() ? 2L : 1L;
             case "@event.variable_update.old_value" -> event.getOldVariableValue();

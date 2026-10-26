@@ -91,7 +91,9 @@ public final class WiredEditorDefaults {
                 "wf_cnd_stuff_is",
                 "wf_cnd_not_stuff_is",
                 "wf_cnd_has_altitude",
-                "wf_cnd_counter_time_matches");
+                "wf_cnd_counter_time_matches",
+                "wf_cnd_chest_has_items",
+                "wf_cnd_chest_has_item_type");
         quantifier(
                 QUANTIFIER_USERS,
                 "wf_cnd_actor_dir",

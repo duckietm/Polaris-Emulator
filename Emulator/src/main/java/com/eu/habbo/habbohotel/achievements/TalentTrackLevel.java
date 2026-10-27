@@ -21,6 +21,8 @@ public class TalentTrackLevel {
     public String[] perks;
     public String[] badges;
     public int hcDays;
+    /** True when a configured task could not be found: such a level can never be completed. */
+    public boolean missingAchievements;
 
     public TalentTrackLevel(ResultSet set) throws SQLException {
         this.type = TalentTrackType.valueOf(set.getString("type").toUpperCase());
@@ -36,23 +38,32 @@ public class TalentTrackLevel {
         String[] achievements = set.getString("achievement_ids").split(",");
         String[] achievementLevels = set.getString("achievement_levels").split(",");
         if (achievementLevels.length == achievements.length) {
+            AchievementManager manager = Emulator.getGameEnvironment().getAchievementManager();
             for (int i = 0; i < achievements.length; i++) {
-                if (achievements[i].isEmpty() || achievementLevels[i].isEmpty()) continue;
+                String task = achievements[i].trim();
+                if (task.isEmpty() || achievementLevels[i].isBlank()) continue;
 
-                Achievement achievement = Emulator.getGameEnvironment()
-                        .getAchievementManager()
-                        .getAchievement(Integer.parseInt(achievements[i]));
+                Achievement achievement = resolveAchievement(manager, task);
 
                 if (achievement != null) {
-                    this.achievements.put(achievement, Integer.parseInt(achievementLevels[i]));
+                    this.achievements.put(achievement, Integer.parseInt(achievementLevels[i].trim()));
                 } else {
+                    this.missingAchievements = true;
                     LOGGER.error(
-                            "Could not find achievement with ID {} for talenttrack level {} of type {}",
-                            achievements[i],
+                            "Could not find achievement {} for talenttrack level {} of type {}",
+                            task,
                             this.level,
                             this.type);
                 }
             }
+        } else {
+            this.missingAchievements = true;
+            LOGGER.error(
+                    "Talent track level {} of type {} lists {} achievements but {} levels",
+                    this.level,
+                    this.type,
+                    achievements.length,
+                    achievementLevels.length);
         }
 
         for (String s : set.getString("reward_furni").split(",")) {
@@ -73,5 +84,20 @@ public class TalentTrackLevel {
         if (!set.getString("reward_badges").isEmpty()) {
             this.badges = set.getString("reward_badges").split(",");
         }
+    }
+
+    /**
+     * A task is an achievement id, or its name (with or without "ACH_"), so the rows do not depend on how a
+     * hotel's achievements table is numbered.
+     */
+    static Achievement resolveAchievement(AchievementManager manager, String task) {
+        if (manager == null || task == null || task.isEmpty()) return null;
+
+        if (task.chars().allMatch(Character::isDigit)) {
+            return manager.getAchievement(Integer.parseInt(task));
+        }
+
+        String name = task.regionMatches(true, 0, "ACH_", 0, 4) ? task.substring(4) : task;
+        return manager.getAchievement(name);
     }
 }

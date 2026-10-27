@@ -508,7 +508,8 @@ public class AchievementManager {
 
         for (Map.Entry<Integer, TalentTrackLevel> entry :
                 this.talentTrackLevels.get(type).entrySet()) {
-            final boolean[] allCompleted = {true};
+            // A level whose tasks are not all known is never completed (it used to pass with no tasks at all).
+            final boolean[] allCompleted = {!entry.getValue().missingAchievements};
             for (Map.Entry<Achievement, Integer> achievementEntry :
                     entry.getValue().achievements.entrySet()) {
                 AchievementLevel requiredLevel =

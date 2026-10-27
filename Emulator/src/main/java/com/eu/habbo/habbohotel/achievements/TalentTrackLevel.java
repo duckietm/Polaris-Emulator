@@ -38,11 +38,13 @@ public class TalentTrackLevel {
         String[] achievements = set.getString("achievement_ids").split(",");
         String[] achievementLevels = set.getString("achievement_levels").split(",");
         if (achievementLevels.length == achievements.length) {
-            AchievementManager manager = Emulator.getGameEnvironment().getAchievementManager();
+            // Looked up only for a real task: a level without tasks loads without a game environment.
+            AchievementManager manager = null;
             for (int i = 0; i < achievements.length; i++) {
                 String task = achievements[i].trim();
                 if (task.isEmpty() || achievementLevels[i].isBlank()) continue;
 
+                if (manager == null) manager = Emulator.getGameEnvironment().getAchievementManager();
                 Achievement achievement = resolveAchievement(manager, task);
 
                 if (achievement != null) {

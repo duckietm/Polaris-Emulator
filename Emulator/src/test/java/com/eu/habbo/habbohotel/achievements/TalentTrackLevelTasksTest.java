@@ -1,14 +1,17 @@
 package com.eu.habbo.habbohotel.achievements;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboStats;
 import java.lang.reflect.Field;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -48,6 +51,27 @@ class TalentTrackLevelTasksTest {
 
         // Level 0 has no tasks and is complete; level 1 lists a task the server does not know, so it stops there.
         assertEquals(0, manager.calculateTalenTrackLevel(habbo, TalentTrackType.HELPER).level);
+    }
+
+    @Test
+    void aLevelWithoutTasksLoadsWithoutTheGameEnvironment() throws Exception {
+        // A club-only milestone (AchievementRewardsIT): no tasks, no furni; there is no game environment to ask.
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString("type")).thenReturn("citizenship");
+        when(row.getInt("level")).thenReturn(20);
+        when(row.getInt("reward_hc_days")).thenReturn(2);
+        when(row.getString("achievement_ids")).thenReturn("");
+        when(row.getString("achievement_levels")).thenReturn("");
+        when(row.getString("reward_furni")).thenReturn(" , ");
+        when(row.getString("reward_perks")).thenReturn("TRADE");
+        when(row.getString("reward_badges")).thenReturn("");
+
+        TalentTrackLevel level = new TalentTrackLevel(row);
+
+        assertEquals(2, level.hcDays);
+        assertTrue(level.achievements.isEmpty());
+        assertTrue(level.items.isEmpty());
+        assertFalse(level.missingAchievements);
     }
 
     private static TalentTrackLevel level(int number, boolean missing) {

@@ -43,4 +43,49 @@ class BotFollowHabboTest {
         unit.setLocation(new RoomTile((short) x, (short) y, (short) 0, RoomTileState.OPEN, true));
         return unit;
     }
+
+    @Test
+    void theBotWalksToARandomFreeTileAroundTheUserAndWaitsWhileTheyAreAway() {
+        Room room = mock(Room.class);
+        com.eu.habbo.habbohotel.rooms.RoomLayout layout = mock(com.eu.habbo.habbohotel.rooms.RoomLayout.class);
+        when(room.getLayout()).thenReturn(layout);
+        when(layout.getTile(org.mockito.ArgumentMatchers.anyShort(), org.mockito.ArgumentMatchers.anyShort()))
+                .thenAnswer(invocation -> new RoomTile(
+                        invocation.getArgument(0), invocation.getArgument(1), (short) 0, RoomTileState.OPEN, true));
+        when(room.getRoomUnitsAt(org.mockito.ArgumentMatchers.any())).thenReturn(java.util.List.of());
+        Bot bot = mock(Bot.class);
+        RoomUnit botUnit = unitAt(1, 1);
+        when(bot.getRoomUnit()).thenReturn(botUnit);
+        when(bot.getRoom()).thenReturn(room);
+        when(bot.getFollowingHabboId()).thenReturn(9);
+        Habbo habbo = mock(Habbo.class);
+        com.eu.habbo.habbohotel.users.HabboInfo info = mock(com.eu.habbo.habbohotel.users.HabboInfo.class);
+        when(info.getId()).thenReturn(9);
+        when(habbo.getHabboInfo()).thenReturn(info);
+        RoomUnit userUnit = unitAt(6, 6);
+        when(habbo.getRoomUnit()).thenReturn(userUnit);
+        BotFollowHabbo follow = new BotFollowHabbo(bot, habbo, room);
+
+        // Away: nothing happens.
+        RoomTile before = botUnit.getGoal();
+        follow.step(new java.util.Random(1));
+        org.junit.jupiter.api.Assertions.assertSame(before, botUnit.getGoal());
+
+        // Back in the room: a tile next to them.
+        when(room.getHabbo(9)).thenReturn(habbo);
+        java.util.Set<String> goals = new java.util.HashSet<>();
+        try (org.mockito.MockedStatic<com.eu.habbo.Emulator> emulator =
+                org.mockito.Mockito.mockStatic(com.eu.habbo.Emulator.class)) {
+            emulator.when(com.eu.habbo.Emulator::getPluginManager)
+                    .thenReturn(mock(com.eu.habbo.plugin.PluginManager.class));
+            java.util.Random random = new java.util.Random(7);
+            for (int i = 0; i < 40; i++) {
+                RoomTile goal =
+                        BotFollowHabbo.randomFreeTileAround(room, userUnit.getCurrentLocation(), botUnit, random);
+                assertTrue(BotFollowHabbo.nextTo(goal, userUnit.getCurrentLocation()), goal.x + "," + goal.y);
+                goals.add(goal.x + "," + goal.y);
+            }
+        }
+        assertTrue(goals.size() > 1, "the tile is random: " + goals);
+    }
 }

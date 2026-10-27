@@ -177,7 +177,8 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
 
         switch (this.matchMode) {
             case MATCH_EXACT:
-                return normalizedText.equals(normalizedKey);
+                // AIR keeps the message's own spaces: " hi" does not fire for the keyword "hi".
+                return text.toLowerCase().equals(normalizedKey);
             case MATCH_ALL_WORDS:
                 return !normalizedText.isEmpty();
             case MATCH_CONTAINS:

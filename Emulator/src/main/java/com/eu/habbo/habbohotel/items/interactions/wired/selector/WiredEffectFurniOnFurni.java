@@ -72,11 +72,7 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect implements W
         }
 
         result = this.applySelectorModifiers(
-                result,
-                this.getSelectableFloorItems(room, ctx),
-                ctx.targets().items(),
-                this.filterExisting,
-                this.invert);
+                result, this.getSelectableItems(room, ctx), ctx.targets().items(), this.filterExisting, this.invert);
 
         ctx.targets().setItems(result);
     }

@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureUsagePolicy;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBadgeDisplay;
 import com.eu.habbo.habbohotel.items.interactions.InteractionClothing;
@@ -47,6 +48,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLegacyDataGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -77,6 +79,19 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
     private final Set<HabboItem> items;
     private int toggleType = TOGGLE_TYPE_NEXT;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    /** Furni AIR's Toggle State never changes, whatever their state count; no packet is sent for them. */
+    static final Set<String> UNTOUCHED_NAMES = Set.of(
+            "wf_floor_switch1",
+            "wf_floor_switch2",
+            "wf_antenna1",
+            "wf_antenna2",
+            "wf_pressureplate",
+            "wf_arrowplate",
+            "wf_box",
+            "wf_pyramid",
+            "wf_tile1",
+            "wf_tile2");
 
     private static final List<Class<? extends HabboItem>> FORBIDDEN_TYPES =
             new ArrayList<Class<? extends HabboItem>>() {
@@ -237,9 +252,22 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
 
         Set<HabboItem> itemsToRemove = new HashSet<>();
         for (HabboItem item : effectiveItems) {
-            if (item == null
-                    || item.getRoomId() == 0
-                    || FORBIDDEN_TYPES.stream().anyMatch(a -> a.isAssignableFrom(item.getClass()))) {
+            if (item == null || item.getRoomId() == 0) {
+                itemsToRemove.add(item);
+                continue;
+            }
+
+            // A wired box in the list flashes instead of changing state, and stays picked.
+            if (item instanceof InteractionWired wired) {
+                wired.flashBox(room);
+                continue;
+            }
+
+            if (isUntouched(item) || isHeldByFurniOnTop(room, item)) {
+                continue;
+            }
+
+            if (FORBIDDEN_TYPES.stream().anyMatch(a -> a.isAssignableFrom(item.getClass()))) {
                 itemsToRemove.add(item);
                 continue;
             }
@@ -359,10 +387,50 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         return item.getBaseItem().getStateCount();
     }
 
+    static boolean isUntouched(HabboItem item) {
+        return UNTOUCHED_NAMES.contains(FurnitureUsagePolicy.baseName(item));
+    }
+
+    /**
+     * A furni whose height follows its state does not change while furni stand higher on any of its tiles,
+     * as AIR refuses it (the same rule as a double-click).
+     */
+    static boolean isHeldByFurniOnTop(Room room, HabboItem item) {
+        Item base = item.getBaseItem();
+
+        if (room == null || room.getLayout() == null || base == null) {
+            return false;
+        }
+
+        double[] heights = base.getMultiHeights();
+
+        if (heights == null || heights.length <= 1 || toggleStateCount(item) <= 1) {
+            return false;
+        }
+
+        RoomTile origin = room.getLayout().getTile(item.getX(), item.getY());
+
+        if (origin == null) {
+            return false;
+        }
+
+        for (RoomTile tile :
+                room.getLayout().getTilesAt(origin, base.getWidth(), base.getLength(), item.getRotation())) {
+            for (HabboItem other : room.getItemsAt(tile)) {
+                if (other != item && other.getZ() > item.getZ()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private void toggleItemState(Room room, Habbo habbo, HabboItem item) throws Exception {
         if (item instanceof InteractionQueueSpeedControl queueSpeed) {
             // Its state also carries the animation frame, so it steps a whole mode, never a frame.
-            queueSpeed.stepMode(room, this.toggleType != TOGGLE_TYPE_PREVIOUS);
+            // AIR shows the next mode group, but the rollers keep the step time a user chose.
+            queueSpeed.wiredStepMode(room, this.toggleType != TOGGLE_TYPE_PREVIOUS);
             WiredManager.triggerFurniStateUpdated(room, (habbo != null) ? habbo.getRoomUnit() : null, item, true);
             return;
         }

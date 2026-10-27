@@ -54,4 +54,17 @@ class VoucherResolveBeforeClaimTest {
                 method.contains("CatalogItem item = this.getCatalogItem(voucher.catalogItemId)"),
                 "the offer is not looked up a second time after the claim");
     }
+
+    @Test
+    void aWalletThatCannotTakeTheValueRefusesTheVoucherUnspent() throws Exception {
+        String method = redeemVoucher();
+
+        int wallet = method.indexOf("fitsWallet(habbo.getHabboInfo().getCredits(), voucher.credits)");
+        int claim = method.indexOf("voucher.claimForUser(");
+        assertTrue(wallet > 0 && wallet < claim, "the wallet is checked while the voucher is still unspent");
+
+        assertTrue(CatalogManager.fitsWallet(Integer.MAX_VALUE - 5, 5));
+        assertFalse(CatalogManager.fitsWallet(Integer.MAX_VALUE - 5, 6));
+        assertTrue(CatalogManager.fitsWallet(Integer.MAX_VALUE, 0));
+    }
 }

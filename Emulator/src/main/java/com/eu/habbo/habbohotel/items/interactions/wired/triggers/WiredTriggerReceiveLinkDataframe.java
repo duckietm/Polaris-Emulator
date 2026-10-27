@@ -76,7 +76,12 @@ public class WiredTriggerReceiveLinkDataframe extends WiredTriggerReceiveLinkBas
         WiredContextVariableScope scope = new WiredContextVariableScope();
         for (RowConfig row : this.rows) {
             String value = payload.values().get(row.key());
-            if (value == null) continue;
+            if (value == null) {
+                // A placeholder whose key the dataframe lacks reads "null" (observed on AIR).
+                if (row.kind() == WiredLinkDataframeCodec.PLACEHOLDER_DESTINATION)
+                    placeholders.put(row.placeholder(), "null");
+                continue;
+            }
             if (row.kind() == WiredLinkDataframeCodec.PLACEHOLDER_DESTINATION) {
                 placeholders.put(row.placeholder(), value);
             } else if (WiredLinkDataframeCodec.isLiteral(value) && isCaptureVariable(room, row.variableId())) {

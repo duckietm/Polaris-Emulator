@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.WiredUserActionType;
+import com.eu.habbo.habbohotel.wired.core.WiredActionMemory;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -20,10 +21,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class WiredEffectUsersByAction extends InteractionWiredEffect implements WiredOfficialSelector {
-    private static final String CACHE_LAST_ACTION_ID = "wired.last_user_action.id";
-    private static final String CACHE_LAST_ACTION_PARAMETER = "wired.last_user_action.parameter";
-    private static final String CACHE_LAST_ACTION_TIMESTAMP = "wired.last_user_action.timestamp";
-    private static final long TRANSIENT_ACTION_WINDOW_MS = 5_000L;
     static final int OFFICIAL_ACTION_IDS = 2;
     // A fresh box selects sitting users, as officially.
     private static final int DEFAULT_ACTION = WiredUserActionType.SIT;
@@ -270,24 +267,10 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect implements 
         }
     }
 
+    /** AIR remembers an action 5 s (respect 2.5 s); blow kiss, laugh and dance are never remembered. */
     private boolean matchesRecentAction(RoomUnit roomUnit) {
-        Object actionValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_ID);
-        Object parameterValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_PARAMETER);
-        Object timestampValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_TIMESTAMP);
-
-        if (!(actionValue instanceof Integer) || !(timestampValue instanceof Long)) {
-            return false;
-        }
-
-        long timestamp = (Long) timestampValue;
-        if ((System.currentTimeMillis() - timestamp) > TRANSIENT_ACTION_WINDOW_MS) {
-            return false;
-        }
-
-        int actionId = (Integer) actionValue;
-        int parameter = (parameterValue instanceof Integer) ? (Integer) parameterValue : -1;
-
-        return this.matchesConfiguredAction(actionId, parameter);
+        int[] recent = WiredActionMemory.selectorRecent(roomUnit, System.currentTimeMillis());
+        return recent != null && this.matchesConfiguredAction(recent[0], recent[1]);
     }
 
     private boolean matchesConfiguredAction(int actionId, int actionParameter) {

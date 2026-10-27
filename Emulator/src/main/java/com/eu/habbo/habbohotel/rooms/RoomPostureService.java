@@ -69,11 +69,16 @@ final class RoomPostureService {
         } else if (!hasSpecialPetStatus
                 && thisTile.state == RoomTileState.SIT
                 && (!unit.hasStatus(RoomUnitStatus.SIT) || unit.sitUpdate)) {
+            boolean sitsDown = !unit.hasStatus(RoomUnitStatus.SIT);
             this.room.dance(unit, DanceType.NONE);
             unit.setStatus(RoomUnitStatus.SIT, (Item.getCurrentHeight(topItem) * 1.0D) + "");
             unit.setZ(topItem.getZ());
             unit.setRotation(RoomUserRotation.values()[topItem.getRotation()]);
             unit.sitUpdate = false;
+            // AIR: sitting down on a seat is the user's "sit" action (a re-sit on the same seat is not).
+            if (sitsDown && unit.getRoomUnitType() == RoomUnitType.USER) {
+                WiredManager.triggerUserPerformsAction(this.room, unit, WiredUserActionType.SIT, -1);
+            }
             return ChairOutcome.SAT;
         }
 

@@ -619,6 +619,7 @@ public final class WiredManager {
         user.getCacheable().put(CACHE_LAST_ACTION_ID, actionId);
         user.getCacheable().put(CACHE_LAST_ACTION_PARAMETER, actionParameter);
         user.getCacheable().put(CACHE_LAST_ACTION_TIMESTAMP, System.currentTimeMillis());
+        WiredActionMemory.record(user, actionId, actionParameter, System.currentTimeMillis());
 
         WiredEvent event = WiredEvents.userPerformsAction(room, user, actionId, actionParameter);
         return handleEvent(event);
@@ -1415,7 +1416,7 @@ public final class WiredManager {
         getTickService().resetRoomTimers(room);
 
         room.setLastTimerReset(Emulator.getIntUnixTimestamp());
-        WiredRoomTime.markTimersReset(room, System.currentTimeMillis());
+        WiredRoomTime.scheduleTimersReset(room, room.getCycleTimestamp(), System.currentTimeMillis());
     }
 
     // ========== Effect Execution ==========

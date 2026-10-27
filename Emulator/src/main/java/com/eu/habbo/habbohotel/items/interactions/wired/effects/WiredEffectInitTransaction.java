@@ -508,11 +508,33 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.referenceUserSource = settings.userSource(1, DEFAULT_REFERENCE_SOURCE);
 
+        // AIR refuses picked chests that hold no chest; a stored box still loads.
+        int chestSource = normalizeFurniSource(settings.furniSource(0, DEFAULT_CHEST_SOURCE), DEFAULT_CHEST_SOURCE);
+        if (chestSource == WiredSourceUtil.SOURCE_SELECTED && !picksAChest(this.getRoom(), settings.getFurniIds())) {
+            throw new WiredSaveException(REQUIRE_CHESTS);
+        }
+
         copyPicks(this.chestIds, settings.getFurniIds());
         copyPicks(this.contractIds, settings.getFurniIds2());
         this.mixedPicks = false;
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    static final String REQUIRE_CHESTS = "wiredfurni.error.require_chests";
+
+    static boolean picksAChest(Room room, int[] furniIds) {
+        if (room == null || furniIds == null) {
+            return false;
+        }
+
+        for (int id : furniIds) {
+            if (room.getHabboItem(id) instanceof InteractionWiredChest) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

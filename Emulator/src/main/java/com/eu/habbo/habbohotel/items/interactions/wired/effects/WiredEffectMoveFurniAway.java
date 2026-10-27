@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -24,11 +25,11 @@ import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
@@ -68,24 +69,27 @@ public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
             RoomTile t = room.getLayout().getTile(item.getX(), item.getY());
             if (t == null) continue;
 
-            RoomUnit target = room.getRoomUnits().stream()
-                    .min(Comparator.comparingDouble(a -> a.getCurrentLocation().distance(t)))
-                    .orElse(null);
+            List<RoomUnit> users = fleeCandidates(room);
+            RoomUnit target = nearest(users, item.getX(), item.getY(), false);
 
             if (target == null) continue;
 
-            // Someone right next to the furni still counts as bumping into it, and it still
-            // flees: before, it stood still and let itself be caught.
-            // As in Habbo, the collision runs in the pass of this flee.
-            if (target.getCurrentLocation().distance(t) <= 1) {
+            // As in AIR, a user right next to the furni bumps into it and it stays put; the collision runs in
+            // the pass of this flee.
+            if (manhattan(target, item.getX(), item.getY()) <= 1) {
                 WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, target, item));
+                continue;
             }
 
             RoomTile oldLocation = room.getLayout().getTile(item.getX(), item.getY());
+            RoomUnit inLine = nearest(users, item.getX(), item.getY(), true);
 
-            // The step straight away along the longer axis first, then along the other one, so a
-            // wall or a furni in the way no longer leaves the furni standing still.
-            for (int[] step : stepsAway(item.getX(), item.getY(), target.getX(), target.getY())) {
+            for (int[] step : fleeSteps(
+                    item.getX(),
+                    item.getY(),
+                    inLine != null ? new int[] {inLine.getX(), inLine.getY()} : null,
+                    target.getX(),
+                    target.getY())) {
                 RoomTile newLocation =
                         room.getLayout().getTile((short) (item.getX() + step[0]), (short) (item.getY() + step[1]));
 
@@ -103,25 +107,68 @@ public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
         }
     }
 
-    /**
-     * The straight steps that take a furni at (x, y) further from (awayX, awayY): along the axis
-     * with more distance between them first, then the other. Someone on the furni's own tile
-     * leaves no direction, so no steps.
-     */
-    static List<int[]> stepsAway(int x, int y, int awayX, int awayY) {
-        int dx = Integer.signum(x - awayX);
-        int dy = Integer.signum(y - awayY);
-        List<int[]> steps = new ArrayList<>(2);
-        int[] alongX = {dx, 0};
-        int[] alongY = {0, dy};
+    /** The users a furni flees from: avatars only, no bots or pets. */
+    static List<RoomUnit> fleeCandidates(Room room) {
+        List<RoomUnit> users = new ArrayList<>();
 
-        boolean xFirst = Math.abs(x - awayX) >= Math.abs(y - awayY);
-        for (int[] step : xFirst ? new int[][] {alongX, alongY} : new int[][] {alongY, alongX}) {
-            if (step[0] != 0 || step[1] != 0) {
-                steps.add(step);
+        for (RoomUnit unit : room.getRoomUnits()) {
+            if (unit != null && unit.getRoomUnitType() == RoomUnitType.USER && unit.getCurrentLocation() != null) {
+                users.add(unit);
             }
         }
 
+        return users;
+    }
+
+    /**
+     * The nearest user by tile steps, a tie broken at random. In line means in the furni's row or column within
+     * 3 tiles, the user the furni flees straight away from.
+     */
+    static RoomUnit nearest(List<RoomUnit> users, int x, int y, boolean inLine) {
+        List<RoomUnit> nearest = new ArrayList<>();
+        int best = Integer.MAX_VALUE;
+
+        for (RoomUnit unit : users) {
+            int distance = manhattan(unit, x, y);
+
+            if (inLine && ((unit.getX() != x && unit.getY() != y) || distance > 3)) {
+                continue;
+            }
+
+            if (distance < best) {
+                best = distance;
+                nearest.clear();
+            }
+
+            if (distance == best) {
+                nearest.add(unit);
+            }
+        }
+
+        return nearest.isEmpty()
+                ? null
+                : nearest.get(ThreadLocalRandom.current().nextInt(nearest.size()));
+    }
+
+    static int manhattan(RoomUnit unit, int x, int y) {
+        return Math.abs(unit.getX() - x) + Math.abs(unit.getY() - y);
+    }
+
+    /**
+     * AIR's flee steps, the first that moves wins: straight away from the user in line (when there is one), east,
+     * one step in y away from the nearest user (south when level with it), then the other y step.
+     */
+    static List<int[]> fleeSteps(int x, int y, int[] inLine, int nearestX, int nearestY) {
+        List<int[]> steps = new ArrayList<>(4);
+
+        if (inLine != null && (inLine[0] != x || inLine[1] != y)) {
+            steps.add(new int[] {Integer.signum(x - inLine[0]), Integer.signum(y - inLine[1])});
+        }
+
+        steps.add(new int[] {1, 0});
+        int awayY = y >= nearestY ? 1 : -1;
+        steps.add(new int[] {0, awayY});
+        steps.add(new int[] {0, -awayY});
         return steps;
     }
 
@@ -144,14 +191,18 @@ public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
             RoomTile t = room.getLayout().getTile(currentPos.x, currentPos.y);
             if (t == null) continue;
 
-            RoomUnit target = room.getRoomUnits().stream()
-                    .min(Comparator.comparingDouble(a -> a.getCurrentLocation().distance(t)))
-                    .orElse(null);
+            List<RoomUnit> users = fleeCandidates(room);
+            RoomUnit target = nearest(users, currentPos.x, currentPos.y, false);
 
-            if (target == null) continue;
+            if (target == null || manhattan(target, currentPos.x, currentPos.y) <= 1) continue;
 
-            List<int[]> steps = stepsAway(currentPos.x, currentPos.y, target.getX(), target.getY());
-            if (steps.isEmpty()) continue;
+            RoomUnit inLine = nearest(users, currentPos.x, currentPos.y, true);
+            List<int[]> steps = fleeSteps(
+                    currentPos.x,
+                    currentPos.y,
+                    inLine != null ? new int[] {inLine.getX(), inLine.getY()} : null,
+                    target.getX(),
+                    target.getY());
 
             boolean moved = false;
             for (int[] step : steps) {

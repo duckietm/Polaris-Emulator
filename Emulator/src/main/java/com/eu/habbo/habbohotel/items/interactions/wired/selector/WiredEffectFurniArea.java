@@ -47,7 +47,7 @@ public class WiredEffectFurniArea extends InteractionWiredEffect implements Wire
         ctx.targets()
                 .setItems(this.applySelectorModifiers(
                         furniInArea,
-                        this.getSelectableFloorItems(room, ctx),
+                        this.getSelectableItems(room, ctx),
                         ctx.targets().items(),
                         this.filterExisting,
                         this.invert));
@@ -77,14 +77,11 @@ public class WiredEffectFurniArea extends InteractionWiredEffect implements Wire
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        if (params == null || params.length < 4) {
-            throw new WiredSaveException("wf_slc_furni_area requires 4 int params: rootX, rootY, width, height");
-        }
-
-        this.rootX = params[0];
-        this.rootY = params[1];
-        this.areaWidth = params[2];
-        this.areaHeight = params[3];
+        // AIR clamps each value to 0..64 and fills a value the save left out, instead of refusing it.
+        this.rootX = WiredSelectorPayloadGuard.areaValue(params, 0);
+        this.rootY = WiredSelectorPayloadGuard.areaValue(params, 1);
+        this.areaWidth = WiredSelectorPayloadGuard.areaValue(params, 2);
+        this.areaHeight = WiredSelectorPayloadGuard.areaValue(params, 3);
         this.filterExisting = settings.isSelectorFilter();
         this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());

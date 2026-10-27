@@ -58,12 +58,14 @@ class WiredVariableCatalogFlagsTest {
     }
 
     @Test
-    void aContextVariableHasNoStoredTimes() {
+    void aContextVariableIsNotInterceptableAndHasACreationTime() {
+        // AIR: a context box's changes cannot be intercepted; it has a creation time, and a last update when it has
+        // a value.
         Block block =
                 block(box("ctx:7", RoomWiredVariableCatalog.TYPE_CREATED, RoomWiredVariableCatalog.TARGET_CONTEXT));
 
         assertEquals(-20, block.target);
-        assertArrayEquals(new boolean[] {false, true, true, true, true, false, false, false, false}, block.flags);
+        assertArrayEquals(new boolean[] {false, true, true, true, false, false, false, true, true}, block.flags);
     }
 
     @Test

@@ -38,6 +38,30 @@ public final class WiredUserMovementHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredUserMovementHelper.class);
     private static final ThreadLocal<Set<Integer>> SUPPRESSED_STATUS_ROOM_UNIT_IDS = new ThreadLocal<>();
+    /** A Move/Rotate User box is running: its moves and turns join the firing's one WiredMovements. */
+    private static final ThreadLocal<Boolean> JOIN_FIRING = new ThreadLocal<>();
+
+    /**
+     * Runs a Move/Rotate User box: all its users' moves, then their turns, go out in the firing's one WiredMovements
+     * with its furni moves (observed on AIR). Other avatar moves keep their own packet.
+     */
+    public static void joiningFiringMovements(Runnable box) {
+        Boolean previous = JOIN_FIRING.get();
+        JOIN_FIRING.set(Boolean.TRUE);
+        try {
+            box.run();
+        } finally {
+            if (previous == null) JOIN_FIRING.remove();
+            else JOIN_FIRING.set(previous);
+        }
+    }
+
+    private static void sendMovements(Room room, List<WiredMovementsComposer.MovementData> movements) {
+        if (Boolean.TRUE.equals(JOIN_FIRING.get()) && WiredMoveCarryHelper.collectIfOpen(movements)) {
+            return;
+        }
+        room.sendComposer(new WiredMovementsComposer(movements).compose());
+    }
     // Keyed by the unit itself: a unit id is only unique inside its room, so two rooms would share an integer key.
     private static final Map<RoomUnit, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL =
             Collections.synchronizedMap(new WeakHashMap<>());
@@ -268,7 +292,7 @@ public final class WiredUserMovementHelper {
             WiredMoveStyleHelper.sendUnitsNow(
                     room, List.of(roomUnit.getId()), WiredMoveStyleHelper.STYLE_JUMP, jumpStrength);
         }
-        room.sendComposer(new WiredMovementsComposer(movements).compose());
+        sendMovements(room, movements);
 
         scheduleTileCallbacks(room, roomUnit, oldLocation, targetTile, oldTopItem, newTopItem, animationDuration);
         scheduleFinalStatusSync(room, roomUnit, targetTile, animationDuration);
@@ -426,12 +450,19 @@ public final class WiredUserMovementHelper {
         RoomUserRotation resolvedBodyRotation = bodyRotation == null ? roomUnit.getBodyRotation() : bodyRotation;
         RoomUserRotation resolvedHeadRotation = headRotation == null ? roomUnit.getHeadRotation() : headRotation;
 
-        roomUnit.setBodyRotation(resolvedBodyRotation);
-        roomUnit.setHeadRotation(resolvedHeadRotation);
-        room.sendComposer(
-                new WiredMovementsComposer(Collections.singletonList(WiredMovementsComposer.userDirectionUpdate(
-                                roomUnit.getId(), resolvedHeadRotation.getValue(), resolvedBodyRotation.getValue())))
-                        .compose());
+        // A box turning a user who lies down or sits on a seat sends the turn, but the user keeps the furni's
+        // direction (observed on AIR); one sitting on the floor turns.
+        boolean keepsSeatDirection = Boolean.TRUE.equals(JOIN_FIRING.get())
+                && (roomUnit.hasStatus(RoomUnitStatus.LAY)
+                        || (roomUnit.hasStatus(RoomUnitStatus.SIT) && !roomUnit.cmdSit));
+        if (!keepsSeatDirection) {
+            roomUnit.setBodyRotation(resolvedBodyRotation);
+            roomUnit.setHeadRotation(resolvedHeadRotation);
+        }
+        sendMovements(
+                room,
+                Collections.singletonList(WiredMovementsComposer.userDirectionUpdate(
+                        roomUnit.getId(), resolvedHeadRotation.getValue(), resolvedBodyRotation.getValue())));
         return true;
     }
 
@@ -472,6 +503,7 @@ public final class WiredUserMovementHelper {
     }
 
     static void clearThreadLocalsForCurrentThread() {
+        JOIN_FIRING.remove();
         SUPPRESSED_STATUS_ROOM_UNIT_IDS.remove();
     }
 

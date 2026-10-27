@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 
 public class WiredGame extends Game {
     public static final int RED_EFFECT_ID = 223;
@@ -39,14 +40,19 @@ public class WiredGame extends Game {
 
     @Override
     public boolean addHabbo(Habbo habbo, GameTeamColors teamColor) {
-        this.room.giveEffect(habbo, this.getEffectId(teamColor), -1);
+        // A user frozen by wired keeps the freeze effect; unfreezing shows the team's (AIR).
+        if (!WiredFreezeUtil.isFrozen(habbo.getRoomUnit())) {
+            this.room.giveEffect(habbo, this.getEffectId(teamColor), -1);
+        }
         return super.addHabbo(habbo, teamColor);
     }
 
     @Override
     public void removeHabbo(Habbo habbo) {
         super.removeHabbo(habbo);
-        this.room.giveEffect(habbo, 0, -1);
+        if (!WiredFreezeUtil.isFrozen(habbo.getRoomUnit())) {
+            this.room.giveEffect(habbo, 0, -1);
+        }
     }
 
     @Override

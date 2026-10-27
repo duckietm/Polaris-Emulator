@@ -227,6 +227,7 @@ public final class WiredEvent {
     private final List<RoomUnit> forwardedUsers;
     private final List<HabboItem> forwardedItems;
     private final Set<Integer> signalPath; // the antennas a signal chain already went through
+    private final Map<Integer, Integer> signalChain; // runs per receiving stack in this signal chain, shared
     private final boolean stackCall; // raised by a call-stacks box rather than by the stack's trigger
     private final int variableTargetType;
     private final int variableDefinitionItemId;
@@ -271,6 +272,7 @@ public final class WiredEvent {
         this.forwardedUsers = builder.forwardedUsers;
         this.forwardedItems = builder.forwardedItems;
         this.signalPath = builder.signalPath;
+        this.signalChain = builder.signalChain;
         this.stackCall = builder.stackCall;
         this.variableTargetType = builder.variableTargetType;
         this.variableDefinitionItemId = builder.variableDefinitionItemId;
@@ -493,6 +495,14 @@ public final class WiredEvent {
         return signalPath;
     }
 
+    /**
+     * How often each receiving stack ran in the signal chain this event belongs to, shared by every event of the
+     * chain (a delayed Send Signal starts a new one); null for an event that is not a signal.
+     */
+    public Map<Integer, Integer> getSignalChain() {
+        return signalChain;
+    }
+
     /** Whether a call-stacks box raised this, so the called stack runs without its trigger. */
     public boolean isStackCall() {
         return stackCall;
@@ -611,6 +621,7 @@ public final class WiredEvent {
         private List<RoomUnit> forwardedUsers = List.of();
         private List<HabboItem> forwardedItems = List.of();
         private Set<Integer> signalPath = Set.of();
+        private Map<Integer, Integer> signalChain;
         private boolean stackCall;
         private int variableTargetType = -1;
         private int variableDefinitionItemId;
@@ -713,6 +724,12 @@ public final class WiredEvent {
         /** The furni a signal or a stack call passes on (nulls are skipped). */
         public Builder forwardedItems(Collection<HabboItem> items) {
             this.forwardedItems = immutableWithoutNulls(items);
+            return this;
+        }
+
+        /** The run counts of the signal chain this event continues; the map is shared, not copied. */
+        public Builder signalChain(Map<Integer, Integer> chain) {
+            this.signalChain = chain;
             return this;
         }
 

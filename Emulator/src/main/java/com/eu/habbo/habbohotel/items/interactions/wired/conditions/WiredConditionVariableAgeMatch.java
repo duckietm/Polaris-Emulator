@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
-import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -154,7 +153,9 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         this.fromVariable = (params.length > 6) && params[6] == 1 && this.durationVariableId > 0;
         if (!this.fromVariable) this.durationVariableId = 0;
 
-        if (!this.isValidSource(room)) {
+        // A box with no variable, or one no box defines, saves too and then always fails (observed on AIR). A room
+        // variable has no creation time: only its last update can be compared.
+        if (this.targetType == TARGET_ROOM && this.compareValue != COMPARE_VALUE_UPDATED) {
             return false;
         }
 
@@ -409,21 +410,6 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         return switch (this.comparison) {
             case COMPARISON_HIGHER_THAN -> ageMs > thresholdMs;
             default -> ageMs < thresholdMs;
-        };
-    }
-
-    private boolean isValidSource(Room room) {
-        if (room == null || !isCustomVariableToken(this.variableToken)) return false;
-
-        return switch (this.targetType) {
-            case TARGET_FURNI -> room.getFurniVariableManager().getDefinitionInfo(this.variableItemId) != null;
-            case TARGET_CONTEXT -> WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId) != null;
-            case TARGET_ROOM -> {
-                WiredVariableDefinitionInfo definition =
-                        room.getRoomVariableManager().getDefinitionInfo(this.variableItemId);
-                yield this.compareValue == COMPARE_VALUE_UPDATED && definition != null;
-            }
-            default -> room.getUserVariableManager().getDefinitionInfo(this.variableItemId) != null;
         };
     }
 

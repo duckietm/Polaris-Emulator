@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
@@ -43,11 +44,15 @@ import java.util.Set;
  * as a typed value and its chests as the chest picks.
  */
 public class WiredConditionChestHasItemType extends InteractionWiredCondition
-        implements WiredOfficialSources, WiredOfficialSecondaryPicks, WiredOfficialVariableIds {
+        implements WiredOfficialSources,
+                WiredOfficialSecondaryPicks,
+                WiredOfficialVariableIds,
+                WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.CHEST_HAS_ITEM_TYPE;
 
     static final int DEFAULT_TYPE_SOURCE = WiredSourceUtil.SOURCE_SELECTED;
     static final int DEFAULT_CHEST_SOURCE = WiredVariableOperand.SOURCE_SECONDARY_SELECTED;
+    private int quantifier = 0;
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
 
     private final List<Integer> typeItemIds = new ArrayList<>();
@@ -84,22 +89,17 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
         }
 
         int total = 0;
-        boolean anyChest = false;
         List<InteractionWiredChest> seen = new ArrayList<>();
         for (HabboItem item : this.resolve(ctx, room, this.chestSource, this.chestIds)) {
             if (!(item instanceof InteractionWiredChest chest) || seen.contains(chest)) continue;
             seen.add(chest);
-            anyChest = true;
             // Wired only reaches a chest whose owner upgraded it to answer wired.
             if (!chest.answersWired()) continue;
             for (int baseId : types) {
                 total += chest.getContents().count(ChestStorage.KIND_FURNI, baseId);
             }
         }
-        // With no chest to check Habbo passes, whatever the comparison.
-        if (!anyChest) {
-            return true;
-        }
+        // With no chest AIR counts 0 and still compares ("equal to 0" passes).
         Integer threshold = this.resolveAmount(ctx, room);
         return threshold != null && WiredComparison.compare(total, threshold, this.comparison);
     }
@@ -138,6 +138,7 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
     @Override
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
+        this.quantifier = WiredConditionChestHasItems.normalizeChestQuantifier(settings.getQuantifierCode());
         this.amount = (params.length > 0) ? Math.max(0, params[0]) : 1;
         this.amountMode = ((params.length > 1) && params[1] == WiredConditionChestHasItems.AMOUNT_VARIABLE)
                 ? WiredConditionChestHasItems.AMOUNT_VARIABLE
@@ -220,6 +221,7 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
         data.amountMode = this.amountMode;
         data.valueTarget = this.valueTarget;
         data.amountVariableToken = this.amountVariableToken;
+        data.quantifier = this.quantifier;
         return WiredManager.getGson().toJson(data);
     }
 
@@ -235,6 +237,8 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
 
         this.baseItemId = Math.max(0, data.baseItemId);
         this.comparison = WiredComparison.normalize(data.comparison);
+        this.quantifier =
+                (data.quantifier != null) ? WiredConditionChestHasItems.normalizeChestQuantifier(data.quantifier) : 0;
         if (data.chestIds != null) this.chestIds.addAll(data.chestIds);
         if (data.typeItemIds != null) this.typeItemIds.addAll(data.typeItemIds);
         if (data.furniSource != null) this.typeSource = normalizeSource(data.furniSource, DEFAULT_TYPE_SOURCE);
@@ -310,6 +314,12 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
         this.amountMode = WiredConditionChestHasItems.AMOUNT_CONSTANT;
         this.valueTarget = WiredValueVariable.TARGET_GLOBAL;
         this.amountVariableToken = "";
+        this.quantifier = 0;
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
     }
 
     int getLegacyBaseItemId() {
@@ -349,5 +359,6 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition
         Integer amountMode;
         Integer valueTarget;
         String amountVariableToken;
+        Integer quantifier;
     }
 }

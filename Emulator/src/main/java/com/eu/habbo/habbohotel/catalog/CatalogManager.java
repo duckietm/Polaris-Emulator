@@ -936,6 +936,14 @@ public class CatalogManager {
             }
         }
 
+        // A wallet that cannot take the voucher's value would refuse the grant after the code was spent.
+        if (!fitsWallet(habbo.getHabboInfo().getCredits(), voucher.credits)
+                || (voucher.points > 0
+                        && !fitsWallet(habbo.getHabboInfo().getCurrencyAmount(voucher.pointsType), voucher.points))) {
+            client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+            return;
+        }
+
         Voucher.ClaimResult claimResult =
                 voucher.claimForUser(habbo.getHabboInfo().getId());
         switch (claimResult) {
@@ -970,6 +978,11 @@ public class CatalogManager {
         }
 
         client.sendResponse(new RedeemVoucherOKComposer());
+    }
+
+    /** Whether a balance can take {@code amount} more without overflowing. */
+    static boolean fitsWallet(int balance, int amount) {
+        return amount <= 0 || (long) balance + amount <= Integer.MAX_VALUE;
     }
 
     public boolean deleteVoucher(Voucher voucher) {

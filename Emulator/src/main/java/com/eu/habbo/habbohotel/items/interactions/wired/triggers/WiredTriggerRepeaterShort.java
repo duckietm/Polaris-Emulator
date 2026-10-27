@@ -104,8 +104,9 @@ public class WiredTriggerRepeaterShort extends WiredTriggerRepeater {
     public void onWiredTick(Room room, long tickCount, int tickIntervalMs) {
         long elapsedMs = tickCount * tickIntervalMs;
 
-        if (elapsedMs % this.repeatTime == 0) {
-            long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
+        if (this.phase.shouldFire(
+                elapsedMs % this.repeatTime == 0, room.getCycleTimestamp(), currentTime, this.repeatTime)) {
             if (this.getRoomId() != 0
                     && room.isLoaded()
                     && WiredManager.isTriggerExecutionAllowed(room, this, currentTime)) {

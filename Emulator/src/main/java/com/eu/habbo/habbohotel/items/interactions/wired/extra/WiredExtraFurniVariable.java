@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
@@ -120,6 +121,12 @@ public class WiredExtraFurniVariable extends InteractionWiredExtra
         message.appendInt(CODE);
         message.appendInt(0);
         message.appendInt(0);
+        WiredVariableEditorContext.append(
+                message,
+                room,
+                RoomWiredVariableCatalog.TARGET_FURNI,
+                this.getId(),
+                WiredVariableEditorContext.CONTEXT_FURNI_VARIABLE_INFO_AND_HOLDERS);
     }
 
     @Override

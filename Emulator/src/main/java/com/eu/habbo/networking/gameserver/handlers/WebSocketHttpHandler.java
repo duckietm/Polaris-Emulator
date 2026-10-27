@@ -1,8 +1,10 @@
 package com.eu.habbo.networking.gameserver.handlers;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.auth.AuthHttpUtil;
+import com.eu.habbo.networking.gameserver.auth.GameConnectionLimits;
 import com.eu.habbo.networking.gameserver.e2e.E2eSessionProbe;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -16,6 +18,7 @@ import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.ReferenceCountUtil;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,16 +47,17 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private boolean handleHttpRequest(ChannelHandlerContext ctx, HttpMessage req) {
+        ConfigurationManager config = Emulator.getConfig();
         if (req instanceof FullHttpRequest fullRequest
                 && E2eSessionProbe.tryHandle(
                         fullRequest,
                         ctx,
                         Emulator.getGameServer().getGameClientManager(),
-                        Emulator.getConfig().getBoolean("e2e.enabled", false))) {
+                        config.getBoolean("e2e.enabled", false))) {
             return false;
         }
 
-        captureForwardedIp(ctx, req);
+        captureForwardedIp(ctx, req, config);
 
         if (!isWebSocketUpgrade(req)) {
             return true;
@@ -68,7 +72,7 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
         } catch (Exception ignored) {
         }
 
-        String whitelist = Emulator.getConfig().getValue("ws.whitelist", "localhost");
+        String whitelist = config.getValue("ws.whitelist", "localhost");
         if (!isWhitelisted(origin, whitelist.split(","))) {
             LOGGER.warn(
                     "WebSocket upgrade rejected — origin '{}' not in ws.whitelist='{}'",
@@ -84,11 +88,42 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
             return false;
         }
 
+        return admitVisitor(ctx, GameConnectionLimits.Settings.from(config));
+    }
+
+    /**
+     * Counts the game connection against its visitor, who may hold only so many open at once. The count is
+     * released when the channel closes.
+     */
+    private static boolean admitVisitor(ChannelHandlerContext ctx, GameConnectionLimits.Settings settings) {
+        String peerIp =
+                ctx.channel().remoteAddress() instanceof InetSocketAddress address && address.getAddress() != null
+                        ? address.getAddress().getHostAddress()
+                        : null;
+        String visitor = GameConnectionLimits.visitorOf(
+                ctx.channel().attr(GameServerAttributes.WS_IP).get(), peerIp, AuthHttpUtil.isTrustedProxy(ctx));
+        GameConnectionLimits limits = GameConnectionLimits.shared();
+        if (!limits.tryOpen(visitor, settings)) {
+            LOGGER.warn(
+                    "WebSocket upgrade rejected - {} already holds {} game connections",
+                    visitor,
+                    settings.maxConnections());
+            FullHttpResponse response = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    Unpooled.wrappedBuffer("Too many connections".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            return false;
+        }
+        if (visitor != null) {
+            ctx.channel().attr(GameServerAttributes.VISITOR).set(visitor);
+            ctx.channel().closeFuture().addListener(future -> limits.close(visitor));
+        }
         return true;
     }
 
-    private static void captureForwardedIp(ChannelHandlerContext ctx, HttpMessage req) {
-        String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
+    private static void captureForwardedIp(ChannelHandlerContext ctx, HttpMessage req, ConfigurationManager config) {
+        String ipHeader = config.getValue("ws.ip.header", "");
         // Only honour the forwarded-IP header from a trusted reverse proxy,
         // otherwise the game-session IP (used for bans/rate-limits) is spoofable.
         // Read again for every request: a proxy reuses one connection for several clients, so an IP kept

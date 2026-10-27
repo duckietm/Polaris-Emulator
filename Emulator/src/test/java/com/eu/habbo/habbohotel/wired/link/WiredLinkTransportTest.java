@@ -103,9 +103,10 @@ class WiredLinkTransportTest {
         this.service.save(OWNER, 1, 100, this.networkId, false);
         this.service.save(OWNER, 2, 200, this.networkId, false);
 
-        assertEquals(1, this.transport.send(this.rooms.get(1), sender, WiredLinkPayload.message("a"), 2));
-        assertEquals(0, this.transport.send(this.rooms.get(1), sender, WiredLinkPayload.message("a"), 3));
-        assertEquals(List.of("2:201:3"), this.delivered);
+        // AIR: a receive-and-resend chain runs 10 times in all.
+        assertEquals(1, this.transport.send(this.rooms.get(1), sender, WiredLinkPayload.message("a"), 9));
+        assertEquals(0, this.transport.send(this.rooms.get(1), sender, WiredLinkPayload.message("a"), 10));
+        assertEquals(List.of("2:201:10"), this.delivered);
     }
 
     @Test

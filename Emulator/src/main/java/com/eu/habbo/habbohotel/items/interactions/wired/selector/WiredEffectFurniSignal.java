@@ -54,7 +54,7 @@ public class WiredEffectFurniSignal extends InteractionWiredEffect implements Wi
 
             result = this.applySelectorModifiers(
                     matched,
-                    this.getSelectableFloorItems(room, ctx),
+                    this.getSelectableItems(room, ctx),
                     ctx.targets().items(),
                     this.filterExisting,
                     this.invert);

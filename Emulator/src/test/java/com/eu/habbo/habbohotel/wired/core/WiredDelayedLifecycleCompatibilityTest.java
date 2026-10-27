@@ -81,7 +81,8 @@ class WiredDelayedLifecycleCompatibilityTest {
     }
 
     @Test
-    void emptyRoomDropsCapturedDelayedWork() {
+    void anEmptiedRoomStillRunsCapturedDelayedWork() {
+        // A delayed chain ends only when the room unloads, not when its users leave (observed on AIR).
         Room room = room(53, true, true);
         AtomicInteger executions = new AtomicInteger();
         WiredEngine engine = engine(room, delayedEffect(executions, false));
@@ -90,7 +91,7 @@ class WiredDelayedLifecycleCompatibilityTest {
         when(room.getHabbos()).thenReturn(List.of());
         scheduledTask().run();
 
-        assertEquals(0, executions.get());
+        assertEquals(1, executions.get());
         assertEquals(0, engine.getDiagnosticsSnapshot(room.getId()).getDelayedEventsPending());
     }
 

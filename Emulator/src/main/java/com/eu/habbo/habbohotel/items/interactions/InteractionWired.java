@@ -291,12 +291,17 @@ public abstract class InteractionWired extends InteractionDefault {
     public static WiredSettings readSettings(ClientMessage packet, SaveKind kind, int maximumStringLength) {
         int[] intParams = WiredInputGuard.readIntParams(packet);
         String stringParam = WiredInputGuard.readStringParam(packet, maximumStringLength);
+        int pickCount = peekCount(packet);
         int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
         WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);
 
         switch (kind) {
-            case ACTION -> settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
+            case ACTION -> {
+                int delay = packet.readInt();
+                settings.setRawDelay(delay);
+                settings.setDelay(WiredInputGuard.normalizeDelay(delay));
+            }
             case CONDITION -> settings.setQuantifierCode(packet.readInt());
             case SELECTOR -> {
                 settings.setSelectorFilter(packet.readBoolean());
@@ -308,7 +313,18 @@ public abstract class InteractionWired extends InteractionDefault {
         settings.setFurniSourceTypes(WiredInputGuard.readSourceTypes(packet));
         settings.setUserSourceTypes(WiredInputGuard.readSourceTypes(packet));
         settings.setVariableIds(WiredInputGuard.readVariableIds(packet));
+        int pickCount2 = peekCount(packet);
         settings.setFurniIds2(WiredInputGuard.readFurniIds(packet));
+        settings.setRawPickCounts(pickCount, Math.max(0, pickCount2));
         return settings;
+    }
+
+    /** The count a list starts with, as sent (repeats and dead ids included), without reading it. */
+    private static int peekCount(ClientMessage packet) {
+        if (packet == null || packet.getBuffer() == null || packet.getBuffer().readableBytes() < 4) {
+            return 0;
+        }
+
+        return packet.getBuffer().getInt(packet.getBuffer().readerIndex());
     }
 }

@@ -54,7 +54,7 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
             return false;
         }
 
-        if (((InteractionGameUpCounter) sourceItem).getCurrentTimeInMs() != this.getTargetTimeInMs()) {
+        if (((InteractionGameUpCounter) sourceItem).getCurrentTimeMs() != this.getTargetTimeInMs()) {
             return false;
         }
 

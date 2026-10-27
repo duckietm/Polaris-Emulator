@@ -75,7 +75,7 @@ class WiredConditionTimeDateTimezoneTest {
         ZonedDateTime west = ZonedDateTime.now(ZoneId.of(WEST));
         // Kiritimati and GMT-12 are a day (or more) apart: their days of the month differ.
         int day = east.getDayOfMonth();
-        int[] exactDay = {1, 0, 0, day, day, 0, 0, 0};
+        int[] exactDay = {1, 0, 127, day, day, 4095, 0, 0};
 
         WiredConditionMatchDate eastBox =
                 new WiredConditionMatchDate(5, 1, WiredConditionTestSupport.boxBase(), "", 0, 0);

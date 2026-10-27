@@ -229,8 +229,24 @@ public final class WiredEngine {
         // The box flashes of this dispatch go out when it ends, in the same batch as the chat or click that fired
         // it, not on the next room cycle.
         WiredBoxFlashes.openPass();
+        WiredMoveCarryHelper.beginMovementCollection(true);
         try {
             return this.eventDispatcher.dispatch(event, negateConditions);
+        } finally {
+            sendDispatchMovements(event);
+        }
+    }
+
+    /**
+     * Every stack one event fires shares one publication: one ObjectsDataUpdate with their furni states and flashes,
+     * then one WiredMovements, then their Show Message texts (observed on AIR WIN63-202610201032, both run orders).
+     */
+    private static void sendDispatchMovements(WiredEvent event) {
+        try {
+            ServerMessage movements = WiredMoveCarryHelper.finishMovementCollection();
+            if (movements != null && event != null && event.getRoom() != null) {
+                event.getRoom().sendComposer(movements);
+            }
         } finally {
             WiredBoxFlashes.closePass();
         }
@@ -251,10 +267,11 @@ public final class WiredEngine {
      */
     public boolean handleEventForSourceItem(WiredEvent event, int sourceItemId) {
         WiredBoxFlashes.openPass();
+        WiredMoveCarryHelper.beginMovementCollection(true);
         try {
             return this.eventDispatcher.dispatchForSourceItem(event, sourceItemId);
         } finally {
-            WiredBoxFlashes.closePass();
+            sendDispatchMovements(event);
         }
     }
 
@@ -556,6 +573,8 @@ public final class WiredEngine {
                 if (movementComposer != null) {
                     ctx.room().sendComposer(movementComposer);
                 }
+                // Show Message texts follow the flashes and the movements.
+                WiredBoxFlashes.sendAfterFlash();
             } finally {
                 // After the movement went out: the folded changes may fire other stacks.
                 fold.close();
@@ -826,6 +845,7 @@ public final class WiredEngine {
                 if (movementComposer != null) {
                     room.sendComposer(movementComposer);
                 }
+                WiredBoxFlashes.sendAfterFlash();
             } finally {
                 if (fold != null) {
                     fold.close();
@@ -1047,6 +1067,7 @@ public final class WiredEngine {
     public void clearRoomDiagnostics(int roomId) {
         this.executionGuard.clearRoomDiagnostics(roomId);
         WiredRoomTime.forgetRoom(roomId);
+        WiredDisablerPauses.forgetRoom(roomId);
     }
 
     /**

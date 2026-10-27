@@ -16,7 +16,9 @@ import com.eu.habbo.habbohotel.rooms.PendingRoomEntry;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomForwardGlow;
 import com.eu.habbo.habbohotel.rooms.RoomState;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -26,7 +28,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
+import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.threading.ThreadPooling;
+import com.eu.habbo.threading.runnables.RoomUnitTeleport;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -210,7 +214,15 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         }
 
         Destination destination = this.resolveDestination(ctx, room, environment, now);
-        if (destination == null || destination.roomId() == room.getId()) {
+        if (destination == null) {
+            return;
+        }
+
+        // A teleporter whose partner stands in this room: AIR moves the user onto the partner, no room switch.
+        if (destination.roomId() == room.getId()) {
+            if (destination.teleportItemId() > 0) {
+                this.toSameRoomPartner(room, candidates, destination.teleportItemId(), now);
+            }
             return;
         }
 
@@ -247,6 +259,48 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                     FORWARD_DELAY_MS);
             threading.run(() -> RoomForwardGlow.end(room, unit), GLOW_END_IF_STAYED_MS);
         }
+    }
+
+    private void toSameRoomPartner(Room room, List<Habbo> candidates, int partnerId, long now) {
+        ThreadPooling threading = WiredPlatform.threading();
+
+        for (Habbo habbo : candidates) {
+            if (!habbo.getHabboInfo().tryAcquireRoomForward(now, FORWARD_INTERVAL_MS)) {
+                continue;
+            }
+
+            RoomUnit unit = habbo.getRoomUnit();
+            RoomForwardGlow.show(room, unit);
+            Runnable land = () -> {
+                if (habbo.getHabboInfo().getCurrentRoom() == room) {
+                    landOnPartner(room, unit, room.getHabboItem(partnerId));
+                }
+            };
+
+            if (threading == null) {
+                land.run();
+                continue;
+            }
+
+            threading.run(land, FORWARD_DELAY_MS);
+            threading.run(() -> RoomForwardGlow.end(room, unit), GLOW_END_IF_STAYED_MS);
+        }
+    }
+
+    /** Puts the user on the partner's tile, whoever else stands there, facing the way the partner faces. */
+    static void landOnPartner(Room room, RoomUnit unit, HabboItem partner) {
+        if (room == null || unit == null || partner == null || room.getLayout() == null) {
+            return;
+        }
+
+        RoomTile tile = room.getLayout().getTile(partner.getX(), partner.getY());
+        if (tile == null) {
+            return;
+        }
+
+        new RoomUnitTeleport(unit, room, tile.x, tile.y, tile.getStackHeight(), unit.getEffectId()).run();
+        unit.setRotation(RoomUserRotation.fromValue(partner.getRotation()));
+        room.sendComposer(new RoomUserStatusComposer(unit).compose());
     }
 
     private static void forward(Habbo habbo, Room room, Room target, Destination destination, long now) {

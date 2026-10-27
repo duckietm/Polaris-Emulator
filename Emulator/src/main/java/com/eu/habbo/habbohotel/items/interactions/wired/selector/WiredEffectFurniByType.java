@@ -65,8 +65,10 @@ public class WiredEffectFurniByType extends InteractionWiredEffect implements Wi
             matchKeys.add(key);
         }
 
+        // AIR matches floor and wall furni alike: a picked poster selects every poster of its type.
         Set<HabboItem> matched = new LinkedHashSet<>();
-        room.getFloorItems().forEach(item -> {
+        java.util.function.Consumer<HabboItem> match = item -> {
+            if (item == null || item.getBaseItem() == null) return;
             if (!includeWiredItems && item instanceof InteractionWired) return;
             String key = matchState
                     ? item.getBaseItem().getId() + ":" + item.getExtradata()
@@ -74,10 +76,12 @@ public class WiredEffectFurniByType extends InteractionWiredEffect implements Wi
             if (matchKeys.contains(key)) {
                 matched.add(item);
             }
-        });
+        };
+        room.getFloorItems().forEach(match);
+        room.getWallItems().forEach(match);
 
         Set<HabboItem> result = this.applySelectorModifiers(
-                matched, this.getSelectableFloorItems(room, ctx), ctx.targets().items(), filterExisting, invert);
+                matched, this.getSelectableItems(room, ctx), ctx.targets().items(), filterExisting, invert);
         ctx.targets().setItems(result);
     }
 

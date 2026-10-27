@@ -44,7 +44,7 @@ class WiredTextPlaceholderContextTest {
 
         WiredTextPlaceholderContext.Names names = WiredTextPlaceholderContext.namesFor(room, 1, 1);
 
-        assertEquals(List.of("trigger_text", "name"), names.placeholders());
+        assertEquals(List.of("name", "trigger_text"), names.placeholders());
         assertEquals(List.of("price"), names.capturers());
 
         ServerMessage out = new ServerMessage(1);
@@ -54,8 +54,8 @@ class WiredTextPlaceholderContextTest {
         assertEquals(1, in.readInt());
         assertEquals(7, in.readInt());
         assertEquals(2, in.readInt());
-        assertEquals("trigger_text", readString(in));
         assertEquals("name", readString(in));
+        assertEquals("trigger_text", readString(in));
         assertEquals(1, in.readInt());
         assertEquals("price", readString(in));
         assertEquals(0, in.readableBytes());

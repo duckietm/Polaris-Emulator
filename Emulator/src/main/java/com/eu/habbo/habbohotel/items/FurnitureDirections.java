@@ -125,6 +125,28 @@ public final class FurnitureDirections {
         return NONE;
     }
 
+    /**
+     * The directions a variable counts @rotation in: the furni's own, else 0, 2, 4, 6, or all eight for a furni
+     * that turns in eighths.
+     */
+    public int[] variableDirections(int rotations) {
+        if (this.isKnown()) return this.directions.clone();
+        return rotations >= 8 ? new int[] {0, 1, 2, 3, 4, 5, 6, 7} : new int[] {0, 2, 4, 6};
+    }
+
+    /**
+     * Where a rotation sits in {@code directions}: its index, or for a rotation the furni lacks the first direction
+     * at or after it, wrapping to 0 (observed on AIR: ktchn_fridge, directions 2 and 4, facing 4 reads 1).
+     */
+    public static int indexOf(int[] directions, int rotation) {
+        int index = Arrays.binarySearch(directions, rotation);
+        if (index < 0) {
+            index = -index - 1;
+            if (index >= directions.length) index = 0;
+        }
+        return index;
+    }
+
     /** True when the asset listed directions; false means "use the old rule". */
     public boolean isKnown() {
         return this.directions.length > 0;

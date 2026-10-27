@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
@@ -48,16 +49,22 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
     }
 
     @Override
-    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] intParams = settings.getIntParams();
         String[] stringData = splitStringData(settings.getStringParam());
+        boolean multiple = intParams.length > 0 && intParams[0] != 0;
+        // AIR refuses an empty name too, also on the box's first frame.
+        String refusal = WiredPlaceholderNameRules.refusal(stringData[0], multiple, stringData[1]);
+        if (refusal != null) {
+            throw new WiredSaveException(refusal);
+        }
 
-        this.placeholderType = (intParams.length > 0 && intParams[0] == 1) ? TYPE_MULTIPLE : TYPE_SINGLE;
+        this.placeholderType = multiple ? TYPE_MULTIPLE : TYPE_SINGLE;
         this.userSource = normalizeUserSource(
                 settings.getUserSourceTypes().length > 0
                         ? settings.getUserSourceTypes()[0]
                         : WiredSourceUtil.SOURCE_TRIGGER);
-        this.placeholderName = normalizePlaceholderName(stringData[0]);
+        this.placeholderName = WiredPlaceholderNameRules.storedName(stringData[0]);
         this.delimiter = normalizeDelimiter(stringData[1], MAX_DELIMITER_LENGTH);
 
         return true;

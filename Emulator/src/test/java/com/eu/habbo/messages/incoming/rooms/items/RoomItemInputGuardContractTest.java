@@ -93,7 +93,8 @@ class RoomItemInputGuardContractTest {
         int count = source.indexOf("int count = this.packet.readInt()");
         int guard = source.indexOf("RoomItemInputGuard.isValidCustomValueCount(count)", count);
         int loop = source.indexOf("for (int i = 0; i < count / 2; i++)", guard);
-        int mutate = source.indexOf(".values.put(key, value)", loop);
+        int sanitize = source.indexOf("RoomBackgroundSettings.sanitize(", loop);
+        int mutate = source.indexOf(".values.putAll(received)", loop);
 
         assertTrue(
                 guard > count && guard < loop,
@@ -107,6 +108,7 @@ class RoomItemInputGuardContractTest {
                         "RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_VALUE_LENGTH)"),
                 "custom value values should be trimmed and capped");
         assertTrue(mutate > loop, "custom values should only mutate after bounded reads");
+        assertTrue(sanitize > loop && sanitize < mutate, "a room background is checked before it is stored");
     }
 
     @Test

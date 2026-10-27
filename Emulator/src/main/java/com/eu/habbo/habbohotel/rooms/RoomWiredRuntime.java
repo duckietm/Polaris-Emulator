@@ -6,8 +6,11 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,6 +25,11 @@ public final class RoomWiredRuntime {
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
     private final WiredBoxFlashes boxFlashes;
     private final WiredMessageBudget messageBudget = new WiredMessageBudget();
+    private final WiredSignalLoops signalLoops = new WiredSignalLoops();
+    /** One budget per receiving user; a unit is new on every room entry, so leaving ends it. */
+    private final Map<RoomUnit, WiredMessageBudget> userMessageBudgets =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     private final Set<Integer> movesFreely = ConcurrentHashMap.newKeySet();
     private final WiredHabbicons habbicons = new WiredHabbicons();
     private final AtomicInteger nextTemporaryItemId = new AtomicInteger(ItemManager.FIRST_TEMPORARY_ITEM_ID);
@@ -34,9 +42,37 @@ public final class RoomWiredRuntime {
         this.boxFlashes = new WiredBoxFlashes(room);
     }
 
+    private final AtomicLong lastTransactionFailureDialog = new AtomicLong(Long.MIN_VALUE / 2);
+
+    /**
+     * Whether the room's chest transaction failure dialog may show now: AIR shows it to the whole room at most once
+     * every 20 s, and a failure inside that window does not restart it.
+     */
+    public boolean tryTransactionFailureDialog(long now) {
+        long last = this.lastTransactionFailureDialog.get();
+        return now - last >= TRANSACTION_DIALOG_INTERVAL_MS
+                && this.lastTransactionFailureDialog.compareAndSet(last, now);
+    }
+
+    public static final long TRANSACTION_DIALOG_INTERVAL_MS = 20_000L;
+
+    /** How often each receiving stack ran in the current wired window (AIR's signal loop limit). */
+    public WiredSignalLoops getSignalLoops() {
+        return this.signalLoops;
+    }
+
     /** The room's Show Message budget. */
     public WiredMessageBudget getMessageBudget() {
         return this.messageBudget;
+    }
+
+    /** The Show Message budget of one receiving user, as AIR keeps it. */
+    public WiredMessageBudget getMessageBudget(RoomUnit receiver) {
+        if (receiver == null) {
+            return this.messageBudget;
+        }
+
+        return this.userMessageBudgets.computeIfAbsent(receiver, unit -> new WiredMessageBudget());
     }
 
     /** The room's wired box flashes, sent in the pass that flipped them (the room cycle sends what is left). */

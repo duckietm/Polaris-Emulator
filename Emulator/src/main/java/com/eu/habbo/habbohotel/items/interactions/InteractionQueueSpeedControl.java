@@ -20,6 +20,8 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
     private transient volatile int animationRevision = 0;
     private transient volatile int animationRoomId = 0;
     private transient volatile int animationModeState = Integer.MIN_VALUE;
+    /** The mode the rollers step at; {@code MIN_VALUE} follows the shown mode. Only a click changes it. */
+    private transient volatile int rollerModeState = Integer.MIN_VALUE;
 
     public InteractionQueueSpeedControl(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -103,13 +105,36 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
         }
     }
 
-    /** Moves to the next (or previous) speed mode and saves it. */
+    /** Moves to the next (or previous) speed mode and saves it; the rollers follow (a user's click). */
     public void stepMode(Room room, boolean forward) {
         if (room == null) {
             return;
         }
 
+        this.rollerModeState = Integer.MIN_VALUE;
         applyModeState(room, getNextModeState(this.getExtradata(), forward), true);
+    }
+
+    /**
+     * Toggle State on the controller, as AIR does: it shows the next mode group (frames restarting), but the
+     * rollers and the animation keep the step time of the mode a user last chose.
+     */
+    public void wiredStepMode(Room room, boolean forward) {
+        if (room == null) {
+            return;
+        }
+
+        if (this.rollerModeState == Integer.MIN_VALUE) {
+            this.rollerModeState = toModeState(this.getExtradata());
+        }
+
+        applyModeState(room, getNextModeState(this.getExtradata(), forward), true);
+    }
+
+    /** The mode state whose speed the rollers use. */
+    public int getRollerModeState() {
+        int held = this.rollerModeState;
+        return held == Integer.MIN_VALUE ? toModeState(this.getExtradata()) : held;
     }
 
     @Override
@@ -157,7 +182,7 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
 
         int revision = this.animationRevision;
         int nextFrame = modeState + 1;
-        long delay = toRollerIntervalMs(Integer.toString(modeState));
+        long delay = this.animationDelay(modeState);
 
         Emulator.getThreading().run(() -> this.animateNextFrame(room, modeState, nextFrame, revision), delay);
     }
@@ -178,9 +203,14 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
         room.updateItemState(this);
 
         int followingFrame = (frame >= maxFrame) ? modeState : (frame + 1);
-        long delay = toRollerIntervalMs(Integer.toString(modeState));
+        long delay = this.animationDelay(modeState);
 
         Emulator.getThreading().run(() -> this.animateNextFrame(room, modeState, followingFrame, revision), delay);
+    }
+
+    private long animationDelay(int modeState) {
+        int held = this.rollerModeState;
+        return toRollerIntervalMs(Integer.toString(held == Integer.MIN_VALUE ? modeState : held));
     }
 
     static int getNextModeState(String extradata, boolean forward) {

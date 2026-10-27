@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -26,13 +27,13 @@ import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -142,6 +143,9 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
                     RoomUserRotation.NORTH, RoomUserRotation.EAST, RoomUserRotation.SOUTH, RoomUserRotation.WEST
                 };
 
+                // Every user at this distance in line; AIR breaks a tie at random.
+                List<RoomUnit> ring = new ArrayList<>();
+
                 for (RoomUserRotation rot : rotations) {
                     RoomTile startTile = layout.getTile(item.getX(), item.getY());
 
@@ -152,16 +156,20 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
                     }
 
                     if (startTile != null && layout.tileExists(startTile.x, startTile.y)) {
-                        Collection<RoomUnit> roomUnitsAtTile = room.getRoomUnitsAt(startTile);
-                        if (roomUnitsAtTile.size() > 0) {
-                            target = roomUnitsAtTile.iterator().next();
-                            if (i == 0) { // i = 0 means right next to it
-                                collided = true;
-                                // As in Habbo, the collision runs in the pass of this chase.
-                                WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, target, item));
+                        for (RoomUnit unit : room.getRoomUnitsAt(startTile)) {
+                            if (unit != null && unit.getRoomUnitType() == RoomUnitType.USER) {
+                                ring.add(unit);
                             }
-                            break;
                         }
+                    }
+                }
+
+                if (!ring.isEmpty()) {
+                    target = ring.get(ThreadLocalRandom.current().nextInt(ring.size()));
+                    if (i == 0) { // i = 0 means right next to it
+                        collided = true;
+                        // As in Habbo, the collision runs in the pass of this chase.
+                        WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, target, item));
                     }
                 }
             }
@@ -282,9 +290,11 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
                     }
 
                     if (startTile != null && layout.tileExists(startTile.x, startTile.y)) {
-                        Collection<RoomUnit> roomUnitsAtTile = room.getRoomUnitsAt(startTile);
-                        if (!roomUnitsAtTile.isEmpty()) {
-                            target = roomUnitsAtTile.iterator().next();
+                        target = room.getRoomUnitsAt(startTile).stream()
+                                .filter(unit -> unit != null && unit.getRoomUnitType() == RoomUnitType.USER)
+                                .findFirst()
+                                .orElse(null);
+                        if (target != null) {
                             break;
                         }
                     }

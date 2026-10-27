@@ -11,6 +11,10 @@ public final class RoomQueueSpeedControlSupport {
 
     public static Integer getEffectiveRollerSpeed(Room room) {
         HabboItem controller = getControllerItem(room);
+        if (controller instanceof InteractionQueueSpeedControl speedControl) {
+            return InteractionQueueSpeedControl.toRollerSpeed(Integer.toString(speedControl.getRollerModeState()));
+        }
+
         return controller != null ? InteractionQueueSpeedControl.toRollerSpeed(controller.getExtradata()) : null;
     }
 

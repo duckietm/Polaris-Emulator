@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.wired.WiredSaveDroppedException;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -144,7 +145,8 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
         int team = settings.getIntParams()[2];
 
-        if (team < 1 || team > 4) throw new WiredSaveException("Team is invalid");
+        // AIR drops a save naming no team without an answer.
+        if (team < 1 || team > 4) throw new WiredSaveDroppedException("Team is invalid");
 
         int delay = settings.getDelay();
 

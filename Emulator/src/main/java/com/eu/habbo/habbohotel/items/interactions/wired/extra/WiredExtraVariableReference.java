@@ -80,6 +80,18 @@ public class WiredExtraVariableReference extends InteractionWiredExtra
             throw new WiredSaveException("wiredfurni.error.variables.reference.valid");
         }
 
+        // One reference per shared variable in a room: another box already linked to it is refused (AIR).
+        if (room.getRoomSpecialTypes() != null) {
+            for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+                if (extra instanceof WiredExtraVariableReference other
+                        && other.getId() != this.getId()
+                        && other.getSourceRoomId() == definition.getRoomId()
+                        && other.getSourceVariableItemId() == definition.getItemId()) {
+                    throw new WiredSaveException("wiredfurni.error.variables.reference.already_exists");
+                }
+            }
+        }
+
         this.variableName = normalizedName;
         this.sourceRoomId = definition.getRoomId();
         this.sourceRoomName = sanitizeLabel(definition.getRoomName());

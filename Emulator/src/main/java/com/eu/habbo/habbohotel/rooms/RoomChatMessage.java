@@ -3,6 +3,8 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.DatabaseLoggable;
 import com.eu.habbo.habbohotel.games.GamePlayer;
+import com.eu.habbo.habbohotel.games.battlebanzai.BattleBanzaiGame;
+import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -101,8 +103,8 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
 
     /**
      * The bubble a user's own talk, shout or whisper goes out in. A member of a Wired team speaks in the team's
-     * bubble (AIR styles 130 red, 131 blue, 132 yellow, 133 green), whatever style they picked. Banzai and Freeze
-     * teams keep the picked style. A client cannot ask for a team bubble itself.
+     * bubble (AIR styles 130 red, 131 blue, 132 yellow, 133 green), whatever style they picked; so does a member of a
+     * Battle Banzai or Freeze team, as on AIR. A client cannot ask for a team bubble itself.
      */
     static RoomChatMessageBubbles resolveSpeakerBubble(RoomChatMessageBubbles requested, Habbo speaker) {
         RoomChatMessageBubbles bubble = requested;
@@ -114,14 +116,15 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         return team != null ? team : bubble;
     }
 
-    /** The Wired team bubble of the speaker, or null when they are not in a coloured Wired team. */
+    /** The team bubble of the speaker, or null when they are not in a coloured Wired, Banzai or Freeze team. */
     static RoomChatMessageBubbles wiredTeamBubble(Habbo speaker) {
         if (speaker == null || speaker.getHabboInfo() == null) {
             return null;
         }
 
         HabboInfo info = speaker.getHabboInfo();
-        if (info.getCurrentGame() != WiredGame.class) {
+        Class<?> game = info.getCurrentGame();
+        if (game != WiredGame.class && game != BattleBanzaiGame.class && game != FreezeGame.class) {
             return null;
         }
 

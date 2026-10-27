@@ -6,7 +6,7 @@ import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.row;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -141,7 +141,7 @@ class WiredEffectSendSignalTest {
     }
 
     @Test
-    void aSignalChainReachesEachAntennaOnlyOnce() throws Exception {
+    void aSignalChainMayReachItsAntennaAgainAndSharesOneChainCount() throws Exception {
         Room room = mock(Room.class);
         RoomLayout layout = mock(RoomLayout.class);
         when(room.getLayout()).thenReturn(layout);
@@ -158,19 +158,19 @@ class WiredEffectSendSignalTest {
         };
         box.loadWiredData(row(stored(ANTENNA_TRIGGER)), room);
 
-        // A stack that is not a signal sends to the antenna; the signal names the antenna in its path.
+        // A stack that is not a signal starts a chain; the signal still names its antenna in its path.
         box.execute(signalContext(room, antenna, Set.of()));
         assertEquals(1, sent.size());
         assertEquals(Set.of(401), sent.get(0).getSignalPath());
 
-        // The receiving stack signalling its own antenna again, or a cycle back to it, is dropped.
-        box.execute(signalContext(room, antenna, Set.of(401)));
-        box.execute(signalContext(room, antenna, Set.of(405, 401)));
-        assertEquals(1, sent.size());
-
-        box.execute(signalContext(room, antenna, Set.of(405)));
+        // AIR: the receiving stack signalling its own antenna again goes through (the loop limit stops loops),
+        // and the new signal carries the same chain count.
+        WiredEvent first = sent.get(0);
+        box.execute(new WiredContext(first, null, mock(WiredServices.class), new WiredState(20)));
         assertEquals(2, sent.size());
-        assertTrue(sent.get(1).getSignalPath().containsAll(Set.of(405, 401)));
+        assertSame(first.getSignalChain(), sent.get(1).getSignalChain());
+        // A hop adds no call depth.
+        assertEquals(first.getCallStackDepth(), sent.get(1).getCallStackDepth());
     }
 
     private static WiredContext signalContext(Room room, HabboItem antenna, Set<Integer> path) {

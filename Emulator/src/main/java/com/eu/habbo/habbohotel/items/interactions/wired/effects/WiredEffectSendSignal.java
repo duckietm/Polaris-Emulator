@@ -28,13 +28,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,14 +131,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                     .collect(Collectors.toList());
         }
 
-        // A signal chain reaches each antenna once: a signal to an antenna the chain already went
-        // through (its own, or one earlier in a cycle) is dropped, as in Habbo.
-        Set<Integer> signalPath = ctx.event().getSignalPath();
-        if (!signalPath.isEmpty()) {
-            resolvedAntennas = resolvedAntennas.stream()
-                    .filter(antenna -> !signalPath.contains(antenna.getId()))
-                    .collect(Collectors.toList());
-        }
+        // A signal may reach an antenna its chain already went through: AIR stops loops per receiving stack
+        // instead (100 runs per 500 ms window and per chain, WiredSignalLoops).
 
         if (resolvedAntennas.isEmpty()) {
             LOGGER.debug(
@@ -153,24 +149,16 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
         List<HabboItem> forwardedFurni =
                 capped(WiredSourceUtil.resolveItemsRaw(ctx, this.furniForward, this.forwardItems));
 
+        // AIR: split per user over no users, or per furni over no furni, sends nothing; split users go out in a new
+        // random order every firing.
+        if ((signalPerUser && forwardedUsers.isEmpty()) || (signalPerFurni && forwardedFurni.isEmpty())) {
+            return;
+        }
+
         List<RoomUnit> usersToSend;
         if (signalPerUser) {
-            LinkedHashMap<Integer, RoomUnit> mergedUsers = new LinkedHashMap<>();
-
-            if (triggeringUser != null) {
-                mergedUsers.put(triggeringUser.getId(), triggeringUser);
-            }
-
-            for (RoomUnit forwardedUser : forwardedUsers) {
-                if (forwardedUser == null) {
-                    continue;
-                }
-
-                mergedUsers.put(forwardedUser.getId(), forwardedUser);
-            }
-
-            usersToSend =
-                    mergedUsers.isEmpty() ? Collections.singletonList(null) : new ArrayList<>(mergedUsers.values());
+            usersToSend = new ArrayList<>(forwardedUsers);
+            Collections.shuffle(usersToSend, ThreadLocalRandom.current());
         } else {
             usersToSend = Collections.singletonList(triggeringUser);
         }
@@ -188,7 +176,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
             furniToSend = Collections.singletonList(forwardedFurni.get(0));
         }
 
-        int nextDepth = currentDepth + 1;
+        // A hop adds no call depth (AIR has no signal depth limit; the loop limit stops loops).
+        int nextDepth = currentDepth;
+        // A delayed Send Signal starts a new chain, so a delayed loop keeps going.
+        Map<Integer, Integer> chain = (this.getDelay() > 0 || ctx.event().getSignalChain() == null)
+                ? new HashMap<>()
+                : ctx.event().getSignalChain();
         int signalUserCount = signalPerUser
                 ? (int) usersToSend.stream().filter(Objects::nonNull).count()
                 : (!forwardedUsers.isEmpty() ? forwardedUsers.size() : (triggeringUser != null ? 1 : 0));
@@ -232,7 +225,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                             furniCarried,
                             signalUserCount,
                             signalFurniCount,
-                            nextDepth);
+                            nextDepth,
+                            chain);
                 }
             }
         }
@@ -257,7 +251,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
             List<HabboItem> furniCarried,
             int signalUserCount,
             int signalFurniCount,
-            int depth) {
+            int depth,
+            Map<Integer, Integer> chain) {
         if (antenna == null) return;
         RoomTile tile = room.getLayout().getTile(antenna.getX(), antenna.getY());
         if (tile == null) return;
@@ -291,6 +286,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 .contextVariableScope(ctx.contextVariables())
                 .carriedPlaceholders(WiredTextPlaceholderUtil.carriedPlaceholders(ctx))
                 .signalPath(withAntenna(ctx.event().getSignalPath(), signalChannel))
+                .signalChain(chain)
                 .triggeredByEffect(true);
 
         if (actor != null) builder.actor(actor);

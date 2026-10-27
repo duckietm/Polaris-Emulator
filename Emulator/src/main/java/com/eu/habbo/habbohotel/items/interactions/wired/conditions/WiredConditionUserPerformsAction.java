@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredUserActionType;
+import com.eu.habbo.habbohotel.wired.core.WiredActionMemory;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredQuantifier;
@@ -19,10 +20,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class WiredConditionUserPerformsAction extends InteractionWiredCondition implements WiredOfficialQuantifier {
-    private static final String CACHE_LAST_ACTION_ID = "wired.last_user_action.id";
-    private static final String CACHE_LAST_ACTION_PARAMETER = "wired.last_user_action.parameter";
-    private static final String CACHE_LAST_ACTION_TIMESTAMP = "wired.last_user_action.timestamp";
-    private static final long TRANSIENT_ACTION_WINDOW_MS = 5_000L;
     static final int OFFICIAL_ACTION_IDS = 2;
     protected static final int DEFAULT_ACTION = WiredUserActionType.WAVE;
     protected static final int QUANTIFIER_ALL = 0;
@@ -233,8 +230,12 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
                 return roomUnit.hasStatus(RoomUnitStatus.SIT);
             case WiredUserActionType.LAY:
                 return roomUnit.hasStatus(RoomUnitStatus.LAY);
-            case WiredUserActionType.RELAX:
-                return roomUnit.isIdle();
+            case WiredUserActionType.STAND:
+                return !roomUnit.hasStatus(RoomUnitStatus.SIT) && !roomUnit.hasStatus(RoomUnitStatus.LAY);
+            case WiredUserActionType.AWAKE:
+                // AIR's sleep lasts 2 s: awake unless the avatar fell asleep in the last 2 s.
+                return !WiredActionMemory.recentExpression(
+                        roomUnit, WiredUserActionType.RELAX, System.currentTimeMillis());
             case WiredUserActionType.SIGN:
                 return this.matchesSignState(roomUnit);
             case WiredUserActionType.DANCE:
@@ -244,25 +245,15 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         }
     }
 
+    /**
+     * AIR sees a wave, respect or sleep for 2 s after it; other actions only in their own event or by the
+     * avatar's current state.
+     */
     protected boolean matchesRecentAction(RoomUnit roomUnit) {
-        Object actionValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_ID);
-        Object parameterValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_PARAMETER);
-        Object timestampValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_TIMESTAMP);
-
-        if (!(actionValue instanceof Integer) || !(timestampValue instanceof Long)) {
-            return false;
-        }
-
-        long timestamp = (Long) timestampValue;
-        if (!WiredUserActionInputGuard.isRecentTimestamp(
-                timestamp, System.currentTimeMillis(), TRANSIENT_ACTION_WINDOW_MS)) {
-            return false;
-        }
-
-        int actionId = (Integer) actionValue;
-        int parameter = (parameterValue instanceof Integer) ? (Integer) parameterValue : -1;
-
-        return this.matchesConfiguredAction(actionId, parameter);
+        return (this.selectedAction == WiredUserActionType.WAVE
+                        || this.selectedAction == WiredUserActionType.RESPECT
+                        || this.selectedAction == WiredUserActionType.RELAX)
+                && WiredActionMemory.recentExpression(roomUnit, this.selectedAction, System.currentTimeMillis());
     }
 
     protected boolean matchesConfiguredAction(int actionId, int actionParameter) {

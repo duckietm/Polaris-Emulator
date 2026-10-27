@@ -9,9 +9,12 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Which chests the two give-from-chest boxes reach, shared by both.
@@ -103,6 +106,15 @@ final class WiredChestTargets {
             Habbo habbo = room.getHabbo(unit);
             ChestTransactionFailures.send(habbo, ChestTransactionFailures.NO_OR_LOCKED_CHESTS);
         });
+
+        // AIR also shows the whole room its transaction failure dialog, at most once every 20 s.
+        if (room.getWiredRuntime() != null
+                && room.getWiredRuntime().tryTransactionFailureDialog(System.currentTimeMillis())) {
+            Map<String, String> keys = new HashMap<>();
+            keys.put("image", "${image.library.url}album1584/WIRD2.png");
+            keys.put("message", "${room.error.wired.transaction_failure}");
+            room.sendComposer(new BubbleAlertComposer("wired.error", keys).compose());
+        }
     }
 
     /**

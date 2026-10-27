@@ -293,8 +293,10 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
             return this.hasAnyEnabledOption();
         }
 
+        // Habbo saves the trigger with no variable or one no box defines; it then never fires (observed on AIR).
         if (this.variableToken.isEmpty()) {
-            throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
+            this.arrayDataConfigured = false;
+            return this.hasAnyEnabledOption();
         }
 
         // A pointer only exists while a stack runs, so nothing can watch it change (AIR VariableUpdate filter).
@@ -303,7 +305,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
         }
 
         if (room == null || !this.isValidDefinition(room)) {
-            throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.invalid_variable");
+            this.arrayDataConfigured = false;
+            return this.hasAnyEnabledOption();
         }
 
         WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room);
@@ -438,10 +441,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
     }
 
     private boolean hasAnyEnabledOption() {
-        return this.createdEnabled
-                || this.deletedEnabled
-                || (this.valueChangedEnabled
-                        && (this.increasedEnabled || this.decreasedEnabled || this.unchangedEnabled));
+        // AIR saves "value changed" with no kind ticked too; the box then never fires for a change.
+        return this.createdEnabled || this.deletedEnabled || this.valueChangedEnabled;
     }
 
     private boolean isValidDefinition(Room room) {

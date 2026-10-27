@@ -10,6 +10,8 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredRoomLinker;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * The usage policy a furni is sent with (AIR {@code RoomWidgetFurniInfoUsagePolicyEnum}): who may use
@@ -26,8 +28,28 @@ public final class FurnitureUsagePolicy {
 
     private FurnitureUsagePolicy() {}
 
+    /** Game furni AIR shows without a Use button. */
+    static final Set<String> NO_USE_BUTTON = Set.of(
+            "wf_tile1",
+            "wf_tile2",
+            "wf_pyramid",
+            "wf_box",
+            "wf_arrowplate",
+            "wf_arrowplate_8dir",
+            "wf_pressureplate",
+            "wf_ringplate",
+            "wf_blob",
+            "wf_blob2",
+            "wf_button",
+            "wf_button_red",
+            "wf_button_x");
+
     public static int of(HabboItem item) {
         if (item == null) {
+            return NOBODY;
+        }
+
+        if (NO_USE_BUTTON.contains(baseName(item))) {
             return NOBODY;
         }
 
@@ -43,6 +65,13 @@ public final class FurnitureUsagePolicy {
      * remote switches, vending machines, information terminals, post-its, puzzle boxes and random
      * state furni. The same on the floor and on the wall.
      */
+    /** The furni's catalog name in lower case, or "" when it has none. */
+    public static String baseName(HabboItem item) {
+        Item base = item != null ? item.getBaseItem() : null;
+        String name = base != null ? base.getName() : null;
+        return name != null ? name.toLowerCase(Locale.ROOT) : "";
+    }
+
     public static boolean isUsableByEverybody(HabboItem item) {
         return (item instanceof InteractionTeleport && !(item instanceof InteractionWiredRoomLinker))
                 || item instanceof InteractionSwitch

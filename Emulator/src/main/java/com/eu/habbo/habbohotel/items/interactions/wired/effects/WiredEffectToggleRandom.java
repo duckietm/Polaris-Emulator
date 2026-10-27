@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureUsagePolicy;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBadgeDisplay;
 import com.eu.habbo.habbohotel.items.interactions.InteractionClothing;
@@ -70,6 +71,27 @@ public class WiredEffectToggleRandom extends InteractionWiredEffect {
 
     private final Set<HabboItem> items = new LinkedHashSet<>();
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    /** Floor switches AIR does randomise, although their class is otherwise excluded. */
+    static final Set<String> RANDOMISED_SWITCHES = Set.of("wf_floor_switch1", "wf_floor_switch2");
+
+    /** Game furni AIR's Toggle Random never changes; they are skipped and stay picked. */
+    static final Set<String> UNTOUCHED_NAMES = Set.of(
+            "wf_tile1",
+            "wf_tile2",
+            "wf_pyramid",
+            "wf_box",
+            "wf_arrowplate",
+            "wf_arrowplate_8dir",
+            "wf_pressureplate",
+            "wf_ringplate",
+            "wf_antenna1",
+            "wf_antenna2",
+            "wf_blob",
+            "wf_blob2",
+            "wf_button",
+            "wf_button_red",
+            "wf_button_x");
 
     private static final List<Class<? extends HabboItem>> FORBIDDEN_TYPES =
             new ArrayList<Class<? extends HabboItem>>() {
@@ -223,10 +245,14 @@ public class WiredEffectToggleRandom extends InteractionWiredEffect {
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
 
         for (HabboItem item : effectiveItems) {
-            if (item.getRoomId() == 0 || FORBIDDEN_TYPES.stream().anyMatch(a -> a.isAssignableFrom(item.getClass()))) {
+            if (item.getRoomId() == 0) {
                 if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
                     this.items.remove(item);
                 }
+                continue;
+            }
+
+            if (!isRandomised(item)) {
                 continue;
             }
 
@@ -234,7 +260,14 @@ public class WiredEffectToggleRandom extends InteractionWiredEffect {
                 // States run 0..stateCount-1; the old "+ 1" could write stateCount itself, a state
                 // the furni does not have.
                 int stateCount = item.getBaseItem().getStateCount();
-                item.setExtradata(Emulator.getRandom().nextInt(Math.max(1, stateCount)) + "");
+                String next = Integer.toString(Emulator.getRandom().nextInt(Math.max(1, stateCount)));
+
+                // AIR writes and sends nothing when the pick is the state the furni already shows.
+                if (next.equals(item.getExtradata())) {
+                    continue;
+                }
+
+                item.setExtradata(next);
                 item.needsUpdate(true);
                 room.updateItem(item);
                 WiredManager.triggerFurniStateUpdated(room, ctx.actor().orElse(null), item, true);
@@ -242,6 +275,18 @@ public class WiredEffectToggleRandom extends InteractionWiredEffect {
                 LOGGER.error("Caught exception", e);
             }
         }
+    }
+
+    static boolean isRandomised(HabboItem item) {
+        String name = FurnitureUsagePolicy.baseName(item);
+
+        if (RANDOMISED_SWITCHES.contains(name)) {
+            return true;
+        }
+
+        return !UNTOUCHED_NAMES.contains(name)
+                && !(item instanceof InteractionGameTimer)
+                && FORBIDDEN_TYPES.stream().noneMatch(a -> a.isAssignableFrom(item.getClass()));
     }
 
     @Deprecated

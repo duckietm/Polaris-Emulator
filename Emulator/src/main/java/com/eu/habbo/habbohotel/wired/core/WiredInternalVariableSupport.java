@@ -8,8 +8,11 @@ import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.BuildersClubPalette;
+import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
@@ -421,11 +424,12 @@ public final class WiredInternalVariableSupport {
                     BuildersClubPalette.BLUE -> BuildersClubPalette.read(item, normalized);
             case String smart
             when WiredSmartVariables.isFurniKey(smart) -> WiredSmartVariables.readFurniValue(item, smart);
-            // A wall item's id is negative, as AIR picks it.
+            // A wall item's id is negative, as AIR picks it; a Builders Club floor furni's is the id the client
+            // knows it by.
             case "@id" ->
                 (item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL)
                         ? -item.getId()
-                        : item.getId();
+                        : BuildersClubItemIds.toWire(item.getId());
             case "@class_id" ->
                 (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
             // The height it has now: a multi-height furni's current setting, not its base height.
@@ -434,11 +438,13 @@ public final class WiredInternalVariableSupport {
             case "@position_x" -> (int) item.getX();
             case "@position_y" -> (int) item.getY();
             case "@position" -> packPosition(item.getX(), item.getY());
-            case "@occupation" -> (packPosition(item.getX(), item.getY()) << 8) | (item.getRotation() & 0xFF);
-            case "@rotation" -> item.getRotation();
+            // The rotation as a position in the furni's list of directions, not the raw rotation (observed on AIR).
+            case "@occupation" -> (packPosition(item.getX(), item.getY()) << 8) | (rotationIndex(item) & 0xFF);
+            case "@rotation" -> rotationIndex(item);
             case "@altitude" -> (int) Math.round(item.getZ() * 100);
             case "@is_invisible" -> 0;
-            case "@type" -> 0;
+            // 2 a temporary furni, 1 a Builders Club one, 0 one the room owns (observed on AIR).
+            case "@type" -> item.isTemporary() ? 2 : BuildersClubRoomSupport.isTrackedItem(item.getId()) ? 1 : 0;
             case "@is_stackable" ->
                 (item.getBaseItem() != null && item.getBaseItem().allowStack()) ? 1 : 0;
             case "@can_stand_on" ->
@@ -492,7 +498,11 @@ public final class WiredInternalVariableSupport {
         String normalized = normalizeKey(key);
 
         if ("@state".equals(normalized)) {
-            item.setExtradata(String.valueOf(normalizeFurniStateValue(item, value)));
+            Integer next = furniStateWrite(item, value);
+            if (next == null) {
+                return false;
+            }
+            item.setExtradata(String.valueOf(next));
             room.updateItemState(item);
             return true;
         }
@@ -538,7 +548,8 @@ public final class WiredInternalVariableSupport {
             case "@furni_count" ->
                 room.getFloorItems().size() + room.getWallItems().size();
             case "@user_count" -> room.getUserCount();
-            case "@wired_timer" -> (int) (WiredManager.getTickService().getTickCount() / 10L);
+            // The room's wired timer in 500 ms pulses, from the last Reset Timers (or the room load).
+            case "@wired_timer" -> WiredRoomTime.pulsesSinceTimerReset(room, System.currentTimeMillis());
             case "@team_red_score" -> getTeamMetric(room, GameTeamColors.RED, true);
             case "@team_green_score" -> getTeamMetric(room, GameTeamColors.GREEN, true);
             case "@team_blue_score" -> getTeamMetric(room, GameTeamColors.BLUE, true);
@@ -629,7 +640,7 @@ public final class WiredInternalVariableSupport {
         if (event == null || !event.isScalarVariableChange()) return null;
         return switch (key) {
             case "@event.variable_update.box_id" ->
-                ctx.triggerItem() == null ? null : (long) ctx.triggerItem().getId();
+                ctx.triggerItem() == null ? null : (long) BuildersClubItemIds.toWire(ctx.triggerItem());
             case "@event.variable_update.change_type" ->
                 event.isVariableCreated() ? 0L : event.isVariableDeleted() ? 2L : 1L;
             case "@event.variable_update.old_value" -> event.getOldVariableValue();
@@ -999,27 +1010,33 @@ public final class WiredInternalVariableSupport {
         return packed & 0xFF;
     }
 
-    /** {@code @occupation}, {@code x << 16 | y << 8 | rotation}: moves and turns the furni in one move. */
+    /**
+     * {@code @occupation}, {@code x << 16 | y << 8 | direction index}: moves and turns the furni in one move. An index
+     * the furni does not have keeps its rotation, and the move still happens.
+     */
     private static boolean writeFurniOccupation(Room room, HabboItem item, int value) {
         int x = (value >> 16) & 0xFF;
         int y = (value >> 8) & 0xFF;
-        int rotation = value & 0xFF;
-        FurnitureDirections directions = FurnitureDirections.of(item);
-        if (directions.isKnown()) {
-            Integer allowed = directions.write(rotation);
-            if (allowed == null) return false;
-            rotation = allowed;
-        }
+        int[] directions = variableDirections(item);
+        int index = value & 0xFF;
+        int rotation = index < directions.length ? directions[index] : item.getRotation();
         return moveFurniTo(room, item, x, y, rotation, item.getZ());
     }
 
+    /** {@code @rotation} is a direction index: the furni turns to that direction, an index it lacks is refused. */
     private static boolean writeFurniRotation(Room room, HabboItem item, int value) {
-        FurnitureDirections directions = FurnitureDirections.of(item);
-        if (!directions.isKnown()) {
-            return moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
-        }
-        Integer rotation = directions.write(value);
-        return rotation != null && moveFurniTo(room, item, item.getX(), item.getY(), rotation, item.getZ());
+        int[] directions = variableDirections(item);
+        if (value < 0 || value >= directions.length) return false;
+        return moveFurniTo(room, item, item.getX(), item.getY(), directions[value], item.getZ());
+    }
+
+    private static int[] variableDirections(HabboItem item) {
+        int rotations = item.getBaseItem() != null ? item.getBaseItem().getRotations() : 0;
+        return FurnitureDirections.of(item).variableDirections(rotations);
+    }
+
+    private static int rotationIndex(HabboItem item) {
+        return FurnitureDirections.indexOf(variableDirections(item), item.getRotation());
     }
 
     private static boolean moveFurniTo(Room room, HabboItem item, int x, int y, int rotation, double z) {
@@ -1040,22 +1057,34 @@ public final class WiredInternalVariableSupport {
         return error == FurnitureMovementError.NONE;
     }
 
-    private static int normalizeFurniStateValue(HabboItem item, int value) {
-        if (item == null || item.getBaseItem() == null) {
-            return value;
+    /**
+     * The state a variable write gives a furni, or null when it is no write (observed on AIR WIN63-202610201032): a
+     * value outside the furni's states sets state 0, a furni without states and a wired box or antenna are left alone,
+     * and writing the state the furni already has changes nothing.
+     */
+    static Integer furniStateWrite(HabboItem item, int value) {
+        if (item == null || item.getBaseItem() == null || item instanceof InteractionWired || isAntenna(item)) {
+            return null;
         }
 
         int stateCount = item.getBaseItem().getStateCount();
         if (stateCount <= 0) {
-            return value;
+            return null;
         }
 
-        int wrappedValue = value % stateCount;
-        if (wrappedValue < 0) {
-            wrappedValue += stateCount;
+        int next = (value < 0 || value >= stateCount) ? 0 : value;
+        String current = item.getExtradata();
+        if (current != null && !current.isBlank() && current.trim().equals(String.valueOf(next))) {
+            return null;
         }
+        return next;
+    }
 
-        return wrappedValue;
+    private static boolean isAntenna(HabboItem item) {
+        return item.getBaseItem().getInteractionType() != null
+                && "antenna"
+                        .equalsIgnoreCase(
+                                item.getBaseItem().getInteractionType().getName());
     }
 
     private static int parseInteger(String value) {

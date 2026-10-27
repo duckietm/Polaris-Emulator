@@ -3,11 +3,13 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
@@ -28,6 +30,12 @@ public final class WiredBoxFlashes {
 
     private static final ThreadLocal<Deque<Boolean>> PASS_DEPTH = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<Set<WiredBoxFlashes>> DIRTY = ThreadLocal.withInitial(LinkedHashSet::new);
+    /** Show Message texts of the pass, sent after its flashes and movements (observed on AIR WIN63-202610151745). */
+    private static final ThreadLocal<List<Runnable>> AFTER_FLASH = ThreadLocal.withInitial(ArrayList::new);
+    /** A chat line's wired is running: its speaker's own line goes out after the pass. */
+    private static final ThreadLocal<Integer> SAY_DEPTH = ThreadLocal.withInitial(() -> 0);
+    /** Texts of stacks a say reached through a signal: they follow the speaker's line. */
+    private static final ThreadLocal<List<Runnable>> AFTER_SPEAKER = ThreadLocal.withInitial(ArrayList::new);
 
     private final Room room;
     private final LongSupplier clock;
@@ -115,12 +123,79 @@ public final class WiredBoxFlashes {
         if (!depth.isEmpty() || WiredFurniStateBatch.isOpen()) return;
 
         flushDirty();
+        sendAfterFlash();
+    }
+
+    /**
+     * Sends {@code send} after the flashes and movements of the pass open on this thread; outside a pass it is sent
+     * now. During a say, a text from a stack the say reached through a signal follows the speaker's own line.
+     */
+    public static void sendAfterFlash(Runnable send, boolean reachedBySignal) {
+        if (!isPassOpen() && !WiredFurniStateBatch.isOpen()) {
+            send.run();
+            return;
+        }
+        (reachedBySignal && SAY_DEPTH.get() > 0 ? AFTER_SPEAKER : AFTER_FLASH)
+                .get()
+                .add(send);
+    }
+
+    /**
+     * Runs a chat line's wired in one pass: one flash for every stack the line fired, then their texts. The caller
+     * sends the speaker's own line after this returns and then {@link #releaseAfterSpeaker()}.
+     */
+    public static void runSayPass(Runnable wired) {
+        SAY_DEPTH.set(SAY_DEPTH.get() + 1);
+        openPass();
+        try {
+            wired.run();
+        } finally {
+            closePass();
+            SAY_DEPTH.set(SAY_DEPTH.get() - 1);
+        }
+    }
+
+    /** Sends the texts a say's signals produced, after the speaker's own line. */
+    public static void releaseAfterSpeaker() {
+        if (SAY_DEPTH.get() > 0) return;
+        List<Runnable> held = AFTER_SPEAKER.get();
+        if (held.isEmpty()) return;
+        List<Runnable> sends = new ArrayList<>(held);
+        held.clear();
+        runEach(sends);
+    }
+
+    /**
+     * Sends the texts queued for after the flashes, once no pass or furni batch is open on this thread. The engine
+     * calls it after a firing's movement packet went out, so the texts follow the movements.
+     */
+    public static void sendAfterFlash() {
+        if (isPassOpen() || WiredFurniStateBatch.isOpen()) return;
+        List<Runnable> queued = AFTER_FLASH.get();
+        if (queued.isEmpty()) return;
+        List<Runnable> sends = new ArrayList<>(queued);
+        queued.clear();
+        runEach(sends);
+    }
+
+    /** One failing send (a user who just left) must not keep the others from going out. */
+    private static void runEach(List<Runnable> sends) {
+        for (Runnable send : sends) {
+            try {
+                send.run();
+            } catch (RuntimeException ignored) {
+                // The recipient is gone; the rest still go out.
+            }
+        }
     }
 
     /** Drops this thread's open passes and its unsent flashes (wired shutdown and cleanup). */
     public static void clearForCurrentThread() {
         PASS_DEPTH.remove();
         DIRTY.remove();
+        AFTER_FLASH.remove();
+        AFTER_SPEAKER.remove();
+        SAY_DEPTH.remove();
     }
 
     static boolean isPassOpen() {

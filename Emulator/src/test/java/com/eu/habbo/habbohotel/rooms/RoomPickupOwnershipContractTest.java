@@ -79,7 +79,10 @@ class RoomPickupOwnershipContractTest {
         verify(item).needsUpdate(true);
         verify(items).addItem(item);
         verify(client).sendResponse(any(com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer.class));
-        verify(client).sendResponse(any(com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer.class));
+        // Habbo sends the picker the item itself, not an inventory reload.
+        verify(client).sendResponse(any(com.eu.habbo.messages.outgoing.inventory.InventoryUpdateItemComposer.class));
+        verify(client, org.mockito.Mockito.never())
+                .sendResponse(any(com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer.class));
         verify(threading).run(item);
     }
 

@@ -56,11 +56,23 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
                         .filter(this::isAntennaItem)
                         .collect(Collectors.toList());
 
-        if (!resolvedAntennas.isEmpty()) {
-            return resolvedAntennas.stream().anyMatch(item -> item != null && item.getId() == event.getSignalChannel());
+        boolean heard = !resolvedAntennas.isEmpty()
+                ? resolvedAntennas.stream().anyMatch(item -> item != null && item.getId() == event.getSignalChannel())
+                : this.channel > 0 && event.getSignalChannel() == this.channel;
+
+        return heard && admitRun(event);
+    }
+
+    /** AIR's loop limit: at most 100 runs of this stack per 500 ms window and per signal chain. */
+    private boolean admitRun(WiredEvent event) {
+        Room room = event.getRoom();
+        if (room == null || room.getWiredRuntime() == null) {
+            return true;
         }
 
-        return this.channel > 0 && event.getSignalChannel() == this.channel;
+        return room.getWiredRuntime()
+                .getSignalLoops()
+                .admit(this.getId(), event.getSignalChain(), System.currentTimeMillis());
     }
 
     public int getChannel() {

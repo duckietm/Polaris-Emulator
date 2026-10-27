@@ -1,13 +1,16 @@
 package com.eu.habbo.habbohotel.quests;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
+import com.eu.habbo.messages.outgoing.quests.ActiveDailyTasksComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +116,45 @@ public final class QuestRewards {
             habbo.getClient().sendResponse(new AddHabboItemComposer(habboItem));
         }
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
+    }
+
+    /** AIR ProductIconWidget product types a daily task reward is drawn with. */
+    public static final int PRODUCT_WALL = 0;
+
+    public static final int PRODUCT_FLOOR = 1;
+    public static final int PRODUCT_BADGE = 4;
+    public static final int PRODUCT_CURRENCY = 8;
+    public static final int PRODUCT_UNKNOWN = -1;
+
+    /**
+     * A daily task reward as AIR's DailyTaskRewardView reads it: the product type, then the item type (a currency
+     * type, a badge code or a furni class id). A badge keeps its code in the extra params too, for older clients.
+     * A furni that does not exist, or an unknown reward type, is sent as the unknown product.
+     */
+    public static ActiveDailyTasksComposer.Reward dailyTaskRewardWire(
+            String rewardType, String extra, int amount, Function<String, Item> itemLookup) {
+        String type = rewardType == null ? "" : rewardType.trim().toLowerCase();
+        int currency = activityPointTypeOf(type);
+
+        if (currency != -2) {
+            return new ActiveDailyTasksComposer.Reward(PRODUCT_CURRENCY, String.valueOf(currency), "", amount);
+        }
+
+        if (TYPE_BADGE.equals(type)) {
+            String code = extra == null ? "" : extra;
+            return new ActiveDailyTasksComposer.Reward(PRODUCT_BADGE, code, code, amount);
+        }
+
+        if (TYPE_FURNI.equals(type)) {
+            Item item = (itemLookup == null || extra == null) ? null : itemLookup.apply(extra);
+            if (item != null) {
+                int product = item.getType() == FurnitureType.WALL ? PRODUCT_WALL : PRODUCT_FLOOR;
+                return new ActiveDailyTasksComposer.Reward(product, String.valueOf(item.getSpriteId()), extra, amount);
+            }
+            LOGGER.warn("Daily task reward furni {} does not exist", extra);
+        }
+
+        return new ActiveDailyTasksComposer.Reward(PRODUCT_UNKNOWN, rewardType == null ? "" : rewardType, "", amount);
     }
 
     /** Maps the string reward type to the client activityPointType, -2 when it is not a currency. */

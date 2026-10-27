@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.games.GamePlayer;
+import com.eu.habbo.habbohotel.games.battlebanzai.BattleBanzaiGame;
+import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -82,14 +84,17 @@ public final class WiredFreezeUtil {
         }
     }
 
-    /** The effect an unfrozen user goes back to: their Wired team's effect, or none. */
+    /** The effect an unfrozen user goes back to: the effect of the Wired, Banzai or Freeze team they are in now. */
     static int restoredEffect(Room room, RoomUnit roomUnit) {
         Habbo habbo = room.getHabbo(roomUnit);
         if (habbo == null || habbo.getHabboInfo() == null) return 0;
-        if (habbo.getHabboInfo().getCurrentGame() != WiredGame.class) return 0;
+        Class<?> game = habbo.getHabboInfo().getCurrentGame();
         GamePlayer player = habbo.getHabboInfo().getGamePlayer();
-        if (player == null || player.getTeamColor() == null) return 0;
-        return WiredGame.teamEffectId(player.getTeamColor());
+        if (game == null || player == null || player.getTeamColor() == null) return 0;
+        if (game == WiredGame.class) return WiredGame.teamEffectId(player.getTeamColor());
+        if (game == BattleBanzaiGame.class) return BattleBanzaiGame.effectId + player.getTeamColor().type;
+        if (game == FreezeGame.class) return FreezeGame.effectId + player.getTeamColor().type;
+        return 0;
     }
 
     public static void onTeleport(Room room, RoomUnit roomUnit) {

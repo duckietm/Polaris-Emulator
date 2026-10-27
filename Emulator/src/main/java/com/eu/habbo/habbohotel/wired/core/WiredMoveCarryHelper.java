@@ -495,7 +495,47 @@ public final class WiredMoveCarryHelper {
             return null;
         }
 
-        return new WiredMovementsComposer(movements).compose();
+        return new WiredMovementsComposer(furniFirst(movements)).compose();
+    }
+
+    /**
+     * The order one WiredMovements lists a tick's moves in: the furni, then the users, then the turns, each kept in
+     * the order it was collected (observed on AIR WIN63-202610201032).
+     */
+    static List<WiredMovementsComposer.MovementData> furniFirst(List<WiredMovementsComposer.MovementData> movements) {
+        List<WiredMovementsComposer.MovementData> ordered = new ArrayList<>(movements.size());
+        for (int rank = 0; rank < 3; rank++) {
+            for (WiredMovementsComposer.MovementData movement : movements) {
+                if (orderRank(movement) == rank) {
+                    ordered.add(movement);
+                }
+            }
+        }
+        return ordered;
+    }
+
+    private static int orderRank(WiredMovementsComposer.MovementData movement) {
+        return switch (movement.getType()) {
+            case WiredMovementsComposer.TYPE_USER_MOVE -> 1;
+            case WiredMovementsComposer.TYPE_USER_DIRECTION -> 2;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Adds user moves to the open collection, so they go out in the firing's one WiredMovements.
+     *
+     * @return false when no collection is open; the caller then sends them itself
+     */
+    public static boolean collectIfOpen(List<WiredMovementsComposer.MovementData> movements) {
+        List<WiredMovementsComposer.MovementData> collected = COLLECTED_MOVEMENTS.get();
+        if (collected == null) {
+            return false;
+        }
+        for (WiredMovementsComposer.MovementData movement : movements) {
+            collect(collected, movement);
+        }
+        return true;
     }
 
     /** Adds a movement to the collection, remembering which firing moved the furni. */
@@ -1513,8 +1553,9 @@ public final class WiredMoveCarryHelper {
     }
 
     /**
-     * The movement curve outranks a projectile's own curve; the overshoot is the projectile's
-     * either way. Returns the jump strength the furni flies with, 0 for none.
+     * A projectile with a curve outranks the movement curve add-on for the furni it moves, as AIR does; a
+     * projectile without one leaves the movement curve in charge. The overshoot is the projectile's either way.
+     * Returns the jump strength the furni flies with, 0 for none.
      */
     private static int sendMoveStyleHint(
             Room room,
@@ -1523,6 +1564,14 @@ public final class WiredMoveCarryHelper {
             WiredContext ctx,
             WiredExtraProjectile projectile,
             int overshoot) {
+        int curveStrength = (projectile != null) ? projectile.getCurveStrength() : 0;
+
+        if (curveStrength != 0) {
+            WiredMoveStyleHelper.broadcast(
+                    room, List.of(movingItem.getId()), WiredMoveStyleHelper.STYLE_JUMP, curveStrength, overshoot);
+            return curveStrength;
+        }
+
         Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null) {
             return 0;
@@ -1538,14 +1587,9 @@ public final class WiredMoveCarryHelper {
             }
         }
 
-        int curveStrength = (projectile != null) ? projectile.getCurveStrength() : 0;
         WiredMoveStyleHelper.broadcast(
-                room,
-                List.of(movingItem.getId()),
-                (curveStrength != 0) ? WiredMoveStyleHelper.STYLE_JUMP : WiredMoveStyleHelper.STYLE_LINEAR,
-                curveStrength,
-                overshoot);
-        return curveStrength;
+                room, List.of(movingItem.getId()), WiredMoveStyleHelper.STYLE_LINEAR, 0, overshoot);
+        return 0;
     }
 
     private static Collection<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {

@@ -90,11 +90,7 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
         }
 
         Set<HabboItem> result = this.applySelectorModifiers(
-                matched,
-                this.getSelectableFloorItems(room, ctx),
-                ctx.targets().items(),
-                this.filterExisting,
-                this.invert);
+                matched, this.getSelectableItems(room, ctx), ctx.targets().items(), this.filterExisting, this.invert);
         ctx.targets().setItems(result);
     }
 
@@ -107,10 +103,31 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
      * behaviour. Behaviour observed in plus-emulator/PlusEMU 74b6b1b0, reimplemented.
      */
     private boolean runPickedSelectors(WiredContext ctx, Room room) {
-        List<List<InteractionWiredEffect>> stacks = this.pickedStacks(room);
+        List<PickedStack> stacks = this.pickedStacks(room);
         if (stacks == null) {
             return false;
         }
+
+        // AIR runs Remote Selections inside picked stacks too, to any depth; a stack already on the way is
+        // skipped so two remotes cannot run each other forever.
+        Set<Long> path = RUNNING_STACKS.get();
+        boolean outermost = path.isEmpty();
+        long ownTile = tileKey(this.getX(), this.getY());
+        boolean ownAdded = path.add(ownTile);
+
+        try {
+            return this.runPickedStacks(ctx, room, stacks, path);
+        } finally {
+            if (ownAdded) {
+                path.remove(ownTile);
+            }
+            if (outermost) {
+                RUNNING_STACKS.remove();
+            }
+        }
+    }
+
+    private boolean runPickedStacks(WiredContext ctx, Room room, List<PickedStack> stacks, Set<Long> path) {
 
         // "Filter the stacks": that many of the picked stacks, chosen at random.
         if (this.pickCount > 0 && this.pickCount < stacks.size()) {
@@ -122,14 +139,19 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
         Set<RoomUnit> users = new LinkedHashSet<>();
         boolean first = true;
 
-        for (List<InteractionWiredEffect> stack : stacks) {
+        for (PickedStack picked : stacks) {
+            List<InteractionWiredEffect> stack = picked.selectors();
             Set<HabboItem> selectedItems = new LinkedHashSet<>();
             Set<RoomUnit> selectedUsers = new LinkedHashSet<>();
-            if (!stack.isEmpty()) {
+            if (!stack.isEmpty() && path.size() < MAX_NESTED_STACKS && path.add(picked.tile())) {
                 WiredContext scratch =
                         new WiredContext(ctx.event(), ctx.triggerItem(), ctx.services(), new WiredState(20));
-                for (InteractionWiredEffect selector : stack) {
-                    selector.execute(scratch);
+                try {
+                    for (InteractionWiredEffect selector : stack) {
+                        selector.execute(scratch);
+                    }
+                } finally {
+                    path.remove(picked.tile());
                 }
                 if (scratch.targets().isItemsModifiedBySelector())
                     selectedItems.addAll(scratch.targets().items());
@@ -152,6 +174,9 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
         room.getFloorItems().forEach(item -> {
             if (item != null) everyFurni.add(item);
         });
+        room.getWallItems().forEach(item -> {
+            if (item != null) everyFurni.add(item);
+        });
 
         ctx.targets()
                 .setItems(this.applySelectorModifiers(
@@ -162,12 +187,22 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
         return true;
     }
 
+    private static final ThreadLocal<Set<Long>> RUNNING_STACKS = ThreadLocal.withInitial(java.util.HashSet::new);
+    /** A safety cap on nesting; a path can never be longer than the stacks in the room. */
+    private static final int MAX_NESTED_STACKS = 256;
+
+    private record PickedStack(long tile, List<InteractionWiredEffect> selectors) {}
+
+    private static long tileKey(int x, int y) {
+        return (((long) x) << 32) | (y & 0xFFFFFFFFL);
+    }
+
     /**
      * The selectors of every picked stack, one entry per stack (tile), in pick order; null when no Wired box is
-     * picked. Remote selectors are left out so two of them cannot run each other forever.
+     * picked. Nested Remote Selections are included; the running path keeps them from looping.
      */
-    private List<List<InteractionWiredEffect>> pickedStacks(Room room) {
-        List<List<InteractionWiredEffect>> stacks = new ArrayList<>();
+    private List<PickedStack> pickedStacks(Room room) {
+        List<PickedStack> stacks = new ArrayList<>();
         Set<Long> tiles = new java.util.HashSet<>();
         boolean pickedWired = false;
 
@@ -176,21 +211,19 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect implements
             if (!(picked instanceof InteractionWired)) continue;
             pickedWired = true;
 
-            long tile = (((long) picked.getX()) << 32) | (picked.getY() & 0xFFFFFFFFL);
+            long tile = tileKey(picked.getX(), picked.getY());
             if (!tiles.add(tile)) continue;
 
             List<InteractionWiredEffect> selectors = new ArrayList<>();
             Set<HabboItem> onTile = room.getItemsAt(picked.getX(), picked.getY());
             if (onTile != null) {
                 for (HabboItem item : WiredExecutionOrderUtil.sort(onTile)) {
-                    if (item instanceof InteractionWiredEffect effect
-                            && effect.isSelector()
-                            && !(effect instanceof WiredEffectRemoteSelector)) {
+                    if (item instanceof InteractionWiredEffect effect && effect.isSelector()) {
                         selectors.add(effect);
                     }
                 }
             }
-            stacks.add(selectors);
+            stacks.add(new PickedStack(tile, selectors));
         }
 
         return pickedWired ? stacks : null;

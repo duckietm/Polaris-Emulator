@@ -323,6 +323,7 @@ public class RoomUnitManager {
 
             double z = habbo.getRoomUnit().getCurrentLocation().getStackHeight();
             boolean hadLayStatus = habbo.getRoomUnit().hasStatus(RoomUnitStatus.LAY);
+            boolean hadSitStatus = habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT);
 
             boolean isRiding =
                     habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() != null;
@@ -370,6 +371,10 @@ public class RoomUnitManager {
 
             if (!hadLayStatus && habbo.getRoomUnit().hasStatus(RoomUnitStatus.LAY)) {
                 WiredManager.triggerUserPerformsAction(this.room, habbo.getRoomUnit(), WiredUserActionType.LAY, -1);
+            }
+
+            if (!hadSitStatus && habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
+                WiredManager.triggerUserPerformsAction(this.room, habbo.getRoomUnit(), WiredUserActionType.SIT, -1);
             }
         }
 

@@ -79,11 +79,7 @@ public class WiredEffectScanChestFurniByType extends InteractionWiredEffect impl
         }
 
         Set<HabboItem> result = this.applySelectorModifiers(
-                matched,
-                this.getSelectableFloorItems(room, ctx),
-                ctx.targets().items(),
-                this.filterExisting,
-                this.invert);
+                matched, this.getSelectableItems(room, ctx), ctx.targets().items(), this.filterExisting, this.invert);
         ctx.targets().setItems(result);
     }
 

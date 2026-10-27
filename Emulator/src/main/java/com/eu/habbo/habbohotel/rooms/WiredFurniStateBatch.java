@@ -75,6 +75,16 @@ public final class WiredFurniStateBatch {
         return true;
     }
 
+    /**
+     * Queues a furni whose data a wired firing wrote outside the furni-state path (a game counter's value), so it
+     * goes out in the firing's one ObjectsDataUpdate.
+     *
+     * @return whether it was queued; when not, the caller sends the data itself
+     */
+    public static boolean deferData(Room room, HabboItem item) {
+        return defer(room, item);
+    }
+
     /** Plain floor furni only: wall furni and limited furni keep their own update packets. */
     static boolean deferrable(HabboItem item) {
         return item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.FLOOR && !item.isLimited();

@@ -27,6 +27,10 @@ public final class ChestTransactionFailures {
     public static final int MISCONFIGURED = 5;
     public static final int INSUFFICIENT_FUNDS = 6;
     public static final int FUNDS_GONE = 7;
+
+    /** The player may not trade (a trade lock), so may not deposit either. */
+    public static final int USER_CANT_TRADE = 8;
+
     public static final int EMPTY = 10;
     public static final int CHEST_FULL = 11;
 
@@ -69,10 +73,16 @@ public final class ChestTransactionFailures {
 
     /**
      * Why a player may not start a deposit into {@code item}, or {@link #NONE}. AIR: anyone when the
-     * chest takes donations, else someone with rights while the lock does not stand in their way.
+     * chest takes donations, else someone with rights while the lock does not stand in their way. A player who
+     * may not trade is refused first, donations included (observed on AIR WIN63-202610131318).
      */
     public static int depositRefusal(HabboItem item, Habbo habbo, boolean hasRights) {
         if (!(item instanceof InteractionWiredChest chest)) return NOT_A_WIRED_CHEST;
+        if (habbo != null
+                && habbo.getHabboStats() != null
+                && !habbo.getHabboStats().allowTrade()) {
+            return USER_CANT_TRADE;
+        }
         if (chest.getContents().isAccessDonate()) return NONE;
         boolean owner = habbo != null && habbo.getHabboInfo().getId() == chest.getUserId();
         if ((!hasRights && !owner) || chest.isLockedFor(habbo)) return NO_OR_LOCKED_CHESTS;
@@ -101,7 +111,7 @@ public final class ChestTransactionFailures {
      * the room's setup or stock (a misconfigured contract, no usable chest, a chest that ran out of the reward or is
      * full) and the server's own errors. What the player does is part of playing and is left to the Transaction Failed
      * trigger: walking away, letting it time out, a cancelled trade, an empty or invalid offer, too many offers, not
-     * enough to pay.
+     * enough to pay, a trade lock.
      */
     public static boolean countsOnMonitor(int reason) {
         return switch (reason) {
@@ -111,6 +121,7 @@ public final class ChestTransactionFailures {
                     TRADE_CANCELLED,
                     ALREADY_TRADING,
                     INSUFFICIENT_FUNDS,
+                    USER_CANT_TRADE,
                     EMPTY,
                     TOO_MANY_OFFERS -> false;
             default -> true;
@@ -150,6 +161,21 @@ public final class ChestTransactionFailures {
     }
 
     /** Tell the player the transaction failed and why. */
+    /**
+     * AIR: a chest give skips a user who may not trade and tells them so (fail 8), without a wired error dialog or
+     * Transaction Failed; the others are still given. True when this user was skipped.
+     */
+    public static boolean skipsNonTrader(Habbo habbo) {
+        if (habbo == null
+                || habbo.getHabboStats() == null
+                || habbo.getHabboStats().allowTrade()) {
+            return false;
+        }
+
+        send(habbo, USER_CANT_TRADE);
+        return true;
+    }
+
     public static void send(Habbo habbo, int reason) {
         if (habbo == null || habbo.getClient() == null || reason == NONE) return;
 

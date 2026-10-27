@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredServices;
@@ -23,6 +24,7 @@ class WiredSelectorUnionTest {
     private static RoomUnit holding(int handItem) {
         RoomUnit unit = mock(RoomUnit.class);
         when(unit.getHandItem()).thenReturn(handItem);
+        when(unit.getRoomUnitType()).thenReturn(RoomUnitType.USER);
         return unit;
     }
 
@@ -52,7 +54,7 @@ class WiredSelectorUnionTest {
     }
 
     @Test
-    void handItemZeroIsAnyHandItem() {
+    void handItemZeroIsAnEmptyHandAsInAir() {
         RoomUnit cola = holding(5);
         RoomUnit empty = holding(0);
         Room room = mock(Room.class);
@@ -65,6 +67,6 @@ class WiredSelectorUnionTest {
 
         selector(0).execute(ctx);
 
-        assertEquals(Set.of(cola), ctx.targets().users());
+        assertEquals(Set.of(empty), ctx.targets().users());
     }
 }

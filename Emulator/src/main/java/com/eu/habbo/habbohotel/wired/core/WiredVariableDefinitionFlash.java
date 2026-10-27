@@ -9,8 +9,9 @@ import java.util.Set;
  * A Give Variable, Change Variable Value or Remove Variable that wrote a variable also flashes that variable's
  * definition box and the variable add-ons on its tile (Time Utilities, Level-up and the like), as in Habbo.
  *
- * <p>The definition box shows the kind of the last write: 6 for a give, 2 for a change and 8 for a remove, moving to
- * the pair's other state (7, 3, 9) when the same kind writes again; a change that leaves the value as it was only
+ * <p>The definition box shows the kind of the last write: 6 for a give, 2 for a change that raised a value, 4 for one
+ * that only lowered values and 8 for a remove, moving to the pair's other state (7, 3, 5, 9) when the same kind writes
+ * again; a change that leaves the value as it was only
  * flips the box between 0 and 1. A write through an echo shows on its source's definition, and the echo box only
  * flips.
  */
@@ -19,6 +20,9 @@ public final class WiredVariableDefinitionFlash {
     public static final int KIND_UNCHANGED = 0;
 
     public static final int KIND_CHANGED = 2;
+    /** A change that only lowered values (observed on AIR WIN63-202610151745): 4, then 5. */
+    public static final int KIND_LOWERED = 4;
+
     public static final int KIND_GIVEN = 6;
     public static final int KIND_REMOVED = 8;
 

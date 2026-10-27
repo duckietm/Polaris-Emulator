@@ -19,7 +19,7 @@ CREATE TABLE `emulator_settings` (
 
 ## Inventory summary
 
-- Total non-wired keys documented here: `329`
+- Total non-wired keys documented here: `330`
 - Source of defaults: `Default Database/FullDB.sql`
 - Value type is inferred from the default string stored in SQL.
 
@@ -33,7 +33,7 @@ CREATE TABLE `emulator_settings` (
 - `bundle` (2)
 - `callback` (3)
 - `camera` (11)
-- `catalog` (5)
+- `catalog` (6)
 - `commands` (3)
 - `console` (1)
 - `custom` (1)
@@ -168,6 +168,7 @@ Catalog behaviour that is not wired-specific.
 
 | Key | Default value | Type | Purpose |
 |---|---|---|---|
+| `catalog.club.loyalty.points_type` | `-1` (no row; code default) | `integer` | Points type of the club offers on a `loyalty_vip_buy` page (offer window 6). Below 0, every HC/VIP offer paid in points only (no credits) is listed. |
 | `catalog.guild.hc_required` | `1` | `boolean` | Require HC or VIP status before users can create a guild. |
 | `catalog.guild.price` | `10` | `integer` | Credit cost required to create a guild. |
 | `catalog.ltd.page.soldout` | `761` | `integer` | Layout or image ID used when a limited page is sold out. |

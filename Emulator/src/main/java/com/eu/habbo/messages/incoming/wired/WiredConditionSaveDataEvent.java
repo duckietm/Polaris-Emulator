@@ -10,12 +10,20 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSaveGate;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
 
 public class WiredConditionSaveDataEvent extends MessageHandler {
+    /** A save dropped without an answer. */
+    private static final class DroppedSave extends RuntimeException {
+        DroppedSave() {
+            super(null, null, false, false);
+        }
+    }
+
     private static final WiredConditionSaveAdapter SAVE_ADAPTER = new WiredConditionSaveAdapter();
 
     @Override
@@ -44,11 +52,16 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                                                     maximumStringLength),
                                             room);
                                     settings.setRoom(room);
+                                    // AIR drops a save with more than 20 picks without an answer.
+                                    if (WiredSaveGate.dropsSilently(settings)) throw new DroppedSave();
+                                    WiredSaveGate.keepPicksOnce(settings);
                                     String sourceRefusal = WiredSourceSaveRules.apply(condition, settings, room);
                                     if (sourceRefusal != null) throw new WiredSaveRefusedException(sourceRefusal);
                                     return settings;
                                 },
                                 () -> this.packet);
+                    } catch (DroppedSave dropped) {
+                        return;
                     } catch (WiredSaveRefusedException refused) {
                         this.client.sendResponse(
                                 new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));

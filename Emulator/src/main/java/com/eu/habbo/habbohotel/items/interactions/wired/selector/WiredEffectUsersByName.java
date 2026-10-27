@@ -19,10 +19,12 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class WiredEffectUsersByName extends InteractionWiredEffect implements WiredOfficialSelector {
     static final int MAX_NAMES = 20;
+    /** The longest name AIR keeps in the list. */
+    static final int MAX_NAME_LENGTH = 30;
+
     static final int MAX_NAMES_TEXT_LENGTH = 1000;
     public static final WiredEffectType type = WiredEffectType.USERS_BY_NAME_SELECTOR;
 
@@ -56,8 +58,9 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
             }
             availableUsers.add(unit);
 
+            // AIR compares the name as it is, ignoring case only.
             String name = nameOf(room, unit);
-            if (name != null && this.usernames.contains(name.trim().toLowerCase(Locale.ROOT))) {
+            if (name != null && this.usernames.contains(name.toLowerCase(Locale.ROOT))) {
                 result.add(unit);
             }
         }
@@ -71,10 +74,10 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        String names = this.normalizeNamesText(settings.getStringParam());
+        String names = normalizeNamesText(settings.getStringParam());
         refuseOversizedNames(settings.getStringParam(), names);
         this.namesText = names;
-        this.usernames = this.parseUsernames(this.namesText);
+        this.usernames = parseUsernames(this.namesText);
         this.filterExisting = settings.isSelectorFilter();
         this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());
@@ -137,15 +140,15 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
                 return;
             }
 
-            this.namesText = this.normalizeNamesText(data.namesText);
+            this.namesText = normalizeNamesText(data.namesText);
             this.filterExisting = data.filterExisting;
             this.invert = data.invert;
             this.setDelay(data.delay);
         } else {
-            this.namesText = this.normalizeNamesText(wiredData);
+            this.namesText = normalizeNamesText(wiredData);
         }
 
-        this.usernames = this.parseUsernames(this.namesText);
+        this.usernames = parseUsernames(this.namesText);
     }
 
     @Override
@@ -196,40 +199,57 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
             throw new WiredSaveRefusedException(
                     "wiredfurni.error.too_much_text", Map.of("limit", String.valueOf(MAX_NAMES_TEXT_LENGTH)));
         }
-        if (!normalized.isEmpty() && normalized.split("\n").length > MAX_NAMES) {
+
+        if (normalized.isEmpty()) {
+            return;
+        }
+
+        // AIR counts every TAB-separated name, an empty one between two tabs too; a long name is refused first.
+        String[] names = normalized.split("\t", -1);
+
+        for (String name : names) {
+            if (name.length() > MAX_NAME_LENGTH) {
+                throw new WiredSaveRefusedException(
+                        "wiredfurni.error.username_length",
+                        Map.of("max_username_length", String.valueOf(MAX_NAME_LENGTH)));
+            }
+        }
+
+        if (names.length > MAX_NAMES) {
             throw new WiredSaveRefusedException(
                     "wiredfurni.error.usernames_count", Map.of("max_usernames", String.valueOf(MAX_NAMES)));
         }
     }
 
-    private String normalizeNamesText(String value) {
-        if (value == null || value.trim().isEmpty()) {
+    /**
+     * AIR stores the names lower case, separated by TAB only, with no trimming and the trailing tabs cut. Line
+     * breaks (rows saved before, or a client that sends them) are read as tabs.
+     */
+    static String normalizeNamesText(String value) {
+        if (value == null) {
             return "";
         }
 
-        Set<String> normalizedLines = new LinkedHashSet<>();
+        String names = value.replaceAll("\\r\\n|\\r|\\n", "\t").toLowerCase(Locale.ROOT);
+        int end = names.length();
 
-        for (String line : value.split("[\\t\\r\\n]+")) {
-            String normalized = line.trim();
-            if (!normalized.isEmpty()) {
-                normalizedLines.add(normalized);
-            }
+        while (end > 0 && names.charAt(end - 1) == '\t') {
+            end--;
         }
 
-        return normalizedLines.stream().collect(Collectors.joining("\n"));
+        return names.substring(0, end);
     }
 
-    private Set<String> parseUsernames(String value) {
+    static Set<String> parseUsernames(String value) {
         Set<String> result = new LinkedHashSet<>();
 
-        if (value == null || value.trim().isEmpty()) {
+        if (value == null || value.isEmpty()) {
             return result;
         }
 
-        for (String line : value.split("[\\t\\r\\n]+")) {
-            String normalized = line.trim();
-            if (!normalized.isEmpty()) {
-                result.add(normalized.toLowerCase(Locale.ROOT));
+        for (String name : value.split("\t")) {
+            if (!name.isEmpty()) {
+                result.add(name.toLowerCase(Locale.ROOT));
             }
         }
 

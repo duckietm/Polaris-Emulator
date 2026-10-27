@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -36,6 +37,14 @@ public final class WiredPointerVariableSupport {
 
     public static boolean isPointer(Room room, int itemId) {
         return pointer(room, itemId) != null;
+    }
+
+    /**
+     * Whether a box without a delay is pointed at a pointer: Habbo then writes nothing through it and reads no value
+     * from it (observed on AIR); a delayed box resolves the pointer when it runs.
+     */
+    public static boolean ignoredWithoutDelay(Room room, int delay, int itemId) {
+        return delay <= 0 && itemId > 0 && isPointer(room, itemId);
     }
 
     /** The room's named pointers listed under an official variable target, by name and then id. */
@@ -111,7 +120,9 @@ public final class WiredPointerVariableSupport {
         int accessor = pointer.getAccessorVariableId();
         if (!isValidAccessor(room, accessor) || !WiredContextVariableSupport.hasVariable(ctx, accessor)) return 0;
 
-        Integer target = WiredContextVariableSupport.getCurrentValue(ctx, accessor);
+        Integer held = WiredContextVariableSupport.getCurrentValue(ctx, accessor);
+        // The accessor may hold the id the client knows a Builders Club box by (its @id).
+        Integer target = held == null ? null : BuildersClubItemIds.fromWire(room, held);
         if (target == null || target <= 0 || target == pointer.getId() || isPointer(room, target)) return 0;
 
         return isVariableOf(room, pointer.getSourceType(), target) ? target : 0;

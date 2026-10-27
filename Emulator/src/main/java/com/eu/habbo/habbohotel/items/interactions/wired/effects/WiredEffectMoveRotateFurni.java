@@ -26,6 +26,7 @@ import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -69,6 +70,21 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
                             .getRoom(this.getRoomId())
                             .getHabboItem(item.getId())
                     == null);
+        }
+
+        // No move and no turn: AIR puts each picked furni back on its own tile, on top of its stack, in a random
+        // order (whether it is already on top is judged at its turn).
+        if (this.direction == 0 && this.rotation == 0) {
+            List<HabboItem> restacked = new ArrayList<>(effectiveItems);
+            Collections.shuffle(restacked, ThreadLocalRandom.current());
+
+            for (HabboItem item : restacked) {
+                if (item != null && !this.itemCooldowns.contains(item)) {
+                    this.restack(room, item, ctx);
+                }
+            }
+
+            return;
         }
 
         for (HabboItem item : effectiveItems) {
@@ -127,6 +143,41 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
                 }
             }
         }
+    }
+
+    private void restack(Room room, HabboItem item, WiredContext ctx) {
+        RoomTile tile = room.getLayout() != null ? room.getLayout().getTile(item.getX(), item.getY()) : null;
+        Double top = restackHeight(room, item, tile);
+
+        if (top != null
+                && WiredMoveCarryHelper.moveFurni(room, this, item, tile, item.getRotation(), top, null, true, ctx)
+                        == FurnitureMovementError.NONE) {
+            this.itemCooldowns.add(item);
+        }
+    }
+
+    /** The height a furni goes to on top of the other furni on its tile, or null when it is already the top. */
+    static Double restackHeight(Room room, HabboItem item, RoomTile tile) {
+        if (tile == null) {
+            return null;
+        }
+
+        double top = Double.NEGATIVE_INFINITY;
+        boolean onTop = true;
+
+        for (HabboItem other : room.getItemsAt(tile)) {
+            if (other == null || other == item) {
+                continue;
+            }
+
+            if (other.getZ() >= item.getZ()) {
+                onTop = false;
+            }
+
+            top = Math.max(top, other.getZ() + Item.getCurrentHeight(other));
+        }
+
+        return onTop ? null : top;
     }
 
     @Override

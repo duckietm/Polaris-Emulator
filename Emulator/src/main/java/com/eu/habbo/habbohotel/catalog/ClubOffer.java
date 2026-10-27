@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.catalog;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
@@ -9,9 +11,17 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 public class ClubOffer implements ISerialize {
+    /** AIR's club_buy page: the Habbo Club and VIP offers. */
+    public static final int WINDOW_CLUB_BUY = 0;
+    /** AIR's vip_buy page (the window this server always served). */
     public static final int WINDOW_HABBO_CLUB = 1;
+
     public static final int WINDOW_BUILDERS_CLUB = 2;
     public static final int WINDOW_BUILDERS_CLUB_ADDONS = 3;
+    /** AIR's loyalty_vip_buy page: the club offers paid in points only. */
+    public static final int WINDOW_LOYALTY_VIP = 6;
+    /** The settings key narrowing the loyalty window to one points type; below 0 any points type counts. */
+    public static final String LOYALTY_POINTS_TYPE_KEY = "catalog.club.loyalty.points_type";
 
     public enum OfferType {
         HC,
@@ -141,6 +151,29 @@ public class ClubOffer implements ISerialize {
     }
 
     public boolean belongsToWindow(int windowId) {
+        ConfigurationManager config = windowId == WINDOW_LOYALTY_VIP ? WiredPlatform.configuration() : null;
+        int loyaltyPointsType = config != null ? config.getInt(LOYALTY_POINTS_TYPE_KEY, -1) : -1;
+
+        return this.belongsToWindow(windowId, loyaltyPointsType);
+    }
+
+    /**
+     * The offer window AIR asks for: 0 (club_buy) and 1 (vip_buy) hold the Habbo Club and VIP offers, 6
+     * (loyalty_vip_buy) the ones of those paid in points only (of {@code loyaltyPointsType} when it is 0 or more),
+     * 2 and 3 the Builders Club membership and add-ons.
+     */
+    public boolean belongsToWindow(int windowId, int loyaltyPointsType) {
+        if (windowId == WINDOW_CLUB_BUY) {
+            return this.isHabboClubOffer();
+        }
+
+        if (windowId == WINDOW_LOYALTY_VIP) {
+            return this.isHabboClubOffer()
+                    && this.credits == 0
+                    && this.points > 0
+                    && (loyaltyPointsType < 0 || this.pointsType == loyaltyPointsType);
+        }
+
         return this.getWindowId() == windowId;
     }
 

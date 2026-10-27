@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSaveGate;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
@@ -33,6 +34,10 @@ public class WiredTriggerSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired trigger settings"));
                         return;
                     }
+
+                    // AIR drops a save with more than 20 picks without an answer; a repeated pick is kept once.
+                    if (WiredSaveGate.dropsSilently(settings)) return;
+                    WiredSaveGate.keepPicksOnce(settings);
 
                     String sourceRefusal = WiredSourceSaveRules.apply(trigger, settings, room);
                     if (sourceRefusal != null) {

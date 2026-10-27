@@ -70,11 +70,12 @@ class WiredConditionChestSelectionTest {
     }
 
     @Test
-    void withNoChestToCheckBothConditionsPassWhateverTheComparison() {
+    void withNoChestToCheckItemsPassesAndItemTypesCountsZero() {
         Room room = room(1);
         when(room.getHabboItem(1)).thenReturn(mock(InteractionWiredChest.class));
 
         for (InteractionWiredCondition box : boxes()) {
+            // At most 10: a count of 0 passes.
             assertTrue(save(box, room), box.getClass().getSimpleName());
             assertTrue(box.evaluate(context(room, null)), box.getClass().getSimpleName());
 
@@ -83,10 +84,29 @@ class WiredConditionChestSelectionTest {
             when(room.getHabboItem(1)).thenReturn(null);
             assertTrue(box.evaluate(context(room, null)), box.getClass().getSimpleName());
             when(room.getHabboItem(1)).thenReturn(mock(InteractionWiredChest.class));
+
+            // More than 10: AIR's Chest Has Items still passes with no chest, Chest Has Item Types compares 0.
+            assertTrue(saveParams(box, room, new int[] {10, 0, 0, WiredComparison.GREATER}));
+            assertEquals(
+                    box instanceof WiredConditionChestHasItems,
+                    box.evaluate(context(room, null)),
+                    box.getClass().getSimpleName());
         }
     }
 
-    /** Saves [10, 5, more than or equal, 3] with these chest picks (Chest Has Item Types' second picks). */
+    private static boolean saveParams(InteractionWiredCondition box, Room room, int[] params) {
+        WiredSettings settings = chestPicks(box, settings(params));
+        ConfigurationManager config = capOf(5);
+        GameEnvironment environment = environmentWith(room);
+
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class)) {
+            platform.when(WiredPlatform::configuration).thenReturn(config);
+            platform.when(WiredPlatform::gameEnvironment).thenReturn(environment);
+            return box.saveData(settings);
+        }
+    }
+
+    /** Saves [amount 10, mode 5, target 5, at most (3)] with these chest picks (Chest Has Item Types' second picks). */
     private static boolean save(InteractionWiredCondition box, Room room, int... picks) {
         WiredSettings settings = chestPicks(box, settings(new int[] {10, 5, WiredComparison.GREATER_EQUAL, 3}), picks);
         ConfigurationManager config = capOf(5);

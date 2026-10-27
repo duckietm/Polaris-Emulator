@@ -134,9 +134,11 @@ public final class WiredLeaderboardQuery {
         InteractionWiredExtra levelSystem = config.hasColumn(WiredLeaderboardCodec.COLUMN_LEVEL)
                 ? WiredVariableLevelSystemSupport.getLevelSystem(room, definition)
                 : null;
-        Map<Integer, String> texts = config.hasColumn(WiredLeaderboardCodec.COLUMN_TEXT_CONNECTION)
-                ? WiredVariableTextConnectorSupport.mappings(room, definition.getId())
-                : Map.of();
+        boolean showsText = config.hasColumn(WiredLeaderboardCodec.COLUMN_TEXT_CONNECTION);
+        Map<Integer, String> texts =
+                showsText ? WiredVariableTextConnectorSupport.mappings(room, definition.getId()) : Map.of();
+        // A value without a label shows the connector's "_=" text, as in Habbo (observed on AIR).
+        String fallback = showsText ? WiredVariableTextConnectorSupport.fallbackText(room, definition.getId()) : null;
 
         // As in Habbo, a row carries its creation and last-update times only when the board shows that column.
         boolean showsCreation = config.hasColumn(WiredLeaderboardCodec.COLUMN_CREATION);
@@ -149,7 +151,7 @@ public final class WiredLeaderboardQuery {
                     ? WiredVariableLevelSystemSupport.getDerivedValue(
                             levelSystem, WiredExtraVariableLevelUpSystem.SUB_CURRENT_LEVEL, value)
                     : null;
-            String text = value != null ? texts.get(value) : null;
+            String text = value != null ? texts.getOrDefault(value, fallback) : null;
             rows.add(new WiredLeaderboardRow(
                     (int) Math.min(Integer.MAX_VALUE, offset + i + 1),
                     holder.userId(),

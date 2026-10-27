@@ -39,4 +39,15 @@ class WiredEffectChangeVariableValueOfficialMathTest {
         }
         assertEquals(0, applyOperation(OP_RANDOM, 5, 0));
     }
+
+    @Test
+    void randomNeverDrawsItsBound() {
+        for (int i = 0; i < 50; i++) {
+            assertEquals(0, applyOperation(OP_RANDOM, 9, 1));
+        }
+        for (int i = 0; i < 200; i++) {
+            int value = applyOperation(OP_RANDOM, 0, 5);
+            assertTrue(value >= 0 && value < 5, "value " + value);
+        }
+    }
 }

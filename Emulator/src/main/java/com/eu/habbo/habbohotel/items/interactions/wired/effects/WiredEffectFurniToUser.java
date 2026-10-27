@@ -10,15 +10,19 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredFairDeal;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
     public static final WiredEffectType type = WiredEffectType.FURNI_TO_USER;
@@ -34,19 +38,34 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
+
+        if (room == null) {
+            return;
+        }
+
         List<HabboItem> items = new ArrayList<>(this.resolveItems(ctx));
-        Habbo habbo = this.resolveLastHabbo(room, ctx);
-
-        if (room == null || habbo == null || habbo.getRoomUnit() == null) {
-            return;
-        }
-
         items.removeIf(item -> item == null);
+        List<Habbo> habbos = this.resolveHabbos(room, ctx);
+        habbos.removeIf(habbo -> habbo.getRoomUnit() == null);
 
-        if (items.isEmpty()) {
+        if (items.isEmpty() || habbos.isEmpty()) {
             return;
         }
 
+        // AIR deals the furni evenly over the users (one each with as many furni as users, the extra ones to
+        // different users each firing) and moves them in a random order.
+        Collections.shuffle(items, ThreadLocalRandom.current());
+        List<Habbo> owners = WiredFairDeal.deal(habbos, items.size());
+        Map<Habbo, List<HabboItem>> dealt = new LinkedHashMap<>();
+
+        for (int i = 0; i < items.size(); i++) {
+            dealt.computeIfAbsent(owners.get(i), habbo -> new ArrayList<>()).add(items.get(i));
+        }
+
+        dealt.forEach((habbo, dealtItems) -> this.moveToUser(room, ctx, habbo, dealtItems));
+    }
+
+    private void moveToUser(Room room, WiredContext ctx, Habbo habbo, List<HabboItem> items) {
         items.sort(Comparator.comparingDouble(HabboItem::getZ).thenComparingInt(HabboItem::getId));
 
         Map<Integer, Double> followerZOverrides = new HashMap<>();

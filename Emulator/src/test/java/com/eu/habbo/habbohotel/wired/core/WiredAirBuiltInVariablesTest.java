@@ -47,7 +47,7 @@ class WiredAirBuiltInVariablesTest {
     @Test
     void anUpCounterShowsItsStateAndPulses() {
         InteractionGameUpCounter counter = mock(InteractionGameUpCounter.class);
-        when(counter.getCurrentTimeInMs()).thenReturn(12_500);
+        when(counter.getCurrentTimeMs()).thenReturn(12_500L);
         when(counter.isRunning()).thenReturn(true);
 
         assertEquals(25, WiredSmartVariables.readFurniValue(counter, "~clock.pulse_count"), "12.5 s is 25 pulses");

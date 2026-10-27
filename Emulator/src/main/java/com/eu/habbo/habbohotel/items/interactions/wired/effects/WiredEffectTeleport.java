@@ -19,6 +19,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredFairDeal;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
@@ -34,9 +35,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredEffectTeleport extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.TELEPORT;
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectTeleport.class);
 
     protected List<HabboItem> items;
     private boolean fastTeleport = false;
@@ -184,31 +188,56 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
         }
 
         tile = landingTile(room, tile);
+        RoomTile landing = tile;
+        // AIR's normal Teleport To raises Walks On at the republish, while the user still stands on the old tile;
+        // the landing then only raises Walks Off. Fast mode raises both at the landing.
+        boolean walkOnAtRepublish = republishDelay >= 0 && !fastTeleport;
 
         if (republishDelay >= 0) {
             schedule(
                     () -> {
                         if (room.isLoaded() && roomUnit.isInRoom()) {
                             room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
+
+                            if (walkOnAtRepublish) {
+                                walkOnLanding(room, roomUnit, landing);
+                            }
                         }
                     },
                     republishDelay);
         }
 
+        RoomUnitTeleport landingTask = new RoomUnitTeleport(
+                roomUnit,
+                room,
+                tile.x,
+                tile.y,
+                tile.getStackHeight() + (tile.state == RoomTileState.SIT ? -0.5 : 0),
+                roomUnit.getEffectId());
         schedule(
                 () -> {
                     roomUnit.isWiredTeleporting = true;
                 },
                 Math.max(0, landingDelay - 500));
-        schedule(
-                new RoomUnitTeleport(
-                        roomUnit,
-                        room,
-                        tile.x,
-                        tile.y,
-                        tile.getStackHeight() + (tile.state == RoomTileState.SIT ? -0.5 : 0),
-                        roomUnit.getEffectId()),
-                Math.max(0, landingDelay));
+        schedule(walkOnAtRepublish ? landingTask.withoutWalkOn() : landingTask, Math.max(0, landingDelay));
+    }
+
+    private static void walkOnLanding(Room room, RoomUnit roomUnit, RoomTile landing) {
+        RoomTile current = roomUnit.getCurrentLocation();
+        HabboItem topItem = room.getTopItemAt(landing.x, landing.y);
+
+        if (topItem == null
+                || current == null
+                || landing.equals(current)
+                || topItem == room.getTopItemAt(current.x, current.y)) {
+            return;
+        }
+
+        try {
+            topItem.onWalkOn(roomUnit, room, new Object[] {current, landing});
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
     }
 
     private static void schedule(Runnable task, long delay) {
@@ -356,9 +385,13 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
 
         if (effectiveItems.isEmpty()) return;
 
-        for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
-            int i = Emulator.getRandom().nextInt(effectiveItems.size());
-            HabboItem item = effectiveItems.get(i);
+        // AIR spreads the users over the furni: each furni once before any furni twice.
+        List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        List<HabboItem> targets = WiredFairDeal.deal(effectiveItems, users.size());
+
+        for (int i = 0; i < users.size(); i++) {
+            RoomUnit roomUnit = users.get(i);
+            HabboItem item = targets.get(i);
 
             if (item == null) continue;
 

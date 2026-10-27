@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -42,11 +43,10 @@ public class WiredEffectUsersHandItem extends InteractionWiredEffect implements 
         Set<RoomUnit> result = new LinkedHashSet<>();
 
         for (RoomUnit roomUnit : room.getRoomUnits()) {
-            // 0 is any hand item, as in Habbo; empty hands are that one inverted.
+            // AIR: only avatars, holding exactly this hand item; 0 ("None" in the editor) is an empty hand.
             if (roomUnit != null
-                    && (this.handItemId == 0
-                            ? roomUnit.getHandItem() > 0
-                            : roomUnit.getHandItem() == this.handItemId)) {
+                    && roomUnit.getRoomUnitType() == RoomUnitType.USER
+                    && roomUnit.getHandItem() == this.handItemId) {
                 result.add(roomUnit);
             }
         }
@@ -61,7 +61,8 @@ public class WiredEffectUsersHandItem extends InteractionWiredEffect implements 
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        this.handItemId = (params.length > 0) ? Math.max(0, params[0]) : 0;
+        // Stored as sent, as AIR does.
+        this.handItemId = (params.length > 0) ? params[0] : 0;
         this.filterExisting = settings.isSelectorFilter();
         this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());
@@ -124,7 +125,7 @@ public class WiredEffectUsersHandItem extends InteractionWiredEffect implements 
             return;
         }
 
-        this.handItemId = Math.max(0, data.handItemId);
+        this.handItemId = data.handItemId;
         this.filterExisting = data.filterExisting;
         this.invert = data.invert;
         this.setDelay(data.delay);

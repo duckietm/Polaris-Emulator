@@ -190,9 +190,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable
             nextArrayData = parseArrayData(stringParts.length > 3 ? stringParts[3] : null);
         }
 
-        if (!this.isValidSource(room, nextTargetType, nextVariableToken)) return false;
-        if (nextReferenceMode == REFERENCE_VARIABLE
-                && !this.isValidReference(room, nextReferenceTargetType, nextReferenceVariableToken)) return false;
+        // Empty or unknown slots save too (AIR); every comparison then blocks.
         WiredArrayVariableDefinition targetArray =
                 this.resolveArrayDefinition(room, nextTargetType, getCustomItemId(nextVariableToken));
         if (targetArray != null && !WiredArrayEditorSupport.isAddressableCell(nextArrayData.address, targetArray))
@@ -773,34 +771,6 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable
         if (currentValue == null || referenceValue == null) return false;
 
         return WiredArrayRuntimeSupport.compare(currentValue.longValue(), referenceValue.longValue(), this.comparison);
-    }
-
-    private boolean isValidSource(Room room, int targetType, String variableToken) {
-        if (variableToken == null || variableToken.isEmpty()) return false;
-
-        return switch (targetType) {
-            case TARGET_USER ->
-                isInternalVariableToken(variableToken)
-                        ? canUseUserInternalReference(getInternalVariableKey(variableToken))
-                        : this.isValidUserCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_FURNI ->
-                isInternalVariableToken(variableToken)
-                        ? canUseFurniInternalReference(getInternalVariableKey(variableToken))
-                        : this.isValidFurniCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_CONTEXT ->
-                isInternalVariableToken(variableToken)
-                        ? canUseContextInternalReference(getInternalVariableKey(variableToken))
-                        : this.isValidContextCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_ROOM ->
-                isInternalVariableToken(variableToken)
-                        ? canUseRoomInternalReference(getInternalVariableKey(variableToken))
-                        : this.isValidRoomCustomValue(room, getCustomItemId(variableToken));
-            default -> false;
-        };
-    }
-
-    private boolean isValidReference(Room room, int targetType, String variableToken) {
-        return this.isValidSource(room, targetType, variableToken);
     }
 
     private boolean isValidUserCustomValue(Room room, int variableItemId) {

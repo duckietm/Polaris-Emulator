@@ -18,6 +18,7 @@ public class RoomUnitTeleport implements Runnable {
     private int x;
     private int y;
     private double z;
+    private boolean walkOnAtLanding = true;
 
     public RoomUnitTeleport(RoomUnit roomUnit, Room room, int x, int y, double z, int newEffect) {
         this.roomUnit = roomUnit;
@@ -26,6 +27,12 @@ public class RoomUnitTeleport implements Runnable {
         this.y = y;
         this.z = z;
         // newEffect parameter is unused
+    }
+
+    /** Leaves Walks On out of the landing, for a teleport that raised it already (AIR's normal Teleport To). */
+    public RoomUnitTeleport withoutWalkOn() {
+        this.walkOnAtLanding = false;
+        return this;
     }
 
     @Override
@@ -68,7 +75,7 @@ public class RoomUnitTeleport implements Runnable {
         this.room.updateHabbosAt(newLocation.x, newLocation.y);
         this.room.updateBotsAt(newLocation.x, newLocation.y);
 
-        topItem = room.getTopItemAt(x, y);
+        topItem = this.walkOnAtLanding ? room.getTopItemAt(x, y) : null;
         if (topItem != null
                 && roomUnit.getCurrentLocation().equals(room.getLayout().getTile((short) x, (short) y))) {
             try {

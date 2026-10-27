@@ -17,6 +17,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableIds;
@@ -46,7 +47,7 @@ import java.util.List;
  * before the slot has no source and keeps reading its picks.
  */
 public class WiredConditionChestHasItems extends InteractionWiredCondition
-        implements WiredOfficialSources, WiredOfficialVariableIds {
+        implements WiredOfficialSources, WiredOfficialVariableIds, WiredOfficialQuantifier {
     public static final WiredConditionType type = WiredConditionType.CHEST_HAS_ITEMS;
 
     static final int AMOUNT_CONSTANT = 0;
@@ -61,6 +62,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
     private final List<Integer> chestIds = new ArrayList<>();
     /** Where the chests come from: the picks (100), the trigger, a selector or a signal. */
     private int furniSource = DEFAULT_CHEST_SOURCE;
+
+    private int quantifier = 0;
 
     private int amount = 1;
     private int comparison = WiredComparison.GREATER_EQUAL;
@@ -211,6 +214,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
         this.comparison = (params.length > 3) ? WiredComparison.normalize(params[3]) : WiredComparison.GREATER_EQUAL;
         this.amountVariableToken = variableTokenOf(settings);
         this.furniSource = normalizeSource(settings.furniSource(0, DEFAULT_CHEST_SOURCE));
+        this.quantifier = normalizeChestQuantifier(settings.getQuantifierCode());
 
         // A variable amount that names no variable would silently behave as a constant, so it is
         // refused at the door instead of being saved as something the dialog did not say.
@@ -272,7 +276,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
                         this.amountTarget,
                         this.amountVariableToken,
                         this.valueTarget,
-                        this.furniSource));
+                        this.furniSource,
+                        this.quantifier));
     }
 
     @Override
@@ -299,6 +304,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
         }
         // Saved before the source slot: the picks, as the box always read them.
         this.furniSource = (data.furniSource != null) ? normalizeSource(data.furniSource) : DEFAULT_CHEST_SOURCE;
+        this.quantifier = (data.quantifier != null) ? normalizeChestQuantifier(data.quantifier) : 0;
     }
 
     @Override
@@ -335,6 +341,17 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
         this.amountVariableToken = "";
         this.valueTarget = WiredValueVariable.TARGET_GLOBAL;
         this.furniSource = DEFAULT_CHEST_SOURCE;
+        this.quantifier = 0;
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
+    }
+
+    /** AIR opens the chest conditions with the furni quantifier and keeps 0, 1 or 2; it does not change the count. */
+    static int normalizeChestQuantifier(int value) {
+        return (value >= 0 && value <= 2) ? value : 0;
     }
 
     /** Normalises the token the dialog sends; a blank one simply names no variable. */
@@ -351,6 +368,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
         String amountVariableToken;
         Integer valueTarget;
         Integer furniSource;
+        Integer quantifier;
 
         public JsonData(
                 int amount,
@@ -360,7 +378,8 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
                 int amountTarget,
                 String amountVariableToken,
                 Integer valueTarget,
-                Integer furniSource) {
+                Integer furniSource,
+                Integer quantifier) {
             this.amount = amount;
             this.comparison = comparison;
             this.chestIds = chestIds;
@@ -369,6 +388,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition
             this.amountVariableToken = amountVariableToken;
             this.valueTarget = valueTarget;
             this.furniSource = furniSource;
+            this.quantifier = quantifier;
         }
     }
 }

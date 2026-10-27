@@ -145,10 +145,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition
         this.arrayExistenceMode = arrayData.existenceMode == ARRAY_ENTRY_EXISTS ? ARRAY_ENTRY_EXISTS : ARRAY_EXISTS;
         this.arrayAddress = arrayData.address;
 
-        if (this.variableToken.isEmpty()) {
-            return false;
-        }
-
+        // No variable, or one of another domain, saves too (AIR): Has then never passes and Not Has always does.
         WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, this.variableItemId);
         if (arrayDefinition != null
                 && this.arrayExistenceMode == ARRAY_ENTRY_EXISTS
@@ -182,8 +179,11 @@ public class WiredConditionHasVariable extends InteractionWiredCondition
     protected boolean evaluateWithNegation(WiredContext ctx, boolean negative) {
         Room room = ctx.room();
 
-        if (room == null || this.variableToken == null || this.variableToken.isEmpty()) {
+        if (room == null) {
             return false;
+        }
+        if (this.variableToken == null || this.variableToken.isEmpty()) {
+            return negative;
         }
 
         // A pointer is checked as the variable it stands for in this stack.

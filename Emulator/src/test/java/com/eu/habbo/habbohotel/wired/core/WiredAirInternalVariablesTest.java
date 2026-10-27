@@ -40,8 +40,10 @@ class WiredAirInternalVariablesTest {
         when(item.getRotation()).thenReturn(4);
 
         assertEquals(14 << 8 | 22, WiredInternalVariableSupport.readFurniValue(this.room, item, "@position"));
+        // The low byte is the rotation's index among the furni's directions (0, 2, 4, 6 here): facing 4 is 2 (AIR).
         assertEquals(
-                14 << 16 | 22 << 8 | 4, WiredInternalVariableSupport.readFurniValue(this.room, item, "@occupation"));
+                14 << 16 | 22 << 8 | 2, WiredInternalVariableSupport.readFurniValue(this.room, item, "@occupation"));
+        assertEquals(2, WiredInternalVariableSupport.readFurniValue(this.room, item, "@rotation"));
         assertTrue(WiredInternalVariableSupport.canUseFurniDestination("@position"));
         assertTrue(WiredInternalVariableSupport.canUseFurniDestination("@occupation"));
     }

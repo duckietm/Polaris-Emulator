@@ -7,7 +7,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurn
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir | CONDITION | type=ACTOR_DIR | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCheckArray | CONDITION | type=CHECK_ARRAY | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems | CONDITION | type=CHEST_HAS_ITEMS | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionDateRangeActive | CONDITION | type=DATE_RANGE | operator=AND | evaluate=false
@@ -62,7 +62,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHab
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboOwnsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHabboWearsBadge | CONDITION | type=NOT_ACTOR_WEARS_BADGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasTag | CONDITION | type=NOT_USER_TAG | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable | CONDITION | type=NOT_HAS_VAR | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotHasVariable | CONDITION | type=NOT_HAS_VAR | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInGroup | CONDITION | type=NOT_ACTOR_IN_GROUP | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotInTeam | CONDITION | type=NOT_ACTOR_IN_TEAM | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotMatchStatePosition | CONDITION | type=NOT_MATCH_SSHOT | operator=AND | evaluate=true

@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.wired.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -28,7 +27,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
-import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +85,8 @@ class WiredInternalVariableChangedTest {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
             assertTrue(trigger.saveData(settings));
             settings.setStringParam("internal:@user_id");
-            assertThrows(WiredTriggerSaveException.class, () -> trigger.saveData(settings));
+            // Any variable saves (AIR); one that never changes never fires.
+            assertTrue(trigger.saveData(settings));
             settings.setStringParam("internal:@has_rights");
             assertTrue(trigger.saveData(settings));
             settings.setStringParam("internal:@effect");
@@ -173,7 +172,10 @@ class WiredInternalVariableChangedTest {
     void furnitureAndRoomWritesEmitTheActualStoredValueAndCorrectTarget() {
         Room room = mock(Room.class);
         HabboItem item = mock(HabboItem.class);
-        when(item.getBaseItem()).thenReturn(mock(Item.class));
+        Item base = mock(Item.class);
+        // A furni without states refuses @state writes (AIR); this one has six.
+        when(base.getStateCount()).thenReturn(6);
+        when(item.getBaseItem()).thenReturn(base);
         AtomicReference<String> state = new AtomicReference<>("2");
         when(item.getExtradata()).thenAnswer(call -> state.get());
         doAnswer(call -> {

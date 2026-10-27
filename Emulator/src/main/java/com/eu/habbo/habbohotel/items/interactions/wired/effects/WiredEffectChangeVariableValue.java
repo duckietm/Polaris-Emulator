@@ -115,11 +115,15 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
 
-    /** What a destination pass did: wrote nothing, wrote only the values already held, or changed one. */
+    /**
+     * What a destination pass did: wrote nothing, wrote only the values already held, only lowered values, or raised
+     * one. Holders combine by the largest, so one raise shows as a raise.
+     */
     private static final int NOT_WRITTEN = 0;
 
     private static final int WRITTEN_SAME = 1;
-    private static final int WRITTEN_CHANGED = 2;
+    private static final int WRITTEN_LOWERED = 2;
+    private static final int WRITTEN_RAISED = 3;
 
     private int destinationTargetType = TARGET_USER,
             destinationVariableItemId = 0,
@@ -156,6 +160,12 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
         if (room == null || this.destinationVariableToken.isEmpty()) return;
+        if (WiredPointerVariableSupport.ignoredWithoutDelay(room, this.getDelay(), this.destinationVariableItemId))
+            return;
+        if (this.referenceMode == REF_VARIABLE
+                && !this.isUnaryOperation()
+                && WiredPointerVariableSupport.ignoredWithoutDelay(room, this.getDelay(), this.referenceVariableItemId))
+            return;
 
         // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
         int destinationId = WiredPointerVariableSupport.resolve(ctx, room, this.destinationVariableItemId);
@@ -182,9 +192,11 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
             WiredVariableDefinitionFlash.flash(
                     room,
                     destinationId,
-                    written == WRITTEN_CHANGED
+                    written == WRITTEN_RAISED
                             ? WiredVariableDefinitionFlash.KIND_CHANGED
-                            : WiredVariableDefinitionFlash.KIND_UNCHANGED);
+                            : written == WRITTEN_LOWERED
+                                    ? WiredVariableDefinitionFlash.KIND_LOWERED
+                                    : WiredVariableDefinitionFlash.KIND_UNCHANGED);
         }
     }
 
@@ -325,7 +337,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                     value -> room.getUserVariableManager().updateVariableValue(holder, destinationId, value))) {
                 room.getUserVariableManager().updateVariableValue(holder, destinationId, nextValue);
             }
-            wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
+            wrote = Math.max(wrote, written(currentValue, nextValue));
         }
         return wrote;
     }
@@ -344,6 +356,13 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
 
             Integer referenceValue = this.referenceFor(references, roomUnit.getId(), TARGET_USER, index++);
             if (!this.isUnaryOperation() && referenceValue == null) continue;
+
+            // A hand item is only ever handed over: Assign gives the item whatever the user holds, every other
+            // operation leaves the hand as it is (observed on AIR WIN63-202610201032).
+            if (HAND_ITEM_KEY.equals(key)) {
+                if (this.operation == OP_ASSIGN) this.writeUserInternalValue(room, roomUnit, key, referenceValue);
+                continue;
+            }
 
             this.writeUserInternalValue(
                     room, roomUnit, key, applyOperation(this.operation, currentValue, referenceValue));
@@ -382,7 +401,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                     value -> room.getFurniVariableManager().updateVariableValue(itemId, destinationId, value))) {
                 room.getFurniVariableManager().updateVariableValue(itemId, destinationId, nextValue);
             }
-            wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
+            wrote = Math.max(wrote, written(currentValue, nextValue));
         }
         return wrote;
     }
@@ -439,7 +458,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                 value -> room.getRoomVariableManager().updateVariableValue(destinationId, value))) {
             room.getRoomVariableManager().updateVariableValue(destinationId, nextValue);
         }
-        return nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME;
+        return written(currentValue, nextValue);
     }
 
     /** Which variable on which holder a folded change is for. */
@@ -488,7 +507,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                     currentValue == null ? 0 : currentValue,
                     nextValue);
         }
-        return nextValue != (currentValue == null ? 0 : currentValue) ? WRITTEN_CHANGED : WRITTEN_SAME;
+        return written(currentValue == null ? 0 : currentValue, nextValue);
     }
 
     @Deprecated
@@ -589,12 +608,8 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
                 sameHolderRequested, nextReferenceMode, nextDestinationTargetType, nextReferenceTargetType);
         ArrayData nextArrayData = this.parseArrayData(arrayText);
 
-        // No variable chosen yet: Habbo saves the box, and it does nothing until one is (5a3c7a05).
-        if (nextDestinationVariableToken != null && !nextDestinationVariableToken.isEmpty()) {
-            this.validateDestination(room, nextDestinationTargetType, nextDestinationVariableToken);
-        }
-        if (nextReferenceMode == REF_VARIABLE)
-            this.validateReference(room, nextReferenceTargetType, nextReferenceVariableToken);
+        // Habbo saves the box with any variable in either slot, or none: one no box defines, of another kind or
+        // read-only is stored, and the box then changes nothing (observed on AIR WIN63-202610201032).
         this.validateArrayData(
                 room,
                 nextDestinationTargetType,
@@ -960,6 +975,12 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
         return new ArrayList<>(snapshot.values.values()).get(0);
     }
 
+    private static final String HAND_ITEM_KEY = "@handitem_id";
+
+    private static int written(long before, long after) {
+        return after > before ? WRITTEN_RAISED : after < before ? WRITTEN_LOWERED : WRITTEN_SAME;
+    }
+
     static int applyOperation(int operation, int currentValue, Integer referenceValue) {
         if (referenceValue == null && isBitOperation(operation)) return currentValue;
         return switch (operation) {
@@ -967,21 +988,27 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
             case OP_ADD -> clamp((long) currentValue + referenceValue);
             case OP_SUB -> clamp((long) currentValue - referenceValue);
             case OP_MUL -> clamp((long) currentValue * referenceValue);
+            // By 0: the int bound of the value's sign, 0 for 0 (observed on AIR WIN63-202610151745).
             case OP_DIV ->
-                (referenceValue == null || referenceValue == 0) ? currentValue : (currentValue / referenceValue);
+                (referenceValue == null || referenceValue == 0)
+                        ? Integer.signum(currentValue) > 0
+                                ? Integer.MAX_VALUE
+                                : currentValue < 0 ? Integer.MIN_VALUE : 0
+                        : (currentValue / referenceValue);
             case OP_POW ->
                 (referenceValue == null || referenceValue < 0)
                         ? 0
                         : clamp(Math.round(Math.pow(currentValue, referenceValue)));
             case OP_MOD ->
-                (referenceValue == null || referenceValue == 0) ? currentValue : (currentValue % referenceValue);
+                (referenceValue == null || referenceValue == 0) ? 0 : (int) ((long) currentValue % referenceValue);
             // "Set minimum" is a floor and "set maximum" a ceiling, as in the official client.
             case OP_MIN -> (referenceValue != null) ? Math.max(currentValue, referenceValue) : currentValue;
             case OP_MAX -> (referenceValue != null) ? Math.min(currentValue, referenceValue) : currentValue;
             case OP_RANDOM ->
                 (referenceValue == null || referenceValue <= 0)
                         ? 0
-                        : Math.toIntExact(Emulator.getRandom().nextLong(referenceValue + 1L));
+                        // 0 to n-1: the bound itself is never drawn (AIR).
+                        : Math.toIntExact(Emulator.getRandom().nextLong(referenceValue));
             case OP_ABS -> (currentValue == Integer.MIN_VALUE) ? Integer.MAX_VALUE : Math.abs(currentValue);
             case OP_AND -> (referenceValue != null) ? (currentValue & referenceValue) : currentValue;
             case OP_OR -> (referenceValue != null) ? (currentValue | referenceValue) : currentValue;
@@ -1047,104 +1074,6 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
             case ROOM -> TARGET_ROOM;
             case USER -> TARGET_USER;
         };
-    }
-
-    private void validateDestination(Room room, int targetType, String variableToken) throws WiredSaveException {
-        if (variableToken == null || variableToken.isEmpty())
-            throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
-
-        boolean valid =
-                switch (targetType) {
-                    case TARGET_USER ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseUserInternalDestination(getInternalVariableKey(variableToken))
-                                : this.isValidUserCustomDestination(room, getCustomItemId(variableToken));
-                    case TARGET_FURNI ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseFurniInternalDestination(getInternalVariableKey(variableToken))
-                                : this.isValidFurniCustomDestination(room, getCustomItemId(variableToken));
-                    case TARGET_CONTEXT ->
-                        isInternalVariableToken(variableToken)
-                                ? WiredContextVariableSupport.isWritableCapture(
-                                        room, getInternalVariableKey(variableToken))
-                                : this.isValidContextCustomDestination(room, getCustomItemId(variableToken));
-                    case TARGET_ROOM ->
-                        isInternalVariableToken(variableToken)
-                                ? WiredInternalVariableSupport.canUseRoomDestination(
-                                        getInternalVariableKey(variableToken))
-                                : this.isValidRoomCustomDestination(room, getCustomItemId(variableToken));
-                    default -> false;
-                };
-
-        if (!valid) throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-    }
-
-    private void validateReference(Room room, int targetType, String variableToken) throws WiredSaveException {
-        if (variableToken == null || variableToken.isEmpty())
-            throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
-
-        boolean valid =
-                switch (targetType) {
-                    case TARGET_USER ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseUserInternalReference(getInternalVariableKey(variableToken))
-                                : this.isValidUserCustomReference(room, getCustomItemId(variableToken));
-                    case TARGET_FURNI ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseFurniInternalReference(getInternalVariableKey(variableToken))
-                                : this.isValidFurniCustomDestination(room, getCustomItemId(variableToken));
-                    case TARGET_CONTEXT ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseContextInternalReference(getInternalVariableKey(variableToken))
-                                : this.isValidContextCustomReference(room, getCustomItemId(variableToken));
-                    case TARGET_ROOM ->
-                        isInternalVariableToken(variableToken)
-                                ? canUseRoomInternalReference(getInternalVariableKey(variableToken))
-                                : this.isValidRoomCustomReference(room, getCustomItemId(variableToken));
-                    default -> false;
-                };
-
-        if (!valid) throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-    }
-
-    private boolean isValidUserCustomDestination(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition =
-                (room != null) ? room.getUserVariableManager().getDefinitionInfo(variableItemId) : null;
-        return definition != null && (definition.hasValue() || definition.isArray()) && !definition.isReadOnly();
-    }
-
-    private boolean isValidFurniCustomDestination(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition =
-                (room != null) ? room.getFurniVariableManager().getDefinitionInfo(variableItemId) : null;
-        return definition != null && (definition.hasValue() || definition.isArray()) && !definition.isReadOnly();
-    }
-
-    private boolean isValidRoomCustomDestination(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition =
-                (room != null) ? room.getRoomVariableManager().getDefinitionInfo(variableItemId) : null;
-        return definition != null && (definition.hasValue() || definition.isArray()) && !definition.isReadOnly();
-    }
-
-    private boolean isValidContextCustomDestination(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, variableItemId);
-        return definition != null && (definition.hasValue() || definition.isArray()) && !definition.isReadOnly();
-    }
-
-    private boolean isValidUserCustomReference(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition =
-                (room != null) ? room.getUserVariableManager().getDefinitionInfo(variableItemId) : null;
-        return definition != null && (definition.hasValue() || definition.isArray());
-    }
-
-    private boolean isValidRoomCustomReference(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition =
-                (room != null) ? room.getRoomVariableManager().getDefinitionInfo(variableItemId) : null;
-        return definition != null && (definition.hasValue() || definition.isArray());
-    }
-
-    private boolean isValidContextCustomReference(Room room, int variableItemId) {
-        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, variableItemId);
-        return definition != null && (definition.hasValue() || definition.isArray());
     }
 
     private boolean isValidFurniCustomReference(Room room, int variableItemId) {

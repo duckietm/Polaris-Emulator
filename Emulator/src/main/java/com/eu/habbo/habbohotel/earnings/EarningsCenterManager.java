@@ -78,6 +78,18 @@ public class EarningsCenterManager {
         return entries;
     }
 
+    /**
+     * Whether the window collects what the hotel's own source of {@code category} pays (marketplace sales, HC payday,
+     * wired credits): the window and the row are on and the row is not swapped for a configured periodic reward.
+     */
+    public boolean collectsInWindow(EarningsCategory category) {
+        return category != null
+                && this.config.getBoolean(CONFIG_PREFIX + "enabled", false)
+                && this.config.getBoolean(CONFIG_PREFIX + category.getKey() + ".enabled", true)
+                && nativeEnabled(category)
+                && this.nativeIntegration.handles(category);
+    }
+
     /** Whether the player can claim the row now (what the window would show). */
     public boolean isClaimable(Habbo habbo, EarningsCategory category) {
         EarningsEntry entry = buildEntry(habbo, getUserId(habbo), category, now());

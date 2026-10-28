@@ -48,6 +48,16 @@ public final class EarningsNotifications {
         };
     }
 
+    /** Whether {@code category} is collected in the income window (window and row on, the hotel's own source). */
+    public static boolean collectsInWindow(EarningsCategory category) {
+        try {
+            return MANAGER.get().get().collectsInWindow(category);
+        } catch (RuntimeException e) {
+            LOGGER.debug("Earnings state unavailable for collectsInWindow", e);
+            return false;
+        }
+    }
+
     /** Tell an online player that {@code category} holds a new reward, when the window would let them claim it. */
     public static boolean newReward(Habbo habbo, EarningsCategory category) {
         if (habbo == null || habbo.getClient() == null || habbo.getHabboInfo() == null) return false;

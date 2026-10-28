@@ -1,10 +1,17 @@
 package com.eu.habbo.habbohotel.earnings;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
+import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -69,6 +76,18 @@ public class EarningsCenterManager {
         }
 
         return entries;
+    }
+
+    /**
+     * Whether the window collects what the hotel's own source of {@code category} pays (marketplace sales, HC payday,
+     * wired credits): the window and the row are on and the row is not swapped for a configured periodic reward.
+     */
+    public boolean collectsInWindow(EarningsCategory category) {
+        return category != null
+                && this.config.getBoolean(CONFIG_PREFIX + "enabled", false)
+                && this.config.getBoolean(CONFIG_PREFIX + category.getKey() + ".enabled", true)
+                && nativeEnabled(category)
+                && this.nativeIntegration.handles(category);
     }
 
     /** Whether the player can claim the row now (what the window would show). */
@@ -449,31 +468,36 @@ public class EarningsCenterManager {
             }
         }
 
+        /**
+         * Creates the furni and puts it in the open inventory. Writing only the database row left it invisible until
+         * the next login.
+         */
         private void grantItem(Habbo habbo, int itemId, int quantity) throws SQLException {
-            if (!itemExists(itemId)) {
+            // WiredEarnings in this package reaches the hotel through WiredPlatform too.
+            GameEnvironment environment = WiredPlatform.gameEnvironment();
+            ItemManager itemManager = environment == null ? null : environment.getItemManager();
+            Item baseItem = itemManager == null ? null : itemManager.getItem(itemId);
+            if (baseItem == null) {
                 throw new SQLException("Unknown earnings item reward " + itemId);
             }
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO items (user_id, item_id, extra_data) VALUES (?, ?, '')")) {
+            List<HabboItem> created = new ArrayList<>();
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                 for (int i = 0; i < quantity; i++) {
-                    statement.setInt(1, habbo.getHabboInfo().getId());
-                    statement.setInt(2, itemId);
-                    statement.addBatch();
+                    HabboItem item = itemManager.createItem(
+                            connection, habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
+                    if (item == null) {
+                        throw new SQLException("Earnings item reward " + itemId + " could not be created");
+                    }
+                    created.add(item);
                 }
-
-                statement.executeBatch();
-            }
-        }
-
-        private boolean itemExists(int itemId) throws SQLException {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement =
-                            connection.prepareStatement("SELECT id FROM items_base WHERE id = ? LIMIT 1")) {
-                statement.setInt(1, itemId);
-                try (ResultSet set = statement.executeQuery()) {
-                    return set.next();
+            } finally {
+                if (!created.isEmpty()) {
+                    habbo.getInventory().getItemsComponent().addItems(created);
+                    if (habbo.getClient() != null) {
+                        habbo.getClient().sendResponse(new AddHabboItemComposer(created));
+                        habbo.getClient().sendResponse(new InventoryRefreshComposer());
+                    }
                 }
             }
         }
@@ -578,8 +602,8 @@ public class EarningsCenterManager {
                     return false;
                 }
 
-                MarketPlace.getCredits(habbo.getClient());
-                return true;
+                // Only a payout that went through is a successful claim.
+                return MarketPlace.claimSoldCredits(habbo.getClient()) > 0;
             }
 
             if (category == EarningsCategory.HC_PAYDAY) {
@@ -587,8 +611,8 @@ public class EarningsCenterManager {
                     return false;
                 }
 
-                SubscriptionHabboClub.processUnclaimed(habbo);
-                return true;
+                // Only the payday rows: the club gift popup and the HC achievement belong to the login.
+                return SubscriptionHabboClub.claimUnclaimedPayDays(habbo) > 0;
             }
 
             return false;

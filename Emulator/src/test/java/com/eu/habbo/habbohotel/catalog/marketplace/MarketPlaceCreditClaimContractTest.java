@@ -14,7 +14,7 @@ class MarketPlaceCreditClaimContractTest {
     @Test
     void soldOfferIsDetachedBeforeCreditsAreGranted() throws Exception {
         String source = marketPlaceSource();
-        int getCreditsStart = source.indexOf("public static void getCredits");
+        int getCreditsStart = source.indexOf("public static int claimSoldCredits");
         int payoutRangeGuard = source.indexOf("claimable > Integer.MAX_VALUE", getCreditsStart);
         // The claim now also names the seller it is claiming for; the order it has to
         // keep is the same.
@@ -23,7 +23,7 @@ class MarketPlaceCreditClaimContractTest {
                 "credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice())", getCreditsStart);
         int inventoryRemoval = source.indexOf("removeMarketplaceOffer(offer)", getCreditsStart);
 
-        assertTrue(getCreditsStart > -1, "MarketPlace.getCredits must exist");
+        assertTrue(getCreditsStart > -1, "MarketPlace.claimSoldCredits must exist");
         assertTrue(
                 payoutRangeGuard > getCreditsStart && payoutRangeGuard < removeUserCall,
                 "Unrepresentable aggregate payouts must be rejected before any offer is claimed");

@@ -4,6 +4,8 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.habbohotel.achievements.Achievement;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
+import com.eu.habbo.habbohotel.earnings.EarningsCategory;
+import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -303,12 +305,13 @@ public class SubscriptionHabboClub extends Subscription {
                         int totalReward =
                                 (calculated.creditRewardForMonthlySpent + calculated.creditRewardForStreakBonus);
                         if (totalReward > 0) {
-                            boolean claimed = claimPayDay(
-                                    Emulator.getGameEnvironment()
-                                            .getHabboManager()
-                                            .getHabbo(userId),
-                                    totalReward,
-                                    HC_PAYDAY_CURRENCY);
+                            Habbo online = Emulator.getGameEnvironment()
+                                    .getHabboManager()
+                                    .getHabbo(userId);
+                            // With the income window on, the payday waits there (as in AIR) instead of going
+                            // straight into the purse.
+                            boolean waits = paydayWaitsInIncomeWindow();
+                            boolean claimed = !waits && claimPayDay(online, totalReward, HC_PAYDAY_CURRENCY);
                             HcPayDayLogEntry le = new HcPayDayLogEntry(
                                     timestampNow,
                                     userId,
@@ -319,7 +322,13 @@ public class SubscriptionHabboClub extends Subscription {
                                     totalReward,
                                     HC_PAYDAY_CURRENCY,
                                     claimed);
-                            Emulator.getThreading().run(le);
+                            if (waits) {
+                                // Written now, so the row is claimable when the player is told about it.
+                                le.run();
+                                EarningsNotifications.newReward(online, EarningsCategory.HC_PAYDAY);
+                            } else {
+                                Emulator.getThreading().run(le);
+                            }
                         }
                         stats.lastHCPayday = timestampNow;
                         Emulator.getThreading().run(stats);
@@ -373,6 +382,25 @@ public class SubscriptionHabboClub extends Subscription {
                             habbo.getHabboStats().getRemainingClubGifts()));
         }
 
+        // The income window collects the payday rows; the client lights the purse indicator from its first status.
+        if (paydayWaitsInIncomeWindow()) return;
+
+        claimUnclaimedPayDays(habbo);
+    }
+
+    /** Whether unpaid HC paydays wait in the income window (its HC payday row) instead of paying at once. */
+    public static boolean paydayWaitsInIncomeWindow() {
+        return EarningsNotifications.collectsInWindow(EarningsCategory.HC_PAYDAY);
+    }
+
+    /**
+     * Pays out the payday rows the user has not collected yet.
+     *
+     * @return how many rows were paid
+     */
+    public static int claimUnclaimedPayDays(Habbo habbo) {
+        int paid = 0;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT * FROM `logs_hc_payday` WHERE user_id = ? AND claimed = 0")) {
@@ -392,7 +420,9 @@ public class SubscriptionHabboClub extends Subscription {
                         // row each paid it out.
                         if (!claimPayDayRow(connection, logId)) continue;
 
-                        if (!claimPayDay(habbo, totalPayout, currency)) {
+                        if (claimPayDay(habbo, totalPayout, currency)) {
+                            paid++;
+                        } else {
                             releasePayDayRow(connection, logId);
                         }
                     } catch (Exception e) {
@@ -405,6 +435,8 @@ public class SubscriptionHabboClub extends Subscription {
         } catch (SQLException e) {
             SubscriptionManager.LOGGER.error("Caught SQL exception", e);
         }
+
+        return paid;
     }
 
     /**

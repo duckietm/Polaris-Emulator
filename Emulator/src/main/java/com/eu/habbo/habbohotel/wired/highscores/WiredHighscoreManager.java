@@ -13,13 +13,14 @@ import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -27,8 +28,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,63 +241,73 @@ public class WiredHighscoreManager {
             copy = new ArrayList<>(list);
         }
 
-        Stream<WiredHighscoreRow> highscores = copy.stream()
+        List<WiredHighscoreDataEntry> entries = copy.stream()
                 .filter(entry -> this.timeMatchesEntry(entry, clearType)
                         && (scoreType != WiredHighscoreScoreType.MOSTWIN || entry.isWin()))
-                .map(entry -> new WiredHighscoreRow(
-                        entry.getUserIds().stream()
-                                .map(id -> Emulator.getGameEnvironment()
-                                        .getHabboManager()
-                                        .getCachedUsername(id))
-                                .collect(Collectors.toList()),
-                        entry.getScore()));
+                .collect(Collectors.toList());
 
+        return rows(entries, scoreType, id -> Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getCachedUsername(id));
+    }
+
+    /**
+     * The board rows for the entries of one period. A team is the set of its user ids: the boards used to group
+     * by the hash of the list of names, so two teams whose lists collided, or two users whose names were not
+     * cached, shared a row, and the same team listed in another order did not.
+     */
+    static List<WiredHighscoreRow> rows(
+            List<WiredHighscoreDataEntry> entries, WiredHighscoreScoreType scoreType, IntFunction<String> username) {
         if (scoreType == WiredHighscoreScoreType.CLASSIC) {
-            return highscores.sorted(WiredHighscoreRow::compareTo).collect(Collectors.toList());
+            return entries.stream()
+                    .map(entry -> row(entry, entry.getScore(), username))
+                    .sorted(WiredHighscoreRow::compareTo)
+                    .collect(Collectors.toList());
         }
 
+        Collection<List<WiredHighscoreDataEntry>> teams = entries.stream()
+                .collect(Collectors.groupingBy(
+                        entry -> Set.copyOf(entry.getUserIds()), LinkedHashMap::new, Collectors.toList()))
+                .values();
+
         if (scoreType == WiredHighscoreScoreType.PERTEAM) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> e.getValue().stream()
+            return teams.stream()
+                    .map(team -> team.stream()
+                            .map(entry -> row(entry, entry.getScore(), username))
                             .sorted(WiredHighscoreRow::compareTo)
-                            .collect(Collectors.toList())
-                            .get(0))
+                            .findFirst()
+                            .orElseThrow())
                     .sorted(WiredHighscoreRow::compareTo)
                     .collect(Collectors.toList());
         }
 
         if (scoreType == WiredHighscoreScoreType.MOSTWIN) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> new WiredHighscoreRow(
-                            e.getValue().get(0).getUsers(), e.getValue().size()))
+            return teams.stream()
+                    .map(team -> row(team.get(0), team.size(), username))
                     .sorted(WiredHighscoreRow::compareTo)
                     .collect(Collectors.toList());
         }
 
-        if (scoreType == WiredHighscoreScoreType.LONGESTTIME) {
-            return bestPerTeam(highscores, true);
-        }
-
-        // The fastest time is the same shape read the other way round: keep each team's smallest
+        // The fastest time is the same shape as the longest read the other way round: keep each team's smallest
         // score and put the smallest first, or the board would crown whoever was slowest.
-        if (scoreType == WiredHighscoreScoreType.FASTESTTIME) {
-            return bestPerTeam(highscores, false);
+        if (scoreType == WiredHighscoreScoreType.LONGESTTIME || scoreType == WiredHighscoreScoreType.FASTESTTIME) {
+            boolean longest = scoreType == WiredHighscoreScoreType.LONGESTTIME;
+            Comparator<WiredHighscoreDataEntry> byScore = Comparator.comparingInt(WiredHighscoreDataEntry::getScore);
+            Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
+
+            return teams.stream()
+                    .map(team -> longest ? Collections.max(team, byScore) : Collections.min(team, byScore))
+                    .map(entry -> row(entry, entry.getScore(), username))
+                    .sorted(longest ? byValue.reversed() : byValue)
+                    .collect(Collectors.toList());
         }
 
         return null;
     }
 
-    private static List<WiredHighscoreRow> bestPerTeam(Stream<WiredHighscoreRow> highscores, boolean longest) {
-        Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
-
-        return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                .map(e -> (longest
-                                ? e.getValue().stream().max(byValue)
-                                : e.getValue().stream().min(byValue))
-                        .orElse(null))
-                .filter(Objects::nonNull)
-                .sorted(longest ? byValue.reversed() : byValue)
-                .collect(Collectors.toList());
+    private static WiredHighscoreRow row(WiredHighscoreDataEntry entry, int value, IntFunction<String> username) {
+        return new WiredHighscoreRow(
+                entry.getUserIds().stream().map(username::apply).collect(Collectors.toList()), value);
     }
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {

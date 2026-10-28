@@ -246,9 +246,10 @@ public class WiredHighscoreManager {
                         && (scoreType != WiredHighscoreScoreType.MOSTWIN || entry.isWin()))
                 .collect(Collectors.toList());
 
-        return rows(entries, scoreType, id -> Emulator.getGameEnvironment()
-                .getHabboManager()
-                .getCachedUsername(id));
+        return rows(
+                entries,
+                scoreType,
+                id -> Emulator.getGameEnvironment().getHabboManager().getCachedUsername(id));
     }
 
     /**

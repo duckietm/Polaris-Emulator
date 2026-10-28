@@ -28,25 +28,37 @@ class WiredHighscoreTeamRowsTest {
     void usersWithTheSameNameAreStillDifferentTeams() {
         List<WiredHighscoreDataEntry> entries = List.of(entry(10, true, 1), entry(30, true, 2), entry(20, true, 1));
 
-        assertEquals(List.of(30, 20), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.PERTEAM, UNCACHED)));
-        assertEquals(List.of(2, 1), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.MOSTWIN, UNCACHED)));
-        assertEquals(List.of(30, 20), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.LONGESTTIME, UNCACHED)));
-        assertEquals(List.of(10, 30), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.FASTESTTIME, UNCACHED)));
+        assertEquals(
+                List.of(30, 20),
+                values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.PERTEAM, UNCACHED)));
+        assertEquals(
+                List.of(2, 1), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.MOSTWIN, UNCACHED)));
+        assertEquals(
+                List.of(30, 20),
+                values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.LONGESTTIME, UNCACHED)));
+        assertEquals(
+                List.of(10, 30),
+                values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.FASTESTTIME, UNCACHED)));
     }
 
     @Test
     void oneTeamListedInAnotherOrderIsOneTeam() {
         List<WiredHighscoreDataEntry> entries = List.of(entry(5, true, 7, 8), entry(9, true, 8, 7));
 
-        assertEquals(List.of(9), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.PERTEAM, id -> "u" + id)));
-        assertEquals(List.of(2), values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.MOSTWIN, id -> "u" + id)));
+        assertEquals(
+                List.of(9),
+                values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.PERTEAM, id -> "u" + id)));
+        assertEquals(
+                List.of(2),
+                values(WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.MOSTWIN, id -> "u" + id)));
     }
 
     @Test
     void classicKeepsEveryEntryAndShowsTheNames() {
         List<WiredHighscoreDataEntry> entries = List.of(entry(4, false, 1), entry(6, false, 1));
 
-        List<WiredHighscoreRow> rows = WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.CLASSIC, id -> "u" + id);
+        List<WiredHighscoreRow> rows =
+                WiredHighscoreManager.rows(entries, WiredHighscoreScoreType.CLASSIC, id -> "u" + id);
 
         assertEquals(List.of(6, 4), values(rows));
         assertEquals(List.of("u1"), rows.get(0).getUsers());

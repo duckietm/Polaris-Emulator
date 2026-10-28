@@ -1921,7 +1921,8 @@ public final class WiredManager {
                         failureCode = WiredRewardAlertComposer.REWARD_ALL_COLLECTED;
                     }
                 } else {
-                    rewardToGive = pickReward(wiredBox.getRewardItems(), Emulator.getRandom().nextInt(100));
+                    rewardToGive = pickReward(
+                            wiredBox.getRewardItems(), Emulator.getRandom().nextInt(100));
 
                     if (rewardToGive == null) {
                         failureCode = WiredRewardAlertComposer.UNLUCKY_NO_REWARD;

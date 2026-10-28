@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
@@ -44,8 +45,6 @@ public class WiredHighscoreManager {
 
     private static final DayOfWeek firstDayOfWeek =
             WeekFields.of(Locale.of(locale, country)).getFirstDayOfWeek();
-    private static final DayOfWeek lastDayOfWeek =
-            DayOfWeek.of(((firstDayOfWeek.getValue() + 5) % DayOfWeek.values().length) + 1);
     public static ScheduledFuture<?> midnightUpdater = null;
 
     // Every write to items_highscore_data goes through one thread, in the order it was asked for. On the
@@ -300,21 +299,41 @@ public class WiredHighscoreManager {
     }
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {
+        return isInCurrentPeriod(entry.getTimestamp(), timeType, HotelDateTimeUtil.localDateTimeNow(), firstDayOfWeek);
+    }
+
+    /**
+     * Whether a score made at {@code timestamp} counts on a board cleared every {@code timeType}: from the first
+     * second of the current period up to, not including, the first second of the next one. The bounds used to be
+     * exclusive on both ends, so a score made at midnight or in the last second of the period counted nowhere.
+     */
+    static boolean isInCurrentPeriod(
+            long timestamp, WiredHighscoreClearType timeType, LocalDateTime now, DayOfWeek firstDayOfWeek) {
+        LocalDateTime today = now.with(LocalTime.MIDNIGHT);
+        LocalDateTime start;
+        LocalDateTime next;
         switch (timeType) {
-            case DAILY:
-                return entry.getTimestamp() > this.getTodayStartTimestamp()
-                        && entry.getTimestamp() < this.getTodayEndTimestamp();
-            case WEEKLY:
-                return entry.getTimestamp() > this.getWeekStartTimestamp()
-                        && entry.getTimestamp() < this.getWeekEndTimestamp();
-            case MONTHLY:
-                return entry.getTimestamp() > this.getMonthStartTimestamp()
-                        && entry.getTimestamp() < this.getMonthEndTimestamp();
-            case ALLTIME:
+            case DAILY -> {
+                start = today;
+                next = start.plusDays(1);
+            }
+            case WEEKLY -> {
+                start = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek));
+                next = start.plusWeeks(1);
+            }
+            case MONTHLY -> {
+                start = today.with(TemporalAdjusters.firstDayOfMonth());
+                next = start.plusMonths(1);
+            }
+            case ALLTIME -> {
                 return true;
+            }
+            default -> {
+                return false;
+            }
         }
 
-        return false;
+        return timestamp >= HotelDateTimeUtil.toEpochSecond(start) && timestamp < HotelDateTimeUtil.toEpochSecond(next);
     }
 
     public Map<Integer, List<WiredHighscoreDataEntry>> getData() {
@@ -369,45 +388,5 @@ public class WiredHighscoreManager {
 
     static String joinUserIds(List<Integer> userIds) {
         return String.join(",", userIds.stream().map(Object::toString).collect(Collectors.toList()));
-    }
-
-    private long getTodayStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(
-                HotelDateTimeUtil.localDateTimeNow().with(LocalTime.MIDNIGHT));
-    }
-
-    private long getTodayEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1));
-    }
-
-    private long getWeekStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .with(TemporalAdjusters.previousOrSame(firstDayOfWeek)));
-    }
-
-    private long getWeekEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1)
-                .with(TemporalAdjusters.nextOrSame(lastDayOfWeek)));
-    }
-
-    private long getMonthStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .with(TemporalAdjusters.firstDayOfMonth()));
-    }
-
-    private long getMonthEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1)
-                .with(TemporalAdjusters.lastDayOfMonth()));
     }
 }

@@ -61,7 +61,7 @@ public class MarketPlace {
         Set<MarketPlaceOffer> offers = new HashSet<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ?")) {
+                        "SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ? AND marketplace_items.seller_claimed = 0")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -590,6 +590,13 @@ public class MarketPlace {
     }
 
     public static void getCredits(GameClient client) {
+        claimSoldCredits(client);
+    }
+
+    /**
+     * Pays the seller what their sold offers earned and returns the amount paid (0 when nothing was paid).
+     */
+    public static int claimSoldCredits(GameClient client) {
         Set<MarketPlaceOffer> offers = new HashSet<>();
         offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
 
@@ -598,7 +605,7 @@ public class MarketPlace {
             if (offer.getState().equals(MarketPlaceState.SOLD)) {
                 if (offer.getPrice() < 0) {
                     LOGGER.warn("Rejected negative marketplace payout for offer {}", offer.getOfferId());
-                    return;
+                    return 0;
                 }
                 claimable += offer.getPrice();
             }
@@ -612,7 +619,7 @@ public class MarketPlace {
                     "Marketplace payout for user {} exceeds wallet range: {}",
                     client.getHabbo().getHabboInfo().getId(),
                     claimable);
-            return;
+            return 0;
         }
         try {
             WalletBalanceMath.checkedBalance(currentBalance, (int) claimable);
@@ -622,7 +629,7 @@ public class MarketPlace {
                     client.getHabbo().getHabboInfo().getId(),
                     currentBalance,
                     claimable);
-            return;
+            return 0;
         }
 
         int credits = 0;
@@ -647,10 +654,16 @@ public class MarketPlace {
         } else {
             client.getHabbo().givePoints(MARKETPLACE_CURRENCY, credits);
         }
+
+        return credits;
     }
 
     /**
      * Takes a sold offer's proceeds, once.
+     *
+     * <p>The offer is marked as paid out with {@code seller_claimed}. It used to be detached by setting its
+     * {@code user_id} to -1, which a database with the {@code fk_market_user} foreign key refuses, so the seller
+     * was never paid. The row keeps its seller and its sold state, so the price history still counts the sale.
      *
      * <p>The update carried no condition beyond the id, so two sessions of the same
      * seller could each claim the same sold offer and each be paid for it. Keyed on the
@@ -662,7 +675,7 @@ public class MarketPlace {
     private static boolean removeUser(MarketPlaceOffer offer, int sellerId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE marketplace_items SET user_id = -1 WHERE id = ? AND user_id = ? AND state = ?")) {
+                        "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0")) {
             statement.setInt(1, offer.getOfferId());
             statement.setInt(2, sellerId);
             statement.setInt(3, MarketPlaceState.SOLD.getState());

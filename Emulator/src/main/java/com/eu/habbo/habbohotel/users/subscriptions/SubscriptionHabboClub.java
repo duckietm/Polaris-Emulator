@@ -373,6 +373,17 @@ public class SubscriptionHabboClub extends Subscription {
                             habbo.getHabboStats().getRemainingClubGifts()));
         }
 
+        claimUnclaimedPayDays(habbo);
+    }
+
+    /**
+     * Pays out the payday rows the user has not collected yet.
+     *
+     * @return how many rows were paid
+     */
+    public static int claimUnclaimedPayDays(Habbo habbo) {
+        int paid = 0;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT * FROM `logs_hc_payday` WHERE user_id = ? AND claimed = 0")) {
@@ -392,7 +403,9 @@ public class SubscriptionHabboClub extends Subscription {
                         // row each paid it out.
                         if (!claimPayDayRow(connection, logId)) continue;
 
-                        if (!claimPayDay(habbo, totalPayout, currency)) {
+                        if (claimPayDay(habbo, totalPayout, currency)) {
+                            paid++;
+                        } else {
                             releasePayDayRow(connection, logId);
                         }
                     } catch (Exception e) {
@@ -405,6 +418,8 @@ public class SubscriptionHabboClub extends Subscription {
         } catch (SQLException e) {
             SubscriptionManager.LOGGER.error("Caught SQL exception", e);
         }
+
+        return paid;
     }
 
     /**

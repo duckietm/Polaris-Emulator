@@ -16,8 +16,8 @@ class WiredSaveSettingsRoomContractTest {
     void everyWiredSaveHandsTheRoomToTheSettingsBeforeSaving() throws Exception {
         for (String handler :
                 new String[] {"WiredTriggerSaveDataEvent", "WiredEffectSaveDataEvent", "WiredConditionSaveDataEvent"}) {
-            String source =
-                    Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/wired/" + handler + ".java"));
+            String source = Files.readString(
+                    Path.of("src/main/java/com/eu/habbo/messages/incoming/wired/" + handler + ".java"));
 
             int setRoom = source.indexOf("settings.setRoom(room);");
             int rules = source.indexOf("WiredSourceSaveRules.apply(");

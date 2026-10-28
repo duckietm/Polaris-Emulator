@@ -263,6 +263,9 @@ public class BattleBanzaiGame extends Game {
         this.refreshGates();
 
         for (HabboItem tile : this.gameTiles.values()) {
+            // A tile picked up during the game is someone's inventory item now: leave it alone.
+            if (tile.getRoomId() != this.room.getId()) continue;
+
             if (tile.getExtradata().equals("1")) {
                 tile.setExtradata("0");
                 this.room.updateItem(tile);
@@ -273,8 +276,10 @@ public class BattleBanzaiGame extends Game {
         }
     }
 
-    private synchronized void resetMap() {
+    /** Takes the field from the tiles in the room now; the tiles of an earlier game that left the room go. */
+    synchronized void resetMap() {
         this.tileCount = 0;
+        this.gameTiles.clear();
         for (HabboItem item : this.room.getFloorItems()) {
             if (item instanceof InteractionBattleBanzaiTile) {
                 item.setExtradata("1");

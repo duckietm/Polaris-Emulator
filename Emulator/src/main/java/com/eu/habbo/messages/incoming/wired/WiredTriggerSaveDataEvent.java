@@ -30,6 +30,8 @@ public class WiredTriggerSaveDataEvent extends MessageHandler {
                     try {
                         settings =
                                 BuildersClubItemIds.fromWire(InteractionWired.readSettings(this.packet, false), room);
+                        // As for effects and conditions: without the room a trigger skips the checks that need it.
+                        settings.setRoom(room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired trigger settings"));
                         return;

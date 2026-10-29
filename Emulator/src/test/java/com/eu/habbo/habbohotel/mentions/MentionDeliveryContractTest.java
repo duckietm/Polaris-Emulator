@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class MentionDeliveryContractTest {
@@ -23,13 +24,16 @@ class MentionDeliveryContractTest {
     void theRoomMarksTheLineOnlyWhereItIsSentToTheRoom() throws Exception {
         String chat = Files.readString(MAIN.resolve("habbohotel/rooms/RoomChatManager.java"));
 
+        // Only what lies between the two statements matters, not how deep the block is indented.
         assertTrue(
-                chat.contains("roomChatMessage.delivered = true;\n                this.handleTalk(")
-                        || chat.contains("roomChatMessage.delivered = true;\r\n                this.handleTalk("),
+                Pattern.compile("roomChatMessage\\.delivered = true;\\s*this\\.handleTalk\\(")
+                        .matcher(chat)
+                        .find(),
                 "talk must mark the line as delivered right before it reaches the room");
         assertTrue(
-                chat.contains("roomChatMessage.delivered = true;\n                this.handleShout(")
-                        || chat.contains("roomChatMessage.delivered = true;\r\n                this.handleShout("),
+                Pattern.compile("roomChatMessage\\.delivered = true;\\s*this\\.handleShout\\(")
+                        .matcher(chat)
+                        .find(),
                 "shout must mark the line as delivered right before it reaches the room");
     }
 

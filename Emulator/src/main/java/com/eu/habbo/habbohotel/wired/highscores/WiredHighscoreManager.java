@@ -9,17 +9,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -27,8 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +46,6 @@ public class WiredHighscoreManager {
 
     private static final DayOfWeek firstDayOfWeek =
             WeekFields.of(Locale.of(locale, country)).getFirstDayOfWeek();
-    private static final DayOfWeek lastDayOfWeek =
-            DayOfWeek.of(((firstDayOfWeek.getValue() + 5) % DayOfWeek.values().length) + 1);
     public static ScheduledFuture<?> midnightUpdater = null;
 
     // Every write to items_highscore_data goes through one thread, in the order it was asked for. On the
@@ -240,81 +240,112 @@ public class WiredHighscoreManager {
             copy = new ArrayList<>(list);
         }
 
-        Stream<WiredHighscoreRow> highscores = copy.stream()
+        List<WiredHighscoreDataEntry> entries = copy.stream()
                 .filter(entry -> this.timeMatchesEntry(entry, clearType)
                         && (scoreType != WiredHighscoreScoreType.MOSTWIN || entry.isWin()))
-                .map(entry -> new WiredHighscoreRow(
-                        entry.getUserIds().stream()
-                                .map(id -> Emulator.getGameEnvironment()
-                                        .getHabboManager()
-                                        .getCachedUsername(id))
-                                .collect(Collectors.toList()),
-                        entry.getScore()));
+                .collect(Collectors.toList());
 
+        return rows(
+                entries,
+                scoreType,
+                id -> Emulator.getGameEnvironment().getHabboManager().getCachedUsername(id));
+    }
+
+    /**
+     * The board rows for the entries of one period. A team is the set of its user ids: the boards used to group
+     * by the hash of the list of names, so two teams whose lists collided, or two users whose names were not
+     * cached, shared a row, and the same team listed in another order did not.
+     */
+    static List<WiredHighscoreRow> rows(
+            List<WiredHighscoreDataEntry> entries, WiredHighscoreScoreType scoreType, IntFunction<String> username) {
         if (scoreType == WiredHighscoreScoreType.CLASSIC) {
-            return highscores.sorted(WiredHighscoreRow::compareTo).collect(Collectors.toList());
+            return entries.stream()
+                    .map(entry -> row(entry, entry.getScore(), username))
+                    .sorted(WiredHighscoreRow::compareTo)
+                    .collect(Collectors.toList());
         }
 
+        Collection<List<WiredHighscoreDataEntry>> teams = entries.stream()
+                .collect(Collectors.groupingBy(
+                        entry -> Set.copyOf(entry.getUserIds()), LinkedHashMap::new, Collectors.toList()))
+                .values();
+
         if (scoreType == WiredHighscoreScoreType.PERTEAM) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> e.getValue().stream()
+            return teams.stream()
+                    .map(team -> team.stream()
+                            .map(entry -> row(entry, entry.getScore(), username))
                             .sorted(WiredHighscoreRow::compareTo)
-                            .collect(Collectors.toList())
-                            .get(0))
+                            .findFirst()
+                            .orElseThrow())
                     .sorted(WiredHighscoreRow::compareTo)
                     .collect(Collectors.toList());
         }
 
         if (scoreType == WiredHighscoreScoreType.MOSTWIN) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> new WiredHighscoreRow(
-                            e.getValue().get(0).getUsers(), e.getValue().size()))
+            return teams.stream()
+                    .map(team -> row(team.get(0), team.size(), username))
                     .sorted(WiredHighscoreRow::compareTo)
                     .collect(Collectors.toList());
         }
 
-        if (scoreType == WiredHighscoreScoreType.LONGESTTIME) {
-            return bestPerTeam(highscores, true);
-        }
-
-        // The fastest time is the same shape read the other way round: keep each team's smallest
+        // The fastest time is the same shape as the longest read the other way round: keep each team's smallest
         // score and put the smallest first, or the board would crown whoever was slowest.
-        if (scoreType == WiredHighscoreScoreType.FASTESTTIME) {
-            return bestPerTeam(highscores, false);
+        if (scoreType == WiredHighscoreScoreType.LONGESTTIME || scoreType == WiredHighscoreScoreType.FASTESTTIME) {
+            boolean longest = scoreType == WiredHighscoreScoreType.LONGESTTIME;
+            Comparator<WiredHighscoreDataEntry> byScore = Comparator.comparingInt(WiredHighscoreDataEntry::getScore);
+            Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
+
+            return teams.stream()
+                    .map(team -> longest ? Collections.max(team, byScore) : Collections.min(team, byScore))
+                    .map(entry -> row(entry, entry.getScore(), username))
+                    .sorted(longest ? byValue.reversed() : byValue)
+                    .collect(Collectors.toList());
         }
 
         return null;
     }
 
-    private static List<WiredHighscoreRow> bestPerTeam(Stream<WiredHighscoreRow> highscores, boolean longest) {
-        Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
-
-        return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                .map(e -> (longest
-                                ? e.getValue().stream().max(byValue)
-                                : e.getValue().stream().min(byValue))
-                        .orElse(null))
-                .filter(Objects::nonNull)
-                .sorted(longest ? byValue.reversed() : byValue)
-                .collect(Collectors.toList());
+    private static WiredHighscoreRow row(WiredHighscoreDataEntry entry, int value, IntFunction<String> username) {
+        return new WiredHighscoreRow(
+                entry.getUserIds().stream().map(username::apply).collect(Collectors.toList()), value);
     }
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {
+        return isInCurrentPeriod(entry.getTimestamp(), timeType, HotelDateTimeUtil.localDateTimeNow(), firstDayOfWeek);
+    }
+
+    /**
+     * Whether a score made at {@code timestamp} counts on a board cleared every {@code timeType}: from the first
+     * second of the current period up to, not including, the first second of the next one. The bounds used to be
+     * exclusive on both ends, so a score made at midnight or in the last second of the period counted nowhere.
+     */
+    static boolean isInCurrentPeriod(
+            long timestamp, WiredHighscoreClearType timeType, LocalDateTime now, DayOfWeek firstDayOfWeek) {
+        LocalDateTime today = now.with(LocalTime.MIDNIGHT);
+        LocalDateTime start;
+        LocalDateTime next;
         switch (timeType) {
-            case DAILY:
-                return entry.getTimestamp() > this.getTodayStartTimestamp()
-                        && entry.getTimestamp() < this.getTodayEndTimestamp();
-            case WEEKLY:
-                return entry.getTimestamp() > this.getWeekStartTimestamp()
-                        && entry.getTimestamp() < this.getWeekEndTimestamp();
-            case MONTHLY:
-                return entry.getTimestamp() > this.getMonthStartTimestamp()
-                        && entry.getTimestamp() < this.getMonthEndTimestamp();
-            case ALLTIME:
+            case DAILY -> {
+                start = today;
+                next = start.plusDays(1);
+            }
+            case WEEKLY -> {
+                start = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek));
+                next = start.plusWeeks(1);
+            }
+            case MONTHLY -> {
+                start = today.with(TemporalAdjusters.firstDayOfMonth());
+                next = start.plusMonths(1);
+            }
+            case ALLTIME -> {
                 return true;
+            }
+            default -> {
+                return false;
+            }
         }
 
-        return false;
+        return timestamp >= HotelDateTimeUtil.toEpochSecond(start) && timestamp < HotelDateTimeUtil.toEpochSecond(next);
     }
 
     public Map<Integer, List<WiredHighscoreDataEntry>> getData() {
@@ -369,45 +400,5 @@ public class WiredHighscoreManager {
 
     static String joinUserIds(List<Integer> userIds) {
         return String.join(",", userIds.stream().map(Object::toString).collect(Collectors.toList()));
-    }
-
-    private long getTodayStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(
-                HotelDateTimeUtil.localDateTimeNow().with(LocalTime.MIDNIGHT));
-    }
-
-    private long getTodayEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1));
-    }
-
-    private long getWeekStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .with(TemporalAdjusters.previousOrSame(firstDayOfWeek)));
-    }
-
-    private long getWeekEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1)
-                .with(TemporalAdjusters.nextOrSame(lastDayOfWeek)));
-    }
-
-    private long getMonthStartTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .with(TemporalAdjusters.firstDayOfMonth()));
-    }
-
-    private long getMonthEndTimestamp() {
-        return HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.localDateTimeNow()
-                .with(LocalTime.MIDNIGHT)
-                .plusDays(1)
-                .plusSeconds(-1)
-                .with(TemporalAdjusters.lastDayOfMonth()));
     }
 }

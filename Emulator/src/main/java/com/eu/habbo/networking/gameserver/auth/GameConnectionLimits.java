@@ -65,9 +65,14 @@ public final class GameConnectionLimits {
         return ClientAddressBucket.of(peerIp);
     }
 
+    /** Whether {@link #tryOpen} counts a connection of {@code visitor}, and so whether its close must release one. */
+    public static boolean isCounted(String visitor, Settings settings) {
+        return visitor != null && settings.maxConnections() > 0;
+    }
+
     /** Counts one more open connection for {@code visitor}; false (and nothing counted) when it is at the cap. */
     public boolean tryOpen(String visitor, Settings settings) {
-        if (visitor == null || settings.maxConnections() <= 0) {
+        if (!isCounted(visitor, settings)) {
             return true;
         }
         boolean[] admitted = {false};

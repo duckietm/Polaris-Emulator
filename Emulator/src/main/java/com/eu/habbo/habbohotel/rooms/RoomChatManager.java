@@ -409,27 +409,30 @@ public class RoomChatManager {
                             : -1));
         }
 
-        // Send chat based on type
-        if (chatType == RoomChatType.WHISPER) {
-            this.handleWhisper(habbo, roomChatMessage, prefixMessage, clearPrefixMessage);
-        } else if (chatType == RoomChatType.TALK) {
-            if (suppressSaysOutput) {
-                whisperBackToSpeaker(habbo, roomChatMessage);
-            } else {
-                roomChatMessage.delivered = true;
-                this.handleTalk(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
+        // Send chat based on type. The texts the line's wired queued go out even when sending the line fails, so
+        // they never stay on this thread to follow the next line it handles.
+        try {
+            if (chatType == RoomChatType.WHISPER) {
+                this.handleWhisper(habbo, roomChatMessage, prefixMessage, clearPrefixMessage);
+            } else if (chatType == RoomChatType.TALK) {
+                if (suppressSaysOutput) {
+                    whisperBackToSpeaker(habbo, roomChatMessage);
+                } else {
+                    roomChatMessage.delivered = true;
+                    this.handleTalk(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
+                }
+            } else if (chatType == RoomChatType.SHOUT) {
+                if (suppressSaysOutput) {
+                    whisperBackToSpeaker(habbo, roomChatMessage);
+                } else {
+                    roomChatMessage.delivered = true;
+                    this.handleShout(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
+                }
             }
-        } else if (chatType == RoomChatType.SHOUT) {
-            if (suppressSaysOutput) {
-                whisperBackToSpeaker(habbo, roomChatMessage);
-            } else {
-                roomChatMessage.delivered = true;
-                this.handleShout(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
+        } finally {
+            if (runsWired) {
+                WiredBoxFlashes.releaseAfterSpeaker();
             }
-        }
-
-        if (runsWired) {
-            WiredBoxFlashes.releaseAfterSpeaker();
         }
 
         // Notify bots and talking furniture

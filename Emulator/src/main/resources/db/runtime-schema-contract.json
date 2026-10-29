@@ -11,7 +11,7 @@
     "bots": ["bubble_id", "chat_auto", "chat_delay", "chat_lines", "chat_random", "dance", "effect", "figure", "freeroam", "gender", "id", "motto", "name", "room_id", "rot", "type", "user_id", "x", "y", "z"],
     "builders_club_items": ["item_id", "room_id", "user_id"],
     "calendar_campaigns": ["enabled", "id", "image", "lock_expired", "name", "start_timestamp", "total_days"],
-    "calendar_rewards": ["badge", "campaign_id", "credits", "custom_image", "id", "item_id", "pixels", "points", "points_type", "product_name", "subscription_days", "subscription_type"],
+    "calendar_rewards": ["badge", "campaign_id", "credits", "custom_image", "day", "id", "item_id", "pixels", "points", "points_type", "product_name", "subscription_days", "subscription_type"],
     "calendar_rewards_claimed": ["campaign_id", "day", "reward_id", "timestamp", "user_id"],
     "camera_competition_entries": ["id", "room_id", "submitted_at", "url", "user_id"],
     "camera_web": ["id", "room_id", "timestamp", "url", "user_id"],

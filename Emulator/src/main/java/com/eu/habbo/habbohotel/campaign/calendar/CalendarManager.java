@@ -4,8 +4,10 @@ import static java.time.temporal.ChronoUnit.DAYS;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.database.SqlQueries;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.events.calendar.AdventCalendarProductComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.plugin.events.users.calendar.UserClaimRewardEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,11 +15,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.function.IntUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,6 +131,34 @@ public class CalendarManager {
         return campaign != null && day >= 0 && day < campaign.getTotalDays();
     }
 
+    /**
+     * The reward for a claimed day ({@code day} counted from 0, as the calendar sends it): one of the rewards set for
+     * that day ({@code calendar_rewards.day = day + 1}), otherwise one of the rewards without a day. When several
+     * rewards qualify, {@code randomIndex} picks one (it is given the number of candidates). Null when none qualifies.
+     */
+    static CalendarRewardObject pickReward(
+            Collection<CalendarRewardObject> rewards, int day, IntUnaryOperator randomIndex) {
+        List<CalendarRewardObject> forDay = new ArrayList<>();
+        List<CalendarRewardObject> anyDay = new ArrayList<>();
+        for (CalendarRewardObject reward : rewards) {
+            if (reward.getDay() == day + 1) forDay.add(reward);
+            else if (reward.getDay() == 0) anyDay.add(reward);
+        }
+        List<CalendarRewardObject> candidates = forDay.isEmpty() ? anyDay : forDay;
+        if (candidates.isEmpty()) return null;
+        candidates.sort(Comparator.comparingInt(CalendarRewardObject::getId));
+        return candidates.get(randomIndex.applyAsInt(candidates.size()));
+    }
+
+    /** One bubble for each part of an opened day's reward (see {@link CalendarRewardNotifications}). */
+    private static void sendRewardBubbles(Habbo habbo, CalendarRewardObject reward) {
+        Item item = reward.getItem();
+        int pixels = (int) (reward.getPixels() * (habbo.getHabboStats().hasActiveClub() ? HC_MODIFIER : 1.0));
+        CalendarRewardNotifications.bubbles(reward, pixels, item == null ? null : item.getName())
+                .forEach(bubble ->
+                        habbo.getClient().sendResponse(new BubbleAlertComposer(bubble.type(), bubble.keys())));
+    }
+
     public void claimCalendarReward(Habbo habbo, String campaignName, int day, boolean force) {
         CalendarCampaign campaign = calendarCampaigns.values().stream()
                 .filter(cc -> Objects.equals(cc.getName(), campaignName))
@@ -139,14 +173,15 @@ public class CalendarManager {
         if (habbo.getHabboStats().calendarRewardsClaimed.stream()
                 .noneMatch(claimed -> claimed.getCampaignId() == campaign.getId() && claimed.getDay() == day)) {
 
-            Set<Integer> keys = campaign.getRewards().keySet();
-            Map<Integer, Integer> rewards = new HashMap<>();
-            if (keys.isEmpty()) return;
-            keys.forEach(key -> rewards.put(rewards.size() + 1, key));
-            int rand = Emulator.getRandom().nextInt(rewards.size() - 1 + 1) + 1;
-            int random = rewards.get(rand);
-            CalendarRewardObject object = campaign.getRewards().get(random);
-            if (object == null) return;
+            CalendarRewardObject object =
+                    pickReward(campaign.getRewards().values(), day, Emulator.getRandom()::nextInt);
+            if (object == null) {
+                LOGGER.warn(
+                        "Calendar campaign '{}' has no reward for day {} and no reward without a day; nothing was given.",
+                        campaign.getName(),
+                        day + 1);
+                return;
+            }
             int daysBetween = (int) DAYS.between(
                     new Timestamp(campaign.getStartTimestamp() * 1000L).toInstant(), new Date().toInstant());
             if (daysBetween >= 0 && daysBetween <= campaign.getTotalDays()) {
@@ -188,6 +223,7 @@ public class CalendarManager {
                                     new Timestamp(System.currentTimeMillis())));
                     habbo.getClient().sendResponse(new AdventCalendarProductComposer(true, object, habbo));
                     object.give(habbo);
+                    sendRewardBubbles(habbo, object);
                 }
             }
         }

@@ -1,6 +1,6 @@
 package com.eu.habbo.networking.gameserver.auth;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.google.gson.JsonObject;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -33,14 +33,13 @@ final class RememberCookie {
 
         static final Settings DEFAULTS = new Settings("octane_remember", CookieHeaderNames.SameSite.Strict, true);
 
-        static Settings fromConfig() {
-            if (Emulator.getConfig() == null) return DEFAULTS;
-            String name =
-                    Emulator.getConfig().getValue(NAME_SETTING, DEFAULTS.name()).trim();
+        static Settings from(ConfigurationManager config) {
+            if (config == null) return DEFAULTS;
+            String name = config.getValue(NAME_SETTING, DEFAULTS.name()).trim();
             return new Settings(
                     name.isEmpty() ? DEFAULTS.name() : name,
-                    sameSite(Emulator.getConfig().getValue(SAME_SITE_SETTING, "Strict")),
-                    Emulator.getConfig().getBoolean(SECURE_SETTING, true));
+                    sameSite(config.getValue(SAME_SITE_SETTING, "Strict")),
+                    config.getBoolean(SECURE_SETTING, true));
         }
 
         static CookieHeaderNames.SameSite sameSite(String value) {

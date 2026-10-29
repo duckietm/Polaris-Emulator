@@ -57,6 +57,9 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `io.packet.handler.queue.low_watermark` | integer | `192` | — | yes | no | Inbound execution backpressure setting. |
 | `io.packet.handler.threads` | integer | `0` | — | yes | no | Inbound execution backpressure setting. |
 | `login.news.limit` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
+| `login.remember.cookie.name` | string | `octane_remember` | — | no | no | Built-in login endpoint setting. |
+| `login.remember.cookie.samesite` | string | `Strict` | — | no | no | Built-in login endpoint setting. |
+| `login.remember.cookie.secure` | boolean | `true` | — | no | no | Built-in login endpoint setting. |
 | `login.remember.duration.days` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.enabled` | boolean | `false` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.jwt.secret` | string | `` | — | yes | no | Built-in login endpoint setting. |

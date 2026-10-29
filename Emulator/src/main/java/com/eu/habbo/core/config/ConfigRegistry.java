@@ -211,6 +211,10 @@ public final class ConfigRegistry {
         keys.add(definition("db.integrity.audit.mode", ConfigKey.ValueType.STRING, "warn", true));
         keys.add(definition("cms.api.allowed", ConfigKey.ValueType.STRING, "127.0.0.1;::1", true));
         keys.add(definition("execution.backpressure.mode", ConfigKey.ValueType.STRING, "observe", true));
+        // Read on every remember request, so a change applies without a restart.
+        keys.add(definition("login.remember.cookie.name", ConfigKey.ValueType.STRING, "octane_remember", false));
+        keys.add(definition("login.remember.cookie.samesite", ConfigKey.ValueType.STRING, "Strict", false));
+        keys.add(definition("login.remember.cookie.secure", ConfigKey.ValueType.BOOLEAN, "true", false));
         return List.copyOf(keys);
     }
 

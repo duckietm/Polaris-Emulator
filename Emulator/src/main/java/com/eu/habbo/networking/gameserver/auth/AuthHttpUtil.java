@@ -78,11 +78,22 @@ public final class AuthHttpUtil {
     }
 
     static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, JsonObject body) {
+        sendJson(ctx, req, status, body, null);
+    }
+
+    /** As {@link #sendJson(ChannelHandlerContext, FullHttpRequest, HttpResponseStatus, JsonObject)}, with a cookie. */
+    static void sendJson(
+            ChannelHandlerContext ctx,
+            FullHttpRequest req,
+            HttpResponseStatus status,
+            JsonObject body,
+            String setCookie) {
         byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
         FullHttpResponse response =
                 new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(bytes));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
+        if (setCookie != null) response.headers().add(HttpHeaderNames.SET_COOKIE, setCookie);
         applyCors(req, response);
         boolean keepAlive = isKeepAlive(req);
         if (keepAlive) response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);

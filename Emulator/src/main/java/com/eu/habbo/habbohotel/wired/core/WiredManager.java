@@ -1819,13 +1819,10 @@ public final class WiredManager {
 
     public static boolean getReward(Habbo habbo, WiredEffectGiveReward wiredBox) {
         synchronized (wiredBox) {
-            if (wiredBox.getLimit() > 0) {
-                if (wiredBox.getLimit() - wiredBox.getGiven() == 0) {
-                    habbo.getClient()
-                            .sendResponse(
-                                    new WiredRewardAlertComposer(WiredRewardAlertComposer.LIMITED_NO_MORE_AVAILABLE));
-                    return false;
-                }
+            if (isLimitReached(wiredBox.getLimit(), wiredBox.getGiven())) {
+                habbo.getClient()
+                        .sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.LIMITED_NO_MORE_AVAILABLE));
+                return false;
             }
 
             WiredGiveRewardItem rewardToGive = null;
@@ -1924,15 +1921,8 @@ public final class WiredManager {
                         failureCode = WiredRewardAlertComposer.REWARD_ALL_COLLECTED;
                     }
                 } else {
-                    int randomNumber = Emulator.getRandom().nextInt(101);
-                    int count = 0;
-                    for (WiredGiveRewardItem item : wiredBox.getRewardItems()) {
-                        if (randomNumber >= count && randomNumber <= (count + item.probability)) {
-                            rewardToGive = item;
-                            break;
-                        }
-                        count += item.probability;
-                    }
+                    rewardToGive = pickReward(
+                            wiredBox.getRewardItems(), Emulator.getRandom().nextInt(100));
 
                     if (rewardToGive == null) {
                         failureCode = WiredRewardAlertComposer.UNLUCKY_NO_REWARD;
@@ -1951,6 +1941,30 @@ public final class WiredManager {
 
             return false;
         }
+    }
+
+    /**
+     * The reward a roll of 0-99 lands on: each reward takes as many values as its probability, in list order, and
+     * a roll past them all wins nothing. The roll used to be 0-100 with both ends of each range included, so every
+     * reward won one value more than its probability and one at 0% could still be given.
+     */
+    static WiredGiveRewardItem pickReward(List<WiredGiveRewardItem> rewards, int roll) {
+        int count = 0;
+        for (WiredGiveRewardItem item : rewards) {
+            if (item.probability <= 0) continue;
+
+            if (roll < count + item.probability) {
+                return item;
+            }
+            count += item.probability;
+        }
+
+        return null;
+    }
+
+    /** Whether a box with a limit has given all it may; a count past the limit is also spent. */
+    static boolean isLimitReached(int limit, int given) {
+        return limit > 0 && given >= limit;
     }
 
     static boolean isWithinMinuteLimit(int now, int previousReward, int intervalMinutes) {

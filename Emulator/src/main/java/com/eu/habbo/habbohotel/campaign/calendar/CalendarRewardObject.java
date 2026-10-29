@@ -128,6 +128,7 @@ public class CalendarRewardObject {
     }
 
     public Item getItem() {
+        if (this.itemId <= 0) return null;
         return Emulator.getGameEnvironment().getItemManager().getItem(this.itemId);
     }
 }

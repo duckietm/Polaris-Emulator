@@ -17959,43 +17959,6 @@
       ]
     },
     {
-      "name": "CAMPAIGN_CALENDAR_DOOR_OPENED",
-      "direction": "server_to_client",
-      "header": 2551,
-      "java": {
-        "symbol": "AdventCalendarProductComposer",
-        "className": "AdventCalendarProductComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/events/calendar/AdventCalendarProductComposer.java"
-      },
-      "typescript": {
-        "symbol": "CAMPAIGN_CALENDAR_DOOR_OPENED",
-        "className": "CampaignCalendarDoorOpenedMessageParser",
-        "path": "packages/communication/src/messages/parser/campaign/CampaignCalendarDoorOpenedMessageParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "TRADE_ACCEPTED",
       "direction": "server_to_client",
       "header": 2568,
@@ -28506,6 +28469,22 @@
         "path": "packages/communication/src/messages/parser/room/furniture/FurnitureDataParser.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external serializer serializeExtradata inside composeInternal"
+    },
+    {
+      "name": "CAMPAIGN_CALENDAR_DOOR_OPENED",
+      "direction": "server_to_client",
+      "header": 2551,
+      "java": {
+        "symbol": "AdventCalendarProductComposer",
+        "className": "AdventCalendarProductComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/events/calendar/AdventCalendarProductComposer.java"
+      },
+      "typescript": {
+        "symbol": "CAMPAIGN_CALENDAR_DOOR_OPENED",
+        "className": "CampaignCalendarDoorOpenedMessageParser",
+        "path": "packages/communication/src/messages/parser/campaign/CampaignCalendarDoorOpenedMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [boolean, string, string, string, string, int, int, int, int, string, int] versus TypeScript [boolean, string, string, string, {\"type\":\"optional\",\"controller\":\"bytesAvailable\",\"fields\":[{\"type\":\"string\",},{\"type\":\"int\",},{\"type\":\"int\",},{\"type\":\"int\",},{\"type\":\"int\",},{\"type\":\"string\",},{\"type\":\"int\",}]}]"
     },
     {
       "name": "USER_PERKS",

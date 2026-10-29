@@ -1,5 +1,5 @@
 {
-  "description": "Packets the contract generator found with different fields on the emulator and on the renderer and set aside as exemptions in packet-field-contracts.json. PacketWireMismatchBaselineTest fails when a packet joins this list or leaves it without this file changing: fix the wire on one side, or add the packet here on purpose. GET_HABBICON_SHOP_DATA is not a real mismatch: its handler skips the first int of the packet, which the analyzer cannot see.",
+  "description": "Packets the contract generator found with different fields on the emulator and on the renderer and set aside as exemptions in packet-field-contracts.json. PacketWireMismatchBaselineTest fails when a packet joins this list or leaves it without this file changing: fix the wire on one side, or add the packet here on purpose. GET_HABBICON_SHOP_DATA is not a real mismatch: its handler skips the first int of the packet, which the analyzer cannot see. CAMPAIGN_CALENDAR_DOOR_OPENED is compatible too: the server always sends the reward fields after the four AIR ones and the renderer reads them only while bytes are available, which the manifest cannot express.",
   "mismatches": [
     { "direction": "client_to_server", "header": 6000, "name": "SNOWWAR_LOAD_STAGE_READY" },
     { "direction": "client_to_server", "header": 6003, "name": "SNOWWAR_WALK" },
@@ -7,6 +7,7 @@
     { "direction": "client_to_server", "header": 6005, "name": "SNOWWAR_THROW_AT_PLAYER" },
     { "direction": "client_to_server", "header": 6006, "name": "SNOWWAR_CREATE_SNOWBALL" },
     { "direction": "client_to_server", "header": 9460, "name": "GET_HABBICON_SHOP_DATA" },
+    { "direction": "server_to_client", "header": 2551, "name": "CAMPAIGN_CALENDAR_DOOR_OPENED" },
     { "direction": "server_to_client", "header": 5012, "name": "SNOWWAR_GAMES_INFORMATION" },
     { "direction": "server_to_client", "header": 9406, "name": "SOUNDBOARD_PLAY" },
     { "direction": "server_to_client", "header": 9450, "name": "DAILY_TASK_UPDATED" },

@@ -45,7 +45,9 @@ public class CalendarCommand extends Command {
                         campaign.getTotalDays(),
                         daysBetween,
                         gameClient.getHabbo().getHabboStats().calendarRewardsClaimed,
-                        campaign.getLockExpired()));
+                        campaign.getLockExpired(),
+                        campaign.getRewards(),
+                        gameClient.getHabbo()));
             }
         }
 

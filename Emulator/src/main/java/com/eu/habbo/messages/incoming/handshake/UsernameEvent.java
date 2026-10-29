@@ -74,7 +74,9 @@ public class UsernameEvent extends MessageHandler {
                             campaign.getTotalDays(),
                             (int) daysBetween,
                             this.client.getHabbo().getHabboStats().calendarRewardsClaimed,
-                            campaign.getLockExpired()));
+                            campaign.getLockExpired(),
+                            campaign.getRewards(),
+                            this.client.getHabbo()));
                     this.client.sendResponse(new NuxAlertComposer("openView/calendar"));
                 }
             }

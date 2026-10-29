@@ -117,7 +117,10 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
         }
         if (visitor != null) {
             ctx.channel().attr(GameServerAttributes.VISITOR).set(visitor);
-            ctx.channel().closeFuture().addListener(future -> limits.close(visitor));
+            // With the limit off nothing was counted, so closing must not release another connection's count.
+            if (GameConnectionLimits.isCounted(visitor, settings)) {
+                ctx.channel().closeFuture().addListener(future -> limits.close(visitor));
+            }
         }
         return true;
     }

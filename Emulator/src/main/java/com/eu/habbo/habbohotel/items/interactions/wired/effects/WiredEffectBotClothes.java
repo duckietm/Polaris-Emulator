@@ -107,6 +107,9 @@ public class WiredEffectBotClothes extends InteractionWiredEffect implements Wir
         List<Bot> bots = WiredBotSourceUtil.resolveBots(ctx, room, this.botSource, this.botName);
 
         for (Bot bot : bots) {
+            // The new look is saved with the bot, so a visitor's bot placed here is left as its owner made it.
+            if (bot.getOwnerId() != room.getOwnerId()) continue;
+
             bot.setFigure(this.botLook);
         }
     }

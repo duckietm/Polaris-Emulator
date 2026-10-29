@@ -19,16 +19,13 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserActionComposer;
 import com.eu.habbo.threading.runnables.BattleBanzaiTilesFlicker;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -79,7 +76,7 @@ public class BattleBanzaiGame extends Game {
         super(BattleBanzaiGameTeam.class, BattleBanzaiGamePlayer.class, room, true);
 
         this.lockedTiles = new HashMap<>();
-        this.gameTiles = new HashMap<>();
+        this.gameTiles = new ConcurrentHashMap<>();
 
         room.setAllowEffects(true);
     }
@@ -263,6 +260,9 @@ public class BattleBanzaiGame extends Game {
         this.refreshGates();
 
         for (HabboItem tile : this.gameTiles.values()) {
+            // A tile picked up during the game is someone's inventory item now: leave it alone.
+            if (tile.getRoomId() != this.room.getId()) continue;
+
             if (tile.getExtradata().equals("1")) {
                 tile.setExtradata("0");
                 this.room.updateItem(tile);
@@ -273,8 +273,10 @@ public class BattleBanzaiGame extends Game {
         }
     }
 
-    private synchronized void resetMap() {
+    /** Takes the field from the tiles in the room now; the tiles of an earlier game that left the room go. */
+    synchronized void resetMap() {
         this.tileCount = 0;
+        this.gameTiles.clear();
         for (HabboItem item : this.room.getFloorItems()) {
             if (item instanceof InteractionBattleBanzaiTile) {
                 item.setExtradata("1");
@@ -329,42 +331,56 @@ public class BattleBanzaiGame extends Game {
             final int x = item.getX();
             final int y = item.getY();
 
-            final List<List<RoomTile>> filledAreas = new ArrayList<>();
-            final Set<HabboItem> lockedTiles = new HashSet<>(this.lockedTiles.get(teamColor));
+            // The fill runs on another thread, so it works on a snapshot of the positions taken under the lock.
+            final Map<Integer, HabboItem> tilesByPosition = new HashMap<>();
+            for (HabboItem gameTile : this.gameTiles.values()) {
+                tilesByPosition.put(BattleBanzaiAreaFill.key(gameTile.getX(), gameTile.getY()), gameTile);
+            }
+
+            final Set<Integer> ownLocked = new HashSet<>();
+            final Set<Integer> foreignLocked = new HashSet<>();
+            for (Map.Entry<GameTeamColors, Set<HabboItem>> entry : this.lockedTiles.entrySet()) {
+                Set<Integer> target = entry.getKey() == teamColor ? ownLocked : foreignLocked;
+
+                for (HabboItem lockedTile : entry.getValue()) {
+                    target.add(BattleBanzaiAreaFill.key(lockedTile.getX(), lockedTile.getY()));
+                }
+            }
 
             try {
                 executor.execute(() -> {
-                    filledAreas.add(this.floodFill(x, y - 1, lockedTiles, new ArrayList<>(), teamColor));
-                    filledAreas.add(this.floodFill(x, y + 1, lockedTiles, new ArrayList<>(), teamColor));
-                    filledAreas.add(this.floodFill(x - 1, y, lockedTiles, new ArrayList<>(), teamColor));
-                    filledAreas.add(this.floodFill(x + 1, y, lockedTiles, new ArrayList<>(), teamColor));
+                    Set<Integer> field = tilesByPosition.keySet();
+                    List<Integer> largestArea = null;
 
-                    Optional<List<RoomTile>> largestAreaOfAll =
-                            filledAreas.stream().filter(Objects::nonNull).max(Comparator.comparing(List::size));
+                    int[][] neighbours = {{x, y - 1}, {x, y + 1}, {x - 1, y}, {x + 1, y}};
+                    for (int[] start : neighbours) {
+                        List<Integer> area =
+                                BattleBanzaiAreaFill.enclosedArea(start[0], start[1], field, ownLocked, foreignLocked);
 
-                    if (largestAreaOfAll.isPresent()) {
-                        for (RoomTile tile : largestAreaOfAll.get()) {
-                            Optional<HabboItem> tileItem = this.gameTiles.values().stream()
-                                    .filter(i -> i.getX() == tile.x
-                                            && i.getY() == tile.y
-                                            && i instanceof InteractionBattleBanzaiTile)
-                                    .findAny();
-
-                            tileItem.ifPresent(habboItem -> {
-                                this.tileLocked(teamColor, habboItem, habbo, true);
-
-                                habboItem.setExtradata((2 + (teamColor.type * 3)) + "");
-                                this.room.updateItem(habboItem);
-                            });
+                        if (area != null && (largestArea == null || area.size() > largestArea.size())) {
+                            largestArea = area;
                         }
+                    }
 
-                        this.refreshCounters(teamColor);
-                        if (habbo != null) {
-                            habbo.getHabboInfo()
-                                    .getGamePlayer()
-                                    .addScore(BattleBanzaiGame.POINTS_LOCK_TILE
-                                            * largestAreaOfAll.get().size());
-                        }
+                    if (largestArea == null) return;
+
+                    int filled = 0;
+                    for (int position : largestArea) {
+                        HabboItem habboItem = tilesByPosition.get(position);
+
+                        // Another team may have locked the tile while the fill was running.
+                        if (habboItem == null || this.isLockedByAnotherTeam(habboItem, teamColor)) continue;
+
+                        this.tileLocked(teamColor, habboItem, habbo, true);
+
+                        habboItem.setExtradata((2 + (teamColor.type * 3)) + "");
+                        this.room.updateItem(habboItem);
+                        filled++;
+                    }
+
+                    this.refreshCounters(teamColor);
+                    if (habbo != null && habbo.getHabboInfo().getGamePlayer() != null) {
+                        habbo.getHabboInfo().getGamePlayer().addScore(BattleBanzaiGame.POINTS_LOCK_TILE * filled);
                     }
                 });
             } catch (RejectedExecutionException e) {
@@ -373,51 +389,10 @@ public class BattleBanzaiGame extends Game {
         }
     }
 
-    private List<RoomTile> floodFill(
-            int x, int y, Set<HabboItem> lockedTiles, List<RoomTile> stack, GameTeamColors color) {
-        if (this.isOutOfBounds(x, y) || this.isForeignLockedTile(x, y, color)) return null;
-
-        RoomTile tile = this.room.getLayout().getTile((short) x, (short) y);
-
-        if (this.hasLockedTileAtCoordinates(x, y, lockedTiles) || stack.contains(tile)) return stack;
-
-        stack.add(tile);
-
-        List<List<RoomTile>> result = new ArrayList<>();
-        result.add(this.floodFill(x, y - 1, lockedTiles, stack, color));
-        result.add(this.floodFill(x, y + 1, lockedTiles, stack, color));
-        result.add(this.floodFill(x - 1, y, lockedTiles, stack, color));
-        result.add(this.floodFill(x + 1, y, lockedTiles, stack, color));
-
-        if (result.contains(null)) return null;
-
-        Optional<List<RoomTile>> biggestArea = result.stream().max(Comparator.comparing(List::size));
-
-        return biggestArea.orElse(null);
-    }
-
-    private boolean hasLockedTileAtCoordinates(int x, int y, Set<HabboItem> lockedTiles) {
-        for (HabboItem item : lockedTiles) {
-            if (item.getX() == x && item.getY() == y) return true;
-        }
-
-        return false;
-    }
-
-    private boolean isOutOfBounds(int x, int y) {
-        for (HabboItem item : this.gameTiles.values()) {
-            if (item.getX() == x && item.getY() == y) return false;
-        }
-
-        return true;
-    }
-
-    private boolean isForeignLockedTile(int x, int y, GameTeamColors color) {
-        for (Map.Entry<GameTeamColors, Set<HabboItem>> lockedTilesForColor : this.lockedTiles.entrySet()) {
-            if (lockedTilesForColor.getKey() == color) continue;
-
-            for (HabboItem item : lockedTilesForColor.getValue()) {
-                if (item.getX() == x && item.getY() == y) return true;
+    private boolean isLockedByAnotherTeam(HabboItem item, GameTeamColors color) {
+        synchronized (this.lockedTiles) {
+            for (Map.Entry<GameTeamColors, Set<HabboItem>> entry : this.lockedTiles.entrySet()) {
+                if (entry.getKey() != color && entry.getValue().contains(item)) return true;
             }
         }
 

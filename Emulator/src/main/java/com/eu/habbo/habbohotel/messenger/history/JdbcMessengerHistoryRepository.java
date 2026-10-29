@@ -274,24 +274,36 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     private List<MessengerStoredMessage> loadLegacyDirectHistory(
             long conversationId, int firstUserId, int secondUserId, long beforeMessageId, int limit) {
+        // One page per direction, each read newest first through idx_chatlogs_private_pair, then the newest of
+        // both: an OR across the two directions could only use one single-column index and filter the rest.
         String sql = """
-                SELECT id, user_from_id, message, timestamp
-                FROM chatlogs_private
-                WHERE ((user_from_id = ? AND user_to_id = ?) OR (user_from_id = ? AND user_to_id = ?))
-                  AND (? = 0 OR id < ?)
+                (SELECT id, user_from_id, message, timestamp
+                 FROM chatlogs_private
+                 WHERE user_from_id = ? AND user_to_id = ? AND (? = 0 OR id < ?)
+                 ORDER BY id DESC
+                 LIMIT ?)
+                UNION
+                (SELECT id, user_from_id, message, timestamp
+                 FROM chatlogs_private
+                 WHERE user_from_id = ? AND user_to_id = ? AND (? = 0 OR id < ?)
+                 ORDER BY id DESC
+                 LIMIT ?)
                 ORDER BY id DESC
                 LIMIT ?
                 """;
         List<MessengerStoredMessage> messages = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, firstUserId);
-            statement.setInt(2, secondUserId);
-            statement.setInt(3, secondUserId);
-            statement.setInt(4, firstUserId);
-            statement.setLong(5, beforeMessageId);
-            statement.setLong(6, beforeMessageId);
-            statement.setInt(7, limit + 1);
+            int[][] directions = {{firstUserId, secondUserId}, {secondUserId, firstUserId}};
+            int index = 1;
+            for (int[] direction : directions) {
+                statement.setInt(index++, direction[0]);
+                statement.setInt(index++, direction[1]);
+                statement.setLong(index++, beforeMessageId);
+                statement.setLong(index++, beforeMessageId);
+                statement.setInt(index++, limit + 1);
+            }
+            statement.setInt(index, limit + 1);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     messages.add(new MessengerStoredMessage(
@@ -370,14 +382,23 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             }
         }
 
+        // This runs inside the send transaction, so each direction is read newest first through
+        // idx_chatlogs_private_pair and at most LEGACY_ADOPT_LIMIT rows of it are touched.
         String sql = """
                 INSERT INTO messenger_messages (conversation_id, sender_id, type, message, metadata, created_at)
                 SELECT ?, legacy.user_from_id, 0, LEFT(legacy.message, 255), NULL, FROM_UNIXTIME(legacy.timestamp)
                 FROM (
-                    SELECT id, user_from_id, message, timestamp
-                    FROM chatlogs_private
-                    WHERE ((user_from_id = ? AND user_to_id = ?) OR (user_from_id = ? AND user_to_id = ?))
-                      AND message <> ''
+                    (SELECT id, user_from_id, message, timestamp
+                     FROM chatlogs_private
+                     WHERE user_from_id = ? AND user_to_id = ? AND message <> ''
+                     ORDER BY id DESC
+                     LIMIT ?)
+                    UNION
+                    (SELECT id, user_from_id, message, timestamp
+                     FROM chatlogs_private
+                     WHERE user_from_id = ? AND user_to_id = ? AND message <> ''
+                     ORDER BY id DESC
+                     LIMIT ?)
                     ORDER BY id DESC
                     LIMIT ?
                 ) legacy
@@ -387,9 +408,11 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             statement.setLong(1, conversationId);
             statement.setInt(2, firstUserId);
             statement.setInt(3, secondUserId);
-            statement.setInt(4, secondUserId);
-            statement.setInt(5, firstUserId);
-            statement.setInt(6, LEGACY_ADOPT_LIMIT);
+            statement.setInt(4, LEGACY_ADOPT_LIMIT);
+            statement.setInt(5, secondUserId);
+            statement.setInt(6, firstUserId);
+            statement.setInt(7, LEGACY_ADOPT_LIMIT);
+            statement.setInt(8, LEGACY_ADOPT_LIMIT);
             statement.executeUpdate();
         }
     }

@@ -50,6 +50,25 @@ class GameConnectionLimitsTest {
     }
 
     @Test
+    void aConnectionOpenedWithTheLimitOffReleasesNothingOnClose() {
+        GameConnectionLimits limits = new GameConnectionLimits();
+        GameConnectionLimits.Settings off = new GameConnectionLimits.Settings(0, 0, 1L, 1L);
+        assertFalse(GameConnectionLimits.isCounted("a", off));
+        assertFalse(GameConnectionLimits.isCounted(null, SETTINGS));
+        assertTrue(GameConnectionLimits.isCounted("a", SETTINGS));
+
+        // Opened while the limit was off, then the limit is turned back on and two connections are counted.
+        assertTrue(limits.tryOpen("a", off));
+        assertTrue(limits.tryOpen("a", SETTINGS));
+        assertTrue(limits.tryOpen("a", SETTINGS));
+        if (GameConnectionLimits.isCounted("a", off)) {
+            limits.close("a");
+        }
+        assertEquals(2, limits.openConnections("a"));
+        assertFalse(limits.tryOpen("a", SETTINGS));
+    }
+
+    @Test
     void repeatedFailedLoginsBlockTheVisitorForTheBlockTime() {
         GameConnectionLimits limits = new GameConnectionLimits();
         long now = 1_000_000L;

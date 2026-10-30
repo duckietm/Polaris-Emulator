@@ -115,7 +115,7 @@ class NeverSentEventsContractTest {
     void anInvitationNobodyReceivedIsReportedBackWithTheNames() throws Exception {
         String invite = source("com/eu/habbo/messages/incoming/friends/InviteFriendsEvent.java");
 
-        assertTrue(invite.contains("if (habbo == null || habbo.getHabboStats().blockRoomInvites) {"));
+        assertTrue(invite.contains("if (habbo == null || habbo.getClient() == null || habbo.getHabboStats().blockRoomInvites) {"));
         assertTrue(invite.contains("missed.add(buddy)"));
         assertTrue(invite.contains("new RoomInviteErrorComposer("));
         assertTrue(invite.contains("RoomInviteErrorComposer.ERROR_RECIPIENT_UNAVAILABLE, missed)"));

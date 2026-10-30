@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
@@ -1710,7 +1711,7 @@ public final class WiredManager {
             Integer amount = parsePositiveRewardInteger(rewardValue);
             if (amount == null) return false;
 
-            habbo.giveCredits(amount);
+            if (!grantRewardCurrency(habbo, -1, amount)) return false;
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
         }
@@ -1719,7 +1720,7 @@ public final class WiredManager {
             Integer amount = parsePositiveRewardInteger(rewardValue);
             if (amount == null) return false;
 
-            habbo.givePoints(5, amount);
+            if (!grantRewardCurrency(habbo, 5, amount)) return false;
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
         }
@@ -1728,7 +1729,7 @@ public final class WiredManager {
             Integer amount = parsePositiveRewardInteger(rewardValue);
             if (amount == null) return false;
 
-            habbo.givePixels(amount);
+            if (!grantRewardCurrency(habbo, 0, amount)) return false;
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
         }
@@ -1753,7 +1754,7 @@ public final class WiredManager {
                         ignored);
             }
 
-            habbo.givePoints(type, points);
+            if (!grantRewardCurrency(habbo, type, points)) return false;
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
         }
@@ -1800,12 +1801,27 @@ public final class WiredManager {
                 return false;
             }
 
-            Emulator.getGameEnvironment().getCatalogManager().purchaseItem(null, item, habbo, 1, "", true);
+            if (!Emulator.getGameEnvironment().getCatalogManager().purchaseItemDelivered(null, item, habbo, 1, "", true)) {
+                return false;
+            }
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Pays a currency reward and says whether it went through. The void give calls hid a refusal (a plugin, or the
+     * ledger at a full wallet), and the reward was still counted as given, using up a once-only or limited slot.
+     */
+    private static boolean grantRewardCurrency(Habbo habbo, int type, int amount) {
+        int userId = habbo.getHabboInfo().getId();
+        String operationId = EconomyOperationId.create("wired-reward:" + userId);
+
+        return type < 0
+                ? habbo.applyCredits(amount, "wired.reward", operationId, userId)
+                : habbo.applyPoints(type, amount, "wired.reward", operationId, userId);
     }
 
     private static Integer parsePositiveRewardInteger(String value) {

@@ -710,9 +710,14 @@ public class MarketPlace {
         return credits;
     }
 
+    /** The claim methods share one way to the database. */
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
     /** Undoes {@link #removeUser} for an offer whose payout did not go through. */
     private static boolean releaseClaim(MarketPlaceOffer offer, int sellerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE marketplace_items SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1")) {
             statement.setInt(1, offer.getOfferId());
@@ -739,7 +744,7 @@ public class MarketPlace {
      * @return whether this caller is the one that claimed it
      */
     private static boolean removeUser(MarketPlaceOffer offer, int sellerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0")) {
             statement.setInt(1, offer.getOfferId());

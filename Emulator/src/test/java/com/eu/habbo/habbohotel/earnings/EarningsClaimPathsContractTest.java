@@ -30,6 +30,22 @@ class EarningsClaimPathsContractTest {
         assertTrue(club.contains("claimUnclaimedPayDays(habbo);\n    }"), "the login still pays the payday rows");
     }
 
+    /** A copy that failed left the earlier copies of the same item reward in the inventory, with an error shown. */
+    @Test
+    void anItemRewardIsGrantedWholeOrNotAtAll() throws Exception {
+        String manager = Files.readString(MANAGER);
+
+        assertTrue(manager.contains("connection.setAutoCommit(false);"));
+        assertTrue(manager.contains("connection.commit();"));
+        assertTrue(manager.contains("connection.rollback();"));
+        assertTrue(
+                manager.indexOf("connection.commit();") < manager.indexOf("addItems(created);"),
+                "the inventory gets the furni only once they are committed");
+        assertTrue(
+                manager.contains("b.getType() == EarningsReward.TYPE_ITEM, a.getType() == EarningsReward.TYPE_ITEM"),
+                "furni are granted before the rewards that cannot be taken back");
+    }
+
     /** An item reward was only written to the database, so it stayed out of the open inventory until relog. */
     @Test
     void anItemRewardLandsInTheOpenInventory() throws Exception {

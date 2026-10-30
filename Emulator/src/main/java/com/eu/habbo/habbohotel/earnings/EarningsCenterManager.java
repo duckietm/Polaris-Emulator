@@ -441,7 +441,13 @@ public class EarningsCenterManager {
                 return;
             }
 
-            for (EarningsReward reward : rewards) {
+            // Furni first: they are the only reward that can fail halfway, and they are written in one transaction, so
+            // a failure leaves the player with none of this claim's rewards rather than with part of them.
+            List<EarningsReward> ordered = new ArrayList<>(rewards);
+            ordered.sort((a, b) ->
+                    Boolean.compare(b.getType() == EarningsReward.TYPE_ITEM, a.getType() == EarningsReward.TYPE_ITEM));
+
+            for (EarningsReward reward : ordered) {
                 switch (reward.getType()) {
                     case EarningsReward.TYPE_CREDITS -> habbo.giveCredits(reward.getAmount());
                     case EarningsReward.TYPE_PIXELS -> habbo.givePixels(reward.getAmount());
@@ -470,7 +476,8 @@ public class EarningsCenterManager {
 
         /**
          * Creates the furni and puts it in the open inventory. Writing only the database row left it invisible until
-         * the next login.
+         * the next login. All the copies are written in one transaction: a copy that failed used to leave the earlier
+         * ones in the inventory while the claim reported an error.
          */
         private void grantItem(Habbo habbo, int itemId, int quantity) throws SQLException {
             // WiredEarnings in this package reaches the hotel through WiredPlatform too.
@@ -483,22 +490,30 @@ public class EarningsCenterManager {
 
             List<HabboItem> created = new ArrayList<>();
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-                for (int i = 0; i < quantity; i++) {
-                    HabboItem item = itemManager.createItem(
-                            connection, habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
-                    if (item == null) {
-                        throw new SQLException("Earnings item reward " + itemId + " could not be created");
+                boolean autoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    for (int i = 0; i < quantity; i++) {
+                        HabboItem item = itemManager.createItem(
+                                connection, habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
+                        if (item == null) {
+                            throw new SQLException("Earnings item reward " + itemId + " could not be created");
+                        }
+                        created.add(item);
                     }
-                    created.add(item);
+                    connection.commit();
+                } catch (SQLException | RuntimeException e) {
+                    connection.rollback();
+                    throw e;
+                } finally {
+                    connection.setAutoCommit(autoCommit);
                 }
-            } finally {
-                if (!created.isEmpty()) {
-                    habbo.getInventory().getItemsComponent().addItems(created);
-                    if (habbo.getClient() != null) {
-                        habbo.getClient().sendResponse(new AddHabboItemComposer(created));
-                        habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                    }
-                }
+            }
+
+            habbo.getInventory().getItemsComponent().addItems(created);
+            if (habbo.getClient() != null) {
+                habbo.getClient().sendResponse(new AddHabboItemComposer(created));
+                habbo.getClient().sendResponse(new InventoryRefreshComposer());
             }
         }
 

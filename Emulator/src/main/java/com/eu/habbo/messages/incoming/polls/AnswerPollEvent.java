@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.polls;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.polls.Poll;
+import com.eu.habbo.habbohotel.polls.PollQuestion;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -9,7 +10,10 @@ import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredRewardAlertComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,19 +73,36 @@ public class AnswerPollEvent extends MessageHandler {
         // Only a question of this poll is stored: any id was written, and sending just the last question's id was
         // enough for the badge.
         if (poll != null && poll.hasQuestion(questionId)) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO polls_answers(poll_id, user_id, question_id, answer) VALUES(?, ?, ?, ?) ON DUPLICATE KEY UPDATE answer=VALUES(answer)")) {
-                statement.setInt(1, pollId);
-                statement.setInt(2, this.client.getHabbo().getHabboInfo().getId());
-                statement.setInt(3, questionId);
-                statement.setString(4, answer.toString());
-                statement.execute();
+            int userId = this.client.getHabbo().getHabboInfo().getId();
+            Set<Integer> answered = new HashSet<>();
+
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO polls_answers(poll_id, user_id, question_id, answer) VALUES(?, ?, ?, ?) ON DUPLICATE KEY UPDATE answer=VALUES(answer)")) {
+                    statement.setInt(1, pollId);
+                    statement.setInt(2, userId);
+                    statement.setInt(3, questionId);
+                    statement.setString(4, answer.toString());
+                    statement.execute();
+                }
+
+                // The questions this user has answered so far, for the badge check below.
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT question_id FROM polls_answers WHERE poll_id = ? AND user_id = ?")) {
+                    statement.setInt(1, pollId);
+                    statement.setInt(2, userId);
+                    try (ResultSet set = statement.executeQuery()) {
+                        while (set.next()) answered.add(set.getInt("question_id"));
+                    }
+                }
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
+                return;
             }
 
-            if (poll.lastQuestionId == questionId) {
+            // The badge needs every main question answered, not only the last one: sending the last question's id
+            // alone was enough. Sub-questions are left out, since they are only asked after some answers.
+            if (poll.lastQuestionId == questionId && hasAnsweredEveryQuestion(poll, answered)) {
                 if (poll.badgeReward.length() > 0) {
                     if (!this.client
                             .getHabbo()
@@ -105,5 +126,13 @@ public class AnswerPollEvent extends MessageHandler {
                 }
             }
         }
+    }
+
+    static boolean hasAnsweredEveryQuestion(Poll poll, Set<Integer> answered) {
+        for (PollQuestion question : poll.getQuestions()) {
+            if (!answered.contains(question.id)) return false;
+        }
+
+        return true;
     }
 }

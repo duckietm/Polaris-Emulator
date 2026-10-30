@@ -317,6 +317,10 @@ public class Habbo implements Runnable {
 
             try {
                 environment.getGuideManager().userLogsOut(this);
+                // The wheel kept every user's state and last spin for the whole uptime.
+                if (environment.getWheelManager() != null) {
+                    environment.getWheelManager().forgetUser(this.habboInfo.getId());
+                }
                 this.habboInfo.setOnline(false);
                 this.needsUpdate(true);
                 this.messenger.connectionChanged(this, false, false);

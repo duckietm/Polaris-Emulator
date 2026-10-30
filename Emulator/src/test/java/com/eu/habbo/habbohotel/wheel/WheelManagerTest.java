@@ -139,6 +139,22 @@ class WheelManagerTest {
     }
 
     @Test
+    void aUserWhoLoggedOutIsReadAgainFromTheDatabase() throws SQLException {
+        try (Fixture fixture = new Fixture(Map.of("wheel.spin_cost", 50, "wheel.spin_cost_type", -1), null)) {
+            when(fixture.habboInfo.getCredits()).thenReturn(100);
+            WheelManager manager = new WheelManager();
+
+            assertTrue(manager.buySpin(fixture.habbo));
+            assertEquals(1, manager.getUserState(USER_ID).extraSpins);
+
+            manager.forgetUser(USER_ID);
+
+            // The stubbed database holds no row, so a state read again starts from nothing.
+            assertEquals(0, manager.getUserState(USER_ID).extraSpins);
+        }
+    }
+
+    @Test
     void aBalanceBelowTheCostBuysNothing() throws SQLException {
         try (Fixture fixture = new Fixture(Map.of("wheel.spin_cost", 50, "wheel.spin_cost_type", -1), null)) {
             when(fixture.habboInfo.getCredits()).thenReturn(49);

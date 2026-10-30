@@ -66,7 +66,6 @@ class MarketPlaceCreditClaimContractTest {
         int commit = source.indexOf("connection.commit();", helper);
 
         assertTrue(helper > 0 && delete > helper && update > delete && commit > update);
-        assertTrue(source.indexOf("returnOfferItem(connection, habbo, offer)") < source.indexOf("removeMarketplaceOffer(offer);
-"));
+        assertTrue(source.indexOf("returnOfferItem(connection, habbo, offer)") < source.indexOf("habbo.getInventory().removeMarketplaceOffer(offer);"));
     }
 }

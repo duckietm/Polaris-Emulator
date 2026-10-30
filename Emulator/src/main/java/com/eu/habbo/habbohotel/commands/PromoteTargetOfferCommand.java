@@ -44,7 +44,7 @@ public class PromoteTargetOfferCommand extends Command {
                         message.add(entryConfig
                                 .replace("%id%", offer.getId() + "")
                                 .replace("%title%", offer.getTitle())
-                                .replace("%description%", offer.getDescription().substring(0, 25)));
+                                .replace("%description%", listedDescription(offer.getDescription())));
                     }
                 } else {
                     message.add(pair);
@@ -88,5 +88,11 @@ public class PromoteTargetOfferCommand extends Command {
         }
 
         return true;
+    }
+
+    /** The first 25 characters of a description; a shorter one is listed whole instead of throwing. */
+    static String listedDescription(String description) {
+        if (description == null) return "";
+        return description.substring(0, Math.min(25, description.length()));
     }
 }

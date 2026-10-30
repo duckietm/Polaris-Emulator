@@ -206,11 +206,8 @@ public class MarketPlace {
                                     HabboItem item = Emulator.getGameEnvironment()
                                             .getItemManager()
                                             .loadHabboItem(set);
-                                    habbo.getInventory()
-                                            .getItemsComponent()
-                                            .addItem(item);
-                                    habbo.getClient()
-                                            .sendResponse(new MarketplaceCancelSaleComposer(offer, true));
+                                    habbo.getInventory().getItemsComponent().addItem(item);
+                                    habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, true));
                                     habbo.getClient().sendResponse(new AddHabboItemComposer(item));
                                     habbo.getClient().sendResponse(new InventoryRefreshComposer());
                                 }
@@ -245,7 +242,10 @@ public class MarketPlace {
                 updateItems.setInt(2, offer.getSoldItemId());
                 if (updateItems.executeUpdate() != 1) {
                     connection.rollback();
-                    LOGGER.warn("Marketplace offer {} kept: its item {} is missing", offer.getOfferId(), offer.getSoldItemId());
+                    LOGGER.warn(
+                            "Marketplace offer {} kept: its item {} is missing",
+                            offer.getOfferId(),
+                            offer.getSoldItemId());
                     return false;
                 }
             }

@@ -190,37 +190,29 @@ public class MarketPlace {
                             return;
                         }
 
-                        try (PreparedStatement statement = connection.prepareStatement(
-                                "DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
-                            statement.setInt(1, offer.getOfferId());
-                            int count = statement.executeUpdate();
+                        // The offer row goes and the item comes back together, or neither: a failed item update
+                        // used to leave the offer deleted and the item owned by nobody (user_id -1).
+                        if (!returnOfferItem(connection, habbo, offer)) {
+                            habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, false));
+                            return;
+                        }
 
-                            if (count != 0) {
-                                habbo.getInventory().removeMarketplaceOffer(offer);
-                                try (PreparedStatement updateItems = connection.prepareStatement(
-                                        "UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
-                                    updateItems.setInt(1, habbo.getHabboInfo().getId());
-                                    updateItems.setInt(2, offer.getSoldItemId());
-                                    updateItems.execute();
-
-                                    try (PreparedStatement selectItem =
-                                            connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
-                                        selectItem.setInt(1, offer.getSoldItemId());
-                                        try (ResultSet set = selectItem.executeQuery()) {
-                                            while (set.next()) {
-                                                HabboItem item = Emulator.getGameEnvironment()
-                                                        .getItemManager()
-                                                        .loadHabboItem(set);
-                                                habbo.getInventory()
-                                                        .getItemsComponent()
-                                                        .addItem(item);
-                                                habbo.getClient()
-                                                        .sendResponse(new MarketplaceCancelSaleComposer(offer, true));
-                                                habbo.getClient().sendResponse(new AddHabboItemComposer(item));
-                                                habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                                            }
-                                        }
-                                    }
+                        habbo.getInventory().removeMarketplaceOffer(offer);
+                        try (PreparedStatement selectItem =
+                                connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
+                            selectItem.setInt(1, offer.getSoldItemId());
+                            try (ResultSet set = selectItem.executeQuery()) {
+                                while (set.next()) {
+                                    HabboItem item = Emulator.getGameEnvironment()
+                                            .getItemManager()
+                                            .loadHabboItem(set);
+                                    habbo.getInventory()
+                                            .getItemsComponent()
+                                            .addItem(item);
+                                    habbo.getClient()
+                                            .sendResponse(new MarketplaceCancelSaleComposer(offer, true));
+                                    habbo.getClient().sendResponse(new AddHabboItemComposer(item));
+                                    habbo.getClient().sendResponse(new InventoryRefreshComposer());
                                 }
                             }
                         }
@@ -230,6 +222,41 @@ public class MarketPlace {
                 LOGGER.error("Caught SQL exception", e);
                 habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, false));
             }
+        }
+    }
+
+    private static boolean returnOfferItem(Connection connection, Habbo habbo, MarketPlaceOffer offer)
+            throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
+                statement.setInt(1, offer.getOfferId());
+                if (statement.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            try (PreparedStatement updateItems =
+                    connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
+                updateItems.setInt(1, habbo.getHabboInfo().getId());
+                updateItems.setInt(2, offer.getSoldItemId());
+                if (updateItems.executeUpdate() != 1) {
+                    connection.rollback();
+                    LOGGER.warn("Marketplace offer {} kept: its item {} is missing", offer.getOfferId(), offer.getSoldItemId());
+                    return false;
+                }
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(autoCommit);
         }
     }
 

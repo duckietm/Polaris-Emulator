@@ -56,4 +56,17 @@ class MarketPlaceCreditClaimContractTest {
         assertTrue(release > apply, "a refused payout hands the offers back");
         assertTrue(source.contains("SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1"));
     }
+
+    @Test
+    void aTakenBackOfferReturnsItsItemInTheSameTransaction() throws Exception {
+        String source = marketPlaceSource();
+        int helper = source.indexOf("private static boolean returnOfferItem(");
+        int delete = source.indexOf("DELETE FROM marketplace_items WHERE id = ? AND state != 2", helper);
+        int update = source.indexOf("updateItems.executeUpdate() != 1", helper);
+        int commit = source.indexOf("connection.commit();", helper);
+
+        assertTrue(helper > 0 && delete > helper && update > delete && commit > update);
+        assertTrue(source.indexOf("returnOfferItem(connection, habbo, offer)") < source.indexOf("removeMarketplaceOffer(offer);
+"));
+    }
 }

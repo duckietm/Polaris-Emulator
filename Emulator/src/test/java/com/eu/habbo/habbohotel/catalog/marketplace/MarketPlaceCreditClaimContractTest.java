@@ -69,4 +69,13 @@ class MarketPlaceCreditClaimContractTest {
         assertTrue(source.indexOf("returnOfferItem(connection, habbo, offer)")
                 < source.indexOf("habbo.getInventory().removeMarketplaceOffer(offer);"));
     }
+
+    @Test
+    void aSaleIsShownGoneOnlyOnceTheOfferIsSaved() throws Exception {
+        String source = marketPlaceSource();
+        int persisted = source.indexOf("if (!offer.isPersisted()) {");
+        int removal = source.indexOf("new RemoveHabboItemComposer(clientItemId)");
+
+        assertTrue(persisted > 0 && removal > persisted);
+    }
 }

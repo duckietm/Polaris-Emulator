@@ -594,19 +594,25 @@ public class MarketPlace {
 
         RequestOffersEvent.cachedResults.clear();
 
-        client.sendResponse(new RemoveHabboItemComposer(event.item.getGiftAdjustedId()));
-        client.sendResponse(new InventoryRefreshComposer());
+        // The client is told the item left only once the offer is saved: a failed insert kept the item on the server
+        // while the client showed it gone until the next refresh.
+        int clientItemId = event.item.getGiftAdjustedId();
+        boolean fromGift = event.item.isFromGift();
 
         event.item.setFromGift(false);
 
         MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getHabbo());
         if (!offer.isPersisted()) {
+            event.item.setFromGift(fromGift);
             LOGGER.warn(
                     "Marketplace offer insert failed for user {} item {}",
                     client.getHabbo().getHabboInfo().getId(),
                     event.item.getId());
             return false;
         }
+
+        client.sendResponse(new RemoveHabboItemComposer(clientItemId));
+        client.sendResponse(new InventoryRefreshComposer());
 
         client.getHabbo().getInventory().addMarketplaceOffer(offer);
         client.getHabbo().getInventory().getItemsComponent().removeHabboItem(event.item);

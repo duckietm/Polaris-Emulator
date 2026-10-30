@@ -653,6 +653,7 @@ public class PacketManager {
     private final Map<Integer, Class<? extends MessageHandler>> incoming;
     private final Map<Integer, List<ICallable>> callables;
     private final PacketNames names;
+    private final PacketErrorLogLimiter errorLog = new PacketErrorLogLimiter(60_000);
 
     public PacketManager() throws Exception {
         this.incoming = new HashMap<>();
@@ -803,7 +804,15 @@ public class PacketManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            PacketErrorLogLimiter.Decision decision =
+                    this.errorLog.record(packet.getMessageId(), e.getClass(), System.currentTimeMillis());
+            if (decision.log()) {
+                LOGGER.error(
+                        "Caught exception handling packet {} ({} more like it in the last minute)",
+                        packet.getMessageId(),
+                        decision.suppressedSinceLast(),
+                        e);
+            }
         }
     }
 

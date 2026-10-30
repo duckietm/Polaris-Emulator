@@ -1801,7 +1801,9 @@ public final class WiredManager {
                 return false;
             }
 
-            if (!Emulator.getGameEnvironment().getCatalogManager().purchaseItemDelivered(null, item, habbo, 1, "", true)) {
+            if (!Emulator.getGameEnvironment()
+                    .getCatalogManager()
+                    .purchaseItemDelivered(null, item, habbo, 1, "", true)) {
                 return false;
             }
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);

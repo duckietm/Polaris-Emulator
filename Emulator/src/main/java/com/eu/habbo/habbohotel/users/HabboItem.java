@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
@@ -75,7 +76,12 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     private String extradata;
     private int limitedStack;
     private int limitedSells;
-    private boolean needsUpdate = false;
+    private volatile boolean needsUpdate = false;
+    // Bumped by every needsUpdate(true). A save clears the flag only when nothing asked for another save while it
+    // wrote: the flag used to be cleared after the query, which dropped a change made during it.
+    private final AtomicLong saveGeneration = new AtomicLong();
+    // Saves of one item run one at a time, so an older UPDATE can no longer land after a newer one.
+    private final Object saveLock = new Object();
     private boolean needsDelete = false;
     /**
      * A temporary furni (the official "place furni" wired): it has no database row and no owner, is
@@ -338,6 +344,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     }
 
     public void needsUpdate(boolean value) {
+        if (value) this.saveGeneration.incrementAndGet();
         this.needsUpdate = value;
     }
 
@@ -382,6 +389,12 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
 
     @Override
     public void run() {
+        synchronized (this.saveLock) {
+            this.save();
+        }
+    }
+
+    private void save() {
         if (this.temporary) {
             // No row to write or delete.
             this.needsUpdate = false;
@@ -404,6 +417,8 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
                     statement.execute();
                 }
             } else if (this.needsUpdate) {
+                long generation = this.saveGeneration.get();
+
                 try (PreparedStatement statement = connection.prepareStatement(
                         "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, x = ?, y = ?, z = ?, rot = ?, extra_data = ?, limited_data = ?, expires = ?, allow_underpass = ? WHERE id = ?")) {
                     statement.setInt(1, this.databaseUserId);
@@ -425,7 +440,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
                     LOGGER.error("SQLException trying to save HabboItem: {}", this.toString());
                 }
 
-                this.needsUpdate = false;
+                if (this.saveGeneration.get() == generation) this.needsUpdate = false;
             }
 
         } catch (SQLException e) {

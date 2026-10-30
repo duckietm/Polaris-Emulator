@@ -1770,7 +1770,8 @@ public class CatalogManager {
                     .getValue("scripter.warning.catalog.amount")
                     .replace("%username%", habbo.getHabboInfo().getUsername())
                     .replace("%itemname%", item.getName())
-                    .replace("%pagename%", page.getCaption());
+                    // A purchase without a page (targeted offers, vouchers, rewards) has no caption to name.
+                    .replace("%pagename%", page == null ? "" : page.getCaption());
             ScripterManager.scripterDetected(habbo.getClient(), message);
             LOGGER.info(message);
             habbo.getClient()

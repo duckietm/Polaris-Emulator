@@ -16,6 +16,7 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.google.gson.JsonObject;
@@ -39,19 +40,30 @@ final class SessionEndpoints {
 
     private SessionEndpoints() {}
 
+    /** The remember cookie settings, read on every request so a change applies without a restart. */
+    private static RememberCookie.Settings rememberCookies() {
+        return RememberCookie.Settings.from(Emulator.getConfig());
+    }
+
     static boolean submitResetEmail(Runnable task) {
         return AuthHttpHandler.submitTask(task);
     }
 
     static void handleLogout(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body) {
         String ssoTicket = readString(body, "ssoTicket");
-        String rememberToken = readString(body, "rememberToken").trim();
+        RememberCookie.Settings cookies = rememberCookies();
+        String rememberToken = RememberCookie.token(req, body, cookies);
+        String cookieToken = RememberCookie.fromCookie(req, cookies);
         JsonObject ok = new JsonObject();
         ok.addProperty("message", "Logged out.");
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             int userId = 0;
             int rememberUserId = rememberToken.isEmpty() ? 0 : RememberJwtService.revokeFromToken(conn, rememberToken);
+            // A body token and a cookie of another login on this browser: both end here.
+            if (!cookieToken.isEmpty() && !cookieToken.equals(rememberToken)) {
+                RememberJwtService.revokeFromToken(conn, cookieToken);
+            }
 
             if (ssoTicket != null && !ssoTicket.isEmpty()) {
                 try (PreparedStatement lookup = conn.prepareStatement(
@@ -91,11 +103,33 @@ final class SessionEndpoints {
             LOGGER.error("Logout cleanup failed", e);
         }
 
-        sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        sendJson(ctx, req, HttpResponseStatus.OK, ok, cookieToken.isEmpty() ? null : RememberCookie.expire(cookies));
+    }
+
+    /**
+     * Puts the remember token in the reply, or, for a client in cookie mode, in an HttpOnly cookie it never sees.
+     * Returns the Set-Cookie value, null when the token went into the reply.
+     */
+    static String addRemember(JsonObject reply, RememberJwtService.RotationResult remembered, boolean cookieMode) {
+        if (!cookieMode) {
+            reply.addProperty("rememberToken", remembered.jwt);
+            return null;
+        }
+        reply.addProperty("rememberExpiresAt", remembered.expiresAt);
+        return RememberCookie.issue(
+                remembered.jwt, remembered.expiresAt, Instant.now().getEpochSecond(), rememberCookies());
+    }
+
+    /** A request whose body carries no token reads the cookie, and so is answered in cookie mode. */
+    private static boolean inCookieMode(JsonObject body) {
+        return RememberCookie.requested(body)
+                || readString(body, "rememberToken").trim().isEmpty();
     }
 
     static void handleRemember(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
-        String jwt = readString(body, "rememberToken").trim();
+        RememberCookie.Settings cookies = rememberCookies();
+        boolean cookieMode = inCookieMode(body);
+        String jwt = RememberCookie.token(req, body, cookies);
         if (jwt.isEmpty()) {
             sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing rememberToken."));
             return;
@@ -111,7 +145,12 @@ final class SessionEndpoints {
 
             RememberJwtService.RotationResult rot = RememberJwtService.rotate(conn, jwt, ip);
             if (rot == null) {
-                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.UNAUTHORIZED,
+                        errorPayload("Remember token invalid or expired."),
+                        cookieMode ? RememberCookie.expire(cookies) : null);
                 return;
             }
             if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
@@ -133,13 +172,13 @@ final class SessionEndpoints {
             ok.addProperty("ssoTicket", ssoTicket);
             ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
             ok.addProperty("username", rot.username);
-            ok.addProperty("rememberToken", rot.jwt);
+            String setCookie = addRemember(ok, rot, cookieMode);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
             AccessTokenService.Issued access = AccessTokenService.issue(conn, rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
-            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            sendJson(ctx, req, HttpResponseStatus.OK, ok, setCookie);
         } catch (Exception e) {
             LOGGER.error("Remember login failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
@@ -204,7 +243,9 @@ final class SessionEndpoints {
     }
 
     static void handleRefresh(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
-        String jwt = readString(body, "rememberToken").trim();
+        RememberCookie.Settings cookies = rememberCookies();
+        boolean cookieMode = inCookieMode(body);
+        String jwt = RememberCookie.token(req, body, cookies);
         if (jwt.isEmpty()) {
             sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing rememberToken."));
             return;
@@ -219,20 +260,25 @@ final class SessionEndpoints {
 
             RememberJwtService.RotationResult rot = RememberJwtService.rotate(conn, jwt, ip);
             if (rot == null) {
-                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.UNAUTHORIZED,
+                        errorPayload("Remember token invalid or expired."),
+                        cookieMode ? RememberCookie.expire(cookies) : null);
                 return;
             }
             if (refuseBanned(ctx, req, conn, rot.userId, ip, rot.jwt)) {
                 return;
             }
             JsonObject ok = new JsonObject();
-            ok.addProperty("rememberToken", rot.jwt);
+            String setCookie = addRemember(ok, rot, cookieMode);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
             AccessTokenService.Issued access = AccessTokenService.issue(conn, rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
-            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            sendJson(ctx, req, HttpResponseStatus.OK, ok, setCookie);
         } catch (Exception e) {
             LOGGER.error("Refresh failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
@@ -395,12 +441,11 @@ final class SessionEndpoints {
                         upd.executeUpdate();
                     }
 
-                    String rememberToken = null;
+                    RememberJwtService.RotationResult remembered = null;
                     if (rememberMe) {
                         try {
-                            RememberJwtService.RotationResult issued =
+                            remembered =
                                     RememberJwtService.issueForNewFamily(conn, userId, rs.getString("username"), ip);
-                            rememberToken = issued.jwt;
                         } catch (SQLException e) {
                             LOGGER.error("Failed to issue remember-me JWT for userId=" + userId, e);
                         }
@@ -412,11 +457,12 @@ final class SessionEndpoints {
                     ok.addProperty("ssoTicket", ssoTicket);
                     ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
                     ok.addProperty("username", rs.getString("username"));
-                    if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
+                    String setCookie =
+                            remembered == null ? null : addRemember(ok, remembered, RememberCookie.requested(body));
                     AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
                     ok.addProperty("accessToken", access.token);
                     ok.addProperty("accessTokenExpiresAt", access.expiresAt);
-                    sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                    sendJson(ctx, req, HttpResponseStatus.OK, ok, setCookie);
                 }
             }
         } catch (Exception e) {
@@ -426,7 +472,8 @@ final class SessionEndpoints {
     }
 
     static void handleRegister(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
-        if (!Emulator.getConfig().getBoolean("login.register.enabled", true)) {
+        ConfigurationManager config = Emulator.getConfig();
+        if (!config.getBoolean("login.register.enabled", true)) {
             sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, errorPayload("Registration is closed."));
             return;
         }
@@ -456,7 +503,7 @@ final class SessionEndpoints {
         }
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-            int maxPerIp = Emulator.getConfig().getInt("register.max_per_ip", 5);
+            int maxPerIp = config.getInt("register.max_per_ip", 5);
             if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
                 try (PreparedStatement quota =
                         conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
@@ -496,17 +543,17 @@ final class SessionEndpoints {
             }
 
             String hashed = PasswordHasher.hash(password, 12);
-            String defaultLook = Emulator.getConfig()
-                    .getValue("register.default.look", "hr-100-7.hd-180-1.ch-210-66.lg-270-82.sh-290-80");
-            String defaultMotto = Emulator.getConfig().getValue("register.default.motto", "I love Habbo!");
+            String defaultLook =
+                    config.getValue("register.default.look", "hr-100-7.hd-180-1.ch-210-66.lg-270-82.sh-290-80");
+            String defaultMotto = config.getValue("register.default.motto", "I love Habbo!");
             int now = Emulator.getIntUnixTimestamp();
 
             String finalLook = (figure.isEmpty() || !FIGURE_RE.matcher(figure).matches()) ? defaultLook : figure;
             String finalGender = (gender.equals("M") || gender.equals("F")) ? gender : "M";
 
-            int startingCredits = Math.max(0, Emulator.getConfig().getInt("new_user_credits", 0));
-            int startingDuckets = Math.max(0, Emulator.getConfig().getInt("new_user_duckets", 0));
-            int startingDiamonds = Math.max(0, Emulator.getConfig().getInt("new_user_diamonds", 0));
+            int startingCredits = Math.max(0, config.getInt("new_user_credits", 0));
+            int startingDuckets = Math.max(0, config.getInt("new_user_duckets", 0));
+            int startingDiamonds = Math.max(0, config.getInt("new_user_diamonds", 0));
 
             int newUserId = 0;
             try (PreparedStatement ins = conn.prepareStatement(

@@ -7,8 +7,9 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -96,18 +97,33 @@ public class AdventCalendarDataComposer extends MessageComposer {
         }
 
         if (this.rewardsById != null) {
-            List<CalendarRewardClaimed> opened = this.unlocked.stream()
-                    .filter(claimed -> this.rewardsById.containsKey(claimed.getRewardId()))
-                    .toList();
-            this.response.appendInt(opened.size());
-            for (CalendarRewardClaimed claimed : opened) {
-                this.response.appendInt(claimed.getDay());
-                AdventCalendarProductComposer.appendReward(
-                        this.response, this.rewardsById.get(claimed.getRewardId()), this.habbo);
+            Map<Integer, CalendarRewardObject> opened = new LinkedHashMap<>();
+            for (CalendarRewardClaimed claimed : this.unlocked) {
+                CalendarRewardObject reward = rewardOf(claimed, this.rewardsById);
+                if (reward != null) opened.putIfAbsent(claimed.getDay(), reward);
             }
+            this.response.appendInt(opened.size());
+            opened.forEach((day, reward) -> {
+                this.response.appendInt(day);
+                AdventCalendarProductComposer.appendReward(this.response, reward, this.habbo);
+            });
         }
 
         return this.response;
+    }
+
+    /**
+     * The reward a claimed day gave: the claimed reward when the campaign still has it, else (the reward rows were
+     * replaced since) the reward the campaign now sets for that day, the lowest id when there are several.
+     */
+    static CalendarRewardObject rewardOf(
+            CalendarRewardClaimed claimed, Map<Integer, CalendarRewardObject> rewardsById) {
+        CalendarRewardObject reward = rewardsById.get(claimed.getRewardId());
+        if (reward != null) return reward;
+        return rewardsById.values().stream()
+                .filter(candidate -> candidate.getDay() == claimed.getDay() + 1)
+                .min(Comparator.comparingInt(CalendarRewardObject::getId))
+                .orElse(null);
     }
 
     public String getEventName() {

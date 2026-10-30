@@ -89,6 +89,12 @@ login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.
 login.remember.jwt.secret=change-me-to-a-long-random-secret
+# A client that sends "rememberCookie": true gets its remember token as an HttpOnly cookie on /api/auth instead of in
+# the JSON reply, so no script on the client's origin can read it. Strict suits a client served from the same site as
+# the API; when they are on different sites use None (the cookie is then always Secure, so https only).
+login.remember.cookie.name=octane_remember
+login.remember.cookie.samesite=Strict
+login.remember.cookie.secure=true
 # Lifetime for SSO tickets minted by Polaris's built-in password/remember endpoints.
 login.sso.ticket.ttl.seconds=60
 

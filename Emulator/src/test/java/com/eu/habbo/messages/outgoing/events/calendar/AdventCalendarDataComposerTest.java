@@ -22,11 +22,16 @@ import org.junit.jupiter.api.Test;
 class AdventCalendarDataComposerTest {
 
     private static CalendarRewardObject reward(int id) throws SQLException {
+        return reward(id, 0);
+    }
+
+    private static CalendarRewardObject reward(int id, int day) throws SQLException {
         ResultSet set = mock(ResultSet.class);
         when(set.getString(anyString())).thenReturn("");
         when(set.getString("product_name")).thenReturn("%credits% credits");
         when(set.getInt("id")).thenReturn(id);
         when(set.getInt("credits")).thenReturn(50);
+        when(set.getInt("day")).thenReturn(day);
         return new CalendarRewardObject(set);
     }
 
@@ -82,5 +87,16 @@ class AdventCalendarDataComposerTest {
         ByteBuf packet = readUpToTheExtension(new AdventCalendarDataComposer("xmas", "", 24, 5, claims(), false));
 
         assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void fallsBackToTheDaysRewardWhenTheClaimedRewardWasReplaced() throws SQLException {
+        CalendarRewardClaimed claimed = new CalendarRewardClaimed(1, 1, 3, 9, new Timestamp(0));
+
+        assertEquals(
+                12,
+                AdventCalendarDataComposer.rewardOf(claimed, Map.of(12, reward(12, 4), 13, reward(13, 5)))
+                        .getId());
+        assertEquals(null, AdventCalendarDataComposer.rewardOf(claimed, Map.of(13, reward(13, 5))));
     }
 }

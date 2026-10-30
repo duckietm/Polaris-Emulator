@@ -77,8 +77,7 @@ class VoucherResolveBeforeClaimTest {
         int points = method.indexOf("client.getHabbo().givePoints", deliver);
         int ok = method.indexOf("new RedeemVoucherOKComposer()", deliver);
 
-        assertTrue(deliver > 0 && release > deliver, "a refused item releases the claim:
-" + method);
+        assertTrue(deliver > 0 && release > deliver, "a refused item releases the claim: " + method);
         assertTrue(release < points && points < ok, "currency and the OK come only after the item was delivered");
     }
 }

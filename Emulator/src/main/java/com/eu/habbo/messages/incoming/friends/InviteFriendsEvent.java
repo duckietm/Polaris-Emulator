@@ -7,7 +7,9 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.RoomInviteComposer;
 import com.eu.habbo.messages.outgoing.friends.RoomInviteErrorComposer;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class InviteFriendsEvent extends MessageHandler {
     @Override
@@ -21,10 +23,11 @@ public class InviteFriendsEvent extends MessageHandler {
             final int count = this.packet.readInt();
             if (count <= 0 || count > 100) return;
 
-            final int[] userIds = new int[count];
+            // Each friend once: the same id repeated sent the same invite once per copy.
+            final Set<Integer> userIds = new LinkedHashSet<>();
 
-            for (int i = 0; i < userIds.length; i++) {
-                userIds[i] = this.packet.readInt();
+            for (int i = 0; i < count; i++) {
+                userIds.add(this.packet.readInt());
             }
 
             String message = FriendInputGuard.normalizeMessage(this.packet.readString());
@@ -51,7 +54,7 @@ public class InviteFriendsEvent extends MessageHandler {
 
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(i);
 
-                if (habbo == null || habbo.getHabboStats().blockRoomInvites) {
+                if (habbo == null || habbo.getClient() == null || habbo.getHabboStats().blockRoomInvites) {
                     missed.add(buddy);
                     continue;
                 }

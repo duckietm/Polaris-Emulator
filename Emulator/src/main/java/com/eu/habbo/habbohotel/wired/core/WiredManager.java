@@ -1640,17 +1640,43 @@ public final class WiredManager {
         });
     }
 
-    private static void persistReward(int wiredId, int habboId, int rewardId, int timestamp) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+    /** The reward claim rows share one way to the database. */
+    private static Connection openRewardConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /**
+     * Writes the claim row that the next {@link #getReward} reads, and says whether it was written. It is written
+     * before the reward is delivered: written after, a failed insert was only logged, and a once-only or timed
+     * reward could be claimed again.
+     */
+    private static boolean persistReward(int wiredId, int habboId, int rewardId, int timestamp) {
+        try (Connection connection = openRewardConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO wired_rewards_given (wired_item, user_id, reward_id, timestamp) VALUES (?, ?, ?, ?)")) {
             statement.setInt(1, wiredId);
             statement.setInt(2, habboId);
             statement.setInt(3, rewardId);
             statement.setInt(4, timestamp);
-            statement.execute();
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Wired reward claim {} for user {} could not be written; nothing given", wiredId, habboId, e);
+            return false;
+        }
+    }
+
+    /** Takes back the claim row of a reward that could not be delivered, so it can be claimed again. */
+    private static void forgetReward(int wiredId, int habboId, int rewardId, int timestamp) {
+        try (Connection connection = openRewardConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM wired_rewards_given WHERE wired_item = ? AND user_id = ? AND reward_id = ? AND timestamp = ? LIMIT 1")) {
+            statement.setInt(1, wiredId);
+            statement.setInt(2, habboId);
+            statement.setInt(3, rewardId);
+            statement.setInt(4, timestamp);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Wired reward claim {} for user {} could not be taken back", wiredId, habboId, e);
         }
     }
 
@@ -1660,7 +1686,6 @@ public final class WiredManager {
             wiredBox.incrementGiven();
         }
 
-        persistReward(wiredBox.getId(), habbo.getHabboInfo().getId(), reward.id, Emulator.getIntUnixTimestamp());
         habbo.getClient().sendResponse(new WiredRewardAlertComposer(successCode));
     }
 
@@ -1846,7 +1871,7 @@ public final class WiredManager {
             WiredGiveRewardItem rewardToGive = null;
             int failureCode = -1;
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+            try (Connection connection = openRewardConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "SELECT * FROM wired_rewards_given WHERE user_id = ? AND wired_item = ? ORDER BY timestamp DESC LIMIT ?",
                             ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -1954,7 +1979,22 @@ public final class WiredManager {
             }
 
             if (rewardToGive != null) {
-                return giveReward(habbo, wiredBox, rewardToGive);
+                // Claim first, deliver second: a claim that cannot be written gives nothing, and a delivery that
+                // fails gives the claim back.
+                int userId = habbo.getHabboInfo().getId();
+                int claimedAt = Emulator.getIntUnixTimestamp();
+
+                if (!persistReward(wiredBox.getId(), userId, rewardToGive.id, claimedAt)) {
+                    return false;
+                }
+
+                boolean given = giveReward(habbo, wiredBox, rewardToGive);
+
+                if (!given) {
+                    forgetReward(wiredBox.getId(), userId, rewardToGive.id, claimedAt);
+                }
+
+                return given;
             }
 
             return false;

@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,8 +35,13 @@ public class WheelManager {
     public static final int MAX_EXTRA_SPINS = 10_000;
     private static final long MIN_SPIN_INTERVAL_MS = 1500L;
 
-    private final List<WheelPrize> prizes = new ArrayList<>();
-    private int totalWeight = 0;
+    /**
+     * The prizes and their total weight, swapped in whole by a reload. Clearing and refilling one shared list while a
+     * spin was picking from it threw (index or concurrent modification) after the spin had already been used.
+     */
+    private record PrizeTable(List<WheelPrize> prizes, int totalWeight) {}
+
+    private volatile PrizeTable prizeTable = new PrizeTable(List.of(), 0);
     private int freeSpinsPerDay = 1;
     private int spinCost = 50;
     private int spinCostType = 5;
@@ -76,8 +82,8 @@ public class WheelManager {
     }
 
     private void loadPrizes() {
-        this.prizes.clear();
-        this.totalWeight = 0;
+        List<WheelPrize> loaded = new ArrayList<>();
+        int weight = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -85,16 +91,20 @@ public class WheelManager {
                 ResultSet set = statement.executeQuery()) {
             while (set.next()) {
                 WheelPrize prize = new WheelPrize(set);
-                this.prizes.add(prize);
-                this.totalWeight += prize.weight;
+                loaded.add(prize);
+                weight += prize.weight;
             }
         } catch (SQLException e) {
+            // The prizes already loaded stay in use rather than an empty wheel.
             LOGGER.error("Failed to load fortune wheel prizes", e);
+            return;
         }
+
+        this.prizeTable = new PrizeTable(Collections.unmodifiableList(loaded), weight);
     }
 
     public List<WheelPrize> getPrizes() {
-        return this.prizes;
+        return this.prizeTable.prizes();
     }
 
     public int getSpinCost() {
@@ -206,15 +216,16 @@ public class WheelManager {
     }
 
     private WheelPrize pickWeighted() {
-        if (this.prizes.isEmpty() || this.totalWeight <= 0) return null;
+        PrizeTable table = this.prizeTable;
+        if (table.prizes().isEmpty() || table.totalWeight() <= 0) return null;
 
-        int roll = ThreadLocalRandom.current().nextInt(this.totalWeight);
+        int roll = ThreadLocalRandom.current().nextInt(table.totalWeight());
         int acc = 0;
-        for (WheelPrize prize : this.prizes) {
+        for (WheelPrize prize : table.prizes()) {
             acc += prize.weight;
             if (roll < acc) return prize;
         }
-        return this.prizes.get(this.prizes.size() - 1);
+        return table.prizes().get(table.prizes().size() - 1);
     }
 
     private void giveReward(Habbo habbo, WheelPrize prize, WheelUserState state) {
@@ -333,12 +344,16 @@ public class WheelManager {
         WheelUserState state = this.getUserState(userId);
         if (state.extraSpins >= MAX_EXTRA_SPINS) return false;
 
-        if (this.spinCostType == -1) {
-            if (habbo.getHabboInfo().getCredits() < this.spinCost) return false;
-            habbo.giveCredits(-this.spinCost);
-        } else {
-            if (habbo.getHabboInfo().getCurrencyAmount(this.spinCostType) < this.spinCost) return false;
-            habbo.givePoints(this.spinCostType, -this.spinCost);
+        // The spin is granted only for a payment that went through: the void give* calls did not say when a plugin
+        // or the ledger refused the debit, and the spin was added anyway.
+        if (this.spinCost > 0) {
+            if (this.spinCostType == -1) {
+                if (habbo.getHabboInfo().getCredits() < this.spinCost) return false;
+                if (!habbo.tryTakeCredits(this.spinCost)) return false;
+            } else {
+                if (habbo.getHabboInfo().getCurrencyAmount(this.spinCostType) < this.spinCost) return false;
+                if (!habbo.tryTakePoints(this.spinCostType, this.spinCost)) return false;
+            }
         }
 
         state.extraSpins++;

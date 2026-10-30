@@ -58,6 +58,11 @@ public class Voucher {
         }
     }
 
+    /** The claim methods share one way to the database. */
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
     public boolean hasUserExhausted(int userId) {
         return this.limit > 0
                 && Math.toIntExact(this.history.stream()
@@ -104,7 +109,7 @@ public class Voucher {
             return;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE FROM voucher_history WHERE voucher_id = ? AND user_id = ? AND timestamp = ? LIMIT 1")) {
             statement.setInt(1, this.id);
@@ -120,7 +125,7 @@ public class Voucher {
     }
 
     private boolean insertHistoryEntry(int userId, int timestamp) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO voucher_history (`voucher_id`, `user_id`, `timestamp`) VALUES (?, ?, ?)")) {
             statement.setInt(1, this.id);

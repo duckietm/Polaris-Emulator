@@ -24,6 +24,8 @@ public class HorseRemoveSaddleEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null) return;
+
         Pet pet = room.getPet(this.packet.readInt());
 
         if (pet == null || !(pet instanceof HorsePet) || pet.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
@@ -53,12 +55,16 @@ public class HorseRemoveSaddleEvent extends MessageHandler {
 
         if (saddleItem == null) return;
 
+        // The saddle item first: the horse lost its saddle even when the item could not be created, and the owner got
+        // nothing back.
+        HabboItem saddle = Emulator.getGameEnvironment().getItemManager().createItem(this.client.getHabbo().getHabboInfo().getId(), saddleItem, 0, 0, "");
+
+        if (saddle == null) return;
+
         horse.hasSaddle(false);
         horse.needsUpdate = true;
         Emulator.getThreading().run(pet);
-        this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomPetHorseFigureComposer(horse).compose());
-
-        HabboItem saddle = Emulator.getGameEnvironment().getItemManager().createItem(this.client.getHabbo().getHabboInfo().getId(), saddleItem, 0, 0, "");
+        room.sendComposer(new RoomPetHorseFigureComposer(horse).compose());
 
         this.client.getHabbo().getInventory().getItemsComponent().addItem(saddle);
 

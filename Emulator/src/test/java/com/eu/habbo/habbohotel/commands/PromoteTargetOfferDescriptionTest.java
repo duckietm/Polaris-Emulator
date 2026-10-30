@@ -10,7 +10,8 @@ class PromoteTargetOfferDescriptionTest {
     @Test
     void aShortDescriptionIsListedWholeAndALongOneIsCut() {
         assertEquals("Summer sale", PromoteTargetOfferCommand.listedDescription("Summer sale"));
-        assertEquals("abcdefghijklmnopqrstuvwxy", PromoteTargetOfferCommand.listedDescription("abcdefghijklmnopqrstuvwxyz"));
+        assertEquals(
+                "abcdefghijklmnopqrstuvwxy", PromoteTargetOfferCommand.listedDescription("abcdefghijklmnopqrstuvwxyz"));
         assertEquals("", PromoteTargetOfferCommand.listedDescription(null));
     }
 }

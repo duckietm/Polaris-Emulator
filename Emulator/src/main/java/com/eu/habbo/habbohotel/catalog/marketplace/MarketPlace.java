@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.earnings.EarningsCategory;
 import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -633,15 +634,16 @@ public class MarketPlace {
         }
 
         int credits = 0;
+        int sellerId = client.getHabbo().getHabboInfo().getId();
+        List<MarketPlaceOffer> claimed = new ArrayList<>();
 
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
-                    if (removeUser(offer, client.getHabbo().getHabboInfo().getId())) {
+                    if (removeUser(offer, sellerId)) {
                         client.getHabbo().getInventory().removeMarketplaceOffer(offer);
                         credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
-                        offer.needsUpdate(true);
-                        Emulator.getThreading().run(offer);
+                        claimed.add(offer);
                     }
                 }
             }
@@ -649,13 +651,50 @@ public class MarketPlace {
 
         offers.clear();
 
-        if (MARKETPLACE_CURRENCY == 0) {
-            client.getHabbo().giveCredits(credits);
-        } else {
-            client.getHabbo().givePoints(MARKETPLACE_CURRENCY, credits);
+        if (claimed.isEmpty() || credits == 0) {
+            return 0;
+        }
+
+        // The payout says whether it happened (a plugin or the ledger can refuse it). When it did not, the offers are
+        // handed back as unclaimed: they used to stay claimed with nothing paid and no way to claim them again.
+        String operationId = EconomyOperationId.create("marketplace-payout:" + sellerId);
+        boolean paid = MARKETPLACE_CURRENCY == 0
+                ? client.getHabbo().applyCredits(credits, "marketplace.payout", operationId, sellerId)
+                : client.getHabbo()
+                        .applyPoints(MARKETPLACE_CURRENCY, credits, "marketplace.payout", operationId, sellerId);
+
+        if (!paid) {
+            synchronized (client.getHabbo().getInventory()) {
+                for (MarketPlaceOffer offer : claimed) {
+                    if (releaseClaim(offer, sellerId)) {
+                        client.getHabbo().getInventory().addMarketplaceOffer(offer);
+                    }
+                }
+            }
+            LOGGER.warn("Marketplace payout of {} refused for user {}; offers released", credits, sellerId);
+            return 0;
+        }
+
+        for (MarketPlaceOffer offer : claimed) {
+            offer.needsUpdate(true);
+            Emulator.getThreading().run(offer);
         }
 
         return credits;
+    }
+
+    /** Undoes {@link #removeUser} for an offer whose payout did not go through. */
+    private static boolean releaseClaim(MarketPlaceOffer offer, int sellerId) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE marketplace_items SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1")) {
+            statement.setInt(1, offer.getOfferId());
+            statement.setInt(2, sellerId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.error("Marketplace claim of offer {} could not be released", offer.getOfferId(), e);
+            return false;
+        }
     }
 
     /**

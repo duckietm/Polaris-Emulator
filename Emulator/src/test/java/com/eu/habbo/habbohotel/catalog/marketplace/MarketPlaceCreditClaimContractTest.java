@@ -44,4 +44,16 @@ class MarketPlaceCreditClaimContractTest {
                 source.contains("private static boolean removeUser"),
                 "removeUser must report whether the marketplace ownership update succeeded");
     }
+
+    @Test
+    void aRefusedPayoutReleasesTheClaims() throws Exception {
+        String source = marketPlaceSource();
+        int start = source.indexOf("public static int claimSoldCredits");
+        int apply = source.indexOf("applyCredits(credits, \"marketplace.payout\"", start);
+        int release = source.indexOf("releaseClaim(offer, sellerId)", start);
+
+        assertTrue(apply > start, "the payout reports whether it happened");
+        assertTrue(release > apply, "a refused payout hands the offers back");
+        assertTrue(source.contains("SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1"));
+    }
 }

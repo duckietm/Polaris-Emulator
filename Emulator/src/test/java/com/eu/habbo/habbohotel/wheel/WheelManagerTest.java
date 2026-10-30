@@ -84,6 +84,8 @@ class WheelManagerTest {
 
             when(habbo.getHabboInfo()).thenReturn(habboInfo);
             when(habboInfo.getId()).thenReturn(USER_ID);
+            when(habbo.tryTakeCredits(anyInt())).thenReturn(true);
+            when(habbo.tryTakePoints(anyInt(), anyInt())).thenReturn(true);
 
             emulator.when(Emulator::getConfig).thenReturn(config);
             emulator.when(Emulator::getDatabase).thenReturn(database);
@@ -104,7 +106,7 @@ class WheelManagerTest {
 
             assertTrue(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo).giveCredits(-50);
+            verify(fixture.habbo).tryTakeCredits(50);
             assertEquals(1, manager.getUserState(USER_ID).extraSpins);
             verify(fixture.writeStatement, times(2)).executeUpdate();
         }
@@ -118,8 +120,21 @@ class WheelManagerTest {
 
             assertTrue(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo).givePoints(5, -50);
-            verify(fixture.habbo, never()).giveCredits(anyInt());
+            verify(fixture.habbo).tryTakePoints(5, 50);
+            verify(fixture.habbo, never()).tryTakeCredits(anyInt());
+        }
+    }
+
+    @Test
+    void aRefusedDebitGrantsNoSpin() throws SQLException {
+        try (Fixture fixture = new Fixture(Map.of("wheel.spin_cost", 50, "wheel.spin_cost_type", -1), null)) {
+            when(fixture.habboInfo.getCredits()).thenReturn(100);
+            when(fixture.habbo.tryTakeCredits(50)).thenReturn(false);
+            WheelManager manager = new WheelManager();
+
+            assertFalse(manager.buySpin(fixture.habbo));
+
+            assertEquals(0, manager.getUserState(USER_ID).extraSpins);
         }
     }
 
@@ -131,7 +146,7 @@ class WheelManagerTest {
 
             assertFalse(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo, never()).giveCredits(anyInt());
+            verify(fixture.habbo, never()).tryTakeCredits(anyInt());
             assertEquals(0, manager.getUserState(USER_ID).extraSpins);
         }
     }
@@ -143,8 +158,8 @@ class WheelManagerTest {
 
             assertFalse(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo, never()).giveCredits(anyInt());
-            verify(fixture.habbo, never()).givePoints(anyInt(), anyInt());
+            verify(fixture.habbo, never()).tryTakeCredits(anyInt());
+            verify(fixture.habbo, never()).tryTakePoints(anyInt(), anyInt());
         }
     }
 
@@ -157,7 +172,7 @@ class WheelManagerTest {
 
             assertFalse(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo, never()).giveCredits(anyInt());
+            verify(fixture.habbo, never()).tryTakeCredits(anyInt());
         }
     }
 
@@ -189,7 +204,7 @@ class WheelManagerTest {
 
             assertTrue(manager.buySpin(fixture.habbo));
 
-            verify(fixture.habbo).giveCredits(-50);
+            verify(fixture.habbo).tryTakeCredits(50);
         }
     }
 

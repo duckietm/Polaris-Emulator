@@ -84,9 +84,10 @@ public class RequestCreateRoomEvent extends MessageHandler {
             enforceCategory = true;
         }
 
-        if (maxUsers > 250) return;
+        // A room for no one, or a trade mode below the known ones, was created as asked.
+        if (maxUsers < 1 || maxUsers > 250) return;
 
-        if (tradeType > 2) return;
+        if (tradeType < 0 || tradeType > 2) return;
 
         if (name.trim().length() < 3
                 || name.length() > 25

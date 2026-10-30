@@ -28,22 +28,25 @@ public class PurchaseTargetOfferEvent extends MessageHandler {
 
         if (amount <= 0 || offerId <= 0) return;
 
-
-        if (Emulator.getIntUnixTimestamp() - this.client.getHabbo().getHabboStats().lastPurchaseTimestamp >= CatalogManager.PURCHASE_COOLDOWN) {
+        if (Emulator.getIntUnixTimestamp() - this.client.getHabbo().getHabboStats().lastPurchaseTimestamp
+                >= CatalogManager.PURCHASE_COOLDOWN) {
             this.client.getHabbo().getHabboStats().lastPurchaseTimestamp = Emulator.getIntUnixTimestamp();
 
-            TargetOffer offer = Emulator.getGameEnvironment().getCatalogManager().getTargetOffer(offerId);
+            TargetOffer offer =
+                    Emulator.getGameEnvironment().getCatalogManager().getTargetOffer(offerId);
             if (offer == null) return;
 
             HabboOfferPurchase purchase = HabboOfferPurchase.getOrCreate(this.client.getHabbo(), offerId);
 
             if (purchase != null) {
-                amount = TargetOfferPurchaseGuard.purchasableAmount(amount, offer.getPurchaseLimit(), purchase.getAmount());
+                amount = TargetOfferPurchaseGuard.purchasableAmount(
+                        amount, offer.getPurchaseLimit(), purchase.getAmount());
                 if (amount <= 0) return;
 
                 int now = Emulator.getIntUnixTimestamp();
                 if (offer.getExpirationTime() > now) {
-                    CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offer.getCatalogItem());
+                    CatalogItem item =
+                            Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offer.getCatalogItem());
                     if (item == null) return;
                     if (item.isLimited()) {
                         amount = 1;
@@ -53,7 +56,6 @@ public class PurchaseTargetOfferEvent extends MessageHandler {
 
                     // The limit counts what was delivered: it used to be taken before the purchase, which could fail.
                     if (delivered > 0) purchase.update(delivered, now);
-
                 }
             }
         }

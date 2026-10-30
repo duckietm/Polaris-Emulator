@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.polls;
 
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,21 +13,15 @@ public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
 
     public final int id;
 
-
     public final int parentId;
-
 
     public final int type;
 
-
     public final String question;
-
 
     public final Map<Integer, String[]> options;
 
-
     public final int minSelections;
-
 
     public final int order;
 
@@ -49,7 +42,9 @@ public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
 
         if (this.type == 1 || this.type == 2) {
             for (int i = 0; i < opts.split(";").length; i++) {
-                this.options.put(i, new String[]{opts.split(";")[i].split(":")[0], opts.split(";")[i].split(":")[1]});
+                this.options.put(i, new String[] {
+                    opts.split(";")[i].split(":")[0], opts.split(";")[i].split(":")[1]
+                });
             }
         }
     }

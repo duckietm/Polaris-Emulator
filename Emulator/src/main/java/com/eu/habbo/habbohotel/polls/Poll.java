@@ -9,12 +9,9 @@ public class Poll {
 
     public final int id;
 
-
     public final String title;
 
-
     public final String thanksMessage;
-
 
     public final String badgeReward;
 

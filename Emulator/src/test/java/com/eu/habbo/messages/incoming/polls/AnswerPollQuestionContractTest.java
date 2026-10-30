@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 /** A poll answer was stored, and the badge given, for any question id the client sent. */
 class AnswerPollQuestionContractTest {
 
-    private static final Path EVENT = Path.of("src/main/java/com/eu/habbo/messages/incoming/polls/AnswerPollEvent.java");
+    private static final Path EVENT =
+            Path.of("src/main/java/com/eu/habbo/messages/incoming/polls/AnswerPollEvent.java");
     private static final Path POLL = Path.of("src/main/java/com/eu/habbo/habbohotel/polls/Poll.java");
 
     @Test

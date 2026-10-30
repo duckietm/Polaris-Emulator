@@ -83,6 +83,37 @@ public class Voucher {
         return ClaimResult.CLAIMED;
     }
 
+    /**
+     * Gives back the newest claim of this user, for a redemption whose item could not be delivered. The history row
+     * goes from the database and from memory, so the code counts as unused again.
+     */
+    public synchronized void releaseClaim(int userId) {
+        VoucherHistoryEntry latest = null;
+        for (VoucherHistoryEntry entry : this.history) {
+            if (entry.getUserId() == userId && (latest == null || entry.getTimestamp() >= latest.getTimestamp())) {
+                latest = entry;
+            }
+        }
+
+        if (latest == null) {
+            return;
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM voucher_history WHERE voucher_id = ? AND user_id = ? AND timestamp = ? LIMIT 1")) {
+            statement.setInt(1, this.id);
+            statement.setInt(2, userId);
+            statement.setInt(3, latest.getTimestamp());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Voucher {} claim of user {} could not be released", this.id, userId, e);
+            return;
+        }
+
+        this.history.remove(latest);
+    }
+
     private boolean insertHistoryEntry(int userId, int timestamp) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO voucher_history (`voucher_id`, `user_id`, `timestamp`) VALUES (?, ?, ?)")) {
             statement.setInt(1, this.id);

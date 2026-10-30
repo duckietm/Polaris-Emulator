@@ -965,16 +965,19 @@ public class CatalogManager {
                 return;
         }
 
+        // The item is checked before the currency is given: a refused item (club only, sold out, a purchase already
+        // running) used to leave the code spent, nothing delivered and an OK on screen.
+        if (voucherItem != null && !this.purchaseItemDelivered(null, voucherItem, client.getHabbo(), 1, "", true)) {
+            voucher.releaseClaim(habbo.getHabboInfo().getId());
+            return;
+        }
+
         if (voucher.points > 0) {
             client.getHabbo().givePoints(voucher.pointsType, voucher.points);
         }
 
         if (voucher.credits > 0) {
             client.getHabbo().giveCredits(voucher.credits);
-        }
-
-        if (voucherItem != null) {
-            this.purchaseItem(null, voucherItem, client.getHabbo(), 1, "", true);
         }
 
         client.sendResponse(new RedeemVoucherOKComposer());
@@ -1466,6 +1469,29 @@ public class CatalogManager {
 
     public void purchaseItem(
             CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
+        this.purchaseItemDelivered(page, item, habbo, amount, extradata, free);
+    }
+
+    /**
+     * {@link #purchaseItem}, saying whether the order was delivered. A refusal (club only, sold out, a purchase
+     * already running, ...) answers the client itself and returns false, so a caller that already spent something
+     * for it, such as a voucher, can give that back.
+     */
+    public boolean purchaseItemDelivered(
+            CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
+        LegacyPurchase purchase = new LegacyPurchase();
+        this.purchaseItem(page, item, habbo, amount, extradata, free, purchase);
+        return purchase.delivered;
+    }
+
+    private void purchaseItem(
+            CatalogPage page,
+            CatalogItem item,
+            Habbo habbo,
+            int amount,
+            String extradata,
+            boolean free,
+            LegacyPurchase purchase) {
         if (item == null) {
             habbo.getClient()
                     .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
@@ -1481,8 +1507,6 @@ public class CatalogManager {
             }
             habbo.getHabboStats().isPurchasingFurniture = true;
         }
-
-        LegacyPurchase purchase = new LegacyPurchase();
 
         try {
             if (this.refusedBeforePricing(item, habbo, amount)) {

@@ -49,7 +49,7 @@ class VoucherResolveBeforeClaimTest {
     void theDeliveryUsesTheOfferAlreadyResolved() throws Exception {
         String method = redeemVoucher();
 
-        assertTrue(method.contains("this.purchaseItem(null, voucherItem,"), method);
+        assertTrue(method.contains("this.purchaseItemDelivered(null, voucherItem,"), method);
         assertFalse(
                 method.contains("CatalogItem item = this.getCatalogItem(voucher.catalogItemId)"),
                 "the offer is not looked up a second time after the claim");
@@ -66,5 +66,19 @@ class VoucherResolveBeforeClaimTest {
         assertTrue(CatalogManager.fitsWallet(Integer.MAX_VALUE - 5, 5));
         assertFalse(CatalogManager.fitsWallet(Integer.MAX_VALUE - 5, 6));
         assertTrue(CatalogManager.fitsWallet(Integer.MAX_VALUE, 0));
+    }
+
+    @Test
+    void anUndeliveredItemGivesTheVoucherBackAndNothingElse() throws Exception {
+        String method = redeemVoucher();
+
+        int deliver = method.indexOf("this.purchaseItemDelivered(null, voucherItem,");
+        int release = method.indexOf("voucher.releaseClaim(", deliver);
+        int points = method.indexOf("client.getHabbo().givePoints", deliver);
+        int ok = method.indexOf("new RedeemVoucherOKComposer()", deliver);
+
+        assertTrue(deliver > 0 && release > deliver, "a refused item releases the claim:
+" + method);
+        assertTrue(release < points && points < ok, "currency and the OK come only after the item was delivered");
     }
 }

@@ -49,6 +49,9 @@ public class WheelManager {
 
     private final ConcurrentHashMap<Integer, Long> lastSpinAt = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, WheelUserState> userStateCache = new ConcurrentHashMap<>();
+    // One lock per user: the methods were synchronized on the manager, so every player waited on the database writes
+    // of every other player's spin.
+    private final ConcurrentHashMap<Integer, Object> userLocks = new ConcurrentHashMap<>();
     private final java.util.concurrent.CopyOnWriteArrayList<WheelRecentWin> recentWinsCache =
             new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -119,7 +122,26 @@ public class WheelManager {
         return Emulator.getIntUnixTimestamp() / SECONDS_PER_DAY;
     }
 
-    public synchronized WheelUserState getUserState(int userId) {
+    private Object lockFor(int userId) {
+        return this.userLocks.computeIfAbsent(userId, id -> new Object());
+    }
+
+    /** Drops what is kept for a user who logged out; the state is read again from the database on the next visit. */
+    public void forgetUser(int userId) {
+        synchronized (this.lockFor(userId)) {
+            this.lastSpinAt.remove(userId);
+            this.userStateCache.remove(userId);
+        }
+        this.userLocks.remove(userId);
+    }
+
+    public WheelUserState getUserState(int userId) {
+        synchronized (this.lockFor(userId)) {
+            return this.getUserStateLocked(userId);
+        }
+    }
+
+    private WheelUserState getUserStateLocked(int userId) {
         int today = this.today();
         WheelUserState cached = this.userStateCache.get(userId);
 
@@ -181,7 +203,13 @@ public class WheelManager {
         }
     }
 
-    public synchronized WheelPrize spin(Habbo habbo) {
+    public WheelPrize spin(Habbo habbo) {
+        synchronized (this.lockFor(habbo.getHabboInfo().getId())) {
+            return this.spinLocked(habbo);
+        }
+    }
+
+    private WheelPrize spinLocked(Habbo habbo) {
         int userId = habbo.getHabboInfo().getId();
         long now = System.currentTimeMillis();
         Long last = this.lastSpinAt.get(userId);
@@ -337,7 +365,13 @@ public class WheelManager {
         }
     }
 
-    public synchronized boolean buySpin(Habbo habbo) {
+    public boolean buySpin(Habbo habbo) {
+        synchronized (this.lockFor(habbo.getHabboInfo().getId())) {
+            return this.buySpinLocked(habbo);
+        }
+    }
+
+    private boolean buySpinLocked(Habbo habbo) {
         if (this.spinCost <= 0) return false;
 
         int userId = habbo.getHabboInfo().getId();

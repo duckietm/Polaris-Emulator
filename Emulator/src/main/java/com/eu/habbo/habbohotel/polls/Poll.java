@@ -44,6 +44,17 @@ public class Poll {
         return null;
     }
 
+    /** Whether this poll asks the question, as a question of its own or a sub-question of one. */
+    public boolean hasQuestion(int id) {
+        for (PollQuestion q : this.questions) {
+            if (q.id == id || q.hasSubQuestion(id)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void addQuestion(PollQuestion question) {
         this.questions.add(question);
 

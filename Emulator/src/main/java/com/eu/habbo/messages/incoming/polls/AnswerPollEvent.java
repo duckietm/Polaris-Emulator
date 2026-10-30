@@ -66,7 +66,9 @@ public class AnswerPollEvent extends MessageHandler {
 
         Poll poll = Emulator.getGameEnvironment().getPollManager().getPoll(pollId);
 
-        if (poll != null) {
+        // Only a question of this poll is stored: any id was written, and sending just the last question's id was
+        // enough for the badge.
+        if (poll != null && poll.hasQuestion(questionId)) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO polls_answers(poll_id, user_id, question_id, answer) VALUES(?, ?, ?, ?) ON DUPLICATE KEY UPDATE answer=VALUES(answer)")) {

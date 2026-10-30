@@ -54,6 +54,16 @@ public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
         }
     }
 
+    public boolean hasSubQuestion(int id) {
+        for (PollQuestion subQuestion : this.subQuestions) {
+            if (subQuestion.id == id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void addSubQuestion(PollQuestion pollQuestion) {
         this.subQuestions.add(pollQuestion);
     }

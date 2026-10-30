@@ -111,18 +111,26 @@ public class ItemsComponent {
         return this.items.get(Math.abs(itemId));
     }
 
+    /**
+     * Takes one item of this base item out of the inventory, or null when there is none. A missing item used to reach
+     * removeHabboItem(null) and throw, so crafting and the wired take-furni effect never reached their own null check
+     * and left the items already taken out of the inventory.
+     */
     public HabboItem getAndRemoveHabboItem(final Item item) {
-        final HabboItem[] habboItem = {null};
+        HabboItem found = null;
         synchronized (this.items) {
             for (HabboItem object : this.items.values()) {
                 if (object.getBaseItem() == item) {
-                    habboItem[0] = object;
+                    found = object;
                     break;
                 }
             }
         }
-        this.removeHabboItem(habboItem[0]);
-        return habboItem[0];
+        if (found == null) {
+            return null;
+        }
+        this.removeHabboItem(found);
+        return found;
     }
 
     public void removeHabboItem(int itemId) {

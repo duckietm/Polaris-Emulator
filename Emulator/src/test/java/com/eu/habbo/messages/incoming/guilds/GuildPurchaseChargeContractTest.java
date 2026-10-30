@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 /** A group purchase charged with no check, and kept the price when the group could not be created. */
 class GuildPurchaseChargeContractTest {
 
-    private static final Path BUY = Path.of("src/main/java/com/eu/habbo/messages/incoming/guilds/RequestGuildBuyEvent.java");
+    private static final Path BUY =
+            Path.of("src/main/java/com/eu/habbo/messages/incoming/guilds/RequestGuildBuyEvent.java");
     private static final Path MANAGER = Path.of("src/main/java/com/eu/habbo/habbohotel/guilds/GuildManager.java");
 
     @Test
@@ -33,6 +34,7 @@ class GuildPurchaseChargeContractTest {
         assertTrue(manager.contains("connection.setAutoCommit(false);"));
         assertTrue(manager.contains("connection.rollback();"));
         assertTrue(manager.contains("throw new SQLException(\"No id was generated for the new group\");"));
-        assertFalse(manager.contains("LOGGER.error(\"Caught SQL exception\", e);\n        }\n\n        habbo.getHabboStats().addGuild"));
+        assertFalse(manager.contains(
+                "LOGGER.error(\"Caught SQL exception\", e);\n        }\n\n        habbo.getHabboStats().addGuild"));
     }
 }

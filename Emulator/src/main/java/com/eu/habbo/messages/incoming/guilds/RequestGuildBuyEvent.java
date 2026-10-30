@@ -110,8 +110,7 @@ public class RequestGuildBuyEvent extends MessageHandler {
             if (guildPrice > 0) {
                 if (this.client.getHabbo().getHabboInfo().getCredits() < guildPrice
                         || !this.client.getHabbo().tryTakeCredits(guildPrice)) {
-                    this.client.sendResponse(
-                            new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                     return;
                 }
                 charged = guildPrice;

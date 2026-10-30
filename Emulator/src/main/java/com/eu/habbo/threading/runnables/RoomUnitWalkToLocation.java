@@ -25,7 +25,8 @@ public class RoomUnitWalkToLocation implements Runnable {
         if (targetReached != null) this.targetReached.add(targetReached);
 
         this.failedReached = new ArrayList<>();
-        if (failedReached != null) this.targetReached.add(failedReached);
+        // It went into targetReached, so a failed walk never ran it and a successful one ran it as well.
+        if (failedReached != null) this.failedReached.add(failedReached);
     }
 
     public RoomUnitWalkToLocation(RoomUnit walker, RoomTile goalTile, Room room, List<Runnable> targetReached, List<Runnable> failedReached) {

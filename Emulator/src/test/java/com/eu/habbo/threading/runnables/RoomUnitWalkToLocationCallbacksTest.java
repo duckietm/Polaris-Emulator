@@ -11,8 +11,8 @@ class RoomUnitWalkToLocationCallbacksTest {
 
     @Test
     void theFailureCallbackGoesWithTheFailures() throws Exception {
-        String source = Files.readString(
-                Path.of("src/main/java/com/eu/habbo/threading/runnables/RoomUnitWalkToLocation.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/threading/runnables/RoomUnitWalkToLocation.java"));
 
         assertTrue(source.contains("if (failedReached != null) this.failedReached.add(failedReached);"));
         assertTrue(!source.contains("if (failedReached != null) this.targetReached.add(failedReached);"));

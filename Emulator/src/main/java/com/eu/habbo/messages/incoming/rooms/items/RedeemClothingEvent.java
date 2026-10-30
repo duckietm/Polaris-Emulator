@@ -22,6 +22,12 @@ import org.slf4j.LoggerFactory;
 public class RedeemClothingEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedeemClothingEvent.class);
 
+    // A burst of redeems for the same furni wrote the clothing once per packet.
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
@@ -47,11 +53,9 @@ public class RedeemClothingEvent extends MessageHandler {
                                 .getWardrobeComponent()
                                 .getClothing()
                                 .contains(clothing.id)) {
-                            if (!this.grantClothing(clothing.id)) {
-                                return;
-                            }
-
-                            item.setRoomId(0);
+                            // The tile first, the grant last: the clothing used to be written to the database before
+                            // a missing tile returned, so the furni stayed in the room and the wardrobe in memory
+                            // did not change.
                             RoomTile tile = this.client
                                     .getHabbo()
                                     .getHabboInfo()
@@ -61,6 +65,12 @@ public class RedeemClothingEvent extends MessageHandler {
                             if (tile == null) {
                                 return;
                             }
+
+                            if (!this.grantClothing(clothing.id)) {
+                                return;
+                            }
+
+                            item.setRoomId(0);
 
                             this.client
                                     .getHabbo()

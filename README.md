@@ -16,8 +16,9 @@ online.
 
 ## Requirements
 
-- **Emulator:** Java 21 (JDK) and Maven
-- **Database:** MariaDB
+- **Emulator:** Java 25 (JDK). The build also runs on JDK 26. Maven is not needed: the
+  `Emulator/` folder ships the Maven wrapper (`mvnw` / `mvnw.cmd`)
+- **Database:** MariaDB (CI runs the migrations against 10.11, 11.4 and 12.3)
 
 ## Quick start
 
@@ -46,6 +47,9 @@ java -jar Polaris-<version>-jar-with-dependencies.jar --migrations-only
 
 # Read-only compatibility, checksum and pending-migration report
 java -jar Polaris-<version>-jar-with-dependencies.jar --migrations=validate
+
+# Realign the migration history (e.g. a migration whose file is no longer present), then exit
+java -jar Polaris-<version>-jar-with-dependencies.jar --migrations=repair
 ```
 
 `--migrations=apply` explicitly applies migrations before normal startup. There
@@ -55,8 +59,8 @@ hosting-panel restarts.
 ### 2. Game server
 
 ```
-cd emulator
-mvn package
+cd Emulator
+./mvnw package          # mvnw.cmd package on Windows
 ```
 
 The build produces `target/Polaris-<version>-jar-with-dependencies.jar`.
@@ -83,6 +87,13 @@ Polaris keeps its promise to existing plugin authors:
 
 How it works, what it covers and how to configure it is documented in
 [`POLARIS.md`](POLARIS.md).
+
+The plugin surface is checked on every build: `PluginAbiCompatibilityTest`
+compares the emulator's public classes with Arcturus Morningstar 3.5.5 and with
+the last released Polaris jar, and fails on any change that would break an
+already compiled plugin (see [`Emulator/abi-baseline`](Emulator/abi-baseline)).
+Writing a new plugin is covered in the
+[plugin author guide](docs/plugin-author-guide.md).
 
 ## Credits
 

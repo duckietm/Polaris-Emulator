@@ -15,7 +15,7 @@ class NavigatorLiftedRoomsLoadTest {
         when(set.next()).thenReturn(true, true, false);
         when(set.getInt("room_id")).thenReturn(7, 9);
         when(set.getInt("area_id")).thenReturn(2, 0);
-        when(set.getString("image")).thenReturn("officialrooms_hq/a.png", null);
+        when(set.getString("image")).thenReturn("officialrooms_hq/a.png", (String) null);
         when(set.getString("caption")).thenReturn("Lobby", " ");
         when(set.getString("room_name")).thenReturn("Pool room");
 

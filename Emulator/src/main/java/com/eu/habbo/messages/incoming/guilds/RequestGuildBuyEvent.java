@@ -102,19 +102,33 @@ public class RequestGuildBuyEvent extends MessageHandler {
         // credits were deducted before the room was checked, so a purchase that
         // failed afterwards (missing room, room already used by a guild, not the
         // owner) still took the credits without ever creating the group.
+        // The debit says whether it happened (a plugin or the ledger can refuse it), and a group that could not be
+        // created gives the price back: the price used to be taken with no check and kept when the creation failed.
+        int charged = 0;
         if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
-            int guildPrice = config.getInt("catalog.guild.price");
-            if (this.client.getHabbo().getHabboInfo().getCredits() >= guildPrice) {
-                this.client.getHabbo().giveCredits(-guildPrice);
-            } else {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                return;
+            int guildPrice = Math.max(0, config.getInt("catalog.guild.price"));
+            if (guildPrice > 0) {
+                if (this.client.getHabbo().getHabboInfo().getCredits() < guildPrice
+                        || !this.client.getHabbo().tryTakeCredits(guildPrice)) {
+                    this.client.sendResponse(
+                            new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                    return;
+                }
+                charged = guildPrice;
             }
         }
 
         Guild guild = Emulator.getGameEnvironment()
                 .getGuildManager()
                 .createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge, colorOne, colorTwo);
+
+        if (guild == null) {
+            if (charged > 0) {
+                this.client.getHabbo().giveCredits(charged, "guild.purchase.refund");
+            }
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
 
         r.setGuild(guild.getId());
         r.removeAllRights();

@@ -11,8 +11,12 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.json.JsonObjectDecoder;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,15 +28,15 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
     // of allocating a parser per RCON request.
     private static final Gson GSON = new Gson();
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
+    private static final Pattern IP_LITERAL =
+            Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}|[0-9A-Fa-f.]*:[0-9A-Fa-f:.]*");
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         String address = remoteAddress(ctx);
 
-        for (String s : Emulator.getRconServer().allowedAdresses) {
-            if (s.equalsIgnoreCase(address)) {
-                return;
-            }
+        if (isAllowed(address, Emulator.getRconServer().allowedAdresses)) {
+            return;
         }
 
         ctx.channel().close();
@@ -74,7 +78,8 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             } catch (ArrayIndexOutOfBoundsException e) {
                 LOGGER.error("Unknown RCON Message: {}", key);
             } catch (Exception e) {
-                LOGGER.error("Invalid RCON Message: {}", message);
+                // Only the key: the payload can carry user data and tokens.
+                LOGGER.error("Invalid RCON Message: {}", key);
                 LOGGER.error("Caught exception", e);
             }
 
@@ -117,6 +122,41 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
         int configured = Emulator.getConfig().getInt("rcon.max_payload_bytes", DEFAULT_MAX_PAYLOAD_BYTES);
         return configured > 0 ? configured : DEFAULT_MAX_PAYLOAD_BYTES;
+    }
+
+    /**
+     * An address entry is compared as an address, so {@code ::1} also allows {@code 0:0:0:0:0:0:0:1}. Any other entry
+     * is compared as text, as before; nothing here resolves a host name.
+     */
+    static boolean isAllowed(String address, List<String> entries) {
+        InetAddress remote = literal(address);
+
+        for (String entry : entries) {
+            String allowed = entry.trim();
+
+            if (allowed.equalsIgnoreCase(address)) {
+                return true;
+            }
+
+            InetAddress allowedAddress = literal(allowed);
+            if (remote != null && remote.equals(allowedAddress)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static InetAddress literal(String value) {
+        if (value == null || !IP_LITERAL.matcher(value).matches()) {
+            return null;
+        }
+
+        try {
+            return InetAddress.getByName(value);
+        } catch (UnknownHostException | SecurityException e) {
+            return null;
+        }
     }
 
     static String remoteAddress(ChannelHandlerContext ctx) {

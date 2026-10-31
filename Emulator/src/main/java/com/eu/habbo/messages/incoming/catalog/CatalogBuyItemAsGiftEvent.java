@@ -807,7 +807,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         return extraData;
     }
 
-    /** Creates one furni of the gift, both halves for a teleporter; false once the sender has been answered. */
+    /**
+     * Creates one furni of the gift, both halves for a teleporter, with no owner until the gift is opened;
+     * false once the sender has been answered.
+     */
     private boolean createGiftedFurniture(
             Item baseItem,
             int userId,
@@ -822,10 +825,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
             HabboItem teleportOne = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
             HabboItem teleportTwo = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (teleportOne == null || teleportTwo == null) {
                 // The half that was created is deleted with the rest when the gift fails.
@@ -847,7 +850,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
             HabboItem habboItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (habboItem == null) {
                 LOGGER.debug("hopper creation failed. baseItemId={}", baseItem.getId());
@@ -862,7 +865,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 || baseItem.getInteractionType().getType() == InteractionGuildGate.class) {
             HabboItem createdItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (createdItem == null) {
                 LOGGER.debug("guild item creation failed. baseItemId={}", baseItem.getId());
@@ -897,7 +900,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         } else {
             HabboItem habboItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (habboItem == null) {
                 LOGGER.debug(

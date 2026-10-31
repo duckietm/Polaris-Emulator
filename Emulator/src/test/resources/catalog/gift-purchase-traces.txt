@@ -1,7 +1,7 @@
 == aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #0
 payment.tryTake(5, 0, 0) -> true
 scripterDetected([scripter.warning.catalog.badge_display])
-itemManager.createItem(2, item:badge_display, 0, 0, sender	<today>	UMAD)
+itemManager.createGiftContent(2, item:badge_display, 0, 0, sender	<today>	UMAD)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -15,7 +15,7 @@ stats purchasing=false lastGift=1000000
 
 == aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #1
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:badge_display, 0, 0, sender	<today>	ADM)
+itemManager.createGiftContent(2, item:badge_display, 0, 0, sender	<today>	ADM)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display, owned	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -177,7 +177,7 @@ stats purchasing=false lastGift=0
 
 == aFailedGiftDeletesWhatWasCreatedAndRefunds #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
@@ -196,7 +196,7 @@ stats purchasing=false lastGift=0
 == aFailedLimitedGiftReturnsItsReservedNumber #1
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGiftContent(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
@@ -208,7 +208,7 @@ stats purchasing=false lastGift=0
 == aFailedLimitedGiftReturnsItsReservedNumber #2
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGiftContent(2, item:chair, 50, 7, )
 connection.close()
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 limitedConfiguration.restoreNumber(20, 7)
@@ -220,7 +220,7 @@ connection.prepareStatement(SELECT id FROM users WHERE username = ?)
 statement.setString(1, friend)
 statement.executeQuery()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(3, item:chair, 0, 0, )
+itemManager.createGiftContent(3, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 achievement(3, achievement:GiftReceiver)
@@ -243,7 +243,7 @@ stats purchasing=false lastGift=1000000
 
 == aGiftToOneselfGivesNoAchievements #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(1, item:chair, 0, 0, )
+itemManager.createGiftContent(1, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:me	sender	hd-180, 0, 0)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
 recipientItems.addItem(habboItem9000:present_gen)
@@ -255,7 +255,7 @@ stats purchasing=false lastGift=1000000
 
 == aHopperIsRegistered #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:hopper, 0, 0, )
+itemManager.createGiftContent(2, item:hopper, 0, 0, )
 itemManager.insertHopper(habboItem1000:hopper)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hop	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
@@ -277,7 +277,7 @@ stats purchasing=false lastGift=0
 == aLimitedHopperKeepsItsStackAndNumber #0
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:hopper, 50, 7, )
+itemManager.createGiftContent(2, item:hopper, 50, 7, )
 itemManager.insertHopper(habboItem1000:hopper)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:hopper)
@@ -295,7 +295,7 @@ stats purchasing=false lastGift=1000000
 == aLimitedItemIsNumberedAndLogged #0
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGiftContent(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
 achievement(sender, achievement:GiftGiver)
@@ -313,7 +313,7 @@ stats purchasing=false lastGift=1000000
 catalogManager.createOrUpdateLimitedConfig(catalogItem)
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGiftContent(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
 achievement(sender, achievement:GiftGiver)
@@ -330,8 +330,8 @@ stats purchasing=false lastGift=1000000
 == aLimitedTeleporterRecordsOneSaleForItsNumber #0
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:teleport, 50, 7, )
-itemManager.createItem(2, item:teleport, 50, 7, )
+itemManager.createGiftContent(2, item:teleport, 50, 7, )
+itemManager.createGiftContent(2, item:teleport, 50, 7, )
 itemManager.insertTeleportPair(1000, 1001)
 itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:teleport)
@@ -354,7 +354,7 @@ stats purchasing=false lastGift=0
 
 == aSenderWithInfiniteCurrencyIsChargedNothing #0
 payment.tryTake(0, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:free	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -378,8 +378,8 @@ stats purchasing=false lastGift=0
 
 == aTeleporterIsGivenAsALinkedPair #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:teleport, 0, 0, )
-itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
 itemManager.insertTeleportPair(1000, 1001)
 itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
@@ -394,8 +394,8 @@ stats purchasing=false lastGift=1000000
 
 == aTeleporterThatCannotBeCreatedRefunds #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:teleport, 0, 0, )
-itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
 payment.refund(5, 0, 0)
@@ -403,8 +403,8 @@ stats purchasing=false lastGift=0
 
 == aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:teleport, 0, 0, )
-itemManager.createItem(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
+itemManager.createGiftContent(2, item:teleport, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
 itemManager.deleteItem(habboItem1000:teleport)
@@ -413,7 +413,7 @@ stats purchasing=false lastGift=0
 
 == aTrophyCarriesTheSenderAndTheDate #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:trophy, 0, 0, sender	<today>	engraved)
+itemManager.createGiftContent(2, item:trophy, 0, 0, sender	<today>	engraved)
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:trophy	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -427,7 +427,7 @@ stats purchasing=false lastGift=1000000
 
 == anExceptionWhileCreatingRefundsAndAnswersWithAnError #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 connection.close()
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 payment.refund(5, 0, 0)
@@ -435,7 +435,7 @@ stats purchasing=false lastGift=0
 
 == anItemThatCannotBeCreatedRefunds #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
 payment.refund(5, 0, 0)
@@ -443,7 +443,7 @@ stats purchasing=false lastGift=0
 
 == anItemThatCannotBeCreatedRefunds #1
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:hopper, 0, 0, )
+itemManager.createGiftContent(2, item:hopper, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.close()
 payment.refund(5, 0, 0)
@@ -451,7 +451,7 @@ stats purchasing=false lastGift=0
 
 == anOfferIdFromSearchResultsFindsTheItemOnThePage #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:search	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -465,7 +465,7 @@ stats purchasing=false lastGift=1000000
 
 == anOnlineFriendReceivesTheGiftWithTheSendersName #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hello	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_wrap, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -490,7 +490,7 @@ stats purchasing=false lastGift=0
 == limitedItemsRespectTheDailyLimits #2
 limitedConfiguration.pollNumber()
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 50, 7, )
+itemManager.createGiftContent(2, item:chair, 50, 7, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:under	sender	hd-180, 0, 0)
 limitedConfiguration.limitedSold(20, sender, habboItem1000:chair)
 achievement(sender, achievement:GiftGiver)
@@ -511,7 +511,7 @@ stats purchasing=false lastGift=0
 
 == onlyAPermittedSenderMayHideTheirName #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hidden?	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -525,7 +525,7 @@ stats purchasing=false lastGift=1000000
 
 == onlyAPermittedSenderMayHideTheirName #1
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	0	filtered:hidden	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -539,7 +539,7 @@ stats purchasing=false lastGift=1000000
 
 == pointsAreChargedInTheirOwnCurrency #0
 payment.tryTake(5, 5, 4) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -553,7 +553,7 @@ stats purchasing=false lastGift=1000000
 
 == pointsAreChargedInTheirOwnCurrency #1
 payment.tryTake(5, 5, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -567,7 +567,7 @@ stats purchasing=false lastGift=1000000
 
 == theMessageIsCutToTheConfiguredLengthAndLosesItsTabs #0
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:abcd	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -581,7 +581,7 @@ stats purchasing=false lastGift=1000000
 
 == thePaidWrapAddsTheConfiguredFee #0
 payment.tryTake(8, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_wrap, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -615,7 +615,7 @@ stats purchasing=false lastGift=0
 
 == theRequestIsRefusedBeforeAnythingIsCharged #4
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:club only, member	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_gen, ids=null, category=AddHabboItemCategory{number=1}, entries=null})
@@ -684,7 +684,7 @@ stats purchasing=false lastGift=0
 
 == theWrappingIsChecked #3
 payment.tryTake(5, 0, 0) -> true
-itemManager.createItem(2, item:chair, 0, 0, )
+itemManager.createGiftContent(2, item:chair, 0, 0, )
 itemManager.createGift(friend, item:present_other, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180, 0, 0)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddHabboItemComposer{itemsList=null, item=habboItem9000:present_other, ids=null, category=AddHabboItemCategory{number=1}, entries=null})

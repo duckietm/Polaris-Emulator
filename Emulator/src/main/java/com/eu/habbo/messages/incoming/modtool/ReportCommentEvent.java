@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThread;
+import com.eu.habbo.habbohotel.guilds.forums.ForumThreadComment;
 import com.eu.habbo.habbohotel.modtool.CfhTopic;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
@@ -46,16 +47,22 @@ public class ReportCommentEvent extends MessageHandler {
         if (topic == null) return;
 
         ForumThread thread = ForumThread.getById(threadId);
+        ForumThreadComment comment = ForumThreadComment.getById(commentId);
 
-        if (thread == null) return;
+        // The comment's author is the one reported, and only for a comment of that thread in that group:
+        // the ticket used to name whoever opened the thread.
+        if (thread == null
+                || thread.getGuildId() != groupId
+                || comment == null
+                || comment.getThreadId() != threadId) return;
 
-        Habbo opener = Emulator.getGameEnvironment().getHabboManager().getHabbo(thread.getOpenerId());
+        Habbo author = Emulator.getGameEnvironment().getHabboManager().getHabbo(comment.getUserId());
 
         ModToolIssue issue = new ModToolIssue(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                thread.getOpenerId(),
-                opener == null ? "" : opener.getHabboInfo().getUsername(),
+                comment.getUserId(),
+                author == null ? "" : author.getHabboInfo().getUsername(),
                 0,
                 message,
                 ModToolTicketType.DISCUSSION);

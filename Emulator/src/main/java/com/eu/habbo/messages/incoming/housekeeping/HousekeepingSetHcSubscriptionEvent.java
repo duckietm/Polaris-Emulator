@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -60,8 +61,7 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
             int current = online.getHabboStats().getClubExpireTimestamp();
             newExpire = HousekeepingSanctionDuration.unixUntil(current > now ? current : now, extension);
         } else {
-            newExpire = HousekeepingSanctionDuration.unixUntil(
-                    now, extension); // best-effort offline; can't read previous expiry cheaply
+            newExpire = -1; // offline: extended from the stored expiry, read below
         }
 
         if (online != null) {
@@ -71,6 +71,11 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE users_settings SET club_expire_timestamp = ? WHERE user_id = ? LIMIT 1")) {
+            if (newExpire < 0) {
+                // A day added to an offline user with 300 days left used to leave them one day.
+                newExpire = HousekeepingSanctionDuration.unixUntil(
+                        Math.max(storedClubExpire(connection, userId), now), extension);
+            }
             statement.setInt(1, newExpire);
             statement.setInt(2, userId);
             int rows = statement.executeUpdate();
@@ -94,5 +99,15 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
                 "days=" + days + " expire=" + newExpire,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
+    }
+
+    private static int storedClubExpire(Connection connection, int userId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT club_expire_timestamp FROM users_settings WHERE user_id = ? LIMIT 1")) {
+            statement.setInt(1, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt(1) : 0;
+            }
+        }
     }
 }

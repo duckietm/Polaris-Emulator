@@ -471,6 +471,23 @@ final class SessionEndpoints {
         }
     }
 
+    /**
+     * Two registrations from one IP checked the quota at the same time and both went in. Registrations sharing a
+     * stripe run one at a time from the quota check to the commit.
+     */
+    private static final Object[] REGISTRATION_LOCKS = new Object[64];
+
+    static {
+        for (int i = 0; i < REGISTRATION_LOCKS.length; i++) {
+            REGISTRATION_LOCKS[i] = new Object();
+        }
+    }
+
+    static Object registrationLock(String ip) {
+        int hash = ip == null ? 0 : ip.hashCode();
+        return REGISTRATION_LOCKS[Math.floorMod(hash, REGISTRATION_LOCKS.length)];
+    }
+
     static void handleRegister(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         ConfigurationManager config = Emulator.getConfig();
         if (!config.getBoolean("login.register.enabled", true)) {
@@ -502,7 +519,68 @@ final class SessionEndpoints {
             return;
         }
 
+        synchronized (registrationLock(ip)) {
+            register(ctx, req, config, ip, username, email, password, figure, gender, templateId);
+        }
+    }
+
+    private static void register(
+            ChannelHandlerContext ctx,
+            FullHttpRequest req,
+            ConfigurationManager config,
+            String ip,
+            String username,
+            String email,
+            String password,
+            String figure,
+            String gender,
+            int templateId) {
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            // The account, its currencies and its template room are written together or not at all.
+            conn.setAutoCommit(false);
+            boolean created;
+            try {
+                created = registerInTransaction(
+                        ctx, req, conn, config, ip, username, email, password, figure, gender, templateId);
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+
+            if (!created) {
+                return;
+            }
+
+            AvailabilityCache.invalidateEmail(email);
+            AvailabilityCache.invalidateUsername(username);
+
+            JsonObject ok = new JsonObject();
+            ok.addProperty(
+                    "message",
+                    "Welcome aboard, " + username
+                            + "! Your account is ready — log in below with the password you just chose.");
+            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        } catch (Exception e) {
+            LOGGER.error("Register query failed for username=" + username, e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    /** @return whether the account was created; false when a response explaining why not was already sent. */
+    private static boolean registerInTransaction(
+            ChannelHandlerContext ctx,
+            FullHttpRequest req,
+            Connection conn,
+            ConfigurationManager config,
+            String ip,
+            String username,
+            String email,
+            String password,
+            String figure,
+            String gender,
+            int templateId)
+            throws Exception {
             int maxPerIp = config.getInt("register.max_per_ip", 5);
             if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
                 try (PreparedStatement quota =
@@ -516,7 +594,7 @@ final class SessionEndpoints {
                                     HttpResponseStatus.TOO_MANY_REQUESTS,
                                     errorPayload("This IP has reached the maximum of " + maxPerIp
                                             + " registered accounts."));
-                            return;
+                            return false;
                         }
                     }
                 }
@@ -537,7 +615,7 @@ final class SessionEndpoints {
                         else if (userTaken) message = "That Habbo name is already in use.";
                         else message = "That email address is already in use.";
                         sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
-                        return;
+                        return false;
                     }
                 }
             }
@@ -601,19 +679,7 @@ final class SessionEndpoints {
                         username);
             }
 
-            AvailabilityCache.invalidateEmail(email);
-            AvailabilityCache.invalidateUsername(username);
-
-            JsonObject ok = new JsonObject();
-            ok.addProperty(
-                    "message",
-                    "Welcome aboard, " + username
-                            + "! Your account is ready — log in below with the password you just chose.");
-            sendJson(ctx, req, HttpResponseStatus.OK, ok);
-        } catch (Exception e) {
-            LOGGER.error("Register query failed for username=" + username, e);
-            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
-        }
+            return true;
     }
 
     /** The least time between two reset mails for the same account. */

@@ -51,6 +51,11 @@ public class ScratchPetEvent extends MessageHandler {
 
             List<Runnable> tasks = new ArrayList<>();
             tasks.add(() -> {
+                // Checked again on arrival: the walk takes time, and a second scratch sent meanwhile used the same
+                // point, so respect went below zero.
+                if (habbo.getHabboInfo().getCurrentRoom() != room || pet.getRoomUnit() == null) return;
+                if (!(pet instanceof MonsterplantPet) && habbo.getHabboStats().petRespectPointsToGive <= 0) return;
+
                 pet.scratched(habbo);
                 Emulator.getThreading().run(pet);
             });
@@ -61,7 +66,10 @@ public class ScratchPetEvent extends MessageHandler {
             if (closestTile != null) {
                 habbo.getRoomUnit().setGoalLocation(closestTile);
                 Emulator.getThreading()
-                        .run(new RoomUnitWalkToLocation(habbo.getRoomUnit(), closestTile, room, tasks, tasks));
+                        // Nothing happens when the walk fails: the same tasks ran on failure too, so a pet out of
+                        // reach was scratched from wherever the user stood.
+                        .run(new RoomUnitWalkToLocation(
+                                habbo.getRoomUnit(), closestTile, room, tasks, new ArrayList<>()));
             }
         }
     }

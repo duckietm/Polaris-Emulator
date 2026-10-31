@@ -54,6 +54,12 @@ public class PetSupplementEvent extends MessageHandler {
             return;
         }
 
+        // A supplement renewed the whole life on every packet, for free, so a plant never died: it now waits, like a
+        // treatment, until the plant has lost some energy.
+        if (!plant.maySupplement()) {
+            return;
+        }
+
         plant.setDeathTimestamp(Emulator.getIntUnixTimestamp() + MonsterplantPet.timeToLive);
         plant.addHappiness(10);
         Emulator.getThreading().run(plant);

@@ -29,6 +29,7 @@ class NullSkippingCountContractTest {
         String friends = source("friends/UpdateFriendComposer.java");
 
         assertTrue(friends.contains("this.response.appendInt(present.size()); // totalbuddies"));
-        assertTrue(friends.contains("for(MessengerBuddy buddy : present){") || friends.contains("for (MessengerBuddy buddy : present) {"));
+        assertTrue(friends.contains("for(MessengerBuddy buddy : present){")
+                || friends.contains("for (MessengerBuddy buddy : present) {"));
     }
 }

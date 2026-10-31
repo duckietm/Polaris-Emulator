@@ -278,7 +278,9 @@ final class RoomItemOwnershipService {
                 : Emulator.getGameServer().getGameClientManager().getHabbo(item.getUserId());
         if (owner != null) {
             if (batch != null) {
-                batch.deliveries.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(item);
+                batch.deliveries
+                        .computeIfAbsent(owner, ignored -> new ArrayList<>())
+                        .add(item);
             } else {
                 deliver(owner, List.of(item), picker);
             }

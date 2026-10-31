@@ -453,6 +453,12 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private void updateMetrics() {
+        // Closing the window only hides it: collecting a snapshot every second for nobody wastes CPU for the
+        // whole life of the process. The first tick after it is shown again refreshes everything.
+        if (!this.isVisible()) {
+            return;
+        }
+
         try {
             EmulatorStatsService.Snapshot snapshot = EmulatorStatsService.collectSnapshot();
             EmulatorStatsService.Overview overview = snapshot.overview;
@@ -517,10 +523,11 @@ public class EmulatorDashboard extends JFrame {
     }
 
     public static void launch() {
-        if (instance == null) {
-            instance = new EmulatorDashboard();
-        }
+        // Swing components are built and shown on the event dispatch thread.
         SwingUtilities.invokeLater(() -> {
+            if (instance == null) {
+                instance = new EmulatorDashboard();
+            }
             instance.setVisible(true);
         });
     }

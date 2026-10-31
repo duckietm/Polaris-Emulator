@@ -18,6 +18,8 @@ public class UseRandomStateItemEvent extends MessageHandler {
             this.packet.readInt(); // state
 
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            // Outside a room this threw and was logged as an error for every packet.
+            if (room == null) return;
 
             HabboItem item = room.getHabboItem(itemId);
 

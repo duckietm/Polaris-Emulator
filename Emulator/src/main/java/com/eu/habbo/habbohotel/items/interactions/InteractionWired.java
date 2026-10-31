@@ -73,6 +73,7 @@ public abstract class InteractionWired extends InteractionDefault {
      * with its snapshot, and a save older than the last one written is dropped.
      */
     private final Object wiredDataSnapshotLock = new Object();
+
     private long wiredDataVersion;
     private final Object wiredDataWriteLock = new Object();
     private long wiredDataWritten;

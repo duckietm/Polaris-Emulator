@@ -23,7 +23,8 @@ public class AmbassadorVisitCommandEvent extends MessageHandler {
                             || (!habbo.getHabboStats().hideOnline && !habbo.getHabboStats().blockFollowing))
                     && CommandTargetGuard.canTarget(this.client.getHabbo(), habbo)) {
                 if (habbo.getHabboInfo().getCurrentRoom() != null) {
-                    this.client.sendResponse(new ForwardToRoomComposer(habbo.getHabboInfo().getCurrentRoom().getId()));
+                    this.client.sendResponse(new ForwardToRoomComposer(
+                            habbo.getHabboInfo().getCurrentRoom().getId()));
                 }
             }
         }

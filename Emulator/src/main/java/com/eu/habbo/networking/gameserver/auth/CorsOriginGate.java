@@ -3,17 +3,15 @@ package com.eu.habbo.networking.gameserver.auth;
 import com.eu.habbo.Emulator;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
-
 import java.net.URI;
 import java.util.Locale;
 
 public final class CorsOriginGate {
 
-    private static final String CONFIG_KEY    = "ws.whitelist";
+    private static final String CONFIG_KEY = "ws.whitelist";
     private static final String CONFIG_DEFAULT = "localhost";
 
-    private CorsOriginGate() {
-    }
+    private CorsOriginGate() {}
 
     public static boolean isAllowed(FullHttpRequest req) {
         if (req == null) return false;

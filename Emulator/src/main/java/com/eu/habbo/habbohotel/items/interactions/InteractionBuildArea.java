@@ -126,10 +126,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         int minX = Math.max(0, newLocation.x - intValue(this.values, "tilesBack"));
         int minY = Math.max(0, newLocation.y - intValue(this.values, "tilesRight"));
-        int maxX = Math.min(
-                room.getLayout().getMapSizeX(), newLocation.x + intValue(this.values, "tilesFront"));
-        int maxY = Math.min(
-                room.getLayout().getMapSizeY(), newLocation.y + intValue(this.values, "tilesLeft"));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), newLocation.x + intValue(this.values, "tilesFront"));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), newLocation.y + intValue(this.values, "tilesLeft"));
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
@@ -165,10 +163,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
     private void regenAffectedTiles(Room room) {
         int minX = Math.max(0, this.getX() - intValue(this.values, "tilesBack"));
         int minY = Math.max(0, this.getY() - intValue(this.values, "tilesRight"));
-        int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
-        int maxY =
-                Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
 
         this.tiles.clear();
 
@@ -209,8 +205,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         int minX = Math.max(0, this.getX() - intValue(oldValues, "tilesBack"));
         int minY = Math.max(0, this.getY() - intValue(oldValues, "tilesRight"));
-        int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(oldValues, "tilesFront"));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(oldValues, "tilesFront"));
         int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(oldValues, "tilesLeft"));
 
         for (int x = minX; x <= maxX; x++) {

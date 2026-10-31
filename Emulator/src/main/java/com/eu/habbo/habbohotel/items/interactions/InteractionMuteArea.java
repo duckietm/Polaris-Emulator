@@ -117,10 +117,8 @@ public class InteractionMuteArea extends InteractionCustomValues {
     private void regenAffectedTiles(Room room) {
         int minX = Math.max(0, this.getX() - intValue(this.values, "tilesBack"));
         int minY = Math.max(0, this.getY() - intValue(this.values, "tilesRight"));
-        int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
-        int maxY =
-                Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
 
         this.tiles.clear();
 

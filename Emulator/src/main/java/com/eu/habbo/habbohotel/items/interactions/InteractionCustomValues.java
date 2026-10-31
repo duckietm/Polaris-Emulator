@@ -77,7 +77,10 @@ public abstract class InteractionCustomValues extends HabboItem {
         StringBuilder data = new StringBuilder();
         synchronized (this.values) {
             for (Map.Entry<String, String> set : this.values.entrySet()) {
-                data.append(set.getKey()).append("=").append(encode(set.getValue())).append(";");
+                data.append(set.getKey())
+                        .append("=")
+                        .append(encode(set.getValue()))
+                        .append(";");
             }
         }
 

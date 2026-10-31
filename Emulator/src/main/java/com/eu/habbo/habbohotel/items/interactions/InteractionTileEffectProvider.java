@@ -56,7 +56,8 @@ public class InteractionTileEffectProvider extends InteractionCustomValues {
                 && habbo.getHabboInfo().getRank() != null
                 && environment
                         .getPermissionsManager()
-                        .isEffectBlocked(effectId, habbo.getHabboInfo().getRank().getId());
+                        .isEffectBlocked(
+                                effectId, habbo.getHabboInfo().getRank().getId());
     }
 
     @Override

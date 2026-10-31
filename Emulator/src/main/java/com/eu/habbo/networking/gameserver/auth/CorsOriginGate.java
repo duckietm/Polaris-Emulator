@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 
 import java.net.URI;
+import java.util.Locale;
 
 public final class CorsOriginGate {
 
@@ -33,21 +34,34 @@ public final class CorsOriginGate {
         if (configured == null || configured.isEmpty()) return false;
 
         for (String entry : configured.split(",")) {
-            String trimmed = entry.trim();
-            if (trimmed.isEmpty()) continue;
-
-            if ("*".equals(trimmed)) {
-                return true;
-            }
-            if (trimmed.startsWith("*")) {
-                String suffix = trimmed.substring(1);
-                if (host.endsWith(suffix) || ("." + host).equals(suffix)) {
-                    return true;
-                }
-            } else if (host.equals(trimmed)) {
+            if (matches(host, entry)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Whether an origin host is allowed by one whitelist entry: "*" allows every host, "*.example.com" (or
+     * "*example.com") allows example.com and its subdomains, anything else allows that host only, all ignoring case.
+     * The wildcard used to be a plain text suffix, so "*example.com" also allowed "evilexample.com".
+     */
+    static boolean matches(String host, String entry) {
+        if (host == null || entry == null) return false;
+
+        String trimmed = entry.trim().toLowerCase(Locale.ROOT);
+        String origin = host.toLowerCase(Locale.ROOT);
+        if (trimmed.isEmpty()) return false;
+        if ("*".equals(trimmed)) return true;
+
+        if (trimmed.startsWith("*")) {
+            String base = trimmed.substring(1);
+            if (base.startsWith(".")) base = base.substring(1);
+            if (base.isEmpty()) return false;
+
+            return origin.equals(base) || origin.endsWith("." + base);
+        }
+
+        return origin.equals(trimmed);
     }
 }

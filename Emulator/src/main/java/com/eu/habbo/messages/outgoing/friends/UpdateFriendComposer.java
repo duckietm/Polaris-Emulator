@@ -3,6 +3,7 @@ package com.eu.habbo.messages.outgoing.friends;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.messenger.MessengerCategory;
@@ -47,9 +48,11 @@ public class UpdateFriendComposer extends MessageComposer {
             this.response.appendInt(0);
         }
 
-        this.response.appendInt(buddies.size()); // totalbuddies
+        // The count is of what is written: a null buddy was skipped but counted, and the client lost the whole list.
+        List<MessengerBuddy> present = buddies.stream().filter(Objects::nonNull).toList();
+        this.response.appendInt(present.size()); // totalbuddies
 
-        for(MessengerBuddy buddy : buddies){
+        for(MessengerBuddy buddy : present){
 
             if (buddy != null) {
                 this.response.appendInt(this.action); // -1 = removed friendId / 0 = updated friend / 1 = added friend

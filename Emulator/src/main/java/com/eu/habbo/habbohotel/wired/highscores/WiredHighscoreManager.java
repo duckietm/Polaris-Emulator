@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +60,7 @@ public class WiredHighscoreManager {
         long millis = System.currentTimeMillis();
 
         this.data.clear();
+        this.dropRowsOfDeletedBoards();
         this.loadHighscoreData();
 
         LOGGER.info(
@@ -187,6 +190,84 @@ public class WiredHighscoreManager {
             statement.setInt(5, entry.getTimestamp());
             statement.execute();
         }
+    }
+
+    /** The rows of boards whose furni no longer exists: no board and no condition can read them again. */
+    private void dropRowsOfDeletedBoards() {
+        try (Connection connection = connection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE h FROM `items_highscore_data` h LEFT JOIN `items` i ON i.`id` = h.`item_id` WHERE i.`id` IS NULL")) {
+            int removed = statement.executeUpdate();
+            if (removed > 0) {
+                LOGGER.info("Highscore Manager -> removed {} rows of deleted boards", removed);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    /**
+     * Drops the rows of one board that no reader can see any more. Every game end added a row per team and nothing
+     * was ever removed, and the whole table is read at boot and walked at every board reload.
+     *
+     * <p>A board shows the rows of its current period; the points condition reads each user's best score on every
+     * row. So the rows outside the current period (and, on an all-time board, every row) are compacted to the best
+     * and the worst score of each team, which keeps the condition, the per-team and longest-time boards (best) and
+     * the fastest-time board (worst) as they were. All-time classic and most-wins boards read every row and are left
+     * alone.
+     */
+    public void compact(int itemId, WiredHighscoreClearType clearType, WiredHighscoreScoreType scoreType) {
+        List<WiredHighscoreDataEntry> list = this.data.get(itemId);
+        if (list == null) return;
+
+        List<WiredHighscoreDataEntry> snapshot;
+        synchronized (list) {
+            List<WiredHighscoreDataEntry> kept =
+                    compacted(list, clearType, scoreType, entry -> this.timeMatchesEntry(entry, clearType));
+            if (kept.size() == list.size()) return;
+
+            list.clear();
+            list.addAll(kept);
+            snapshot = new ArrayList<>(kept);
+        }
+
+        this.write(() -> this.rewrite(itemId, snapshot));
+    }
+
+    /** The rows of a board that {@link #compact} keeps, in their order. */
+    static List<WiredHighscoreDataEntry> compacted(
+            List<WiredHighscoreDataEntry> entries,
+            WiredHighscoreClearType clearType,
+            WiredHighscoreScoreType scoreType,
+            Predicate<WiredHighscoreDataEntry> inCurrentPeriod) {
+        boolean allTime = clearType == WiredHighscoreClearType.ALLTIME;
+        if (allTime && (scoreType == WiredHighscoreScoreType.CLASSIC || scoreType == WiredHighscoreScoreType.MOSTWIN)) {
+            return new ArrayList<>(entries);
+        }
+
+        Map<Set<Integer>, WiredHighscoreDataEntry> best = new HashMap<>();
+        Map<Set<Integer>, WiredHighscoreDataEntry> worst = new HashMap<>();
+        for (WiredHighscoreDataEntry entry : entries) {
+            if (entry == null || (!allTime && inCurrentPeriod.test(entry))) continue;
+
+            Set<Integer> team = Set.copyOf(entry.getUserIds());
+            best.merge(team, entry, (a, b) -> b.getScore() > a.getScore() ? b : a);
+            worst.merge(team, entry, (a, b) -> b.getScore() < a.getScore() ? b : a);
+        }
+
+        List<WiredHighscoreDataEntry> kept = new ArrayList<>();
+        for (WiredHighscoreDataEntry entry : entries) {
+            if (entry == null) continue;
+
+            if (!allTime && inCurrentPeriod.test(entry)) {
+                kept.add(entry);
+                continue;
+            }
+
+            Set<Integer> team = Set.copyOf(entry.getUserIds());
+            if (best.get(team) == entry || worst.get(team) == entry) kept.add(entry);
+        }
+        return kept;
     }
 
     private void loadHighscoreData() {
@@ -368,34 +449,38 @@ public class WiredHighscoreManager {
         List<WiredHighscoreDataEntry> stored = Collections.synchronizedList(new ArrayList<>(entries));
         this.data.put(itemId, stored);
 
-        this.write(() -> {
-            try (Connection connection = connection()) {
-                try (PreparedStatement delete =
-                        connection.prepareStatement("DELETE FROM `items_highscore_data` WHERE `item_id` = ?")) {
-                    delete.setInt(1, itemId);
-                    delete.execute();
-                }
+        List<WiredHighscoreDataEntry> snapshot = new ArrayList<>(stored);
+        this.write(() -> this.rewrite(itemId, snapshot));
+    }
 
-                if (stored.isEmpty()) {
-                    return;
-                }
-
-                try (PreparedStatement insert = connection.prepareStatement(
-                        "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
-                    for (WiredHighscoreDataEntry entry : stored) {
-                        insert.setInt(1, entry.getItemId());
-                        insert.setString(2, joinUserIds(entry.getUserIds()));
-                        insert.setInt(3, entry.getScore());
-                        insert.setInt(4, entry.isWin() ? 1 : 0);
-                        insert.setInt(5, entry.getTimestamp());
-                        insert.addBatch();
-                    }
-                    insert.executeBatch();
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+    /** Replaces the rows of one board on disk with these. */
+    private void rewrite(int itemId, List<WiredHighscoreDataEntry> entries) {
+        try (Connection connection = connection()) {
+            try (PreparedStatement delete =
+                    connection.prepareStatement("DELETE FROM `items_highscore_data` WHERE `item_id` = ?")) {
+                delete.setInt(1, itemId);
+                delete.execute();
             }
-        });
+
+            if (entries.isEmpty()) {
+                return;
+            }
+
+            try (PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
+                for (WiredHighscoreDataEntry entry : entries) {
+                    insert.setInt(1, entry.getItemId());
+                    insert.setString(2, joinUserIds(entry.getUserIds()));
+                    insert.setInt(3, entry.getScore());
+                    insert.setInt(4, entry.isWin() ? 1 : 0);
+                    insert.setInt(5, entry.getTimestamp());
+                    insert.addBatch();
+                }
+                insert.executeBatch();
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
     }
 
     static String joinUserIds(List<Integer> userIds) {

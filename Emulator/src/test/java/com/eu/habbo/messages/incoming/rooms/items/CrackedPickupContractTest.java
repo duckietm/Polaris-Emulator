@@ -20,6 +20,7 @@ class CrackedPickupContractTest {
 
         int guard = single.indexOf("if (item instanceof InteractionCrackable crackable && crackable.cracked) return;");
         assertTrue(guard > 0 && guard < single.indexOf("room.pickUpItem("));
-        assertTrue(chooser.contains("if (item instanceof InteractionCrackable crackable && crackable.cracked) continue;"));
+        assertTrue(
+                chooser.contains("if (item instanceof InteractionCrackable crackable && crackable.cracked) continue;"));
     }
 }

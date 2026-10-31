@@ -2,12 +2,11 @@ package com.eu.habbo.crypto;
 
 import com.eu.habbo.crypto.exceptions.HabboCryptoException;
 import com.eu.habbo.crypto.utils.BigIntegerUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class HabboRSACrypto {
 
@@ -15,6 +14,7 @@ public class HabboRSACrypto {
     private final BigInteger n;
     private final BigInteger d;
     private final int blockSize;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public HabboRSACrypto(String e, String n) {
         this.e = new BigInteger(e, 16);
@@ -28,6 +28,10 @@ public class HabboRSACrypto {
         this.n = new BigInteger(n, 16);
         this.d = new BigInteger(d, 16);
         this.blockSize = (this.n.bitLength() + 7) / 8;
+    }
+
+    int blockSize() {
+        return this.blockSize;
     }
 
     public byte[] Encrypt(byte[] data) throws HabboCryptoException {
@@ -80,7 +84,8 @@ public class HabboRSACrypto {
 
     private byte[] DoDecrypt(byte[] data, boolean isPublic, int padType) throws HabboCryptoException {
         if (data.length % this.blockSize != 0) {
-            throw new HabboCryptoException("Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
+            throw new HabboCryptoException(
+                    "Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
         }
 
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
@@ -120,7 +125,7 @@ public class HabboRSACrypto {
 
         if (padType == 2) {
             while (n > 2) {
-                result[--n] = (byte) ThreadLocalRandom.current().nextInt(1, 256);
+                result[--n] = (byte) (RANDOM.nextInt(255) + 1);
             }
         } else {
             while (n > 2) {
@@ -144,14 +149,15 @@ public class HabboRSACrypto {
         }
 
         if (b.length - i != n - 1 || b[i] != padType) {
-            throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", expected b[i]==" + padType + ", got b[i]=" + b[i]);
+            throw new HabboCryptoException(
+                    "PKCS#1 unpad: i=" + i + ", expected b[i]==" + padType + ", got b[i]=" + b[i]);
         }
 
         ++i;
 
         while (b[i] != 0) {
             if (++i >= b.length) {
-                throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", b[i-1]!=0 (=" + b[i-1] + ")");
+                throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", b[i-1]!=0 (=" + b[i - 1] + ")");
             }
         }
 
@@ -164,5 +170,4 @@ public class HabboRSACrypto {
 
         return resultCopy;
     }
-
 }

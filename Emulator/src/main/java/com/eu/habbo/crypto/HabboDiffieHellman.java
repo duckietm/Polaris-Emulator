@@ -3,15 +3,15 @@ package com.eu.habbo.crypto;
 import com.eu.habbo.crypto.exceptions.HabboCryptoException;
 import com.eu.habbo.crypto.utils.BigIntegerUtils;
 import com.eu.habbo.util.HexUtils;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HabboDiffieHellman {
 
     private static final int DH_PRIMES_BIT_SIZE = 128;
     private static final int DH_KEY_BIT_SIZE = 128;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final HabboRSACrypto crypto;
 
@@ -35,8 +35,8 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHPrimes() {
-        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
-        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
+        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, RANDOM);
+        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, RANDOM);
 
         if (this.DHGenerator.compareTo(this.DHPrime) > 0) {
             BigInteger temp = this.DHPrime;
@@ -47,7 +47,7 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHKeys() {
-        this.DHPrivate = BigInteger.probablePrime(DH_KEY_BIT_SIZE, ThreadLocalRandom.current());
+        this.DHPrivate = BigInteger.probablePrime(DH_KEY_BIT_SIZE, RANDOM);
         this.DHPublic = this.DHGenerator.modPow(this.DHPrivate, this.DHPrime);
     }
 
@@ -61,6 +61,12 @@ public class HabboDiffieHellman {
 
     private BigInteger decryptBigInteger(String str) throws HabboCryptoException {
         byte[] bytes = HexUtils.toBytes(str);
+        // A number fits one RSA block; a longer value only made the server run one RSA operation per block.
+        if (bytes.length != this.crypto.blockSize()) {
+            throw new HabboCryptoException(
+                    "Expected one RSA block of " + this.crypto.blockSize() + " bytes, got " + bytes.length + ".");
+        }
+
         byte[] decrypted = this.crypto.Decrypt(bytes);
         String intStr = new String(decrypted, StandardCharsets.UTF_8);
 
@@ -92,7 +98,8 @@ public class HabboDiffieHellman {
         }
 
         if (this.DHGenerator.compareTo(this.DHPrime) > -1) {
-            throw new HabboCryptoException("Generator cannot be >= Prime!\nPrime: " + this.DHPrime.toString() + "\nGenerator: " + this.DHGenerator.toString());
+            throw new HabboCryptoException("Generator cannot be >= Prime!\nPrime: " + this.DHPrime.toString()
+                    + "\nGenerator: " + this.DHGenerator.toString());
         }
 
         generateDHKeys();
@@ -104,5 +111,4 @@ public class HabboDiffieHellman {
 
         return BigIntegerUtils.toUnsignedByteArray(sharedKey);
     }
-
 }

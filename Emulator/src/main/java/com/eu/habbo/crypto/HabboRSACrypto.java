@@ -2,12 +2,11 @@ package com.eu.habbo.crypto;
 
 import com.eu.habbo.crypto.exceptions.HabboCryptoException;
 import com.eu.habbo.crypto.utils.BigIntegerUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class HabboRSACrypto {
 
@@ -85,7 +84,8 @@ public class HabboRSACrypto {
 
     private byte[] DoDecrypt(byte[] data, boolean isPublic, int padType) throws HabboCryptoException {
         if (data.length % this.blockSize != 0) {
-            throw new HabboCryptoException("Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
+            throw new HabboCryptoException(
+                    "Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
         }
 
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
@@ -149,14 +149,15 @@ public class HabboRSACrypto {
         }
 
         if (b.length - i != n - 1 || b[i] != padType) {
-            throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", expected b[i]==" + padType + ", got b[i]=" + b[i]);
+            throw new HabboCryptoException(
+                    "PKCS#1 unpad: i=" + i + ", expected b[i]==" + padType + ", got b[i]=" + b[i]);
         }
 
         ++i;
 
         while (b[i] != 0) {
             if (++i >= b.length) {
-                throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", b[i-1]!=0 (=" + b[i-1] + ")");
+                throw new HabboCryptoException("PKCS#1 unpad: i=" + i + ", b[i-1]!=0 (=" + b[i - 1] + ")");
             }
         }
 
@@ -169,5 +170,4 @@ public class HabboRSACrypto {
 
         return resultCopy;
     }
-
 }

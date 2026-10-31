@@ -5,9 +5,9 @@ import com.eu.habbo.crypto.HabboRC4;
 import com.eu.habbo.messages.NoAuthMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.handshake.CompleteDiffieHandshakeComposer;
+import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.decoders.GameByteDecryption;
 import com.eu.habbo.networking.gameserver.encoders.GameByteEncryption;
-import com.eu.habbo.networking.gameserver.GameServerAttributes;
 
 @NoAuthMessage
 public class CompleteDiffieHandshakeEvent extends MessageHandler {
@@ -27,7 +27,8 @@ public class CompleteDiffieHandshakeEvent extends MessageHandler {
         byte[] sharedKey = this.client.getEncryption().getDiffie().getSharedKey(this.packet.readString());
 
         this.client.setHandshakeFinished(true);
-        this.client.sendResponse(new CompleteDiffieHandshakeComposer(this.client.getEncryption().getDiffie().getPublicKey()));
+        this.client.sendResponse(new CompleteDiffieHandshakeComposer(
+                this.client.getEncryption().getDiffie().getPublicKey()));
 
         this.client.getChannel().attr(GameServerAttributes.CRYPTO_CLIENT).set(new HabboRC4(sharedKey));
         this.client.getChannel().attr(GameServerAttributes.CRYPTO_SERVER).set(new HabboRC4(sharedKey));
@@ -35,5 +36,4 @@ public class CompleteDiffieHandshakeEvent extends MessageHandler {
         this.client.getChannel().pipeline().addFirst(new GameByteDecryption());
         this.client.getChannel().pipeline().addFirst(new GameByteEncryption());
     }
-
 }

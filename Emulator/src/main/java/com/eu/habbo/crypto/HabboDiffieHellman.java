@@ -3,7 +3,6 @@ package com.eu.habbo.crypto;
 import com.eu.habbo.crypto.exceptions.HabboCryptoException;
 import com.eu.habbo.crypto.utils.BigIntegerUtils;
 import com.eu.habbo.util.HexUtils;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -64,7 +63,8 @@ public class HabboDiffieHellman {
         byte[] bytes = HexUtils.toBytes(str);
         // A number fits one RSA block; a longer value only made the server run one RSA operation per block.
         if (bytes.length != this.crypto.blockSize()) {
-            throw new HabboCryptoException("Expected one RSA block of " + this.crypto.blockSize() + " bytes, got " + bytes.length + ".");
+            throw new HabboCryptoException(
+                    "Expected one RSA block of " + this.crypto.blockSize() + " bytes, got " + bytes.length + ".");
         }
 
         byte[] decrypted = this.crypto.Decrypt(bytes);
@@ -98,7 +98,8 @@ public class HabboDiffieHellman {
         }
 
         if (this.DHGenerator.compareTo(this.DHPrime) > -1) {
-            throw new HabboCryptoException("Generator cannot be >= Prime!\nPrime: " + this.DHPrime.toString() + "\nGenerator: " + this.DHGenerator.toString());
+            throw new HabboCryptoException("Generator cannot be >= Prime!\nPrime: " + this.DHPrime.toString()
+                    + "\nGenerator: " + this.DHGenerator.toString());
         }
 
         generateDHKeys();
@@ -110,5 +111,4 @@ public class HabboDiffieHellman {
 
         return BigIntegerUtils.toUnsignedByteArray(sharedKey);
     }
-
 }

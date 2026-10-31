@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,25 @@ public class CommandHandler {
     static final String NO_PERMISSION_FALLBACK = "You do not have permission to use this command.";
 
     private static final Map<String, Command> commands = new HashMap<>(5);
+    /**
+     * Commands that act on the caller's room. Sent from the staff chat there is none, and they threw a
+     * NullPointerException; they now do nothing.
+     */
+    static final Set<Class<? extends Command>> ROOM_COMMANDS = Set.of(
+            RoomGiftCommand.class,
+            SayAllCommand.class,
+            RoomCreditsCommand.class,
+            RoomPointsCommand.class,
+            RoomItemCommand.class,
+            RoomEffectCommand.class,
+            FreezeCommand.class,
+            MimicCommand.class,
+            PullCommand.class,
+            PushCommand.class,
+            SuperPullCommand.class,
+            TransformCommand.class,
+            RoomBundleCommand.class,
+            WordQuizCommand.class);
     private static final Comparator<Command> ALPHABETICAL_ORDER = new Comparator<Command>() {
         public int compare(Command c1, Command c2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(c1.permission, c2.permission);
@@ -130,7 +150,8 @@ public class CommandHandler {
             if (commandLine.startsWith(":")) {
                 commandLine = commandLine.replaceFirst(":", "");
 
-                String[] parts = commandLine.split(" ");
+                // Any run of whitespace separates two parameters: "a  b" is two, not three with an empty one.
+                String[] parts = commandLine.trim().split("\\s+");
 
                 if (parts.length >= 1) {
                     for (Command command : commands.values()) {
@@ -176,6 +197,11 @@ public class CommandHandler {
                                                                                 .isEqualOrGreaterThan(
                                                                                         RoomRightLevels
                                                                                                 .GUILD_RIGHTS)))) {
+                                    if (ROOM_COMMANDS.contains(command.getClass())
+                                            && gameClient.getHabbo().getHabboInfo().getCurrentRoom() == null) {
+                                        return CommandOutcome.RETURNED_FALSE;
+                                    }
+
                                     try {
                                         UserExecuteCommandEvent userExecuteCommandEvent =
                                                 new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
@@ -238,7 +264,7 @@ public class CommandHandler {
                     }
                 }
             } else {
-                String[] args = commandLine.split(" ");
+                String[] args = commandLine.trim().split("\\s+");
 
                 if (args.length <= 1) return CommandOutcome.UNKNOWN;
 

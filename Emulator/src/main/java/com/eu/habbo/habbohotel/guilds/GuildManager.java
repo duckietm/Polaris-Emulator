@@ -398,13 +398,17 @@ public class GuildManager {
         }
     }
 
+    /** Makes an accepted member an admin; the owner and a user who only asked to join are left as they are. */
     public void setAdmin(Guild guild, int userId) {
+        if (guild.getOwnerId() == userId) return;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? LIMIT 1")) {
-            statement.setInt(1, 1);
+                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? AND level_id = ? LIMIT 1")) {
+            statement.setInt(1, GuildRank.ADMIN.type);
             statement.setInt(2, userId);
             statement.setInt(3, guild.getId());
+            statement.setInt(4, GuildRank.MEMBER.type);
             statement.execute();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

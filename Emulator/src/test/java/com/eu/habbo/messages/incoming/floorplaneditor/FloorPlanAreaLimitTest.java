@@ -18,7 +18,8 @@ class FloorPlanAreaLimitTest {
     void theRawTextMayHoldOneSeparatorPerRow() {
         // 64 rows of 64 tiles plus 63 separators: under the raw cap of area + width, so the tiles decide.
         int raw = 64 * 64 + 63;
-        assertTrue(raw <= FloorPlanEditorSaveEvent.MAXIMUM_FLOORPLAN_SIZE
-                + FloorPlanEditorSaveEvent.MAXIMUM_FLOORPLAN_WIDTH_LENGTH);
+        assertTrue(raw
+                <= FloorPlanEditorSaveEvent.MAXIMUM_FLOORPLAN_SIZE
+                        + FloorPlanEditorSaveEvent.MAXIMUM_FLOORPLAN_WIDTH_LENGTH);
     }
 }

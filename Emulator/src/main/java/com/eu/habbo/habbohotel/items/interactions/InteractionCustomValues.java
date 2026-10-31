@@ -10,15 +10,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class InteractionCustomValues extends HabboItem {
+    /** The furthest an area furni reaches from its own tile, on each side. */
+    protected static final int MAX_AREA_TILES = 128;
+
     public final Map<String, String> values = new HashMap<>();
+
+    /** The keys a save may set: the ones the furni starts with. */
+    private final Set<String> knownKeys;
 
     public InteractionCustomValues(ResultSet set, Item baseItem, Map<String, String> defaultValues)
             throws SQLException {
         super(set, baseItem);
 
         this.values.putAll(defaultValues);
+        this.knownKeys = Set.copyOf(defaultValues.keySet());
 
         for (String s : set.getString("extra_data").split(";")) {
             // Split on the FIRST '=' only: values such as room-ad image URLs
@@ -26,7 +34,7 @@ public abstract class InteractionCustomValues extends HabboItem {
             // used to drop them (data.length != 2), so the ad image vanished.
             int separator = s.indexOf('=');
             if (separator > 0) {
-                this.values.put(s.substring(0, separator), s.substring(separator + 1));
+                this.values.put(s.substring(0, separator), decode(s.substring(separator + 1)));
             }
         }
     }
@@ -42,6 +50,7 @@ public abstract class InteractionCustomValues extends HabboItem {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
         this.values.putAll(defaultValues);
+        this.knownKeys = Set.copyOf(defaultValues.keySet());
     }
 
     @Override
@@ -68,7 +77,7 @@ public abstract class InteractionCustomValues extends HabboItem {
         StringBuilder data = new StringBuilder();
         synchronized (this.values) {
             for (Map.Entry<String, String> set : this.values.entrySet()) {
-                data.append(set.getKey()).append("=").append(set.getValue()).append(";");
+                data.append(set.getKey()).append("=").append(encode(set.getValue())).append(";");
             }
         }
 
@@ -88,4 +97,41 @@ public abstract class InteractionCustomValues extends HabboItem {
     }
 
     public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {}
+
+    /** Whether a save may set this key: only the furni's own keys are kept. */
+    public boolean acceptsKey(String key) {
+        return this.knownKeys.contains(key);
+    }
+
+    /** The value a save stores for one of the furni's keys, or null to keep the stored one. */
+    public String sanitizeValue(String key, String value) {
+        return value;
+    }
+
+    /** A whole number in [0, max] as text, or null when the value is not a number. */
+    protected static String boundedInt(String value, int max) {
+        try {
+            return Integer.toString(Math.max(0, Math.min(Integer.parseInt(value.trim()), max)));
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** A stored number, 0 when it is missing or not a number: a bad value must not break every check. */
+    protected static int intValue(Map<String, String> values, String key) {
+        try {
+            return Integer.parseInt(values.get(key).trim());
+        } catch (RuntimeException e) {
+            return 0;
+        }
+    }
+
+    // A value may hold ';' (a list of builders, an address), which also separates the stored entries.
+    static String encode(String value) {
+        return value == null ? "" : value.replace("%", "%25").replace(";", "%3B");
+    }
+
+    static String decode(String value) {
+        return value.replace("%3B", ";").replace("%25", "%");
+    }
 }

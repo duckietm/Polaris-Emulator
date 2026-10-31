@@ -124,12 +124,12 @@ public class InteractionBuildArea extends InteractionCustomValues {
         Set<RoomTile> oldTiles = this.tiles;
         Set<RoomTile> newTiles = new HashSet<>();
 
-        int minX = Math.max(0, newLocation.x - Integer.parseInt(this.values.get("tilesBack")));
-        int minY = Math.max(0, newLocation.y - Integer.parseInt(this.values.get("tilesRight")));
+        int minX = Math.max(0, newLocation.x - intValue(this.values, "tilesBack"));
+        int minY = Math.max(0, newLocation.y - intValue(this.values, "tilesRight"));
         int maxX = Math.min(
-                room.getLayout().getMapSizeX(), newLocation.x + Integer.parseInt(this.values.get("tilesFront")));
+                room.getLayout().getMapSizeX(), newLocation.x + intValue(this.values, "tilesFront"));
         int maxY = Math.min(
-                room.getLayout().getMapSizeY(), newLocation.y + Integer.parseInt(this.values.get("tilesLeft")));
+                room.getLayout().getMapSizeY(), newLocation.y + intValue(this.values, "tilesLeft"));
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
@@ -163,12 +163,12 @@ public class InteractionBuildArea extends InteractionCustomValues {
     }
 
     private void regenAffectedTiles(Room room) {
-        int minX = Math.max(0, this.getX() - Integer.parseInt(this.values.get("tilesBack")));
-        int minY = Math.max(0, this.getY() - Integer.parseInt(this.values.get("tilesRight")));
+        int minX = Math.max(0, this.getX() - intValue(this.values, "tilesBack"));
+        int minY = Math.max(0, this.getY() - intValue(this.values, "tilesRight"));
         int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
+                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
         int maxY =
-                Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
+                Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
 
         this.tiles.clear();
 
@@ -178,6 +178,11 @@ public class InteractionBuildArea extends InteractionCustomValues {
                 if (tile != null && tile.state != RoomTileState.INVALID) this.tiles.add(tile);
             }
         }
+    }
+
+    @Override
+    public String sanitizeValue(String key, String value) {
+        return key.startsWith("tiles") ? boundedInt(value, MAX_AREA_TILES) : value;
     }
 
     @Override
@@ -202,11 +207,11 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         Set<RoomTile> oldTiles = new HashSet<>();
 
-        int minX = Math.max(0, this.getX() - Integer.parseInt(oldValues.get("tilesBack")));
-        int minY = Math.max(0, this.getY() - Integer.parseInt(oldValues.get("tilesRight")));
+        int minX = Math.max(0, this.getX() - intValue(oldValues, "tilesBack"));
+        int minY = Math.max(0, this.getY() - intValue(oldValues, "tilesRight"));
         int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(oldValues.get("tilesFront")));
-        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(oldValues.get("tilesLeft")));
+                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(oldValues, "tilesFront"));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(oldValues, "tilesLeft"));
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {

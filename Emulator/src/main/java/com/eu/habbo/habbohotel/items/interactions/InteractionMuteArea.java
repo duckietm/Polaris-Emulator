@@ -85,6 +85,13 @@ public class InteractionMuteArea extends InteractionCustomValues {
         this.regenAffectedTiles(room);
     }
 
+    @Override
+    public String sanitizeValue(String key, String value) {
+        if (key.startsWith("tiles")) return boundedInt(value, MAX_AREA_TILES);
+        if (key.equals("state")) return "1".equals(value) ? "1" : "0";
+        return value;
+    }
+
     public boolean inSquare(RoomTile location) {
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
@@ -108,12 +115,12 @@ public class InteractionMuteArea extends InteractionCustomValues {
     }
 
     private void regenAffectedTiles(Room room) {
-        int minX = Math.max(0, this.getX() - Integer.parseInt(this.values.get("tilesBack")));
-        int minY = Math.max(0, this.getY() - Integer.parseInt(this.values.get("tilesRight")));
+        int minX = Math.max(0, this.getX() - intValue(this.values, "tilesBack"));
+        int minY = Math.max(0, this.getY() - intValue(this.values, "tilesRight"));
         int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
+                Math.min(room.getLayout().getMapSizeX(), this.getX() + intValue(this.values, "tilesFront"));
         int maxY =
-                Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
+                Math.min(room.getLayout().getMapSizeY(), this.getY() + intValue(this.values, "tilesLeft"));
 
         this.tiles.clear();
 

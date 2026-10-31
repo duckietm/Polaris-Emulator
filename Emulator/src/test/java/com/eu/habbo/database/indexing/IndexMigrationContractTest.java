@@ -1,6 +1,7 @@
 package com.eu.habbo.database.indexing;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -8,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class IndexMigrationContractTest {
     private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration");
@@ -39,9 +38,11 @@ class IndexMigrationContractTest {
                 .collect(Collectors.joining("\n"));
 
         for (IndexRequirement requirement : contract.requirements()) {
-            assertTrue(all.contains("`" + requirement.name() + "`"),
+            assertTrue(
+                    all.contains("`" + requirement.name() + "`"),
                     () -> "No Flyway migration creates " + requirement.displayName());
-            assertFalse(drops.contains("`" + requirement.name() + "`"),
+            assertFalse(
+                    drops.contains("`" + requirement.name() + "`"),
                     () -> "A Flyway migration drops " + requirement.displayName());
         }
     }

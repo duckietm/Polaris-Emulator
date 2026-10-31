@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 /** One user that failed stopped the online-time loop for every user after it. */
 class AchievementUpdaterContractTest {
 
-    private static final Path SOURCE = Path.of("src/main/java/com/eu/habbo/threading/runnables/AchievementUpdater.java");
+    private static final Path SOURCE =
+            Path.of("src/main/java/com/eu/habbo/threading/runnables/AchievementUpdater.java");
 
     @Test
     void eachUserIsGuardedAndAMissingAchievementStopsTheRun() throws Exception {

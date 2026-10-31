@@ -148,7 +148,7 @@ final class RoomItemOwnershipService {
     }
 
     void pickUp(HabboItem item, Habbo picker) {
-        this.pickUp(item, picker, true);
+        this.pickUp(item, picker, true, null);
     }
 
     /**
@@ -177,13 +177,16 @@ final class RoomItemOwnershipService {
 
         List<Integer> floorItemIds = new ArrayList<>();
         List<Integer> wallItemIds = new ArrayList<>();
+        // A whole room emptied at once: the owners get their furni in one delivery each and the freed floor is
+        // recomputed once, instead of an inventory packet, a reload and a stack-height update per furni.
+        PickUpBatch batch = new PickUpBatch();
 
         for (HabboItem item : items) {
             if (item == null) {
                 continue;
             }
             FurnitureType type = item.getBaseItem().getType();
-            if (!this.pickUp(item, picker, false)) {
+            if (!this.pickUp(item, picker, false, batch)) {
                 continue;
             }
             if (type == FurnitureType.FLOOR) {
@@ -199,14 +202,27 @@ final class RoomItemOwnershipService {
         if (!wallItemIds.isEmpty()) {
             this.room.sendComposer(new RemoveWallItemsComposer(wallItemIds, pickerId).compose());
         }
+
+        if (!batch.freedTiles.isEmpty()) {
+            this.refreshTiles(batch.freedTiles);
+        }
+        batch.deliveries.forEach((owner, delivered) -> deliver(owner, delivered, picker));
+    }
+
+    /** What a batched pick-up sends once at the end instead of once per furni. */
+    private static final class PickUpBatch {
+        private final Set<RoomTile> freedTiles = new HashSet<>();
+        private final Map<Habbo, List<HabboItem>> deliveries = new HashMap<>();
     }
 
     /**
      * @param sendRemoveComposer when false the caller sends the batched removal
      *     composer itself; the room-side state changes are identical.
+     * @param batch when not null, the freed floor and the owner's delivery are collected there and sent once by the
+     *     caller.
      * @return whether the item was actually picked up (a plugin can cancel it).
      */
-    private boolean pickUp(HabboItem item, Habbo picker, boolean sendRemoveComposer) {
+    private boolean pickUp(HabboItem item, Habbo picker, boolean sendRemoveComposer, PickUpBatch batch) {
         if (item == null) {
             return false;
         }
@@ -237,7 +253,11 @@ final class RoomItemOwnershipService {
             if (sendRemoveComposer) {
                 this.room.sendComposer(new RemoveFloorItemComposer(item).compose());
             }
-            this.refreshRemovedFloorArea(item);
+            if (batch != null) {
+                batch.freedTiles.addAll(this.floorArea(item));
+            } else {
+                this.refreshTiles(this.floorArea(item));
+            }
             RoomConfigurationFurniSupport.onControllerRemoved(this.room, item);
         } else if (item.getBaseItem().getType() == FurnitureType.WALL && sendRemoveComposer) {
             this.room.sendComposer(new RemoveWallItemComposer(item).compose());
@@ -257,12 +277,11 @@ final class RoomItemOwnershipService {
                 ? picker
                 : Emulator.getGameServer().getGameClientManager().getHabbo(item.getUserId());
         if (owner != null) {
-            owner.getInventory().getItemsComponent().addItem(item);
-            owner.getClient().sendResponse(new AddHabboItemComposer(item));
-            // Habbo sends the picker the item itself; an item returned to its absent owner keeps the reload.
-            owner.getClient()
-                    .sendResponse(
-                            owner == picker ? new InventoryUpdateItemComposer(item) : new InventoryRefreshComposer());
+            if (batch != null) {
+                batch.deliveries.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(item);
+            } else {
+                deliver(owner, List.of(item), picker);
+            }
         }
         Emulator.getThreading().run(item);
 
@@ -271,23 +290,16 @@ final class RoomItemOwnershipService {
 
     void ejectUserFurniture(int userId) {
         Set<HabboItem> items = new HashSet<>();
-        Set<HabboItem> inventoryItems = new HashSet<>();
         synchronized (this.index.items()) {
             for (HabboItem item : this.index.items().values()) {
                 if (item.getUserId() == userId) {
                     items.add(item);
-                    if (!BuildersClubRoomSupport.isTrackedItem(item.getId()) && !isDestroyedOnPickup(item)) {
-                        inventoryItems.add(item);
-                    }
                     item.setRoomId(0);
                 }
             }
         }
 
-        Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
-        if (owner != null && !inventoryItems.isEmpty()) {
-            addInventoryItems(owner, inventoryItems);
-        }
+        // The owner gets them back from pickUpAll, in one delivery; adding them here as well sent everything twice.
         this.pickUpAll(items, null);
     }
 
@@ -337,19 +349,8 @@ final class RoomItemOwnershipService {
             }
         }
 
-        for (Map.Entry<Integer, Set<HabboItem>> entry : itemsByOwner.entrySet()) {
-            Set<HabboItem> inventoryItems = new HashSet<>();
-            for (HabboItem item : entry.getValue()) {
-                if (!BuildersClubRoomSupport.isTrackedItem(item.getId()) && !isDestroyedOnPickup(item)) {
-                    inventoryItems.add(item);
-                }
-            }
-            this.pickUpAll(entry.getValue(), null);
-
-            Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(entry.getKey());
-            if (owner != null && !inventoryItems.isEmpty()) {
-                addInventoryItems(owner, inventoryItems);
-            }
+        for (Set<HabboItem> ownerItems : itemsByOwner.values()) {
+            this.pickUpAll(ownerItems, null);
         }
     }
 
@@ -386,8 +387,8 @@ final class RoomItemOwnershipService {
         }
     }
 
-    private void refreshRemovedFloorArea(HabboItem item) {
-        Set<RoomTile> updatedTiles = new HashSet<>();
+    private Set<RoomTile> floorArea(HabboItem item) {
+        Set<RoomTile> tiles = new HashSet<>();
         Rectangle rectangle = RoomLayout.getRectangle(
                 item.getX(),
                 item.getY(),
@@ -397,13 +398,20 @@ final class RoomItemOwnershipService {
 
         for (short x = (short) rectangle.x; x < rectangle.x + rectangle.getWidth(); x++) {
             for (short y = (short) rectangle.y; y < rectangle.y + rectangle.getHeight(); y++) {
-                double stackHeight = this.room.getStackHeight(x, y, false);
                 RoomTile tile = this.room.currentLayout().getTile(x, y);
                 if (tile != null) {
-                    tile.setStackHeight(stackHeight);
-                    updatedTiles.add(tile);
+                    tiles.add(tile);
                 }
             }
+        }
+
+        return tiles;
+    }
+
+    /** Recomputes the stack height of tiles a pick-up freed and tells the room once. */
+    private void refreshTiles(Set<RoomTile> updatedTiles) {
+        for (RoomTile tile : updatedTiles) {
+            tile.setStackHeight(this.room.getStackHeight(tile.x, tile.y, false));
         }
 
         this.room.sendComposer(new UpdateStackHeightComposer(this.room, updatedTiles).compose());
@@ -414,9 +422,23 @@ final class RoomItemOwnershipService {
         }
     }
 
-    private static void addInventoryItems(Habbo owner, Set<HabboItem> items) {
-        owner.getInventory().getItemsComponent().addItems(items);
-        owner.getClient().sendResponse(new AddHabboItemComposer(items));
-        owner.getClient().sendResponse(new InventoryRefreshComposer());
+    private static void deliver(Habbo owner, List<HabboItem> items, Habbo picker) {
+        // One furni keeps the single-item event plugins listen to; a batch fires the batch event once.
+        if (items.size() == 1) {
+            owner.getInventory().getItemsComponent().addItem(items.get(0));
+            owner.getClient().sendResponse(new AddHabboItemComposer(items.get(0)));
+        } else {
+            owner.getInventory().getItemsComponent().addItems(items);
+            owner.getClient().sendResponse(new AddHabboItemComposer(items));
+        }
+        if (owner == picker) {
+            // Habbo sends the picker the item itself.
+            for (HabboItem item : items) {
+                owner.getClient().sendResponse(new InventoryUpdateItemComposer(item));
+            }
+        } else {
+            // An item returned to its absent owner keeps the reload, once per delivery.
+            owner.getClient().sendResponse(new InventoryRefreshComposer());
+        }
     }
 }

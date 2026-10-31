@@ -25,8 +25,7 @@ class RoomSettingsSaveEventTagErrorTest {
     void aTagCannotHoldTheSeparatorOrAControlCharacter() {
         assertTrue(RoomSettingsSaveEvent.isAcceptableTag("music"));
         assertFalse(RoomSettingsSaveEvent.isAcceptableTag("a;b;c;d"));
-        assertFalse(RoomSettingsSaveEvent.isAcceptableTag("line
-break"));
+        assertFalse(RoomSettingsSaveEvent.isAcceptableTag("line\u0007bell"));
         assertFalse(RoomSettingsSaveEvent.isAcceptableTag(null));
     }
 }

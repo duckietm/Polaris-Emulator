@@ -73,6 +73,15 @@ public class CameraPublishToWebEvent extends MessageHandler {
                 int previousPublish = habboInfo.claimWebPublish(currentTimestamp, CAMERA_PUBLISH_DELAY);
                 if (previousPublish < 0) return;
 
+                // The points are taken first and must really go: the void givePoints after the insert hid a refused
+                // debit (a plugin, the ledger), and the photo was published for free.
+                boolean charged = CAMERA_PUBLISH_POINTS > 0;
+                if (charged && !habbo.tryTakePoints(CAMERA_PUBLISH_POINTS_TYPE, CAMERA_PUBLISH_POINTS)) {
+                    habboInfo.releaseWebPublish(currentTimestamp, previousPublish);
+                    this.client.sendResponse(new NotEnoughPointsTypeComposer(false, true, CAMERA_PUBLISH_POINTS_TYPE));
+                    return;
+                }
+
                 try (Connection connection =
                                 Emulator.getDatabase().getDataSource().getConnection();
                         PreparedStatement statement = connection.prepareStatement(
@@ -82,11 +91,13 @@ public class CameraPublishToWebEvent extends MessageHandler {
                     statement.setInt(3, publishPictureEvent.timestamp);
                     statement.setString(4, publishPictureEvent.URL);
                     statement.execute();
-                    habbo.givePoints(CAMERA_PUBLISH_POINTS_TYPE, -CAMERA_PUBLISH_POINTS);
                     com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                             habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.PUBLISH_PICTURE, 1);
                 } catch (SQLException e) {
                     habboInfo.releaseWebPublish(currentTimestamp, previousPublish);
+                    if (charged) {
+                        habbo.givePoints(CAMERA_PUBLISH_POINTS_TYPE, CAMERA_PUBLISH_POINTS, "camera.publish.refund");
+                    }
                     LOGGER.error("Caught SQL exception", e);
                 }
             }

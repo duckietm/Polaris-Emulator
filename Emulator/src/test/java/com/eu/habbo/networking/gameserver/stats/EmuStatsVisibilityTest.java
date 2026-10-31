@@ -61,8 +61,8 @@ class EmuStatsVisibilityTest {
 
     @Test
     void thePageHasItsOwnPermissionCopiedFromTheOldOne() throws Exception {
-        String migration = Files.readString(
-                Path.of("src/main/resources/db/migration/V20261031170000__emustats_permission.sql"));
+        String migration =
+                Files.readString(Path.of("src/main/resources/db/migration/V20261031170000__emustats_permission.sql"));
 
         assertEquals("acc_emustats", EmuStatsHttpHandler.PERMISSION);
         assertTrue(migration.contains("('acc_emustats', 1,"));

@@ -23,7 +23,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.ReferenceCountUtil;
-
 import java.nio.charset.StandardCharsets;
 import java.util.function.IntPredicate;
 
@@ -32,6 +31,7 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
     private static final Gson GSON = new Gson();
     /** Its own key: the page used to ask for acc_modtool_room_info, so every moderator could read it. */
     static final String PERMISSION = "acc_emustats";
+
     private static final String STALK_PERMISSION = "acc_can_stalk";
 
     @Override
@@ -84,7 +84,8 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        JsonObject snapshot = GSON.toJsonTree(EmulatorStatsService.collectSnapshot()).getAsJsonObject();
+        JsonObject snapshot =
+                GSON.toJsonTree(EmulatorStatsService.collectSnapshot()).getAsJsonObject();
         boolean mayStalk = habbo.hasPermission(STALK_PERMISSION);
         snapshot.add(
                 "users",
@@ -142,7 +143,8 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static void sendCors(ChannelHandlerContext ctx, FullHttpRequest req) {
         if (!CorsOriginGate.isAllowed(req)) {
-            FullHttpResponse forbidden = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FORBIDDEN);
+            FullHttpResponse forbidden =
+                    new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FORBIDDEN);
             forbidden.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
             ctx.writeAndFlush(forbidden).addListener(ChannelFutureListener.CLOSE);
             return;
@@ -154,7 +156,8 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
-    private static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, String json) {
+    private static void sendJson(
+            ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, String json) {
         boolean headRequest = req.method() == HttpMethod.HEAD;
         byte[] bytes = (json == null ? "{}" : json).getBytes(StandardCharsets.UTF_8);
         FullHttpResponse response = headRequest
@@ -173,7 +176,10 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
             response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS");
-            response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, "Authorization, Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
+            response.headers()
+                    .set(
+                            HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS,
+                            "Authorization, Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
             response.headers().set(HttpHeaderNames.VARY, "Origin");
         }
     }

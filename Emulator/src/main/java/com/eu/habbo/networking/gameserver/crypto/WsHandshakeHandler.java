@@ -30,6 +30,7 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private boolean handshakeComplete = false;
     /** The client asked for, and got, the channel with a key and a counter per direction. */
     private boolean directional = false;
+
     private ArrayDeque<ByteBuf> pendingFrames;
     private int pendingFrameBytes;
 

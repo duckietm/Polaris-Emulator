@@ -20,8 +20,10 @@ class WsDirectionalSessionTest {
     private static final byte[] SERVER_SPKI = "server-spki".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] CLIENT_SPKI = "client-spki".getBytes(StandardCharsets.US_ASCII);
     // Computed independently (Python hmac/hashlib); the renderer's test checks the same values.
-    private static final String CLIENT_TO_SERVER_KEY = "74ada030b255155d0698f6ab4b4add8f0866bc8c2c6a82d4f735126fef242721";
-    private static final String SERVER_TO_CLIENT_KEY = "c97264796dd38c46c38dbfb2a64b50ec9c3fd86dbf3028efb969faf4ce6080dd";
+    private static final String CLIENT_TO_SERVER_KEY =
+            "74ada030b255155d0698f6ab4b4add8f0866bc8c2c6a82d4f735126fef242721";
+    private static final String SERVER_TO_CLIENT_KEY =
+            "c97264796dd38c46c38dbfb2a64b50ec9c3fd86dbf3028efb969faf4ce6080dd";
 
     private static byte[] sequence() {
         byte[] bytes = new byte[32];
@@ -36,8 +38,8 @@ class WsDirectionalSessionTest {
     /** A frame as the client builds it: its nonce, then the ciphertext. */
     private static byte[][] clientFrame(long counter, String text) throws GeneralSecurityException {
         byte[] nonce = WsDirectionalSession.nonce(WsDirectionalSession.CLIENT_TO_SERVER, counter);
-        byte[] ciphertext = WsSessionCrypto.aesGcmEncrypt(
-                key("octane-ws-v2 c2s"), nonce, text.getBytes(StandardCharsets.UTF_8));
+        byte[] ciphertext =
+                WsSessionCrypto.aesGcmEncrypt(key("octane-ws-v2 c2s"), nonce, text.getBytes(StandardCharsets.UTF_8));
         return new byte[][] {nonce, ciphertext};
     }
 

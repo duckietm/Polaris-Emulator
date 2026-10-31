@@ -1,10 +1,5 @@
 package com.eu.habbo.networking.gameserver.crypto;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
-import javax.crypto.Mac;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -18,19 +13,25 @@ import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+import javax.crypto.Mac;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public final class WsSessionCrypto {
 
-    public static final int  HANDSHAKE_MAGIC   = 0xC0DEC0DE;
+    public static final int HANDSHAKE_MAGIC = 0xC0DEC0DE;
     public static final byte TYPE_SERVER_HELLO = 0x01;
     public static final byte TYPE_CLIENT_HELLO = 0x02;
 
     public static final String HKDF_INFO = "nitro-ws-v1";
     /** The WebSocket subprotocol a client asks for to use the channel with a key and a counter per direction. */
     public static final String SUBPROTOCOL_V2 = "octane-ws-v2";
-    public static final int    AES_KEY_LEN = 32;
-    public static final int    NONCE_LEN   = 12;
-    public static final int    GCM_TAG_BITS = 128;
+
+    public static final int AES_KEY_LEN = 32;
+    public static final int NONCE_LEN = 12;
+    public static final int GCM_TAG_BITS = 128;
 
     private static final SecureRandom RNG = new SecureRandom();
 
@@ -51,7 +52,8 @@ public final class WsSessionCrypto {
         return kf.generatePublic(new X509EncodedKeySpec(spki));
     }
 
-    public static byte[] deriveSharedSecret(PrivateKey ourPrivate, PublicKey theirPublic) throws GeneralSecurityException {
+    public static byte[] deriveSharedSecret(PrivateKey ourPrivate, PublicKey theirPublic)
+            throws GeneralSecurityException {
         KeyAgreement ka = KeyAgreement.getInstance("ECDH");
         ka.init(ourPrivate);
         ka.doPhase(theirPublic, true);
@@ -95,7 +97,8 @@ public final class WsSessionCrypto {
         return c.doFinal(plaintext);
     }
 
-    public static byte[] aesGcmDecrypt(byte[] key, byte[] nonce, byte[] ciphertextWithTag) throws GeneralSecurityException {
+    public static byte[] aesGcmDecrypt(byte[] key, byte[] nonce, byte[] ciphertextWithTag)
+            throws GeneralSecurityException {
         Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
         c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, nonce));
         return c.doFinal(ciphertextWithTag);

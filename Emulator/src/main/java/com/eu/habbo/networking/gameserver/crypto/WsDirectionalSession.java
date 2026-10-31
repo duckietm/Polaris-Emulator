@@ -42,7 +42,8 @@ final class WsDirectionalSession {
             throws GeneralSecurityException {
         byte[] transcript = transcriptHash(serverSpki, clientSpki);
         return new WsDirectionalSession(
-                key(sharedSecret, INFO_CLIENT_TO_SERVER, transcript), key(sharedSecret, INFO_SERVER_TO_CLIENT, transcript));
+                key(sharedSecret, INFO_CLIENT_TO_SERVER, transcript),
+                key(sharedSecret, INFO_SERVER_TO_CLIENT, transcript));
     }
 
     /** SHA-256 of both handshake public keys, so a key cannot be reused with another handshake. */

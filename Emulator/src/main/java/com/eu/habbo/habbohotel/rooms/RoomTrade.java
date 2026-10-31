@@ -68,6 +68,9 @@ public class RoomTrade {
     }
 
     public synchronized void offerItem(Habbo habbo, HabboItem item) {
+        // A trade that was completed or cancelled takes no more offers or changes.
+        if (this.completed) return;
+
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user == null
@@ -84,6 +87,9 @@ public class RoomTrade {
     }
 
     public synchronized void offerMultipleItems(Habbo habbo, Set<HabboItem> items) {
+        // A trade that was completed or cancelled takes no more offers or changes.
+        if (this.completed) return;
+
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user == null || items == null) return;
@@ -103,6 +109,9 @@ public class RoomTrade {
     }
 
     public synchronized void removeItem(Habbo habbo, HabboItem item) {
+        // A trade that was completed or cancelled takes no more offers or changes.
+        if (this.completed) return;
+
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user == null || item == null || !user.getItems().contains(item)) return;
@@ -115,6 +124,9 @@ public class RoomTrade {
     }
 
     public synchronized void accept(Habbo habbo, boolean value) {
+        // A trade that was completed or cancelled takes no more offers or changes.
+        if (this.completed) return;
+
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user == null) return;
@@ -140,7 +152,9 @@ public class RoomTrade {
 
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
-        if (user == null) return;
+        // Checked here, under the trade's lock: the handler checked "accepted" before taking it, so an offer changed
+        // in between (which clears every acceptance) could still be confirmed.
+        if (user == null || !user.getAccepted()) return;
 
         user.confirm();
 

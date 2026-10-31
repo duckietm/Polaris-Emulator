@@ -9226,6 +9226,7 @@ FIELD public static com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManag
 CONSTRUCTOR public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager(-) throws -
 METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#addHighscoreData(com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#addScore(int,java.util.List<java.lang.Integer>,int,int):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#compact(int,com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreClearType,com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#dispose(-):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#getData(-):java.util.Map<java.lang.Integer, java.util.List<com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry>> throws -
 METHOD public com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager#getEntriesForItemId(int):java.util.List<com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry> throws -

@@ -965,16 +965,19 @@ public class CatalogManager {
                 return;
         }
 
+        // The item is checked before the currency is given: a refused item (club only, sold out, a purchase already
+        // running) used to leave the code spent, nothing delivered and an OK on screen.
+        if (voucherItem != null && !this.purchaseItemDelivered(null, voucherItem, client.getHabbo(), 1, "", true)) {
+            voucher.releaseClaim(habbo.getHabboInfo().getId());
+            return;
+        }
+
         if (voucher.points > 0) {
             client.getHabbo().givePoints(voucher.pointsType, voucher.points);
         }
 
         if (voucher.credits > 0) {
             client.getHabbo().giveCredits(voucher.credits);
-        }
-
-        if (voucherItem != null) {
-            this.purchaseItem(null, voucherItem, client.getHabbo(), 1, "", true);
         }
 
         client.sendResponse(new RedeemVoucherOKComposer());
@@ -1439,8 +1442,11 @@ public class CatalogManager {
                     if (limitedConfiguration.getTotalSet() == 0) {
                         limitedConfiguration.setTotalSet(item.limitedStack);
                     } else if (item.limitedStack > limitedConfiguration.getTotalSet()) {
+                        // The new numbers follow the last one made: they started after the new stack instead, so a
+                        // stack raised from 100 to 150 got 151-200 and numbers 101-150 never existed.
                         limitedConfiguration.generateNumbers(
-                                item.limitedStack + 1, item.limitedStack - limitedConfiguration.getTotalSet());
+                                limitedConfiguration.getTotalSet() + 1,
+                                item.limitedStack - limitedConfiguration.getTotalSet());
                     } else {
                         item.limitedStack = limitedConfiguration.getTotalSet();
                     }
@@ -1466,6 +1472,29 @@ public class CatalogManager {
 
     public void purchaseItem(
             CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
+        this.purchaseItemDelivered(page, item, habbo, amount, extradata, free);
+    }
+
+    /**
+     * {@link #purchaseItem}, saying whether the order was delivered. A refusal (club only, sold out, a purchase
+     * already running, ...) answers the client itself and returns false, so a caller that already spent something
+     * for it, such as a voucher, can give that back.
+     */
+    public boolean purchaseItemDelivered(
+            CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
+        LegacyPurchase purchase = new LegacyPurchase();
+        this.purchaseItem(page, item, habbo, amount, extradata, free, purchase);
+        return purchase.delivered;
+    }
+
+    private void purchaseItem(
+            CatalogPage page,
+            CatalogItem item,
+            Habbo habbo,
+            int amount,
+            String extradata,
+            boolean free,
+            LegacyPurchase purchase) {
         if (item == null) {
             habbo.getClient()
                     .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
@@ -1481,8 +1510,6 @@ public class CatalogManager {
             }
             habbo.getHabboStats().isPurchasingFurniture = true;
         }
-
-        LegacyPurchase purchase = new LegacyPurchase();
 
         try {
             if (this.refusedBeforePricing(item, habbo, amount)) {
@@ -1746,7 +1773,8 @@ public class CatalogManager {
                     .getValue("scripter.warning.catalog.amount")
                     .replace("%username%", habbo.getHabboInfo().getUsername())
                     .replace("%itemname%", item.getName())
-                    .replace("%pagename%", page.getCaption());
+                    // A purchase without a page (targeted offers, vouchers, rewards) has no caption to name.
+                    .replace("%pagename%", page == null ? "" : page.getCaption());
             ScripterManager.scripterDetected(habbo.getClient(), message);
             LOGGER.info(message);
             habbo.getClient()

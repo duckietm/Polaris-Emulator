@@ -44,4 +44,38 @@ class MarketPlaceCreditClaimContractTest {
                 source.contains("private static boolean removeUser"),
                 "removeUser must report whether the marketplace ownership update succeeded");
     }
+
+    @Test
+    void aRefusedPayoutReleasesTheClaims() throws Exception {
+        String source = marketPlaceSource();
+        int start = source.indexOf("public static int claimSoldCredits");
+        int apply = source.indexOf("applyCredits(credits, \"marketplace.payout\"", start);
+        int release = source.indexOf("releaseClaim(offer, sellerId)", start);
+
+        assertTrue(apply > start, "the payout reports whether it happened");
+        assertTrue(release > apply, "a refused payout hands the offers back");
+        assertTrue(source.contains("SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1"));
+    }
+
+    @Test
+    void aTakenBackOfferReturnsItsItemInTheSameTransaction() throws Exception {
+        String source = marketPlaceSource();
+        int helper = source.indexOf("private static boolean returnOfferItem(");
+        int delete = source.indexOf("DELETE FROM marketplace_items WHERE id = ? AND state != 2", helper);
+        int update = source.indexOf("updateItems.executeUpdate() != 1", helper);
+        int commit = source.indexOf("connection.commit();", helper);
+
+        assertTrue(helper > 0 && delete > helper && update > delete && commit > update);
+        assertTrue(source.indexOf("returnOfferItem(connection, habbo, offer)")
+                < source.indexOf("habbo.getInventory().removeMarketplaceOffer(offer);"));
+    }
+
+    @Test
+    void aSaleIsShownGoneOnlyOnceTheOfferIsSaved() throws Exception {
+        String source = marketPlaceSource();
+        int persisted = source.indexOf("if (!offer.isPersisted()) {");
+        int removal = source.indexOf("new RemoveHabboItemComposer(clientItemId)");
+
+        assertTrue(persisted > 0 && removal > persisted);
+    }
 }

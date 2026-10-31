@@ -1,15 +1,14 @@
 package com.eu.habbo.habbohotel.catalog;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Voucher {
     private static final Logger LOGGER = LoggerFactory.getLogger(Voucher.class);
@@ -45,7 +44,9 @@ public class Voucher {
     }
 
     private void loadHistory() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM voucher_history WHERE voucher_id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM voucher_history WHERE voucher_id = ?")) {
             statement.setInt(1, this.id);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -57,8 +58,17 @@ public class Voucher {
         }
     }
 
+    /** The claim methods share one way to the database. */
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
     public boolean hasUserExhausted(int userId) {
-        return this.limit > 0 && Math.toIntExact(this.history.stream().filter(h -> h.getUserId() == userId).count()) >= this.limit;
+        return this.limit > 0
+                && Math.toIntExact(this.history.stream()
+                                .filter(h -> h.getUserId() == userId)
+                                .count())
+                        >= this.limit;
     }
 
     public boolean isExhausted() {
@@ -83,8 +93,41 @@ public class Voucher {
         return ClaimResult.CLAIMED;
     }
 
+    /**
+     * Gives back the newest claim of this user, for a redemption whose item could not be delivered. The history row
+     * goes from the database and from memory, so the code counts as unused again.
+     */
+    public synchronized void releaseClaim(int userId) {
+        VoucherHistoryEntry latest = null;
+        for (VoucherHistoryEntry entry : this.history) {
+            if (entry.getUserId() == userId && (latest == null || entry.getTimestamp() >= latest.getTimestamp())) {
+                latest = entry;
+            }
+        }
+
+        if (latest == null) {
+            return;
+        }
+
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM voucher_history WHERE voucher_id = ? AND user_id = ? AND timestamp = ? LIMIT 1")) {
+            statement.setInt(1, this.id);
+            statement.setInt(2, userId);
+            statement.setInt(3, latest.getTimestamp());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Voucher {} claim of user {} could not be released", this.id, userId, e);
+            return;
+        }
+
+        this.history.remove(latest);
+    }
+
     private boolean insertHistoryEntry(int userId, int timestamp) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO voucher_history (`voucher_id`, `user_id`, `timestamp`) VALUES (?, ?, ?)")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO voucher_history (`voucher_id`, `user_id`, `timestamp`) VALUES (?, ?, ?)")) {
             statement.setInt(1, this.id);
             statement.setInt(2, userId);
             statement.setInt(3, timestamp);

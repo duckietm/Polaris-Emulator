@@ -1,11 +1,10 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.games.Game;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages games within a room.
@@ -61,20 +60,23 @@ public class RoomGameManager {
     }
 
     /**
-     * Gets or creates a game of the specified type.
+     * Gets or creates a game of the specified type. The lookup and the creation happen under the lock of the games:
+     * two threads asking at once each created a game and both were added, so a room ran two of the same game.
      */
     public Game getGameOrCreate(Class<? extends Game> gameType) {
-        Game game = this.getGame(gameType);
-        if (game == null) {
-            try {
-                game = gameType.getDeclaredConstructor(Room.class).newInstance(this.room);
-                this.addGame(game);
-            } catch (Exception e) {
-                LOGGER.error("Error getting game {}", gameType.getName(), e);
+        synchronized (this.games) {
+            Game game = this.getGame(gameType);
+            if (game == null) {
+                try {
+                    game = gameType.getDeclaredConstructor(Room.class).newInstance(this.room);
+                    this.addGame(game);
+                } catch (Exception e) {
+                    LOGGER.error("Error getting game {}", gameType.getName(), e);
+                }
             }
-        }
 
-        return game;
+            return game;
+        }
     }
 
     /**

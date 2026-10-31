@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.earnings.EarningsCategory;
 import com.eu.habbo.habbohotel.earnings.EarningsNotifications;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -189,37 +190,26 @@ public class MarketPlace {
                             return;
                         }
 
-                        try (PreparedStatement statement = connection.prepareStatement(
-                                "DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
-                            statement.setInt(1, offer.getOfferId());
-                            int count = statement.executeUpdate();
+                        // The offer row goes and the item comes back together, or neither: a failed item update
+                        // used to leave the offer deleted and the item owned by nobody (user_id -1).
+                        if (!returnOfferItem(connection, habbo, offer)) {
+                            habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, false));
+                            return;
+                        }
 
-                            if (count != 0) {
-                                habbo.getInventory().removeMarketplaceOffer(offer);
-                                try (PreparedStatement updateItems = connection.prepareStatement(
-                                        "UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
-                                    updateItems.setInt(1, habbo.getHabboInfo().getId());
-                                    updateItems.setInt(2, offer.getSoldItemId());
-                                    updateItems.execute();
-
-                                    try (PreparedStatement selectItem =
-                                            connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
-                                        selectItem.setInt(1, offer.getSoldItemId());
-                                        try (ResultSet set = selectItem.executeQuery()) {
-                                            while (set.next()) {
-                                                HabboItem item = Emulator.getGameEnvironment()
-                                                        .getItemManager()
-                                                        .loadHabboItem(set);
-                                                habbo.getInventory()
-                                                        .getItemsComponent()
-                                                        .addItem(item);
-                                                habbo.getClient()
-                                                        .sendResponse(new MarketplaceCancelSaleComposer(offer, true));
-                                                habbo.getClient().sendResponse(new AddHabboItemComposer(item));
-                                                habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                                            }
-                                        }
-                                    }
+                        habbo.getInventory().removeMarketplaceOffer(offer);
+                        try (PreparedStatement selectItem =
+                                connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
+                            selectItem.setInt(1, offer.getSoldItemId());
+                            try (ResultSet set = selectItem.executeQuery()) {
+                                while (set.next()) {
+                                    HabboItem item = Emulator.getGameEnvironment()
+                                            .getItemManager()
+                                            .loadHabboItem(set);
+                                    habbo.getInventory().getItemsComponent().addItem(item);
+                                    habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, true));
+                                    habbo.getClient().sendResponse(new AddHabboItemComposer(item));
+                                    habbo.getClient().sendResponse(new InventoryRefreshComposer());
                                 }
                             }
                         }
@@ -229,6 +219,44 @@ public class MarketPlace {
                 LOGGER.error("Caught SQL exception", e);
                 habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, false));
             }
+        }
+    }
+
+    private static boolean returnOfferItem(Connection connection, Habbo habbo, MarketPlaceOffer offer)
+            throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
+                statement.setInt(1, offer.getOfferId());
+                if (statement.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            try (PreparedStatement updateItems =
+                    connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
+                updateItems.setInt(1, habbo.getHabboInfo().getId());
+                updateItems.setInt(2, offer.getSoldItemId());
+                if (updateItems.executeUpdate() != 1) {
+                    connection.rollback();
+                    LOGGER.warn(
+                            "Marketplace offer {} kept: its item {} is missing",
+                            offer.getOfferId(),
+                            offer.getSoldItemId());
+                    return false;
+                }
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(autoCommit);
         }
     }
 
@@ -566,19 +594,25 @@ public class MarketPlace {
 
         RequestOffersEvent.cachedResults.clear();
 
-        client.sendResponse(new RemoveHabboItemComposer(event.item.getGiftAdjustedId()));
-        client.sendResponse(new InventoryRefreshComposer());
+        // The client is told the item left only once the offer is saved: a failed insert kept the item on the server
+        // while the client showed it gone until the next refresh.
+        int clientItemId = event.item.getGiftAdjustedId();
+        boolean fromGift = event.item.isFromGift();
 
         event.item.setFromGift(false);
 
         MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getHabbo());
         if (!offer.isPersisted()) {
+            event.item.setFromGift(fromGift);
             LOGGER.warn(
                     "Marketplace offer insert failed for user {} item {}",
                     client.getHabbo().getHabboInfo().getId(),
                     event.item.getId());
             return false;
         }
+
+        client.sendResponse(new RemoveHabboItemComposer(clientItemId));
+        client.sendResponse(new InventoryRefreshComposer());
 
         client.getHabbo().getInventory().addMarketplaceOffer(offer);
         client.getHabbo().getInventory().getItemsComponent().removeHabboItem(event.item);
@@ -633,15 +667,16 @@ public class MarketPlace {
         }
 
         int credits = 0;
+        int sellerId = client.getHabbo().getHabboInfo().getId();
+        List<MarketPlaceOffer> claimed = new ArrayList<>();
 
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
-                    if (removeUser(offer, client.getHabbo().getHabboInfo().getId())) {
+                    if (removeUser(offer, sellerId)) {
                         client.getHabbo().getInventory().removeMarketplaceOffer(offer);
                         credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
-                        offer.needsUpdate(true);
-                        Emulator.getThreading().run(offer);
+                        claimed.add(offer);
                     }
                 }
             }
@@ -649,13 +684,55 @@ public class MarketPlace {
 
         offers.clear();
 
-        if (MARKETPLACE_CURRENCY == 0) {
-            client.getHabbo().giveCredits(credits);
-        } else {
-            client.getHabbo().givePoints(MARKETPLACE_CURRENCY, credits);
+        if (claimed.isEmpty() || credits == 0) {
+            return 0;
+        }
+
+        // The payout says whether it happened (a plugin or the ledger can refuse it). When it did not, the offers are
+        // handed back as unclaimed: they used to stay claimed with nothing paid and no way to claim them again.
+        String operationId = EconomyOperationId.create("marketplace-payout:" + sellerId);
+        boolean paid = MARKETPLACE_CURRENCY == 0
+                ? client.getHabbo().applyCredits(credits, "marketplace.payout", operationId, sellerId)
+                : client.getHabbo()
+                        .applyPoints(MARKETPLACE_CURRENCY, credits, "marketplace.payout", operationId, sellerId);
+
+        if (!paid) {
+            synchronized (client.getHabbo().getInventory()) {
+                for (MarketPlaceOffer offer : claimed) {
+                    if (releaseClaim(offer, sellerId)) {
+                        client.getHabbo().getInventory().addMarketplaceOffer(offer);
+                    }
+                }
+            }
+            LOGGER.warn("Marketplace payout of {} refused for user {}; offers released", credits, sellerId);
+            return 0;
+        }
+
+        for (MarketPlaceOffer offer : claimed) {
+            offer.needsUpdate(true);
+            Emulator.getThreading().run(offer);
         }
 
         return credits;
+    }
+
+    /** The claim methods share one way to the database. */
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /** Undoes {@link #removeUser} for an offer whose payout did not go through. */
+    private static boolean releaseClaim(MarketPlaceOffer offer, int sellerId) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE marketplace_items SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1")) {
+            statement.setInt(1, offer.getOfferId());
+            statement.setInt(2, sellerId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.error("Marketplace claim of offer {} could not be released", offer.getOfferId(), e);
+            return false;
+        }
     }
 
     /**
@@ -673,7 +750,7 @@ public class MarketPlace {
      * @return whether this caller is the one that claimed it
      */
     private static boolean removeUser(MarketPlaceOffer offer, int sellerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0")) {
             statement.setInt(1, offer.getOfferId());

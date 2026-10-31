@@ -105,52 +105,87 @@ public class GuildManager {
                 colorTwo,
                 badge);
 
+        // Both rows or neither, and null when they could not be written: a failure used to log and still return the
+        // group with id 0, so the room was tied to a group that did not exist and the price was kept.
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO guilds (name, description, room_id, user_id, color_one, color_two, badge, date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                statement.setString(1, name);
-                statement.setString(2, description);
-                statement.setInt(3, roomId);
-                statement.setInt(4, guild.getOwnerId());
-                statement.setInt(5, colorOne);
-                statement.setInt(6, colorTwo);
-                statement.setString(7, badge);
-                statement.setInt(8, Emulator.getIntUnixTimestamp());
-                statement.execute();
-
-                try (ResultSet set = statement.getGeneratedKeys()) {
-                    if (set.next()) {
-                        guild.setId(set.getInt(1));
-                    }
-                }
-            }
-
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO guilds_members (guild_id, user_id, level_id, member_since) VALUES (?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                statement.setInt(1, guild.getId());
-                statement.setInt(2, habbo.getHabboInfo().getId());
-                statement.setInt(3, 0);
-                statement.setInt(4, Emulator.getIntUnixTimestamp());
-                statement.execute();
-
-                try (ResultSet set = statement.getGeneratedKeys()) {
-                    if (set.next()) {
-                        guild.increaseMemberCount();
-                        // guild.addMember(new GuildMember(habbo.getHabboInfo().getId(),
-                        // habbo.getHabboInfo().getUsername(), habbo.getHabboInfo().getLook(),
-                        // Emulator.getIntUnixTimestamp(), 2));
-                    }
-                }
+            boolean autoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                this.insertGuild(connection, habbo, guild, roomId, name, description, badge, colorOne, colorTwo);
+                connection.commit();
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(autoCommit);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Group {} for room {} could not be created", name, roomId, e);
+            return null;
+        }
+
+        if (guild.getId() <= 0) {
+            return null;
         }
 
         habbo.getHabboStats().addGuild(guild.getId());
 
         return guild;
+    }
+
+    private void insertGuild(
+            Connection connection,
+            Habbo habbo,
+            Guild guild,
+            int roomId,
+            String name,
+            String description,
+            String badge,
+            int colorOne,
+            int colorTwo)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO guilds (name, description, room_id, user_id, color_one, color_two, badge, date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, name);
+            statement.setString(2, description);
+            statement.setInt(3, roomId);
+            statement.setInt(4, guild.getOwnerId());
+            statement.setInt(5, colorOne);
+            statement.setInt(6, colorTwo);
+            statement.setString(7, badge);
+            statement.setInt(8, Emulator.getIntUnixTimestamp());
+            statement.execute();
+
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    guild.setId(set.getInt(1));
+                }
+            }
+        }
+
+        if (guild.getId() <= 0) {
+            throw new SQLException("No id was generated for the new group");
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO guilds_members (guild_id, user_id, level_id, member_since) VALUES (?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, guild.getId());
+            statement.setInt(2, habbo.getHabboInfo().getId());
+            statement.setInt(3, 0);
+            statement.setInt(4, Emulator.getIntUnixTimestamp());
+            statement.execute();
+
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    guild.increaseMemberCount();
+                    // guild.addMember(new GuildMember(habbo.getHabboInfo().getId(),
+                    // habbo.getHabboInfo().getUsername(), habbo.getHabboInfo().getLook(),
+                    // Emulator.getIntUnixTimestamp(), 2));
+                }
+            }
+        }
     }
 
     public void deleteGuild(Guild guild) {
@@ -363,13 +398,17 @@ public class GuildManager {
         }
     }
 
+    /** Makes an accepted member an admin; the owner and a user who only asked to join are left as they are. */
     public void setAdmin(Guild guild, int userId) {
+        if (guild.getOwnerId() == userId) return;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? LIMIT 1")) {
-            statement.setInt(1, 1);
+                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? AND level_id = ? LIMIT 1")) {
+            statement.setInt(1, GuildRank.ADMIN.type);
             statement.setInt(2, userId);
             statement.setInt(3, guild.getId());
+            statement.setInt(4, GuildRank.MEMBER.type);
             statement.execute();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

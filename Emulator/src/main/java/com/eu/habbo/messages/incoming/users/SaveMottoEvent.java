@@ -8,6 +8,12 @@ import com.eu.habbo.messages.outgoing.users.ExtendedProfileChangedComposer;
 import com.eu.habbo.plugin.events.users.UserSavedMottoEvent;
 
 public class SaveMottoEvent extends MessageHandler {
+    // Each save wrote the user row and broadcast the room data, as often as the client sent it.
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         String motto = UserInputGuard.normalizeText(
@@ -20,6 +26,9 @@ public class SaveMottoEvent extends MessageHandler {
         if (motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) return;
 
         boolean changed = !motto.equals(this.client.getHabbo().getHabboInfo().getMotto());
+        // An unchanged motto needs no write and no broadcast.
+        if (!changed) return;
+
         this.client.getHabbo().getHabboInfo().setMotto(motto);
         this.client.getHabbo().getHabboInfo().run();
         if (changed) {

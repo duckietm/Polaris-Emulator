@@ -2,7 +2,9 @@ package com.eu.habbo.messages.incoming.guilds;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.guilds.GuildManager;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
+import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -25,20 +27,27 @@ public class GuildSetAdminEvent extends MessageHandler {
             return;
         }
 
-        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+        GuildManager guilds = Emulator.getGameEnvironment().getGuildManager();
+        Guild guild = guilds.getGuild(guildId);
 
         if (guild != null) {
-            if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
+            if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
+                    || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
+
+                // Only an accepted member becomes an admin: a user who had only asked to join was made admin, and
+                // so got the group room's rights, without ever being accepted.
+                GuildMember target = guilds.getGuildMember(guildId, userId);
+                if (target == null || target.getRank() != GuildRank.MEMBER || userId == guild.getOwnerId()) return;
 
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-                GuildGivenAdminEvent adminEvent = new GuildGivenAdminEvent(guild, userId, habbo, this.client.getHabbo());
+                GuildGivenAdminEvent adminEvent =
+                        new GuildGivenAdminEvent(guild, userId, habbo, this.client.getHabbo());
                 Emulator.getPluginManager().fireEvent(adminEvent);
 
-                if (adminEvent.isCancelled())
-                    return;
+                if (adminEvent.isCancelled()) return;
 
-                Emulator.getGameEnvironment().getGuildManager().setAdmin(guild, userId);
+                guilds.setAdmin(guild, userId);
 
                 if (habbo != null) {
                     Room room = habbo.getHabboInfo().getCurrentRoom();
@@ -49,7 +58,7 @@ public class GuildSetAdminEvent extends MessageHandler {
                     }
                 }
 
-                GuildMember guildMember = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, userId);
+                GuildMember guildMember = guilds.getGuildMember(guildId, userId);
 
                 this.client.sendResponse(new GuildMemberUpdateComposer(guild, guildMember));
             }

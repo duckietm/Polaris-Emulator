@@ -802,7 +802,8 @@ public class Pet implements ISerialize, Runnable {
         this.needsUpdate = true;
 
         if (habbo != null) {
-            habbo.getHabboStats().petRespectPointsToGive--;
+            // A monster plant can be treated with no points left; the count never goes below zero.
+            if (habbo.getHabboStats().petRespectPointsToGive > 0) habbo.getHabboStats().petRespectPointsToGive--;
             habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomPetRespectComposer(this).compose());
             com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                     habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.RESPECT_PET, 1);

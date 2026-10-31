@@ -62,6 +62,8 @@ public class HabboStats implements Runnable {
     private final IntArrayList ignoredUsers;
     /** Official BlockedUsersManager list (packets 485 / 697 / 1886 / 2649), keyed by user id. */
     private final IntArrayList blockedUsers;
+    /** A script could block hundreds of thousands of ids, one row each. */
+    static final int MAX_BLOCKED_USERS = 500;
 
     private final UserWordFilter customWordFilter;
     private IntArrayList roomsVists;
@@ -1188,7 +1190,10 @@ public class HabboStats implements Runnable {
     }
 
     public boolean blockUser(int userId) {
-        if (userId <= 0 || userId == this.habboInfo.getId() || this.userBlocked(userId)) {
+        if (userId <= 0
+                || userId == this.habboInfo.getId()
+                || this.userBlocked(userId)
+                || this.blockedUsers.size() >= MAX_BLOCKED_USERS) {
             return false;
         }
 

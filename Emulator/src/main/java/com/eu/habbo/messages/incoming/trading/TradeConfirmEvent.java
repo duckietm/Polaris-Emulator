@@ -12,8 +12,8 @@ public class TradeConfirmEvent extends MessageHandler {
 
         RoomTrade trade = habbo.getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(habbo);
 
-        if (trade == null || !trade.getRoomTradeUserForHabbo(habbo).getAccepted())
-            return;
+        // RoomTrade.confirm checks the acceptance itself, under its lock (a user outside the trade threw here).
+        if (trade == null) return;
 
         trade.confirm(habbo);
     }

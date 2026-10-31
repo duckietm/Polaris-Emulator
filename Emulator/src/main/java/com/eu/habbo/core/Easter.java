@@ -13,13 +13,20 @@ public class Easter {
     @EventHandler
     public static void onUserChangeMotto(UserSavedMottoEvent event) {
         if (Emulator.getConfig().getBoolean("easter_eggs.enabled") && event.newMotto.equalsIgnoreCase("crickey!")) {
-            event.habbo.getClient().sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(event.newMotto, event.habbo, event.habbo, RoomChatMessageBubbles.ALERT)));
+            event.habbo
+                    .getClient()
+                    .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                            event.newMotto, event.habbo, event.habbo, RoomChatMessageBubbles.ALERT)));
 
             Room room = event.habbo.getHabboInfo().getCurrentRoom();
 
+            // The motto can be saved outside a room.
+            if (room == null) {
+                return;
+            }
+
             room.sendComposer(new RoomUserRemoveComposer(event.habbo.getRoomUnit()).compose());
             room.sendComposer(new RoomUserPetComposer(2, 1, "FFFFFF", event.habbo).compose());
-
         }
     }
 }

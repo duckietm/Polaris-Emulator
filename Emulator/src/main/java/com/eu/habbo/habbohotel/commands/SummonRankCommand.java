@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.commands;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -26,31 +27,49 @@ public class SummonRankCommand extends Command {
                 return true;
             }
 
+            Room target = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
+            if (target == null) return true;
+
+            // Never below the first rank, and never more people than the room holds.
+            minRank = Math.max(1, minRank);
+            int places = Math.max(0, target.getUsersMax() - target.getUserCount());
+
             for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
-                if (set.getValue().getHabboInfo().getRank().getId() >= minRank) {
-                    if (set.getValue() == gameClient.getHabbo())
-                        continue;
+                if (places <= 0) break;
 
-                    if (set.getValue().getHabboInfo().getCurrentRoom() == gameClient.getHabbo().getHabboInfo().getCurrentRoom())
-                        continue;
+                Habbo habbo = set.getValue();
+                if (!summons(gameClient.getHabbo(), habbo, minRank, target)) continue;
 
-                    Room room = set.getValue().getHabboInfo().getCurrentRoom();
-                    if (room != null) {
-                        Emulator.getGameEnvironment().getRoomManager().logExit(set.getValue());
+                Room current = habbo.getHabboInfo().getCurrentRoom();
+                if (current != null) {
+                    Emulator.getGameEnvironment().getRoomManager().logExit(habbo);
 
-                        room.removeHabbo(set.getValue(), true);
+                    current.removeHabbo(habbo, true);
 
-                        set.getValue().getHabboInfo().setCurrentRoom(null);
-                    }
-
-                    Emulator.getGameEnvironment().getRoomManager().enterRoom(set.getValue(), gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId(), "", true);
-
-                    set.getValue().getClient().sendResponse(new ForwardToRoomComposer(gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId()));
-
+                    habbo.getHabboInfo().setCurrentRoom(null);
                 }
+
+                Emulator.getGameEnvironment().getRoomManager().enterRoom(habbo, target.getId(), "", true);
+
+                habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getId()));
+                places--;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Whether this user is brought: of the rank asked for, one the sender may act on (as :summon checks), not
+     * unkickable, not in a trade and not already there. Nobody of a higher rank is moved by a lower one.
+     */
+    static boolean summons(Habbo sender, Habbo habbo, int minRank, Room target) {
+        if (habbo == null || habbo == sender || habbo.getHabboInfo().getRank().getId() < minRank) return false;
+        if (!CommandTargetGuard.canTarget(sender, habbo) || habbo.hasPermission(Permission.ACC_UNKICKABLE)) return false;
+
+        Room current = habbo.getHabboInfo().getCurrentRoom();
+        if (current == target) return false;
+
+        return current == null || current.getActiveTradeForHabbo(habbo) == null;
     }
 }

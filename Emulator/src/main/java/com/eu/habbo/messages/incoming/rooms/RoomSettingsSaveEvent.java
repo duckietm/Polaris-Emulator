@@ -182,6 +182,13 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                         room.getId(), RoomEditSettingsErrorComposer.TAGS_TOO_LONG, tag));
                 return null;
             }
+            // The tags are stored joined by ";": a tag holding one became several, past both the count and the
+            // length limits.
+            if (!isAcceptableTag(tag)) {
+                this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                        room.getId(), RoomEditSettingsErrorComposer.RESTRICTED_TAGS, tag));
+                return null;
+            }
             if (!uniqueTags.contains(tag)) {
                 uniqueTags.add(tag);
                 tags.append(tag).append(";");
@@ -396,6 +403,18 @@ public class RoomSettingsSaveEvent extends MessageHandler {
     }
 
     /** First tag the predicate rejects, or "" when none does on its own. */
+    /** A tag without the ";" that separates the stored tags, and without control characters. */
+    static boolean isAcceptableTag(String tag) {
+        if (tag == null) return false;
+
+        for (int i = 0; i < tag.length(); i++) {
+            char c = tag.charAt(i);
+            if (c == ';' || Character.isISOControl(c)) return false;
+        }
+
+        return true;
+    }
+
     static String offendingTag(Iterable<String> tags, Predicate<String> offends) {
         for (String tag : tags) {
             if (offends.test(tag)) {

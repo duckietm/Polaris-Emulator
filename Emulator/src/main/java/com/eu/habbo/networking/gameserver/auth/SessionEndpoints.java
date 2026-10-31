@@ -581,105 +581,104 @@ final class SessionEndpoints {
             String gender,
             int templateId)
             throws Exception {
-            int maxPerIp = config.getInt("register.max_per_ip", 5);
-            if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
-                try (PreparedStatement quota =
-                        conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
-                    quota.setString(1, ip);
-                    try (ResultSet rs = quota.executeQuery()) {
-                        if (rs.next() && rs.getInt(1) >= maxPerIp) {
-                            sendJson(
-                                    ctx,
-                                    req,
-                                    HttpResponseStatus.TOO_MANY_REQUESTS,
-                                    errorPayload("This IP has reached the maximum of " + maxPerIp
-                                            + " registered accounts."));
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            try (PreparedStatement check =
-                    conn.prepareStatement("SELECT username, mail FROM users WHERE username = ? OR mail = ? LIMIT 1")) {
-                check.setString(1, username);
-                check.setString(2, email);
-                try (ResultSet rs = check.executeQuery()) {
-                    if (rs.next()) {
-                        String existingUser = rs.getString("username");
-                        String existingMail = rs.getString("mail");
-                        boolean userTaken = existingUser != null && existingUser.equalsIgnoreCase(username);
-                        boolean mailTaken = existingMail != null && existingMail.equalsIgnoreCase(email);
-                        String message;
-                        if (userTaken && mailTaken) message = "That Habbo name and email are already in use.";
-                        else if (userTaken) message = "That Habbo name is already in use.";
-                        else message = "That email address is already in use.";
-                        sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
+        int maxPerIp = config.getInt("register.max_per_ip", 5);
+        if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
+            try (PreparedStatement quota = conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
+                quota.setString(1, ip);
+                try (ResultSet rs = quota.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) >= maxPerIp) {
+                        sendJson(
+                                ctx,
+                                req,
+                                HttpResponseStatus.TOO_MANY_REQUESTS,
+                                errorPayload(
+                                        "This IP has reached the maximum of " + maxPerIp + " registered accounts."));
                         return false;
                     }
                 }
             }
+        }
 
-            String hashed = PasswordHasher.hash(password, 12);
-            String defaultLook =
-                    config.getValue("register.default.look", "hr-100-7.hd-180-1.ch-210-66.lg-270-82.sh-290-80");
-            String defaultMotto = config.getValue("register.default.motto", "I love Habbo!");
-            int now = Emulator.getIntUnixTimestamp();
-
-            String finalLook = (figure.isEmpty() || !FIGURE_RE.matcher(figure).matches()) ? defaultLook : figure;
-            String finalGender = (gender.equals("M") || gender.equals("F")) ? gender : "M";
-
-            int startingCredits = Math.max(0, config.getInt("new_user_credits", 0));
-            int startingDuckets = Math.max(0, config.getInt("new_user_duckets", 0));
-            int startingDiamonds = Math.max(0, config.getInt("new_user_diamonds", 0));
-
-            int newUserId = 0;
-            try (PreparedStatement ins = conn.prepareStatement(
-                    "INSERT INTO users (username, password, mail, account_created, "
-                            + "ip_register, ip_current, last_online, last_login, motto, look, gender, "
-                            + "credits, `rank`, home_room, machine_id, auth_ticket, online) "
-                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, '', '', '0')",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                ins.setString(1, username);
-                ins.setString(2, hashed);
-                ins.setString(3, email);
-                ins.setInt(4, now);
-                ins.setString(5, ip == null ? "" : ip);
-                ins.setString(6, ip == null ? "" : ip);
-                ins.setInt(7, now);
-                ins.setInt(8, now);
-                ins.setString(9, defaultMotto);
-                ins.setString(10, finalLook);
-                ins.setString(11, finalGender);
-                ins.setInt(12, startingCredits);
-                ins.executeUpdate();
-                try (ResultSet keys = ins.getGeneratedKeys()) {
-                    if (keys.next()) newUserId = keys.getInt(1);
+        try (PreparedStatement check =
+                conn.prepareStatement("SELECT username, mail FROM users WHERE username = ? OR mail = ? LIMIT 1")) {
+            check.setString(1, username);
+            check.setString(2, email);
+            try (ResultSet rs = check.executeQuery()) {
+                if (rs.next()) {
+                    String existingUser = rs.getString("username");
+                    String existingMail = rs.getString("mail");
+                    boolean userTaken = existingUser != null && existingUser.equalsIgnoreCase(username);
+                    boolean mailTaken = existingMail != null && existingMail.equalsIgnoreCase(email);
+                    String message;
+                    if (userTaken && mailTaken) message = "That Habbo name and email are already in use.";
+                    else if (userTaken) message = "That Habbo name is already in use.";
+                    else message = "That email address is already in use.";
+                    sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
+                    return false;
                 }
             }
+        }
 
-            if (newUserId > 0 && (startingDuckets > 0 || startingDiamonds > 0)) {
-                RegistrationSupport.seedUserCurrencies(conn, newUserId, startingDuckets, startingDiamonds);
+        String hashed = PasswordHasher.hash(password, 12);
+        String defaultLook =
+                config.getValue("register.default.look", "hr-100-7.hd-180-1.ch-210-66.lg-270-82.sh-290-80");
+        String defaultMotto = config.getValue("register.default.motto", "I love Habbo!");
+        int now = Emulator.getIntUnixTimestamp();
+
+        String finalLook = (figure.isEmpty() || !FIGURE_RE.matcher(figure).matches()) ? defaultLook : figure;
+        String finalGender = (gender.equals("M") || gender.equals("F")) ? gender : "M";
+
+        int startingCredits = Math.max(0, config.getInt("new_user_credits", 0));
+        int startingDuckets = Math.max(0, config.getInt("new_user_duckets", 0));
+        int startingDiamonds = Math.max(0, config.getInt("new_user_diamonds", 0));
+
+        int newUserId = 0;
+        try (PreparedStatement ins = conn.prepareStatement(
+                "INSERT INTO users (username, password, mail, account_created, "
+                        + "ip_register, ip_current, last_online, last_login, motto, look, gender, "
+                        + "credits, `rank`, home_room, machine_id, auth_ticket, online) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, '', '', '0')",
+                Statement.RETURN_GENERATED_KEYS)) {
+            ins.setString(1, username);
+            ins.setString(2, hashed);
+            ins.setString(3, email);
+            ins.setInt(4, now);
+            ins.setString(5, ip == null ? "" : ip);
+            ins.setString(6, ip == null ? "" : ip);
+            ins.setInt(7, now);
+            ins.setInt(8, now);
+            ins.setString(9, defaultMotto);
+            ins.setString(10, finalLook);
+            ins.setString(11, finalGender);
+            ins.setInt(12, startingCredits);
+            ins.executeUpdate();
+            try (ResultSet keys = ins.getGeneratedKeys()) {
+                if (keys.next()) newUserId = keys.getInt(1);
             }
+        }
 
-            LOGGER.info(
-                    "[auth/register] user created id={} username='{}' templateId={} credits={} duckets={} diamonds={}",
-                    newUserId,
-                    username,
-                    templateId,
-                    startingCredits,
-                    startingDuckets,
-                    startingDiamonds);
+        if (newUserId > 0 && (startingDuckets > 0 || startingDiamonds > 0)) {
+            RegistrationSupport.seedUserCurrencies(conn, newUserId, startingDuckets, startingDiamonds);
+        }
 
-            if (newUserId > 0 && templateId > 0) {
-                RegistrationSupport.cloneTemplateForUser(conn, templateId, newUserId, username);
-            } else if (templateId > 0) {
-                LOGGER.warn(
-                        "[auth/register] skipping template clone: user insert did not return an id (username='{}')",
-                        username);
-            }
+        LOGGER.info(
+                "[auth/register] user created id={} username='{}' templateId={} credits={} duckets={} diamonds={}",
+                newUserId,
+                username,
+                templateId,
+                startingCredits,
+                startingDuckets,
+                startingDiamonds);
 
-            return true;
+        if (newUserId > 0 && templateId > 0) {
+            RegistrationSupport.cloneTemplateForUser(conn, templateId, newUserId, username);
+        } else if (templateId > 0) {
+            LOGGER.warn(
+                    "[auth/register] skipping template clone: user insert did not return an id (username='{}')",
+                    username);
+        }
+
+        return true;
     }
 
     /** The least time between two reset mails for the same account. */

@@ -23,16 +23,14 @@ public class ErrorLog implements DatabaseLoggable {
     public final String stackTrace;
 
     public ErrorLog(String type, Throwable e) {
-        this.version = Emulator.version;
-        this.buildHash = Emulator.build;
+        this(type, stackTraceOf(e));
+    }
 
-        this.timeStamp = Emulator.getIntUnixTimestamp();
-        this.type = type;
-
+    private static String stackTraceOf(Throwable e) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         e.printStackTrace(pw);
-        this.stackTrace = sw.toString();
+        String stackTrace = sw.toString();
 
         try {
             pw.close();
@@ -40,6 +38,8 @@ public class ErrorLog implements DatabaseLoggable {
         } catch (IOException e1) {
             LOGGER.error("Exception caught", e1);
         }
+
+        return stackTrace;
     }
 
     public ErrorLog(String type, String message) {

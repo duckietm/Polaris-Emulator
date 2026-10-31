@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -88,5 +89,25 @@ class ChestCapacityTest {
                 ChestStorage.DEFAULT_CAPACITY + ChestStorage.CAPACITY_STEP,
                 storage.getCapacityMax(),
                 "the room bought is still there to be used later");
+    }
+
+    @Test
+    void anUpgradeCountThatWouldOverflowTheLevelIsRefusedAndChangesNothing() {
+        ChestStorage storage = new ChestStorage();
+        assertTrue(storage.upgradeCapacity(1, ChestStorage.KIND_CURRENCY, false));
+
+        assertFalse(storage.upgradeCapacity(Integer.MAX_VALUE, ChestStorage.KIND_CURRENCY, false));
+        assertFalse(storage.upgradeCapacity(Integer.MAX_VALUE - 5, ChestStorage.KIND_FURNI, false));
+        assertEquals(1, storage.getCapacityLevel());
+    }
+
+    @Test
+    void theLastLevelsCanStillBeBoughtExactly() {
+        ChestStorage storage = new ChestStorage();
+        int max = ChestCapacity.maxLevel(ChestStorage.KIND_FURNI, false);
+
+        assertFalse(storage.upgradeCapacity(max + 1, ChestStorage.KIND_FURNI, false));
+        assertTrue(storage.upgradeCapacity(max, ChestStorage.KIND_FURNI, false));
+        assertEquals(max, storage.getCapacityLevel());
     }
 }

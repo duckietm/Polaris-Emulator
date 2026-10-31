@@ -67,6 +67,16 @@ public abstract class InteractionWired extends InteractionDefault {
     // cooldown check-and-set in WiredHandler can't double-fire when a packet
     // thread and the room cycle thread trigger the same box concurrently.
     private final AtomicBoolean processing = new AtomicBoolean(false);
+    /**
+     * Each save of wired_data runs on the shared pool, so two saves of the same box could finish in reverse order and
+     * leave the older settings (or a lower reward counter) in the database. Every save takes the next version together
+     * with its snapshot, and a save older than the last one written is dropped.
+     */
+    private final Object wiredDataSnapshotLock = new Object();
+
+    private long wiredDataVersion;
+    private final Object wiredDataWriteLock = new Object();
+    private long wiredDataWritten;
     private final ConcurrentHashMap<Long, Long> userExecutionCache = new ConcurrentHashMap<>();
 
     /** The box was never saved since it was placed: its editor opens on the official default sources. */
@@ -122,25 +132,37 @@ public abstract class InteractionWired extends InteractionDefault {
     @Override
     public void run() {
         if (this.needsUpdate()) {
-            String wiredDataRaw = this.getWiredData();
-            final String wiredData = (wiredDataRaw == null) ? "" : wiredDataRaw;
+            final String wiredData;
+            final long version;
+            synchronized (this.wiredDataSnapshotLock) {
+                String wiredDataRaw = this.getWiredData();
+                wiredData = (wiredDataRaw == null) ? "" : wiredDataRaw;
+                version = ++this.wiredDataVersion;
+            }
             final int currentRoomId = this.getRoomId();
             final int currentId = this.getId();
 
             Emulator.getThreading().run(() -> {
-                try (Connection connection =
-                                Emulator.getDatabase().getDataSource().getConnection();
-                        PreparedStatement statement =
-                                connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
-                    if (currentRoomId != 0) {
-                        statement.setString(1, wiredData);
-                    } else {
-                        statement.setString(1, "");
+                synchronized (this.wiredDataWriteLock) {
+                    if (version <= this.wiredDataWritten) {
+                        return;
                     }
-                    statement.setInt(2, currentId);
-                    statement.execute();
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+
+                    try (Connection connection =
+                                    Emulator.getDatabase().getDataSource().getConnection();
+                            PreparedStatement statement =
+                                    connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
+                        if (currentRoomId != 0) {
+                            statement.setString(1, wiredData);
+                        } else {
+                            statement.setString(1, "");
+                        }
+                        statement.setInt(2, currentId);
+                        statement.execute();
+                        this.wiredDataWritten = version;
+                    } catch (SQLException e) {
+                        LOGGER.error("Caught SQL exception", e);
+                    }
                 }
             });
         }

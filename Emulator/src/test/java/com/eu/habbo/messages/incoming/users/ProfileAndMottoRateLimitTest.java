@@ -17,8 +17,8 @@ class ProfileAndMottoRateLimitTest {
 
     @Test
     void anUnchangedMottoIsNotWrittenAgain() throws Exception {
-        String motto = Files.readString(
-                Path.of("src/main/java/com/eu/habbo/messages/incoming/users/SaveMottoEvent.java"));
+        String motto =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/users/SaveMottoEvent.java"));
 
         int unchanged = motto.indexOf("if (!changed) return;");
         assertTrue(unchanged > 0 && unchanged < motto.indexOf("setMotto(motto)"));

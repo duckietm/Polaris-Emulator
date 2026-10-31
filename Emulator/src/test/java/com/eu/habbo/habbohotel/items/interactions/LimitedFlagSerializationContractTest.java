@@ -18,7 +18,8 @@ class LimitedFlagSerializationContractTest {
 
     @Test
     void theFormatCarriesTheLimitedFlagWhenTheNumbersFollow() throws Exception {
-        assertTrue(source("InteractionGift.java").contains("serverMessage.appendInt(1 | (this.isLimited() ? 256 : 0));"));
+        assertTrue(
+                source("InteractionGift.java").contains("serverMessage.appendInt(1 | (this.isLimited() ? 256 : 0));"));
         assertTrue(source("InteractionWiredHighscore.java")
                 .contains("serverMessage.appendInt(6 | (this.isLimited() ? 256 : 0));"));
     }

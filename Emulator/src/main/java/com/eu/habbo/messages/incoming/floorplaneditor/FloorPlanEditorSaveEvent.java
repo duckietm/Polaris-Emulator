@@ -104,12 +104,17 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
      * Reads the map and the fields after it. A malformed map is dropped without an answer; fields out of range are
      * reported to the user together. Null when the plan cannot be saved.
      */
+    static boolean exceedsArea(int rows, int width, int maximumArea) {
+        return (long) rows * width > maximumArea;
+    }
+
     private FloorPlan readFloorPlan(Room room) {
         StringJoiner errors = new StringJoiner("<br />");
         String map = this.packet.readString();
 
-        // readString never returns null: a short packet reads as an empty string.
-        if (map.length() > MAXIMUM_FLOORPLAN_SIZE) {
+        // readString never returns null: a short packet reads as an empty string. The raw text also holds one
+        // separator per row; the area itself is checked on the tiles below.
+        if (map.length() > MAXIMUM_FLOORPLAN_SIZE + MAXIMUM_FLOORPLAN_WIDTH_LENGTH) {
             LOGGER.warn(
                     "Floorplan save rejected (oversize): user={} room={} mapLen={}",
                     this.client.getHabbo().getHabboInfo().getId(),
@@ -144,6 +149,14 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             if (row.length() != firstRowSize) {
                 return null;
             }
+        }
+
+        // The area is the tiles, rows times width: the raw length counted the row separators too, so a plan a few
+        // tiles under the limit was refused without a word to the user.
+        if (exceedsArea(mapRows.length, firstRowSize, MAXIMUM_FLOORPLAN_SIZE)) {
+            errors.add("${notification.floorplan_editor.error.message.too_large_area} ("
+                    + "${notification.floorplan_editor.error.message.max} " + MAXIMUM_FLOORPLAN_SIZE
+                    + " ${notification.floorplan_editor.error.message.tiles})");
         }
 
         if (Emulator.getConfig().getBoolean("hotel.room.floorplan.check.enabled")) {

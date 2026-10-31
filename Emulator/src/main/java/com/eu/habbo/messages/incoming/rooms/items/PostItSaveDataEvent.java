@@ -51,13 +51,9 @@ public class PostItSaveDataEvent extends MessageHandler {
 
         if (!(item instanceof InteractionPostIt)) return;
 
-        if (!color.equalsIgnoreCase(PostItColor.YELLOW.hexColor) && !room.hasRights(this.client.getHabbo())) {
-            if (!text.startsWith(item.getExtradata().replace(item.getExtradata().split(" ")[0], ""))) {
-                return;
-            }
-        } else {
-            if (!room.hasRights(this.client.getHabbo())) return;
-        }
+        // Rights in the room, or the note is the visitor's own: a visitor never edits someone else's note.
+        if (!room.hasRights(this.client.getHabbo())
+                && item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
 
         if (color.isEmpty()) color = PostItColor.YELLOW.hexColor;
 

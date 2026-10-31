@@ -126,6 +126,17 @@ public class ToggleFloorItemEvent extends MessageHandler {
                     return;
                 }
 
+                // The rarity is read before the seed is claimed: extradata that is not a number used to
+                // throw here after the claim and the delete, and the seed was gone with no plant.
+                boolean isRare = item.getBaseItem().getName().contains("rare");
+                int rarity = seedRarity(item.getExtradata());
+
+                if (rarity < 0) {
+                    rarity = isRare
+                            ? InteractionMonsterPlantSeed.randomGoldenRarityLevel()
+                            : InteractionMonsterPlantSeed.randomRarityLevel();
+                }
+
                 // Claim the seed before anything is created from it: a pickup or a room
                 // eviction racing this used to leave the seed alive in an inventory while
                 // its row was already deleted, so it could be placed and grown again.
@@ -135,19 +146,6 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
                 Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(item.getId()));
 
-                boolean isRare = item.getBaseItem().getName().contains("rare");
-                int rarity = 0;
-
-                if (item.getExtradata().isEmpty() || Integer.parseInt(item.getExtradata()) - 1 < 0) {
-                    rarity = isRare
-                            ? InteractionMonsterPlantSeed.randomGoldenRarityLevel()
-                            : InteractionMonsterPlantSeed.randomRarityLevel();
-                } else {
-                    try {
-                        rarity = Integer.parseInt(item.getExtradata()) - 1;
-                    } catch (Exception e) {
-                    }
-                }
                 MonsterplantPet pet = Emulator.getGameEnvironment()
                         .getPetManager()
                         .createMonsterplant(
@@ -178,6 +176,15 @@ public class ToggleFloorItemEvent extends MessageHandler {
             }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+        }
+    }
+
+    /** The rarity a seed's extradata asks for, or -1 for a random one (empty, zero or not a number). */
+    static int seedRarity(String extradata) {
+        try {
+            return Integer.parseInt(extradata.trim()) - 1;
+        } catch (RuntimeException e) {
+            return -1;
         }
     }
 }

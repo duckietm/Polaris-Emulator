@@ -19,8 +19,7 @@ public class MoodLightTurnOnEvent extends MessageHandler {
     /** The dimmer is switched and set up by who has rights in the room, or group rights in a group room. */
     static boolean mayControl(Room room, Habbo habbo) {
         return room.hasRights(habbo)
-                || (room.getGuildId() > 0
-                        && !room.getGuildRightLevel(habbo).isLessThan(RoomRightLevels.GUILD_RIGHTS));
+                || (room.getGuildId() > 0 && !room.getGuildRightLevel(habbo).isLessThan(RoomRightLevels.GUILD_RIGHTS));
     }
 
     @Override

@@ -51,10 +51,12 @@ class RoomFurniEditRightsTest {
 
     @Test
     void aVisitorEditsOnlyTheirOwnNote() throws Exception {
-        String source = Files.readString(ITEMS.resolve("PostItSaveDataEvent.java")).replaceAll("\\s+", " ");
+        String source =
+                Files.readString(ITEMS.resolve("PostItSaveDataEvent.java")).replaceAll("\\s+", " ");
 
-        assertTrue(source.contains(
-                "if (!room.hasRights(this.client.getHabbo()) && item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;"));
+        assertTrue(
+                source.contains(
+                        "if (!room.hasRights(this.client.getHabbo()) && item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;"));
         assertFalse(source.contains("text.startsWith(item.getExtradata()"));
     }
 
@@ -62,7 +64,8 @@ class RoomFurniEditRightsTest {
     void onlyAMannequinTakesALook() throws Exception {
         for (String handler : new String[] {"MannequinSaveLookEvent.java", "MannequinSaveNameEvent.java"}) {
             assertTrue(
-                    Files.readString(ITEMS.resolve(handler)).contains("if (!(item instanceof InteractionMannequin)) return;"),
+                    Files.readString(ITEMS.resolve(handler))
+                            .contains("if (!(item instanceof InteractionMannequin)) return;"),
                     handler);
         }
     }

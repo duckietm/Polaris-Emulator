@@ -13,7 +13,8 @@ class LimitedStackIncreaseContractTest {
     @Test
     void theNewNumbersFollowTheLastOneMade() throws Exception {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
-        String method = source.substring(source.indexOf("public CatalogLimitedConfiguration createOrUpdateLimitedConfig("));
+        String method =
+                source.substring(source.indexOf("public CatalogLimitedConfiguration createOrUpdateLimitedConfig("));
 
         assertTrue(method.contains("limitedConfiguration.getTotalSet() + 1,"));
         assertFalse(method.contains("item.limitedStack + 1, item.limitedStack - limitedConfiguration.getTotalSet()"));

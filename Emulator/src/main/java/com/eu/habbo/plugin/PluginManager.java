@@ -165,9 +165,15 @@ public class PluginManager {
                     throw new RuntimeException("Invalid Jar! Missing plugin.json in: " + file.getName());
                 }
 
-                byte[] content = new byte[stream.available()];
+                // available() is only an estimate and one read() may return part of the file: read it whole, with a
+                // limit, so a large or slow plugin.json is neither cut short nor read without bound.
+                byte[] content = stream.readNBytes(MAX_PLUGIN_JSON_BYTES + 1);
+                if (content.length > MAX_PLUGIN_JSON_BYTES) {
+                    throw new RuntimeException(
+                            "plugin.json is larger than " + MAX_PLUGIN_JSON_BYTES + " bytes in: " + file.getName());
+                }
 
-                if (stream.read(content) > 0) {
+                if (content.length > 0) {
                     String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
                     HabboPluginConfiguration pluginConfigurtion =
@@ -237,6 +243,13 @@ public class PluginManager {
         }
     }
 
+    /** The largest plugin.json a plugin may ship. */
+    static final int MAX_PLUGIN_JSON_BYTES = 64 * 1024;
+
+    // The object a plugin's handler is called on, when the listener is not the plugin itself. Only the methods were
+    // kept, so a handler of a separate listener object was called on the plugin and always failed.
+    private final Map<Method, Object> listenerReceivers = new ConcurrentHashMap<>();
+
     public void registerEvents(HabboPlugin plugin, EventListener listener) {
         synchronized (this.dispatchStateLock) {
             synchronized (plugin.registeredEvents) {
@@ -255,6 +268,12 @@ public class PluginManager {
                                 plugin.registeredEvents
                                         .get(eventClass.asSubclass(Event.class))
                                         .add(method);
+
+                                if (listener != plugin) {
+                                    this.listenerReceivers.put(method, listener);
+                                } else {
+                                    this.listenerReceivers.remove(method);
+                                }
                             }
                         }
                     }
@@ -399,11 +418,13 @@ public class PluginManager {
     }
 
     private void publishDispatchSnapshot() {
-        this.dispatchSnapshot = DispatchSnapshot.capture(this.methods, this.plugins);
+        this.dispatchSnapshot =
+                DispatchSnapshot.capture(this.methods, this.plugins, Map.copyOf(this.listenerReceivers));
     }
 
     private record HandlerInvocation(
             HabboPlugin plugin,
+            Object receiver,
             Method method,
             EventHandler annotation,
             Class<? extends Event> eventType,
@@ -414,18 +435,19 @@ public class PluginManager {
                 Comparator.comparingInt(HandlerInvocation::prioritySlot).thenComparing(HandlerInvocation::stableKey);
 
         static HandlerInvocation defaultHandler(Method method) {
-            return create(null, method);
+            return create(null, null, method);
         }
 
-        static HandlerInvocation pluginHandler(HabboPlugin plugin, Method method) {
-            return create(plugin, method);
+        static HandlerInvocation pluginHandler(HabboPlugin plugin, Object receiver, Method method) {
+            return create(plugin, receiver, method);
         }
 
-        private static HandlerInvocation create(HabboPlugin plugin, Method method) {
+        private static HandlerInvocation create(HabboPlugin plugin, Object receiver, Method method) {
             try {
                 method.trySetAccessible();
                 return new HandlerInvocation(
                         plugin,
+                        receiver,
                         method,
                         method.getAnnotation(EventHandler.class),
                         method.getParameterTypes()[0].asSubclass(Event.class),
@@ -472,7 +494,7 @@ public class PluginManager {
                 if (this.staticMethod) {
                     this.handle.invoke(event);
                 } else {
-                    this.handle.invoke(this.plugin, event);
+                    this.handle.invoke(this.receiver, event);
                 }
             } catch (Throwable exception) {
                 if (this.plugin == null) {
@@ -504,7 +526,7 @@ public class PluginManager {
             return new DispatchSnapshot(List.of(), Map.of(), Map.of(), List.of(), new ConcurrentHashMap<>());
         }
 
-        static DispatchSnapshot capture(Set<Method> methods, Set<HabboPlugin> plugins) {
+        static DispatchSnapshot capture(Set<Method> methods, Set<HabboPlugin> plugins, Map<Method, Object> receivers) {
             List<HandlerInvocation> defaults = methods.stream()
                     .filter(method -> method.getAnnotation(EventHandler.class) != null)
                     .map(HandlerInvocation::defaultHandler)
@@ -525,7 +547,8 @@ public class PluginManager {
                         List<HandlerInvocation> eventHandlers =
                                 handlers.computeIfAbsent(eventType, ignored -> new ArrayList<>());
                         registeredMethodsSnapshot.stream()
-                                .map(method -> HandlerInvocation.pluginHandler(plugin, method))
+                                .map(method -> HandlerInvocation.pluginHandler(
+                                        plugin, receivers.getOrDefault(method, plugin), method))
                                 .forEach(eventHandlers::add);
                     });
                 }

@@ -119,6 +119,32 @@ class PluginEventBehaviorTest {
         }
     }
 
+    @Test
+    void aListenerObjectOtherThanThePluginReceivesItsOwnEvents() {
+        List<String> calls = new ArrayList<>();
+        PluginManager manager = new PluginManager();
+        TestPlugin plugin = new TestPlugin(calls) {};
+        manager.getPlugins().add(plugin);
+
+        manager.registerEvents(plugin, new SeparateListener(calls));
+        manager.fireEvent(new TestEvent());
+
+        assertEquals(List.of("listener"), calls);
+    }
+
+    public static final class SeparateListener implements EventListener {
+        private final List<String> calls;
+
+        SeparateListener(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @EventHandler
+        public void onEvent(TestEvent event) {
+            this.calls.add("listener");
+        }
+    }
+
     private abstract static class TestPlugin extends HabboPlugin implements EventListener {
         final List<String> calls;
 

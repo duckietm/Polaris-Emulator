@@ -7,6 +7,12 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.users.UserProfileComposer;
 
 public class RequestUserProfileEvent extends MessageHandler {
+    // An offline profile is read from the database (several queries), as often as the client asked.
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         int habboId = this.packet.readInt();

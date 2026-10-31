@@ -534,6 +534,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return null;
         }
 
+        // A rented furni is given with no end date by the gift path, so a rent offer is not a gift.
+        if (item.isRentOffer()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return null;
+        }
+
         if (item.isClubOnly() && !this.client.getHabbo().getHabboStats().hasActiveClub()) {
             LOGGER.debug("item requires club -> itemId={}", itemId);
             this.client.sendResponse(

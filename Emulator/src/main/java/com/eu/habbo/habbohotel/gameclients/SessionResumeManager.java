@@ -30,6 +30,20 @@ public class SessionResumeManager {
         return Emulator.getConfig().getInt("session.reconnect.grace.seconds", 30);
     }
 
+    /**
+     * How long a ticket put back for a reconnect stays usable. A reload behind a proxy can take longer
+     * than the grace period, so it is never shorter than that; after it the ticket is cleared, so a
+     * ticket seen once cannot be used days later.
+     */
+    public int getRestoredTicketSeconds() {
+        return restoredTicketSeconds(
+                getGracePeriodSeconds(), Emulator.getConfig().getInt("session.reconnect.ticket.seconds", 120));
+    }
+
+    static int restoredTicketSeconds(int graceSeconds, int configuredSeconds) {
+        return Math.max(Math.max(graceSeconds, configuredSeconds), 1);
+    }
+
     public int getPausedEffectId() {
         return Emulator.getConfig().getInt("session.reconnect.effect.id", 170);
     }
@@ -171,11 +185,30 @@ public class SessionResumeManager {
             int updated = statement.executeUpdate();
             if (updated > 0) {
                 LOGGER.info("[SessionResume] Restored SSO ticket for user {} during grace period", userId);
+                Emulator.getThreading()
+                        .run(() -> expireRestoredTicket(userId, ssoTicket), getRestoredTicketSeconds() * 1000L);
             } else {
                 LOGGER.info("[SessionResume] Skipped SSO restore for user {} — a newer ticket is already present (likely a fresh login/hard-refresh)", userId);
             }
         } catch (Exception e) {
             LOGGER.error("[SessionResume] Failed to restore SSO ticket for user " + userId, e);
+        }
+    }
+
+    /**
+     * Clears the ticket put back for a reconnect once its window has passed. Only that ticket: a newer
+     * one the CMS wrote in the meantime is left alone, and a reconnect that used it has consumed it.
+     */
+    private void expireRestoredTicket(int userId, String ssoTicket) {
+        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
+             var statement = connection.prepareStatement("UPDATE users SET auth_ticket = '' WHERE id = ? AND auth_ticket = ? LIMIT 1")) {
+            statement.setInt(1, userId);
+            statement.setString(2, ssoTicket);
+            if (statement.executeUpdate() > 0) {
+                LOGGER.info("[SessionResume] Cleared the unused restored SSO ticket for user {}", userId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to clear the restored SSO ticket for user " + userId, e);
         }
     }
 

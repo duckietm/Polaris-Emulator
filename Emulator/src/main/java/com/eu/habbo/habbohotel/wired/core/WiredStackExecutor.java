@@ -173,7 +173,9 @@ final class WiredStackExecutor {
         }
 
         this.hooks.captureArrayEntries(room, stack, context);
-        boolean conditionsPassed = this.conditionEvaluator.outcomeForExecution(stack, context, negateConditions);
+        WiredConditionEvaluator.Outcome conditionOutcome =
+                this.conditionEvaluator.evaluateForExecution(stack, context, negateConditions);
+        boolean conditionsPassed = conditionOutcome.execute();
         List<IWiredEffect> executableEffects = this.effectPlanner.executableEffects(stack, conditionsPassed);
         boolean hasSpecialOutcome = conditionsPassed && hasSpecialTriggerOutcome(stack, event);
         if (!shouldContinueAfterConditionCheck(stack, room, conditionsPassed, executableEffects, hasSpecialOutcome)) {
@@ -230,6 +232,11 @@ final class WiredStackExecutor {
                     mode == Mode.DIRECT ? "Execution cap blocked direct stack {}" : "Execution cap blocked stack {}",
                     stack.triggerItem() != null ? stack.triggerItem().getId() : "null");
             return false;
+        }
+
+        // The stack runs: the conditions that passed record it now (once a day, once per user, a cooldown).
+        if (conditionsPassed) {
+            this.conditionEvaluator.commit(conditionOutcome, context);
         }
 
         if (mode == Mode.EVENT) {

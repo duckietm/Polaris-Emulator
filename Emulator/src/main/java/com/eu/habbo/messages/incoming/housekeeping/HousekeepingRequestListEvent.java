@@ -214,7 +214,9 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
                 List.of(List.of(
                         info.getIpLogin() == null ? "" : info.getIpLogin(),
                         info.getIpRegister() == null ? "" : info.getIpRegister(),
-                        info.getMail() == null || HousekeepingPrivacy.mailHidden(info.getRank()) ? "" : info.getMail())));
+                        info.getMail() == null || HousekeepingPrivacy.mailHidden(info.getRank())
+                                ? ""
+                                : info.getMail())));
     }
 
     /** The user's temporary rank, if one runs: the rank, the one they go back to, when, who and why. */

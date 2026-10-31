@@ -11,7 +11,8 @@ class GuildSetAdminMemberOnlyContractTest {
 
     @Test
     void theHandlerPromotesOnlyAnAcceptedMember() throws Exception {
-        String event = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/guilds/GuildSetAdminEvent.java"));
+        String event = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/guilds/GuildSetAdminEvent.java"));
 
         int check = event.indexOf("target.getRank() != GuildRank.MEMBER");
         assertTrue(check > 0 && check < event.indexOf("new GuildGivenAdminEvent("));

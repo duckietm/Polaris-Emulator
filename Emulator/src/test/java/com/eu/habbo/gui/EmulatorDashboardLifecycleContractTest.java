@@ -17,7 +17,8 @@ class EmulatorDashboardLifecycleContractTest {
     void theWindowIsBuiltOnTheEventDispatchThread() throws Exception {
         String dashboard = source();
 
-        int later = dashboard.indexOf("SwingUtilities.invokeLater(() -> {", dashboard.indexOf("public static void launch()"));
+        int later = dashboard.indexOf(
+                "SwingUtilities.invokeLater(() -> {", dashboard.indexOf("public static void launch()"));
         assertTrue(later > 0 && later < dashboard.indexOf("instance = new EmulatorDashboard();"));
     }
 

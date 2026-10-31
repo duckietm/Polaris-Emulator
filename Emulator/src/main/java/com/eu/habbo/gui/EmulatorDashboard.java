@@ -2,14 +2,8 @@ package com.eu.habbo.gui;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.monitoring.EmulatorStatsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.awt.BasicStroke;
-import javax.swing.BorderFactory;
 import java.awt.BorderLayout;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -21,21 +15,7 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
 import java.awt.RenderingHints;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
@@ -49,6 +29,25 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EmulatorDashboard extends JFrame {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmulatorDashboard.class);
@@ -130,11 +129,11 @@ public class EmulatorDashboard extends JFrame {
         JPanel brandPanel = new JPanel(new BorderLayout());
         brandPanel.setBackground(COLOR_SURFACE);
         brandPanel.setBorder(new EmptyBorder(20, 20, 30, 20));
-        
+
         JLabel brandTitle = new JLabel("Polaris");
         brandTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         brandTitle.setForeground(COLOR_TEXT);
-        
+
         JLabel brandSub = new JLabel("v" + Emulator.version);
         brandSub.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         brandSub.setForeground(COLOR_PRIMARY);
@@ -149,17 +148,35 @@ public class EmulatorDashboard extends JFrame {
         cardsPanel.setBackground(COLOR_BG);
 
         // Setup Tabs
-        usersTableModel = createTableModel(new String[]{"ID", "Username", "Rank", "Credits", "Room ID"});
-        roomsTableModel = createTableModel(new String[]{"Room ID", "Name", "Players", "Items", "Tickables", "CPU (ms)", "Est. RAM (KB)", "Thread"});
-        wiredTableModel = createTableModel(new String[]{"Room ID", "Avg Tick", "Peak Tick", "Usage %", "Delayed", "Overloaded?", "Heavy?"});
+        usersTableModel = createTableModel(new String[] {"ID", "Username", "Rank", "Credits", "Room ID"});
+        roomsTableModel = createTableModel(
+                new String[] {"Room ID", "Name", "Players", "Items", "Tickables", "CPU (ms)", "Est. RAM (KB)", "Thread"
+                });
+        wiredTableModel = createTableModel(
+                new String[] {"Room ID", "Avg Tick", "Peak Tick", "Usage %", "Delayed", "Overloaded?", "Heavy?"});
         usersTable = createDashboardTable(usersTableModel);
         roomsTable = createDashboardTable(roomsTableModel);
         wiredTable = createDashboardTable(wiredTableModel);
 
         cardsPanel.add(createOverviewTab(), "Overview");
-        cardsPanel.add(createTableTab("Online Users", "Players currently connected to the emulator.", usersTable, usersCountLabel), "Online Users");
-        cardsPanel.add(createTableTab("Active Rooms", "Loaded rooms with lightweight performance indicators.", roomsTable, roomsCountLabel), "Active Rooms");
-        cardsPanel.add(createTableTab("Wired Diagnostics", "Rooms currently using wired timing, delay and execution budget.", wiredTable, wiredCountLabel), "Wired Diagnostics");
+        cardsPanel.add(
+                createTableTab(
+                        "Online Users", "Players currently connected to the emulator.", usersTable, usersCountLabel),
+                "Online Users");
+        cardsPanel.add(
+                createTableTab(
+                        "Active Rooms",
+                        "Loaded rooms with lightweight performance indicators.",
+                        roomsTable,
+                        roomsCountLabel),
+                "Active Rooms");
+        cardsPanel.add(
+                createTableTab(
+                        "Wired Diagnostics",
+                        "Rooms currently using wired timing, delay and execution budget.",
+                        wiredTable,
+                        wiredCountLabel),
+                "Wired Diagnostics");
 
         // Sidebar Navigation
         sidebar.add(createNavButton("Overview", "Overview"));
@@ -188,7 +205,10 @@ public class EmulatorDashboard extends JFrame {
 
     private DefaultTableModel createTableModel(String[] cols) {
         return new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int row, int column) { return false; }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
     }
 
@@ -211,10 +231,12 @@ public class EmulatorDashboard extends JFrame {
                 btn.setBackground(COLOR_SURFACE_HOVER);
                 lbl.setForeground(COLOR_TEXT);
             }
+
             @Override
             public void mouseExited(MouseEvent e) {
                 updateNavButtonStyle(cardName, btn, lbl);
             }
+
             @Override
             public void mouseClicked(MouseEvent e) {
                 setActiveCard(cardName);
@@ -271,10 +293,8 @@ public class EmulatorDashboard extends JFrame {
         JPanel graphContainer = new JPanel(new BorderLayout());
         graphContainer.setBackground(COLOR_SURFACE);
         graphContainer.setBorder(BorderFactory.createCompoundBorder(
-                new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
-                new EmptyBorder(15, 15, 15, 15)
-        ));
-        
+                new MatteBorder(1, 1, 1, 1, COLOR_BORDER), new EmptyBorder(15, 15, 15, 15)));
+
         JLabel gTitle = new JLabel("Realtime Memory Usage");
         gTitle.setFont(FONT_SECTION);
         gTitle.setForeground(COLOR_TEXT_MUTED);
@@ -291,14 +311,12 @@ public class EmulatorDashboard extends JFrame {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(COLOR_SURFACE);
         card.setBorder(BorderFactory.createCompoundBorder(
-                new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
-                new EmptyBorder(15, 20, 15, 20)
-        ));
+                new MatteBorder(1, 1, 1, 1, COLOR_BORDER), new EmptyBorder(15, 20, 15, 20)));
 
         JLabel tLabel = new JLabel(title);
         tLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tLabel.setForeground(COLOR_TEXT_MUTED);
-        
+
         card.add(tLabel, BorderLayout.NORTH);
         card.add(valueLabel, BorderLayout.SOUTH);
         return card;
@@ -324,9 +342,7 @@ public class EmulatorDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(COLOR_SURFACE);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
-                new EmptyBorder(12, 14, 12, 14)
-        ));
+                new MatteBorder(1, 1, 1, 1, COLOR_BORDER), new EmptyBorder(12, 14, 12, 14)));
 
         JPanel accentBar = new JPanel();
         accentBar.setBackground(accent);
@@ -388,11 +404,14 @@ public class EmulatorDashboard extends JFrame {
 
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label =
+                        (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 label.setBorder(new EmptyBorder(0, 10, 0, 10));
                 label.setForeground(isSelected ? Color.WHITE : COLOR_TEXT);
-                label.setBackground(isSelected ? COLOR_PRIMARY : ((row % 2 == 0) ? COLOR_SURFACE : new Color(35, 35, 35)));
+                label.setBackground(
+                        isSelected ? COLOR_PRIMARY : ((row % 2 == 0) ? COLOR_SURFACE : new Color(35, 35, 35)));
                 return label;
             }
         });
@@ -430,22 +449,18 @@ public class EmulatorDashboard extends JFrame {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.getViewport().setBackground(COLOR_SURFACE);
         scrollPane.setBorder(new MatteBorder(1, 1, 1, 1, COLOR_BORDER));
-        scrollPane.setBorder(new CompoundBorder(
-                new EmptyBorder(20, 0, 0, 0),
-                new MatteBorder(1, 1, 1, 1, COLOR_BORDER)
-        ));
+        scrollPane.setBorder(
+                new CompoundBorder(new EmptyBorder(20, 0, 0, 0), new MatteBorder(1, 1, 1, 1, COLOR_BORDER)));
         wrapper.add(scrollPane, BorderLayout.CENTER);
-        
+
         return wrapper;
     }
 
     private JPanel createStatusBar() {
         JPanel statusBar = new JPanel(new BorderLayout());
         statusBar.setBackground(COLOR_SURFACE);
-        statusBar.setBorder(new CompoundBorder(
-                new MatteBorder(1, 0, 0, 0, COLOR_BORDER),
-                new EmptyBorder(8, 14, 8, 14)
-        ));
+        statusBar.setBorder(
+                new CompoundBorder(new MatteBorder(1, 0, 0, 0, COLOR_BORDER), new EmptyBorder(8, 14, 8, 14)));
 
         JLabel left = new JLabel("Dashboard running locally");
         left.setFont(FONT_SMALL);
@@ -489,35 +504,35 @@ public class EmulatorDashboard extends JFrame {
             Object[][] usersData = new Object[snapshot.users.size()][5];
             for (int i = 0; i < snapshot.users.size(); i++) {
                 EmulatorStatsService.OnlineUserRow user = snapshot.users.get(i);
-                usersData[i] = new Object[]{user.id, user.username, user.rank, user.credits, user.roomId};
+                usersData[i] = new Object[] {user.id, user.username, user.rank, user.credits, user.roomId};
             }
 
             Object[][] roomsData = new Object[snapshot.rooms.size()][8];
             for (int i = 0; i < snapshot.rooms.size(); i++) {
                 EmulatorStatsService.ActiveRoomRow room = snapshot.rooms.get(i);
-                roomsData[i] = new Object[]{
-                        room.roomId,
-                        room.name,
-                        room.players,
-                        room.items,
-                        room.tickables,
-                        String.format("%.2f", room.cpuMs),
-                        room.estimatedRamKb,
-                        room.thread
+                roomsData[i] = new Object[] {
+                    room.roomId,
+                    room.name,
+                    room.players,
+                    room.items,
+                    room.tickables,
+                    String.format("%.2f", room.cpuMs),
+                    room.estimatedRamKb,
+                    room.thread
                 };
             }
 
             Object[][] wiredData = new Object[snapshot.wired.size()][7];
             for (int i = 0; i < snapshot.wired.size(); i++) {
                 EmulatorStatsService.WiredRoomRow wiredRoom = snapshot.wired.get(i);
-                wiredData[i] = new Object[]{
-                        wiredRoom.roomId,
-                        wiredRoom.averageTickMs + " ms",
-                        wiredRoom.peakTickMs + " ms",
-                        wiredRoom.usagePercent + "%",
-                        wiredRoom.delayedEventsPending,
-                        wiredRoom.overloaded ? "YES" : "NO",
-                        wiredRoom.heavy ? "YES" : "NO"
+                wiredData[i] = new Object[] {
+                    wiredRoom.roomId,
+                    wiredRoom.averageTickMs + " ms",
+                    wiredRoom.peakTickMs + " ms",
+                    wiredRoom.usagePercent + "%",
+                    wiredRoom.delayedEventsPending,
+                    wiredRoom.overloaded ? "YES" : "NO",
+                    wiredRoom.heavy ? "YES" : "NO"
                 };
             }
 
@@ -531,11 +546,16 @@ public class EmulatorDashboard extends JFrame {
                 uptimeLabel.setText(EmulatorStatsService.formatDuration(overview.uptimeSeconds));
                 lastUpdatedLabel.setText(LocalDateTime.now().format(TIME_FORMAT));
                 footerStatusLabel.setText(overview.guiStatus);
-                memoryGraph.addValue((long) overview.memoryUsedMb * 1024L * 1024L, (long) overview.memoryMaxMb * 1024L * 1024L);
+                memoryGraph.addValue(
+                        (long) overview.memoryUsedMb * 1024L * 1024L, (long) overview.memoryMaxMb * 1024L * 1024L);
 
-                usersTableModel.setDataVector(usersData, new String[]{"ID", "Username", "Rank", "Credits", "Room ID"});
-                roomsTableModel.setDataVector(roomsData, new String[]{"Room ID", "Name", "Players", "Items", "Tickables", "CPU (ms)", "Est. RAM (KB)", "Thread"});
-                wiredTableModel.setDataVector(wiredData, new String[]{"Room ID", "Avg Tick", "Peak Tick", "Usage %", "Delayed", "Overloaded?", "Heavy?"});
+                usersTableModel.setDataVector(usersData, new String[] {"ID", "Username", "Rank", "Credits", "Room ID"});
+                roomsTableModel.setDataVector(roomsData, new String[] {
+                    "Room ID", "Name", "Players", "Items", "Tickables", "CPU (ms)", "Est. RAM (KB)", "Thread"
+                });
+                wiredTableModel.setDataVector(wiredData, new String[] {
+                    "Room ID", "Avg Tick", "Peak Tick", "Usage %", "Delayed", "Overloaded?", "Heavy?"
+                });
                 usersCountLabel.setText(snapshot.users.size() + " rows");
                 roomsCountLabel.setText(snapshot.rooms.size() + " rows");
                 wiredCountLabel.setText(snapshot.wired.size() + " rows");
@@ -584,17 +604,17 @@ public class EmulatorDashboard extends JFrame {
             // Background grid and labels
             g2.setFont(new Font("Segoe UI", Font.PLAIN, 10));
             long maxMemRaw = Runtime.getRuntime().maxMemory();
-            
-            for(int i = 0; i <= 4; i++) {
+
+            for (int i = 0; i <= 4; i++) {
                 int y = i == 0 ? 15 : height * i / 4;
                 if (i == 4) y = height - 5;
-                
+
                 g2.setColor(COLOR_BORDER);
                 g2.drawLine(0, y, width, y);
-                
+
                 // Draw Y-axis numbers
                 g2.setColor(COLOR_TEXT_MUTED);
-                long labelVal = (long) (maxMemRaw * (1.0 - (double)i / 4.0)) / 1024 / 1024;
+                long labelVal = (long) (maxMemRaw * (1.0 - (double) i / 4.0)) / 1024 / 1024;
                 g2.drawString(labelVal + " MB", 5, y - 5);
             }
 
@@ -620,16 +640,19 @@ public class EmulatorDashboard extends JFrame {
             g2.setStroke(new BasicStroke(3.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.setColor(COLOR_PRIMARY);
             g2.draw(path);
-            
+
             // Fill area
             path.lineTo(width, height);
             path.lineTo((MAX_POINTS - history.size()) * dx, height);
             path.closePath();
-            
+
             GradientPaint fillPaint = new GradientPaint(
-                0, 0, new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 120),
-                0, height, new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 10)
-            );
+                    0,
+                    0,
+                    new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 120),
+                    0,
+                    height,
+                    new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 10));
             g2.setPaint(fillPaint);
             g2.fill(path);
 

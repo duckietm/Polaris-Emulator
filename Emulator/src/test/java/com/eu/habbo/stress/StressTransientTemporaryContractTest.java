@@ -14,6 +14,7 @@ class StressTransientTemporaryContractTest {
         Path stress = Path.of("src/main/java/com/eu/habbo/stress");
 
         assertTrue(Files.readString(stress.resolve("StressTransientItem.java")).contains("this.markTemporary();"));
-        assertTrue(Files.readString(stress.resolve("StressTransientRoller.java")).contains("this.markTemporary();"));
+        assertTrue(
+                Files.readString(stress.resolve("StressTransientRoller.java")).contains("this.markTemporary();"));
     }
 }

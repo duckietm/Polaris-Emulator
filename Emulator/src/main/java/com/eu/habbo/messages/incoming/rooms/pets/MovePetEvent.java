@@ -11,10 +11,13 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 public class MovePetEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(this.packet.readInt());
+        // A user outside any room threw here before any check.
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null) return;
+
+        Pet pet = room.getPet(this.packet.readInt());
 
         if (pet != null) {
-            Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
             // AIR playtest mode: pets are moved and rotated as by a visitor without rights.
             if (room != null
                     && room.hasRights(this.client.getHabbo())

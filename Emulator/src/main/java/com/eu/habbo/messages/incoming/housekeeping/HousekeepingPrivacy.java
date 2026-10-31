@@ -1,8 +1,11 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
+import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.Rank;
+
 /**
- * IP addresses in the panel are masked unless the operator holds acc_hk_view_private and asked
- * to see them; every reveal is written to the audit log.
+ * IP and e-mail addresses in the panel are masked unless the operator holds acc_hk_view_private and
+ * asked to see them; every reveal is written to the audit log.
  */
 public final class HousekeepingPrivacy {
     static final String PERMISSION = "acc_hk_view_private";
@@ -25,6 +28,21 @@ public final class HousekeepingPrivacy {
         }
 
         return "x";
+    }
+
+    /** simon@example.com -> s***@example.com; anything without an @ keeps nothing. */
+    public static String maskMail(String mail) {
+        if (mail == null || mail.isBlank()) return "";
+
+        String value = mail.trim();
+        int at = value.indexOf('@');
+
+        return at > 0 ? value.charAt(0) + "***" + value.substring(at) : "x";
+    }
+
+    /** A rank with acc_hide_mail keeps its members' address out of the panel, as :userinfo does. */
+    public static boolean mailHidden(Rank rank) {
+        return rank != null && rank.hasPermission(Permission.ACC_HIDE_MAIL, true);
     }
 
     static String show(String ip, boolean reveal) {

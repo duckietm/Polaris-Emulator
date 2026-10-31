@@ -35,7 +35,7 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
     static final String USER_SANCTIONS = "user.sanctions";
     static final String USER_NOTES = "user.notes";
     static final String USER_TEMP_RANK = "user.temp_rank";
-    /** The user's login and register IPs in clear; needs acc_hk_view_private and is audited. */
+    /** The user's login and register IPs and e-mail in clear; needs acc_hk_view_private and is audited. */
     static final String USER_PRIVATE = "user.private";
 
     static final String ROOM_CHATLOG = "room.chatlog";
@@ -199,7 +199,7 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
         this.client.sendResponse(answer);
     }
 
-    /** A user's login and register IPs in clear (the handler already checked and audited the reveal). */
+    /** A user's login and register IPs and e-mail in clear (the handler already checked and audited the reveal). */
     private static HousekeepingListComposer privateData(String listKey, int userId, GameEnvironment environment) {
         HabboInfo info = environment.getHabboManager().getHabboInfo(userId);
 
@@ -210,10 +210,11 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
                 userId,
                 true,
                 "",
-                List.of("ip_login", "ip_register"),
+                List.of("ip_login", "ip_register", "email"),
                 List.of(List.of(
                         info.getIpLogin() == null ? "" : info.getIpLogin(),
-                        info.getIpRegister() == null ? "" : info.getIpRegister())));
+                        info.getIpRegister() == null ? "" : info.getIpRegister(),
+                        info.getMail() == null || HousekeepingPrivacy.mailHidden(info.getRank()) ? "" : info.getMail())));
     }
 
     /** The user's temporary rank, if one runs: the rank, the one they go back to, when, who and why. */

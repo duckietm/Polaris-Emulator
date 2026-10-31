@@ -29,7 +29,17 @@ public class RandomDiceNumber implements Runnable {
 
     @Override
     public void run() {
-        if (this.result <= 0) this.result = (Emulator.getRandom().nextInt(this.maxNumber) + 1);
+        // A dice picked up or moved to another room while it rolled is left alone: the result used to be written
+        // to it and broadcast to a room it was no longer in.
+        if (this.room == null || this.room.getHabboItem(this.item.getId()) != this.item) {
+            if (this.item instanceof InteractionColorWheel) {
+                ((InteractionColorWheel) this.item).clearRunnable();
+            }
+            return;
+        }
+
+        // A face count of 0 or less made nextInt throw and the dice stayed rolling.
+        if (this.result <= 0) this.result = (Emulator.getRandom().nextInt(Math.max(1, this.maxNumber)) + 1);
 
         this.item.setExtradata(this.result + "");
         this.item.needsUpdate(true);

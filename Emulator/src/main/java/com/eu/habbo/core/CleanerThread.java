@@ -31,6 +31,7 @@ public class CleanerThread implements Runnable {
     private static final int CALLBACK_TIME = 60 * 15;
     /** When the daily counters were last refilled, so a restart does not refill them again. */
     static final String LAST_DAILY_REFILL_KEY = "hotel.refill.daily.last";
+
     static final String LAST_DAILY_REFILL_SQL = "INSERT INTO emulator_settings (`key`, `value`) VALUES (?, ?) "
             + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
 

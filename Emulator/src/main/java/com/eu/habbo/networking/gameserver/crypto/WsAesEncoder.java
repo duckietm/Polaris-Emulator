@@ -15,6 +15,14 @@ public class WsAesEncoder extends MessageToMessageEncoder<ByteBuf> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        WsDirectionalSession session = ctx.channel().attr(WsDirectionalSession.ATTRIBUTE).get();
+        if (session != null) {
+            byte[] plain = new byte[in.readableBytes()];
+            in.readBytes(plain);
+            out.add(ctx.alloc().buffer().writeBytes(session.encrypt(plain)));
+            return;
+        }
+
         byte[] key = ctx.channel().attr(GameServerAttributes.WS_AES_KEY).get();
         if (key == null) {
             LOGGER.warn("[ws-crypto] outbound frame with no session key, dropping");

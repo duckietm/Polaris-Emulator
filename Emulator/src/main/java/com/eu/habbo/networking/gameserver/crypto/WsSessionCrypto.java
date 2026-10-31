@@ -7,7 +7,14 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
@@ -19,6 +26,8 @@ public final class WsSessionCrypto {
     public static final byte TYPE_CLIENT_HELLO = 0x02;
 
     public static final String HKDF_INFO = "nitro-ws-v1";
+    /** The WebSocket subprotocol a client asks for to use the channel with a key and a counter per direction. */
+    public static final String SUBPROTOCOL_V2 = "octane-ws-v2";
     public static final int    AES_KEY_LEN = 32;
     public static final int    NONCE_LEN   = 12;
     public static final int    GCM_TAG_BITS = 128;

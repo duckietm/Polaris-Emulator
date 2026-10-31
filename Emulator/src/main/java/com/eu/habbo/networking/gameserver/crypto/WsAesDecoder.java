@@ -15,8 +15,9 @@ public class WsAesDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        WsDirectionalSession session = ctx.channel().attr(WsDirectionalSession.ATTRIBUTE).get();
         byte[] key = ctx.channel().attr(GameServerAttributes.WS_AES_KEY).get();
-        if (key == null) {
+        if (key == null && session == null) {
             LOGGER.warn("[ws-crypto] inbound frame with no session key, closing");
             ctx.close();
             return;
@@ -36,7 +37,10 @@ public class WsAesDecoder extends MessageToMessageDecoder<ByteBuf> {
         in.readBytes(ct);
 
         try {
-            byte[] plain = WsSessionCrypto.aesGcmDecrypt(key, nonce, ct);
+            // Version 2 also refuses a replayed, reordered or reflected frame.
+            byte[] plain = (session != null)
+                    ? session.decrypt(nonce, ct)
+                    : WsSessionCrypto.aesGcmDecrypt(key, nonce, ct);
             out.add(Unpooled.wrappedBuffer(plain));
         } catch (Exception e) {
             LOGGER.warn("[ws-crypto] AES-GCM decrypt failed ({}), closing channel", e.getClass().getSimpleName());

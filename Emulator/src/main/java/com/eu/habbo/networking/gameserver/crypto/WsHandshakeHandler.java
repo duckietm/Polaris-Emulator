@@ -8,7 +8,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import java.security.KeyPair;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayDeque;
 import java.util.Objects;
@@ -29,6 +28,8 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private boolean helloSent = false;
     private boolean agreementStarted = false;
     private boolean handshakeComplete = false;
+    /** The client asked for, and got, the channel with a key and a counter per direction. */
+    private boolean directional = false;
     private ArrayDeque<ByteBuf> pendingFrames;
     private int pendingFrameBytes;
 
@@ -48,7 +49,8 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+        if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete complete) {
+            this.directional = WsDirectionalSession.SUBPROTOCOL.equals(complete.selectedSubprotocol());
             sendServerHello(ctx, evt);
             return;
         }
@@ -204,8 +206,7 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
             this.agreementStarted = true;
-            PrivateKey serverPrivate = this.serverKeyPair.getPrivate();
-            submitAgreement(ctx, serverPrivate, clientSpki);
+            submitAgreement(ctx, this.serverKeyPair, clientSpki);
         } catch (Exception e) {
             LOGGER.warn("[ws-crypto] handshake failed from {} : {}", clientAddress(ctx), friendlyReason(e));
             ctx.close();
@@ -214,32 +215,44 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void submitAgreement(ChannelHandlerContext ctx, PrivateKey serverPrivate, byte[] clientSpki) {
+    private void submitAgreement(ChannelHandlerContext ctx, KeyPair serverKeys, byte[] clientSpki) {
+        boolean directionalChannel = this.directional;
         try {
-            this.cryptoExecutor.execute(() -> deriveSessionKey(ctx, serverPrivate, clientSpki));
+            this.cryptoExecutor.execute(() -> deriveSessionKey(ctx, serverKeys, clientSpki, directionalChannel));
         } catch (RejectedExecutionException rejected) {
             LOGGER.warn("[ws-crypto] handshake executor is full; " + "closing {}", clientAddress(ctx));
             ctx.close();
         }
     }
 
-    private void deriveSessionKey(ChannelHandlerContext ctx, PrivateKey serverPrivate, byte[] clientSpki) {
+    private void deriveSessionKey(
+            ChannelHandlerContext ctx, KeyPair serverKeys, byte[] clientSpki, boolean directionalChannel) {
         try {
             PublicKey clientPublic = WsSessionCrypto.decodePublicKeySpki(clientSpki);
-            byte[] sharedSecret = WsSessionCrypto.deriveSharedSecret(serverPrivate, clientPublic);
+            byte[] sharedSecret = WsSessionCrypto.deriveSharedSecret(serverKeys.getPrivate(), clientPublic);
+            if (directionalChannel) {
+                byte[] serverSpki = WsSessionCrypto.encodePublicKeySpki(serverKeys.getPublic());
+                WsDirectionalSession session = WsDirectionalSession.forServer(sharedSecret, serverSpki, clientSpki);
+                executeOnIoThread(ctx, () -> finishAgreement(ctx, null, session));
+                return;
+            }
             byte[] sessionKey = WsSessionCrypto.deriveAesKey(sharedSecret);
-            executeOnIoThread(ctx, () -> finishAgreement(ctx, sessionKey));
+            executeOnIoThread(ctx, () -> finishAgreement(ctx, sessionKey, null));
         } catch (Exception exception) {
             executeOnIoThread(ctx, () -> failAgreement(ctx, exception));
         }
     }
 
-    private void finishAgreement(ChannelHandlerContext ctx, byte[] sessionKey) {
+    private void finishAgreement(ChannelHandlerContext ctx, byte[] sessionKey, WsDirectionalSession session) {
         if (!ctx.channel().isActive()) {
             return;
         }
 
-        ctx.channel().attr(GameServerAttributes.WS_AES_KEY).set(sessionKey);
+        if (session != null) {
+            ctx.channel().attr(WsDirectionalSession.ATTRIBUTE).set(session);
+        } else {
+            ctx.channel().attr(GameServerAttributes.WS_AES_KEY).set(sessionKey);
+        }
         ChannelPipeline pipeline = ctx.pipeline();
         pipeline.addAfter(HANDLER_NAME, "wsAesDecoder", new WsAesDecoder());
         pipeline.addAfter(HANDLER_NAME, "wsAesEncoder", new WsAesEncoder());

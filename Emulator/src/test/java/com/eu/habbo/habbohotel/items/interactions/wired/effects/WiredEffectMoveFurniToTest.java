@@ -63,4 +63,12 @@ class WiredEffectMoveFurniToTest {
         assertEquals(1, moved.length);
         assertSame(legacy, moved[0]);
     }
+
+    @Test
+    @DisplayName("the spacing a client sends is held to the dialog's range")
+    void spacingIsClampedToTheDialogRange() {
+        assertEquals(5, WiredEffectMoveFurniTo.clampSpacing(Integer.MAX_VALUE));
+        assertEquals(0, WiredEffectMoveFurniTo.clampSpacing(-3));
+        assertEquals(3, WiredEffectMoveFurniTo.clampSpacing(3));
+    }
 }

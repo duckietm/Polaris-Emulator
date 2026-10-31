@@ -49,8 +49,7 @@ class CatalogPurchaseAtomicityContractTest {
         int debit = gift.indexOf(
                 "CatalogPaymentService.tryTake(this.client.getHabbo(),chargeCredits,item.getPointsType(),chargePoints)");
         int create = gift.indexOf("getItemManager().createGiftContent(userId", debit);
-        assertTrue(
-                debit > -1 && create > debit, "gift payment must be reserved before the gift contents are created");
+        assertTrue(debit > -1 && create > debit, "gift payment must be reserved before the gift contents are created");
         assertTrue(
                 gift.contains("if(!attempt.delivered)this.undo(attempt);"),
                 "failed gift delivery must enter compensating cleanup");

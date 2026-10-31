@@ -169,8 +169,8 @@ public class PluginManager {
                 // limit, so a large or slow plugin.json is neither cut short nor read without bound.
                 byte[] content = stream.readNBytes(MAX_PLUGIN_JSON_BYTES + 1);
                 if (content.length > MAX_PLUGIN_JSON_BYTES) {
-                    throw new RuntimeException("plugin.json is larger than " + MAX_PLUGIN_JSON_BYTES + " bytes in: "
-                            + file.getName());
+                    throw new RuntimeException(
+                            "plugin.json is larger than " + MAX_PLUGIN_JSON_BYTES + " bytes in: " + file.getName());
                 }
 
                 if (content.length > 0) {

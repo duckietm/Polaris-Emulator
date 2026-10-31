@@ -81,7 +81,8 @@ public class InteractionRentableSpace extends HabboItem {
                                         Emulator.getGameEnvironment()
                                                 .getRoomManager()
                                                 .getRoom(this.getRoomId())));
-                        this.renterId = 0;
+                        // endRent clears the renter once the space is emptied: cleared here, the task ran with renter
+                        // 0 and left every item of the renter in the space.
                     }
                 }
             }

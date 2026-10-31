@@ -12,7 +12,8 @@ class ScratchPetReachContractTest {
 
     @Test
     void theScratchHappensOnlyOnArrivalAndChecksThePointsAgain() throws Exception {
-        String event = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/pets/ScratchPetEvent.java"));
+        String event = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/pets/ScratchPetEvent.java"));
 
         assertFalse(event.contains("closestTile, room, tasks, tasks)"));
         assertTrue(event.contains("habbo.getRoomUnit(), closestTile, room, tasks, new ArrayList<>())"));
@@ -25,6 +26,8 @@ class ScratchPetReachContractTest {
     void theRespectCountNeverGoesBelowZero() throws Exception {
         String pet = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/pets/Pet.java"));
 
-        assertTrue(pet.contains("if (habbo.getHabboStats().petRespectPointsToGive > 0) habbo.getHabboStats().petRespectPointsToGive--;"));
+        assertTrue(
+                pet.contains(
+                        "if (habbo.getHabboStats().petRespectPointsToGive > 0) habbo.getHabboStats().petRespectPointsToGive--;"));
     }
 }

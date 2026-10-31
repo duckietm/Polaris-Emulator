@@ -429,6 +429,11 @@ public class MonsterplantPet extends Pet implements IPetLook {
                 seed, owner.getHabboInfo().getId(), owner.getHabboInfo().getUsername(), rarity, mutation);
     }
 
+    /** Whether a supplement (water, light) may renew the plant now: the same rule as a treatment. */
+    public boolean maySupplement() {
+        return this.mayScratch();
+    }
+
     private boolean mayScratch() {
         // Monsterplant petting is available when:
         //   ((energy / max_energy) < 0.98) = true

@@ -65,7 +65,8 @@ public class InteractionGift extends HabboItem {
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
         // serverMessage.appendInt(this.colorId * 1000 + this.ribbonId);
-        serverMessage.appendInt(1);
+        // Map stuff data; the limited flag tells the client the LTD numbers super appends follow.
+        serverMessage.appendInt(1 | (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(6);
         serverMessage.appendString("EXTRA_PARAM");
         serverMessage.appendString("");

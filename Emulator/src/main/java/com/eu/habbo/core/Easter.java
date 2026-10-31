@@ -17,6 +17,11 @@ public class Easter {
 
             Room room = event.habbo.getHabboInfo().getCurrentRoom();
 
+            // The motto can be saved outside a room.
+            if (room == null) {
+                return;
+            }
+
             room.sendComposer(new RoomUserRemoveComposer(event.habbo.getRoomUnit()).compose());
             room.sendComposer(new RoomUserPetComposer(2, 1, "FFFFFF", event.habbo).compose());
 

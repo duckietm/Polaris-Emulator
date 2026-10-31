@@ -24,7 +24,7 @@ public class ErrorLog implements DatabaseLoggable {
 
     public ErrorLog(String type, Throwable e) {
         this.version = Emulator.version;
-        this.buildHash = Emulator.version;
+        this.buildHash = Emulator.build;
 
         this.timeStamp = Emulator.getIntUnixTimestamp();
         this.type = type;

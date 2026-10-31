@@ -195,10 +195,9 @@ public final class Emulator {
             }
 
             LOGGER.info("Polaris has successfully loaded.");
+            int threads = Emulator.getConfig().getInt("runtime.threads");
             LOGGER.info(
-                    "System launched in: {}ms. Using {} threads!",
-                    (System.nanoTime() - startTime) / 1e6,
-                    Runtime.getRuntime().availableProcessors() * 2);
+                    "System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, threads);
             LOGGER.info(
                     "Memory: {}/{}MB",
                     (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024),
@@ -221,11 +220,10 @@ public final class Emulator {
                 EmulatorDashboard.launch();
             }
 
-            if (Emulator.getConfig().getInt("runtime.threads")
-                    < (Runtime.getRuntime().availableProcessors() * 2)) {
+            if (threads < (Runtime.getRuntime().availableProcessors() * 2)) {
                 LOGGER.warn(
                         "Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",
-                        Emulator.getConfig().getInt("runtime.threads"),
+                        threads,
                         Runtime.getRuntime().availableProcessors() * 2);
             }
 
@@ -353,7 +351,7 @@ public final class Emulator {
     static String startupCard(String hotelTimezoneId) {
         return "\n" + "+----------------------------------------------------------------+\n"
                 + "| Polaris (formerly Arcturus Morningstar Extended)               |\n"
-                + "| Source : github.com/duckietm/Nitro-Cool-UI-Renderer            |\n"
+                + "| Source : github.com/duckietm/Polaris-Emulator                  |\n"
                 + "| Scope  : Educational open-source fork of Arcturus/Morningstar  |\n"
                 + "| Version: "
                 + version + "\n" + "| Build  : "

@@ -244,7 +244,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         itemManager = traced(ItemManager.class, "itemManager");
         when(itemManager.getItem(anyInt())).thenAnswer(call -> items.get(call.<Integer>getArgument(0)));
-        when(itemManager.createItem(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenAnswer(call -> {
                     Item base = call.getArgument(1);
                     if (creations++ == failingCreation) return null;
@@ -521,7 +521,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         reset();
         giftCreated = true;
-        when(itemManager.createItem(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalStateException("database gone"));
         assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
     }
@@ -597,7 +597,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
     @Test
     void anExceptionWhileCreatingRefundsAndAnswersWithAnError() {
-        when(itemManager.createItem(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalStateException("database gone"));
 
         assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
@@ -1117,7 +1117,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
     private static final Set<String> RECORDED = Set.of(
             "sendResponse",
-            "createItem",
+            "createGiftContent",
             "createGift",
             "deleteItem",
             "insertTeleportPair",

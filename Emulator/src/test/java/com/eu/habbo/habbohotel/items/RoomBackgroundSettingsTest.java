@@ -5,11 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 class RoomBackgroundSettingsTest {
     private static Map<String, String> pairs(String... values) {
@@ -89,7 +89,8 @@ class RoomBackgroundSettingsTest {
 
     @Test
     void theOpenDefaultIsReportedToTheOperatorOnce() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/items/RoomBackgroundSettings.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/items/RoomBackgroundSettings.java"));
 
         assertTrue(source.contains("if (OPEN_DEFAULT_REPORTED.compareAndSet(false, true)) {"));
         assertTrue(RoomBackgroundSettings.isAllowedHost("https://tracker.net/b.png", " "));

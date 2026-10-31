@@ -1,11 +1,10 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.games.Game;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages games within a room.

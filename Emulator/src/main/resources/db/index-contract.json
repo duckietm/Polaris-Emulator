@@ -175,30 +175,6 @@
       "table": "items_presents",
       "columns": ["item_id"],
       "purpose": "Resolve and delete present configuration by item"
-    },
-    {
-      "name": "idx_users_ip_register",
-      "table": "users",
-      "columns": ["ip_register"],
-      "purpose": "Count the accounts registered from one IP for the registration quota"
-    },
-    {
-      "name": "idx_users_mail",
-      "table": "users",
-      "columns": ["mail"],
-      "purpose": "Find an account by email for registration and password reset"
-    },
-    {
-      "name": "auth_ticket",
-      "table": "users",
-      "columns": ["auth_ticket"],
-      "purpose": "Resolve the SSO ticket of a connecting client"
-    },
-    {
-      "name": "idx_users_remember_token_hash",
-      "table": "users",
-      "columns": ["remember_token_hash"],
-      "purpose": "Resolve a remember-me login"
     }
   ]
 }

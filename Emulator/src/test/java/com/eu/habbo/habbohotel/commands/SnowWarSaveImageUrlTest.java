@@ -15,7 +15,7 @@ class SnowWarSaveImageUrlTest {
     @Test
     void whitespaceOrAControlCharacterInsideIsRefused() {
         assertEquals("", SnowWarSaveCommand.safeImageUrl("https://cdn.test/a.png 1 2 3"));
-        assertEquals("", SnowWarSaveCommand.safeImageUrl("https://cdn.test/a.png\u0007"));
+        assertEquals("", SnowWarSaveCommand.safeImageUrl("https://cdn.test/a\u0007.png"));
         assertEquals("", SnowWarSaveCommand.safeImageUrl("https://cdn.test/a.png\tx"));
     }
 

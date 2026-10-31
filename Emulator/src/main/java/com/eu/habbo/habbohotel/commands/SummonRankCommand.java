@@ -7,12 +7,13 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
-
 import java.util.Map;
 
 public class SummonRankCommand extends Command {
     public SummonRankCommand() {
-        super("cmd_summonrank", Emulator.getTexts().getValue("commands.keys.cmd_summonrank").split(";"));
+        super(
+                "cmd_summonrank",
+                Emulator.getTexts().getValue("commands.keys.cmd_summonrank").split(";"));
     }
 
     @Override
@@ -23,7 +24,11 @@ public class SummonRankCommand extends Command {
             try {
                 minRank = Integer.parseInt(params[1]);
             } catch (Exception e) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.generic.cmd_summonrank.error"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.generic.cmd_summonrank.error"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
@@ -34,7 +39,10 @@ public class SummonRankCommand extends Command {
             minRank = Math.max(1, minRank);
             int places = Math.max(0, target.getUsersMax() - target.getUserCount());
 
-            for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
+            for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment()
+                    .getHabboManager()
+                    .getOnlineHabbos()
+                    .entrySet()) {
                 if (places <= 0) break;
 
                 Habbo habbo = set.getValue();
@@ -65,7 +73,8 @@ public class SummonRankCommand extends Command {
      */
     static boolean summons(Habbo sender, Habbo habbo, int minRank, Room target) {
         if (habbo == null || habbo == sender || habbo.getHabboInfo().getRank().getId() < minRank) return false;
-        if (!CommandTargetGuard.canTarget(sender, habbo) || habbo.hasPermission(Permission.ACC_UNKICKABLE)) return false;
+        if (!CommandTargetGuard.canTarget(sender, habbo) || habbo.hasPermission(Permission.ACC_UNKICKABLE))
+            return false;
 
         Room current = habbo.getHabboInfo().getCurrentRoom();
         if (current == target) return false;

@@ -49,7 +49,9 @@ class SummonRankCommandTargetsTest {
 
         assertFalse(SummonRankCommand.summons(sender, sender, 1, target));
         assertFalse(SummonRankCommand.summons(sender, habbo(2, 3, target), 1, target), "already there");
-        assertFalse(SummonRankCommand.summons(sender, habbo(3, 3, mock(Room.class)), 5, target), "below the rank asked for");
+        assertFalse(
+                SummonRankCommand.summons(sender, habbo(3, 3, mock(Room.class)), 5, target),
+                "below the rank asked for");
     }
 
     @Test
@@ -69,7 +71,8 @@ class SummonRankCommandTargetsTest {
 
     @Test
     void theRankAndTheNumberMovedAreBounded() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/commands/SummonRankCommand.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/commands/SummonRankCommand.java"));
 
         assertTrue(source.contains("minRank = Math.max(1, minRank);"));
         assertTrue(source.contains("target.getUsersMax() - target.getUserCount()"));

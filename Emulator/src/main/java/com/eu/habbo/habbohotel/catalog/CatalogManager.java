@@ -1442,8 +1442,11 @@ public class CatalogManager {
                     if (limitedConfiguration.getTotalSet() == 0) {
                         limitedConfiguration.setTotalSet(item.limitedStack);
                     } else if (item.limitedStack > limitedConfiguration.getTotalSet()) {
+                        // The new numbers follow the last one made: they started after the new stack instead, so a
+                        // stack raised from 100 to 150 got 151-200 and numbers 101-150 never existed.
                         limitedConfiguration.generateNumbers(
-                                item.limitedStack + 1, item.limitedStack - limitedConfiguration.getTotalSet());
+                                limitedConfiguration.getTotalSet() + 1,
+                                item.limitedStack - limitedConfiguration.getTotalSet());
                     } else {
                         item.limitedStack = limitedConfiguration.getTotalSet();
                     }

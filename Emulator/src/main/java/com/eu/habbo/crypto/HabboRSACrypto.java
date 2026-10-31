@@ -7,7 +7,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HabboRSACrypto {
 
@@ -15,6 +15,7 @@ public class HabboRSACrypto {
     private final BigInteger n;
     private final BigInteger d;
     private final int blockSize;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public HabboRSACrypto(String e, String n) {
         this.e = new BigInteger(e, 16);
@@ -28,6 +29,10 @@ public class HabboRSACrypto {
         this.n = new BigInteger(n, 16);
         this.d = new BigInteger(d, 16);
         this.blockSize = (this.n.bitLength() + 7) / 8;
+    }
+
+    int blockSize() {
+        return this.blockSize;
     }
 
     public byte[] Encrypt(byte[] data) throws HabboCryptoException {
@@ -120,7 +125,7 @@ public class HabboRSACrypto {
 
         if (padType == 2) {
             while (n > 2) {
-                result[--n] = (byte) ThreadLocalRandom.current().nextInt(1, 256);
+                result[--n] = (byte) (RANDOM.nextInt(255) + 1);
             }
         } else {
             while (n > 2) {

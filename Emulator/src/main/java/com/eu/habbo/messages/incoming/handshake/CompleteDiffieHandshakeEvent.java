@@ -19,6 +19,11 @@ public class CompleteDiffieHandshakeEvent extends MessageHandler {
             return;
         }
 
+        // A second handshake on the same connection would swap the stream keys again.
+        if (this.client.isHandshakeFinished()) {
+            return;
+        }
+
         byte[] sharedKey = this.client.getEncryption().getDiffie().getSharedKey(this.packet.readString());
 
         this.client.setHandshakeFinished(true);

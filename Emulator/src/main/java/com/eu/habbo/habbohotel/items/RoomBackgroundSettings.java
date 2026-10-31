@@ -4,6 +4,9 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The settings a room background (room ads furni) may store. The save used to take any key and any address, so a
@@ -11,7 +14,12 @@ import java.util.Map;
  * kept, numbers are clamped, addresses must be http(s), and the image may only come from the allowed hosts.
  */
 public final class RoomBackgroundSettings {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomBackgroundSettings.class);
+
     public static final String ALLOWED_HOSTS_SETTING = "room.background.allowed_hosts";
+
+    /** The open default is told to the operator once, the first time it lets an outside image in. */
+    private static final AtomicBoolean OPEN_DEFAULT_REPORTED = new AtomicBoolean();
 
     private static final String IMAGE_URL = "imageUrl";
     private static final String CLICK_URL = "clickUrl";
@@ -89,7 +97,18 @@ public final class RoomBackgroundSettings {
 
     /** The comma-separated hosts (subdomains included); an empty list allows any website. */
     static boolean isAllowedHost(String value, String allowedHosts) {
-        if (value.isEmpty() || allowedHosts == null || allowedHosts.isBlank()) return true;
+        if (value.isEmpty()) return true;
+
+        // Empty means any website, as documented; every visitor of the room then loads the image from that host.
+        if (allowedHosts == null || allowedHosts.isBlank()) {
+            if (OPEN_DEFAULT_REPORTED.compareAndSet(false, true)) {
+                LOGGER.warn(
+                        "Room backgrounds accept images from any website because {} is empty; list the allowed hosts"
+                                + " there to restrict them.",
+                        ALLOWED_HOSTS_SETTING);
+            }
+            return true;
+        }
 
         String host;
         try {

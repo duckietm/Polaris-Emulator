@@ -28,8 +28,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
     // of allocating a parser per RCON request.
     private static final Gson GSON = new Gson();
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
-    private static final Pattern IP_LITERAL =
-            Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}|[0-9A-Fa-f.]*:[0-9A-Fa-f:.]*");
+    private static final Pattern IP_LITERAL = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}|[0-9A-Fa-f.]*:[0-9A-Fa-f:.]*");
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {

@@ -31,8 +31,8 @@ class RCONAllowlistTest {
 
     @Test
     void anInvalidMessageLogsOnlyItsKey() throws Exception {
-        String handler = Files.readString(
-                Path.of("src/main/java/com/eu/habbo/networking/rconserver/RCONServerHandler.java"));
+        String handler =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/networking/rconserver/RCONServerHandler.java"));
 
         assertTrue(handler.contains("LOGGER.error(\"Invalid RCON Message: {}\", key);"));
         assertFalse(handler.contains("LOGGER.error(\"Invalid RCON Message: {}\", message);"));

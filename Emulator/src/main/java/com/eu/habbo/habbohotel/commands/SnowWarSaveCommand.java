@@ -7,7 +7,8 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,7 +30,11 @@ public class SnowWarSaveCommand extends Command {
     private static final int COLLISION_PER_TILE_HEIGHT = 2300;
 
     public SnowWarSaveCommand() {
-        super("cmd_snowwar_save", Emulator.getTexts().getValue("commands.keys.cmd_snowwar_save", "snowwarsave").split(";"));
+        super(
+                "cmd_snowwar_save",
+                Emulator.getTexts()
+                        .getValue("commands.keys.cmd_snowwar_save", "snowwarsave")
+                        .split(";"));
     }
 
     @Override
@@ -44,10 +49,14 @@ public class SnowWarSaveCommand extends Command {
         // the room keeps pointing at the SnowWar model.
         int mapId = findMapIdForModel(getRoomModelName(room.getId()));
         if (mapId <= 0) {
-            gameClient.getHabbo().whisper(
-                    Emulator.getTexts().getValue("commands.error.cmd_snowwar_save.wrong_room",
-                            "This room does not use the SnowWar arena model."),
-                    RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts()
+                                    .getValue(
+                                            "commands.error.cmd_snowwar_save.wrong_room",
+                                            "This room does not use the SnowWar arena model."),
+                            RoomChatMessageBubbles.ALERT);
             return true;
         }
 
@@ -70,15 +79,22 @@ public class SnowWarSaveCommand extends Command {
         int adImages = 0;
         for (HabboItem item : room.getFloorItems()) {
             String name = item.getBaseItem().getName();
-            boolean walkable = item.getBaseItem().allowWalk() || item.getBaseItem().allowSit();
+            boolean walkable =
+                    item.getBaseItem().allowWalk() || item.getBaseItem().allowSit();
             int walkableHeight = walkable ? 0 : 3;
-            int collisionHeight = Math.max(1150, (int) Math.round(item.getBaseItem().getHeight() * COLLISION_PER_TILE_HEIGHT));
+            int collisionHeight =
+                    Math.max(1150, (int) Math.round(item.getBaseItem().getHeight() * COLLISION_PER_TILE_HEIGHT));
 
-            builder.append(name).append(' ')
-                    .append(item.getX()).append(' ')
-                    .append(item.getY()).append(' ')
-                    .append(item.getRotation()).append(' ')
-                    .append(walkableHeight).append(' ')
+            builder.append(name)
+                    .append(' ')
+                    .append(item.getX())
+                    .append(' ')
+                    .append(item.getY())
+                    .append(' ')
+                    .append(item.getRotation())
+                    .append(' ')
+                    .append(walkableHeight)
+                    .append(' ')
                     .append(collisionHeight);
 
             // Room-ad (ads_bg) furni carry an imageUrl in their custom values;
@@ -114,23 +130,57 @@ public class SnowWarSaveCommand extends Command {
             statement.setString(2, builder.toString());
             statement.setString(3, modelName);
             if (statement.executeUpdate() == 0) {
-                gameClient.getHabbo().whisper(
-                        Emulator.getTexts().getValue("commands.error.cmd_snowwar_save.no_model",
-                                "The SnowWar room model row is missing in room_models."),
-                        RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts()
+                                        .getValue(
+                                                "commands.error.cmd_snowwar_save.no_model",
+                                                "The SnowWar room model row is missing in room_models."),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
         }
 
         SnowWarMapsManager.invalidate(mapId);
 
-        gameClient.getHabbo().whisper(
-                Emulator.getTexts().getValue("commands.success.cmd_snowwar_save",
-                        "SnowWar arena saved (%count% items, %ads% ad images). The next game uses the new layout.")
-                        .replace("%count%", Integer.toString(saved))
-                        .replace("%ads%", Integer.toString(adImages)),
-                RoomChatMessageBubbles.ALERT);
+        gameClient
+                .getHabbo()
+                .whisper(
+                        Emulator.getTexts()
+                                .getValue(
+                                        "commands.success.cmd_snowwar_save",
+                                        "SnowWar arena saved (%count% items, %ads% ad images). The next game uses the new layout.")
+                                .replace("%count%", Integer.toString(saved))
+                                .replace("%ads%", Integer.toString(adImages)),
+                        RoomChatMessageBubbles.ALERT);
         return true;
+    }
+
+    /**
+     * The ad image as one token of the saved layout, or "" when it is not a plain http(s) URL. The value is written
+     * into a space and line separated list, so whitespace or a control character in it added tokens or whole rows
+     * to the public layout.
+     */
+    static String safeImageUrl(String value) {
+        if (value == null) return "";
+
+        String url = value.trim();
+        if (url.isEmpty()) return "";
+
+        for (int i = 0; i < url.length(); i++) {
+            char c = url.charAt(i);
+            if (Character.isWhitespace(c) || Character.isISOControl(c)) return "";
+        }
+
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            boolean web = "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+            return web && uri.getHost() != null ? url : "";
+        } catch (URISyntaxException e) {
+            return "";
+        }
     }
 
     /**
@@ -145,8 +195,7 @@ public class SnowWarSaveCommand extends Command {
         java.util.Map<String, String> values = ((InteractionCustomValues) item).values;
         for (java.util.Map.Entry<String, String> entry : values.entrySet()) {
             if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("imageUrl")) {
-                String value = entry.getValue();
-                return (value != null && !value.trim().isEmpty()) ? value.trim() : "";
+                return safeImageUrl(entry.getValue());
             }
         }
         return "";
@@ -168,8 +217,7 @@ public class SnowWarSaveCommand extends Command {
 
     private String getRoomModelName(int roomId) throws SQLException {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT model FROM rooms WHERE id = ?")) {
+                PreparedStatement statement = connection.prepareStatement("SELECT model FROM rooms WHERE id = ?")) {
             statement.setInt(1, roomId);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
@@ -182,8 +230,8 @@ public class SnowWarSaveCommand extends Command {
 
     private String readPublicItems(String modelName) throws SQLException {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT public_items FROM room_models WHERE name = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT public_items FROM room_models WHERE name = ?")) {
             statement.setString(1, modelName);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {

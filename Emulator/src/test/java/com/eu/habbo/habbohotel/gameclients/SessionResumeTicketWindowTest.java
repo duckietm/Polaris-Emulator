@@ -15,9 +15,9 @@ class SessionResumeTicketWindowTest {
 
     @Test
     void theWindowIsNeverShorterThanTheGracePeriod() {
-        assertEquals(120, SessionResumeManager.restoredTicketSeconds(30, 120));
-        assertEquals(300, SessionResumeManager.restoredTicketSeconds(300, 120));
-        assertEquals(1, SessionResumeManager.restoredTicketSeconds(0, 0));
+        assertEquals(120, SessionResumeManager.restoredTicketSeconds(30));
+        assertEquals(300, SessionResumeManager.restoredTicketSeconds(300));
+        assertEquals(120, SessionResumeManager.restoredTicketSeconds(0));
     }
 
     @Test
@@ -27,7 +27,7 @@ class SessionResumeTicketWindowTest {
 
         assertTrue(source.contains("expireRestoredTicket(userId, ssoTicket)"), "a restore schedules its end");
         assertTrue(
-                source.contains("UPDATE users SET auth_ticket = '' WHERE id = ? AND auth_ticket = ?"),
+                source.contains("UPDATE users SET auth_ticket = '' WHERE auth_ticket = ? AND id = ?"),
                 "a newer ticket written by the CMS is never cleared");
     }
 }

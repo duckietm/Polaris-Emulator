@@ -17,6 +17,9 @@ public class SessionResumeManager {
 
     private static SessionResumeManager instance;
 
+    /** The shortest window a restored ticket gets: a page reload behind a proxy can take this long. */
+    static final int RESTORED_TICKET_MIN_SECONDS = 120;
+
     private final ConcurrentHashMap<Integer, GhostSession> ghostSessions = new ConcurrentHashMap<>();
 
     public static SessionResumeManager getInstance() {
@@ -36,12 +39,11 @@ public class SessionResumeManager {
      * ticket seen once cannot be used days later.
      */
     public int getRestoredTicketSeconds() {
-        return restoredTicketSeconds(
-                getGracePeriodSeconds(), Emulator.getConfig().getInt("session.reconnect.ticket.seconds", 120));
+        return restoredTicketSeconds(getGracePeriodSeconds());
     }
 
-    static int restoredTicketSeconds(int graceSeconds, int configuredSeconds) {
-        return Math.max(Math.max(graceSeconds, configuredSeconds), 1);
+    static int restoredTicketSeconds(int graceSeconds) {
+        return Math.max(graceSeconds, RESTORED_TICKET_MIN_SECONDS);
     }
 
     public int getPausedEffectId() {
@@ -76,7 +78,7 @@ public class SessionResumeManager {
             previousEffectEnd = unit.getEffectEndTimestamp();
         }
 
-        ScheduledFuture<?> future = Emulator.getThreading().run(() -> {
+        ScheduledFuture<?> future = schedule(() -> {
             GhostSession ghost = ghostSessions.remove(userId);
             if (ghost != null) {
                 LOGGER.info("[SessionResume] Grace period expired for {} (id={}) - performing full disconnect",
@@ -178,15 +180,14 @@ public class SessionResumeManager {
         // client would get "session expired" on the first attempt. The guard means:
         // normal reconnect (ticket cleared to '' after login) -> restore; hard-refresh
         // (CMS already wrote a new ticket) -> leave the new ticket untouched.
-        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
-             var statement = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? AND (auth_ticket = '' OR auth_ticket IS NULL) LIMIT 1")) {
-            statement.setString(1, ssoTicket);
-            statement.setInt(2, userId);
-            int updated = statement.executeUpdate();
+        try {
+            int updated = updateTicket(
+                    "UPDATE users SET auth_ticket = ? WHERE id = ? AND (auth_ticket = '' OR auth_ticket IS NULL) LIMIT 1",
+                    ssoTicket,
+                    userId);
             if (updated > 0) {
                 LOGGER.info("[SessionResume] Restored SSO ticket for user {} during grace period", userId);
-                Emulator.getThreading()
-                        .run(() -> expireRestoredTicket(userId, ssoTicket), getRestoredTicketSeconds() * 1000L);
+                schedule(() -> expireRestoredTicket(userId, ssoTicket), getRestoredTicketSeconds() * 1000L);
             } else {
                 LOGGER.info("[SessionResume] Skipped SSO restore for user {} — a newer ticket is already present (likely a fresh login/hard-refresh)", userId);
             }
@@ -200,16 +201,29 @@ public class SessionResumeManager {
      * one the CMS wrote in the meantime is left alone, and a reconnect that used it has consumed it.
      */
     private void expireRestoredTicket(int userId, String ssoTicket) {
-        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
-             var statement = connection.prepareStatement("UPDATE users SET auth_ticket = '' WHERE id = ? AND auth_ticket = ? LIMIT 1")) {
-            statement.setInt(1, userId);
-            statement.setString(2, ssoTicket);
-            if (statement.executeUpdate() > 0) {
+        try {
+            int cleared = updateTicket(
+                    "UPDATE users SET auth_ticket = '' WHERE auth_ticket = ? AND id = ? LIMIT 1", ssoTicket, userId);
+            if (cleared > 0) {
                 LOGGER.info("[SessionResume] Cleared the unused restored SSO ticket for user {}", userId);
             }
         } catch (Exception e) {
             LOGGER.error("[SessionResume] Failed to clear the restored SSO ticket for user " + userId, e);
         }
+    }
+
+    /** One ticket update: the ticket is the first parameter, the user id the second. */
+    private static int updateTicket(String sql, String ssoTicket, int userId) throws Exception {
+        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, ssoTicket);
+            statement.setInt(2, userId);
+            return statement.executeUpdate();
+        }
+    }
+
+    private static ScheduledFuture<?> schedule(Runnable task, long delayMillis) {
+        return Emulator.getThreading().run(task, delayMillis);
     }
 
     private void applyPausedEffect(Habbo habbo) {

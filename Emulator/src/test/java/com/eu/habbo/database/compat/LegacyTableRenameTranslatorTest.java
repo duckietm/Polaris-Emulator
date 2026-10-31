@@ -37,6 +37,18 @@ class LegacyTableRenameTranslatorTest {
     }
 
     @Test
+    void leavesTableNamesInsideStringsAlone() {
+        LegacyTableRenameTranslator translator = new LegacyTableRenameTranslator(() -> "old_words:random_words");
+
+        assertEquals("INSERT INTO `random_words` (word) VALUES ('copied from old_words', \"into old_words\")",
+                translator.translate(
+                        "INSERT INTO old_words (word) VALUES ('copied from old_words', \"into old_words\")", CONTEXT));
+        assertEquals("SELECT 'it''s from old_words' FROM `random_words`",
+                translator.translate("SELECT 'it''s from old_words' FROM old_words", CONTEXT));
+        assertNull(translator.translate("SELECT 'from old_words'", CONTEXT));
+    }
+
+    @Test
     void leavesColumnNamesAlone() {
         LegacyTableRenameTranslator translator = new LegacyTableRenameTranslator(() -> "word:renamed_table");
 

@@ -105,10 +105,54 @@ public class LegacyTableRenameTranslator implements LegacySqlTranslator {
                 Pattern pattern = this.patternCache.computeIfAbsent(entry.getKey(), oldName ->
                         Pattern.compile("(?i)\\b(" + TABLE_POSITION_KEYWORDS + ")(\\s+)`?" + Pattern.quote(oldName) + "\\b`?"));
 
-                result = pattern.matcher(result).replaceAll("$1$2`" + Matcher.quoteReplacement(entry.getValue()) + "`");
+                result = replaceOutsideLiterals(
+                        result, pattern, "$1$2`" + Matcher.quoteReplacement(entry.getValue()) + "`");
             }
         }
 
         return result.equals(sql) ? null : result;
+    }
+
+    /**
+     * Applies the rename only outside quoted strings: a table name inside a value, such as a message that says
+     * "from users", is data and must stay as it was.
+     */
+    static String replaceOutsideLiterals(String sql, Pattern pattern, String replacement) {
+        StringBuilder out = new StringBuilder(sql.length());
+        int segmentStart = 0;
+        int i = 0;
+
+        while (i < sql.length()) {
+            char c = sql.charAt(i);
+
+            if (c != '\'' && c != '"') {
+                i++;
+                continue;
+            }
+
+            out.append(pattern.matcher(sql.substring(segmentStart, i)).replaceAll(replacement));
+
+            int end = i + 1;
+            while (end < sql.length()) {
+                char d = sql.charAt(end);
+                if (d == '\\') {
+                    end += 2;
+                } else if (d == c && end + 1 < sql.length() && sql.charAt(end + 1) == c) {
+                    end += 2;
+                } else if (d == c) {
+                    break;
+                } else {
+                    end++;
+                }
+            }
+
+            int literalEnd = Math.min(end + 1, sql.length());
+            out.append(sql, i, literalEnd);
+            segmentStart = literalEnd;
+            i = literalEnd;
+        }
+
+        out.append(pattern.matcher(sql.substring(segmentStart)).replaceAll(replacement));
+        return out.toString();
     }
 }

@@ -1,19 +1,19 @@
 package com.eu.habbo.core;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ErrorLog implements DatabaseLoggable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLog.class);
-    private static final String QUERY = "INSERT INTO emulator_errors (timestamp, version, build_hash, type, stacktrace) VALUES (?, ?, ?, ?, ?)";
+    private static final String QUERY =
+            "INSERT INTO emulator_errors (timestamp, version, build_hash, type, stacktrace) VALUES (?, ?, ?, ?, ?)";
 
     public final String version;
     public final String buildHash;

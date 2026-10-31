@@ -196,8 +196,7 @@ public final class Emulator {
 
             LOGGER.info("Polaris has successfully loaded.");
             int threads = Emulator.getConfig().getInt("runtime.threads");
-            LOGGER.info(
-                    "System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, threads);
+            LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, threads);
             LOGGER.info(
                     "Memory: {}/{}MB",
                     (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024),

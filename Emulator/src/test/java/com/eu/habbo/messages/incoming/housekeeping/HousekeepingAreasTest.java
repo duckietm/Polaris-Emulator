@@ -22,6 +22,7 @@ class HousekeepingAreasTest {
             Map.entry("TradeLockUser", "USERS"),
             Map.entry("ResetUserPassword", "USERS"),
             Map.entry("UserNote", "USERS"),
+            Map.entry("ListActionLog", "USERS"),
             Map.entry("BanUser", "BANS"),
             Map.entry("UnbanUser", "BANS"),
             Map.entry("RevokeBan", "BANS"),

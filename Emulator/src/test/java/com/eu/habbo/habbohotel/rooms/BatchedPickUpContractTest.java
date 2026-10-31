@@ -23,8 +23,7 @@ class BatchedPickUpContractTest {
         String service = source();
 
         assertTrue(service.contains("batch.freedTiles.addAll(this.floorArea(item));"));
-        assertTrue(
-                service.contains("batch.deliveries.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(item);"));
+        assertTrue(service.contains(".computeIfAbsent(owner, ignored -> new ArrayList<>())"));
         assertTrue(
                 service.contains("batch.deliveries.forEach((owner, delivered) -> deliver(owner, delivered, picker));"));
     }

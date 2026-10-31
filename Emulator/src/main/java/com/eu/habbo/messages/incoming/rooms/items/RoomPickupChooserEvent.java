@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.InteractionCrackable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -31,6 +32,7 @@ public class RoomPickupChooserEvent extends MessageHandler {
 
             if (item != null) {
                 if (item instanceof InteractionPostIt) continue;
+                if (item instanceof InteractionCrackable crackable && crackable.cracked) continue;
 
                 if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                     room.pickUpItem(item, this.client.getHabbo());

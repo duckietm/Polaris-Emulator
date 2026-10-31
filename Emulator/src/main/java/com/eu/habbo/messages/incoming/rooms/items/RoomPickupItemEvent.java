@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.interactions.InteractionCrackable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
@@ -41,6 +42,9 @@ public class RoomPickupItemEvent extends MessageHandler {
         if (item == null) return;
 
         if (item instanceof InteractionPostIt) return;
+        // A crackable already broken has given its reward (a subscription at once): picked up before it vanished,
+        // it was kept and could be cracked again.
+        if (item instanceof InteractionCrackable crackable && crackable.cracked) return;
 
         // A Place Furni copy: only the room owner and the owner of the box that placed it may pick it
         // up, which removes it (there is nothing to give back). It never takes a new owner.

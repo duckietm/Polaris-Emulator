@@ -2,6 +2,7 @@ package com.eu.habbo.database.integrity;
 
 import com.eu.habbo.core.ConfigurationManager;
 import com.google.gson.Gson;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,8 @@ public final class DatabaseIntegrityAudit {
     private static final Gson GSON = new Gson();
     private static final Path REPORT_PATH = Path.of("logging", "database-integrity-audit.json");
     private static final int MAX_LOGGED_SAMPLES = 3;
+    /** Room above the audit's queryTimeout, so the server's own timeout fires before the socket gives up. */
+    static final int AUDIT_SOCKET_MARGIN_SECONDS = 30;
 
     private DatabaseIntegrityAudit() {
     }
@@ -40,7 +43,17 @@ public final class DatabaseIntegrityAudit {
         }
 
         IntegrityAuditReport report;
+        // The audit holds one connection for its whole run: the pool's leak detection would report it as a leak.
+        HikariDataSource pool = dataSource instanceof HikariDataSource hikari ? hikari : null;
+        long leakThreshold = pool != null ? pool.getLeakDetectionThreshold() : 0;
+        if (pool != null && leakThreshold > 0) {
+            pool.setLeakDetectionThreshold(0);
+        }
         try (Connection connection = dataSource.getConnection()) {
+            // The pool's socketTimeout (30 s) is sized for gameplay queries, while an audit query may run for its
+            // whole queryTimeout (up to 300 s): the socket closed under it and every later check failed. The pool
+            // restores the connection's own timeout when it is returned.
+            connection.setNetworkTimeout(Runnable::run, (settings.queryTimeoutSeconds() + AUDIT_SOCKET_MARGIN_SECONDS) * 1000);
             IntegrityContract contract = IntegrityContractLoader.load(
                     DatabaseIntegrityAudit.class.getClassLoader());
             report = new DatabaseIntegrityAuditor(
@@ -69,6 +82,10 @@ public final class DatabaseIntegrityAudit {
                     1, 0, 0, 0, List.of(),
                     List.of(new IntegrityAuditError(
                             "audit-startup", bounded(error))));
+        } finally {
+            if (pool != null && leakThreshold > 0) {
+                pool.setLeakDetectionThreshold(leakThreshold);
+            }
         }
 
         log(report, settings.mode());

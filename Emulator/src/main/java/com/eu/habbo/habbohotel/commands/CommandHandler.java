@@ -53,6 +53,7 @@ public class CommandHandler {
             TransformCommand.class,
             RoomBundleCommand.class,
             WordQuizCommand.class);
+
     private static final Comparator<Command> ALPHABETICAL_ORDER = new Comparator<Command>() {
         public int compare(Command c1, Command c2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(c1.permission, c2.permission);
@@ -198,7 +199,11 @@ public class CommandHandler {
                                                                                         RoomRightLevels
                                                                                                 .GUILD_RIGHTS)))) {
                                     if (ROOM_COMMANDS.contains(command.getClass())
-                                            && gameClient.getHabbo().getHabboInfo().getCurrentRoom() == null) {
+                                            && gameClient
+                                                            .getHabbo()
+                                                            .getHabboInfo()
+                                                            .getCurrentRoom()
+                                                    == null) {
                                         return CommandOutcome.RETURNED_FALSE;
                                     }
 

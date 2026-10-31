@@ -1,13 +1,12 @@
 package com.eu.habbo.database.compat;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class LegacyTableRenameTranslatorTest {
 
@@ -25,14 +24,18 @@ class LegacyTableRenameTranslatorTest {
 
     @Test
     void renamesTablesInTablePosition() {
-        LegacyTableRenameTranslator translator = new LegacyTableRenameTranslator(() -> "old_words:random_words;old_logs:new_logs");
+        LegacyTableRenameTranslator translator =
+                new LegacyTableRenameTranslator(() -> "old_words:random_words;old_logs:new_logs");
 
         assertTrue(translator.appliesTo("select * from `old_words`"));
-        assertEquals("SELECT * FROM `random_words` WHERE word = 'old_words value'",
+        assertEquals(
+                "SELECT * FROM `random_words` WHERE word = 'old_words value'",
                 translator.translate("SELECT * FROM `old_words` WHERE word = 'old_words value'", CONTEXT));
-        assertEquals("INSERT INTO `new_logs` (message) VALUES ('x')",
+        assertEquals(
+                "INSERT INTO `new_logs` (message) VALUES ('x')",
                 translator.translate("INSERT INTO old_logs (message) VALUES ('x')", CONTEXT));
-        assertEquals("UPDATE `random_words` SET word = 'a'",
+        assertEquals(
+                "UPDATE `random_words` SET word = 'a'",
                 translator.translate("UPDATE old_words SET word = 'a'", CONTEXT));
     }
 
@@ -40,10 +43,12 @@ class LegacyTableRenameTranslatorTest {
     void leavesTableNamesInsideStringsAlone() {
         LegacyTableRenameTranslator translator = new LegacyTableRenameTranslator(() -> "old_words:random_words");
 
-        assertEquals("INSERT INTO `random_words` (word) VALUES ('copied from old_words', \"into old_words\")",
+        assertEquals(
+                "INSERT INTO `random_words` (word) VALUES ('copied from old_words', \"into old_words\")",
                 translator.translate(
                         "INSERT INTO old_words (word) VALUES ('copied from old_words', \"into old_words\")", CONTEXT));
-        assertEquals("SELECT 'it''s from old_words' FROM `random_words`",
+        assertEquals(
+                "SELECT 'it''s from old_words' FROM `random_words`",
                 translator.translate("SELECT 'it''s from old_words' FROM old_words", CONTEXT));
         assertNull(translator.translate("SELECT 'from old_words'", CONTEXT));
     }

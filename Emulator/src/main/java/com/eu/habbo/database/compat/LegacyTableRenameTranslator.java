@@ -2,7 +2,6 @@ package com.eu.habbo.database.compat;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -64,7 +63,8 @@ public class LegacyTableRenameTranslator implements LegacySqlTranslator {
                 String oldName = parts[0].trim().toLowerCase();
                 String newName = parts[1].trim();
 
-                if (IDENTIFIER.matcher(oldName).matches() && IDENTIFIER.matcher(newName).matches()) {
+                if (IDENTIFIER.matcher(oldName).matches()
+                        && IDENTIFIER.matcher(newName).matches()) {
                     parsed.put(oldName, newName);
                 }
             }
@@ -102,8 +102,10 @@ public class LegacyTableRenameTranslator implements LegacySqlTranslator {
 
         synchronized (this) {
             for (Map.Entry<String, String> entry : this.renames().entrySet()) {
-                Pattern pattern = this.patternCache.computeIfAbsent(entry.getKey(), oldName ->
-                        Pattern.compile("(?i)\\b(" + TABLE_POSITION_KEYWORDS + ")(\\s+)`?" + Pattern.quote(oldName) + "\\b`?"));
+                Pattern pattern = this.patternCache.computeIfAbsent(
+                        entry.getKey(),
+                        oldName -> Pattern.compile(
+                                "(?i)\\b(" + TABLE_POSITION_KEYWORDS + ")(\\s+)`?" + Pattern.quote(oldName) + "\\b`?"));
 
                 result = replaceOutsideLiterals(
                         result, pattern, "$1$2`" + Matcher.quoteReplacement(entry.getValue()) + "`");

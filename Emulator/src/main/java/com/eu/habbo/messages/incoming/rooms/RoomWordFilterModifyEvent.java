@@ -27,7 +27,11 @@ public class RoomWordFilterModifyEvent extends MessageHandler {
 
         // Check if owner.
         if (!room.isOwner(this.client.getHabbo())) {
-            ScripterManager.scripterDetected(this.client, String.format("User (%s) tried to change wordfilter for a not owned room.", this.client.getHabbo().getHabboInfo().getUsername()));
+            ScripterManager.scripterDetected(
+                    this.client,
+                    String.format(
+                            "User (%s) tried to change wordfilter for a not owned room.",
+                            this.client.getHabbo().getHabboInfo().getUsername()));
             return;
         }
 

@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.HabboItem;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -134,6 +136,32 @@ public class SnowWarSaveCommand extends Command {
     }
 
     /**
+     * The ad image as one token of the saved layout, or "" when it is not a plain http(s) URL. The value is written
+     * into a space and line separated list, so whitespace or a control character in it added tokens or whole rows
+     * to the public layout.
+     */
+    static String safeImageUrl(String value) {
+        if (value == null) return "";
+
+        String url = value.trim();
+        if (url.isEmpty()) return "";
+
+        for (int i = 0; i < url.length(); i++) {
+            char c = url.charAt(i);
+            if (Character.isWhitespace(c) || Character.isISOControl(c)) return "";
+        }
+
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            boolean web = "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+            return web && uri.getHost() != null ? url : "";
+        } catch (URISyntaxException e) {
+            return "";
+        }
+    }
+
+    /**
      * Room-ad furni store their image behind an "imageUrl" custom value; be
      * lenient about key casing across furnidata variants.
      */
@@ -145,8 +173,7 @@ public class SnowWarSaveCommand extends Command {
         java.util.Map<String, String> values = ((InteractionCustomValues) item).values;
         for (java.util.Map.Entry<String, String> entry : values.entrySet()) {
             if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("imageUrl")) {
-                String value = entry.getValue();
-                return (value != null && !value.trim().isEmpty()) ? value.trim() : "";
+                return safeImageUrl(entry.getValue());
             }
         }
         return "";

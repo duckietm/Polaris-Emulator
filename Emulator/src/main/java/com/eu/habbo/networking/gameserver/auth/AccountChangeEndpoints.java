@@ -351,7 +351,7 @@ final class AccountChangeEndpoints {
                 return;
             }
 
-            refreshRenameCaches(userId, newUsername);
+            refreshRenameCaches(userId, account.username(), newUsername);
             revokeSessionsAfterRename(conn, userId);
 
             AuthRateLimiter.recordSuccess(ip);
@@ -530,7 +530,11 @@ final class AccountChangeEndpoints {
     }
 
     /** The name lives in a few in-memory copies too; a failure to refresh one is logged and does not undo the rename. */
-    private static void refreshRenameCaches(int userId, String newUsername) {
+    private static void refreshRenameCaches(int userId, String oldUsername, String newUsername) {
+        // The registration form caches whether a name is free: the old name is free now and the new one is taken.
+        AvailabilityCache.invalidateUsername(oldUsername);
+        AvailabilityCache.invalidateUsername(newUsername);
+
         try {
             if (Emulator.getGameServer() != null
                     && Emulator.getGameServer().getGameClientManager() != null

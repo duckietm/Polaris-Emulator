@@ -354,13 +354,11 @@ public class RoomLayout {
                 break;
         }
 
-        int x = tile.x;
-        int y = tile.y;
-
-        for (int i = 0; i <= offset; i++) {
-            x += offsetX;
-            y += offsetY;
-        }
+        // offset + 1 steps, worked out at once: a step loop never ends when offset is Integer.MAX_VALUE.
+        long steps = offset < 0 ? 0 : (long) offset + 1;
+        long x = tile.x + offsetX * steps;
+        long y = tile.y + offsetY * steps;
+        if (x < Short.MIN_VALUE || x > Short.MAX_VALUE || y < Short.MIN_VALUE || y > Short.MAX_VALUE) return null;
 
         return this.getTile((short) x, (short) y);
     }

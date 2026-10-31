@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThread;
+import com.eu.habbo.habbohotel.guilds.forums.ForumThreadComment;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThreadState;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -13,6 +14,8 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumCommentsComposer;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
+import java.util.ArrayList;
+import java.util.List;
 
 
 
@@ -57,8 +60,13 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
             return;
         }
 
-        if (thread.getState() != ForumThreadState.HIDDEN_BY_GUILD_ADMIN || hasStaffPermissions || isGuildAdministrator) {
-            this.client.sendResponse(new GuildForumCommentsComposer(guildId, threadId, index, thread.getComments(limit, index)));
+        // The check was inverted: a thread a group admin hid was served to everyone, one staff hid to group admins.
+        if (ForumThreadState.visibleTo(thread.getState(), hasStaffPermissions, isGuildAdministrator)) {
+            List<ForumThreadComment> comments = new ArrayList<>();
+            for (ForumThreadComment comment : thread.getComments(limit, index)) {
+                comments.add(comment.forReader(hasStaffPermissions, isGuildAdministrator));
+            }
+            this.client.sendResponse(new GuildForumCommentsComposer(guildId, threadId, index, comments));
             this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
         }
         else {

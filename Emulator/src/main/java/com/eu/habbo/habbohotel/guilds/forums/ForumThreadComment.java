@@ -134,6 +134,16 @@ public class ForumThreadComment implements Runnable, ISerialize {
         return createdAt;
     }
 
+    /** This post as a reader may see it: a hidden post keeps its place and author, without its text. */
+    public ForumThreadComment forReader(boolean staff, boolean groupAdmin) {
+        if (ForumThreadState.visibleTo(this.state, staff, groupAdmin)) return this;
+
+        ForumThreadComment hidden =
+                new ForumThreadComment(this.commentId, this.threadId, this.userId, "", this.createdAt, this.state, this.adminId);
+        hidden.index = this.index;
+        return hidden;
+    }
+
     public ForumThreadState getState() {
         return state;
     }

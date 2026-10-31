@@ -152,7 +152,9 @@ public class RoomTrade {
 
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
-        if (user == null) return;
+        // Checked here, under the trade's lock: the handler checked "accepted" before taking it, so an offer changed
+        // in between (which clears every acceptance) could still be confirmed.
+        if (user == null || !user.getAccepted()) return;
 
         user.confirm();
 

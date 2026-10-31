@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.boxBase;
 import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.context;
+import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.passes;
 import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.room;
 import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.settings;
 import static com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTestSupport.user;
@@ -25,12 +26,12 @@ class WiredConditionUserCooldownTest {
         box.clock(() -> now[0]);
         box.saveData(settings(new int[] {30}));
 
-        assertTrue(box.evaluate(context(room, actor)));
+        assertTrue(passes(box, context(room, actor)));
         assertFalse(box.evaluate(context(room, actor)));
         now[0] += 29_999L;
         assertFalse(box.evaluate(context(room, actor)));
         now[0] += 1L;
-        assertTrue(box.evaluate(context(room, actor)));
+        assertTrue(passes(box, context(room, actor)));
     }
 
     @Test
@@ -42,8 +43,8 @@ class WiredConditionUserCooldownTest {
         box.clock(() -> 5_000L);
         box.saveData(settings(new int[] {60}));
 
-        assertTrue(box.evaluate(context(room, first)));
-        assertTrue(box.evaluate(context(room, second)));
+        assertTrue(passes(box, context(room, first)));
+        assertTrue(passes(box, context(room, second)));
         assertFalse(box.evaluate(context(room, first)));
     }
 

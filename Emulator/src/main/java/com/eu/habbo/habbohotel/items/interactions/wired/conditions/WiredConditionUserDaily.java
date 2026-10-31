@@ -56,19 +56,32 @@ public class WiredConditionUserDaily extends InteractionWiredCondition {
         Integer userId = WiredConditionUserCooldown.triggeringUserId(ctx);
         if (userId == null) return false;
 
-        long today = (this.dayClock != null)
-                ? this.dayClock.getAsLong()
-                : WiredRoomTime.now(ctx.room()).toLocalDate().toEpochDay();
+        long today = this.today(ctx);
         synchronized (this.lastPassDay) {
             Long last = this.lastPassDay.get(userId);
-            if (last != null && last == today) return false;
+            return last == null || last != today;
+        }
+    }
 
+    /** The day is spent only when the stack runs: a stack that failed on another condition leaves it for later. */
+    @Override
+    public void commit(WiredContext ctx) {
+        Integer userId = WiredConditionUserCooldown.triggeringUserId(ctx);
+        if (userId == null) return;
+
+        long today = this.today(ctx);
+        synchronized (this.lastPassDay) {
             this.lastPassDay.remove(userId);
             this.lastPassDay.put(userId, today);
             WiredConditionUserCooldown.trimOldest(this.lastPassDay);
         }
         this.needsUpdate(true);
-        return true;
+    }
+
+    private long today(WiredContext ctx) {
+        return (this.dayClock != null)
+                ? this.dayClock.getAsLong()
+                : WiredRoomTime.now(ctx.room()).toLocalDate().toEpochDay();
     }
 
     @Override

@@ -598,6 +598,11 @@ class CatalogPurchaseItemBehaviourTest {
         when(rent.getRentDays()).thenReturn(3);
         this.buy("delivery / a rent offer", rent, 1, "", false);
 
+        CatalogItem rentFurni = this.offer(64, "rent_chair_only", 5, 0, base(1, "chair", FurnitureType.FLOOR));
+        when(rentFurni.isRentOffer()).thenReturn(true);
+        when(rentFurni.getRentDays()).thenReturn(3);
+        this.buy("delivery / a rent offer of furniture only", rentFurni, 1, "", false);
+
         this.createItemFails = true;
         this.buy("delivery / furniture that cannot be created", bundle, 1, "", false);
     }

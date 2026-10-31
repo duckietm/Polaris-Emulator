@@ -2261,6 +2261,8 @@ public class CatalogManager {
 
     private boolean isAtomicFurniturePurchase(CatalogItem item) {
         if (item == null || item.getBaseItems().isEmpty()) return false;
+        // A rent offer takes the delivery that sets the expiry and tracks it; the atomic path does neither.
+        if (item.isRentOffer()) return false;
         for (Item baseItem : item.getBaseItems()) {
             if (baseItem == null
                     || Item.isBot(baseItem)

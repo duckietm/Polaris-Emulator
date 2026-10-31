@@ -47,6 +47,8 @@ import org.slf4j.LoggerFactory;
 public class RoomChatManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomChatManager.class);
     static final int DEFAULT_MUTE_TIME_SECONDS = 30;
+    /** Every word is checked against every message in the room. */
+    static final int MAX_WORD_FILTER_WORDS = 200;
 
     private final Room room;
 
@@ -120,7 +122,7 @@ public class RoomChatManager {
      */
     public void addToWordFilter(String word) {
         synchronized (this.wordFilterWords) {
-            if (this.wordFilterWords.contains(word)) {
+            if (this.wordFilterWords.contains(word) || this.wordFilterWords.size() >= MAX_WORD_FILTER_WORDS) {
                 return;
             }
 

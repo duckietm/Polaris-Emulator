@@ -9,10 +9,14 @@ public class RoomWordFilterModifyEvent extends MessageHandler {
     public void handle() throws Exception {
         final int roomId = this.packet.readInt();
         final boolean add = this.packet.readBoolean();
-        String word = this.packet.readString();
+        String word = this.packet.readString().trim();
 
         if (word.length() > 25) {
-            word = word.substring(0, 24);
+            word = word.substring(0, 25);
+        }
+
+        if (word.isEmpty()) {
+            return;
         }
 
         // Get current room of user.

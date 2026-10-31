@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.ambassadors;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.commands.CommandTargetGuard;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -34,6 +35,9 @@ public class AmbassadorAlertCommandEvent extends MessageHandler {
         Habbo habbo = room.getHabbo(userId);
 
         if (habbo == null || habbo.getClient() == null) return;
+
+        // An ambassador alerted any user in the room, staff above them included.
+        if (!CommandTargetGuard.canTarget(this.client.getHabbo(), habbo)) return;
 
         SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(
                 client.getHabbo(),

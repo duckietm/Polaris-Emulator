@@ -1,24 +1,38 @@
 package com.eu.habbo.networking.gameserver.stats;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.monitoring.EmulatorStatsService;
 import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.ReferenceCountUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.IntPredicate;
 
 public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
     private static final String BASE_PATH = "/api/emustats";
     private static final Gson GSON = new Gson();
+    /** Its own key: the page used to ask for acc_modtool_room_info, so every moderator could read it. */
+    static final String PERMISSION = "acc_emustats";
+    private static final String STALK_PERMISSION = "acc_can_stalk";
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -57,14 +71,65 @@ public class EmuStatsHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
-        if (habbo == null || !habbo.hasPermission(Permission.ACC_MODTOOL_ROOM_INFO)) {
+        GameClientManager clients = Emulator.getGameServer().getGameClientManager();
+        Habbo habbo = clients.getHabbo(userId);
+        if (habbo == null || !habbo.hasPermission(PERMISSION)) {
             sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, "{\"error\":\"Forbidden.\"}");
             return;
         }
 
-        EmulatorStatsService.Snapshot snapshot = EmulatorStatsService.collectSnapshot();
+        // A HEAD request only asks whether the page answers: the snapshot is not built for it.
+        if (req.method() == HttpMethod.HEAD) {
+            sendJson(ctx, req, HttpResponseStatus.OK, "{}");
+            return;
+        }
+
+        JsonObject snapshot = GSON.toJsonTree(EmulatorStatsService.collectSnapshot()).getAsJsonObject();
+        boolean mayStalk = habbo.hasPermission(STALK_PERMISSION);
+        snapshot.add(
+                "users",
+                visibleUsers(
+                        snapshot.getAsJsonArray("users"),
+                        id -> !mayStalk && isHidden(clients.getHabbo(id)),
+                        id -> !mayStalk && blocksFollowing(clients.getHabbo(id))));
         sendJson(ctx, req, HttpResponseStatus.OK, GSON.toJson(snapshot));
+    }
+
+    /**
+     * The users list as the web page may show it: without the users who hide themselves, without the room of those who
+     * do not want to be followed, and without anyone's credits. The server's own dashboard keeps the full list.
+     */
+    static JsonArray visibleUsers(JsonArray users, IntPredicate hidden, IntPredicate roomHidden) {
+        JsonArray visible = new JsonArray();
+        if (users == null) {
+            return visible;
+        }
+
+        for (JsonElement element : users) {
+            JsonObject user = element.getAsJsonObject().deepCopy();
+            int id = user.get("id").getAsInt();
+            if (hidden.test(id)) {
+                continue;
+            }
+
+            user.remove("credits");
+            if (roomHidden.test(id)) {
+                user.addProperty("roomId", 0);
+            }
+            visible.add(user);
+        }
+
+        return visible;
+    }
+
+    private static boolean isHidden(Habbo habbo) {
+        return habbo != null
+                && ((habbo.getRoomUnit() != null && habbo.getRoomUnit().isInvisible())
+                        || habbo.getHabboStats().hideOnline);
+    }
+
+    private static boolean blocksFollowing(Habbo habbo) {
+        return habbo != null && habbo.getHabboStats().blockFollowing;
     }
 
     private static int authenticate(FullHttpRequest req) {

@@ -379,12 +379,13 @@ public final class CollectiblesService {
      */
     public List<Owned> claimLevelRewards(int userId, int level, int xpPerLevel, int now) throws SQLException {
         List<Owned> minted = new ArrayList<>();
-        List<Long> owned = new ArrayList<>();
+        List<Long> ownedAssets = new ArrayList<>();
         if (xpPerLevel > 0) {
-            for (Owned token : this.owned(userId)) owned.add(token.assetId());
+            for (Owned token : this.owned(userId)) ownedAssets.add(token.assetId());
         }
         for (OpenReward open : this.openRewards(userId, level, xpPerLevel, now)) {
-            if (!owned.isEmpty()) this.recordClaimAssets(userId, open.reward().claimKey(), owned, now);
+            if (!ownedAssets.isEmpty())
+                this.recordClaimAssets(userId, open.reward().claimKey(), ownedAssets, now);
             for (int i = open.claimedAmount(); i < open.reward().claimLimit(); i++) {
                 if (!this.recordClaim(
                         userId, open.reward().claimKey(), open.reward().claimLimit(), now)) break;

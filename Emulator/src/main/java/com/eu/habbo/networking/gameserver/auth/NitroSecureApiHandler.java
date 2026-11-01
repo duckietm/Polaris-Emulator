@@ -130,7 +130,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             byte[] encrypted = new byte[readableBytes];
             req.content().getBytes(req.content().readerIndex(), encrypted);
             byte[] clear = NitroSecureAssetHandler.decrypt(
-                    sessionKey, NitroSecureAssetHandler.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
+                    sessionKey, NitroSecureHex.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
             clear = unwrapEnvelope(clear, req, secureContext);
 
             // Same request line and headers, decrypted body: this is the inbound
@@ -170,7 +170,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
         try {
             byte[] clear = readBytes(response.content());
             byte[] encrypted = NitroSecureAssetHandler.encrypt(secureContext.sessionKey(), clear);
-            byte[] hex = NitroSecureAssetHandler.toHex(encrypted).getBytes(StandardCharsets.UTF_8);
+            byte[] hex = NitroSecureHex.toHex(encrypted).getBytes(StandardCharsets.UTF_8);
 
             FullHttpResponse encryptedResponse = new DefaultFullHttpResponse(
                     response.protocolVersion(), response.status(), Unpooled.wrappedBuffer(hex));

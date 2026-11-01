@@ -420,10 +420,13 @@ public class GuildManager {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? LIMIT 1")) {
-            statement.setInt(1, 2);
+                        "UPDATE guilds_members SET level_id = ? WHERE user_id = ? AND guild_id = ? AND level_id = ? LIMIT 1")) {
+            // Only an admin row goes back to member: any row used to, so a blocked member was unblocked and a
+            // request accepted without the member count changing.
+            statement.setInt(1, GuildRank.MEMBER.type);
             statement.setInt(2, userId);
             statement.setInt(3, guild.getId());
+            statement.setInt(4, GuildRank.ADMIN.type);
             statement.execute();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

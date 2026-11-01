@@ -32,6 +32,16 @@ final class GuildForumInputGuard {
         return state >= 0 && state <= 3;
     }
 
+    /** read_forum holds EVERYONE, MEMBERS or ADMINS: an owner-only reader is not in the column. */
+    static boolean isReadState(int state) {
+        return state >= 0 && state <= 2;
+    }
+
+    /** mod_forum holds ADMINS or OWNER only. */
+    static boolean isModerationState(int state) {
+        return state == 2 || state == 3;
+    }
+
     static boolean isThreadModerationState(int state) {
         return state == 1 || state == 10 || state == 20;
     }

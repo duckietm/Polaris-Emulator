@@ -35,6 +35,13 @@ class GuildForumInputGuardTest {
         assertTrue(GuildForumInputGuard.isSettingsState(3));
         assertFalse(GuildForumInputGuard.isSettingsState(4));
 
+        // read_forum and mod_forum are narrower enums in the database.
+        assertTrue(GuildForumInputGuard.isReadState(2));
+        assertFalse(GuildForumInputGuard.isReadState(3));
+        assertTrue(GuildForumInputGuard.isModerationState(2));
+        assertTrue(GuildForumInputGuard.isModerationState(3));
+        assertFalse(GuildForumInputGuard.isModerationState(0));
+
         assertTrue(GuildForumInputGuard.isThreadModerationState(20));
         assertFalse(GuildForumInputGuard.isThreadModerationState(999));
         assertTrue(GuildForumInputGuard.isMessageModerationState(10));

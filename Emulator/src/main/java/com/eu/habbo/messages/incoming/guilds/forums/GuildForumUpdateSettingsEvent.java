@@ -24,10 +24,12 @@ public class GuildForumUpdateSettingsEvent extends MessageHandler {
         int modForum = packet.readInt();
 
         if (!GuildForumInputGuard.isPositiveId(guildId) ||
-                !GuildForumInputGuard.isSettingsState(canRead) ||
+                // Each value must fit its column: one outside the enum made the guild's whole UPDATE fail, name and
+                // badge included, or left a row that did not load at the next start.
+                !GuildForumInputGuard.isReadState(canRead) ||
                 !GuildForumInputGuard.isSettingsState(postMessages) ||
                 !GuildForumInputGuard.isSettingsState(postThreads) ||
-                !GuildForumInputGuard.isSettingsState(modForum)) {
+                !GuildForumInputGuard.isModerationState(modForum)) {
             this.client.sendResponse(new ConnectionErrorComposer(400));
             return;
         }

@@ -26,6 +26,12 @@ public class SetMaxCommand extends Command {
                 return true;
             }
 
+            // A value-2 permission passes for anyone with rights here: the room's limit is its owner's call.
+            if (!gameClient.getHabbo().getHabboInfo().getCurrentRoom().isOwner(gameClient.getHabbo())) {
+                gameClient.getHabbo().whisperLocalized("generic.cannot_do_that", RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             if (max > 0 && max < 9999) {
                 gameClient.getHabbo().getHabboInfo().getCurrentRoom().setUsersMax(max);
                 gameClient

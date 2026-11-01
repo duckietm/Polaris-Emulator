@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.ClothItem;
 import com.eu.habbo.habbohotel.items.interactions.InteractionClothing;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -66,17 +67,19 @@ public class RedeemClothingEvent extends MessageHandler {
                                 return;
                             }
 
+                            // Claimed before the grant: a pickup racing the redeem used to leave the furni in an
+                            // inventory while the clothing was already granted, so it could be redeemed again.
+                            Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+                            if (!room.claimItem(item)) {
+                                return;
+                            }
+
                             if (!this.grantClothing(clothing.id)) {
+                                room.addHabboItem(item);
                                 return;
                             }
 
                             item.setRoomId(0);
-
-                            this.client
-                                    .getHabbo()
-                                    .getHabboInfo()
-                                    .getCurrentRoom()
-                                    .removeHabboItem(item);
                             this.client
                                     .getHabbo()
                                     .getHabboInfo()

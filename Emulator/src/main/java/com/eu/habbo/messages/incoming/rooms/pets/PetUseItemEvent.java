@@ -50,10 +50,12 @@ public class PetUseItemEvent extends MessageHandler {
         // it was then taken and deleted. Only a horse item that changed the horse is used up.
         if (!applyHorseItem(item, horse)) return;
 
+        // The item is claimed before the room hears about it: a pickup that won the race keeps the item, and the
+        // horse keeps the look it was just given, so the item is never both used and back in an inventory.
+        if (!room.claimItem(item)) return;
+
         Emulator.getThreading().run(horse);
         room.sendComposer(new RoomPetHorseFigureComposer(horse).compose());
-
-        room.removeHabboItem(item);
         room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
         // As a plant product does: the tiles under the used furni lose its height and its blocking.
         freeTiles(room, item);
@@ -134,6 +136,9 @@ public class PetUseItemEvent extends MessageHandler {
     /** A revival potion brings a dead plant back. */
     private void revive(Room room, HabboItem item, MonsterplantPet monsterplant) {
         if (!monsterplant.isDead()) return;
+        // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
+        // already used it.
+        if (!room.claimItem(item)) return;
 
         // Use revive() method which properly resets hasDied flag and sets needsUpdate
         monsterplant.revive();
@@ -155,6 +160,9 @@ public class PetUseItemEvent extends MessageHandler {
     /** A fertiliser takes a growing plant one growth time further. */
     private void fertilise(Room room, HabboItem item, MonsterplantPet monsterplant) {
         if (monsterplant.isFullyGrown()) return;
+        // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
+        // already used it.
+        if (!room.claimItem(item)) return;
 
         monsterplant.setCreated(monsterplant.getCreated() - MonsterplantPet.growTime);
         monsterplant.needsUpdate = true;
@@ -184,6 +192,9 @@ public class PetUseItemEvent extends MessageHandler {
                 || (name.equalsIgnoreCase("mnstr_rebreed_3") && monsterplant.getRarity() >= 9);
 
         if (!validItem) return;
+        // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
+        // already used it.
+        if (!room.claimItem(item)) return;
 
         // setCanBreed now automatically sets needsUpdate
         monsterplant.setCanBreed(true);
@@ -200,7 +211,6 @@ public class PetUseItemEvent extends MessageHandler {
 
     /** Takes a used plant product out of the room, shows the plant's new state and frees the tiles under it. */
     private void takeUsedItem(Room room, HabboItem item, Pet pet) {
-        room.removeHabboItem(item);
         room.sendComposer(new RemoveFloorItemComposer(item).compose());
         room.sendComposer(new RoomUserStatusComposer(pet.getRoomUnit()).compose());
         room.sendComposer(new PetStatusUpdateComposer(pet).compose());

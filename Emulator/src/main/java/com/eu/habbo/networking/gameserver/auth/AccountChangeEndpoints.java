@@ -415,7 +415,7 @@ final class AccountChangeEndpoints {
         return "less than an hour";
     }
 
-    private static boolean isUsernameBanned(Connection conn, String username) throws SQLException {
+    static boolean isUsernameBanned(Connection conn, String username) throws SQLException {
         try (PreparedStatement banned =
                 conn.prepareStatement("SELECT 1 FROM banned_usernames WHERE LOWER(username) = LOWER(?) LIMIT 1")) {
             banned.setString(1, username);

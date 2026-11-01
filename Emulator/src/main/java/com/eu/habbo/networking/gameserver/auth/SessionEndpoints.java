@@ -581,6 +581,12 @@ final class SessionEndpoints {
             String gender,
             int templateId)
             throws Exception {
+        // The same list a rename is checked against: a reserved or forbidden name could be taken by registering it.
+        if (AccountChangeEndpoints.isUsernameBanned(conn, username)) {
+            sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is not allowed."));
+            return false;
+        }
+
         int maxPerIp = config.getInt("register.max_per_ip", 5);
         // The database quota below compares ip_register as text, so every address of an IPv6 /64 had its own
         // quota: accounts made in the last day are also counted per client bucket.

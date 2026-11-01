@@ -81,7 +81,8 @@ public class Subscription {
      * @param amount Length of time to add in seconds
      */
     public void addDuration(int amount) {
-        this.duration += amount;
+        // Long purchases one after another used to wrap the int and turn the subscription negative.
+        this.duration = (int) Math.max(0L, Math.min(Integer.MAX_VALUE, (long) this.duration + amount));
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(

@@ -419,7 +419,9 @@ final class WiredSetupImporter {
     int[] remapPicks(List<String> picks, int anchorX, int anchorY) {
         if (picks == null || picks.isEmpty()) return new int[0];
         Set<Integer> ids = new LinkedHashSet<>();
-        int limit = WiredInputGuard.maxFurniSelectionCount();
+        // The selection a box's dialog allows: the save-gate bound (twenty times that) let an import carry five
+        // times the picks a hand-made box may hold.
+        int limit = WiredManager.MAXIMUM_FURNI_SELECTION;
         for (String pick : picks) {
             if (ids.size() >= limit) break;
             int boxIndex = WiredSetupDocument.boxReference(pick);

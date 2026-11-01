@@ -551,7 +551,14 @@ public final class CollectiblesService {
         if (mintable.isEmpty() || !mintOpen(mintable.get(), now)) return Optional.empty();
         int price = mintable.get().price();
         if (price > 0 && !this.addMintTokens(userId, -price)) return Optional.empty();
-        Optional<Owned> owned = this.mint(userId, mintable.get().productCode(), "mint", now);
+        Optional<Owned> owned;
+        try {
+            owned = this.mint(userId, mintable.get().productCode(), "mint", now);
+        } catch (SQLException e) {
+            // The stamps are already taken: a mint that throws gives them back, as one that finds nothing does.
+            if (price > 0) this.addMintTokens(userId, price);
+            throw e;
+        }
         if (owned.isEmpty() && price > 0) this.addMintTokens(userId, price);
         return owned;
     }

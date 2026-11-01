@@ -71,6 +71,7 @@ class WebSocketHttpOffloadTest {
                     blockingExecutor,
                     awaitPresent(channel, "emuStatsHttpHandler").executor());
             assertSame(socketExecutor, awaitPresent(channel, "wsHttpHandler").executor());
+            assertSame(blockingExecutor, awaitPresent(channel, "nitroSecureApiHandler").executor());
             assertSame(socketExecutor, awaitPresent(channel, "authHttpHandler").executor());
         } finally {
             channel.close().syncUninterruptibly();
@@ -116,6 +117,8 @@ class WebSocketHttpOffloadTest {
             awaitRemoved(channel, "blockingHttpAdmissionBadgeLeaderboard");
             awaitRemoved(channel, "blockingHttpAdmissionStats");
             awaitRemoved(channel, "nitroSecureApiHandler");
+            awaitRemoved(channel, "blockingHttpAdmissionApi");
+            awaitRemoved(channel, "httpReadTimeout");
             awaitRemoved(channel, "authHttpHandler");
             awaitRemoved(channel, "cmsApiHandler");
             awaitRemoved(channel, "badgeHttpHandler");

@@ -37,6 +37,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -48,6 +49,10 @@ import org.slf4j.LoggerFactory;
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannelInitializer.class);
     private static final int MAX_FRAME_SIZE = 500000;
+    // A connection that has not upgraded to WebSocket is closed after this many seconds without a read: before, an
+    // HTTP connection could hold its aggregation buffer open for as long as it liked. 0 turns it off.
+    static final String HTTP_READ_TIMEOUT_SETTING = "ws.http.read_timeout_sec";
+    private static final int DEFAULT_HTTP_READ_TIMEOUT_SECONDS = 30;
 
     private final SslContext sslContext;
     private final boolean sslEnabled;
@@ -93,10 +98,17 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
             ch.pipeline().addLast(new SslHandler(engine));
         }
 
+        ConfigurationManager configuration = Emulator.getConfig();
+        int httpReadTimeout = configuration == null
+                ? DEFAULT_HTTP_READ_TIMEOUT_SECONDS
+                : configuration.getInt(HTTP_READ_TIMEOUT_SETTING, DEFAULT_HTTP_READ_TIMEOUT_SECONDS);
+        if (httpReadTimeout > 0) {
+            ch.pipeline().addLast("httpReadTimeout", new ReadTimeoutHandler(httpReadTimeout, TimeUnit.SECONDS));
+        }
+
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());
         ch.pipeline().addLast("httpAggregator", new HttpObjectAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsHttpHandler", new WebSocketHttpHandler());
-        ConfigurationManager configuration = Emulator.getConfig();
         ExecutionBackpressureSettings backpressureSettings = configuration == null
                 ? ExecutionBackpressureSettings.defaults()
                 : ExecutionBackpressureSettings.from(configuration);
@@ -107,7 +119,11 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionAssets",
                         BlockingHttpExecutionGroup.admissionHandler("nitroSecureAssetHandler"));
         ch.pipeline().addLast(blockingHttp, "nitroSecureAssetHandler", new NitroSecureAssetHandler());
-        ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
+        // The secure API derives a key for every request: on the socket event loop that stalled every other
+        // connection of the loop, so it runs on the blocking HTTP executor like the asset handler.
+        ch.pipeline()
+                .addLast("blockingHttpAdmissionApi", BlockingHttpExecutionGroup.admissionHandler("nitroSecureApiHandler"));
+        ch.pipeline().addLast(blockingHttp, "nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
         ch.pipeline().addLast("blockingHttpAdmissionCms", BlockingHttpExecutionGroup.admissionHandler("cmsApiHandler"));
         ch.pipeline().addLast(blockingHttp, "cmsApiHandler", new CmsApiHandler());

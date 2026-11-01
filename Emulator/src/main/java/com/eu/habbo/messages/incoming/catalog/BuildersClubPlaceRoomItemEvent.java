@@ -167,11 +167,13 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
             return buildersClubItem;
         }
 
+        // Only Builders Club offers: the normal catalog's offers were placed for free, past their page's rank,
+        // club, limited and price rules, and could then be redeemed.
         int catalogItemId =
-                Emulator.getGameEnvironment().getCatalogManager().offerDefs.get(offerId);
+                Emulator.getGameEnvironment().getCatalogManager().buildersClubOfferDefs.get(offerId);
 
         if (catalogItemId > 0) {
-            return Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(catalogItemId);
+            return Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(catalogItemId, CatalogPageType.BUILDER);
         }
 
         CatalogPage page =

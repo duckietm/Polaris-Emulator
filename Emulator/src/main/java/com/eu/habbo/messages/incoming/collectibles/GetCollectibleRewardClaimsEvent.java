@@ -44,7 +44,7 @@ public class GetCollectibleRewardClaimsEvent extends MessageHandler {
             setNames.put(collection.collectionId(), collection.name() == null ? "" : collection.name());
         }
         this.client.sendResponse(new CollectibleRewardClaimsComposer(
-                service.openRewards(userId, score.level(), CollectiblesSupport.now()),
+                service.openRewards(userId, score.level(), settings.xpPerLevel(), CollectiblesSupport.now()),
                 CollectiblesService.walletOf(userId),
                 setNames));
     }

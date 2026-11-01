@@ -18,11 +18,13 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntUnaryOperator;
 import javax.sql.DataSource;
@@ -174,13 +176,45 @@ public final class CollectiblesService {
     /** The user's sets as the collections tab shows them. */
     public List<CollectionState> collectionStates(int userId, int now) throws SQLException {
         Map<String, Product> products = this.products();
-        Map<String, Integer> counts = counts(this.owned(userId));
+        List<Owned> owned = this.owned(userId);
+        Map<String, Integer> counts = counts(owned);
         Map<String, Integer> claimed = this.claimed(userId);
         List<CollectionState> states = new ArrayList<>();
         for (Collection collection : this.collections()) {
-            states.add(CollectorProgress.state(collection, products, counts, claimed, now));
+            CollectionState state = CollectorProgress.state(collection, products, counts, claimed, now);
+            states.add(this.withoutSpentClaims(state, products, owned, userId));
         }
         return states;
+    }
+
+    /**
+     * A claim the set's own tokens already earned on another account is shown locked: the tokens passed to this user
+     * do not earn it again.
+     */
+    private CollectionState withoutSpentClaims(
+            CollectionState state, Map<String, Product> products, List<Owned> owned, int userId) throws SQLException {
+        List<Product> setProducts = CollectorProgress.collectionProducts(state.collection(), products);
+        CollectibleData.Claim bonusClaim = this.unlessSpent(state.bonusClaim(), setProducts, owned, userId);
+        CollectibleData.Claim rewardClaim = this.unlessSpent(state.rewardClaim(), setProducts, owned, userId);
+        if (bonusClaim == state.bonusClaim() && rewardClaim == state.rewardClaim()) return state;
+        return new CollectionState(
+                state.collection(),
+                state.entries(),
+                state.score(),
+                state.goal(),
+                state.complete(),
+                state.bonusProduct(),
+                bonusClaim,
+                state.rewardProduct(),
+                rewardClaim);
+    }
+
+    private CollectibleData.Claim unlessSpent(
+            CollectibleData.Claim claim, List<Product> setProducts, List<Owned> owned, int userId) throws SQLException {
+        if (claim == null || claim.status() != CollectibleData.CLAIM_AVAILABLE) return claim;
+        if (pickAssets(owned, this.spentAssets(claim.claimId(), userId), setProducts) != null) return claim;
+        return new CollectibleData.Claim(
+                claim.claimId(), claim.claimedAmount(), claim.claimLimit(), CollectibleData.CLAIM_LOCKED);
     }
 
     /** The collector XP and level, raising the stored high score when it was beaten. */
@@ -287,20 +321,45 @@ public final class CollectiblesService {
         if (product == null || claim == null || claim.status() != CollectibleData.CLAIM_AVAILABLE) {
             return Optional.empty();
         }
+        List<Long> assets = pickAssets(
+                this.owned(userId),
+                this.spentAssets(claim.claimId(), userId),
+                CollectorProgress.collectionProducts(state.collection(), this.products()));
+        if (assets == null) return Optional.empty();
         if (!this.recordClaim(userId, claim.claimId(), 1, now)) return Optional.empty();
+        this.recordClaimAssets(userId, claim.claimId(), assets, now);
 
         Optional<Owned> owned = this.mint(userId, product.productCode(), bonus ? "bonus" : "reward", now);
-        if (owned.isEmpty()) this.unrecordClaim(userId, claim.claimId());
+        if (owned.isEmpty()) {
+            this.unrecordClaim(userId, claim.claimId());
+            this.unrecordClaimAssets(userId, claim.claimId(), assets);
+        }
         return owned;
     }
 
     /** The level rewards a user can still claim. */
     public List<OpenReward> openRewards(int userId, int level, int now) throws SQLException {
+        return this.openRewards(userId, level, 0, now);
+    }
+
+    /**
+     * The level rewards a user can still claim. With {@code xpPerLevel} above zero, a reward counts only the tokens
+     * that did not already earn it on another account, so passing tokens on does not earn it again.
+     */
+    public List<OpenReward> openRewards(int userId, int level, int xpPerLevel, int now) throws SQLException {
         Map<String, Product> products = this.products();
         Map<String, Integer> claimed = this.claimed(userId);
+        List<Owned> owned = xpPerLevel > 0 ? this.owned(userId) : List.of();
+        List<Collection> collections = xpPerLevel > 0 ? this.collections() : List.of();
         List<OpenReward> open = new ArrayList<>();
         for (LevelReward reward : this.levelRewards()) {
-            if (!CollectorProgress.levelRewardOpen(reward, level, now)) continue;
+            int rewardLevel = level;
+            if (xpPerLevel > 0) {
+                Set<Long> spent = this.spentAssets(reward.claimKey(), userId);
+                int score = CollectorProgress.score(counts(unspent(owned, spent)), products, collections);
+                rewardLevel = Math.min(level, CollectorProgress.level(score, xpPerLevel));
+            }
+            if (!CollectorProgress.levelRewardOpen(reward, rewardLevel, now)) continue;
             Product product = products.get(reward.productCode());
             int amount = claimed.getOrDefault(reward.claimKey(), 0);
             if (product == null || amount >= reward.claimLimit()) continue;
@@ -311,8 +370,22 @@ public final class CollectiblesService {
 
     /** Claims every open level reward as often as it can still be claimed. */
     public List<Owned> claimLevelRewards(int userId, int level, int now) throws SQLException {
+        return this.claimLevelRewards(userId, level, 0, now);
+    }
+
+    /**
+     * Claims every open level reward and records the tokens that earned it; see
+     * {@link #openRewards(int, int, int, int)}.
+     */
+    public List<Owned> claimLevelRewards(int userId, int level, int xpPerLevel, int now) throws SQLException {
         List<Owned> minted = new ArrayList<>();
-        for (OpenReward open : this.openRewards(userId, level, now)) {
+        List<Long> ownedAssets = new ArrayList<>();
+        if (xpPerLevel > 0) {
+            for (Owned token : this.owned(userId)) ownedAssets.add(token.assetId());
+        }
+        for (OpenReward open : this.openRewards(userId, level, xpPerLevel, now)) {
+            if (!ownedAssets.isEmpty())
+                this.recordClaimAssets(userId, open.reward().claimKey(), ownedAssets, now);
             for (int i = open.claimedAmount(); i < open.reward().claimLimit(); i++) {
                 if (!this.recordClaim(
                         userId, open.reward().claimKey(), open.reward().claimLimit(), now)) break;
@@ -389,6 +462,77 @@ public final class CollectiblesService {
     // ---------------------------------------------------------------- transfer
 
     /** Moves every token of {@code fromUserId} to {@code toUserId} and returns what moved. */
+    /** The tokens that already earned {@code claimKey} on an account other than {@code userId}. */
+    private Set<Long> spentAssets(String claimKey, int userId) throws SQLException {
+        Set<Long> spent = new HashSet<>();
+        try (Connection connection = this.dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT asset_id FROM collectible_claim_assets WHERE claim_key = ? AND user_id <> ?")) {
+            statement.setString(1, claimKey);
+            statement.setInt(2, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) spent.add(set.getLong(1));
+            }
+        }
+        return spent;
+    }
+
+    static List<Owned> unspent(List<Owned> owned, Set<Long> spent) {
+        if (spent.isEmpty()) return owned;
+        List<Owned> result = new ArrayList<>();
+        for (Owned token : owned) {
+            if (!spent.contains(token.assetId())) result.add(token);
+        }
+        return result;
+    }
+
+    /** One unspent token of each product of a set, or null when one is missing. */
+    static List<Long> pickAssets(List<Owned> owned, Set<Long> spent, List<Product> setProducts) {
+        if (setProducts.isEmpty()) return null;
+        List<Long> picked = new ArrayList<>();
+        for (Product product : setProducts) {
+            Long asset = null;
+            for (Owned token : owned) {
+                if (token.productCode().equals(product.productCode()) && !spent.contains(token.assetId())) {
+                    asset = token.assetId();
+                    break;
+                }
+            }
+            if (asset == null) return null;
+            picked.add(asset);
+        }
+        return picked;
+    }
+
+    private void recordClaimAssets(int userId, String claimKey, List<Long> assets, int now) throws SQLException {
+        try (Connection connection = this.dataSource.getConnection();
+                PreparedStatement insert = connection.prepareStatement(
+                        "INSERT IGNORE INTO collectible_claim_assets (claim_key, asset_id, user_id, claimed_at) VALUES (?, ?, ?, ?)")) {
+            for (long asset : assets) {
+                insert.setString(1, claimKey);
+                insert.setLong(2, asset);
+                insert.setInt(3, userId);
+                insert.setInt(4, now);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private void unrecordClaimAssets(int userId, String claimKey, List<Long> assets) throws SQLException {
+        try (Connection connection = this.dataSource.getConnection();
+                PreparedStatement delete = connection.prepareStatement(
+                        "DELETE FROM collectible_claim_assets WHERE claim_key = ? AND asset_id = ? AND user_id = ?")) {
+            for (long asset : assets) {
+                delete.setString(1, claimKey);
+                delete.setLong(2, asset);
+                delete.setInt(3, userId);
+                delete.addBatch();
+            }
+            delete.executeBatch();
+        }
+    }
+
     public List<Owned> transferAll(int fromUserId, int toUserId) throws SQLException {
         if (fromUserId == toUserId) return List.of();
         List<Owned> moved = new ArrayList<>();

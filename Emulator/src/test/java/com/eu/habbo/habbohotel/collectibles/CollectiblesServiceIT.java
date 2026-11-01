@@ -58,6 +58,7 @@ class CollectiblesServiceIT {
         execute(
                 "DELETE FROM users_collectibles",
                 "DELETE FROM users_collectible_claims",
+                "DELETE FROM collectible_claim_assets",
                 "DELETE FROM users_collector_stats",
                 "DELETE FROM collectible_products",
                 "DELETE FROM collectible_collections",
@@ -147,6 +148,50 @@ class CollectiblesServiceIT {
         assertTrue(service.claimLevelRewards(ALICE, 1, 10).isEmpty());
         assertTrue(service.openRewards(ALICE, 1, 10).isEmpty());
         assertEquals(1, service.openRewards(ALICE, 9, 10).size());
+    }
+
+    @Test
+    void tokensPassedOnDoNotEarnTheSameSetRewardAgain() throws Exception {
+        service.mint(ALICE, "bear", "shop", 1);
+        service.mint(ALICE, "duck", "shop", 1);
+        assertEquals(
+                "trophy",
+                service.claimCollection(ALICE, "toys", false, 150).orElseThrow().productCode());
+
+        service.transferAll(ALICE, BOB);
+        assertEquals(
+                CollectibleData.CLAIM_LOCKED,
+                service.collectionStates(BOB, 150).get(0).rewardClaim().status());
+        assertTrue(service.claimCollection(BOB, "toys", false, 150).isEmpty());
+
+        // Tokens of its own, one of each product, complete the set again for the new owner.
+        service.mint(BOB, "bear", "shop", 1);
+        service.mint(BOB, "duck", "shop", 1);
+        assertEquals(
+                "trophy",
+                service.claimCollection(BOB, "toys", false, 150).orElseThrow().productCode());
+    }
+
+    @Test
+    void tokensPassedOnDoNotRaiseTheLevelForTheSameLevelReward() throws Exception {
+        service.mint(ALICE, "bear", "shop", 1);
+        service.mint(ALICE, "duck", "shop", 1);
+        assertEquals(
+                1,
+                service.openRewards(ALICE, 9, 50, 10).stream()
+                        .filter(open -> open.product().productCode().equals("trophy"))
+                        .count());
+        assertEquals(
+                1,
+                service.claimLevelRewards(ALICE, 9, 50, 10).stream()
+                        .filter(owned -> owned.productCode().equals("trophy"))
+                        .count());
+
+        service.transferAll(ALICE, BOB);
+        assertTrue(service.openRewards(BOB, 9, 50, 10).stream()
+                .noneMatch(open -> open.product().productCode().equals("trophy")));
+        assertTrue(service.claimLevelRewards(BOB, 9, 50, 10).stream()
+                .noneMatch(owned -> owned.productCode().equals("trophy")));
     }
 
     @Test

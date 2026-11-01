@@ -35,13 +35,31 @@ public class FriendRequestEvent extends MessageHandler {
         // If the Habbo is null, we try to get the Habbo from the database.
         // If the Habbo is still null, the Habbo doesn't exist.
         if (targetHabbo == null) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "SELECT users.*, users_settings.block_friendrequests FROM users INNER JOIN users_settings ON users.id = users_settings.user_id WHERE username = ? LIMIT 1")) {
-                statement.setString(1, username);
-                try (ResultSet set = statement.executeQuery()) {
-                    while (set.next()) {
-                        targetHabbo = new Habbo(set);
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+                // Building a Habbo loads the whole account (inventory, friends, requests): the cheap refusals are
+                // checked on a small row first, so a repeated request to an offline user no longer loads it each time.
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.id, users_settings.block_friendrequests FROM users INNER JOIN users_settings ON users.id = users_settings.user_id WHERE username = ? LIMIT 1")) {
+                    statement.setString(1, username);
+                    try (ResultSet set = statement.executeQuery()) {
+                        if (!set.next()) {
+                            this.client.sendResponse(
+                                    new FriendRequestErrorComposer(FriendRequestErrorComposer.TARGET_NOT_FOUND));
+                            return;
+                        }
+                        if (this.refusedBeforeLoading(set.getInt("id"), set.getBoolean("block_friendrequests"))) {
+                            return;
+                        }
+                    }
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.*, users_settings.block_friendrequests FROM users INNER JOIN users_settings ON users.id = users_settings.user_id WHERE username = ? LIMIT 1")) {
+                    statement.setString(1, username);
+                    try (ResultSet set = statement.executeQuery()) {
+                        while (set.next()) {
+                            targetHabbo = new Habbo(set);
+                        }
                     }
                 }
             } catch (SQLException e) {
@@ -107,5 +125,20 @@ public class FriendRequestEvent extends MessageHandler {
         Messenger.makeFriendRequest(this.client.getHabbo().getHabboInfo().getId(), targetId);
         com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                 this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.REQUEST_FRIEND, 1);
+    }
+
+    /** The refusals that need only the target's id and setting: themselves, a friend, a pending request, blocked. */
+    private boolean refusedBeforeLoading(int targetId, boolean targetBlocksFriendRequests) {
+        int userId = this.client.getHabbo().getHabboInfo().getId();
+        if (targetId == userId) return true;
+        if (this.client.getHabbo().getMessenger().getFriends().containsKey(targetId)) return true;
+        if (Messenger.friendRequested(targetId, userId) || Messenger.friendRequested(userId, targetId)) return true;
+
+        if (targetBlocksFriendRequests) {
+            this.client.sendResponse(
+                    new FriendRequestErrorComposer(FriendRequestErrorComposer.TARGET_NOT_ACCEPTING_REQUESTS));
+            return true;
+        }
+        return false;
     }
 }

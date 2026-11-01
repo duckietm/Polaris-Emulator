@@ -352,8 +352,8 @@ final class SessionEndpoints {
 
         // The per-IP throttle alone is cleared by any successful login, so the
         // account being guessed carries its own counter and backoff.
-        if (AuthRateLimiter.isAccountLocked(username)) {
-            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
+        if (AuthRateLimiter.isAccountLocked(username, ip)) {
+            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username, ip);
             LOGGER.info(
                     "[auth/login] account throttled username='{}' ip={} for {}s",
                     AuthHttpUtil.forLog(username),
@@ -385,7 +385,7 @@ final class SessionEndpoints {
                         LOGGER.info(
                                 "[auth/login] user not found username='{}' ip={}", AuthHttpUtil.forLog(username), ip);
                         AuthRateLimiter.recordFailure(ip);
-                        AuthRateLimiter.recordAccountFailure(username);
+                        AuthRateLimiter.recordAccountFailure(username, ip);
                         sendJson(
                                 ctx,
                                 req,
@@ -409,7 +409,7 @@ final class SessionEndpoints {
                                 AuthHttpUtil.forLog(username),
                                 storedPreview);
                         AuthRateLimiter.recordFailure(ip);
-                        AuthRateLimiter.recordAccountFailure(username);
+                        AuthRateLimiter.recordAccountFailure(username, ip);
                         sendJson(
                                 ctx,
                                 req,

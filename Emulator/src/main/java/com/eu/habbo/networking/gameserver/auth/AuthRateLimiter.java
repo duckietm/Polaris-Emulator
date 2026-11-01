@@ -145,12 +145,36 @@ public final class AuthRateLimiter {
         recordSuccess(ip);
         String key = accountKey(username);
         if (key != null) ACCOUNT_STATE.remove(key);
+        String pair = accountKey(username, ip);
+        if (pair != null) ACCOUNT_STATE.remove(pair);
+    }
+
+    /*
+     * The login counts failures per account and client bucket. Locking the account for every address let anyone keep
+     * a chosen user out by getting the password wrong on purpose; now only the address that got it wrong is locked,
+     * and the per-address counter above still slows a guessing run spread over many accounts.
+     */
+
+    /** Records a failed login against the account that was named, from this client bucket. */
+    public static void recordAccountFailure(String username, String ip) {
+        recordAccountFailureKey(accountKey(username, ip));
+    }
+
+    public static boolean isAccountLocked(String username, String ip) {
+        return isAccountKeyLocked(accountKey(username, ip));
+    }
+
+    public static long secondsUntilAccountUnlock(String username, String ip) {
+        return secondsUntilAccountKeyUnlock(accountKey(username, ip));
     }
 
     /** Records a failed credential check against the account that was named. */
     public static void recordAccountFailure(String username) {
+        recordAccountFailureKey(accountKey(username));
+    }
+
+    private static void recordAccountFailureKey(String key) {
         if (!isEnabled()) return;
-        String key = accountKey(username);
         if (key == null) return;
 
         long now = System.currentTimeMillis();
@@ -186,8 +210,11 @@ public final class AuthRateLimiter {
     }
 
     public static boolean isAccountLocked(String username) {
+        return isAccountKeyLocked(accountKey(username));
+    }
+
+    private static boolean isAccountKeyLocked(String key) {
         if (!isEnabled()) return false;
-        String key = accountKey(username);
         if (key == null) return false;
 
         AtomicReference<AccountState> ref = ACCOUNT_STATE.get(key);
@@ -198,7 +225,10 @@ public final class AuthRateLimiter {
     }
 
     public static long secondsUntilAccountUnlock(String username) {
-        String key = accountKey(username);
+        return secondsUntilAccountKeyUnlock(accountKey(username));
+    }
+
+    private static long secondsUntilAccountKeyUnlock(String key) {
         if (key == null) return 0;
 
         AtomicReference<AccountState> ref = ACCOUNT_STATE.get(key);
@@ -232,6 +262,13 @@ public final class AuthRateLimiter {
                 .replaceAll("\\p{M}", "")
                 .toLowerCase(java.util.Locale.ROOT);
         return key.isEmpty() ? null : key;
+    }
+
+    /** The account and the client bucket it was tried from; the account alone when there is no address. */
+    static String accountKey(String username, String ip) {
+        String account = accountKey(username);
+        if (account == null || ip == null || ip.isEmpty()) return account;
+        return account + "|" + bucket(ip);
     }
 
     public static boolean tryProbe(String ip) {

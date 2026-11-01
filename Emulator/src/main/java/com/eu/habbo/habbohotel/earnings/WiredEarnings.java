@@ -1,9 +1,9 @@
 package com.eu.habbo.habbohotel.earnings;
 
-import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.earnings.IncomeRewardNotificationComposer;
 import java.sql.Connection;

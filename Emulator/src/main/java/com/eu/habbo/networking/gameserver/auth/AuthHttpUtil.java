@@ -35,6 +35,16 @@ public final class AuthHttpUtil {
     static final Pattern EMAIL_RE = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     static final Pattern FIGURE_RE = Pattern.compile("^[A-Za-z0-9.\\-]{1,200}$");
 
+    /**
+     * A value a client sent, as it may go into a log line: control characters (a new line could fake a whole log
+     * entry) become '_', and it is cut to 64 characters.
+     */
+    static String forLog(String value) {
+        if (value == null) return "";
+        String cleaned = value.replaceAll("[\\p{Cntrl}]", "_");
+        return cleaned.length() > 64 ? cleaned.substring(0, 64) + "..." : cleaned;
+    }
+
     static final SecureRandom RNG = new SecureRandom();
     static final int MAX_BODY_BYTES = 8 * 1024;
 

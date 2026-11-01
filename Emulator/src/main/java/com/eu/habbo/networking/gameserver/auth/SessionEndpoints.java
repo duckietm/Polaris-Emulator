@@ -353,7 +353,7 @@ final class SessionEndpoints {
         // account being guessed carries its own counter and backoff.
         if (AuthRateLimiter.isAccountLocked(username)) {
             long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
-            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", username, ip, secs);
+            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", AuthHttpUtil.forLog(username), ip, secs);
             sendJson(
                     ctx,
                     req,
@@ -377,7 +377,7 @@ final class SessionEndpoints {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (!rs.next()) {
-                        LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
+                        LOGGER.info("[auth/login] user not found username='{}' ip={}", AuthHttpUtil.forLog(username), ip);
                         AuthRateLimiter.recordFailure(ip);
                         AuthRateLimiter.recordAccountFailure(username);
                         sendJson(
@@ -400,7 +400,7 @@ final class SessionEndpoints {
                         LOGGER.info(
                                 "[auth/login] password mismatch for user id={} username='{}' stored='{}'",
                                 userId,
-                                username,
+                                AuthHttpUtil.forLog(username),
                                 storedPreview);
                         AuthRateLimiter.recordFailure(ip);
                         AuthRateLimiter.recordAccountFailure(username);
@@ -466,7 +466,7 @@ final class SessionEndpoints {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Login query failed for username=" + username, e);
+            LOGGER.error("Login query failed for username=" + AuthHttpUtil.forLog(username), e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -562,7 +562,7 @@ final class SessionEndpoints {
                             + "! Your account is ready — log in below with the password you just chose.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
-            LOGGER.error("Register query failed for username=" + username, e);
+            LOGGER.error("Register query failed for username=" + AuthHttpUtil.forLog(username), e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }

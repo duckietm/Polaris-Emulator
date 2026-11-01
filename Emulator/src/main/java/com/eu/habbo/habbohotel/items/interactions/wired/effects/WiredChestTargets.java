@@ -39,7 +39,8 @@ final class WiredChestTargets {
      * Refuse a save whose picks are not all upgraded chests of {@code kind}. Runs before the box
      * changes anything, so a refused save leaves the box as it was.
      */
-    static void validatePicks(Room room, int[] furniIds, Class<? extends InteractionWiredChest> kind, String refusalKey)
+    static void validatePicks(
+            Room room, int[] furniIds, Class<? extends InteractionWiredChest> kind, String refusalKey, int ownerId)
             throws WiredSaveException {
         if (furniIds == null || furniIds.length == 0) return;
         if (room == null) throw new WiredSaveException("Room not found");
@@ -48,7 +49,9 @@ final class WiredChestTargets {
             HabboItem item = room.getHabboItem(id);
             // A pick the room no longer holds is dropped at run time like any stale pick.
             if (item == null) continue;
-            if (!kind.isInstance(item) || !((InteractionWiredChest) item).answersWired()) {
+            if (!kind.isInstance(item)
+                    || !((InteractionWiredChest) item).answersWired()
+                    || item.getUserId() != ownerId) {
                 throw new WiredSaveException(refusalKey);
             }
         }
@@ -65,38 +68,47 @@ final class WiredChestTargets {
         return items;
     }
 
-    /** The first chest of {@code kind} that wired may take from: upgraded and not locked. */
-    static <T extends InteractionWiredChest> T firstUsable(Collection<HabboItem> candidates, Class<T> kind) {
+    /**
+     * The first chest of {@code kind} that wired may take from: upgraded, not locked, and the box owner's own. Any
+     * chest in the room used to do, so a box handed out what other users had put in theirs.
+     */
+    static <T extends InteractionWiredChest> T firstUsable(
+            Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
         for (HabboItem item : candidates) {
             if (!kind.isInstance(item)) continue;
             T chest = kind.cast(item);
-            if (chest.answersWired() && !chest.getContents().isLocked()) return chest;
+            if (usable(chest, ownerId)) return chest;
         }
         return null;
     }
 
     /** Every chest of {@code kind} that wired may take from, in source order. */
-    static <T extends InteractionWiredChest> List<T> allUsable(Collection<HabboItem> candidates, Class<T> kind) {
+    static <T extends InteractionWiredChest> List<T> allUsable(
+            Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
         List<T> usable = new ArrayList<>();
         for (HabboItem item : candidates) {
             if (!kind.isInstance(item)) continue;
             T chest = kind.cast(item);
-            if (chest.answersWired() && !chest.getContents().isLocked() && !usable.contains(chest)) usable.add(chest);
+            if (usable(chest, ownerId) && !usable.contains(chest)) usable.add(chest);
         }
         return usable;
     }
 
+    private static boolean usable(InteractionWiredChest chest, int ownerId) {
+        return chest.answersWired() && !chest.getContents().isLocked() && chest.getUserId() == ownerId;
+    }
+
     /** Resolve the box's chest source to every chest it may take from this time (AIR: all of them). */
     static <T extends InteractionWiredChest> List<T> resolveAll(
-            WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind) {
-        return allUsable(WiredSourceUtil.resolveItems(ctx, chestSource, picked(room, chestIds)), kind);
+            WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind, int ownerId) {
+        return allUsable(WiredSourceUtil.resolveItems(ctx, chestSource, picked(room, chestIds)), kind, ownerId);
     }
 
     /** Resolve the box's chest source and pick the chest it uses this time. */
     static <T extends InteractionWiredChest> T resolve(
-            WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind) {
+            WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind, int ownerId) {
         List<HabboItem> candidates = WiredSourceUtil.resolveItems(ctx, chestSource, picked(room, chestIds));
-        return firstUsable(candidates, kind);
+        return firstUsable(candidates, kind, ownerId);
     }
 
     /** No usable chest: the triggering user hears why, as the official hotel answers it. */

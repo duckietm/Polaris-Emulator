@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.modtool;
 
-import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.Emulator;
+import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

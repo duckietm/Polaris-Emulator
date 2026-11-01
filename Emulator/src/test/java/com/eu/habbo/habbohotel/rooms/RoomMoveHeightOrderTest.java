@@ -11,7 +11,8 @@ class RoomMoveHeightOrderTest {
 
     @Test
     void theHeightIsCheckedBeforeTheFurniTurns() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomItemMovementService.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomItemMovementService.java"));
         int heightCheck = source.indexOf("// Height sanity checks, before the item is turned");
         int turn = source.indexOf("item.setRotation(rotation);", heightCheck);
         int previousTurn = source.lastIndexOf("item.setRotation(rotation);", heightCheck);

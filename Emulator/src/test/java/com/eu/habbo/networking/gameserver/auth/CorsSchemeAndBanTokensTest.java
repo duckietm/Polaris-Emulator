@@ -37,7 +37,9 @@ class CorsSchemeAndBanTokensTest {
     void writingABanRevokesTheUsersTokens() throws Exception {
         Path modtool = Path.of("src/main/java/com/eu/habbo/habbohotel/modtool");
 
-        assertTrue(Files.readString(modtool.resolve("ModToolBan.java")).contains("AccessTokenService.revokeAll(connection, this.userId);"));
-        assertTrue(Files.readString(modtool.resolve("ModToolManager.java")).contains("AccessTokenService.revokeAll(connection, userId);"));
+        assertTrue(Files.readString(modtool.resolve("ModToolBan.java"))
+                .contains("AccessTokenService.revokeAll(connection, this.userId);"));
+        assertTrue(Files.readString(modtool.resolve("ModToolManager.java"))
+                .contains("AccessTokenService.revokeAll(connection, userId);"));
     }
 }

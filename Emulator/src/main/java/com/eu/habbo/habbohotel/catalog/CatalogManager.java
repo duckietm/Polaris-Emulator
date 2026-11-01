@@ -1717,7 +1717,10 @@ public class CatalogManager {
         try {
             return habbo.getInventory().getItemsComponent().itemCount() > HabboInventory.MAXIMUM_ITEMS;
         } catch (RuntimeException e) {
-            LOGGER.error("Purchase refused for user {}: their inventory could not be read", habbo.getHabboInfo().getId(), e);
+            LOGGER.error(
+                    "Purchase refused for user {}: their inventory could not be read",
+                    habbo.getHabboInfo().getId(),
+                    e);
             return true;
         }
     }

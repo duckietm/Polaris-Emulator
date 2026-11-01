@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.modtool;
 
-import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -20,6 +19,7 @@ import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolUserInfoComposer;
 import com.eu.habbo.messages.outgoing.users.BanInfoComposer;
+import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.plugin.events.support.SupportRoomActionEvent;
 import com.eu.habbo.plugin.events.support.SupportTicketEvent;
 import com.eu.habbo.plugin.events.support.SupportTicketStatusChangedEvent;

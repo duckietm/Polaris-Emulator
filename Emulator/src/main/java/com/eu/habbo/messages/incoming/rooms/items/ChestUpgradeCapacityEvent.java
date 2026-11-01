@@ -56,22 +56,22 @@ public class ChestUpgradeCapacityEvent extends MessageHandler {
 
         ChestStorage c = chest.getContents();
         int kind = chest.chestKind();
-        int totalCredits = COST_CREDITS * Math.max(0, levels);
-        int totalDiamonds = COST_DIAMONDS * Math.max(0, levels);
 
         int result;
         synchronized (habbo) {
             synchronized (c) {
-                if (levels <= 0 || c.getCapacityLevel() + levels > ChestCapacity.maxLevel(kind, false)) {
+                // Compared as levels left, never as a sum: a sum with a client-sent count overflows.
+                if (levels <= 0 || levels > ChestCapacity.maxLevel(kind, false) - c.getCapacityLevel()) {
                     result = ChestUpgradeResultComposer.RESULT_AT_CAPACITY;
-                } else if (habbo.getHabboInfo().getCredits() < totalCredits) {
+                } else if (habbo.getHabboInfo().getCredits() < COST_CREDITS * levels) {
                     result = ChestUpgradeResultComposer.RESULT_NOT_ENOUGH_CREDITS;
-                } else if (habbo.getHabboInfo().getCurrencyAmount(DIAMOND_TYPE) < totalDiamonds) {
+                } else if (habbo.getHabboInfo().getCurrencyAmount(DIAMOND_TYPE) < COST_DIAMONDS * levels) {
                     result = ChestUpgradeResultComposer.RESULT_NOT_ENOUGH_DIAMONDS;
+                } else if (!c.upgradeCapacity(levels, kind, false)) {
+                    result = ChestUpgradeResultComposer.RESULT_AT_CAPACITY;
                 } else {
-                    habbo.giveCredits(-totalCredits);
-                    habbo.givePoints(DIAMOND_TYPE, -totalDiamonds);
-                    c.upgradeCapacity(levels, kind, false);
+                    habbo.giveCredits(-COST_CREDITS * levels);
+                    habbo.givePoints(DIAMOND_TYPE, -COST_DIAMONDS * levels);
                     result = ChestUpgradeResultComposer.RESULT_OK;
                 }
             }

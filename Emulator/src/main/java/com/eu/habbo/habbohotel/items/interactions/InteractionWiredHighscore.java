@@ -109,7 +109,8 @@ public class InteractionWiredHighscore extends HabboItem {
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
-        serverMessage.appendInt(6);
+        // Highscore stuff data; the limited flag tells the client the LTD numbers super appends follow.
+        serverMessage.appendInt(6 | (this.isLimited() ? 256 : 0));
         serverMessage.appendString(this.getExtradata());
         serverMessage.appendInt(this.scoreType.type);
         serverMessage.appendInt(this.clearType.type);

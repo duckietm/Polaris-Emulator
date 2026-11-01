@@ -39,14 +39,14 @@ final class CommandGifts {
 
     /**
      * Creates the content and the gift that holds it; when the gift cannot be made the content is removed again, so
-     * nothing is left without an owner. True when the gift was delivered.
+     * no content is left behind. True when the gift was delivered.
      */
     static boolean send(ItemManager items, Item content, Item wrapper, String username, String message) {
         if (content == null || wrapper == null) return false;
 
         HabboItem item = null;
         try {
-            item = items.createItem(0, content, 0, 0, "");
+            item = items.createGiftContent(ItemManager.GIFT_CONTENT_OWNER, content, 0, 0, "");
 
             if (item == null) return false;
 

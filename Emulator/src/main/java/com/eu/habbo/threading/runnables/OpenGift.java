@@ -1,6 +1,7 @@
 package com.eu.habbo.threading.runnables;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -32,6 +33,15 @@ public class OpenGift implements Runnable {
         this.room = room;
     }
 
+    /**
+     * A furni the gift still holds: on no room, and with no owner yet, or owned by the gift's owner for gifts
+     * made before contents were ownerless. One that was given away since is not taken back by opening.
+     */
+    static boolean stillWrapped(HabboItem content, int giftOwnerId) {
+        return content.getRoomId() == 0
+                && (content.getUserId() == ItemManager.GIFT_CONTENT_OWNER || content.getUserId() == giftOwnerId);
+    }
+
     @Override
     public void run() {
         try {
@@ -46,6 +56,8 @@ public class OpenGift implements Runnable {
             Collection<HabboItem> items = ((InteractionGift) this.item).loadItems();
             // An item that no longer loads is skipped instead of failing the whole gift.
             items.removeIf(Objects::isNull);
+            int giftOwnerId = this.item.getUserId();
+            items.removeIf(content -> !stillWrapped(content, giftOwnerId));
             for (HabboItem i : items) {
                 if (inside == null) inside = i;
 

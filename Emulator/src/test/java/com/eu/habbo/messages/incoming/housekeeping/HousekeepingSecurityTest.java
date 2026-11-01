@@ -23,6 +23,16 @@ class HousekeepingSecurityTest {
     }
 
     @Test
+    void mailsKeepTheirFirstLetterAndDomain() {
+        assertEquals("s***@example.com", HousekeepingPrivacy.maskMail("simon@example.com"));
+        assertEquals("", HousekeepingPrivacy.maskMail(null));
+        assertEquals("", HousekeepingPrivacy.maskMail(" "));
+        assertEquals("x", HousekeepingPrivacy.maskMail("no-address"));
+        assertEquals("x", HousekeepingPrivacy.maskMail("@example.com"));
+        assertTrue(!HousekeepingPrivacy.mailHidden(null));
+    }
+
+    @Test
     void privateDataNeedsItsPermissionAndEveryRevealIsAudited() throws Exception {
         String list = Files.readString(BASE.resolve("HousekeepingRequestListEvent.java"));
         String detail = Files.readString(Path.of(
@@ -32,6 +42,8 @@ class HousekeepingSecurityTest {
         assertTrue(list.contains("hasPermission(HousekeepingPrivacy.PERMISSION)"));
         assertTrue(list.contains("\"user.view_private\""), "a reveal is written to the audit log");
         assertTrue(detail.contains("HousekeepingPrivacy.maskIp("), "the user detail never carries the IP in clear");
+        assertTrue(detail.contains("HousekeepingPrivacy.maskMail("), "nor the e-mail");
+        assertTrue(!detail.contains("appendString(safe(this.info.getMail()))"), "the e-mail is never written in clear");
     }
 
     @Test

@@ -56,7 +56,7 @@ class CommandGiftsTest {
         ItemManager items = mock(ItemManager.class);
         HabboItem content = mock(HabboItem.class);
         when(content.getId()).thenReturn(10);
-        when(items.createItem(eq(0), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(items.createGiftContent(eq(0), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenReturn(content);
         when(items.createGift(anyString(), any(Item.class), anyString(), anyInt(), anyInt()))
                 .thenReturn(null);
@@ -70,14 +70,14 @@ class CommandGiftsTest {
         ItemManager items = mock(ItemManager.class);
 
         assertFalse(CommandGifts.send(items, mock(Item.class), null, "alice", "hi"));
-        verify(items, never()).createItem(anyInt(), any(Item.class), anyInt(), anyInt(), anyString());
+        verify(items, never()).createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString());
     }
 
     @Test
     void aDeliveredGiftKeepsItsContent() {
         ItemManager items = mock(ItemManager.class);
         HabboItem content = mock(HabboItem.class);
-        when(items.createItem(eq(0), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(items.createGiftContent(eq(0), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenReturn(content);
         when(items.createGift(anyString(), any(Item.class), anyString(), anyInt(), anyInt()))
                 .thenReturn(mock(HabboItem.class));

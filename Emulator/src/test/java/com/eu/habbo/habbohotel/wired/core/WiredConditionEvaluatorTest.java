@@ -123,6 +123,35 @@ class WiredConditionEvaluatorTest {
         return new WiredContext(event, null, stack, services, state, null);
     }
 
+    @Test
+    void onlyARunningStackHandsBackItsPassedConditionsToRecord() {
+        Room room = mock(Room.class);
+        WiredServices services = mock(WiredServices.class);
+        List<String> order = new ArrayList<>();
+        TestCondition passing = new TestCondition("pass", true, WiredConditionOperator.AND, order);
+        TestCondition failing = new TestCondition("fail", false, WiredConditionOperator.AND, order);
+        WiredConditionEvaluator evaluator = new WiredConditionEvaluator((ignoredRoom, format, arguments) -> {});
+
+        WiredStack runs = stack(List.of(passing));
+        WiredConditionEvaluator.Outcome ran =
+                evaluator.evaluateForExecution(runs, context(room, services, runs, new WiredState(10)), false);
+        assertTrue(ran.execute());
+        assertEquals(List.of(passing), ran.passed());
+
+        // The passing condition is not handed back when another one stops the stack.
+        WiredStack stopped = stack(List.of(passing, failing));
+        WiredConditionEvaluator.Outcome blocked =
+                evaluator.evaluateForExecution(stopped, context(room, services, stopped, new WiredState(10)), false);
+        assertFalse(blocked.execute());
+        assertTrue(blocked.passed().isEmpty());
+
+        // A negated stack runs when its conditions fail and records none of them.
+        WiredConditionEvaluator.Outcome negated =
+                evaluator.evaluateForExecution(stopped, context(room, services, stopped, new WiredState(10)), true);
+        assertTrue(negated.execute());
+        assertTrue(negated.passed().isEmpty());
+    }
+
     private static final class TestCondition implements IWiredCondition {
         private final String name;
         private final boolean result;

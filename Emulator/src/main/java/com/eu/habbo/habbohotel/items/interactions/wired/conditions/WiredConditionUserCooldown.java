@@ -70,13 +70,22 @@ public class WiredConditionUserCooldown extends InteractionWiredCondition {
         long now = this.clock.getAsLong();
         synchronized (this.lastPassMillis) {
             Long last = this.lastPassMillis.get(userId);
-            if (last != null && now - last < this.seconds * 1000L) return false;
+            return last == null || now - last >= this.seconds * 1000L;
+        }
+    }
 
+    /** The cooldown starts only when the stack runs: a stack stopped by another condition does not start it. */
+    @Override
+    public void commit(WiredContext ctx) {
+        Integer userId = triggeringUserId(ctx);
+        if (userId == null) return;
+
+        long now = this.clock.getAsLong();
+        synchronized (this.lastPassMillis) {
             this.lastPassMillis.remove(userId);
             this.lastPassMillis.put(userId, now);
             trimOldest(this.lastPassMillis);
         }
-        return true;
     }
 
     static Integer triggeringUserId(WiredContext ctx) {

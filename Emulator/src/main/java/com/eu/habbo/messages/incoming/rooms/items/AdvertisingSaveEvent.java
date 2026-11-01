@@ -16,6 +16,11 @@ import java.util.Map;
 
 public class AdvertisingSaveEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null) return;
@@ -73,6 +78,11 @@ public class AdvertisingSaveEvent extends MessageHandler {
 
                 // Keys stored before the save was checked go too.
                 customValues.values.keySet().removeIf(key -> !RoomBackgroundSettings.isKnownKey(key));
+            } else {
+                // Only the furni's own keys, each in its own range: an area side or an effect that is not a
+                // number used to be stored as it came and then broke every placement, chat or step on it.
+                received = sanitize(customValues, received);
+                customValues.values.keySet().removeIf(key -> !customValues.acceptsKey(key));
             }
 
             customValues.values.putAll(received);
@@ -83,5 +93,18 @@ public class AdvertisingSaveEvent extends MessageHandler {
             room.updateItem(item);
             customValues.onCustomValuesSaved(room, this.client, oldValues);
         }
+    }
+
+    static Map<String, String> sanitize(InteractionCustomValues customValues, Map<String, String> received) {
+        Map<String, String> kept = new LinkedHashMap<>();
+
+        received.forEach((key, value) -> {
+            if (!customValues.acceptsKey(key)) return;
+
+            String sanitized = customValues.sanitizeValue(key, value);
+            if (sanitized != null) kept.put(key, sanitized);
+        });
+
+        return kept;
     }
 }

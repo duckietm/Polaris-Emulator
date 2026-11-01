@@ -11,6 +11,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 public class RoomUsersComposer extends MessageComposer {
     private Habbo habbo;
@@ -84,8 +86,11 @@ public class RoomUsersComposer extends MessageComposer {
                     BuildersClubItemIds.toWire(this.habbo.getHabboInfo().getRoomEntryTeleportId()));
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandBorder());
         } else if (this.habbos != null) {
-            this.response.appendInt(this.habbos.size());
-            for (Habbo habbo : this.habbos) {
+            // The count is of what is written: a null entry was skipped but counted, and the client then read the
+            // next packet's bytes as a user and dropped the whole roster.
+            List<Habbo> habbos = this.habbos.stream().filter(Objects::nonNull).toList();
+            this.response.appendInt(habbos.size());
+            for (Habbo habbo : habbos) {
                 if (habbo != null) {
                     this.response.appendInt(habbo.getHabboInfo().getId());
                     this.response.appendString(habbo.getHabboInfo().getUsername());
@@ -161,8 +166,9 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendInt(0);
             this.response.appendInt(0);
         } else if (this.bots != null) {
-            this.response.appendInt(this.bots.size());
-            for (Bot bot : this.bots) {
+            List<Bot> bots = this.bots.stream().filter(Objects::nonNull).toList();
+            this.response.appendInt(bots.size());
+            for (Bot bot : bots) {
                 this.response.appendInt(0 - bot.getId());
                 this.response.appendString(bot.getName());
                 this.response.appendString(bot.getMotto());

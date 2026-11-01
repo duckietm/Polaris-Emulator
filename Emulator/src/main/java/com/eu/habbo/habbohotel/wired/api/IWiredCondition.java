@@ -47,6 +47,16 @@ public interface IWiredCondition {
     boolean evaluate(WiredContext ctx);
 
     /**
+     * Called once the stack's conditions passed and its effects are about to run, for every condition that passed.
+     * A condition that remembers a pass (once per user, once a day, a cooldown) records it here, never in
+     * {@link #evaluate}: evaluate also runs for a stack that fails on another condition, for a negated stack and when
+     * the engine only checks whether a stack would run. Default: nothing to record.
+     *
+     * @param ctx the same context the condition was evaluated with
+     */
+    default void commit(WiredContext ctx) {}
+
+    /**
      * Get the operator for combining this condition with others.
      * Default is AND, meaning all conditions must pass.
      *

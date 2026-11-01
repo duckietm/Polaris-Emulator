@@ -1425,13 +1425,35 @@ public class ItemManager {
         return null;
     }
 
+    /** The owner of a furni still wrapped in a gift: no inventory loads it, and opening the gift gives it one. */
+    public static final int GIFT_CONTENT_OWNER = 0;
+
     public HabboItem createItem(int habboId, Item item, int limitedStack, int limitedSells, String extraData) {
         if (habboId <= 0 || item == null) {
             return null;
         }
 
+        return this.insertItem(habboId, habboId, item, limitedStack, limitedSells, extraData);
+    }
+
+    /**
+     * Creates a furni to be wrapped in a gift. It has no owner until the gift is opened, so it is in no
+     * inventory and cannot be used, traded or sold while the gift still holds it. A recipient above zero is
+     * held to the web-api box limit like any other new furni; zero is a staff gift.
+     */
+    public HabboItem createGiftContent(
+            int recipientId, Item item, int limitedStack, int limitedSells, String extraData) {
+        if (item == null) {
+            return null;
+        }
+
+        return this.insertItem(GIFT_CONTENT_OWNER, recipientId, item, limitedStack, limitedSells, extraData);
+    }
+
+    private HabboItem insertItem(
+            int ownerId, int limitOwnerId, Item item, int limitedStack, int limitedSells, String extraData) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            return this.createItem(connection, habboId, item, limitedStack, limitedSells, extraData);
+            return this.insertItem(connection, ownerId, limitOwnerId, item, limitedStack, limitedSells, extraData);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
@@ -1445,8 +1467,22 @@ public class ItemManager {
             return null;
         }
 
+        return this.insertItem(connection, habboId, habboId, item, limitedStack, limitedSells, extraData);
+    }
+
+    private HabboItem insertItem(
+            Connection connection,
+            int habboId,
+            int limitOwnerId,
+            Item item,
+            int limitedStack,
+            int limitedSells,
+            String extraData)
+            throws SQLException {
         // Every reward, gift and wired path ends here, so a second web-api box cannot be made anywhere.
-        if (WiredWebApiOwnership.isWebApiItem(item) && !WiredWebApiOwnership.canOwnMore(habboId, 1)) {
+        if (limitOwnerId > 0
+                && WiredWebApiOwnership.isWebApiItem(item)
+                && !WiredWebApiOwnership.canOwnMore(limitOwnerId, 1)) {
             return null;
         }
 

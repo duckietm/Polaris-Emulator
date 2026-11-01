@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
 
 public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.MOVE_FURNI_TO;
+    /** The dialog's "empty tiles" slider goes from 1 to 5; 0 is what older saves hold. */
+    private static final int MAX_SPACING = 5;
+
     private final List<HabboItem> items = new ArrayList<>();
     private int direction;
     private int spacing = 1;
@@ -57,7 +60,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         // Official layout: [direction, empty tiles]; the furni source is the official source slot.
         if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
         this.direction = settings.getIntParams()[0];
-        this.spacing = settings.getIntParams()[1];
+        this.spacing = clampSpacing(settings.getIntParams()[1]);
         this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
@@ -156,6 +159,10 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
                 }
             }
         }
+    }
+
+    static int clampSpacing(int spacing) {
+        return Math.max(0, Math.min(spacing, MAX_SPACING));
     }
 
     @Deprecated
@@ -285,7 +292,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.direction = data.direction;
-            this.spacing = data.spacing;
+            this.spacing = clampSpacing(data.spacing);
             this.setDelay(data.delay);
             this.furniSource = data.furniSource;
 
@@ -304,7 +311,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
             if (data.length == 4) {
                 try {
                     this.direction = Integer.parseInt(data[0]);
-                    this.spacing = Integer.parseInt(data[1]);
+                    this.spacing = clampSpacing(Integer.parseInt(data[1]));
                     this.setDelay(Integer.parseInt(data[2]));
                 } catch (Exception e) {
                     WiredCompatibilityDiagnostics.record(

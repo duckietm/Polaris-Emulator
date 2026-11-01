@@ -85,7 +85,8 @@ public class HousekeepingUserNoteEvent extends HousekeepingHandler {
                 HousekeepingAuditLog.TARGET_USER,
                 userId,
                 "",
-                ADD.equals(action) ? "note=" + HousekeepingInputGuard.auditValue(note) : "note_id=" + noteId,
+                // The note's text stays in the notes: the log is read by more operators than the notes are.
+                ADD.equals(action) ? "note_length=" + note.length() : "note_id=" + noteId,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, 0, ""));
     }

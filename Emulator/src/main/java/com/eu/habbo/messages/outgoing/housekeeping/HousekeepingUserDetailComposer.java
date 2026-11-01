@@ -70,8 +70,9 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
         this.response.appendInt(this.info.getCredits());
         this.response.appendInt(this.info.getCurrencyAmount(CURRENCY_DUCKETS));
         this.response.appendInt(this.info.getCurrencyAmount(CURRENCY_DIAMONDS));
-        this.response.appendString(safe(this.info.getMail()));
-        // Masked for everyone; the clear address is the audited user.private list.
+        // Masked for everyone, like the IP below; the clear addresses are the audited user.private list.
+        this.response.appendString(
+                HousekeepingPrivacy.mailHidden(rank) ? "" : HousekeepingPrivacy.maskMail(safe(this.info.getMail())));
         this.response.appendString(HousekeepingPrivacy.maskIp(safe(this.info.getIpLogin())));
         this.response.appendBoolean(ban != null);
         this.response.appendBoolean(muteEnd > now);

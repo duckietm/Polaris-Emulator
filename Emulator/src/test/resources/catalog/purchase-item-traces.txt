@@ -75,6 +75,25 @@ threading.run(CatalogPurchaseLogEntry)
 returned
 purchasing flag false
 
+== delivery / a rent offer of furniture only
+items.createItem(chair, stack 0, number 0, "") -> item#505
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+item#505.setExpiresTimestamp(260200)
+threading.run(item#505)
+RentableFurnitureManager.track(item#505)
+inventory.addItems([item#505])
+plugin event UserCatalogFurnitureBoughtEvent
+stats.addPurchase(offer rent_chair_only)
+buyer <- AddHabboItem({OWNED_FURNI=[505]})
+buyer <- PurchaseOK(offer rent_chair_only)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
 == delivery / furniture that cannot be created
 items.createItem(chair) -> null
 buyer <- AlertPurchaseFailed(0)

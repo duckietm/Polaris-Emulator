@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.interactions.InteractionMannequin;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -16,7 +17,8 @@ public class MannequinSaveNameEvent extends MessageHandler {
         if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         HabboItem item = room.getHabboItem(itemId);
-        if (item == null) return;
+        // Only a mannequin takes a look: other furni read their extradata as a number or a state.
+        if (!(item instanceof InteractionMannequin)) return;
 
         String[] data = item.getExtradata().split(":");
         String name = RoomItemInputGuard.trimToMax(this.packet.readString(), 32);

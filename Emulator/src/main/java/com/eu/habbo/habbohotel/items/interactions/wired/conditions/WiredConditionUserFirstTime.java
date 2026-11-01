@@ -54,7 +54,18 @@ public class WiredConditionUserFirstTime extends InteractionWiredCondition {
         if (userId == null) return false;
 
         synchronized (this.passedUserIds) {
-            if (!this.passedUserIds.add(userId)) return false;
+            return !this.passedUserIds.contains(userId);
+        }
+    }
+
+    /** The first time is used up only when the stack runs, not when another condition stopped it. */
+    @Override
+    public void commit(WiredContext ctx) {
+        Integer userId = WiredConditionUserCooldown.triggeringUserId(ctx);
+        if (userId == null) return;
+
+        synchronized (this.passedUserIds) {
+            if (!this.passedUserIds.add(userId)) return;
             Iterator<Integer> oldest = this.passedUserIds.iterator();
             while (this.passedUserIds.size() > MAX_REMEMBERED_USERS && oldest.hasNext()) {
                 oldest.next();
@@ -62,7 +73,6 @@ public class WiredConditionUserFirstTime extends InteractionWiredCondition {
             }
         }
         this.needsUpdate(true);
-        return true;
     }
 
     @Override

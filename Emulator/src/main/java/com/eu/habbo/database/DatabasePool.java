@@ -68,18 +68,13 @@ class DatabasePool {
             // and every prepareStatement() call re-parses on the server side.
             databaseConfiguration.addDataSourceProperty("cachePrepStmts", "true");
             databaseConfiguration.addDataSourceProperty("prepStmtCacheSize", "500");
-            databaseConfiguration.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
             databaseConfiguration.addDataSourceProperty("useServerPrepStmts", "true");
 
-            // Bulk write throughput: rewrites batched INSERTs into a single multi-value
-            // INSERT statement. Huge win for item/room/inventory persistence paths.
-            databaseConfiguration.addDataSourceProperty("rewriteBatchedStatements", "true");
-
-            // Cut per-connection round-trips.
-            databaseConfiguration.addDataSourceProperty("cacheServerConfiguration", "true");
+            // Cut per-connection round-trips. The MySQL driver options that used to sit here
+            // (rewriteBatchedStatements, prepStmtCacheSqlLimit, cacheServerConfiguration,
+            // cacheResultSetMetadata, elideSetAutoCommits, maintainTimeStats) are unknown to
+            // MariaDB Connector/J 3.x, which ignored them; batches go through its own useBulkStmts.
             databaseConfiguration.addDataSourceProperty("useLocalSessionState", "true");
-            databaseConfiguration.addDataSourceProperty("cacheResultSetMetadata", "true");
-            databaseConfiguration.addDataSourceProperty("elideSetAutoCommits", "true");
 
             // Fail fast instead of pinning a pooled connection (and its worker
             // thread) indefinitely on a stalled/slow MariaDB. HikariCP's
@@ -88,7 +83,6 @@ class DatabasePool {
             databaseConfiguration.addDataSourceProperty("socketTimeout", "30000");
             databaseConfiguration.addDataSourceProperty("connectTimeout", "10000");
             databaseConfiguration.addDataSourceProperty("tcpKeepAlive", "true");
-            databaseConfiguration.addDataSourceProperty("maintainTimeStats", "false");
 
             databaseConfiguration.setPoolName("PolarisHikariPool");
 

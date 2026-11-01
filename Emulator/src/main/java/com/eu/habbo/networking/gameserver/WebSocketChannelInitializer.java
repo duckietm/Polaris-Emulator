@@ -11,6 +11,7 @@ import com.eu.habbo.networking.gameserver.badges.BadgeLeaderboardHttpHandler;
 import com.eu.habbo.networking.gameserver.cms.CmsApiHandler;
 import com.eu.habbo.networking.gameserver.codec.WebSocketCodec;
 import com.eu.habbo.networking.gameserver.crypto.WsHandshakeHandler;
+import com.eu.habbo.networking.gameserver.crypto.WsSessionCrypto;
 import com.eu.habbo.networking.gameserver.decoders.GameByteDecoder;
 import com.eu.habbo.networking.gameserver.decoders.GameByteFrameDecoder;
 import com.eu.habbo.networking.gameserver.decoders.GameClientMessageLogger;
@@ -74,6 +75,8 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                 .websocketPath("/")
                 .checkStartsWith(true)
                 .maxFramePayloadLength(MAX_FRAME_SIZE)
+                // Offered only to a client that asks for it; see WsDirectionalSession.
+                .subprotocols(WsSessionCrypto.SUBPROTOCOL_V2)
                 .build();
     }
 

@@ -36,6 +36,12 @@ import java.util.List;
 public class HousekeepingListActionLogEvent extends HousekeepingHandler {
     private static final int HARD_LIMIT = 500;
 
+    /** The log names users, their sanctions and the permissions changed: it is the users area's to read. */
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     @Override
     public int getRatelimit() {
         return 1000;

@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredServices;
@@ -49,6 +50,13 @@ final class WiredConditionTestSupport {
         when(room.getHabbo(unit)).thenReturn(habbo);
         when(room.getHabbo(userId)).thenReturn(habbo);
         return unit;
+    }
+
+    /** A condition that passes and is recorded, as when its stack runs. */
+    static boolean passes(IWiredCondition condition, WiredContext ctx) {
+        if (!condition.evaluate(ctx)) return false;
+        condition.commit(ctx);
+        return true;
     }
 
     static WiredContext context(Room room, RoomUnit actor) {

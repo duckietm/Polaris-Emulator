@@ -162,7 +162,7 @@ public class ChestStorage {
      * @return false when that would pass the kind's top level; nothing changes then
      */
     public synchronized boolean upgradeCapacity(int levels, int kind, boolean starter) {
-        if (levels <= 0 || this.capacityLevel + levels > ChestCapacity.maxLevel(kind, starter)) return false;
+        if (levels <= 0 || levels > ChestCapacity.maxLevel(kind, starter) - this.capacityLevel) return false;
 
         boolean wasUsingEverything = this.capacity <= 0 || this.capacity >= this.capacityMax;
         this.capacityLevel += levels;

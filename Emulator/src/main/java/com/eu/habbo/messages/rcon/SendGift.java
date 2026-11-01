@@ -61,7 +61,8 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
             return;
         }
 
-        HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
+        HabboItem item =
+                Emulator.getGameEnvironment().getItemManager().createGiftContent(habboInfo.getId(), baseItem, 0, 0, "");
         Item giftItem = this.randomGiftItem();
         if (item == null || giftItem == null) {
             this.status = RCONMessage.SYSTEM_ERROR;

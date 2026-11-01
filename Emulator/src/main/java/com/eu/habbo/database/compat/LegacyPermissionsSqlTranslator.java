@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Translates legacy SQL written against the old single permissions table into
@@ -27,6 +30,15 @@ import java.util.regex.Pattern;
  * statement passes through untouched.
  */
 public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LegacyPermissionsSqlTranslator.class);
+
+    /** A statement that names the legacy table where a table goes, not a column or a word in a string. */
+    private static final Pattern LEGACY_TABLE_POSITION =
+            Pattern.compile("(?is)\\b(?:from|join|into|update|table)\\s+`?permissions`?\\b");
+
+    static final int MAX_WARNED_STATEMENTS = 256;
+    private final Set<String> warnedStatements = ConcurrentHashMap.newKeySet();
 
     static final String LEGACY_TABLE = "permissions";
     static final String DEFINITIONS_TABLE = "permission_definitions";
@@ -95,6 +107,36 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
             return null;
         }
 
+        String translated = this.translateNormalized(sql, context);
+
+        if (translated == null) {
+            this.warnUntranslated(sql);
+        }
+
+        return translated;
+    }
+
+    /**
+     * A statement on the legacy table that is not understood still runs unchanged, as before, but on a normalized
+     * schema nothing reads that table any more: the operator is told, once per statement, that the plugin's change
+     * has no effect.
+     */
+    private void warnUntranslated(String sql) {
+        if (!LEGACY_TABLE_POSITION.matcher(sql).find()) {
+            return;
+        }
+
+        if (this.warnedStatements.size() >= MAX_WARNED_STATEMENTS || !this.warnedStatements.add(sql)) {
+            return;
+        }
+
+        LOGGER.warn(
+                "Polaris legacy bridge -> a plugin statement on the old `permissions` table was not understood and runs"
+                        + " unchanged; on this database nothing reads that table, so it has no effect: {}",
+                sql);
+    }
+
+    private String translateNormalized(String sql, TranslationContext context) throws SQLException {
         String head = sql.stripLeading().toUpperCase(Locale.ROOT);
 
         if (head.startsWith("ALTER")) {

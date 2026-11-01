@@ -35,21 +35,54 @@ final class WiredConditionEvaluator {
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
-    boolean outcomeForExecution(WiredStack stack, WiredContext context, boolean negateConditions) {
-        if (!stack.hasConditions()) {
-            return !negateConditions;
-        }
+    /**
+     * Whether the stack runs, and the conditions that passed. Those are committed (see {@link IWiredCondition#commit})
+     * only by the stack that actually runs; a negated stack commits none, its conditions only say when it must not.
+     */
+    record Outcome(boolean execute, List<IWiredCondition> passed) {}
 
-        boolean conditionsPassed = evaluate(stack, context);
-        diagnostics.log(context.room(), "Conditions result: {}", conditionsPassed ? "PASSED" : "FAILED");
-        return negateConditions ? !conditionsPassed : conditionsPassed;
+    boolean outcomeForExecution(WiredStack stack, WiredContext context, boolean negateConditions) {
+        return evaluateForExecution(stack, context, negateConditions).execute();
     }
 
-    private boolean evaluate(WiredStack stack, WiredContext context) {
+    Outcome evaluateForExecution(WiredStack stack, WiredContext context, boolean negateConditions) {
+        if (!stack.hasConditions()) {
+            return new Outcome(!negateConditions, List.of());
+        }
+
+        List<IWiredCondition> passed = new ArrayList<>();
+        boolean conditionsPassed = evaluate(stack, context, passed);
+        diagnostics.log(context.room(), "Conditions result: {}", conditionsPassed ? "PASSED" : "FAILED");
+        if (negateConditions) {
+            return new Outcome(!conditionsPassed, List.of());
+        }
+        return new Outcome(conditionsPassed, conditionsPassed ? List.copyOf(passed) : List.of());
+    }
+
+    /** Records the passes of the conditions of a stack that runs; one failing condition does not stop the others. */
+    void commit(Outcome outcome, WiredContext context) {
+        for (IWiredCondition condition : outcome.passed()) {
+            try {
+                condition.commit(context);
+            } catch (RuntimeException exception) {
+                diagnostics.log(
+                        context.room(),
+                        "  Condition {} failed to record its pass: {}",
+                        condition.getClass().getSimpleName(),
+                        exception.toString());
+            }
+        }
+    }
+
+    private boolean evaluate(WiredStack stack, WiredContext context, List<IWiredCondition> passed) {
         Set<Integer> evaluated = evaluatedConditionIds(stack, context.room());
         if (evaluated.isEmpty()) {
             return evaluateByMode(
-                    stack.conditions(), context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
+                    stack.conditions(),
+                    context,
+                    stack.conditionEvaluationMode(),
+                    stack.conditionEvaluationValue(),
+                    passed);
         }
 
         // The evaluation add-on's mode covers the conditions picked in it; every other condition must still pass.
@@ -64,9 +97,9 @@ final class WiredConditionEvaluator {
         }
 
         // Both groups are evaluated, so every passing condition flashes as before.
-        boolean othersPassed = evaluateByMode(others, context, WiredExtraOrEval.MODE_ALL, 1);
-        boolean pickedPassed =
-                evaluateByMode(picked, context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
+        boolean othersPassed = evaluateByMode(others, context, WiredExtraOrEval.MODE_ALL, 1, passed);
+        boolean pickedPassed = evaluateByMode(
+                picked, context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue(), passed);
         return othersPassed && pickedPassed;
     }
 
@@ -82,7 +115,11 @@ final class WiredConditionEvaluator {
     }
 
     private boolean evaluateByMode(
-            List<IWiredCondition> conditions, WiredContext context, int evaluationMode, int evaluationValue) {
+            List<IWiredCondition> conditions,
+            WiredContext context,
+            int evaluationMode,
+            int evaluationValue,
+            List<IWiredCondition> passed) {
         if (conditions == null || conditions.isEmpty()) {
             return true;
         }
@@ -97,6 +134,9 @@ final class WiredConditionEvaluator {
 
             boolean result = condition.evaluate(context);
             String conditionKey = conditionGroupKey(condition);
+            if (result) {
+                passed.add(condition);
+            }
 
             // A passing condition flashes with its trigger; a failed one stays at rest.
             if (result && condition instanceof InteractionWiredCondition conditionBox) {

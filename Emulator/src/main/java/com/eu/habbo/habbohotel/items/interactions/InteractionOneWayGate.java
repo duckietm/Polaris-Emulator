@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.interfaces.ConditionalGate;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -16,9 +17,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InteractionOneWayGate extends HabboItem {
+public class InteractionOneWayGate extends HabboItem implements ConditionalGate {
 
     private boolean walkable = false;
+    /**
+     * The unit the open gate lets through. The gate tile is walkable while it is open, so anyone could step on it from
+     * either side; only this unit may, and anyone else is stopped where they stand, as at a club gate.
+     */
+    private volatile RoomUnit passingUnit;
 
     public InteractionOneWayGate(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -32,7 +38,17 @@ public class InteractionOneWayGate extends HabboItem {
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        RoomUnit passing = this.passingUnit;
+        if (passing != null && roomUnit != passing) {
+            return false;
+        }
+
         return this.getBaseItem().allowWalk();
+    }
+
+    @Override
+    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {
+        // The unit simply stays where it is; the gate has nothing to say.
     }
 
     @Override
@@ -96,6 +112,7 @@ public class InteractionOneWayGate extends HabboItem {
                     });
 
                     onFail.add(() -> {
+                        this.passingUnit = null;
                         unit.setCanLeaveRoomByDoor(true);
                         walkable = this.getBaseItem().allowWalk();
                         room.updateTile(currentLocation);
@@ -103,6 +120,7 @@ public class InteractionOneWayGate extends HabboItem {
                         unit.removeOverrideTile(currentLocation);
                     });
 
+                    this.passingUnit = unit;
                     walkable = true;
                     room.updateTile(currentLocation);
                     unit.addOverrideTile(currentLocation);
@@ -129,6 +147,7 @@ public class InteractionOneWayGate extends HabboItem {
     }
 
     private void refresh(Room room) {
+        this.passingUnit = null;
         this.setExtradata("0");
         room.sendComposer(new ItemIntStateComposer(this.getId(), 0).compose());
         room.updateTile(room.getLayout().getTile(this.getX(), this.getY()));

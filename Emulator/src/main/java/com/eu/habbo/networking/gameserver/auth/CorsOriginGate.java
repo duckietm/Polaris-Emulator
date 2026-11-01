@@ -19,8 +19,9 @@ public final class CorsOriginGate {
         if (origin == null || origin.isEmpty()) return false;
 
         String host;
+        URI uri;
         try {
-            URI uri = new URI(origin);
+            uri = new URI(origin);
             host = uri.getHost();
         } catch (Exception ignored) {
             return false;
@@ -32,11 +33,38 @@ public final class CorsOriginGate {
         if (configured == null || configured.isEmpty()) return false;
 
         for (String entry : configured.split(",")) {
-            if (matches(host, entry)) {
+            if (matchesOrigin(uri, host, entry)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * An entry written with its scheme ("https://hotel.com" or "https://hotel.com:8443") also needs the origin's
+     * scheme and port to match: a host-only entry let a page on http or another port of the same host read the
+     * answers. An entry with the host alone matches as before.
+     */
+    static boolean matchesOrigin(URI origin, String host, String entry) {
+        if (entry == null || !entry.contains("://")) return matches(host, entry);
+
+        try {
+            URI allowed = new URI(entry.trim());
+            String allowedHost = allowed.getHost();
+            if (allowedHost == null || origin.getScheme() == null || allowed.getScheme() == null) return false;
+            if (allowedHost.startsWith("www.")) allowedHost = allowedHost.substring(4);
+
+            return origin.getScheme().equalsIgnoreCase(allowed.getScheme())
+                    && effectivePort(origin) == effectivePort(allowed)
+                    && matches(host, allowedHost);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static int effectivePort(URI uri) {
+        if (uri.getPort() != -1) return uri.getPort();
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
     /**

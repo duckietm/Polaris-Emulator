@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.modtool;
 
+import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -475,6 +476,8 @@ public class ModToolManager {
             statement.setString(7, type.getType());
 
             statement.executeUpdate();
+            // As for an online ban: the tokens already issued end with it.
+            AccessTokenService.revokeAll(connection, userId);
 
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {

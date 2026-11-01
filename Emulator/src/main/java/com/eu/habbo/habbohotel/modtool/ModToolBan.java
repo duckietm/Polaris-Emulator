@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.modtool;
 
+import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.Emulator;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -80,6 +81,9 @@ public class ModToolBan implements Runnable {
                 statement.setString(8, this.type.getType());
                 statement.setInt(9, this.cfhTopic);
                 statement.execute();
+                // A ban also ends the access tokens already issued: the HTTP APIs that take only the token stayed
+                // usable until each one expired.
+                AccessTokenService.revokeAll(connection, this.userId);
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
             }

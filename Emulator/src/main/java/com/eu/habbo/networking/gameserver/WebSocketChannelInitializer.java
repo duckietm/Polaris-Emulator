@@ -23,6 +23,7 @@ import com.eu.habbo.networking.gameserver.decoders.PacketDispatchMarker;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
+import com.eu.habbo.networking.gameserver.handlers.PreUpgradeConnectionLimit;
 import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
 import com.eu.habbo.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import com.eu.habbo.networking.gameserver.handlers.WebSocketHttpHandler;
@@ -53,6 +54,9 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
     // HTTP connection could hold its aggregation buffer open for as long as it liked. 0 turns it off.
     static final String HTTP_READ_TIMEOUT_SETTING = "ws.http.read_timeout_sec";
     private static final int DEFAULT_HTTP_READ_TIMEOUT_SECONDS = 30;
+    // Connections one client may hold before the upgrade; a trusted proxy is not counted. 0 turns it off.
+    static final String HTTP_CONNECTIONS_SETTING = "ws.http.connections.per_ip";
+    private static final int DEFAULT_HTTP_CONNECTIONS = 32;
 
     private final SslContext sslContext;
     private final boolean sslEnabled;
@@ -104,6 +108,12 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                 : configuration.getInt(HTTP_READ_TIMEOUT_SETTING, DEFAULT_HTTP_READ_TIMEOUT_SECONDS);
         if (httpReadTimeout > 0) {
             ch.pipeline().addLast("httpReadTimeout", new ReadTimeoutHandler(httpReadTimeout, TimeUnit.SECONDS));
+        }
+        int httpConnections = configuration == null
+                ? DEFAULT_HTTP_CONNECTIONS
+                : configuration.getInt(HTTP_CONNECTIONS_SETTING, DEFAULT_HTTP_CONNECTIONS);
+        if (httpConnections > 0) {
+            ch.pipeline().addLast("httpConnectionLimit", new PreUpgradeConnectionLimit(httpConnections));
         }
 
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());

@@ -15,6 +15,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
     private static final String[] HTTP_ONLY_HANDLERS = {
         "httpReadTimeout",
+        "httpConnectionLimit",
         "blockingHttpAdmissionAssets",
         "nitroSecureAssetHandler",
         "blockingHttpAdmissionApi",

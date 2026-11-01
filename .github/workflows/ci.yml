@@ -13,6 +13,36 @@ permissions:
   contents: read
 
 jobs:
+  # The database jobs below take three runners; a pull request that touches neither the migrations nor the database
+  # code skips them. A push to main or dev always runs them.
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      database: ${{ steps.diff.outputs.database }}
+    steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect database changes
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$BASE_SHA" HEAD | grep -qE '^(Emulator/src/main/resources/db/|Emulator/src/(main|test)/java/com/eu/habbo/database/|Emulator/pom\.xml$|\.github/workflows/ci\.yml$)'; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: Build + unit + integration
     runs-on: ubuntu-latest
@@ -96,15 +126,17 @@ jobs:
 
   migration-matrix:
     name: Migrations on MariaDB ${{ matrix.mariadb }}
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        # Minimum-supported, recommended LTS, and current MariaDB releases.
+        # Minimum-supported and current MariaDB releases. The recommended LTS (11.4.12, the TestDatabase default)
+        # already runs MigrationRunnerIT in the build job's verify.
         mariadb:
           - "mariadb:10.11.14@sha256:dbe56e20372fc6d6b8e0e396866ba89c4c7f128c38c4f59aaa54d957db95790c"
-          - "mariadb:11.4.12@sha256:a794d9eb009e20de605858a11f32f63b4075cbd197c650436f0e3b457e4caed7"
           - "mariadb:12.3@sha256:628f228f0fd5913a220438693576b29b6fe4dc1fa0a1298c0e98579fae28635f"
     defaults:
       run:
@@ -128,6 +160,8 @@ jobs:
 
   backup-restore:
     name: Migration backup + restore
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:

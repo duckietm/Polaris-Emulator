@@ -56,7 +56,7 @@ public class SearchRoomsEvent extends MessageHandler {
         // As in the new navigator: an invisible room is listed only to who may enter or own any room.
         boolean showInvisible = this.client.getHabbo().hasPermission(Permission.ACC_ENTERANYROOM)
                 || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER);
-        String cacheKey = buildCacheKey(prefix, query) + (showInvisible ? "	all" : "");
+        String cacheKey = buildCacheKey(prefix, query) + (showInvisible ? "\tall" : "");
 
         ServerMessage message = null;
         Map<String, ServerMessage> rankCache =

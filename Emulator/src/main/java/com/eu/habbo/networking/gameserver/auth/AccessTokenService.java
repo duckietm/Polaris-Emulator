@@ -186,6 +186,13 @@ public final class AccessTokenService {
     private record UserSecurityState(long version, String passwordHash) {
     }
 
+    /** The secret the base migration wrote for every hotel: public, so never a key. */
+    private static final String PUBLISHED_SECRET = "vA9OXBF7W8VBryT4xuOHIRtlfID60A2Sy54CjQZ7Nb/nL9gQKnbQJ5iYkyJ58TtD";
+
+    static boolean isPublishedSecret(String secret) {
+        return PUBLISHED_SECRET.equals(secret == null ? null : secret.trim());
+    }
+
     private static String secret() {
         String s = cachedSecret;
         if (s != null && !s.isEmpty()) return s;
@@ -194,9 +201,14 @@ public final class AccessTokenService {
             if (cachedSecret != null && !cachedSecret.isEmpty()) return cachedSecret;
 
             String configured = Emulator.getConfig().getValue("login.access.jwt.secret", "");
-            if (configured != null && !configured.isEmpty()) {
+            if (configured != null && !configured.isEmpty() && !isPublishedSecret(configured)) {
                 cachedSecret = configured;
                 return configured;
+            }
+            if (isPublishedSecret(configured)) {
+                // The base migration shipped this value to every hotel, so anyone could sign tokens with it.
+                LOGGER.warn("login.access.jwt.secret is the value published with the base database; generating a new"
+                        + " one, so tokens signed with the old secret stop working");
             }
 
             byte[] buf = new byte[48];

@@ -20,12 +20,14 @@ class RedeemAndNameGuardsTest {
     @Test
     void voucherAttemptsAreCountedPerUser() throws Exception {
         assertTrue(RedeemVoucherEvent.MAX_ATTEMPTS == 10);
-        assertTrue(source("messages/incoming/catalog/RedeemVoucherEvent.java").contains("if (attempts > MAX_ATTEMPTS) {"));
+        assertTrue(
+                source("messages/incoming/catalog/RedeemVoucherEvent.java").contains("if (attempts > MAX_ATTEMPTS) {"));
     }
 
     @Test
     void redeemSkipsWiredChests() throws Exception {
-        assertTrue(source("habbohotel/commands/RedeemCommand.java").contains("|| item instanceof InteractionWiredChest) continue;"));
+        assertTrue(source("habbohotel/commands/RedeemCommand.java")
+                .contains("|| item instanceof InteractionWiredChest) continue;"));
     }
 
     @Test

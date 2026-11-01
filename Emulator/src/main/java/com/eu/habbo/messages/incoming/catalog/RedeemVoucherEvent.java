@@ -1,14 +1,14 @@
 package com.eu.habbo.messages.incoming.catalog;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.RedeemVoucherErrorComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.HotelWillCloseInMinutesComposer;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RedeemVoucherEvent extends MessageHandler {
     /** Voucher codes one user may try in ten minutes: nothing counted the wrong ones, so codes could be guessed. */
@@ -28,13 +28,15 @@ public class RedeemVoucherEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (ShutdownEmulator.timestamp > 0) {
-            this.client.sendResponse(new HotelWillCloseInMinutesComposer((ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
+            this.client.sendResponse(new HotelWillCloseInMinutesComposer(
+                    (ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
             return;
         }
 
         String voucherCode = this.packet.readString();
 
-        int attempts = ATTEMPTS.computeIfAbsent(this.client.getHabbo().getHabboInfo().getId(), id -> new AtomicInteger())
+        int attempts = ATTEMPTS.computeIfAbsent(
+                        this.client.getHabbo().getHabboInfo().getId(), id -> new AtomicInteger())
                 .incrementAndGet();
         if (attempts > MAX_ATTEMPTS) {
             this.client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));

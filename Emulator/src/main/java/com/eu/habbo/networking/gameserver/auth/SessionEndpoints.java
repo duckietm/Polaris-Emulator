@@ -353,7 +353,11 @@ final class SessionEndpoints {
         // account being guessed carries its own counter and backoff.
         if (AuthRateLimiter.isAccountLocked(username)) {
             long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
-            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", AuthHttpUtil.forLog(username), ip, secs);
+            LOGGER.info(
+                    "[auth/login] account throttled username='{}' ip={} for {}s",
+                    AuthHttpUtil.forLog(username),
+                    ip,
+                    secs);
             sendJson(
                     ctx,
                     req,
@@ -377,7 +381,8 @@ final class SessionEndpoints {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (!rs.next()) {
-                        LOGGER.info("[auth/login] user not found username='{}' ip={}", AuthHttpUtil.forLog(username), ip);
+                        LOGGER.info(
+                                "[auth/login] user not found username='{}' ip={}", AuthHttpUtil.forLog(username), ip);
                         AuthRateLimiter.recordFailure(ip);
                         AuthRateLimiter.recordAccountFailure(username);
                         sendJson(

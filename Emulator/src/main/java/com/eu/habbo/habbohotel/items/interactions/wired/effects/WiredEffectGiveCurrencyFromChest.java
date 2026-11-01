@@ -69,7 +69,7 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
 
         // Only upgraded, unlocked chests are used; with none the triggering user is told why.
         List<InteractionWiredChestCurrency> chests = WiredChestTargets.resolveAll(
-                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestCurrency.class);
+                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestCurrency.class, this.getUserId());
         if (chests.isEmpty()) {
             WiredChestTargets.answerNoUsableChest(ctx, room);
             return;
@@ -120,7 +120,8 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
                 this.getRoom(),
                 settings.getFurniIds(),
                 InteractionWiredChestCurrency.class,
-                WiredChestTargets.REQUIRE_COIN_CHESTS);
+                WiredChestTargets.REQUIRE_COIN_CHESTS,
+                this.getUserId());
 
         this.earningsCategory = normalizeCategory(this.reward.read(settings, 1, EARNINGS_GAMES));
         this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);

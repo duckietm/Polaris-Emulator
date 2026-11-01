@@ -71,7 +71,7 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
 
         // Only upgraded, unlocked chests are used; with none the triggering user is told why.
         List<InteractionWiredChestFurni> chests = WiredChestTargets.resolveAll(
-                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestFurni.class);
+                ctx, room, this.chestSource, this.chestIds, InteractionWiredChestFurni.class, this.getUserId());
         if (chests.isEmpty()) {
             WiredChestTargets.answerNoUsableChest(ctx, room);
             return;
@@ -122,7 +122,8 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
                 this.getRoom(),
                 settings.getFurniIds(),
                 InteractionWiredChestFurni.class,
-                WiredChestTargets.REQUIRE_FURNI_CHESTS);
+                WiredChestTargets.REQUIRE_FURNI_CHESTS,
+                this.getUserId());
 
         this.iterationType = normalizeIteration(this.reward.read(settings, 1, ITERATION_RANDOM));
         this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);

@@ -91,7 +91,12 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
                     "assets",
                     AuthHttpUtil.resolveClientIp(ctx, req),
                     positiveConfigInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
-                sendText(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, "Too many requests.", "text/plain; charset=utf-8");
+                sendText(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        "Too many requests.",
+                        "text/plain; charset=utf-8");
                 return;
             }
 

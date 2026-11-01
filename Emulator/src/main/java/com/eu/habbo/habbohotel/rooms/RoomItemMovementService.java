@@ -341,7 +341,8 @@ final class RoomItemMovementService {
         // A footprint that leaves the map was not refused here, and turning a furni on its own tile skipped every
         // tile check, so a rotation could cover a hole, an avatar or a tile past the edge.
         if (!pluginHelper
-                && !layout.fitsOnMap(tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
+                && !layout.fitsOnMap(
+                        tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
             return FurnitureMovementError.INVALID_MOVE;
         }
 

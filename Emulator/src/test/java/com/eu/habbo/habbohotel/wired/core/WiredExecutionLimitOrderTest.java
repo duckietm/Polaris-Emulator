@@ -14,7 +14,8 @@ class WiredExecutionLimitOrderTest {
 
     @Test
     void theLimitIsCheckedBeforeTheSelectorsAndTakenAfterTheRoomBudget() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/wired/core/WiredStackExecutor.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/wired/core/WiredStackExecutor.java"));
         int peek = source.indexOf("!executionLimitExtra.canExecuteAt(currentTime)");
         int selectors = source.indexOf("this.hooks.executeSelectors(stack, context);");
         int budget = source.indexOf("roomDiagnostics.tryConsumeExecutionBudget(");

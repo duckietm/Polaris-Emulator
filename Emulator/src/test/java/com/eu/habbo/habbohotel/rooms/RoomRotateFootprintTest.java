@@ -11,8 +11,8 @@ class RoomRotateFootprintTest {
 
     @Test
     void aTurnInPlaceChecksTheNewTilesAndTheMapEdge() throws Exception {
-        String source = Files.readString(
-                Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomItemMovementService.java"));
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomItemMovementService.java"));
         int method = source.indexOf(
                 "HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates, boolean checkForUnits) {");
         int edge = source.indexOf("!layout.fitsOnMap(tile, item.getBaseItem().getWidth()", method);

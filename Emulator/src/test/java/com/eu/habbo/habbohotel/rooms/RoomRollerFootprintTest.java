@@ -13,7 +13,8 @@ class RoomRollerFootprintTest {
     void aLargeFurniRollsOnlyWhenItsWholeFootprintFits() throws Exception {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomRollerManager.java"));
         int check = source.indexOf("if (!this.footprintFitsInFront(item, roller, tileInFront)) {");
-        int composer = source.indexOf("new FloorItemOnRollerComposer(item, roller, tileInFront, zOffset, this.room)", check);
+        int composer =
+                source.indexOf("new FloorItemOnRollerComposer(item, roller, tileInFront, zOffset, this.room)", check);
         int helper = source.indexOf("private boolean footprintFitsInFront(");
 
         assertTrue(check > 0 && composer > check);

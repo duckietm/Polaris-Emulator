@@ -206,7 +206,8 @@ final class SessionEndpoints {
                     userId = rs.getInt("id");
                     username = rs.getString("username");
                 } else {
-                    com.eu.habbo.habbohotel.gameclients.GameClient online = gameClients().findClientBySsoTicket(ssoTicket);
+                    com.eu.habbo.habbohotel.gameclients.GameClient online =
+                            gameClients().findClientBySsoTicket(ssoTicket);
                     if (online != null && online.getHabbo() != null && online.claimSsoTicketExchange()) {
                         userId = online.getHabbo().getHabboInfo().getId();
                         username = online.getHabbo().getHabboInfo().getUsername();

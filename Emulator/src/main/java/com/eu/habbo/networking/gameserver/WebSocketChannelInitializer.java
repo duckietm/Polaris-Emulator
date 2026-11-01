@@ -37,9 +37,9 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
@@ -122,7 +122,9 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         // The secure API derives a key for every request: on the socket event loop that stalled every other
         // connection of the loop, so it runs on the blocking HTTP executor like the asset handler.
         ch.pipeline()
-                .addLast("blockingHttpAdmissionApi", BlockingHttpExecutionGroup.admissionHandler("nitroSecureApiHandler"));
+                .addLast(
+                        "blockingHttpAdmissionApi",
+                        BlockingHttpExecutionGroup.admissionHandler("nitroSecureApiHandler"));
         ch.pipeline().addLast(blockingHttp, "nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
         ch.pipeline().addLast("blockingHttpAdmissionCms", BlockingHttpExecutionGroup.admissionHandler("cmsApiHandler"));

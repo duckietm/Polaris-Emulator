@@ -11,7 +11,8 @@ class AccessTokenRenewTest {
 
     @Test
     void aValidTokenOfAUserInTheHotelIsRenewed() throws Exception {
-        String endpoints = Files.readString(Path.of("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java"));
+        String endpoints = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java"));
         int method = endpoints.indexOf("static void handleTokenRenew(");
         int verify = endpoints.indexOf("AccessTokenService.verify(conn, bearerToken(req));", method);
         int online = endpoints.indexOf("gameClients().getHabbo(userId) == null", verify);
@@ -23,7 +24,8 @@ class AccessTokenRenewTest {
 
     @Test
     void theRenewPathIsAnAuthPath() throws Exception {
-        String handler = Files.readString(Path.of("src/main/java/com/eu/habbo/networking/gameserver/auth/AuthHttpHandler.java"));
+        String handler =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/networking/gameserver/auth/AuthHttpHandler.java"));
 
         assertTrue(handler.contains("static final String TOKEN_RENEW_PATH = \"/api/auth/token/renew\";"));
         assertTrue(handler.contains("|| path.equals(TOKEN_RENEW_PATH)"));

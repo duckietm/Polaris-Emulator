@@ -97,7 +97,9 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
 
         // The key exchange below runs for every request: a client over its share is refused before it.
         if (!NitroSecureRequestLimiter.tryAcquire(
-                "api", AuthHttpUtil.resolveClientIp(ctx, req), configInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
+                "api",
+                AuthHttpUtil.resolveClientIp(ctx, req),
+                configInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
             sendText(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, "Too many requests.");
             ReferenceCountUtil.release(req);
             return;

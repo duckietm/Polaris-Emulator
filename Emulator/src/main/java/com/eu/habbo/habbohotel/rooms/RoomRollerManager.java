@@ -556,8 +556,8 @@ public class RoomRollerManager {
             return false;
         }
 
-        Set<RoomTile> current = layout.getTilesAt(layout.getTile(roller.getX(), roller.getY()), width, length,
-                item.getRotation());
+        Set<RoomTile> current =
+                layout.getTilesAt(layout.getTile(roller.getX(), roller.getY()), width, length, item.getRotation());
         for (RoomTile tile : layout.getTilesAt(tileInFront, width, length, item.getRotation())) {
             if (tile.state == RoomTileState.INVALID) {
                 return false;

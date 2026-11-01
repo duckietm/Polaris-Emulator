@@ -354,6 +354,9 @@ public class PluginManager {
             this.reloading = true;
             try {
                 this.methods.clear();
+                // The listener instances of the plugins being reloaded go with their methods: kept, the old
+                // instances still received events after the reload.
+                this.listenerReceivers.clear();
                 this.loadPluginsInternal();
                 this.registerDefaultEvents();
             } finally {

@@ -72,6 +72,9 @@ public final class SmtpMailService {
         props.put("mail.smtp.port", String.valueOf(port));
         props.put("mail.smtp.auth", String.valueOf(!username.isEmpty()));
         if (useTls) props.put("mail.smtp.starttls.enable", "true");
+        // An encrypted session also checks that the certificate names this host: without it any certificate was taken,
+        // so reset links could be read on an intercepted network.
+        if (useTls || useSsl) props.put("mail.smtp.ssl.checkserveridentity", "true");
         if (useSsl) {
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");

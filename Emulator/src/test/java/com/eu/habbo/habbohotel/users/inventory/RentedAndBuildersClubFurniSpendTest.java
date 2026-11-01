@@ -40,8 +40,9 @@ class RentedAndBuildersClubFurniSpendTest {
         for (String event : new String[] {"BuildersClubPlaceRoomItemEvent", "BuildersClubPlaceWallItemEvent"}) {
             String source = source("messages/incoming/catalog/" + event + ".java");
 
-            assertTrue(source.contains("buildersClubOfferDefs.get(offerId)"), event);
-            assertFalse(source.contains(".offerDefs.get(offerId)"), event);
+            String compact = source.replace(" ", "");
+            assertTrue(compact.contains(".buildersClubOfferDefs.get(offerId)"), event);
+            assertFalse(compact.contains(".offerDefs.get(offerId)"), event);
         }
     }
 }

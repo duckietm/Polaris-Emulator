@@ -51,7 +51,7 @@ public class CraftingCraftSecretEvent extends MessageHandler {
                         .getHabboItem(itemId);
 
                 // A rented furni is no ingredient: trades, the marketplace and the recycler refuse it too.
-                if (habboItem == null || habboItem.hasRentPeriod() || !habboItems.add(habboItem)) {
+                if (habboItem == null || !habboItems.add(habboItem) || habboItem.hasRentPeriod()) {
                     this.client.sendResponse(new CraftingResultComposer(null));
                     return;
                 }

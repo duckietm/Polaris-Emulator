@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
 
 class RedeemClothingContractTest {
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemClothingEvent.java"));
+        return Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemClothingEvent.java"));
     }
 
     @Test
@@ -21,7 +21,8 @@ class RedeemClothingContractTest {
         int putBack = source.indexOf("room.addHabboItem(item)", grantCall);
         int deleteItem = source.indexOf("new QueryDeleteHabboItem(item.getId())");
 
-        assertTrue(source.contains("private boolean grantClothing(int clothingId)"),
+        assertTrue(
+                source.contains("private boolean grantClothing(int clothingId)"),
                 "clothing DB insert should report whether the grant succeeded");
         // The furni is claimed out of the room first, so a pickup cannot race the grant; a failed grant puts it back.
         assertTrue(claim > -1 && claim < grantCall, "the furni is claimed before the clothing is granted");

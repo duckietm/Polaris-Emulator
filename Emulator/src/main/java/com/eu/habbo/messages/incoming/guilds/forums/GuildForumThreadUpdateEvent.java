@@ -52,7 +52,9 @@ public class GuildForumThreadUpdateEvent extends MessageHandler {
         GuildMember member = Emulator.getGameEnvironment()
                 .getGuildManager()
                 .getGuildMember(guildId, this.client.getHabbo().getHabboInfo().getId());
-        if (member == null) {
+        // A request still waiting (or a blocked member) is no member: with moderation open to members, such a user
+        // used to pin and lock threads.
+        if (member == null || member.getRank().type > GuildRank.MEMBER.type) {
             this.client.sendResponse(new ConnectionErrorComposer(401));
             return;
         }

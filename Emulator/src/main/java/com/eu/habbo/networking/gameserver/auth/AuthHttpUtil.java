@@ -30,9 +30,20 @@ public final class AuthHttpUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpUtil.class);
 
-    static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,32}$");
+    // users.username is varchar(25): a longer name passed here and failed the INSERT with a generic error.
+    static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,25}$");
     static final Pattern EMAIL_RE = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     static final Pattern FIGURE_RE = Pattern.compile("^[A-Za-z0-9.\\-]{1,200}$");
+
+    /**
+     * A value a client sent, as it may go into a log line: control characters (a new line could fake a whole log
+     * entry) become '_', and it is cut to 64 characters.
+     */
+    static String forLog(String value) {
+        if (value == null) return "";
+        String cleaned = value.replaceAll("[\\p{Cntrl}]", "_");
+        return cleaned.length() > 64 ? cleaned.substring(0, 64) + "..." : cleaned;
+    }
 
     static final SecureRandom RNG = new SecureRandom();
     static final int MAX_BODY_BYTES = 8 * 1024;

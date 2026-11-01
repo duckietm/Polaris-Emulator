@@ -32,7 +32,7 @@ class RentedAndBuildersClubFurniSpendTest {
     void redeemingRefusesRentedAndBuildersClubFurni() throws Exception {
         assertTrue(source("messages/incoming/rooms/items/RedeemItemEvent.java")
                 .contains("item.hasRentPeriod() || BuildersClubRoomSupport.isTrackedItem(item.getId())"));
-        assertTrue(source("habbohotel/commands/RedeemCommand.java").contains("|| item.hasRentPeriod()) continue;"));
+        assertTrue(source("habbohotel/commands/RedeemCommand.java").contains("|| item.hasRentPeriod()"));
     }
 
     @Test

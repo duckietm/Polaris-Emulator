@@ -44,7 +44,7 @@ public final class CorsOriginGate {
      * "*example.com") allows example.com and its subdomains, anything else allows that host only, all ignoring case.
      * The wildcard used to be a plain text suffix, so "*example.com" also allowed "evilexample.com".
      */
-    static boolean matches(String host, String entry) {
+    public static boolean matches(String host, String entry) {
         if (host == null || entry == null) return false;
 
         String trimmed = entry.trim().toLowerCase(Locale.ROOT);

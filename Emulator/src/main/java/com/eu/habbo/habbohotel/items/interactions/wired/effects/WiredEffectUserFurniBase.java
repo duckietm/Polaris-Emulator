@@ -63,7 +63,8 @@ public abstract class WiredEffectUserFurniBase extends InteractionWiredEffect {
         for (int index = effectiveItems.size() - 1; index >= 0; index--) {
             HabboItem item = effectiveItems.get(index);
 
-            if (item != null) {
+            // A pick picked up or placed in another room is no target: the user was sent to its old coordinates.
+            if (item != null && (ctx.room() == null || ctx.room().getHabboItem(item.getId()) == item)) {
                 return item;
             }
         }

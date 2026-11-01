@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.auth.AuthHttpUtil;
+import com.eu.habbo.networking.gameserver.auth.CorsOriginGate;
 import com.eu.habbo.networking.gameserver.auth.GameConnectionLimits;
 import com.eu.habbo.networking.gameserver.e2e.E2eSessionProbe;
 import io.netty.buffer.Unpooled;
@@ -160,21 +161,12 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
         return domain.startsWith("www.") ? domain.substring(4) : domain;
     }
 
+    // The same match as CORS: "*.hotel.com" takes hotel.com and its subdomains, never evilhotel.com, and case
+    // does not matter. This suffix match let any domain ending with the allowed one open the game socket.
     private static boolean isWhitelisted(String toCheck, String[] whitelist) {
         for (String entry : whitelist) {
-            String trimmed = entry.trim();
-            if (trimmed.equals("*")) {
+            if (CorsOriginGate.matches(toCheck, entry)) {
                 return true;
-            }
-            if (trimmed.startsWith("*")) {
-                String suffix = trimmed.substring(1);
-                if (toCheck.endsWith(suffix) || ("." + toCheck).equals(suffix)) {
-                    return true;
-                }
-            } else {
-                if (toCheck.equals(trimmed)) {
-                    return true;
-                }
             }
         }
         return false;

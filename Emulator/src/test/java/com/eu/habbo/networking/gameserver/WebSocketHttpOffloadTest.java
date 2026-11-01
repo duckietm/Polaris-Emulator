@@ -121,6 +121,7 @@ class WebSocketHttpOffloadTest {
             awaitRemoved(channel, "nitroSecureApiHandler");
             awaitRemoved(channel, "blockingHttpAdmissionApi");
             awaitRemoved(channel, "httpReadTimeout");
+            awaitRemoved(channel, "httpConnectionLimit");
             awaitRemoved(channel, "authHttpHandler");
             awaitRemoved(channel, "cmsApiHandler");
             awaitRemoved(channel, "badgeHttpHandler");

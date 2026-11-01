@@ -30,7 +30,8 @@ public final class AuthHttpUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpUtil.class);
 
-    static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,32}$");
+    // users.username is varchar(25): a longer name passed here and failed the INSERT with a generic error.
+    static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,25}$");
     static final Pattern EMAIL_RE = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     static final Pattern FIGURE_RE = Pattern.compile("^[A-Za-z0-9.\\-]{1,200}$");
 

@@ -62,14 +62,15 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
+        if (room == null) return;
 
-        List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
+        // Only furni this room still holds: the list used to be copied before the clean-up below, so a furni
+        // picked up or placed in another room was still moved, and its coordinates and rotation rewritten.
+        List<HabboItem> effectiveItems =
+                new ArrayList<>(WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items));
+        effectiveItems.removeIf(item -> item == null || room.getHabboItem(item.getId()) != item);
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            this.items.removeIf(item -> Emulator.getGameEnvironment()
-                            .getRoomManager()
-                            .getRoom(this.getRoomId())
-                            .getHabboItem(item.getId())
-                    == null);
+            this.items.removeIf(item -> item == null || room.getHabboItem(item.getId()) == null);
         }
 
         // No move and no turn: AIR puts each picked furni back on its own tile, on top of its stack, in a random

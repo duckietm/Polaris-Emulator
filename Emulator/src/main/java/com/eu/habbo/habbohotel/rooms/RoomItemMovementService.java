@@ -338,15 +338,33 @@ final class RoomItemMovementService {
 
         HabboItem stackHelper = this.placement.findStackHeightHelperAt(tile, item);
 
+        // A footprint that leaves the map was not refused here, and turning a furni on its own tile skipped every
+        // tile check, so a rotation could cover a hole, an avatar or a tile past the edge.
+        if (!pluginHelper
+                && !layout.fitsOnMap(tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
+            return FurnitureMovementError.INVALID_MOVE;
+        }
+
         // Check if can be placed at new position
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
                 tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
+        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
+                layout.getTile(item.getX(), item.getY()), item.getBaseItem().getWidth(),
+                item.getBaseItem().getLength(), item.getRotation());
+
         HabboItem topItem = this.facade.getTopItemAt(occupiedTiles, null);
 
         if (stackHelper == null && !pluginHelper) {
-            if (oldLocation != tile) {
-                for (RoomTile t : occupiedTiles) {
+            // Turning in place checks only the tiles the furni newly covers: the ones it already stands on keep
+            // whoever is on them, as before.
+            Set<RoomTile> checkedTiles = occupiedTiles;
+            if (oldLocation == tile) {
+                checkedTiles = new java.util.HashSet<>(occupiedTiles);
+                checkedTiles.removeAll(oldOccupiedTiles);
+            }
+            if (!checkedTiles.isEmpty()) {
+                for (RoomTile t : checkedTiles) {
                     HabboItem tileTopItem = this.facade.getTopItemAt(t.x, t.y);
                     if (!magicTile
                             && ((tileTopItem != null && tileTopItem != item
@@ -386,10 +404,6 @@ final class RoomItemMovementService {
                 return FurnitureMovementError.CANT_STACK;
             }
         }
-
-        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
-                layout.getTile(item.getX(), item.getY()), item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), item.getRotation());
 
         int oldRotation = item.getRotation();
 

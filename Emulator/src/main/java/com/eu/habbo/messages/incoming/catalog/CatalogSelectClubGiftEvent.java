@@ -70,6 +70,12 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             }
         }
 
+        // A claim is spent only when something was given: a gift that could not be created used to cost one anyway.
+        if (itemsGiven.isEmpty()) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
         this.client.getHabbo().getHabboStats().hcGiftsClaimed++;
         Emulator.getThreading().run(this.client.getHabbo().getHabboStats());
 

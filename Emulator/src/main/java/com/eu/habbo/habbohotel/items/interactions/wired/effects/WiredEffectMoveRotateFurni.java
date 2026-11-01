@@ -66,7 +66,8 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
 
         // Only furni this room still holds: the list used to be copied before the clean-up below, so a furni
         // picked up or placed in another room was still moved, and its coordinates and rotation rewritten.
-        List<HabboItem> effectiveItems = new ArrayList<>(WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items));
+        List<HabboItem> effectiveItems =
+                new ArrayList<>(WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items));
         effectiveItems.removeIf(item -> item == null || room.getHabboItem(item.getId()) != item);
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
             this.items.removeIf(item -> item == null || room.getHabboItem(item.getId()) == null);

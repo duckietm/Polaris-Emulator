@@ -15,11 +15,13 @@ class WiredEffectMoveRotateRoomItemsTest {
 
     @Test
     void onlyFurniTheRoomStillHoldsAreMoved() throws Exception {
-        String source = Files.readString(Path.of(
-                        "src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateFurni.java"))
+        String source = Files.readString(
+                        Path.of(
+                                "src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateFurni.java"))
                 .replaceAll("\\s+", " ");
 
-        assertTrue(source.contains("effectiveItems.removeIf(item -> item == null || room.getHabboItem(item.getId()) != item);"));
+        assertTrue(source.contains(
+                "effectiveItems.removeIf(item -> item == null || room.getHabboItem(item.getId()) != item);"));
         assertFalse(source.contains(".getRoom(this.getRoomId()) .getHabboItem(item.getId())"));
     }
 }

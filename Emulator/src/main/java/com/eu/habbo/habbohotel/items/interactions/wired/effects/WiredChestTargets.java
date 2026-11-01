@@ -72,7 +72,8 @@ final class WiredChestTargets {
      * The first chest of {@code kind} that wired may take from: upgraded, not locked, and the box owner's own. Any
      * chest in the room used to do, so a box handed out what other users had put in theirs.
      */
-    static <T extends InteractionWiredChest> T firstUsable(Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
+    static <T extends InteractionWiredChest> T firstUsable(
+            Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
         for (HabboItem item : candidates) {
             if (!kind.isInstance(item)) continue;
             T chest = kind.cast(item);
@@ -82,7 +83,8 @@ final class WiredChestTargets {
     }
 
     /** Every chest of {@code kind} that wired may take from, in source order. */
-    static <T extends InteractionWiredChest> List<T> allUsable(Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
+    static <T extends InteractionWiredChest> List<T> allUsable(
+            Collection<HabboItem> candidates, Class<T> kind, int ownerId) {
         List<T> usable = new ArrayList<>();
         for (HabboItem item : candidates) {
             if (!kind.isInstance(item)) continue;

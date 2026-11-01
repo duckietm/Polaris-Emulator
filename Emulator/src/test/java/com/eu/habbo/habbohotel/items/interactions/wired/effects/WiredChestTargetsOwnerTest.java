@@ -37,8 +37,7 @@ class WiredChestTargetsOwnerTest {
         InteractionWiredChestCurrency own = chest(2, OWNER);
         List<HabboItem> candidates = List.of(theirs, own);
 
-        assertEquals(
-                List.of(own), WiredChestTargets.allUsable(candidates, InteractionWiredChestCurrency.class, OWNER));
+        assertEquals(List.of(own), WiredChestTargets.allUsable(candidates, InteractionWiredChestCurrency.class, OWNER));
         assertSame(own, WiredChestTargets.firstUsable(candidates, InteractionWiredChestCurrency.class, OWNER));
         assertNull(WiredChestTargets.firstUsable(List.of(theirs), InteractionWiredChestCurrency.class, OWNER));
     }

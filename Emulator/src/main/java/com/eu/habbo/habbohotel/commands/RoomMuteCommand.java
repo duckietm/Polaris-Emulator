@@ -7,7 +7,9 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 
 public class RoomMuteCommand extends Command {
     public RoomMuteCommand() {
-        super("cmd_roommute", Emulator.getTexts().getValue("commands.keys.cmd_roommute").split(";"));
+        super(
+                "cmd_roommute",
+                Emulator.getTexts().getValue("commands.keys.cmd_roommute").split(";"));
     }
 
     @Override
@@ -22,7 +24,12 @@ public class RoomMuteCommand extends Command {
 
         if (room != null) {
             room.setMuted(!room.isMuted());
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_roommute." + (room.isMuted() ? "muted" : "unmuted")), RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts()
+                                    .getValue("commands.succes.cmd_roommute." + (room.isMuted() ? "muted" : "unmuted")),
+                            RoomChatMessageBubbles.ALERT);
         }
 
         return true;

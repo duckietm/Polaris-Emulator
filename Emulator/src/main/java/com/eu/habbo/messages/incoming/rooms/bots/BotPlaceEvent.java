@@ -34,6 +34,10 @@ public class BotPlaceEvent extends MessageHandler {
 
         Emulator.getGameEnvironment()
                 .getBotManager()
-                .placeBot(bot, this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getCurrentRoom(), tile);
+                .placeBot(
+                        bot,
+                        this.client.getHabbo(),
+                        this.client.getHabbo().getHabboInfo().getCurrentRoom(),
+                        tile);
     }
 }

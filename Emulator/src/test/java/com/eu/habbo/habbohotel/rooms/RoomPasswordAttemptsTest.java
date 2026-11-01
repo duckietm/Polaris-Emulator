@@ -29,8 +29,8 @@ class RoomPasswordAttemptsTest {
 
         assertTrue(source.contains("if (this.rolling) return;"));
         assertTrue(source.contains("this.rolling = false;"));
-        assertTrue(Files.readString(
-                        Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/UseRandomStateItemEvent.java"))
+        assertTrue(Files.readString(Path.of(
+                        "src/main/java/com/eu/habbo/messages/incoming/rooms/items/UseRandomStateItemEvent.java"))
                 .contains("public int getRatelimit()"));
     }
 }

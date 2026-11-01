@@ -31,7 +31,6 @@ final class RoomEntryService {
             .<String, AtomicInteger>build()
             .asMap();
 
-
     private final IntFunction<Room> roomLookup;
     private final Consumer<Room> accessDataLoader;
     private final Consumer<Room> contentLoader;
@@ -163,7 +162,8 @@ final class RoomEntryService {
     private void checkPassword(Habbo habbo, Room room, String password, Spawn spawn) {
         String key = habbo.getHabboInfo().getId() + ":" + room.getId();
 
-        if (passwordAttemptsLeft(PASSWORD_FAILURES.get(key)) && room.getPassword().equalsIgnoreCase(password)) {
+        if (passwordAttemptsLeft(PASSWORD_FAILURES.get(key))
+                && room.getPassword().equalsIgnoreCase(password)) {
             PASSWORD_FAILURES.remove(key);
             this.open(habbo, room, spawn);
             return;

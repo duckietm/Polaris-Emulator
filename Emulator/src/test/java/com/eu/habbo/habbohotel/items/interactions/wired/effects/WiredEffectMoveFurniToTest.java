@@ -2,14 +2,19 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -70,5 +75,22 @@ class WiredEffectMoveFurniToTest {
         assertEquals(5, WiredEffectMoveFurniTo.clampSpacing(Integer.MAX_VALUE));
         assertEquals(0, WiredEffectMoveFurniTo.clampSpacing(-3));
         assertEquals(3, WiredEffectMoveFurniTo.clampSpacing(3));
+    }
+
+    @Test
+    @DisplayName("a pick the room does not hold refuses the save instead of being stored as null")
+    void missingPicksAreRefusedAndNullsAreTolerated() throws Exception {
+        String source = Files.readString(Path.of(
+                        "src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveFurniTo.java"))
+                .replaceAll("\\s+", " ");
+
+        int check = source.indexOf("if (item == null) throw new WiredSaveException(");
+        int clear = source.indexOf("this.items.clear(); this.indexOffset.clear();");
+        assertTrue(check > -1 && check < clear, "checked before the box changes");
+        assertFalse(source.contains("this.items.add(room.getHabboItem("));
+        assertEquals(
+                2,
+                source.split(Pattern.quote("if (item == null || item.getRoomId() != this.getRoomId()"), -1).length - 1,
+                "both writers skip a null pick");
     }
 }

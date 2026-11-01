@@ -36,6 +36,7 @@ class ImportAndReloadBoundsTest {
     void aPluginReloadDropsTheOldListeners() throws Exception {
         String plugins = source("plugin/PluginManager.java");
 
-        assertTrue(plugins.indexOf("this.listenerReceivers.clear();") < plugins.indexOf("this.loadPluginsInternal();", plugins.indexOf("public void reload()")));
+        assertTrue(plugins.indexOf("this.listenerReceivers.clear();")
+                < plugins.indexOf("this.loadPluginsInternal();", plugins.indexOf("public void reload()")));
     }
 }

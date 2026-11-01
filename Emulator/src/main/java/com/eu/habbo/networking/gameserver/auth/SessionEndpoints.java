@@ -582,6 +582,16 @@ final class SessionEndpoints {
             int templateId)
             throws Exception {
         int maxPerIp = config.getInt("register.max_per_ip", 5);
+        // The database quota below compares ip_register as text, so every address of an IPv6 /64 had its own
+        // quota: accounts made in the last day are also counted per client bucket.
+        if (!AuthRateLimiter.registrationAllowed(ip, maxPerIp)) {
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("This IP has reached the maximum of " + maxPerIp + " registered accounts."));
+            return false;
+        }
         if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
             try (PreparedStatement quota = conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
                 quota.setString(1, ip);
@@ -678,6 +688,7 @@ final class SessionEndpoints {
                     username);
         }
 
+        AuthRateLimiter.recordRegistration(ip);
         return true;
     }
 

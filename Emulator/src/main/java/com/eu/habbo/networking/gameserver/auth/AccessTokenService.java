@@ -3,11 +3,6 @@ package com.eu.habbo.networking.gameserver.auth;
 import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -15,6 +10,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AccessTokenService {
 
@@ -73,8 +72,8 @@ public final class AccessTokenService {
         String h = URL_ENC.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
         String p = URL_ENC.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
         String signingInput = h + "." + p;
-        String sig = URL_ENC.encodeToString(hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
-                signingInput.getBytes(StandardCharsets.UTF_8)));
+        String sig = URL_ENC.encodeToString(
+                hmacSha256(secret().getBytes(StandardCharsets.UTF_8), signingInput.getBytes(StandardCharsets.UTF_8)));
         return new Issued(signingInput + "." + sig, exp);
     }
 
@@ -100,13 +99,14 @@ public final class AccessTokenService {
 
         try {
             String signingInput = parts[0] + "." + parts[1];
-            byte[] expected = hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
-                    signingInput.getBytes(StandardCharsets.UTF_8));
+            byte[] expected = hmacSha256(
+                    secret().getBytes(StandardCharsets.UTF_8), signingInput.getBytes(StandardCharsets.UTF_8));
             byte[] provided = URL_DEC.decode(parts[2]);
             if (!constantTimeEquals(expected, provided)) return 0;
 
             byte[] payloadBytes = URL_DEC.decode(parts[1]);
-            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
 
             if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return 0;
             long exp = payload.get("exp").getAsLong();
@@ -138,13 +138,14 @@ public final class AccessTokenService {
 
         try {
             String signingInput = parts[0] + "." + parts[1];
-            byte[] expected = hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
-                    signingInput.getBytes(StandardCharsets.UTF_8));
+            byte[] expected = hmacSha256(
+                    secret().getBytes(StandardCharsets.UTF_8), signingInput.getBytes(StandardCharsets.UTF_8));
             byte[] provided = URL_DEC.decode(parts[2]);
             if (!constantTimeEquals(expected, provided)) return false;
 
             byte[] payloadBytes = URL_DEC.decode(parts[1]);
-            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
             if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return false;
             return payload.get("exp").getAsLong() > Emulator.getIntUnixTimestamp();
         } catch (Exception e) {
@@ -163,27 +164,31 @@ public final class AccessTokenService {
     }
 
     private static UserSecurityState currentSecurityState(Connection conn, int userId) throws SQLException {
-        try (PreparedStatement select = conn.prepareStatement(
-                "SELECT access_token_version, password FROM users WHERE id = ? LIMIT 1")) {
+        try (PreparedStatement select =
+                conn.prepareStatement("SELECT access_token_version, password FROM users WHERE id = ? LIMIT 1")) {
             select.setInt(1, userId);
             try (ResultSet result = select.executeQuery()) {
                 if (!result.next()) {
                     return null;
                 }
-                return new UserSecurityState(
-                        result.getLong("access_token_version"),
-                        result.getString("password"));
+                return new UserSecurityState(result.getLong("access_token_version"), result.getString("password"));
             }
         }
     }
 
     private static String credentialBinding(int userId, String passwordHash) {
         String value = userId + "\0" + (passwordHash == null ? "" : passwordHash);
-        return URL_ENC.encodeToString(hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
-                value.getBytes(StandardCharsets.UTF_8)));
+        return URL_ENC.encodeToString(
+                hmacSha256(secret().getBytes(StandardCharsets.UTF_8), value.getBytes(StandardCharsets.UTF_8)));
     }
 
-    private record UserSecurityState(long version, String passwordHash) {
+    private record UserSecurityState(long version, String passwordHash) {}
+
+    /** The secret the base migration wrote for every hotel: public, so never a key. */
+    private static final String PUBLISHED_SECRET = "vA9OXBF7W8VBryT4xuOHIRtlfID60A2Sy54CjQZ7Nb/nL9gQKnbQJ5iYkyJ58TtD";
+
+    static boolean isPublishedSecret(String secret) {
+        return PUBLISHED_SECRET.equals(secret == null ? null : secret.trim());
     }
 
     private static String secret() {
@@ -194,9 +199,14 @@ public final class AccessTokenService {
             if (cachedSecret != null && !cachedSecret.isEmpty()) return cachedSecret;
 
             String configured = Emulator.getConfig().getValue("login.access.jwt.secret", "");
-            if (configured != null && !configured.isEmpty()) {
+            if (configured != null && !configured.isEmpty() && !isPublishedSecret(configured)) {
                 cachedSecret = configured;
                 return configured;
+            }
+            if (isPublishedSecret(configured)) {
+                // The base migration shipped this value to every hotel, so anyone could sign tokens with it.
+                LOGGER.warn("login.access.jwt.secret is the value published with the base database; generating a new"
+                        + " one, so tokens signed with the old secret stop working");
             }
 
             byte[] buf = new byte[48];
@@ -204,9 +214,9 @@ public final class AccessTokenService {
             String generated = Base64.getEncoder().withoutPadding().encodeToString(buf);
 
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(
-                         "INSERT INTO emulator_settings (`key`, `value`) VALUES ('login.access.jwt.secret', ?) "
-                                 + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")) {
+                    PreparedStatement stmt = conn.prepareStatement(
+                            "INSERT INTO emulator_settings (`key`, `value`) VALUES ('login.access.jwt.secret', ?) "
+                                    + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")) {
                 stmt.setString(1, generated);
                 stmt.executeUpdate();
             } catch (SQLException e) {

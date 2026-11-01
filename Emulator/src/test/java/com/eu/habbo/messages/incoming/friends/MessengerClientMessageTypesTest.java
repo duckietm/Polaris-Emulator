@@ -6,23 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * Only text passes the word filter; a message of type 1, 2 or 3 reached the friend unfiltered and stayed in
- * the history, with whatever metadata it carried.
+ * Only text passes the word filter; a message of type 1, 2 or 3 reached the friend unfiltered and stayed in the
+ * history. Text keeps its metadata: the protocol carries it back to the recipient (the renderer's messenger e2e).
  */
 class MessengerClientMessageTypesTest {
 
     @Test
-    void textAndHabbiconsWithNoMetadataAreAccepted() {
-        assertTrue(SendMessengerMessageEvent.isClientMessage(0, ""));
-        assertTrue(SendMessengerMessageEvent.isClientMessage(4, ""));
-        assertTrue(SendMessengerMessageEvent.isClientMessage(0, null));
+    void textAndHabbiconsAreAccepted() {
+        assertTrue(SendMessengerMessageEvent.isClientMessage(0));
+        assertTrue(SendMessengerMessageEvent.isClientMessage(4));
     }
 
     @Test
-    void otherTypesAndAnyMetadataAreRefused() {
+    void otherTypesAreRefused() {
         for (int type : new int[] {1, 2, 3, 5, -1}) {
-            assertFalse(SendMessengerMessageEvent.isClientMessage(type, ""), "type " + type);
+            assertFalse(SendMessengerMessageEvent.isClientMessage(type), "type " + type);
         }
-        assertFalse(SendMessengerMessageEvent.isClientMessage(0, "{\"x\":1}"));
     }
 }

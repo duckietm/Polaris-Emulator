@@ -80,8 +80,9 @@ class WiredEffectMoveFurniToTest {
     @Test
     @DisplayName("a pick the room does not hold refuses the save instead of being stored as null")
     void missingPicksAreRefusedAndNullsAreTolerated() throws Exception {
-        String source = Files.readString(Path.of(
-                        "src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveFurniTo.java"))
+        String source = Files.readString(
+                        Path.of(
+                                "src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveFurniTo.java"))
                 .replaceAll("\\s+", " ");
 
         int check = source.indexOf("if (item == null) throw new WiredSaveException(");

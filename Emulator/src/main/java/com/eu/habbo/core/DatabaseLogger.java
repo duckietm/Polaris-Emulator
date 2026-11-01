@@ -71,13 +71,32 @@ public class DatabaseLogger {
                 }
                 statement.executeBatch();
             } catch (SQLException e) {
-                // One bad group shouldn't prevent other groups from flushing.
+                // One bad row (a text longer than its column, say) used to throw the whole group away, chat
+                // lines included: the group is written again one row at a time and only the bad rows are dropped.
                 LOGGER.error(
-                        "Exception caught while saving loggable group of size {}: {}",
+                        "Exception caught while saving loggable group of size {}, writing it row by row: {}",
                         entries.size(),
                         group.getKey(),
                         e);
+                int dropped = writeOneByOne(connection, group.getKey(), entries);
+                if (dropped > 0) {
+                    LOGGER.error("{} loggable row(s) could not be saved and were dropped: {}", dropped, group.getKey());
+                }
             }
         }
+    }
+
+    /** Writes each row on its own and answers how many failed. */
+    static int writeOneByOne(Connection connection, String query, List<DatabaseLoggable> entries) {
+        int dropped = 0;
+        for (DatabaseLoggable loggable : entries) {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                loggable.log(statement);
+                statement.executeBatch();
+            } catch (SQLException e) {
+                dropped++;
+            }
+        }
+        return dropped;
     }
 }

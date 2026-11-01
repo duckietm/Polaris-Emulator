@@ -3,6 +3,9 @@ package com.eu.habbo.messages.incoming.navigator;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.rooms.RoomState;
+import java.util.List;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.PrivateRoomsComposer;
@@ -51,7 +54,10 @@ public class SearchRoomsEvent extends MessageHandler {
             prefix = "group:";
         }
 
-        String cacheKey = buildCacheKey(prefix, query);
+        // As in the new navigator: an invisible room is listed only to who may enter or own any room.
+        boolean showInvisible = this.client.getHabbo().hasPermission(Permission.ACC_ENTERANYROOM)
+                || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER);
+        String cacheKey = buildCacheKey(prefix, query) + (showInvisible ? "	all" : "");
 
         ServerMessage message = null;
         Map<String, ServerMessage> rankCache = cachedResults.get(this.client.getHabbo().getHabboInfo().getRank());
@@ -73,6 +79,8 @@ public class SearchRoomsEvent extends MessageHandler {
                 rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithName(query);
             }
 
+            if (!showInvisible) rooms = visibleRooms(rooms);
+
             message = new PrivateRoomsComposer(rooms).compose();
             Map<String, ServerMessage> map = cachedResults.get(this.client.getHabbo().getHabboInfo().getRank());
 
@@ -90,6 +98,14 @@ public class SearchRoomsEvent extends MessageHandler {
         }
 
         this.client.sendResponse(message);
+    }
+
+    static ArrayList<Room> visibleRooms(List<Room> rooms) {
+        ArrayList<Room> visible = new ArrayList<>();
+        for (Room room : rooms) {
+            if (room.getState() != RoomState.INVISIBLE) visible.add(room);
+        }
+        return visible;
     }
 
     private static String buildCacheKey(String prefix, String query) {

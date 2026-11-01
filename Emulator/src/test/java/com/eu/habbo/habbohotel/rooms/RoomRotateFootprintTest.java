@@ -15,7 +15,7 @@ class RoomRotateFootprintTest {
                 Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomItemMovementService.java"));
         int method = source.indexOf(
                 "HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates, boolean checkForUnits) {");
-        int edge = source.indexOf("!layout.fitsOnMap(tile, item.getBaseItem().getWidth()", method);
+        int edge = source.indexOf("&& !layout.fitsOnMap(", method);
         int newTiles = source.indexOf("checkedTiles.removeAll(oldOccupiedTiles);", method);
         int checks = source.indexOf("for (RoomTile t : checkedTiles) {", newTiles);
         int turn = source.indexOf("item.setRotation(rotation);", method);

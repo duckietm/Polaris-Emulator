@@ -210,8 +210,7 @@ public final class CollectiblesService {
     }
 
     private CollectibleData.Claim unlessSpent(
-            CollectibleData.Claim claim, List<Product> setProducts, List<Owned> owned, int userId)
-            throws SQLException {
+            CollectibleData.Claim claim, List<Product> setProducts, List<Owned> owned, int userId) throws SQLException {
         if (claim == null || claim.status() != CollectibleData.CLAIM_AVAILABLE) return claim;
         if (pickAssets(owned, this.spentAssets(claim.claimId(), userId), setProducts) != null) return claim;
         return new CollectibleData.Claim(

@@ -22,8 +22,7 @@ class CollectibleClaimAssetsTest {
 
     @Test
     void picksOneUnspentTokenOfEachProduct() {
-        List<Owned> owned = List.of(
-                new Owned(1, 7, "bear", 1), new Owned(2, 7, "bear", 2), new Owned(3, 7, "duck", 1));
+        List<Owned> owned = List.of(new Owned(1, 7, "bear", 1), new Owned(2, 7, "bear", 2), new Owned(3, 7, "duck", 1));
 
         assertEquals(
                 List.of(2L, 3L),

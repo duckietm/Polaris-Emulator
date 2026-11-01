@@ -7,10 +7,9 @@ import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage> {
 
@@ -64,10 +63,14 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
         int globalMax = config.getInt("packet.global.rate.limit", DEFAULT_GLOBAL_MAX);
         if (globalCount > globalMax) {
             if (globalCount == globalMax + 1) {
-                String username = (client.getHabbo() != null && client.getHabbo().getHabboInfo() != null)
-                        ? client.getHabbo().getHabboInfo().getUsername() : "unauthenticated";
-                LOGGER.warn("Global packet rate limit exceeded for {} ({} packets/sec) — dropping excess packets",
-                        username, globalCount);
+                String username =
+                        (client.getHabbo() != null && client.getHabbo().getHabboInfo() != null)
+                                ? client.getHabbo().getHabboInfo().getUsername()
+                                : "unauthenticated";
+                LOGGER.warn(
+                        "Global packet rate limit exceeded for {} ({} packets/sec) — dropping excess packets",
+                        username,
+                        globalCount);
             }
             message.release();
             this.dropped(ctx, client, config, timestamp);
@@ -89,11 +92,13 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
         int disconnectAfter = config.getInt("packet.rate.limit.disconnect_after", DEFAULT_DISCONNECT_AFTER);
         if (disconnectAfter > 0 && this.droppedInWindow == disconnectAfter + 1) {
             String username = (client.getHabbo() != null && client.getHabbo().getHabboInfo() != null)
-                    ? client.getHabbo().getHabboInfo().getUsername() : "unauthenticated";
-            LOGGER.warn("Closing the connection of {}: {} packets dropped by the rate limit within one second",
-                    username, this.droppedInWindow);
+                    ? client.getHabbo().getHabboInfo().getUsername()
+                    : "unauthenticated";
+            LOGGER.warn(
+                    "Closing the connection of {}: {} packets dropped by the rate limit within one second",
+                    username,
+                    this.droppedInWindow);
             ctx.channel().close();
         }
     }
-
 }

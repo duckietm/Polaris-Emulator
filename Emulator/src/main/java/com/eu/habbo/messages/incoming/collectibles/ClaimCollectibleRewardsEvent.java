@@ -33,7 +33,8 @@ public class ClaimCollectibleRewardsEvent extends MessageHandler {
 
         int userId = habbo.getHabboInfo().getId();
         CollectorScore score = service.collectorScore(userId, settings.xpPerLevel());
-        List<Owned> minted = service.claimLevelRewards(userId, score.level(), settings.xpPerLevel(), CollectiblesSupport.now());
+        List<Owned> minted =
+                service.claimLevelRewards(userId, score.level(), settings.xpPerLevel(), CollectiblesSupport.now());
         CollectiblesSupport.publishAcquired(habbo, minted, service, settings);
 
         this.client.sendResponse(new CollectibleClaimAllResultComposer(minted.isEmpty() ? 1 : 0));

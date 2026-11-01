@@ -154,7 +154,9 @@ class CollectiblesServiceIT {
     void tokensPassedOnDoNotEarnTheSameSetRewardAgain() throws Exception {
         service.mint(ALICE, "bear", "shop", 1);
         service.mint(ALICE, "duck", "shop", 1);
-        assertEquals("trophy", service.claimCollection(ALICE, "toys", false, 150).orElseThrow().productCode());
+        assertEquals(
+                "trophy",
+                service.claimCollection(ALICE, "toys", false, 150).orElseThrow().productCode());
 
         service.transferAll(ALICE, BOB);
         assertEquals(
@@ -164,19 +166,25 @@ class CollectiblesServiceIT {
 
         // A token of its own completes the set again for the new owner.
         service.mint(BOB, "duck", "shop", 1);
-        assertEquals("trophy", service.claimCollection(BOB, "toys", false, 150).orElseThrow().productCode());
+        assertEquals(
+                "trophy",
+                service.claimCollection(BOB, "toys", false, 150).orElseThrow().productCode());
     }
 
     @Test
     void tokensPassedOnDoNotRaiseTheLevelForTheSameLevelReward() throws Exception {
         service.mint(ALICE, "bear", "shop", 1);
         service.mint(ALICE, "duck", "shop", 1);
-        assertEquals(1, service.openRewards(ALICE, 9, 50, 10).stream()
-                .filter(open -> open.product().productCode().equals("trophy"))
-                .count());
-        assertEquals(1, service.claimLevelRewards(ALICE, 9, 50, 10).stream()
-                .filter(owned -> owned.productCode().equals("trophy"))
-                .count());
+        assertEquals(
+                1,
+                service.openRewards(ALICE, 9, 50, 10).stream()
+                        .filter(open -> open.product().productCode().equals("trophy"))
+                        .count());
+        assertEquals(
+                1,
+                service.claimLevelRewards(ALICE, 9, 50, 10).stream()
+                        .filter(owned -> owned.productCode().equals("trophy"))
+                        .count());
 
         service.transferAll(ALICE, BOB);
         assertTrue(service.openRewards(BOB, 9, 50, 10).stream()

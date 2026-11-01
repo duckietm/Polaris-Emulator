@@ -73,6 +73,7 @@ import com.eu.habbo.habbohotel.users.ChatStyleRepository;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboGender;
+import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.users.inventory.EffectsComponent;
@@ -1681,6 +1682,14 @@ public class CatalogManager {
             return true;
         }
 
+        // The catalog checks the inventory size before it gets here, but vouchers, targeted offers and the limited
+        // raffle deliver through this method directly and went past it.
+        if (inventoryOverCap(habbo)) {
+            habbo.getClient()
+                    .sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+            return true;
+        }
+
         String ownershipRefusal = WiredWebApiOwnership.purchaseRefusal(
                 item, amount, habbo.getHabboInfo().getId());
         if (ownershipRefusal != null) {
@@ -1701,6 +1710,16 @@ public class CatalogManager {
         }
 
         return false;
+    }
+
+    /** Whether the buyer's inventory is over its size, or cannot be read to tell. */
+    static boolean inventoryOverCap(Habbo habbo) {
+        try {
+            return habbo.getInventory().getItemsComponent().itemCount() > HabboInventory.MAXIMUM_ITEMS;
+        } catch (RuntimeException e) {
+            LOGGER.error("Purchase refused for user {}: their inventory could not be read", habbo.getHabboInfo().getId(), e);
+            return true;
+        }
     }
 
     /** Refuses a limited edition that is sold out or over the buyer's daily limits. */

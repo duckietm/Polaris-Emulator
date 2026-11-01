@@ -1,10 +1,10 @@
 package com.eu.habbo.messages.incoming.guilds.forums;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 class GuildForumInputGuardTest {
     @Test
@@ -34,6 +34,13 @@ class GuildForumInputGuardTest {
         assertTrue(GuildForumInputGuard.isSettingsState(0));
         assertTrue(GuildForumInputGuard.isSettingsState(3));
         assertFalse(GuildForumInputGuard.isSettingsState(4));
+
+        // read_forum and mod_forum are narrower enums in the database.
+        assertTrue(GuildForumInputGuard.isReadState(2));
+        assertFalse(GuildForumInputGuard.isReadState(3));
+        assertTrue(GuildForumInputGuard.isModerationState(2));
+        assertTrue(GuildForumInputGuard.isModerationState(3));
+        assertFalse(GuildForumInputGuard.isModerationState(0));
 
         assertTrue(GuildForumInputGuard.isThreadModerationState(20));
         assertFalse(GuildForumInputGuard.isThreadModerationState(999));

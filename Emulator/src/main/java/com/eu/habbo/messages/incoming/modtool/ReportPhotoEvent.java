@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionExternalImage;
+import com.eu.habbo.habbohotel.modtool.ModToolManager;
 import com.eu.habbo.habbohotel.modtool.CfhTopic;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
@@ -15,7 +16,15 @@ import com.eu.habbo.threading.runnables.InsertModToolIssue;
 
 public class ReportPhotoEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return ModToolReportGate.RATE_LIMIT_MS;
+    }
+
+    @Override
     public void handle() throws Exception {
+        ModToolManager modTools = Emulator.getGameEnvironment().getModToolManager();
+        if (ModToolReportGate.refuse(this.client, modTools)) return;
+
         boolean hasExtradataId = this.packet.readShort() != 0;
 
         this.packet.getBuffer().resetReaderIndex();
@@ -47,7 +56,7 @@ public class ReportPhotoEvent extends MessageHandler {
             return;
         }
 
-        CfhTopic topic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topicId);
+        CfhTopic topic = modTools.getCfhTopic(topicId);
 
         if (topic == null) return;
 
@@ -78,7 +87,7 @@ public class ReportPhotoEvent extends MessageHandler {
 
         this.client.sendResponse(
                 new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, ""));
-        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
-        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+        modTools.addTicket(issue);
+        modTools.updateTicketToMods(issue);
     }
 }

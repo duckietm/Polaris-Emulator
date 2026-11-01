@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.modtool.ModToolManager;
 import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
 import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
@@ -14,7 +15,15 @@ import java.util.ArrayList;
 
 public class ReportFriendPrivateChatEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return ModToolReportGate.RATE_LIMIT_MS;
+    }
+
+    @Override
     public void handle() throws Exception {
+        ModToolManager modTools = Emulator.getGameEnvironment().getModToolManager();
+        if (ModToolReportGate.refuse(this.client, modTools)) return;
+
         if (!this.client.getHabbo().getHabboStats().allowTalk()) {
             this.client.sendResponse(new HelperRequestDisabledComposer());
             return;
@@ -87,7 +96,7 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
         issue.category = category;
         issue.chatLogs = chatLogs;
         new InsertModToolIssue(issue).run();
-        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
-        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+        modTools.addTicket(issue);
+        modTools.updateTicketToMods(issue);
     }
 }

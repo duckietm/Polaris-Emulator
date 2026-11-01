@@ -95,7 +95,7 @@ public class CraftingCraftItemEvent extends MessageHandler {
                         .getHabbo()
                         .getInventory()
                         .getItemsComponent()
-                        .getAndRemoveHabboItem(set.getKey());
+                        .getAndRemoveUnrentedHabboItem(set.getKey());
 
                 if (habboItem == null) {
                     // Not enough ingredients — give back whatever we already pulled.

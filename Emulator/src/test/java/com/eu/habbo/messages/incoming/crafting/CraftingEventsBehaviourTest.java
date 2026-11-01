@@ -325,7 +325,7 @@ class CraftingEventsBehaviourTest {
 
         ItemsComponent items = mock(ItemsComponent.class);
         when(items.getHabboItem(anyInt())).thenAnswer(i -> this.inventory.get(i.<Integer>getArgument(0)));
-        when(items.getAndRemoveHabboItem(any())).thenAnswer(i -> {
+        when(items.getAndRemoveUnrentedHabboItem(any())).thenAnswer(i -> {
             HabboItem found = this.inventory.values().stream()
                     .filter(x -> x.getBaseItem() == i.getArgument(0))
                     .findFirst()

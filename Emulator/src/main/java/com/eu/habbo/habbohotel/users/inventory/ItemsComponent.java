@@ -133,6 +133,24 @@ public class ItemsComponent {
         return found;
     }
 
+    /** The same, skipping rented furni: an ingredient is the owner's to spend, a rented furni is not. */
+    public HabboItem getAndRemoveUnrentedHabboItem(final Item item) {
+        HabboItem found = null;
+        synchronized (this.items) {
+            for (HabboItem object : this.items.values()) {
+                if (object.getBaseItem() == item && !object.hasRentPeriod()) {
+                    found = object;
+                    break;
+                }
+            }
+        }
+        if (found == null) {
+            return null;
+        }
+        this.removeHabboItem(found);
+        return found;
+    }
+
     public void removeHabboItem(int itemId) {
         this.items.remove(itemId);
     }

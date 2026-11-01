@@ -23,9 +23,9 @@ class RentableSpaceChargeContractTest {
                 "Renting must honor infinite-credit staff permission before charging");
         assertTrue(rentHandling.contains("!hasInfiniteCredits && habbo.getHabboInfo().getCredits() < cost"),
                 "Renting must reject non-staff users without enough credits for the computed cost");
-        assertTrue(rentHandling.contains("habbo.giveCredits(-cost);"),
-                "Renting must deduct the computed credit cost");
-        assertTrue(rentHandling.indexOf("habbo.giveCredits(-cost);") < rentHandling.indexOf("this.setRenterId"),
+        assertTrue(rentHandling.contains("habbo.applyCredits("),
+                "Renting must deduct the computed credit cost, and know whether it went through");
+        assertTrue(rentHandling.indexOf("habbo.applyCredits(") < rentHandling.indexOf("this.setRenterId"),
                 "Credits must be charged before the rentable space is marked as rented");
     }
 }

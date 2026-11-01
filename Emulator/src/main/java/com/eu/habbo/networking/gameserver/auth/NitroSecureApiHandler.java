@@ -38,6 +38,9 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     // the clear (CMS, health, maintenance, stats, the public wired API) are not listed.
     private static final String[] CLIENT_API_ROOTS = {"/api/auth", "/api/badges"};
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
+    // Secure API requests per client bucket and minute: every client HTTP call goes through here, so the share is wide.
+    static final String RATE_LIMIT_CONFIG = "nitro.secure.api.requests_per_minute";
+    private static final int DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
     private static final long MAX_REQUEST_SKEW_MS = 90_000L;
@@ -89,6 +92,14 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
                 return;
             }
             super.channelRead(ctx, msg);
+            return;
+        }
+
+        // The key exchange below runs for every request: a client over its share is refused before it.
+        if (!NitroSecureRequestLimiter.tryAcquire(
+                "api", AuthHttpUtil.resolveClientIp(ctx, req), configInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
+            sendText(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, "Too many requests.");
+            ReferenceCountUtil.release(req);
             return;
         }
 
@@ -238,12 +249,16 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     }
 
     static int maxPayloadBytes() {
-        if (com.eu.habbo.Emulator.getConfig() == null) {
-            return DEFAULT_MAX_PAYLOAD_BYTES;
-        }
-
-        int configured = com.eu.habbo.Emulator.getConfig().getInt(MAX_PAYLOAD_CONFIG, DEFAULT_MAX_PAYLOAD_BYTES);
+        int configured = configInt(MAX_PAYLOAD_CONFIG, DEFAULT_MAX_PAYLOAD_BYTES);
         return configured > 0 ? configured : DEFAULT_MAX_PAYLOAD_BYTES;
+    }
+
+    /** A number from the config; the fallback without a configuration. 0 or less turns the request limit off. */
+    private static int configInt(String key, int fallback) {
+        if (com.eu.habbo.Emulator.getConfig() == null) {
+            return fallback;
+        }
+        return com.eu.habbo.Emulator.getConfig().getInt(key, fallback);
     }
 
     private static byte[] unwrapEnvelope(byte[] clear, FullHttpRequest req, SecureApiContext secureContext) {

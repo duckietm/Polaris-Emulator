@@ -30,7 +30,8 @@ class DatabaseLoggerRowByRowTest {
         DatabaseLoggable bad = mock(DatabaseLoggable.class);
         doThrow(new SQLException("Data too long")).when(bad).log(statement);
 
-        int dropped = DatabaseLogger.writeOneByOne(connection, "INSERT INTO chatlogs_room VALUES (?)", List.of(good, bad, good));
+        int dropped = DatabaseLogger.writeOneByOne(
+                connection, "INSERT INTO chatlogs_room VALUES (?)", List.of(good, bad, good));
 
         assertEquals(1, dropped);
         verify(good, times(2)).log(statement);

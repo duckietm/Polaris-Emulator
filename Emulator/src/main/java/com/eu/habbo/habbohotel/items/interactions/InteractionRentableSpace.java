@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -148,11 +149,17 @@ public class InteractionRentableSpace extends HabboItem {
      * otherwise the RentableSpaceInfoComposer error code the client shows.
      */
     public int tryRent(Habbo habbo) {
-        int errorCode = this.getRentErrorCode(habbo);
-        if (errorCode != 0) return errorCode;
+        // Checked and rented under one lock: two users renting at once both passed the check and both paid, and the
+        // first was left with a rent of a space that was not theirs.
+        synchronized (this) {
+            int errorCode = this.getRentErrorCode(habbo);
+            if (errorCode != 0) return errorCode;
 
-        this.rent(habbo);
-        return this.getRenterId() == habbo.getHabboInfo().getId() ? 0 : RentableSpaceInfoComposer.NOT_ENOUGH_CREDITS;
+            this.rent(habbo);
+            return this.getRenterId() == habbo.getHabboInfo().getId()
+                    ? 0
+                    : RentableSpaceInfoComposer.NOT_ENOUGH_CREDITS;
+        }
     }
 
     /** Charges the rent and marks the space rented; silently does nothing when the user cannot pay. */
@@ -161,8 +168,15 @@ public class InteractionRentableSpace extends HabboItem {
         boolean hasInfiniteCredits = habbo.hasPermission(Permission.ACC_INFINITE_CREDITS);
         if (!hasInfiniteCredits && habbo.getHabboInfo().getCredits() < cost) return;
 
-        if (!hasInfiniteCredits) {
-            habbo.giveCredits(-cost);
+        // The space is rented only when the charge went through: a cancelled or refused debit used to rent it anyway.
+        if (!hasInfiniteCredits
+                && cost > 0
+                && !habbo.applyCredits(
+                        -cost,
+                        "rentable_space.rent",
+                        EconomyOperationId.create("rentable_space:" + this.getId() + ":" + habbo.getHabboInfo().getId()),
+                        habbo.getHabboInfo().getId())) {
+            return;
         }
 
         this.setRenterId(habbo.getHabboInfo().getId());

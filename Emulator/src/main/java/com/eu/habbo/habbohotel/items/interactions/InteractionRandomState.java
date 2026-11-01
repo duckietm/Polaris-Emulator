@@ -25,8 +25,14 @@ public class InteractionRandomState extends InteractionDefault {
         room.updateItemState(this);
     }
 
+    /** A roll is running: clicks meanwhile are ignored instead of each scheduling one more result and broadcast. */
+    private volatile boolean rolling;
+
     public void onRandomStateClick(GameClient client, Room room) throws Exception {
+        if (this.rolling) return;
+
         RandomStateParams params = new RandomStateParams(this.getBaseItem().getCustomParams());
+        this.rolling = true;
 
         this.setExtradata("");
         room.updateItemState(this);
@@ -39,6 +45,7 @@ public class InteractionRandomState extends InteractionDefault {
                         () -> {
                             this.setExtradata(randomState + "");
                             room.updateItemState(this);
+                            this.rolling = false;
                         },
                         params.getDelay());
     }

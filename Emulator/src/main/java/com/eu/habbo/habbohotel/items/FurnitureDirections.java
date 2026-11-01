@@ -240,7 +240,12 @@ public final class FurnitureDirections {
      * direction (where the client starts a move whose direction the furni lacks).
      */
     public int place(int rotation) {
-        if (!this.isKnown() || this.has(rotation)) {
+        // A furni with no known directions still turns only in 0..7: a raw 99 or -1 used to give an empty footprint,
+        // which skipped every tile check of the placement or the move.
+        if (!this.isKnown()) {
+            return Math.floorMod(rotation, 8);
+        }
+        if (this.has(rotation)) {
             return rotation;
         }
         return this.has(this.defaultDirection) ? this.defaultDirection : this.directions[0];

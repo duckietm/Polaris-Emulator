@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.pets;
 
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -28,7 +29,9 @@ public class MovePetEvent extends MessageHandler {
 
                     RoomTile tile = room.getLayout().getTile((short) x, (short) y);
 
-                    if (tile != null) {
+                    // Only to a tile a pet can stand on, and never a pet someone is riding.
+                    boolean ridden = pet instanceof RideablePet rideable && rideable.getRider() != null;
+                    if (tile != null && tile.isWalkable() && !ridden) {
                         pet.getRoomUnit().setLocation(tile);
                         pet.getRoomUnit().setPreviousLocation(tile);
                         pet.getRoomUnit().setZ(tile.z);

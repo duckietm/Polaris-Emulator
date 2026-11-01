@@ -105,7 +105,8 @@ public class InteractionRentableSpace extends HabboItem {
 
         if (habbo == null) return true;
 
-        if (habbo.getHabboInfo().getId() == room.getId()) return true;
+        // The room's owner walks on a rented space; this compared the user id with the room id.
+        if (habbo.getHabboInfo().getId() == room.getOwnerId()) return true;
 
         if (this.endTimestamp > Emulator.getIntUnixTimestamp()) {
             return this.renterId > 0 && this.renterId == habbo.getHabboInfo().getId();
@@ -240,7 +241,8 @@ public class InteractionRentableSpace extends HabboItem {
         }
 
         for (HabboItem item : items) {
-            if (item.getUserId() == this.renterId) {
+            // The renter's furni go home, never the space itself (a renter who owns the space used to lose it too).
+            if (item != this && item.getUserId() == this.renterId) {
                 room.pickUpItem(item, null);
             }
         }

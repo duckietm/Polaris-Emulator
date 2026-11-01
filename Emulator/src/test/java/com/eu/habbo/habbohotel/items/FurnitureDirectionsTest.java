@@ -58,6 +58,15 @@ class FurnitureDirectionsTest {
         assertFalse(FurnitureDirections.UNKNOWN.isKnown());
     }
 
+    // A furni with no known directions keeps the requested one, but only inside 0..7: 99 or -1 gave an empty
+    // footprint that skipped every tile check.
+    @Test
+    void anUnknownFurniStillTurnsInsideTheEightDirections() {
+        assertEquals(3, FurnitureDirections.UNKNOWN.place(3));
+        assertEquals(3, FurnitureDirections.UNKNOWN.place(99));
+        assertEquals(7, FurnitureDirections.UNKNOWN.place(-1));
+    }
+
     // AIR rotates to the next entry of furniture_allowed_directions; a direction it lacks counts as
     // the first entry at or after it.
     @Test

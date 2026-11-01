@@ -8,6 +8,10 @@ import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.rooms.DoorbellAddUserComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomEnterErrorComposer;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -17,6 +21,15 @@ import java.util.function.IntFunction;
  * only, and loads the full room (items, bots, pets, heightmap, wired) once entry is granted.
  */
 final class RoomEntryService {
+    /** Wrong passwords one user may try at one room before the room stops checking them, for ten minutes. */
+    static final int MAX_PASSWORD_FAILURES = 5;
+
+    // Counted per user and room: a client could try passwords in a loop, two a second, for as long as it liked.
+    private static final Map<String, AtomicInteger> PASSWORD_FAILURES = Caffeine.newBuilder()
+            .maximumSize(100_000)
+            .expireAfterWrite(Duration.ofMinutes(10))
+            .<String, AtomicInteger>build()
+            .asMap();
 
     private final IntFunction<Room> roomLookup;
     private final Consumer<Room> accessDataLoader;
@@ -147,12 +160,21 @@ final class RoomEntryService {
     }
 
     private void checkPassword(Habbo habbo, Room room, String password, Spawn spawn) {
-        if (room.getPassword().equalsIgnoreCase(password)) {
+        String key = habbo.getHabboInfo().getId() + ":" + room.getId();
+
+        if (passwordAttemptsLeft(PASSWORD_FAILURES.get(key))
+                && room.getPassword().equalsIgnoreCase(password)) {
+            PASSWORD_FAILURES.remove(key);
             this.open(habbo, room, spawn);
             return;
         }
+        PASSWORD_FAILURES.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
         habbo.getClient().sendResponse(new GenericErrorMessagesComposer(GenericErrorCode.WRONG_ROOM_PASSWORD));
         this.returnToHotel(habbo);
+    }
+
+    static boolean passwordAttemptsLeft(AtomicInteger failures) {
+        return failures == null || failures.get() < MAX_PASSWORD_FAILURES;
     }
 
     private void open(Habbo habbo, Room room, Spawn spawn) {

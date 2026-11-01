@@ -30,6 +30,7 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.HexFormat;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.crypto.Cipher;
@@ -495,11 +496,8 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     }
 
     static String toHex(byte[] bytes) {
-        StringBuilder builder = new StringBuilder(bytes.length * 2);
-        for (byte value : bytes) {
-            builder.append(String.format("%02x", value & 0xff));
-        }
-        return builder.toString();
+        // String.format per byte made a 16 MB asset cost millions of allocations on every request.
+        return HexFormat.of().formatHex(bytes);
     }
 
     static byte[] fromHex(String hex) {

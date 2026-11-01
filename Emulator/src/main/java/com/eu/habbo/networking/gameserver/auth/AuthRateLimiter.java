@@ -3,7 +3,9 @@ package com.eu.habbo.networking.gameserver.auth;
 import java.text.Normalizer;
 import com.eu.habbo.Emulator;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class AuthRateLimiter {
@@ -21,6 +23,13 @@ public final class AuthRateLimiter {
     private static final Map<String, AtomicReference<AccountState>> ACCOUNT_STATE = bounded();
     private static final int MAX_BACKOFF_DOUBLINGS = 4;
 
+    // Accounts made per client bucket, each counted for a day from the first one.
+    private static final Map<String, AtomicInteger> REGISTRATIONS = Caffeine.newBuilder()
+            .maximumSize(MAX_ENTRIES)
+            .expireAfterWrite(Duration.ofDays(1))
+            .<String, AtomicInteger>build()
+            .asMap();
+
     // Both maps are keyed by client IP and reachable by unauthenticated traffic.
     // recordSuccess removes STATE on login, but failed-only and probe-only IPs
     // never get removed otherwise — unbounded growth over the JVM lifetime.
@@ -30,6 +39,19 @@ public final class AuthRateLimiter {
     private static volatile long lastSweepMillis = 0L;
 
     private AuthRateLimiter() {}
+
+    /** Whether this client bucket may make one more account today; a limit of 0 or no address lets it through. */
+    public static boolean registrationAllowed(String ip, int maxPerDay) {
+        if (maxPerDay <= 0 || ip == null || ip.isEmpty()) return true;
+        AtomicInteger made = REGISTRATIONS.get(bucket(ip));
+        return made == null || made.get() < maxPerDay;
+    }
+
+    /** Counts an account made from this client bucket. */
+    public static void recordRegistration(String ip) {
+        if (ip == null || ip.isEmpty()) return;
+        REGISTRATIONS.computeIfAbsent(bucket(ip), k -> new AtomicInteger()).incrementAndGet();
+    }
 
     private static <V> Map<String, V> bounded() {
         return Caffeine.newBuilder().maximumSize(MAX_ENTRIES).<String, V>build().asMap();

@@ -5,8 +5,7 @@ final class GuildForumInputGuard {
     static final int MAX_THREAD_INDEX = 1000;
     static final int MAX_MARK_READ_BATCH = 50;
 
-    private GuildForumInputGuard() {
-    }
+    private GuildForumInputGuard() {}
 
     static String normalize(String value) {
         return value == null ? "" : value.trim();

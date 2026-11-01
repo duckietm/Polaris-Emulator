@@ -58,8 +58,9 @@ class ModToolReportGateTest {
 
     @Test
     void theFourReportPacketsUseTheGateAndARateLimit() throws Exception {
-        for (String handler :
-                new String[] {"ReportCommentEvent", "ReportThreadEvent", "ReportPhotoEvent", "ReportFriendPrivateChatEvent"}) {
+        for (String handler : new String[] {
+            "ReportCommentEvent", "ReportThreadEvent", "ReportPhotoEvent", "ReportFriendPrivateChatEvent"
+        }) {
             String source = Files.readString(
                     Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool/" + handler + ".java"));
 

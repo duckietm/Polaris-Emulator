@@ -15,8 +15,8 @@ class RentableSpaceRentOnceTest {
 
     @Test
     void theCheckAndTheRentShareOneLockAndTheChargeMustGoThrough() throws Exception {
-        String source = Files.readString(
-                        Path.of("src/main/java/com/eu/habbo/habbohotel/items/interactions/InteractionRentableSpace.java"))
+        String source = Files.readString(Path.of(
+                        "src/main/java/com/eu/habbo/habbohotel/items/interactions/InteractionRentableSpace.java"))
                 .replaceAll("\\s+", " ");
 
         assertTrue(source.contains("synchronized (this) { int errorCode = this.getRentErrorCode(habbo);"));

@@ -174,7 +174,8 @@ public class InteractionRentableSpace extends HabboItem {
                 && !habbo.applyCredits(
                         -cost,
                         "rentable_space.rent",
-                        EconomyOperationId.create("rentable_space:" + this.getId() + ":" + habbo.getHabboInfo().getId()),
+                        EconomyOperationId.create("rentable_space:" + this.getId() + ":"
+                                + habbo.getHabboInfo().getId()),
                         habbo.getHabboInfo().getId())) {
             return;
         }

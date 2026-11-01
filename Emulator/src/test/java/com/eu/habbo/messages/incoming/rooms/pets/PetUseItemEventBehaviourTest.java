@@ -75,6 +75,7 @@ class PetUseItemEventBehaviourTest {
 
     private static final Set<String> RECORDED = Set.of(
             "removeHabboItem",
+            "claimItem",
             "sendComposer",
             "updateTiles",
             "setRace",
@@ -282,6 +283,8 @@ class PetUseItemEventBehaviourTest {
         when(this.room.getLayout()).thenReturn(layout);
         when(this.room.getHabboItem(anyInt()))
                 .thenAnswer(i -> this.itemThere && i.<Integer>getArgument(0) == ITEM_ID ? this.item : null);
+        // A product is claimed out of the room before it is used; the claim wins while the item is there.
+        when(this.room.claimItem(any())).thenAnswer(i -> this.itemThere);
         when(this.room.getPet(anyInt()))
                 .thenAnswer(i -> this.petThere && i.<Integer>getArgument(0) == PET_ID ? this.pet : null);
 

@@ -31,6 +31,7 @@
     "chatlogs_private": ["id", "message", "timestamp", "user_from_id", "user_to_id"],
     "chatlogs_room": ["id", "message", "room_id", "timestamp", "user_from_id", "user_to_id"],
     "collectible_avatar_outfits": ["contract_key", "figure", "gender", "product_code"],
+    "collectible_claim_assets": ["asset_id", "claim_key", "claimed_at", "user_id"],
     "collectible_collections": ["bonus_end", "bonus_product_code", "bonus_start", "collection_id", "completion_xp", "enabled", "name", "reward_product_code", "sort_order"],
     "collectible_level_rewards": ["claim_limit", "enabled", "id", "min_level", "product_code", "valid_from", "valid_to"],
     "collectible_mint_token_offers": ["amount", "enabled", "offer_id", "product_code", "silver_price"],

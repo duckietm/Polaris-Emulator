@@ -164,7 +164,8 @@ class CollectiblesServiceIT {
                 service.collectionStates(BOB, 150).get(0).rewardClaim().status());
         assertTrue(service.claimCollection(BOB, "toys", false, 150).isEmpty());
 
-        // A token of its own completes the set again for the new owner.
+        // Tokens of its own, one of each product, complete the set again for the new owner.
+        service.mint(BOB, "bear", "shop", 1);
         service.mint(BOB, "duck", "shop", 1);
         assertEquals(
                 "trophy",

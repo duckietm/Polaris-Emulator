@@ -86,7 +86,11 @@ final class AccountChangeEndpoints {
 
             // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
             if (AuthRateLimiter.isAccountLocked(username)) {
-                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many attempts. Try again later."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
                 return;
             }
 
@@ -202,7 +206,11 @@ final class AccountChangeEndpoints {
 
             // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
             if (AuthRateLimiter.isAccountLocked(username)) {
-                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many attempts. Try again later."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
                 return;
             }
 
@@ -306,7 +314,11 @@ final class AccountChangeEndpoints {
 
             // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
             if (AuthRateLimiter.isAccountLocked(account.username())) {
-                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many attempts. Try again later."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
                 return;
             }
 

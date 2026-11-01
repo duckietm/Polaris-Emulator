@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.earnings;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.earnings.IncomeRewardNotificationComposer;
 import java.sql.Connection;
@@ -122,9 +123,19 @@ public class WiredEarnings {
     public boolean claim(Habbo habbo, EarningsCategory category) throws SQLException {
         int credits = this.pending(habbo, category);
         if (credits <= 0) return false;
-        if (!this.store.take(habbo.getHabboInfo().getId(), category.getKey(), credits)) return false;
+        int userId = habbo.getHabboInfo().getId();
+        if (!this.store.take(userId, category.getKey(), credits)) return false;
 
-        habbo.giveCredits(credits, "earnings.wired." + category.getKey());
+        // The row is already emptied: a credit a plugin cancelled or the ledger refused (a purse near its maximum)
+        // used to lose it and answer success. It goes back to the row instead.
+        if (!habbo.applyCredits(
+                credits,
+                "earnings.wired." + category.getKey(),
+                EconomyOperationId.create("earnings:" + userId + ":" + category.getKey()),
+                userId)) {
+            this.store.add(userId, category.getKey(), credits);
+            return false;
+        }
         return true;
     }
 

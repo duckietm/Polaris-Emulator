@@ -31,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -488,6 +489,24 @@ final class SessionEndpoints {
         return REGISTRATION_LOCKS[Math.floorMod(hash, REGISTRATION_LOCKS.length)];
     }
 
+    /**
+     * The e-mail column has no unique index, so two registrations with the same address from two IPs both passed the
+     * check. Registrations sharing an address stripe also run one at a time; this lock is always taken after the IP
+     * one, so the two can never wait on each other.
+     */
+    private static final Object[] REGISTRATION_EMAIL_LOCKS = new Object[64];
+
+    static {
+        for (int i = 0; i < REGISTRATION_EMAIL_LOCKS.length; i++) {
+            REGISTRATION_EMAIL_LOCKS[i] = new Object();
+        }
+    }
+
+    static Object registrationEmailLock(String email) {
+        int hash = email == null ? 0 : email.toLowerCase(Locale.ROOT).hashCode();
+        return REGISTRATION_EMAIL_LOCKS[Math.floorMod(hash, REGISTRATION_EMAIL_LOCKS.length)];
+    }
+
     static void handleRegister(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         ConfigurationManager config = Emulator.getConfig();
         if (!config.getBoolean("login.register.enabled", true)) {
@@ -520,7 +539,9 @@ final class SessionEndpoints {
         }
 
         synchronized (registrationLock(ip)) {
-            register(ctx, req, config, ip, username, email, password, figure, gender, templateId);
+            synchronized (registrationEmailLock(email)) {
+                register(ctx, req, config, ip, username, email, password, figure, gender, templateId);
+            }
         }
     }
 

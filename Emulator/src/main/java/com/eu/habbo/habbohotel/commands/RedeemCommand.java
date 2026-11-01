@@ -84,7 +84,7 @@ public class RedeemCommand extends Command {
         List<Redeemable> redeemables = new ArrayList<>();
 
         for (HabboItem item : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (item.getUserId() != habbo.getHabboInfo().getId()) continue;
+            if (item.getUserId() != habbo.getHabboInfo().getId() || item.hasRentPeriod()) continue;
 
             String name = item.getBaseItem().getName();
 

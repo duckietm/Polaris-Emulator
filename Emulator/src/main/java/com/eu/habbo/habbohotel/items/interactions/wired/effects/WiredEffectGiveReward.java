@@ -198,18 +198,19 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
         if (gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
             // Official layout: [interval, unique, limit, n]; the user source is the official slot.
             if (settings.getIntParams().length < 4) throw new WiredSaveException("Invalid data");
-            this.rewardTime = settings.getIntParams()[0];
-            this.uniqueRewards = settings.getIntParams()[1] == 1;
-            this.limit = settings.getIntParams()[2];
-            this.limitationInterval = Math.max(1, settings.getIntParams()[3]);
-            this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
-            this.given.set(0);
+            // Everything is read and checked before the box changes: a bad reward row used to leave the box with the
+            // new interval and limit, the given counter at zero and an empty reward list.
+            int newRewardTime = settings.getIntParams()[0];
+            boolean newUniqueRewards = settings.getIntParams()[1] == 1;
+            int newLimit = settings.getIntParams()[2];
+            int newLimitationInterval = Math.max(1, settings.getIntParams()[3]);
+            int newUserSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
             String data = settings.getStringParam();
 
             String[] items = data.split(";");
 
-            this.rewardItems.clear();
+            List<WiredGiveRewardItem> newRewardItems = new ArrayList<>();
 
             int i = 1;
             for (String s : items) {
@@ -218,7 +219,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
                 if (d.length == 3) {
                     if (!(d[1].contains(":") || d[1].contains(";"))) {
                         try {
-                            this.rewardItems.add(new WiredGiveRewardItem(
+                            newRewardItems.add(new WiredGiveRewardItem(
                                     i, d[0].equalsIgnoreCase("0"), d[1], Integer.parseInt(d[2].trim())));
                             continue;
                         } catch (IllegalArgumentException ignored) {
@@ -236,8 +237,24 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
                 return false;
             }
 
+            // The rewards already given count against the limit unless the limit or the rewards themselves change:
+            // saving the box with nothing changed used to hand everything out again.
+            boolean rewardsChanged = newLimit != this.limit
+                    || !newRewardItems.toString().equals(new ArrayList<>(this.rewardItems).toString());
+
+            this.rewardTime = newRewardTime;
+            this.uniqueRewards = newUniqueRewards;
+            this.limit = newLimit;
+            this.limitationInterval = newLimitationInterval;
+            this.userSource = newUserSource;
+            this.rewardItems.clear();
+            this.rewardItems.addAll(newRewardItems);
+
             this.setDelay(settings.getDelay());
 
+            if (!rewardsChanged) return true;
+
+            this.given.set(0);
             WiredManager.dropRewards(this.getId());
             return true;
         }

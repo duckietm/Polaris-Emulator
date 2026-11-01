@@ -226,17 +226,26 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             return;
         }
 
+        // The once-a-second limit is taken before the room is loaded: a box firing in a loop used to load its
+        // destination (any room id) into memory every time, even when nobody could be forwarded.
+        List<Habbo> ready = new ArrayList<>();
+        for (Habbo habbo : candidates) {
+            if (habbo.getHabboInfo().tryAcquireRoomForward(now, FORWARD_INTERVAL_MS)) {
+                ready.add(habbo);
+            }
+        }
+        if (ready.isEmpty()) {
+            return;
+        }
+
         Room target = environment.getRoomManager().loadRoom(destination.roomId());
         if (target == null) {
             return;
         }
 
         ThreadPooling threading = WiredPlatform.threading();
-        for (Habbo habbo : candidates) {
+        for (Habbo habbo : ready) {
             if (!mayForward(habbo, target)) {
-                continue;
-            }
-            if (!habbo.getHabboInfo().tryAcquireRoomForward(now, FORWARD_INTERVAL_MS)) {
                 continue;
             }
 

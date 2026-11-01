@@ -135,6 +135,16 @@ final class RoomItemMovementService {
             }
         }
 
+        // Height sanity checks, before the item is turned: a refused height used to leave it turned.
+        if (z > RoomFurniHeightLimit.current()) {
+            return FurnitureMovementError.CANT_STACK;
+        }
+
+        // Prevent furni going under the floor
+        if (z < layout.getHeightAtSquare(tile.x, tile.y)) {
+            return FurnitureMovementError.CANT_STACK;
+        }
+
         int oldRotation = item.getRotation();
 
         if (oldRotation != rotation) {
@@ -149,16 +159,6 @@ final class RoomItemMovementService {
                     return FurnitureMovementError.CANCEL_PLUGIN_ROTATE;
                 }
             }
-        }
-
-        // Height sanity checks
-        if (z > RoomFurniHeightLimit.current()) {
-            return FurnitureMovementError.CANT_STACK;
-        }
-
-        // Prevent furni going under the floor
-        if (z < layout.getHeightAtSquare(tile.x, tile.y)) {
-            return FurnitureMovementError.CANT_STACK;
         }
 
         z = RoomBuildHeight.apply(actor, layout, tile, z);

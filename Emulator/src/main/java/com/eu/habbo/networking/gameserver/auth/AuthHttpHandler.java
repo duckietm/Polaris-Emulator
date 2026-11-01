@@ -87,6 +87,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String REFRESH_PATH = "/api/auth/refresh";
     static final String SERVER_KEY_PATH = "/api/auth/server-key";
     static final String SSO_TOKEN_PATH = "/api/auth/sso-token";
+    static final String TOKEN_RENEW_PATH = "/api/auth/token/renew";
     static final String CHANGE_PASSWORD_PATH = "/api/auth/change-password";
     static final String CHANGE_EMAIL_PATH = "/api/auth/change-email";
     static final String CHANGE_USERNAME_PATH = "/api/auth/change-username";
@@ -145,6 +146,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 || path.equals(REFRESH_PATH)
                 || path.equals(SERVER_KEY_PATH)
                 || path.equals(SSO_TOKEN_PATH)
+                || path.equals(TOKEN_RENEW_PATH)
                 || path.equals(CHANGE_PASSWORD_PATH)
                 || path.equals(CHANGE_EMAIL_PATH)
                 || path.equals(CHANGE_USERNAME_PATH)
@@ -273,6 +275,10 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
         if (path.equals(SSO_TOKEN_PATH)) {
             SessionEndpoints.handleSsoToken(ctx, req, body, ip);
+            return;
+        }
+        if (path.equals(TOKEN_RENEW_PATH)) {
+            SessionEndpoints.handleTokenRenew(ctx, req, ip);
             return;
         }
         if (path.equals(CHANGE_PASSWORD_PATH)) {

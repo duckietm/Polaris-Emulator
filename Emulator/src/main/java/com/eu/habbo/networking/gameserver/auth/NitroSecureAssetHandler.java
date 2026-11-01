@@ -50,6 +50,9 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     private static final String BOOTSTRAP_PATH = "/nitro-sec/bootstrap";
     private static final String FILE_PATH = "/nitro-sec/file";
     private static final int MAX_BOOTSTRAP_BODY_BYTES = 4096;
+    // Bootstrap and file requests per client bucket and minute; the client loads its few gamedata files once.
+    static final String RATE_LIMIT_CONFIG = "nitro.secure.assets.requests_per_minute";
+    private static final int DEFAULT_RATE_LIMIT_PER_MINUTE = 300;
     private static final int DEFAULT_MAX_CONFIG_BYTES = 2 * 1024 * 1024;
     private static final int DEFAULT_MAX_GAMEDATA_BYTES = 16 * 1024 * 1024;
     private static final SecureRandom RNG = new SecureRandom();
@@ -81,6 +84,19 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         try {
             if (req.method() == HttpMethod.OPTIONS) {
                 sendCors(ctx, req);
+                return;
+            }
+
+            if (!NitroSecureRequestLimiter.tryAcquire(
+                    "assets",
+                    AuthHttpUtil.resolveClientIp(ctx, req),
+                    positiveConfigInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
+                sendText(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        "Too many requests.",
+                        "text/plain; charset=utf-8");
                 return;
             }
 

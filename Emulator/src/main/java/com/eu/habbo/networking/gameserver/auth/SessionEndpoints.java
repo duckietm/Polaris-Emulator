@@ -194,7 +194,7 @@ final class SessionEndpoints {
             return;
         }
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection conn = openConnection();
                 PreparedStatement lookup = conn.prepareStatement(
                         "SELECT id, username FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             lookup.setString(1, ssoTicket);
@@ -207,7 +207,7 @@ final class SessionEndpoints {
                     username = rs.getString("username");
                 } else {
                     com.eu.habbo.habbohotel.gameclients.GameClient online =
-                            Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
+                            gameClients().findClientBySsoTicket(ssoTicket);
                     if (online != null && online.getHabbo() != null && online.claimSsoTicketExchange()) {
                         userId = online.getHabbo().getHabboInfo().getId();
                         username = online.getHabbo().getHabboInfo().getUsername();
@@ -241,6 +241,43 @@ final class SessionEndpoints {
             LOGGER.error("[auth/sso-token] lookup failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    /**
+     * A fresh access token for the holder of a valid one while that user is in the hotel. Without "remember me" the
+     * token was never renewed, so every HTTP feature stopped once it expired, until the next login. A ban or a
+     * password change still ends it: {@link AccessTokenService#verify} refuses a revoked or rebound token.
+     */
+    static void handleTokenRenew(ChannelHandlerContext ctx, FullHttpRequest req, String ip) {
+        try (Connection conn = openConnection()) {
+            int userId = AccessTokenService.verify(conn, bearerToken(req));
+            if (userId <= 0 || gameClients().getHabbo(userId) == null) {
+                AuthRateLimiter.recordFailure(ip);
+                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Access token cannot be renewed."));
+                return;
+            }
+
+            if (refuseBanned(ctx, req, conn, userId, ip, null)) {
+                return;
+            }
+
+            AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
+            JsonObject ok = new JsonObject();
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        } catch (Exception e) {
+            LOGGER.error("[auth/token/renew] failed", e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    private static com.eu.habbo.habbohotel.gameclients.GameClientManager gameClients() {
+        return Emulator.getGameServer().getGameClientManager();
     }
 
     static void handleRefresh(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {

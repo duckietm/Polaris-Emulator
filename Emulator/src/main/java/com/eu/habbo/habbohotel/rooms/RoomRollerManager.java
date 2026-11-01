@@ -518,6 +518,10 @@ public class RoomRollerManager {
             for (HabboItem item : sortedItems) {
                 if (item.getX() == roller.getX() && item.getY() == roller.getY() && zOffset <= 0) {
                     if (item != roller) {
+                        if (!this.footprintFitsInFront(item, roller, tileInFront)) {
+                            continue;
+                        }
+
                         if (furnitureRolledEvent != null) {
                             furnitureRolledEvent = new FurnitureRolledEvent(item, roller, tileInFront);
                             Emulator.getPluginManager().fireEvent(furnitureRolledEvent);
@@ -533,6 +537,36 @@ public class RoomRollerManager {
                 }
             }
         }
+    }
+
+    /**
+     * A furni larger than one tile rolls only when its whole footprint lands on the map, on valid tiles and on no
+     * avatar: only the tile in front of the roller was checked, so a row of rollers could push a 2x2 off the map or
+     * onto a hole and the position was saved.
+     */
+    private boolean footprintFitsInFront(HabboItem item, InteractionRoller roller, RoomTile tileInFront) {
+        int width = item.getBaseItem().getWidth();
+        int length = item.getBaseItem().getLength();
+        if (width <= 1 && length <= 1) {
+            return true;
+        }
+
+        RoomLayout layout = this.room.getLayout();
+        if (!layout.fitsOnMap(tileInFront, width, length, item.getRotation())) {
+            return false;
+        }
+
+        Set<RoomTile> current =
+                layout.getTilesAt(layout.getTile(roller.getX(), roller.getY()), width, length, item.getRotation());
+        for (RoomTile tile : layout.getTilesAt(tileInFront, width, length, item.getRotation())) {
+            if (tile.state == RoomTileState.INVALID) {
+                return false;
+            }
+            if (!current.contains(tile) && tile.hasUnits()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private double calculateTargetZ(RoomTile targetTile, Set<HabboItem> itemsBeingRolled) {

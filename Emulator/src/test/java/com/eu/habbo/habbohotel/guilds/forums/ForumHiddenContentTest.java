@@ -46,14 +46,16 @@ class ForumHiddenContentTest {
 
     @Test
     void theThreadHandlerAndTheReportUseTheRightChecks() throws Exception {
-        String handler = Files.readString(Path.of(
-                        "src/main/java/com/eu/habbo/messages/incoming/guilds/forums/GuildForumThreadsMessagesEvent.java"))
+        String handler = Files.readString(
+                        Path.of(
+                                "src/main/java/com/eu/habbo/messages/incoming/guilds/forums/GuildForumThreadsMessagesEvent.java"))
                 .replaceAll("\\s+", " ");
         String report = Files.readString(
                         Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool/ReportCommentEvent.java"))
                 .replaceAll("\\s+", " ");
 
-        assertTrue(handler.contains("ForumThreadState.visibleTo(thread.getState(), hasStaffPermissions, isGuildAdministrator)"));
+        assertTrue(handler.contains(
+                "ForumThreadState.visibleTo(thread.getState(), hasStaffPermissions, isGuildAdministrator)"));
         assertTrue(handler.contains("comment.forReader(hasStaffPermissions, isGuildAdministrator)"));
         assertTrue(report.contains("comment.getThreadId() != threadId"));
         assertTrue(report.contains("thread.getGuildId() != groupId"));

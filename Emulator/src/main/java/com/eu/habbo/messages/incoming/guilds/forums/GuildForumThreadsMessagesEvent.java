@@ -17,8 +17,6 @@ import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 public class GuildForumThreadsMessagesEvent extends MessageHandler {
     @Override
     public int getRatelimit() {
@@ -32,9 +30,9 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
         int index = packet.readInt(); // 40
         int limit = packet.readInt(); // 20
 
-        if (!GuildForumInputGuard.isPositiveId(guildId) ||
-                !GuildForumInputGuard.isPositiveId(threadId) ||
-                !GuildForumInputGuard.isValidPage(index, limit)) {
+        if (!GuildForumInputGuard.isPositiveId(guildId)
+                || !GuildForumInputGuard.isPositiveId(threadId)
+                || !GuildForumInputGuard.isValidPage(index, limit)) {
             this.client.sendResponse(new ConnectionErrorComposer(400));
             return;
         }
@@ -52,8 +50,12 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
             return;
         }
 
-        GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, this.client.getHabbo().getHabboInfo().getId());
-        boolean isGuildAdministrator = (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || (member != null && member.getRank().equals(GuildRank.ADMIN)));
+        GuildMember member = Emulator.getGameEnvironment()
+                .getGuildManager()
+                .getGuildMember(guildId, this.client.getHabbo().getHabboInfo().getId());
+        boolean isGuildAdministrator =
+                (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
+                        || (member != null && member.getRank().equals(GuildRank.ADMIN)));
 
         if (!guild.canHabboReadForum(this.client.getHabbo().getHabboInfo().getId(), member, hasStaffPermissions)) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_ACCESS_DENIED.key).compose());
@@ -68,8 +70,7 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
             }
             this.client.sendResponse(new GuildForumCommentsComposer(guildId, threadId, index, comments));
             this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
-        }
-        else {
+        } else {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_ACCESS_DENIED.key).compose());
         }
     }

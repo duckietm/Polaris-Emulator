@@ -51,10 +51,8 @@ public class ReportCommentEvent extends MessageHandler {
 
         // The comment's author is the one reported, and only for a comment of that thread in that group:
         // the ticket used to name whoever opened the thread.
-        if (thread == null
-                || thread.getGuildId() != groupId
-                || comment == null
-                || comment.getThreadId() != threadId) return;
+        if (thread == null || thread.getGuildId() != groupId || comment == null || comment.getThreadId() != threadId)
+            return;
 
         Habbo author = Emulator.getGameEnvironment().getHabboManager().getHabbo(comment.getUserId());
 

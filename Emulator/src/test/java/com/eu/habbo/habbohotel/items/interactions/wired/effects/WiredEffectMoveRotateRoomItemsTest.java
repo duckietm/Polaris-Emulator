@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -22,6 +21,7 @@ class WiredEffectMoveRotateRoomItemsTest {
 
         assertTrue(source.contains(
                 "effectiveItems.removeIf(item -> item == null || room.getHabboItem(item.getId()) != item);"));
-        assertFalse(source.contains(".getRoom(this.getRoomId()) .getHabboItem(item.getId())"));
+        assertTrue(source.contains(
+                "this.items.removeIf(item -> item == null || room.getHabboItem(item.getId()) == null);"));
     }
 }

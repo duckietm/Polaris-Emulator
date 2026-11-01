@@ -70,10 +70,11 @@ jobs:
       # `verify` runs the unit tests (Surefire, including the isolated lifecycle fork)
       # and the *IT integration tests (Failsafe), which build the schema by running
       # the real timestamped migrations against a Testcontainers MariaDB. A broken
-      # migration fails the build. Two Surefire forks share the runner's cores;
+      # migration fails the build. Four forks, one per core of the hosted runner, for both the unit tests and the
+      # integration tests (each fork starts its own MariaDB container); with two the job took about four minutes.
       # Spotless and SpotBugs run in the static-analysis job alongside this one.
       - name: Build and test
-        run: ./mvnw -B -Pcoverage verify -DforkCount=2 -Dspotless.check.skip=true -Dspotbugs.skip=true
+        run: ./mvnw -B -Pcoverage verify -DforkCount=4 -Dspotless.check.skip=true -Dspotbugs.skip=true
 
   static-analysis:
     name: Spotless + SpotBugs

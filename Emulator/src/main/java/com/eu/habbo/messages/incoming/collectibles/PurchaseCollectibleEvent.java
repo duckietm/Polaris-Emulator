@@ -51,8 +51,15 @@ public class PurchaseCollectibleEvent extends MessageHandler {
             return;
         }
 
-        Optional<Owned> owned =
-                service.mint(habbo.getHabboInfo().getId(), productCode, "shop", CollectiblesSupport.now());
+        Optional<Owned> owned;
+        try {
+            owned = service.mint(habbo.getHabboInfo().getId(), productCode, "shop", CollectiblesSupport.now());
+        } catch (Exception exception) {
+            // The emeralds are already taken: a mint that throws refunds them, as one that finds nothing does.
+            CollectiblesSupport.refund(habbo, settings.emeraldType(), price, "collectibles.shop.refund");
+            this.client.sendResponse(new CollectiblePurchaseResultComposer(1));
+            throw exception;
+        }
         if (owned.isEmpty()) {
             CollectiblesSupport.refund(habbo, settings.emeraldType(), price, "collectibles.shop.refund");
             this.client.sendResponse(new CollectiblePurchaseResultComposer(1));

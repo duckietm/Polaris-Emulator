@@ -1,8 +1,8 @@
 package com.eu.habbo.networking.gameserver.auth;
 
-import java.text.Normalizer;
 import com.eu.habbo.Emulator;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.text.Normalizer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;

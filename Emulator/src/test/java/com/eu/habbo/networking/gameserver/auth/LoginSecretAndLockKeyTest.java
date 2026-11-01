@@ -15,7 +15,8 @@ class LoginSecretAndLockKeyTest {
 
     @Test
     void theSecretShippedWithTheBaseDatabaseIsNeverUsed() {
-        assertTrue(AccessTokenService.isPublishedSecret("vA9OXBF7W8VBryT4xuOHIRtlfID60A2Sy54CjQZ7Nb/nL9gQKnbQJ5iYkyJ58TtD"));
+        assertTrue(AccessTokenService.isPublishedSecret(
+                "vA9OXBF7W8VBryT4xuOHIRtlfID60A2Sy54CjQZ7Nb/nL9gQKnbQJ5iYkyJ58TtD"));
         assertFalse(AccessTokenService.isPublishedSecret("a-secret-this-hotel-chose"));
         assertFalse(AccessTokenService.isPublishedSecret(null));
     }

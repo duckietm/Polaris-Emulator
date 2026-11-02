@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -84,7 +85,11 @@ public class RedeemCommand extends Command {
         List<Redeemable> redeemables = new ArrayList<>();
 
         for (HabboItem item : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (item.getUserId() != habbo.getHabboInfo().getId()) continue;
+            // A wired chest is never cashed in, whatever it is named: it was deleted without releasing what it held,
+            // as the room redeem already refuses.
+            if (item.getUserId() != habbo.getHabboInfo().getId()
+                    || item.hasRentPeriod()
+                    || item instanceof InteractionWiredChest) continue;
 
             String name = item.getBaseItem().getName();
 

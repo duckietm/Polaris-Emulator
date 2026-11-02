@@ -163,6 +163,14 @@ final class WiredStackExecutor {
             firedTrigger.flashBox(room);
         }
 
+        // A stack its Execution Limit already blocks stops before the selectors: it used to scan every selected furni
+        // and only then be refused.
+        WiredExtraExecutionLimit executionLimitExtra = executionLimitExtra(room, stack);
+        if (executionLimitExtra != null && !executionLimitExtra.canExecuteAt(currentTime)) {
+            logExecutionLimitBlocked(room, stack, mode, executionLimitExtra);
+            return false;
+        }
+
         List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
         if (stack.hasEffects()) {
             executedSelectors = this.hooks.executeSelectors(stack, context);
@@ -200,19 +208,6 @@ final class WiredStackExecutor {
             return false;
         }
 
-        WiredExtraExecutionLimit executionLimitExtra = executionLimitExtra(room, stack);
-        if (executionLimitExtra != null && !executionLimitExtra.tryAcquireExecutionSlot(currentTime)) {
-            this.diagnostics.log(
-                    room,
-                    mode == Mode.DIRECT
-                            ? "Execution limit blocked direct stack {} (max {} in {} ms)"
-                            : "Execution limit blocked stack {} (max {} in {} ms)",
-                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
-                    executionLimitExtra.getMaxExecutions(),
-                    executionLimitExtra.getTimeWindowMs());
-            return false;
-        }
-
         if (!fireTriggeredEvent(stack, event)) {
             this.diagnostics.log(
                     room, mode == Mode.DIRECT ? "Direct stack cancelled by plugin" : "Stack cancelled by plugin");
@@ -231,6 +226,13 @@ final class WiredStackExecutor {
                     room,
                     mode == Mode.DIRECT ? "Execution cap blocked direct stack {}" : "Execution cap blocked stack {}",
                     stack.triggerItem() != null ? stack.triggerItem().getId() : "null");
+            return false;
+        }
+
+        // The Execution Limit slot is taken only once the room budget admitted the stack: a stack the budget refused
+        // used to spend a slot without running.
+        if (executionLimitExtra != null && !executionLimitExtra.tryAcquireExecutionSlot(currentTime)) {
+            logExecutionLimitBlocked(room, stack, mode, executionLimitExtra);
             return false;
         }
 
@@ -455,6 +457,18 @@ final class WiredStackExecutor {
                 extra.activateBox(room, roomUnit, currentTime);
             }
         }
+    }
+
+    private void logExecutionLimitBlocked(
+            Room room, WiredStack stack, Mode mode, WiredExtraExecutionLimit executionLimitExtra) {
+        this.diagnostics.log(
+                room,
+                mode == Mode.DIRECT
+                        ? "Execution limit blocked direct stack {} (max {} in {} ms)"
+                        : "Execution limit blocked stack {} (max {} in {} ms)",
+                stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                executionLimitExtra.getMaxExecutions(),
+                executionLimitExtra.getTimeWindowMs());
     }
 
     private static WiredExtraExecutionLimit executionLimitExtra(Room room, WiredStack stack) {

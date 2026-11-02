@@ -21,6 +21,15 @@ public final class SendMessengerMessageEvent extends MessageHandler {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SendMessengerMessageEvent.class);
     private static final int TEXT_MESSAGE = 0;
 
+    /**
+     * What a client may send: text or a Habbicon. The store also takes types 1-3, which the word filter never saw.
+     * Text keeps its metadata (the protocol carries it back to the recipient, bounded by the store); a Habbicon is
+     * refused metadata further down.
+     */
+    static boolean isClientMessage(int type) {
+        return type == TEXT_MESSAGE || type == MessengerHistoryService.HABBICON_MESSAGE;
+    }
+
     @Override
     public void handle() {
         int conversationId = packet.readInt();
@@ -37,6 +46,7 @@ public final class SendMessengerMessageEvent extends MessageHandler {
             if (!client.getHabbo().getHabboStats().allowTalk()) throw new IllegalStateException("muted");
             if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId, hasStaffChat))
                 throw new IllegalArgumentException("invalid message target");
+            if (!isClientMessage(type)) throw new IllegalArgumentException("unsupported message type");
             // Same per-user console limit as the Flash message packet.
             if (client.getHabbo().getHabboStats().consoleMessageFlooded(System.currentTimeMillis()))
                 throw new IllegalStateException("flood");

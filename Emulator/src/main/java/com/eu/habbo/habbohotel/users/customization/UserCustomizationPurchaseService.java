@@ -9,9 +9,11 @@ import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.UserNickIcon;
 import com.eu.habbo.habbohotel.users.UserPrefix;
 import java.sql.SQLException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
@@ -247,7 +249,13 @@ public final class UserCustomizationPurchaseService {
     public static boolean containsControlChars(String text) {
         for (int index = 0; index < text.length(); index++) {
             char character = text.charAt(index);
-            if (character < 0x20 || character == 0x7F) {
+            // Format characters (zero-width space, joiners, direction marks) hide a word from the filter, and '<' '>'
+            // are markup in the clients that show the prefix.
+            if (character < 0x20
+                    || character == 0x7F
+                    || Character.getType(character) == Character.FORMAT
+                    || character == '<'
+                    || character == '>') {
                 return true;
             }
         }
@@ -279,12 +287,24 @@ public final class UserCustomizationPurchaseService {
     }
 
     private boolean containsFilteredWord(String text) {
+        // Compared without accents and invisible characters too: a blocked word with an accent or a zero-width
+        // character in it passed the plain comparison and showed next to the name for the whole room.
+        String folded = foldForFilter(text);
         for (WordFilterWord word : this.filteredWords) {
-            if (word.key != null && !word.key.isEmpty() && Strings.CI.contains(text, word.key)) {
+            if (word.key != null
+                    && !word.key.isEmpty()
+                    && (Strings.CI.contains(text, word.key) || folded.contains(foldForFilter(word.key)))) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** Lower case, accents taken off, and format characters (zero-width spaces and joiners) removed. */
+    static String foldForFilter(String text) {
+        return Normalizer.normalize(text, Normalizer.Form.NFKD)
+                .replaceAll("[\\p{M}\\p{Cf}]", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private static boolean contains(String[] values, String candidate) {

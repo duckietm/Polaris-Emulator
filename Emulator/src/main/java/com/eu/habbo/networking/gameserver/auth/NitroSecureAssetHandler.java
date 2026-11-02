@@ -50,6 +50,9 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     private static final String BOOTSTRAP_PATH = "/nitro-sec/bootstrap";
     private static final String FILE_PATH = "/nitro-sec/file";
     private static final int MAX_BOOTSTRAP_BODY_BYTES = 4096;
+    // Bootstrap and file requests per client bucket and minute; the client loads its few gamedata files once.
+    static final String RATE_LIMIT_CONFIG = "nitro.secure.assets.requests_per_minute";
+    private static final int DEFAULT_RATE_LIMIT_PER_MINUTE = 300;
     private static final int DEFAULT_MAX_CONFIG_BYTES = 2 * 1024 * 1024;
     private static final int DEFAULT_MAX_GAMEDATA_BYTES = 16 * 1024 * 1024;
     private static final SecureRandom RNG = new SecureRandom();
@@ -81,6 +84,19 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         try {
             if (req.method() == HttpMethod.OPTIONS) {
                 sendCors(ctx, req);
+                return;
+            }
+
+            if (!NitroSecureRequestLimiter.tryAcquire(
+                    "assets",
+                    AuthHttpUtil.resolveClientIp(ctx, req),
+                    positiveConfigInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
+                sendText(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        "Too many requests.",
+                        "text/plain; charset=utf-8");
                 return;
             }
 
@@ -168,7 +184,7 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
                     ctx,
                     req,
                     HttpResponseStatus.OK,
-                    toHex(encrypted),
+                    NitroSecureHex.toHex(encrypted),
                     "text/plain; charset=utf-8",
                     true,
                     fingerprint(sessionKey.getEncoded()));
@@ -492,27 +508,5 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
 
     static String getServerKeyFingerprint() {
         return SERVER_KEY_FINGERPRINT;
-    }
-
-    static String toHex(byte[] bytes) {
-        StringBuilder builder = new StringBuilder(bytes.length * 2);
-        for (byte value : bytes) {
-            builder.append(String.format("%02x", value & 0xff));
-        }
-        return builder.toString();
-    }
-
-    static byte[] fromHex(String hex) {
-        String normalized = hex == null ? "" : hex.trim();
-        if ((normalized.length() % 2) != 0) throw new IllegalArgumentException("Invalid encrypted hex payload.");
-
-        byte[] out = new byte[normalized.length() / 2];
-        for (int i = 0; i < out.length; i++) {
-            int high = Character.digit(normalized.charAt(i * 2), 16);
-            int low = Character.digit(normalized.charAt((i * 2) + 1), 16);
-            if (high < 0 || low < 0) throw new IllegalArgumentException("Invalid encrypted hex payload.");
-            out[i] = (byte) ((high << 4) | low);
-        }
-        return out;
     }
 }

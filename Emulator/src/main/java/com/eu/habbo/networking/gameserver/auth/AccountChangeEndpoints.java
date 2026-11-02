@@ -84,8 +84,19 @@ final class AccountChangeEndpoints {
                 return;
             }
 
+            // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
+            if (AuthRateLimiter.isAccountLocked(username)) {
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
+                return;
+            }
+
             if (!checkPassword(currentPassword, storedHash)) {
                 AuthRateLimiter.recordFailure(ip);
+                AuthRateLimiter.recordAccountFailure(username);
                 LOGGER.info(
                         "[auth/change-password] current password mismatch for user id={} username='{}'",
                         userId,
@@ -193,8 +204,19 @@ final class AccountChangeEndpoints {
                 return;
             }
 
+            // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
+            if (AuthRateLimiter.isAccountLocked(username)) {
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
+                return;
+            }
+
             if (!checkPassword(currentPassword, storedHash)) {
                 AuthRateLimiter.recordFailure(ip);
+                AuthRateLimiter.recordAccountFailure(username);
                 LOGGER.info("[auth/change-email] password mismatch for user id={} username='{}'", userId, username);
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Current password is incorrect."));
                 return;
@@ -290,8 +312,19 @@ final class AccountChangeEndpoints {
                 return;
             }
 
+            // The account's own counter, as at login: a stolen token could guess the current password from many IPs.
+            if (AuthRateLimiter.isAccountLocked(account.username())) {
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many attempts. Try again later."));
+                return;
+            }
+
             if (!checkPassword(currentPassword, account.storedHash())) {
                 AuthRateLimiter.recordFailure(ip);
+                AuthRateLimiter.recordAccountFailure(account.username());
                 LOGGER.info(
                         "[auth/change-username] password mismatch for user id={} username='{}'",
                         userId,
@@ -415,7 +448,7 @@ final class AccountChangeEndpoints {
         return "less than an hour";
     }
 
-    private static boolean isUsernameBanned(Connection conn, String username) throws SQLException {
+    static boolean isUsernameBanned(Connection conn, String username) throws SQLException {
         try (PreparedStatement banned =
                 conn.prepareStatement("SELECT 1 FROM banned_usernames WHERE LOWER(username) = LOWER(?) LIMIT 1")) {
             banned.setString(1, username);

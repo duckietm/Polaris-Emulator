@@ -31,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,7 +194,7 @@ final class SessionEndpoints {
             return;
         }
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection conn = openConnection();
                 PreparedStatement lookup = conn.prepareStatement(
                         "SELECT id, username FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             lookup.setString(1, ssoTicket);
@@ -206,7 +207,7 @@ final class SessionEndpoints {
                     username = rs.getString("username");
                 } else {
                     com.eu.habbo.habbohotel.gameclients.GameClient online =
-                            Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
+                            gameClients().findClientBySsoTicket(ssoTicket);
                     if (online != null && online.getHabbo() != null && online.claimSsoTicketExchange()) {
                         userId = online.getHabbo().getHabboInfo().getId();
                         username = online.getHabbo().getHabboInfo().getUsername();
@@ -240,6 +241,43 @@ final class SessionEndpoints {
             LOGGER.error("[auth/sso-token] lookup failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    /**
+     * A fresh access token for the holder of a valid one while that user is in the hotel. Without "remember me" the
+     * token was never renewed, so every HTTP feature stopped once it expired, until the next login. A ban or a
+     * password change still ends it: {@link AccessTokenService#verify} refuses a revoked or rebound token.
+     */
+    static void handleTokenRenew(ChannelHandlerContext ctx, FullHttpRequest req, String ip) {
+        try (Connection conn = openConnection()) {
+            int userId = AccessTokenService.verify(conn, bearerToken(req));
+            if (userId <= 0 || gameClients().getHabbo(userId) == null) {
+                AuthRateLimiter.recordFailure(ip);
+                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Access token cannot be renewed."));
+                return;
+            }
+
+            if (refuseBanned(ctx, req, conn, userId, ip, null)) {
+                return;
+            }
+
+            AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
+            JsonObject ok = new JsonObject();
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        } catch (Exception e) {
+            LOGGER.error("[auth/token/renew] failed", e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    private static com.eu.habbo.habbohotel.gameclients.GameClientManager gameClients() {
+        return Emulator.getGameServer().getGameClientManager();
     }
 
     static void handleRefresh(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
@@ -351,9 +389,13 @@ final class SessionEndpoints {
 
         // The per-IP throttle alone is cleared by any successful login, so the
         // account being guessed carries its own counter and backoff.
-        if (AuthRateLimiter.isAccountLocked(username)) {
-            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username);
-            LOGGER.info("[auth/login] account throttled username='{}' ip={} for {}s", username, ip, secs);
+        if (AuthRateLimiter.isAccountLocked(username, ip)) {
+            long secs = AuthRateLimiter.secondsUntilAccountUnlock(username, ip);
+            LOGGER.info(
+                    "[auth/login] account throttled username='{}' ip={} for {}s",
+                    AuthHttpUtil.forLog(username),
+                    ip,
+                    secs);
             sendJson(
                     ctx,
                     req,
@@ -377,9 +419,10 @@ final class SessionEndpoints {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (!rs.next()) {
-                        LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
+                        LOGGER.info(
+                                "[auth/login] user not found username='{}' ip={}", AuthHttpUtil.forLog(username), ip);
                         AuthRateLimiter.recordFailure(ip);
-                        AuthRateLimiter.recordAccountFailure(username);
+                        AuthRateLimiter.recordAccountFailure(username, ip);
                         sendJson(
                                 ctx,
                                 req,
@@ -400,10 +443,10 @@ final class SessionEndpoints {
                         LOGGER.info(
                                 "[auth/login] password mismatch for user id={} username='{}' stored='{}'",
                                 userId,
-                                username,
+                                AuthHttpUtil.forLog(username),
                                 storedPreview);
                         AuthRateLimiter.recordFailure(ip);
-                        AuthRateLimiter.recordAccountFailure(username);
+                        AuthRateLimiter.recordAccountFailure(username, ip);
                         sendJson(
                                 ctx,
                                 req,
@@ -466,7 +509,7 @@ final class SessionEndpoints {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Login query failed for username=" + username, e);
+            LOGGER.error("Login query failed for username=" + AuthHttpUtil.forLog(username), e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -486,6 +529,24 @@ final class SessionEndpoints {
     static Object registrationLock(String ip) {
         int hash = ip == null ? 0 : ip.hashCode();
         return REGISTRATION_LOCKS[Math.floorMod(hash, REGISTRATION_LOCKS.length)];
+    }
+
+    /**
+     * The e-mail column has no unique index, so two registrations with the same address from two IPs both passed the
+     * check. Registrations sharing an address stripe also run one at a time; this lock is always taken after the IP
+     * one, so the two can never wait on each other.
+     */
+    private static final Object[] REGISTRATION_EMAIL_LOCKS = new Object[64];
+
+    static {
+        for (int i = 0; i < REGISTRATION_EMAIL_LOCKS.length; i++) {
+            REGISTRATION_EMAIL_LOCKS[i] = new Object();
+        }
+    }
+
+    static Object registrationEmailLock(String email) {
+        int hash = email == null ? 0 : email.toLowerCase(Locale.ROOT).hashCode();
+        return REGISTRATION_EMAIL_LOCKS[Math.floorMod(hash, REGISTRATION_EMAIL_LOCKS.length)];
     }
 
     static void handleRegister(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
@@ -520,7 +581,9 @@ final class SessionEndpoints {
         }
 
         synchronized (registrationLock(ip)) {
-            register(ctx, req, config, ip, username, email, password, figure, gender, templateId);
+            synchronized (registrationEmailLock(email)) {
+                register(ctx, req, config, ip, username, email, password, figure, gender, templateId);
+            }
         }
     }
 
@@ -562,7 +625,7 @@ final class SessionEndpoints {
                             + "! Your account is ready — log in below with the password you just chose.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
-            LOGGER.error("Register query failed for username=" + username, e);
+            LOGGER.error("Register query failed for username=" + AuthHttpUtil.forLog(username), e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -581,7 +644,23 @@ final class SessionEndpoints {
             String gender,
             int templateId)
             throws Exception {
+        // The same list a rename is checked against: a reserved or forbidden name could be taken by registering it.
+        if (AccountChangeEndpoints.isUsernameBanned(conn, username)) {
+            sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is not allowed."));
+            return false;
+        }
+
         int maxPerIp = config.getInt("register.max_per_ip", 5);
+        // The database quota below compares ip_register as text, so every address of an IPv6 /64 had its own
+        // quota: accounts made in the last day are also counted per client bucket.
+        if (!AuthRateLimiter.registrationAllowed(ip, maxPerIp)) {
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("This IP has reached the maximum of " + maxPerIp + " registered accounts."));
+            return false;
+        }
         if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
             try (PreparedStatement quota = conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
                 quota.setString(1, ip);
@@ -678,6 +757,7 @@ final class SessionEndpoints {
                     username);
         }
 
+        AuthRateLimiter.recordRegistration(ip);
         return true;
     }
 

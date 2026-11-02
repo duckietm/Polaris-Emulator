@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
+import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -30,6 +31,11 @@ public class RedeemItemEvent extends MessageHandler {
         if (item == null
                 || item instanceof InteractionWiredChest
                 || this.client.getHabbo().getHabboInfo().getId() != item.getUserId()) {
+            return false;
+        }
+
+        // A rented furni is not the owner's to cash in, and a Builders Club furni was never paid for.
+        if (item.hasRentPeriod() || BuildersClubRoomSupport.isTrackedItem(item.getId())) {
             return false;
         }
 

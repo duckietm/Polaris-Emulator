@@ -19,6 +19,7 @@ import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolUserInfoComposer;
 import com.eu.habbo.messages.outgoing.users.BanInfoComposer;
+import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.plugin.events.support.SupportRoomActionEvent;
 import com.eu.habbo.plugin.events.support.SupportTicketEvent;
 import com.eu.habbo.plugin.events.support.SupportTicketStatusChangedEvent;
@@ -475,6 +476,8 @@ public class ModToolManager {
             statement.setString(7, type.getType());
 
             statement.executeUpdate();
+            // As for an online ban: the tokens already issued end with it.
+            AccessTokenService.revokeAll(connection, userId);
 
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {

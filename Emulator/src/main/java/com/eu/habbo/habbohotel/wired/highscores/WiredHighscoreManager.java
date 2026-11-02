@@ -192,11 +192,18 @@ public class WiredHighscoreManager {
         }
     }
 
-    /** The rows of boards whose furni no longer exists: no board and no condition can read them again. */
+    /**
+     * The rows of boards whose furni no longer exists: no board and no condition can read them again. A board stored
+     * in a wired chest has left {@code items} for {@code wired_chest_items} with its id, and keeps its scores.
+     */
+    static final String DROP_ROWS_OF_DELETED_BOARDS = "DELETE h FROM `items_highscore_data` h"
+            + " LEFT JOIN `items` i ON i.`id` = h.`item_id`"
+            + " WHERE i.`id` IS NULL"
+            + " AND NOT EXISTS (SELECT 1 FROM `wired_chest_items` s WHERE s.`id` = h.`item_id`)";
+
     private void dropRowsOfDeletedBoards() {
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "DELETE h FROM `items_highscore_data` h LEFT JOIN `items` i ON i.`id` = h.`item_id` WHERE i.`id` IS NULL")) {
+                PreparedStatement statement = connection.prepareStatement(DROP_ROWS_OF_DELETED_BOARDS)) {
             int removed = statement.executeUpdate();
             if (removed > 0) {
                 LOGGER.info("Highscore Manager -> removed {} rows of deleted boards", removed);

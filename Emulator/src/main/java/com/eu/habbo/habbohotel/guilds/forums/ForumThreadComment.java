@@ -7,12 +7,15 @@ import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.plugin.events.guilds.forums.GuildForumThreadCommentBeforeCreated;
 import com.eu.habbo.plugin.events.guilds.forums.GuildForumThreadCommentCreated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ForumThreadComment implements Runnable, ISerialize {
     private static final Logger LOGGER = LoggerFactory.getLogger(ForumThreadComment.class);
@@ -28,7 +31,14 @@ public class ForumThreadComment implements Runnable, ISerialize {
     private int index;
     private boolean needsUpdate;
 
-    public ForumThreadComment(int commentId, int threadId, int userId, String message, int createdAt, ForumThreadState state, int adminId) {
+    public ForumThreadComment(
+            int commentId,
+            int threadId,
+            int userId,
+            String message,
+            int createdAt,
+            ForumThreadState state,
+            int adminId) {
         this.commentId = commentId;
         this.threadId = threadId;
         this.userId = userId;
@@ -55,10 +65,11 @@ public class ForumThreadComment implements Runnable, ISerialize {
     public static ForumThreadComment getById(int id) {
         ForumThreadComment foundComment = forumCommentsCache.get(id);
 
-        if (foundComment != null)
-            return foundComment;
+        if (foundComment != null) return foundComment;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM `guilds_forums_comments` WHERE `id` = ? LIMIT 1")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM `guilds_forums_comments` WHERE `id` = ? LIMIT 1")) {
             statement.setInt(1, id);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -85,10 +96,14 @@ public class ForumThreadComment implements Runnable, ISerialize {
     public static ForumThreadComment create(ForumThread thread, Habbo poster, String message) throws Exception {
         ForumThreadComment createdComment = null;
 
-        if (Emulator.getPluginManager().fireEvent(new GuildForumThreadCommentBeforeCreated(thread, poster, message)).isCancelled())
-            return null;
+        if (Emulator.getPluginManager()
+                .fireEvent(new GuildForumThreadCommentBeforeCreated(thread, poster, message))
+                .isCancelled()) return null;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `guilds_forums_comments`(`thread_id`, `user_id`, `message`, `created_at`) VALUES (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO `guilds_forums_comments`(`thread_id`, `user_id`, `message`, `created_at`) VALUES (?, ?, ?, ?);",
+                        Statement.RETURN_GENERATED_KEYS)) {
             int timestamp = Emulator.getIntUnixTimestamp();
 
             statement.setInt(1, thread.getThreadId());
@@ -96,13 +111,19 @@ public class ForumThreadComment implements Runnable, ISerialize {
             statement.setString(3, message);
             statement.setInt(4, timestamp);
 
-            if (statement.executeUpdate() < 1)
-                return null;
+            if (statement.executeUpdate() < 1) return null;
 
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {
                     int commentId = set.getInt(1);
-                    createdComment = new ForumThreadComment(commentId, thread.getThreadId(), poster.getHabboInfo().getId(), message, timestamp, ForumThreadState.OPEN, 0);
+                    createdComment = new ForumThreadComment(
+                            commentId,
+                            thread.getThreadId(),
+                            poster.getHabboInfo().getId(),
+                            message,
+                            timestamp,
+                            ForumThreadState.OPEN,
+                            0);
 
                     Emulator.getPluginManager().fireEvent(new GuildForumThreadCommentCreated(createdComment));
                 }
@@ -132,6 +153,16 @@ public class ForumThreadComment implements Runnable, ISerialize {
 
     public int getCreatedAt() {
         return createdAt;
+    }
+
+    /** This post as a reader may see it: a hidden post keeps its place and author, without its text. */
+    public ForumThreadComment forReader(boolean staff, boolean groupAdmin) {
+        if (ForumThreadState.visibleTo(this.state, staff, groupAdmin)) return this;
+
+        ForumThreadComment hidden = new ForumThreadComment(
+                this.commentId, this.threadId, this.userId, "", this.createdAt, this.state, this.adminId);
+        hidden.index = this.index;
+        return hidden;
     }
 
     public ForumThreadState getState() {
@@ -194,10 +225,11 @@ public class ForumThreadComment implements Runnable, ISerialize {
 
     @Override
     public void run() {
-        if (!this.needsUpdate)
-            return;
+        if (!this.needsUpdate) return;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE guilds_forums_comments SET `state` = ?, `admin_id` = ? WHERE `id` = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE guilds_forums_comments SET `state` = ?, `admin_id` = ? WHERE `id` = ?")) {
             statement.setInt(1, this.state.getStateId());
             statement.setInt(2, this.adminId);
             statement.setInt(3, this.commentId);

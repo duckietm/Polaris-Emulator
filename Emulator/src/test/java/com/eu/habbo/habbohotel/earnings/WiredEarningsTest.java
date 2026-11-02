@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -128,10 +129,24 @@ class WiredEarningsTest {
         Habbo habbo = this.player();
         earnings.pay(habbo, 25, WiredEarnings.CATEGORY_GAMES);
 
+        when(habbo.applyCredits(anyInt(), anyString(), anyString(), any())).thenReturn(true);
+
         assertTrue(earnings.claim(habbo, EarningsCategory.GAMES));
-        verify(habbo).giveCredits(25, "earnings.wired.games");
+        verify(habbo).applyCredits(eq(25), eq("earnings.wired.games"), anyString(), any());
         assertFalse(earnings.claim(habbo, EarningsCategory.GAMES), "nothing left");
         assertFalse(earnings.claim(habbo, EarningsCategory.MARKETPLACE), "not a wired row");
+    }
+
+    @Test
+    void aCreditThatDoesNotGoThroughLeavesTheRowToClaimAgain() throws SQLException {
+        Store store = new Store();
+        WiredEarnings earnings = new WiredEarnings(windowOn(), store);
+        Habbo habbo = this.player();
+        earnings.pay(habbo, 25, WiredEarnings.CATEGORY_GAMES);
+        when(habbo.applyCredits(anyInt(), anyString(), anyString(), any())).thenReturn(false);
+
+        assertFalse(earnings.claim(habbo, EarningsCategory.GAMES));
+        assertEquals(25, earnings.pending(habbo, EarningsCategory.GAMES), "the credits are still waiting");
     }
 
     @Test

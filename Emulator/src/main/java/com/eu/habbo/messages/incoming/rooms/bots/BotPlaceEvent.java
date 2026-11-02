@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomPlayTestSupport;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BotErrorComposer;
 
@@ -27,12 +28,16 @@ public class BotPlaceEvent extends MessageHandler {
         int x = this.packet.readInt();
         int y = this.packet.readInt();
 
+        // A tile off the map used to reach the bot manager as null and throw there.
+        RoomTile tile = room.getLayout().getTile((short) x, (short) y);
+        if (tile == null) return;
+
         Emulator.getGameEnvironment()
                 .getBotManager()
                 .placeBot(
                         bot,
                         this.client.getHabbo(),
                         this.client.getHabbo().getHabboInfo().getCurrentRoom(),
-                        room.getLayout().getTile((short) x, (short) y));
+                        tile);
     }
 }

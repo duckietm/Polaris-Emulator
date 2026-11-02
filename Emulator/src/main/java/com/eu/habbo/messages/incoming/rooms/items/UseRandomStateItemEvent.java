@@ -12,6 +12,11 @@ public class UseRandomStateItemEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UseRandomStateItemEvent.class);
 
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         try {
             int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());

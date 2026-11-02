@@ -63,6 +63,8 @@ class WiredGiveFromChestRulesTest {
         when(chest.answersWired()).thenReturn(upgraded);
         when(chest.getContents()).thenReturn(contents);
         when(chest.getId()).thenReturn(CHEST_ID);
+        // The boxes below belong to user 1, and a box only takes from its owner's chests.
+        when(chest.getUserId()).thenReturn(1);
         return chest;
     }
 

@@ -51,6 +51,29 @@ class AuthRateLimiterAccountTest {
     }
 
     @Test
+    void aLoginLockHoldsOnlyTheAddressThatGotThePasswordWrong() {
+        for (int i = 0; i < MAX_ATTEMPTS; i++) {
+            AuthRateLimiter.recordAccountFailure("Admin", "203.0.113.7");
+        }
+
+        assertTrue(AuthRateLimiter.isAccountLocked("Admin", "203.0.113.7"));
+        assertTrue(AuthRateLimiter.secondsUntilAccountUnlock("admin", "203.0.113.7") > 0);
+        assertFalse(AuthRateLimiter.isAccountLocked("Admin", "198.51.100.20"));
+        assertFalse(AuthRateLimiter.isAccountLocked("Admin"));
+    }
+
+    @Test
+    void theOwnersSuccessClearsTheirOwnAddress() {
+        for (int i = 0; i < MAX_ATTEMPTS - 1; i++) {
+            AuthRateLimiter.recordAccountFailure("Admin", "198.51.100.20");
+        }
+        AuthRateLimiter.recordSuccess("198.51.100.20", "Admin");
+
+        AuthRateLimiter.recordAccountFailure("Admin", "198.51.100.20");
+        assertFalse(AuthRateLimiter.isAccountLocked("Admin", "198.51.100.20"));
+    }
+
+    @Test
     void locksTheAccountAfterTheConfiguredAttempts() {
         failNTimes("Admin", MAX_ATTEMPTS - 1);
         assertFalse(AuthRateLimiter.isAccountLocked("Admin"));

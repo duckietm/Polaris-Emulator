@@ -54,11 +54,20 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
 
         if (room == null) return false;
 
-        this.items.clear();
-        this.indexOffset.clear();
-
         // Official layout: [direction, empty tiles]; the furni source is the official source slot.
         if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+
+        // Every pick is checked before the box changes: a pick the room did not hold used to be stored as null,
+        // and the next save of wired_data or the next open of the dialog threw on it.
+        List<HabboItem> picks = new ArrayList<>();
+        for (int itemId : settings.getFurniIds()) {
+            HabboItem item = room.getHabboItem(itemId);
+            if (item == null) throw new WiredSaveException(String.format("Item %s not found", itemId));
+            picks.add(item);
+        }
+
+        this.items.clear();
+        this.indexOffset.clear();
         this.direction = settings.getIntParams()[0];
         this.spacing = clampSpacing(settings.getIntParams()[1]);
         this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
@@ -70,9 +79,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         }
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            for (int i = 0; i < count; i++) {
-                this.items.add(room.getHabboItem(settings.getFurniIds()[i]));
-            }
+            this.items.addAll(picks);
         }
 
         this.setDelay(settings.getDelay());
@@ -227,7 +234,8 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
 
         for (HabboItem item : itemsSnapshot) {
-            if (item.getRoomId() != this.getRoomId()
+            if (item == null
+                    || item.getRoomId() != this.getRoomId()
                     || Emulator.getGameEnvironment()
                                     .getRoomManager()
                                     .getRoom(this.getRoomId())
@@ -255,7 +263,8 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         Set<HabboItem> items = new HashSet<>();
 
         for (HabboItem item : itemsSnapshot) {
-            if (item.getRoomId() != this.getRoomId()
+            if (item == null
+                    || item.getRoomId() != this.getRoomId()
                     || Emulator.getGameEnvironment()
                                     .getRoomManager()
                                     .getRoom(this.getRoomId())

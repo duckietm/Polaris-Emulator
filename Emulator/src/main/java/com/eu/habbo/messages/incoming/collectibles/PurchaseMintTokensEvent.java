@@ -45,7 +45,16 @@ public class PurchaseMintTokensEvent extends MessageHandler {
         }
 
         int userId = habbo.getHabboInfo().getId();
-        if (!service.addMintTokens(userId, offer.get().amount())) {
+        boolean added;
+        try {
+            added = service.addMintTokens(userId, offer.get().amount());
+        } catch (Exception exception) {
+            // The silver is already taken: stamps that cannot be stored refund it, as a refused store does.
+            CollectiblesSupport.refund(habbo, settings.silverType(), price, "collectibles.stamps.refund");
+            this.client.sendResponse(new CollectiblePurchaseResultComposer(1));
+            throw exception;
+        }
+        if (!added) {
             CollectiblesSupport.refund(habbo, settings.silverType(), price, "collectibles.stamps.refund");
             this.client.sendResponse(new CollectiblePurchaseResultComposer(1));
             return;

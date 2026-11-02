@@ -38,6 +38,9 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     // the clear (CMS, health, maintenance, stats, the public wired API) are not listed.
     private static final String[] CLIENT_API_ROOTS = {"/api/auth", "/api/badges"};
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
+    // Secure API requests per client bucket and minute: every client HTTP call goes through here, so the share is wide.
+    static final String RATE_LIMIT_CONFIG = "nitro.secure.api.requests_per_minute";
+    private static final int DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
     private static final long MAX_REQUEST_SKEW_MS = 90_000L;
@@ -92,6 +95,16 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             return;
         }
 
+        // The key exchange below runs for every request: a client over its share is refused before it.
+        if (!NitroSecureRequestLimiter.tryAcquire(
+                "api",
+                AuthHttpUtil.resolveClientIp(ctx, req),
+                configInt(RATE_LIMIT_CONFIG, DEFAULT_RATE_LIMIT_PER_MINUTE))) {
+            sendText(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, "Too many requests.");
+            ReferenceCountUtil.release(req);
+            return;
+        }
+
         try {
             String clientKey = req.headers().get("X-Nitro-Key");
             if (clientKey == null || clientKey.isBlank()) {
@@ -130,7 +143,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             byte[] encrypted = new byte[readableBytes];
             req.content().getBytes(req.content().readerIndex(), encrypted);
             byte[] clear = NitroSecureAssetHandler.decrypt(
-                    sessionKey, NitroSecureAssetHandler.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
+                    sessionKey, NitroSecureHex.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
             clear = unwrapEnvelope(clear, req, secureContext);
 
             // Same request line and headers, decrypted body: this is the inbound
@@ -170,7 +183,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
         try {
             byte[] clear = readBytes(response.content());
             byte[] encrypted = NitroSecureAssetHandler.encrypt(secureContext.sessionKey(), clear);
-            byte[] hex = NitroSecureAssetHandler.toHex(encrypted).getBytes(StandardCharsets.UTF_8);
+            byte[] hex = NitroSecureHex.toHex(encrypted).getBytes(StandardCharsets.UTF_8);
 
             FullHttpResponse encryptedResponse = new DefaultFullHttpResponse(
                     response.protocolVersion(), response.status(), Unpooled.wrappedBuffer(hex));
@@ -238,12 +251,16 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     }
 
     static int maxPayloadBytes() {
-        if (com.eu.habbo.Emulator.getConfig() == null) {
-            return DEFAULT_MAX_PAYLOAD_BYTES;
-        }
-
-        int configured = com.eu.habbo.Emulator.getConfig().getInt(MAX_PAYLOAD_CONFIG, DEFAULT_MAX_PAYLOAD_BYTES);
+        int configured = configInt(MAX_PAYLOAD_CONFIG, DEFAULT_MAX_PAYLOAD_BYTES);
         return configured > 0 ? configured : DEFAULT_MAX_PAYLOAD_BYTES;
+    }
+
+    /** A number from the config; the fallback without a configuration. 0 or less turns the request limit off. */
+    private static int configInt(String key, int fallback) {
+        if (com.eu.habbo.Emulator.getConfig() == null) {
+            return fallback;
+        }
+        return com.eu.habbo.Emulator.getConfig().getInt(key, fallback);
     }
 
     private static byte[] unwrapEnvelope(byte[] clear, FullHttpRequest req, SecureApiContext secureContext) {

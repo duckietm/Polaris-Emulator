@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.Database;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
@@ -690,7 +691,10 @@ public class BuildersClubRoomSupport {
     }
 
     private static Connection openConnection() throws SQLException {
-        return Emulator.getDatabase().getDataSource().getConnection();
+        Database database = Emulator.getDatabase();
+        // No database (a test, or a hotel still starting): every lookup answers "not tracked" instead of throwing.
+        if (database == null) throw new SQLException("No database");
+        return database.getDataSource().getConnection();
     }
 
     private static HabboInfo habboInfo(int userId) {

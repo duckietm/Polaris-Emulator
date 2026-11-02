@@ -58,6 +58,7 @@ class WiredEffectForwardUserToRoomTest {
     private MockedStatic<WiredPlatform> platform;
     private final Map<Integer, Room> rooms = new HashMap<>();
     private ItemManager itemManager;
+    private RoomManager roomManager;
     private Room room;
 
     @BeforeEach
@@ -69,6 +70,7 @@ class WiredEffectForwardUserToRoomTest {
         this.rooms.put(0, this.room);
 
         RoomManager roomManager = mock(RoomManager.class);
+        this.roomManager = roomManager;
         when(roomManager.getRoom(anyInt())).thenAnswer(invocation -> this.rooms.get(invocation.getArgument(0)));
         when(roomManager.loadRoom(anyInt())).thenAnswer(invocation -> this.rooms.get(invocation.getArgument(0)));
         this.itemManager = mock(ItemManager.class);
@@ -159,6 +161,19 @@ class WiredEffectForwardUserToRoomTest {
 
         assertEquals(77, forwardedRoom(habbo));
         assertNull(pendingEntry(habbo));
+    }
+
+    @Test
+    void theDestinationIsNotLoadedWhenNobodyMayBeForwardedYet() throws Exception {
+        WiredEffectForwardUserToRoom box = box();
+        box.loadWiredData(row("{\"roomIdText\":\"77\",\"delay\":0,\"userSource\":0}"), this.room);
+
+        RoomUnit unit = mock(RoomUnit.class);
+        Habbo habbo = visitor(unit);
+        when(habbo.getHabboInfo().tryAcquireRoomForward(anyLong(), anyLong())).thenReturn(false);
+        box.execute(context(this.room, unit));
+
+        verify(this.roomManager, never()).loadRoom(77);
     }
 
     @Test

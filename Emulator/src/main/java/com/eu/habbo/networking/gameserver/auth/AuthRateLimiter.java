@@ -2,7 +2,10 @@ package com.eu.habbo.networking.gameserver.auth;
 
 import com.eu.habbo.Emulator;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.text.Normalizer;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class AuthRateLimiter {
@@ -20,6 +23,13 @@ public final class AuthRateLimiter {
     private static final Map<String, AtomicReference<AccountState>> ACCOUNT_STATE = bounded();
     private static final int MAX_BACKOFF_DOUBLINGS = 4;
 
+    // Accounts made per client bucket, each counted for a day from the first one.
+    private static final Map<String, AtomicInteger> REGISTRATIONS = Caffeine.newBuilder()
+            .maximumSize(MAX_ENTRIES)
+            .expireAfterWrite(Duration.ofDays(1))
+            .<String, AtomicInteger>build()
+            .asMap();
+
     // Both maps are keyed by client IP and reachable by unauthenticated traffic.
     // recordSuccess removes STATE on login, but failed-only and probe-only IPs
     // never get removed otherwise — unbounded growth over the JVM lifetime.
@@ -29,6 +39,19 @@ public final class AuthRateLimiter {
     private static volatile long lastSweepMillis = 0L;
 
     private AuthRateLimiter() {}
+
+    /** Whether this client bucket may make one more account today; a limit of 0 or no address lets it through. */
+    public static boolean registrationAllowed(String ip, int maxPerDay) {
+        if (maxPerDay <= 0 || ip == null || ip.isEmpty()) return true;
+        AtomicInteger made = REGISTRATIONS.get(bucket(ip));
+        return made == null || made.get() < maxPerDay;
+    }
+
+    /** Counts an account made from this client bucket. */
+    public static void recordRegistration(String ip) {
+        if (ip == null || ip.isEmpty()) return;
+        REGISTRATIONS.computeIfAbsent(bucket(ip), k -> new AtomicInteger()).incrementAndGet();
+    }
 
     private static <V> Map<String, V> bounded() {
         return Caffeine.newBuilder().maximumSize(MAX_ENTRIES).<String, V>build().asMap();
@@ -122,12 +145,36 @@ public final class AuthRateLimiter {
         recordSuccess(ip);
         String key = accountKey(username);
         if (key != null) ACCOUNT_STATE.remove(key);
+        String pair = accountKey(username, ip);
+        if (pair != null) ACCOUNT_STATE.remove(pair);
+    }
+
+    /*
+     * The login counts failures per account and client bucket. Locking the account for every address let anyone keep
+     * a chosen user out by getting the password wrong on purpose; now only the address that got it wrong is locked,
+     * and the per-address counter above still slows a guessing run spread over many accounts.
+     */
+
+    /** Records a failed login against the account that was named, from this client bucket. */
+    public static void recordAccountFailure(String username, String ip) {
+        recordAccountFailureKey(accountKey(username, ip));
+    }
+
+    public static boolean isAccountLocked(String username, String ip) {
+        return isAccountKeyLocked(accountKey(username, ip));
+    }
+
+    public static long secondsUntilAccountUnlock(String username, String ip) {
+        return secondsUntilAccountKeyUnlock(accountKey(username, ip));
     }
 
     /** Records a failed credential check against the account that was named. */
     public static void recordAccountFailure(String username) {
+        recordAccountFailureKey(accountKey(username));
+    }
+
+    private static void recordAccountFailureKey(String key) {
         if (!isEnabled()) return;
-        String key = accountKey(username);
         if (key == null) return;
 
         long now = System.currentTimeMillis();
@@ -163,8 +210,11 @@ public final class AuthRateLimiter {
     }
 
     public static boolean isAccountLocked(String username) {
+        return isAccountKeyLocked(accountKey(username));
+    }
+
+    private static boolean isAccountKeyLocked(String key) {
         if (!isEnabled()) return false;
-        String key = accountKey(username);
         if (key == null) return false;
 
         AtomicReference<AccountState> ref = ACCOUNT_STATE.get(key);
@@ -175,7 +225,10 @@ public final class AuthRateLimiter {
     }
 
     public static long secondsUntilAccountUnlock(String username) {
-        String key = accountKey(username);
+        return secondsUntilAccountKeyUnlock(accountKey(username));
+    }
+
+    private static long secondsUntilAccountKeyUnlock(String key) {
         if (key == null) return 0;
 
         AtomicReference<AccountState> ref = ACCOUNT_STATE.get(key);
@@ -199,11 +252,23 @@ public final class AuthRateLimiter {
         return configInt("login.ratelimit.account.window_sec", 900) * 1000L;
     }
 
-    /** Null when there is no account to key on; usernames are case-insensitive. */
-    private static String accountKey(String username) {
+    /**
+     * Null when there is no account to key on. The database matches names case- and accent-insensitively
+     * (utf8mb3_general_ci), so "Admin", "ADMIN" and "Ädmin" find one account and must share one counter.
+     */
+    static String accountKey(String username) {
         if (username == null) return null;
-        String key = username.trim().toLowerCase(java.util.Locale.ROOT);
+        String key = Normalizer.normalize(username.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(java.util.Locale.ROOT);
         return key.isEmpty() ? null : key;
+    }
+
+    /** The account and the client bucket it was tried from; the account alone when there is no address. */
+    static String accountKey(String username, String ip) {
+        String account = accountKey(username);
+        if (account == null || ip == null || ip.isEmpty()) return account;
+        return account + "|" + bucket(ip);
     }
 
     public static boolean tryProbe(String ip) {

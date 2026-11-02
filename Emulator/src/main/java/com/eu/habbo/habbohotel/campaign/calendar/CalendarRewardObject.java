@@ -34,7 +34,10 @@ public class CalendarRewardObject {
         this.pixels = set.getInt("pixels");
         this.points = set.getInt("points");
         this.pointsType = set.getInt("points_type");
-        this.badge = set.getString("badge");
+        // A reward without a badge holds NULL: give() and the product composer used to throw on it after the day
+        // was already claimed.
+        String badge = set.getString("badge");
+        this.badge = badge == null ? "" : badge;
         this.itemId = set.getInt("item_id");
         this.subscription_type = set.getString("subscription_type");
         this.subscription_days = set.getInt("subscription_days");
@@ -75,6 +78,7 @@ public class CalendarRewardObject {
                 HabboItem habboItem = Emulator.getGameEnvironment()
                         .getItemManager()
                         .createItem(habbo.getHabboInfo().getId(), item, 0, 0, "");
+                if (habboItem == null) return;
                 habbo.getInventory().getItemsComponent().addItem(habboItem);
                 habbo.getClient().sendResponse(new AddHabboItemComposer(habboItem));
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());

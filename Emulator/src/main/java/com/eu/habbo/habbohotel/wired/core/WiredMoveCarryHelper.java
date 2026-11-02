@@ -60,7 +60,10 @@ public final class WiredMoveCarryHelper {
     private record Firing(int id, boolean dropsReturnedFurni) {}
 
     // Keyed by the unit itself: a unit id is only unique inside its room, so two rooms would share an integer key.
-    private static final Map<RoomUnit, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL =
+    // The hold also keeps the posture the clients last got, so a sit or lay that starts during a ride still goes out.
+    private record StatusHold(long until, String posture) {}
+
+    private static final Map<RoomUnit, StatusHold> SUPPRESSED_STATUS_COMPOSER_UNTIL =
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<RoomUnit, ConcurrentHashMap<Integer, UserFollowEntry>> ACTIVE_USER_FOLLOWERS =
             Collections.synchronizedMap(new WeakHashMap<>());
@@ -231,6 +234,13 @@ public final class WiredMoveCarryHelper {
                 room.getLayout() == null ? null : room.getLayout().getTile(movingItem.getX(), movingItem.getY());
         double oldZ = movingItem.getZ();
         CarryContext carryContext = prepareCarryContext(room, stackItem, movingItem, ctx);
+
+        // A furni that stays on its tile (an altitude or rotation write) takes the users sitting or lying on it along,
+        // in the same animation: otherwise the tile update moved them to the new height at once while the furni was
+        // still animating there, and a repeating move left them bouncing out of step with their seat.
+        if (!carryContext.active && isSameTile(oldLocation, targetTile)) {
+            carryContext = prepareSeatedCarryContext(room, movingItem);
+        }
         WiredMovementPhysics movementPhysics = getMovementPhysics(room, stackItem, movingItem, ctx);
         FurnitureMovementError movementError =
                 room.furnitureFitsAtWithPhysics(targetTile, movingItem, rotation, false, movementPhysics);
@@ -413,13 +423,27 @@ public final class WiredMoveCarryHelper {
             return false;
         }
 
-        Long suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit);
+        StatusHold suppressedUntil = SUPPRESSED_STATUS_COMPOSER_UNTIL.get(roomUnit);
 
         if (suppressedUntil == null) {
             return false;
         }
 
-        if (suppressedUntil <= System.currentTimeMillis()) {
+        // A posture change (a rider that sits down or stands up on its ride) is never held back: the status carries it,
+        // and the clients keep the ride's slide for the location. The next ride tick starts a new hold.
+        if (!suppressedUntil.posture().equals(posture(roomUnit))) {
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit, suppressedUntil);
+            return false;
+        }
+
+        // A unit that walks off has left its ride: its walk, and the sit at the end of it, go out at once instead of
+        // waiting for the ride's hold to run out (a seat moved after it would otherwise never announce the sit).
+        if (roomUnit.isWalking()) {
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit, suppressedUntil);
+            return false;
+        }
+
+        if (suppressedUntil.until() <= System.currentTimeMillis()) {
             SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit, suppressedUntil);
             return false;
         }
@@ -1112,6 +1136,96 @@ public final class WiredMoveCarryHelper {
         return new CarryContext(true, carriedUnits, carriedIds);
     }
 
+    private static boolean isSameTile(RoomTile a, RoomTile b) {
+        return a != null && b != null && a.x == b.x && a.y == b.y;
+    }
+
+    /** The users sitting or lying on the moving furni itself, carried without a carry-users extra. */
+    private static CarryContext prepareSeatedCarryContext(Room room, HabboItem movingItem) {
+        List<RoomUnit> riders = seatedRiders(room, movingItem);
+
+        if (riders.isEmpty()) {
+            return CarryContext.disabled();
+        }
+
+        // The carry holds the rider's status back while the seat animates, and a repeater keeps renewing that, so the
+        // status that sat the user down would never reach the clients: send it once as the ride starts.
+        List<RoomUnit> unannounced = ridersToAnnounce(riders);
+        if (!unannounced.isEmpty()) {
+            room.sendComposer(new RoomUserStatusComposer(unannounced, true).compose());
+        }
+
+        RoomTile anchorTile = room.getLayout().getTile(movingItem.getX(), movingItem.getY());
+        List<CarriedRoomUnit> carriedUnits = new ArrayList<>();
+        HashSet<Integer> carriedIds = new HashSet<>();
+
+        for (RoomUnit roomUnit : riders) {
+            carriedUnits.add(new CarriedRoomUnit(
+                    roomUnit,
+                    roomUnit.getCurrentLocation(),
+                    roomUnit.getZ(),
+                    roomUnit.getZ() - getCarrySurfaceZ(movingItem, roomUnit, roomUnit.getZ()),
+                    roomUnit.getX() - anchorTile.x,
+                    roomUnit.getY() - anchorTile.y));
+            carriedIds.add(roomUnit.getId());
+        }
+
+        return new CarryContext(true, carriedUnits, carriedIds);
+    }
+
+    /** The riders whose status is not held back yet: their ride starts now, so the clients may not know they sit. */
+    static List<RoomUnit> ridersToAnnounce(List<RoomUnit> riders) {
+        List<RoomUnit> unannounced = new ArrayList<>();
+
+        for (RoomUnit roomUnit : riders) {
+            if (!shouldSuppressStatusComposer(roomUnit)) {
+                unannounced.add(roomUnit);
+            }
+        }
+
+        return unannounced;
+    }
+
+    /** The users sitting or lying directly on a seat or bed furni (not walking, not riding a pet). */
+    static List<RoomUnit> seatedRiders(Room room, HabboItem movingItem) {
+        List<RoomUnit> riders = new ArrayList<>();
+
+        if (room == null || movingItem == null || movingItem.getBaseItem() == null || room.getLayout() == null) {
+            return riders;
+        }
+
+        if (!movingItem.getBaseItem().allowSit() && !movingItem.getBaseItem().allowLay()) {
+            return riders;
+        }
+
+        RoomTile anchorTile = room.getLayout().getTile(movingItem.getX(), movingItem.getY());
+        if (anchorTile == null) {
+            return riders;
+        }
+
+        Collection<RoomTile> occupiedTiles = room.getLayout()
+                .getTilesAt(
+                        anchorTile,
+                        movingItem.getBaseItem().getWidth(),
+                        movingItem.getBaseItem().getLength(),
+                        movingItem.getRotation());
+
+        if (occupiedTiles == null || occupiedTiles.isEmpty()) {
+            return riders;
+        }
+
+        for (RoomUnit roomUnit : room.getRoomUnits()) {
+            if (roomUnit != null
+                    && (roomUnit.hasStatus(RoomUnitStatus.SIT) || roomUnit.hasStatus(RoomUnitStatus.LAY))
+                    && isEligibleUser(
+                            room, movingItem, roomUnit, occupiedTiles, WiredExtraMoveCarryUsers.MODE_DIRECTLY_ON_FURNI)) {
+                riders.add(roomUnit);
+            }
+        }
+
+        return riders;
+    }
+
     private static Collection<RoomUnit> resolveUsers(Room room, WiredContext ctx, int userSource) {
         if (userSource == WiredExtraMoveCarryUsers.SOURCE_ALL_ROOM_USERS) {
             return new ArrayList<>(room.getRoomUnits());
@@ -1122,8 +1236,9 @@ public final class WiredMoveCarryHelper {
 
     private static boolean isEligibleUser(
             Room room, HabboItem movingItem, RoomUnit roomUnit, Collection<RoomTile> occupiedTiles, int carryMode) {
+        // A bot rides along as an avatar does; a pet does not.
         if (roomUnit == null
-                || roomUnit.getRoomUnitType() != RoomUnitType.USER
+                || (roomUnit.getRoomUnitType() != RoomUnitType.USER && roomUnit.getRoomUnitType() != RoomUnitType.BOT)
                 || roomUnit.getCurrentLocation() == null
                 || !roomUnit.isInRoom()
                 || roomUnit.isWalking()) {
@@ -1386,7 +1501,7 @@ public final class WiredMoveCarryHelper {
         }
     }
 
-    private static void suppressStatusComposer(RoomUnit roomUnit, int duration) {
+    static void suppressStatusComposer(RoomUnit roomUnit, int duration) {
         if (roomUnit == null) {
             return;
         }
@@ -1394,7 +1509,17 @@ public final class WiredMoveCarryHelper {
         long suppressedUntil = System.currentTimeMillis()
                 + Math.max(duration, WiredMovementsComposer.DEFAULT_DURATION)
                 + STATUS_SUPPRESSION_GRACE_MS;
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.put(roomUnit, suppressedUntil);
+        // A renewed hold keeps the posture of the first one: that is what the clients were last told.
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.compute(roomUnit, (unit, current) ->
+                new StatusHold(suppressedUntil, current != null ? current.posture() : posture(unit)));
+    }
+
+    private static String posture(RoomUnit roomUnit) {
+        if (roomUnit.hasStatus(RoomUnitStatus.LAY)) {
+            return "lay";
+        }
+
+        return roomUnit.hasStatus(RoomUnitStatus.SIT) ? "sit" : "std";
     }
 
     private static WiredExtraMoveCarryUsers getActiveExtra(Room room, HabboItem stackItem) {

@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class WiredMoveCarryHelper {
     private static final double DIRECT_HEIGHT_TOLERANCE = 0.1D;
@@ -69,8 +67,6 @@ public final class WiredMoveCarryHelper {
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<RoomUnit, ConcurrentHashMap<Integer, UserFollowEntry>> ACTIVE_USER_FOLLOWERS =
             Collections.synchronizedMap(new WeakHashMap<>());
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(WiredMoveCarryHelper.class);
 
     private WiredMoveCarryHelper() {}
 
@@ -245,7 +241,6 @@ public final class WiredMoveCarryHelper {
         if (!carryContext.active && isSameTile(oldLocation, targetTile)) {
             carryContext = prepareSeatedCarryContext(room, movingItem);
         }
-        logSeatMove(room, movingItem, oldLocation, targetTile, oldZ, z, carryContext);
         WiredMovementPhysics movementPhysics = getMovementPhysics(room, stackItem, movingItem, ctx);
         FurnitureMovementError movementError =
                 room.furnitureFitsAtWithPhysics(targetTile, movingItem, rotation, false, movementPhysics);
@@ -1176,71 +1171,6 @@ public final class WiredMoveCarryHelper {
         }
 
         return new CarryContext(true, carriedUnits, carriedIds);
-    }
-
-    /**
-     * Debug trace of a wired move of a seat or bed: every unit on its tiles, with its status, walk state and height, and
-     * whether the move carries it. Only written when debug logging is on.
-     */
-    private static void logSeatMove(
-            Room room,
-            HabboItem movingItem,
-            RoomTile oldLocation,
-            RoomTile targetTile,
-            double oldZ,
-            Double targetZ,
-            CarryContext carryContext) {
-        if (!LOGGER.isDebugEnabled()
-                || room == null
-                || room.getLayout() == null
-                || movingItem == null
-                || movingItem.getBaseItem() == null
-                || oldLocation == null
-                || (!movingItem.getBaseItem().allowSit() && !movingItem.getBaseItem().allowLay())) {
-            return;
-        }
-
-        Collection<RoomTile> occupiedTiles = room.getLayout()
-                .getTilesAt(
-                        oldLocation,
-                        movingItem.getBaseItem().getWidth(),
-                        movingItem.getBaseItem().getLength(),
-                        movingItem.getRotation());
-        StringBuilder units = new StringBuilder();
-
-        for (RoomUnit roomUnit : room.getRoomUnits()) {
-            if (roomUnit == null || occupiedTiles == null || !occupiesMovingFurni(occupiedTiles, roomUnit)) {
-                continue;
-            }
-
-            HabboItem topItem = room.getTopItemAt(roomUnit.getX(), roomUnit.getY());
-            RoomTile goal = roomUnit.getGoal();
-            units.append(String.format(
-                    " [unit=%d type=%s status=%s walking=%s goal=%s z=%.2f prevZ=%.2f top=%s carried=%s heldBack=%s]",
-                    roomUnit.getId(),
-                    roomUnit.getRoomUnitType(),
-                    roomUnit.getStatusMap(),
-                    roomUnit.isWalking(),
-                    goal == null ? "-" : goal.x + "," + goal.y,
-                    roomUnit.getZ(),
-                    roomUnit.getPreviousLocationZ(),
-                    topItem == null ? "-" : String.valueOf(topItem.getId()),
-                    carryContext.carriedUserIds.contains(roomUnit.getId()),
-                    shouldSuppressStatusComposer(roomUnit)));
-        }
-
-        LOGGER.debug(
-                "Wired seat move: room={} item={} tile={},{}->{},{} z={}->{} carry={}{}",
-                room.getId(),
-                movingItem.getId(),
-                oldLocation.x,
-                oldLocation.y,
-                targetTile.x,
-                targetTile.y,
-                String.format("%.2f", oldZ),
-                targetZ == null ? "stack" : String.format("%.2f", targetZ),
-                carryContext.active,
-                units.length() == 0 ? " no units on it" : units);
     }
 
     /** The riders whose status is not held back yet: their ride starts now, so the clients may not know they sit. */

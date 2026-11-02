@@ -120,15 +120,58 @@ public class WiredMovementsComposer extends MessageComposer {
             return movements;
         }
 
+        // The users such a furni carried went there and back with it: sliding them alone would move them while their
+        // furni stands still.
+        Set<Integer> returnedUsers = returnedSlides(movements);
         List<MovementData> kept = new ArrayList<>(movements.size());
 
         for (MovementData movement : movements) {
-            if (!(movement instanceof FurniMovementData furni) || !returned.contains(furni.id)) {
-                kept.add(movement);
+            if (movement instanceof FurniMovementData furni && returned.contains(furni.id)) {
+                continue;
             }
+
+            if (movement instanceof UserMovementData user && returnedUsers.contains(user.id)) {
+                continue;
+            }
+
+            kept.add(movement);
         }
 
         return kept;
+    }
+
+    /** The users whose slides in this list end where the first one started. */
+    private static Set<Integer> returnedSlides(List<MovementData> movements) {
+        Map<Integer, UserMovementData> first = new HashMap<>();
+        Map<Integer, UserMovementData> last = new HashMap<>();
+        Set<Integer> walked = new HashSet<>();
+
+        for (MovementData movement : movements) {
+            if (movement instanceof UserMovementData user) {
+                if (user.movementType != USER_MOVEMENT_SLIDE) {
+                    walked.add(user.id);
+                }
+
+                first.putIfAbsent(user.id, user);
+                last.put(user.id, user);
+            }
+        }
+
+        Set<Integer> returned = new HashSet<>();
+
+        for (Map.Entry<Integer, UserMovementData> entry : first.entrySet()) {
+            UserMovementData start = entry.getValue();
+            UserMovementData end = last.get(entry.getKey());
+
+            if (!walked.contains(entry.getKey())
+                    && start.fromX == end.toX
+                    && start.fromY == end.toY
+                    && Double.compare(start.fromZ, end.toZ) == 0) {
+                returned.add(entry.getKey());
+            }
+        }
+
+        return returned;
     }
 
     private static String movementKey(MovementData movement) {

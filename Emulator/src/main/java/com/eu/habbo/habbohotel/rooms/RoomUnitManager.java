@@ -604,7 +604,10 @@ public class RoomUnitManager {
         HabboItem topItem = this.room.getTopItemAt(x, y);
 
         for (Bot bot : bots) {
-            if (bot.getRoomUnit() == null) {
+            // A bot a wired move carries gets its height from the carry, as an avatar does.
+            if (bot.getRoomUnit() == null
+                    || WiredMoveCarryHelper.shouldSuppressStatusUpdate(bot.getRoomUnit())
+                    || WiredUserMovementHelper.shouldSuppressStatusUpdate(bot.getRoomUnit())) {
                 continue;
             }
 

@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyShort;
@@ -55,6 +56,22 @@ class WiredMoveCarrySeatedTest {
     }
 
     @Test
+    void aBotSittingOnTheSeatRidesAlongAsAnAvatarDoes() {
+        Fixture fixture = new Fixture(true);
+        RoomUnit bot = fixture.unit(1, 4, 8, RoomUnitStatus.SIT, RoomUnitType.BOT);
+
+        assertEquals(List.of(bot), WiredMoveCarryHelper.seatedRiders(fixture.room, fixture.seat));
+    }
+
+    @Test
+    void aPetOnTheSeatIsNotCarried() {
+        Fixture fixture = new Fixture(true);
+        fixture.unit(1, 4, 8, RoomUnitStatus.SIT, RoomUnitType.PET);
+
+        assertTrue(WiredMoveCarryHelper.seatedRiders(fixture.room, fixture.seat).isEmpty());
+    }
+
+    @Test
     void aRiderIsAnnouncedOnlyWhenItsRideStarts() {
         Fixture fixture = new Fixture(true);
         RoomUnit sitter = fixture.unit(1, 4, 8, RoomUnitStatus.SIT);
@@ -67,6 +84,52 @@ class WiredMoveCarrySeatedTest {
             assertTrue(WiredMoveCarryHelper.ridersToAnnounce(List.of(sitter)).isEmpty());
         } finally {
             WiredMoveCarryHelper.clearStatusComposerSuppression(sitter);
+        }
+    }
+
+    @Test
+    void aRiderThatWalksOffIsNoLongerHeldBack() {
+        Fixture fixture = new Fixture(true);
+        RoomUnit rider = fixture.unit(1, 4, 8, null);
+
+        try {
+            WiredMoveCarryHelper.suppressStatusComposer(rider, 2000);
+            assertTrue(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+
+            when(rider.isWalking()).thenReturn(true);
+            assertFalse(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+
+            // It stays released when it stops on the seat, so the seat's ride announces the sit.
+            when(rider.isWalking()).thenReturn(false);
+            assertFalse(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+            assertEquals(List.of(rider), WiredMoveCarryHelper.ridersToAnnounce(List.of(rider)));
+        } finally {
+            WiredMoveCarryHelper.clearStatusComposerSuppression(rider);
+        }
+    }
+
+    @Test
+    void aRiderThatSitsDownDuringItsRideIsNoLongerHeldBack() {
+        Fixture fixture = new Fixture(true);
+        // The ride starts on the last walk step: the user stands on the seat, the sit follows one status cycle later.
+        RoomUnit rider = fixture.unit(1, 4, 8, null);
+
+        try {
+            WiredMoveCarryHelper.suppressStatusComposer(rider, 2000);
+            assertTrue(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+
+            when(rider.hasStatus(RoomUnitStatus.SIT)).thenReturn(true);
+            // A renewed hold keeps the standing posture the clients were last told, so the sit still goes out.
+            WiredMoveCarryHelper.suppressStatusComposer(rider, 2000);
+
+            assertFalse(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+            assertEquals(List.of(rider), WiredMoveCarryHelper.ridersToAnnounce(List.of(rider)));
+
+            // The next ride tick holds the sitter again.
+            WiredMoveCarryHelper.suppressStatusComposer(rider, 2000);
+            assertTrue(WiredMoveCarryHelper.shouldSuppressStatusComposer(rider));
+        } finally {
+            WiredMoveCarryHelper.clearStatusComposerSuppression(rider);
         }
     }
 
@@ -94,10 +157,14 @@ class WiredMoveCarrySeatedTest {
         }
 
         private RoomUnit unit(int id, int x, int y, RoomUnitStatus status) {
+            return this.unit(id, x, y, status, RoomUnitType.USER);
+        }
+
+        private RoomUnit unit(int id, int x, int y, RoomUnitStatus status, RoomUnitType type) {
             RoomUnit unit = mock(RoomUnit.class);
             RoomTile tile = new RoomTile((short) x, (short) y, (short) 0, RoomTileState.OPEN, true);
             when(unit.getId()).thenReturn(id);
-            when(unit.getRoomUnitType()).thenReturn(RoomUnitType.USER);
+            when(unit.getRoomUnitType()).thenReturn(type);
             when(unit.getCurrentLocation()).thenReturn(tile);
             when(unit.isInRoom()).thenReturn(true);
             when(unit.getX()).thenReturn((short) x);

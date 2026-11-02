@@ -26,6 +26,25 @@ class WiredMovementsReturnedFurniTest {
     }
 
     @Test
+    void theUsersAReturnedFurniCarriedStayWithIt() {
+        WiredMovementsComposer.MovementData up = WiredMovementsComposer.furniMovement(
+                7, 1, 1, 1, 1, 0.0, 0.5, 0, 2000, 0, WiredMovementsComposer.FURNI_ANCHOR_NONE, 0);
+        WiredMovementsComposer.MovementData down = WiredMovementsComposer.furniMovement(
+                7, 1, 1, 1, 1, 0.5, 0.0, 0, 2000, 0, WiredMovementsComposer.FURNI_ANCHOR_NONE, 0);
+        WiredMovementsComposer.MovementData riderUp =
+                WiredMovementsComposer.userSlideMovement(3, 1, 1, 1, 1, 0.0, 0.5, 2, 2, 2000);
+        WiredMovementsComposer.MovementData riderDown =
+                WiredMovementsComposer.userSlideMovement(3, 1, 1, 1, 1, 0.5, 0.0, 2, 2, 2000);
+        WiredMovementsComposer.MovementData other =
+                WiredMovementsComposer.userSlideMovement(4, 2, 1, 3, 1, 0.0, 0.0, 2, 2, 500);
+
+        List<WiredMovementsComposer.MovementData> kept = WiredMovementsComposer.withoutReturnedFurni(
+                List.of(up, riderUp, down, riderDown, other), Set.of(7), Map.of(7, 0));
+
+        assertEquals(List.of(other), kept);
+    }
+
+    @Test
     void aTurnedFurniAndFurniMovedByOtherFiringsKeepTheirEntries() {
         List<WiredMovementsComposer.MovementData> turned = List.of(move(7, 1, 2, 2), move(7, 2, 1, 2));
         List<WiredMovementsComposer.MovementData> chained = List.of(move(9, 1, 2, 0), move(9, 2, 1, 0));

@@ -14612,8 +14612,8 @@
       "header": 793,
       "java": {
         "symbol": "IsFirstLoginOfDayComposer",
-        "className": "UnknownComposer4",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/UnknownComposer4.java"
+        "className": "IsFirstLoginOfDayComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/IsFirstLoginOfDayComposer.java"
       },
       "typescript": {
         "symbol": "FIRST_LOGIN_OF_DAY",
@@ -27500,8 +27500,8 @@
       "header": 1452,
       "java": {
         "symbol": "BuildersClubExpiredComposer",
-        "className": "BuildersClubExpiredComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/BuildersClubExpiredComposer.java"
+        "className": "BuildersClubSubscriptionStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/BuildersClubSubscriptionStatusComposer.java"
       },
       "typescript": {
         "symbol": "BUILDERS_CLUB_SUBSCRIPTION",
@@ -29740,8 +29740,8 @@
       "header": 4000,
       "java": {
         "symbol": "ErrorLoginComposer",
-        "className": "ErrorLoginComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/ErrorLoginComposer.java"
+        "className": "DisconnectReasonComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/handshake/DisconnectReasonComposer.java"
       },
       "typescript": {
         "symbol": "DISCONNECT_REASON",

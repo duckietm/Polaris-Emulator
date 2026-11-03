@@ -106,8 +106,11 @@ final class JavaPacketRegistry {
             discovered.add(new RegisteredPacket(Direction.CLIENT_TO_SERVER, header, symbol.get(), source));
         }
 
+        // A composer is found by the header it writes. Most live under outgoing; IsFirstLoginOfDayComposer sits in the
+        // incoming package (its full name is plugin ABI), so incoming is read too.
         Path outgoingRoot = javaSourceRoot.resolve("com/eu/habbo/messages/outgoing");
-        try (Stream<Path> files = Files.walk(outgoingRoot)) {
+        Path incomingRoot = javaSourceRoot.resolve("com/eu/habbo/messages/incoming");
+        try (Stream<Path> files = Stream.concat(Files.walk(outgoingRoot), Files.walk(incomingRoot))) {
             for (Path source : files.filter(path -> path.toString().endsWith(".java"))
                     .sorted()
                     .toList()) {

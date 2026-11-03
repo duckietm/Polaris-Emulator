@@ -1,14 +1,17 @@
 package com.eu.habbo.messages.outgoing.unknown;
 
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.handshake.IsFirstLoginOfDayComposer;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.Outgoing;
 
+/**
+ * Header 793 is sent by {@link IsFirstLoginOfDayComposer}; this class sent the same packet with {@code false}. It stays
+ * only for plugins that may still use it.
+ */
+@Deprecated
 public class UnknownComposer4 extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
-        this.response.init(Outgoing.IsFirstLoginOfDayComposer);
-        this.response.appendBoolean(false); //Think something related to promo. Not sure though.
-        return this.response;
+        return new IsFirstLoginOfDayComposer(false).compose();
     }
 }

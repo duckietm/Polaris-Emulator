@@ -7,14 +7,15 @@ import com.eu.habbo.messages.ServerMessage;
 
 public class TestCommand extends Command {
     public TestCommand() {
-        super("acc_debug", new String[]{"test"});
+        super("acc_debug", new String[] {"test"});
     }
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         // The check read "!= null", so the command never ran for anyone.
-        if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL) || !Emulator.debugging)
-            return false;
+        if (gameClient.getHabbo() == null
+                || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)
+                || !Emulator.debugging) return false;
 
         if (params.length < 2) return false;
 

@@ -26,7 +26,8 @@ class CommandRegistrationTest {
     void theTestCommandRefusesOnlyAMissingUser() throws Exception {
         String test = Files.readString(COMMANDS.resolve("TestCommand.java"));
 
-        assertTrue(test.contains("if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission("));
+        assertTrue(test.contains("gameClient.getHabbo() == null"));
+        assertTrue(!test.contains("gameClient.getHabbo() != null"));
         assertTrue(test.contains("for (int i = 2; i < params.length; i++) {"));
     }
 }

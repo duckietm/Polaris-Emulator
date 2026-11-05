@@ -414,6 +414,7 @@ public class CommandHandler {
         addCommand(new RoomCreditsCommand());
         addCommand(new RoomDanceCommand());
         addCommand(new RoomEffectCommand());
+        addCommand(new RoomGiftCommand());
         addCommand(new RoomSpecialEffectCommand());
         addCommand(new RoomItemCommand());
         addCommand(new RoomKickCommand());

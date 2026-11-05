@@ -7,19 +7,29 @@ import com.eu.habbo.messages.ServerMessage;
 
 public class TestCommand extends Command {
     public TestCommand() {
-        super("acc_debug", new String[]{"test"});
+        super("acc_debug", new String[] {"test"});
     }
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        if (gameClient.getHabbo() != null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL) || !Emulator.debugging)
-            return false;
+        // The check read "!= null", so the command never ran for anyone.
+        if (gameClient.getHabbo() == null
+                || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)
+                || !Emulator.debugging) return false;
 
-        int header = Integer.parseInt(params[1]);
+        if (params.length < 2) return false;
+
+        int header;
+        try {
+            header = Integer.parseInt(params[1]);
+        } catch (NumberFormatException e) {
+            return false;
+        }
 
         ServerMessage message = new ServerMessage(header);
 
-        for (int i = 1; i < params.length; i++) {
+        // params[1] is the header; the fields follow it.
+        for (int i = 2; i < params.length; i++) {
             String[] data = params[i].split(":");
 
             if (data[0].equalsIgnoreCase("b")) {

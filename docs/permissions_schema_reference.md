@@ -33,9 +33,9 @@ Example:
 
 Relevant runtime files:
 
-- `Arcturus-Morningstar-Extended/Emulator/src/main/java/com/eu/habbo/habbohotel/permissions/PermissionsManager.java:45`
-- `Arcturus-Morningstar-Extended/Emulator/src/main/java/com/eu/habbo/habbohotel/permissions/Rank.java:71`
-- `Arcturus-Morningstar-Extended/Emulator/src/main/java/com/eu/habbo/habbohotel/modtool/ModToolManager.java:57`
+- `Arcturus-Morningstar-Extended/Emulator/src/main/java/polaris/hotel/permissions/PermissionsManager.java:45`
+- `Arcturus-Morningstar-Extended/Emulator/src/main/java/polaris/hotel/permissions/Rank.java:71`
+- `Arcturus-Morningstar-Extended/Emulator/src/main/java/polaris/hotel/modtool/ModToolManager.java:57`
 
 ## Tables
 

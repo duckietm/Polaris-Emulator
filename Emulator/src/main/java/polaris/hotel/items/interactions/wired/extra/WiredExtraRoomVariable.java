@@ -1,0 +1,255 @@
+package polaris.hotel.items.interactions.wired.extra;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.wired.WiredLargePayload;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.rooms.variables.RoomWiredVariableCatalog;
+import polaris.hotel.wired.arrays.WiredArrayDefinition;
+import polaris.hotel.wired.arrays.WiredArrayDefinitionState;
+import polaris.hotel.wired.arrays.WiredArrayDefinitionSupport;
+import polaris.hotel.wired.arrays.WiredArrayVariableDefinition;
+import polaris.hotel.wired.arrays.WiredArrayVariableType;
+import polaris.hotel.wired.arrays.WiredVariableDefinitionData;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredRoomStats;
+import polaris.messages.ServerMessage;
+import polaris.messages.incoming.wired.WiredSaveException;
+import polaris.messages.outgoing.wired.WiredAllVariablesDiffComposer;
+
+public class WiredExtraRoomVariable extends InteractionWiredExtra
+        implements WiredArrayVariableDefinition, WiredLargePayload {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredExtraRoomVariable.class);
+    public static final int CODE = 72;
+    /** AIR wired context GLOBAL_VARIABLE_INFO_AND_VALUE: the variable and its current value. */
+    private static final int CONTEXT_GLOBAL_VARIABLE_INFO_AND_VALUE = 3;
+
+    public static final int AVAILABILITY_ROOM_ACTIVE = 1;
+    public static final int AVAILABILITY_PERMANENT = 10;
+    public static final int AVAILABILITY_SHARED = 11;
+
+    private String variableName = "";
+    private int availability = AVAILABILITY_ROOM_ACTIVE;
+    private final WiredArrayDefinitionState array = new WiredArrayDefinitionState();
+
+    public WiredExtraRoomVariable(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredExtraRoomVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        WiredVariableDefinitionData definitionData;
+        try {
+            definitionData = WiredArrayDefinitionSupport.readEditorData(settings.getStringParam());
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+        String normalizedName = WiredVariableNameValidator.normalizeForSave(definitionData.name);
+
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        if (room == null) {
+            throw new WiredSaveException("Room not found");
+        }
+
+        WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
+        int[] intParams = settings.getIntParams();
+        int nextAvailability = normalizeAvailability((intParams.length > 0) ? intParams[0] : AVAILABILITY_ROOM_ACTIVE);
+
+        if ((nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED)
+                && !WiredRoomStats.canBecomePermanent(room, this)) {
+            throw new WiredSaveException(WiredRoomStats.PERMANENT_LIMIT_ERROR);
+        }
+
+        WiredArrayDefinition nextArrayDefinition;
+        try {
+            nextArrayDefinition =
+                    WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
+
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+
+        try {
+            room.getArrayVariableManager()
+                    .updateDefinition(
+                            this,
+                            nextArrayDefinition,
+                            nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED,
+                            () -> {
+                                this.variableName = normalizedName;
+                                this.array.assign(nextArrayDefinition);
+                                this.availability = nextAvailability;
+
+                                room.getRoomVariableManager().handleDefinitionUpdated(this);
+                            });
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+        return true;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.variableName, this.availability, this.array.persisted(this.variableName)));
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        int currentValue = (room != null) ? room.getRoomVariableManager().getCurrentValue(this.getId()) : 0;
+
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.array.editorString(this.variableName));
+        // AIR (GlobalVariable): [availability]; the inspection's current value comes in the wired context.
+        message.appendInt(1);
+        message.appendInt(this.availability);
+        message.appendInt(0);
+        message.appendInt(CODE);
+        message.appendInt(0);
+        message.appendInt(0);
+
+        RoomWiredVariableCatalog.Variable variable = (room != null)
+                ? RoomWiredVariableCatalog.byId(RoomWiredVariableCatalog.variables(room))
+                        .get(RoomWiredVariableCatalog.variableId(RoomWiredVariableCatalog.TARGET_ROOM, this.getId()))
+                : null;
+        if (variable != null) {
+            message.appendInt(1);
+            message.appendInt(CONTEXT_GLOBAL_VARIABLE_INFO_AND_VALUE);
+            WiredAllVariablesDiffComposer.appendVariable(message, variable);
+            message.appendInt(currentValue);
+        }
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
+
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
+
+            if (data != null) {
+                this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
+                this.availability = normalizeAvailability(data.availability);
+                if (data.definition != null) {
+                    this.array.restore(
+                            data.definition,
+                            LOGGER,
+                            "room",
+                            this.getId(),
+                            room == null ? this.getRoomId() : room.getId());
+                }
+            }
+
+            return;
+        }
+
+        this.variableName = WiredVariableNameValidator.normalizeLegacy(wiredData);
+    }
+
+    @Override
+    public void onPickUp() {
+        this.variableName = "";
+        this.availability = AVAILABILITY_ROOM_ACTIVE;
+        this.array.clear();
+    }
+
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
+
+    @Override
+    public boolean hasConfiguration() {
+        return true;
+    }
+
+    public String getVariableName() {
+        return this.variableName;
+    }
+
+    public boolean hasValue() {
+        return true;
+    }
+
+    public int getAvailability() {
+        return this.availability;
+    }
+
+    public boolean isPermanentAvailability() {
+        return this.availability == AVAILABILITY_PERMANENT || this.availability == AVAILABILITY_SHARED;
+    }
+
+    public boolean isSharedAvailability() {
+        return this.availability == AVAILABILITY_SHARED;
+    }
+
+    @Override
+    public WiredArrayVariableType getArrayVariableType() {
+        return WiredArrayVariableType.ROOM;
+    }
+
+    @Override
+    public WiredArrayDefinition getArrayDefinition() {
+        return this.array.definition();
+    }
+
+    @Override
+    public boolean isArrayPermanent() {
+        return this.isPermanentAvailability();
+    }
+
+    @Override
+    public boolean isArrayUnavailable() {
+        return this.array.isUnavailable();
+    }
+
+    @Override
+    public boolean isArrayShared() {
+        return this.isSharedAvailability();
+    }
+
+    private static int normalizeAvailability(int value) {
+        if (value == AVAILABILITY_PERMANENT || value == AVAILABILITY_SHARED) {
+            return value;
+        }
+
+        return AVAILABILITY_ROOM_ACTIVE;
+    }
+
+    static class JsonData {
+        String variableName;
+        int availability;
+        WiredVariableDefinitionData definition;
+
+        JsonData(String variableName, int availability, WiredVariableDefinitionData definition) {
+            this.variableName = variableName;
+            this.availability = availability;
+            this.definition = definition;
+        }
+    }
+}

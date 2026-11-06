@@ -1,0 +1,50 @@
+package polaris.messages.incoming.housekeeping;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class HousekeepingAuditCoverageContractTest {
+    private static final List<String> SENSITIVE_HANDLERS = List.of(
+            "HousekeepingBanUserEvent.java",
+            "HousekeepingMuteUserEvent.java",
+            "HousekeepingGiveCreditsEvent.java",
+            "HousekeepingGiveCurrencyEvent.java",
+            "HousekeepingResetUserPasswordEvent.java",
+            "HousekeepingSetUserRankEvent.java",
+            "HousekeepingSetHcSubscriptionEvent.java",
+            "HousekeepingTradeLockUserEvent.java",
+            "HousekeepingGrantItemEvent.java",
+            "HousekeepingTransferRoomOwnershipEvent.java",
+            "HousekeepingSendHotelAlertEvent.java",
+            "HousekeepingDeleteRoomEvent.java",
+            "HousekeepingForceDisconnectUserEvent.java",
+            "HousekeepingKickAllFromRoomEvent.java",
+            "HousekeepingKickUserEvent.java",
+            "HousekeepingMuteRoomEvent.java",
+            "HousekeepingRoomStateEvent.java",
+            "HousekeepingSaveRoomSettingsEvent.java",
+            "HousekeepingReloadEvent.java",
+            "HousekeepingRevokeBanEvent.java",
+            "HousekeepingMaintenanceEvent.java",
+            "HousekeepingWordFilterEvent.java",
+            "HousekeepingSetPermissionEvent.java",
+            "HousekeepingUserNoteEvent.java",
+            "HousekeepingLockdownEvent.java",
+            "HousekeepingUnbanUserEvent.java");
+
+    @Test
+    void sensitiveHousekeepingActionsWriteAuditEntries() throws Exception {
+        Path base = Path.of("src/main/java/polaris/messages/incoming/housekeeping");
+
+        for (String handler : SENSITIVE_HANDLERS) {
+            String source = Files.readString(base.resolve(handler));
+            assertTrue(
+                    source.contains("HousekeepingAuditLog.log"),
+                    handler + " must append a housekeeping audit log entry after successful privileged actions");
+        }
+    }
+}

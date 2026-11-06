@@ -1,0 +1,822 @@
+package polaris.hotel.wired.core;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import polaris.hotel.bots.Bot;
+import polaris.hotel.games.Game;
+import polaris.hotel.games.GamePlayer;
+import polaris.hotel.games.GameTeam;
+import polaris.hotel.games.GameTeamColors;
+import polaris.hotel.games.battlebanzai.BattleBanzaiGame;
+import polaris.hotel.games.freeze.FreezeGame;
+import polaris.hotel.games.wired.WiredGame;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraTextOutputFurniName;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraTextOutputGlobal;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraTextOutputUsername;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraTextOutputVariable;
+import polaris.hotel.pets.Pet;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.rooms.RoomUnitType;
+import polaris.hotel.rooms.variables.UserVariableHolders;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.arrays.WiredArrayRuntimeSupport;
+import polaris.hotel.wired.arrays.WiredArrayVariableDefinition;
+import polaris.hotel.wired.arrays.WiredArrayVariableType;
+import polaris.hotel.wired.arrays.WiredArrayView;
+
+public final class WiredTextPlaceholderUtil {
+    private static final char PRESERVED_SPACE = '\u00A0';
+    private static final int MAX_PLACEHOLDER_EXPANSION_LENGTH = 16384;
+    private static final int MAX_PLACEHOLDER_REPLACEMENTS = 512;
+    private static final int MAX_GLOBAL_PLACEHOLDERS = 64;
+
+    private WiredTextPlaceholderUtil() {}
+
+    public static String applyUsernamePlaceholders(WiredContext ctx, String text) {
+        if (ctx == null || text == null || text.isEmpty()) {
+            return text;
+        }
+
+        text = applyTriggerText(ctx, text);
+        text = applyLinkValues(ctx, text);
+
+        Room room = ctx.room();
+        UserItem triggerItem = ctx.triggerItem();
+
+        if (room == null || room.getRoomSpecialTypes() == null) {
+            return text;
+        }
+
+        Collection<InteractionWiredExtra> extras = (triggerItem != null)
+                ? room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY())
+                : null;
+        List<InteractionWiredExtra> stackExtras =
+                (extras != null && !extras.isEmpty()) ? WiredExecutionOrderUtil.sort(extras) : List.of();
+        List<WiredExtraTextOutputGlobal> globals =
+                text.contains("$(") ? collectGlobalPlaceholders(room) : Collections.emptyList();
+        java.util.Map<String, String> carried = ctx.event().getCarriedPlaceholders();
+        if (stackExtras.isEmpty() && globals.isEmpty() && carried.isEmpty()) {
+            return text;
+        }
+
+        String resolvedText = text;
+
+        int replacementCount = 0;
+
+        for (InteractionWiredExtra extra : stackExtras) {
+            if (extra instanceof WiredExtraTextOutputUsername) {
+                WiredExtraTextOutputUsername usernameExtra = (WiredExtraTextOutputUsername) extra;
+                String placeholderToken = usernameExtra.getPlaceholderToken();
+
+                if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
+                    resolvedText = replaceWithBudget(
+                            resolvedText, placeholderToken, buildUsernameReplacement(ctx, usernameExtra));
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
+                }
+
+                continue;
+            }
+
+            if (extra instanceof WiredExtraTextOutputFurniName) {
+                WiredExtraTextOutputFurniName furniExtra = (WiredExtraTextOutputFurniName) extra;
+                String placeholderToken = furniExtra.getPlaceholderToken();
+
+                if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
+                    resolvedText = replaceWithBudget(
+                            resolvedText, placeholderToken, buildFurniNameReplacement(ctx, furniExtra));
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
+                }
+
+                continue;
+            }
+
+            if (extra instanceof WiredExtraTextOutputVariable) {
+                WiredExtraTextOutputVariable variableExtra = (WiredExtraTextOutputVariable) extra;
+                String placeholderToken = variableExtra.getPlaceholderToken();
+
+                if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
+                    String replacement = buildVariableReplacement(ctx, variableExtra);
+                    // null: the variable's box was picked up meanwhile, and the placeholder stays as written.
+                    if (replacement != null) {
+                        resolvedText = replaceWithBudget(resolvedText, placeholderToken, replacement);
+                    }
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
+                }
+            }
+        }
+
+        // Then the sender's, as they were when the signal or stack call went out (official).
+        for (java.util.Map.Entry<String, String> placeholder : carried.entrySet()) {
+            if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                break;
+            }
+
+            if (resolvedText.contains(placeholder.getKey())) {
+                resolvedText = replaceWithBudget(resolvedText, placeholder.getKey(), placeholder.getValue());
+                replacementCount++;
+            }
+        }
+
+        for (WiredExtraTextOutputGlobal global : globals) {
+            if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                break;
+            }
+
+            String placeholderToken = global.getPlaceholderToken();
+            if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
+                resolvedText = replaceWithBudget(resolvedText, placeholderToken, global.resolveText(room));
+                replacementCount++;
+            }
+        }
+
+        return preserveRepeatedSpaces(resolvedText);
+    }
+
+    /** At most this many placeholders travel with a signal or a stack call. */
+    static final int MAX_CARRIED_PLACEHOLDERS = 50;
+
+    /**
+     * The placeholders a signal or stack call hands to the stacks it starts: this stack's own
+     * (username, furni name and variable outputs), as they read now, then the ones it was handed
+     * itself. The receiving stack applies its own first and these after them.
+     */
+    public static java.util.Map<String, String> carriedPlaceholders(WiredContext ctx) {
+        java.util.LinkedHashMap<String, String> carried = new java.util.LinkedHashMap<>();
+        if (ctx == null) {
+            return carried;
+        }
+
+        Room room = ctx.room();
+        UserItem triggerItem = ctx.triggerItem();
+        if (room != null && room.getRoomSpecialTypes() != null && triggerItem != null) {
+            Collection<InteractionWiredExtra> extras =
+                    room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+            List<InteractionWiredExtra> stackExtras =
+                    (extras != null && !extras.isEmpty()) ? WiredExecutionOrderUtil.sort(extras) : List.of();
+
+            for (InteractionWiredExtra extra : stackExtras) {
+                if (carried.size() >= MAX_CARRIED_PLACEHOLDERS) {
+                    break;
+                }
+
+                if (extra instanceof WiredExtraTextOutputUsername username) {
+                    putPlaceholder(
+                            carried, username.getPlaceholderToken(), () -> buildUsernameReplacement(ctx, username));
+                } else if (extra instanceof WiredExtraTextOutputFurniName furni) {
+                    putPlaceholder(carried, furni.getPlaceholderToken(), () -> buildFurniNameReplacement(ctx, furni));
+                } else if (extra instanceof WiredExtraTextOutputVariable variable) {
+                    putPlaceholder(
+                            carried, variable.getPlaceholderToken(), () -> buildVariableReplacement(ctx, variable));
+                }
+            }
+        }
+
+        for (java.util.Map.Entry<String, String> inherited :
+                ctx.event().getCarriedPlaceholders().entrySet()) {
+            if (carried.size() >= MAX_CARRIED_PLACEHOLDERS) {
+                break;
+            }
+            carried.putIfAbsent(inherited.getKey(), inherited.getValue());
+        }
+        return carried;
+    }
+
+    private static void putPlaceholder(
+            java.util.Map<String, String> carried, String token, java.util.function.Supplier<String> text) {
+        if (token == null || token.isEmpty() || carried.containsKey(token)) {
+            return;
+        }
+        String resolved = text.get();
+        if (resolved != null) {
+            carried.put(token, resolved);
+        }
+    }
+
+    /** The official {@code $(trigger_text)}: the whole message that fired a User Says Keyword stack. */
+    public static final String TRIGGER_TEXT_TOKEN = "$(trigger_text)";
+
+    static String applyTriggerText(WiredContext ctx, String text) {
+        if (!text.contains(TRIGGER_TEXT_TOKEN)) return text;
+
+        String said = (ctx.eventType() == WiredEvent.Type.USER_SAYS
+                        || ctx.eventType() == WiredEvent.Type.LINK_MESSAGE_RECEIVED)
+                ? ctx.event().getText().orElse("")
+                : "";
+        return replaceWithBudget(text, TRIGGER_TEXT_TOKEN, said);
+    }
+
+    /** The placeholders a Receive Link Dataframe trigger filled from the dataframe that started the stack. */
+    static String applyLinkValues(WiredContext ctx, String text) {
+        if (ctx.eventType() != WiredEvent.Type.LINK_DATAFRAME_RECEIVED || !text.contains("$(")) return text;
+
+        String resolved = text;
+        for (java.util.Map.Entry<String, String> value :
+                ctx.event().getLinkValues().entrySet()) {
+            String token = "$(" + value.getKey() + ")";
+            if (resolved.contains(token)) {
+                resolved = replaceWithBudget(resolved, token, value.getValue());
+            }
+            if (resolved.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH) break;
+        }
+        return resolved;
+    }
+
+    /** The room's global placeholders by item id, capped; a stack's own placeholders are applied first. */
+    static List<WiredExtraTextOutputGlobal> collectGlobalPlaceholders(Room room) {
+        List<WiredExtraTextOutputGlobal> result = new ArrayList<>();
+
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+            if (extra instanceof WiredExtraTextOutputGlobal global
+                    && !global.getPlaceholderName().isEmpty()) {
+                result.add(global);
+            }
+        }
+
+        result.sort(Comparator.comparingInt(WiredExtraTextOutputGlobal::getId));
+        return (result.size() > MAX_GLOBAL_PLACEHOLDERS) ? result.subList(0, MAX_GLOBAL_PLACEHOLDERS) : result;
+    }
+
+    private static boolean shouldStopPlaceholderExpansion(String resolvedText, int replacementCount) {
+        return replacementCount >= MAX_PLACEHOLDER_REPLACEMENTS
+                || (resolvedText != null && resolvedText.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH);
+    }
+
+    private static String replaceWithBudget(String input, String placeholderToken, String replacement) {
+        if (input == null || input.isEmpty() || placeholderToken == null || placeholderToken.isEmpty()) {
+            return input;
+        }
+
+        if (replacement == null) {
+            replacement = "";
+        }
+
+        int matchIndex = input.indexOf(placeholderToken);
+        if (matchIndex < 0) {
+            return input;
+        }
+
+        StringBuilder builder = new StringBuilder(Math.min(MAX_PLACEHOLDER_EXPANSION_LENGTH, input.length()));
+        int searchIndex = 0;
+
+        while (matchIndex >= 0) {
+            builder.append(input, searchIndex, matchIndex);
+
+            int remainingCapacity = MAX_PLACEHOLDER_EXPANSION_LENGTH - builder.length();
+            if (remainingCapacity <= 0) {
+                return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+            }
+
+            if (replacement.length() <= remainingCapacity) {
+                builder.append(replacement);
+            } else {
+                builder.append(replacement, 0, remainingCapacity);
+                return builder.toString();
+            }
+
+            searchIndex = matchIndex + placeholderToken.length();
+            if (builder.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH) {
+                return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+            }
+
+            matchIndex = input.indexOf(placeholderToken, searchIndex);
+        }
+
+        int remainingCapacity = MAX_PLACEHOLDER_EXPANSION_LENGTH - builder.length();
+        if (remainingCapacity <= 0) {
+            return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+        }
+
+        int tailLength = Math.min(input.length() - searchIndex, remainingCapacity);
+        builder.append(input, searchIndex, searchIndex + tailLength);
+        return builder.toString();
+    }
+
+    private static String preserveRepeatedSpaces(String text) {
+        if (text == null || text.length() < 2) {
+            return text;
+        }
+
+        StringBuilder result = new StringBuilder(text.length());
+        int index = 0;
+        while (index < text.length()) {
+            char currentChar = text.charAt(index);
+            if (currentChar != ' ') {
+                result.append(currentChar);
+                index++;
+                continue;
+            }
+
+            int startIndex = index;
+            while (index < text.length() && text.charAt(index) == ' ') {
+                index++;
+            }
+
+            int spaceCount = index - startIndex;
+            if (spaceCount == 1) {
+                result.append(' ');
+                continue;
+            }
+
+            for (int spaceIndex = 0; spaceIndex < spaceCount; spaceIndex++) {
+                result.append(PRESERVED_SPACE);
+            }
+        }
+
+        return result.toString();
+    }
+
+    public static boolean requiresActor(Room room, UserItem stackItem) {
+        if (room == null || stackItem == null || room.getRoomSpecialTypes() == null) {
+            return false;
+        }
+
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(stackItem.getX(), stackItem.getY());
+        if (extras == null || extras.isEmpty()) {
+            return false;
+        }
+
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraTextOutputUsername) {
+                int userSource = ((WiredExtraTextOutputUsername) extra).getUserSource();
+                if (userSource == WiredSourceUtil.SOURCE_TRIGGER || userSource == WiredSourceUtil.SOURCE_CLICKED_USER) {
+                    return true;
+                }
+            }
+
+            if (extra instanceof WiredExtraTextOutputVariable
+                    && ((WiredExtraTextOutputVariable) extra).requiresActor()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String buildUsernameReplacement(WiredContext ctx, WiredExtraTextOutputUsername extra) {
+        List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, extra.getUserSource());
+        if (users.isEmpty()) {
+            return "";
+        }
+
+        LinkedHashSet<Integer> seenUserIds = new LinkedHashSet<>();
+        List<String> usernames = new ArrayList<>();
+
+        for (RoomUnit unit : users) {
+            if ((unit == null) || !seenUserIds.add(unit.getId())) {
+                continue;
+            }
+
+            String roomUnitName = getRoomUnitName(ctx.room(), unit);
+            if (roomUnitName == null || roomUnitName.trim().isEmpty()) {
+                continue;
+            }
+
+            usernames.add(roomUnitName);
+        }
+
+        if (usernames.isEmpty()) {
+            return "";
+        }
+
+        if (extra.getPlaceholderType() == WiredExtraTextOutputUsername.TYPE_MULTIPLE) {
+            return String.join(extra.getDelimiter(), usernames);
+        }
+
+        return usernames.get(0);
+    }
+
+    private static String buildFurniNameReplacement(WiredContext ctx, WiredExtraTextOutputFurniName extra) {
+        List<UserItem> items;
+        if (extra.getFurniSource() == WiredSourceUtil.SOURCE_SELECTOR) {
+            items = WiredSourceUtil.resolveSelectorItems(ctx, true);
+        } else {
+            items = WiredSourceUtil.resolveItems(ctx, extra.getFurniSource(), extra.getItems());
+        }
+
+        if (items.isEmpty()) {
+            return "";
+        }
+
+        LinkedHashSet<Integer> seenItemIds = new LinkedHashSet<>();
+        List<String> furniNames = new ArrayList<>();
+
+        for (UserItem item : items) {
+            if ((item == null) || (item.getBaseItem() == null) || !seenItemIds.add(item.getId())) {
+                continue;
+            }
+
+            String furniName = item.getBaseItem().getDisplayName();
+            if (furniName == null || furniName.trim().isEmpty()) {
+                furniName = item.getBaseItem().getName();
+            }
+
+            if (furniName == null || furniName.trim().isEmpty()) {
+                continue;
+            }
+
+            furniNames.add(furniName);
+        }
+
+        if (furniNames.isEmpty()) {
+            return "";
+        }
+
+        if (extra.getPlaceholderType() == WiredExtraTextOutputFurniName.TYPE_MULTIPLE) {
+            return String.join(extra.getDelimiter(), furniNames);
+        }
+
+        return furniNames.get(0);
+    }
+
+    private static String buildVariableReplacement(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        if (definitionPickedUp(ctx.room(), extra)) return null;
+        WiredArrayVariableDefinition arrayDefinition = extra.getArrayDefinition(ctx.room());
+        if (arrayDefinition != null) return buildArrayReplacement(ctx, extra, arrayDefinition);
+        List<String> values =
+                switch (extra.getTargetType()) {
+                    case WiredExtraTextOutputVariable.TARGET_FURNI -> collectFurniVariableValues(ctx, extra);
+                    case WiredExtraTextOutputVariable.TARGET_CONTEXT -> collectContextVariableValues(ctx, extra);
+                    case WiredExtraTextOutputVariable.TARGET_ROOM -> collectRoomVariableValues(ctx, extra);
+                    default -> collectUserVariableValues(ctx, extra);
+                };
+
+        if (values.isEmpty()) {
+            return "";
+        }
+
+        if (extra.getPlaceholderType() == WiredExtraTextOutputVariable.TYPE_MULTIPLE) {
+            return String.join(extra.getDelimiter(), values);
+        }
+
+        return values.get(0);
+    }
+
+    /**
+     * Whether the variable the output shows lost its box: a delayed message then leaves the placeholder as written
+     * (observed on AIR WIN63-202610201032). An imported or referenced variable still has a definition.
+     */
+    private static boolean definitionPickedUp(Room room, WiredExtraTextOutputVariable extra) {
+        int id = extra.getVariableItemId();
+        if (room == null || id <= 0 || room.getUserItem(id) != null) return false;
+        if (extra.getTargetType() == WiredExtraTextOutputVariable.TARGET_CONTEXT) {
+            return WiredContextVariableSupport.getDefinitionInfo(room, id) == null;
+        }
+        return room.getUserVariableManager().getDefinitionInfo(id) == null
+                && room.getFurniVariableManager().getDefinitionInfo(id) == null
+                && room.getRoomVariableManager().getDefinitionInfo(id) == null;
+    }
+
+    private static String buildArrayReplacement(
+            WiredContext ctx, WiredExtraTextOutputVariable extra, WiredArrayVariableDefinition definition) {
+        int source = definition.getArrayVariableType() == WiredArrayVariableType.FURNI
+                ? extra.getFurniSource()
+                : extra.getUserSource();
+        List<WiredArrayRuntimeSupport.Owner> owners =
+                WiredArrayRuntimeSupport.resolveOwners(ctx, extra.getItems(), definition, source);
+        List<String> values = new ArrayList<>();
+        for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            Integer index = WiredArrayRuntimeSupport.resolveIndex(
+                    ctx, extra.getItems(), extra.getArrayAddress(), definition, owner);
+            WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            Long fieldValue =
+                    index == null || value == null ? null : value.readField(index, extra.getArrayAddress().fieldId);
+            if (fieldValue != null) {
+                values.add(WiredVariableTextConnectorSupport.toArrayText(
+                        ctx.room(), definition.getId(), extra.getArrayAddress().fieldId, fieldValue));
+            }
+        }
+        if (values.isEmpty()) return "";
+        return extra.getPlaceholderType() == WiredExtraTextOutputVariable.TYPE_MULTIPLE
+                ? String.join(extra.getDelimiter(), values)
+                : values.get(0);
+    }
+
+    private static List<String> collectUserVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        Room room = ctx.room();
+        List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, extra.getUserSource());
+        if (room == null || users.isEmpty()) {
+            return List.of();
+        }
+
+        LinkedHashSet<Integer> seenUserIds = new LinkedHashSet<>();
+        List<String> values = new ArrayList<>();
+
+        for (RoomUnit roomUnit : users) {
+            if (roomUnit == null || !seenUserIds.add(roomUnit.getId())) {
+                continue;
+            }
+
+            String value = resolveUserVariableValue(room, roomUnit, extra);
+            if (value != null && !value.isEmpty()) {
+                values.add(value);
+            }
+        }
+
+        return values;
+    }
+
+    private static List<String> collectFurniVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        Room room = ctx.room();
+        if (room == null) {
+            return List.of();
+        }
+
+        extra.refresh(room);
+
+        List<UserItem> items = (extra.getFurniSource() == WiredSourceUtil.SOURCE_SELECTOR)
+                ? WiredSourceUtil.resolveSelectorItems(ctx, true)
+                : WiredSourceUtil.resolveItems(ctx, extra.getFurniSource(), extra.getItems());
+
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        LinkedHashSet<Integer> seenItemIds = new LinkedHashSet<>();
+        List<String> values = new ArrayList<>();
+
+        for (UserItem item : items) {
+            if (item == null || !seenItemIds.add(item.getId())) {
+                continue;
+            }
+
+            String value = resolveFurniVariableValue(room, item, extra);
+            if (value != null && !value.isEmpty()) {
+                values.add(value);
+            }
+        }
+
+        return values;
+    }
+
+    private static List<String> collectRoomVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        Room room = ctx.room();
+        if (room == null) {
+            return List.of();
+        }
+
+        String value = resolveRoomVariableValue(room, extra);
+        return value == null ? List.of() : List.of(value);
+    }
+
+    private static List<String> collectContextVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        if (ctx == null) {
+            return List.of();
+        }
+
+        String value = resolveContextVariableValue(ctx, extra);
+        return value == null ? List.of() : List.of(value);
+    }
+
+    private static String resolveUserVariableValue(Room room, RoomUnit roomUnit, WiredExtraTextOutputVariable extra) {
+        if (room == null || roomUnit == null) {
+            return null;
+        }
+
+        if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
+            Integer value = readUserInternalValue(
+                    room, roomUnit, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            return value != null ? String.valueOf(value) : null;
+        }
+
+        int holder = UserVariableHolders.of(room, roomUnit);
+        if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, extra.getVariableItemId())) {
+            return null;
+        }
+
+        Integer value = room.getUserVariableManager().getCurrentValue(holder, extra.getVariableItemId());
+        if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
+            return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
+        }
+
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    private static String resolveFurniVariableValue(Room room, UserItem item, WiredExtraTextOutputVariable extra) {
+        if (room == null || item == null) {
+            return null;
+        }
+
+        if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
+            Integer value = readFurniInternalValue(
+                    room, item, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            return value != null ? String.valueOf(value) : null;
+        }
+
+        if (!room.getFurniVariableManager().hasVariable(item.getId(), extra.getVariableItemId())) {
+            return null;
+        }
+
+        Integer value = room.getFurniVariableManager().getCurrentValue(item.getId(), extra.getVariableItemId());
+        if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
+            return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
+        }
+
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    private static String resolveRoomVariableValue(Room room, WiredExtraTextOutputVariable extra) {
+        if (room == null) {
+            return null;
+        }
+
+        if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
+            Integer value = readRoomInternalValue(
+                    room, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            return value != null ? String.valueOf(value) : null;
+        }
+
+        Integer value = room.getRoomVariableManager().getCurrentValue(extra.getVariableItemId());
+        if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
+            return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
+        }
+
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    private static String resolveContextVariableValue(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        if (ctx == null) {
+            return null;
+        }
+
+        if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
+            Long value = WiredInternalVariableSupport.readContextLongValue(
+                    ctx, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            return value != null ? String.valueOf(value) : null;
+        }
+
+        if (!WiredContextVariableSupport.hasVariable(ctx, extra.getVariableItemId())) {
+            return null;
+        }
+
+        Integer value = WiredContextVariableSupport.getCurrentValue(ctx, extra.getVariableItemId());
+        if (extra.getDisplayType(ctx.room()) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
+            return WiredVariableTextConnectorSupport.toText(ctx.room(), extra.getVariableItemId(), value);
+        }
+
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    private static String getRoomUnitName(Room room, RoomUnit roomUnit) {
+        if (room == null || roomUnit == null) {
+            return "";
+        }
+
+        if (roomUnit.getRoomUnitType() == RoomUnitType.USER) {
+            User user = room.getUser(roomUnit);
+            return (user != null && user.getUserInfo() != null)
+                    ? user.getUserInfo().getUsername()
+                    : "";
+        }
+
+        if (roomUnit.getRoomUnitType() == RoomUnitType.BOT) {
+            Bot bot = room.getBot(roomUnit);
+            return (bot != null) ? bot.getName() : "";
+        }
+
+        if (roomUnit.getRoomUnitType() == RoomUnitType.PET) {
+            Pet pet = room.getPet(roomUnit);
+            return (pet != null) ? pet.getName() : "";
+        }
+
+        return "";
+    }
+
+    private static Integer readUserInternalValue(Room room, RoomUnit roomUnit, String key) {
+        return WiredInternalVariableSupport.readUserValue(room, roomUnit, key);
+    }
+
+    private static Integer readFurniInternalValue(Room room, UserItem item, String key) {
+        return WiredInternalVariableSupport.readFurniValue(room, item, key);
+    }
+
+    private static Integer readRoomInternalValue(Room room, String key) {
+        return WiredInternalVariableSupport.readRoomValue(room, key);
+    }
+
+    private static Integer getUserTeamScore(Room room, User user) {
+        if (room == null || user == null || user.getUserInfo().getGamePlayer() == null) {
+            return null;
+        }
+
+        Game game = resolveTeamGame(room, user);
+        GamePlayer gamePlayer = user.getUserInfo().getGamePlayer();
+
+        if (game == null || gamePlayer.getTeamColor() == null) {
+            return gamePlayer.getScore();
+        }
+
+        GameTeam team = game.getTeam(gamePlayer.getTeamColor());
+        return (team != null) ? team.getTotalScore() : gamePlayer.getScore();
+    }
+
+    private static Integer getTeamColorId(int effectId) {
+        TeamEffectData data = getTeamEffectData(effectId);
+        return data == null ? null : data.colorId;
+    }
+
+    private static Integer getTeamTypeId(int effectId) {
+        TeamEffectData data = getTeamEffectData(effectId);
+        return data == null ? null : data.typeId;
+    }
+
+    private static int getTeamMetric(Room room, GameTeamColors color, boolean score) {
+        Game game = resolveTeamGame(room, null);
+        if (game == null || color == null) {
+            return 0;
+        }
+
+        GameTeam team = game.getTeam(color);
+        if (team == null) {
+            return 0;
+        }
+
+        return score ? team.getTotalScore() : team.getMembers().size();
+    }
+
+    private static Game resolveTeamGame(Room room, User user) {
+        if (room == null) {
+            return null;
+        }
+
+        if (user != null && user.getUserInfo() != null && user.getUserInfo().getCurrentGame() != null) {
+            Game game = room.getGame(user.getUserInfo().getCurrentGame());
+            if (game != null) {
+                return game;
+            }
+        }
+
+        Game wiredGame = room.getGame(WiredGame.class);
+        if (wiredGame != null) {
+            return wiredGame;
+        }
+
+        Game freezeGame = room.getGame(FreezeGame.class);
+        if (freezeGame != null) {
+            return freezeGame;
+        }
+
+        return room.getGame(BattleBanzaiGame.class);
+    }
+
+    private static TeamEffectData getTeamEffectData(int effectValue) {
+        if (effectValue <= 0) {
+            return null;
+        }
+
+        if (effectValue >= 223 && effectValue <= 226) {
+            return new TeamEffectData(effectValue - 222, 0);
+        }
+
+        if (effectValue >= 33 && effectValue <= 36) {
+            return new TeamEffectData(effectValue - 32, 1);
+        }
+
+        if (effectValue >= 40 && effectValue <= 43) {
+            return new TeamEffectData(effectValue - 39, 2);
+        }
+
+        return null;
+    }
+
+    private static Integer parseInteger(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static class TeamEffectData {
+        final int colorId;
+        final int typeId;
+
+        TeamEffectData(int colorId, int typeId) {
+            this.colorId = colorId;
+            this.typeId = typeId;
+        }
+    }
+}

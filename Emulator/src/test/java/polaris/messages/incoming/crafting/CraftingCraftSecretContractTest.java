@@ -1,0 +1,41 @@
+package polaris.messages.incoming.crafting;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+
+class CraftingCraftSecretContractTest {
+    private static String source() throws Exception {
+        return Files.readString(
+                Path.of("src/main/java/polaris/messages/incoming/crafting/CraftingCraftSecretEvent.java"));
+    }
+
+    @Test
+    void rejectsInvalidIngredientCountsBeforeReadingItemIds() throws Exception {
+        String source = source().replaceAll("\\s+", "");
+
+        int countRead = source.indexOf("intcount=this.packet.readInt()");
+        int guard = source.indexOf("count<=0||!PacketGuard.isValidIntList(", countRead);
+        int loop = source.indexOf("for(inti=0;i<count;i++)", guard);
+
+        assertTrue(countRead > -1, "secret crafting must read the client supplied ingredient count");
+        assertTrue(guard > countRead, "secret crafting must validate the ingredient count");
+        assertTrue(loop > guard, "ingredient count validation must happen before item id reads");
+    }
+
+    @Test
+    void rejectsDuplicateIngredientItemsBeforeRecipeLookup() throws Exception {
+        String source = source().replaceAll("\\s+", "");
+
+        int setDeclaration = source.indexOf("Set<UserItem>userItems=newLinkedHashSet<>()");
+        int duplicateGuard = source.indexOf("userItem==null||!userItems.add(userItem)", setDeclaration);
+        int recipeLookup = source.indexOf("CraftingReciperecipe=altar.getRecipe(items)", duplicateGuard);
+
+        assertTrue(setDeclaration > -1, "secret crafting should track unique inventory items");
+        assertTrue(duplicateGuard > setDeclaration, "secret crafting must reject duplicate item ids");
+        assertTrue(
+                recipeLookup > duplicateGuard, "duplicate rejection must happen before recipe lookup/reward creation");
+    }
+}

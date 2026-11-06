@@ -1,0 +1,514 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import polaris.Emulator;
+import polaris.WiredCompatibilityDiagnostics;
+import polaris.WiredPlatform;
+import polaris.hotel.items.FurnitureType;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.items.interactions.wired.interfaces.InteractionWiredMatchFurniSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.WiredMatchFurniSetting;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredQuantifier;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.protocol.WiredOfficialQuantifier;
+import polaris.messages.ServerMessage;
+
+public class WiredConditionMatchStatePosition extends InteractionWiredCondition
+        implements InteractionWiredMatchFurniSettings, WiredOfficialQuantifier {
+    protected static final int QUANTIFIER_ALL = 0;
+    protected static final int QUANTIFIER_ANY = 1;
+
+    public static final WiredConditionType type = WiredConditionType.MATCH_SSHOT;
+
+    private Set<WiredMatchFurniSetting> settings;
+
+    private boolean state;
+    private boolean position;
+    private boolean direction;
+    private boolean altitude;
+    private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int quantifier = QUANTIFIER_ALL;
+
+    public WiredConditionMatchStatePosition(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.settings = new HashSet<>();
+    }
+
+    public WiredConditionMatchStatePosition(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.settings = new HashSet<>();
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        this.refresh();
+
+        message.appendBoolean(false);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(this.settings.size());
+
+        for (WiredMatchFurniSetting item : this.settings) message.appendInt(item.item_id);
+
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(4);
+        message.appendInt(this.state ? 1 : 0);
+        message.appendInt(this.direction ? 1 : 0);
+        message.appendInt(this.position ? 1 : 0);
+        message.appendInt(this.altitude ? 1 : 0);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if (settings.getIntParams().length < 3) return false;
+        int[] params = settings.getIntParams();
+        this.state = params[0] == 1;
+        this.direction = params[1] == 1;
+        this.position = params[2] == 1;
+        this.altitude = (params.length > 3) && (params[3] == 1);
+        // Official layout: [state, direction, position, altitude], the furni in the official source slot;
+        // the quantifier (0 all, 1 any) in its slot.
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? WiredMatchPositionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0], false)
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
+
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        if (room == null) return true;
+
+        int count = settings.getFurniIds().length;
+        if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
+
+        this.settings.clear();
+
+        for (int i = 0; i < count; i++) {
+            int itemId = settings.getFurniIds()[i];
+            UserItem item = room.getUserItem(itemId);
+
+            if (item == null) continue;
+
+            // Wall items are snapshotted by state, wall position and altitude, as in Habbo (dba6fcd8).
+            if (isWallItem(item)) {
+                this.settings.add(new WiredMatchFurniSetting(
+                        item.getId(), item.getExtradata(), 0, 0, 0, item.getZ(), item.getWallPosition()));
+            } else {
+                this.settings.add(new WiredMatchFurniSetting(
+                        item.getId(), item.getExtradata(), item.getRotation(), item.getX(), item.getY(), item.getZ()));
+            }
+        }
+
+        this.furniSource =
+                WiredMatchPositionInputGuard.normalizeFurniSource(this.furniSource, !this.settings.isEmpty());
+
+        return true;
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
+        this.refresh();
+
+        // An empty snapshot matches nothing, as in Habbo.
+        if (this.settings.isEmpty()) return false;
+
+        if (this.quantifier == QUANTIFIER_ANY) {
+            return this.evaluateAnyTargetMatches(ctx);
+        }
+
+        return this.evaluateAllTargetsMatch(ctx);
+    }
+
+    protected boolean evaluateAllTargetsMatch(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
+        Room room = ctx.room();
+
+        if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
+            List<UserItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, null);
+            if (targets.isEmpty()) return WiredQuantifier.overEmpty(true);
+
+            for (UserItem item : targets) {
+                if (item == null) return false;
+
+                WiredMatchFurniSetting setting = this.resolveSettingForTarget(room, item);
+                if (setting == null) {
+                    return false;
+                }
+
+                if (!this.matchesSetting(item, setting)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        for (WiredMatchFurniSetting setting : this.settings) {
+            UserItem item = room.getUserItem(setting.item_id);
+            if (item == null) continue;
+            if (!this.matchesSetting(item, setting)) return false;
+        }
+
+        return true;
+    }
+
+    protected boolean evaluateAnyTargetMatches(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
+        Room room = ctx.room();
+
+        if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
+            List<UserItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, null);
+            if (targets.isEmpty()) return false;
+
+            for (UserItem item : targets) {
+                if (item == null) continue;
+
+                WiredMatchFurniSetting setting = this.resolveSettingForTarget(room, item);
+                if (setting != null && this.matchesSetting(item, setting)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        for (WiredMatchFurniSetting setting : this.settings) {
+            UserItem item = room.getUserItem(setting.item_id);
+            if (item == null) continue;
+
+            if (this.matchesSetting(item, setting)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected int getQuantifier() {
+        return this.quantifier;
+    }
+
+    private WiredMatchFurniSetting resolveSettingForTarget(Room room, UserItem target) {
+        WiredMatchFurniSetting fallback = null;
+
+        for (WiredMatchFurniSetting setting : this.settings) {
+            UserItem sourceItem = room.getUserItem(setting.item_id);
+            if (sourceItem == null) continue;
+            if (sourceItem.getBaseItem().getId() != target.getBaseItem().getId()) continue;
+
+            if (setting.state.equals(target.getExtradata())) {
+                return setting;
+            }
+
+            if (fallback == null) {
+                fallback = setting;
+            }
+        }
+
+        return fallback;
+    }
+
+    private boolean matchesSetting(UserItem item, WiredMatchFurniSetting setting) {
+        if (this.state && !item.getExtradata().equals(setting.state)) return false;
+
+        // A wall item compares its wall tile, offset and side, and has no direction.
+        if (isWallItem(item)) {
+            if (this.position && !java.util.Objects.equals(setting.wallPosition, item.getWallPosition())) return false;
+            return !this.altitude || BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) == 0;
+        }
+
+        if (this.position && !(setting.x == item.getX() && setting.y == item.getY())) return false;
+
+        if (this.altitude && BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0)
+            return false;
+
+        return !this.direction || setting.rotation == item.getRotation();
+    }
+
+    private static boolean isWallItem(UserItem item) {
+        return item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL;
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.state,
+                        this.position,
+                        this.direction,
+                        this.altitude,
+                        new ArrayList<>(this.settings),
+                        this.furniSource,
+                        this.quantifier));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
+
+        if (wiredData.startsWith("{")) {
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
+
+            if (data == null) {
+                return;
+            }
+
+            this.state = data.state;
+            this.position = data.position;
+            this.direction = data.direction;
+            this.altitude = data.altitude;
+            this.settings.addAll(WiredMatchPositionInputGuard.sanitizeSettings(data.settings, room));
+            this.furniSource =
+                    WiredMatchPositionInputGuard.normalizeFurniSource(data.furniSource, !this.settings.isEmpty());
+            this.quantifier = this.normalizeQuantifier(data.quantifier);
+        } else {
+            String[] data = wiredData.split(":");
+
+            if (data.length >= 5) {
+                try {
+                    int itemCount = Math.min(Integer.parseInt(data[0]), WiredManager.MAXIMUM_FURNI_SELECTION);
+
+                    String[] items = data[1].split(";");
+
+                    for (int i = 0; i < itemCount && i < items.length; i++) {
+                        WiredMatchFurniSetting setting = this.parseLegacySetting(items[i], room);
+                        if (setting != null) {
+                            this.settings.add(setting);
+                        }
+                    }
+
+                    this.state = data[2].equals("1");
+                    this.direction = data[3].equals("1");
+                    this.position = data[4].equals("1");
+                } catch (NumberFormatException ignored) {
+                    // malformed legacy data — keep whatever was parsed plus defaults
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.CONDITION_MATCH_POSITION_ITEM,
+                            this.getRoomId(),
+                            this.getId(),
+                            ignored);
+                }
+            }
+
+            this.altitude = false;
+            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(
+                    WiredSourceUtil.SOURCE_TRIGGER, !this.settings.isEmpty());
+            this.quantifier = QUANTIFIER_ALL;
+        }
+    }
+
+    private WiredMatchFurniSetting parseLegacySetting(String value, Room room) {
+        String[] parts = value.split("-", 6);
+        if (parts.length < 5) {
+            return null;
+        }
+
+        try {
+            double z = (parts.length >= 6) ? Double.parseDouble(parts[5]) : 0.0D;
+            return WiredMatchPositionInputGuard.sanitizeParts(
+                    Integer.parseInt(parts[0]),
+                    parts[1],
+                    Integer.parseInt(parts[2]),
+                    Integer.parseInt(parts[3]),
+                    Integer.parseInt(parts[4]),
+                    z,
+                    room);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.settings.clear();
+        this.direction = false;
+        this.position = false;
+        this.state = false;
+        this.altitude = false;
+        this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = QUANTIFIER_ALL;
+    }
+
+    int normalizeQuantifier(int value) {
+        return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER:
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    WiredMatchFurniSetting normalizeSetting(WiredMatchFurniSetting setting) {
+        if (setting == null || setting.item_id <= 0) {
+            return null;
+        }
+
+        int rotation = Math.max(0, Math.min(7, setting.rotation));
+        int x = Math.max(0, setting.x);
+        int y = Math.max(0, setting.y);
+        double z = Math.max(0.0D, Math.min(Room.MAXIMUM_FURNI_HEIGHT, setting.z));
+
+        return new WiredMatchFurniSetting(setting.item_id, setting.state, rotation, x, y, z);
+    }
+
+    WiredMatchFurniSetting parseLegacySetting(String[] values) {
+        if (values == null || values.length < 5) {
+            return null;
+        }
+
+        try {
+            int itemId = Integer.parseInt(values[0]);
+            if (itemId <= 0) {
+                return null;
+            }
+
+            String state = values[1];
+            int rotation = Integer.parseInt(values[2]);
+            int x = Integer.parseInt(values[3]);
+            int y = Integer.parseInt(values[4]);
+            double z = values.length >= 6 ? Double.parseDouble(values[5]) : 0.0D;
+
+            return this.normalizeSetting(new WiredMatchFurniSetting(itemId, state, rotation, x, y, z));
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    protected void refresh() {
+        if (WiredPlatform.gameEnvironment() == null
+                || WiredPlatform.gameEnvironment().getRoomManager() == null) {
+            return;
+        }
+
+        Room room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        if (room != null) {
+            Set<WiredMatchFurniSetting> remove = new HashSet<>();
+
+            for (WiredMatchFurniSetting setting : this.settings) {
+                UserItem item = room.getUserItem(setting.item_id);
+                if (item == null) {
+                    remove.add(setting);
+                }
+            }
+
+            for (WiredMatchFurniSetting setting : remove) {
+                this.settings.remove(setting);
+            }
+        }
+    }
+
+    @Override
+    public Set<WiredMatchFurniSetting> getMatchFurniSettings() {
+        return this.settings;
+    }
+
+    @Override
+    public boolean shouldMatchState() {
+        return this.state;
+    }
+
+    @Override
+    public boolean shouldMatchRotation() {
+        return this.direction;
+    }
+
+    @Override
+    public boolean shouldMatchPosition() {
+        return this.position;
+    }
+
+    @Override
+    public boolean shouldMatchAltitude() {
+        return this.altitude;
+    }
+
+    static class JsonData {
+        boolean state;
+        boolean position;
+        boolean direction;
+        boolean altitude;
+        List<WiredMatchFurniSetting> settings;
+        int furniSource;
+        int quantifier;
+
+        public JsonData(
+                boolean state,
+                boolean position,
+                boolean direction,
+                boolean altitude,
+                List<WiredMatchFurniSetting> settings,
+                int furniSource,
+                int quantifier) {
+            this.state = state;
+            this.position = position;
+            this.direction = direction;
+            this.altitude = altitude;
+            this.settings = settings;
+            this.furniSource = furniSource;
+            this.quantifier = quantifier;
+        }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
+    }
+}

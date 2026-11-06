@@ -1,0 +1,24 @@
+package polaris.messages.rcon;
+
+import com.google.gson.Gson;
+import polaris.Emulator;
+import polaris.messages.incoming.soundboard.SoundboardSettingsSender;
+
+// Ricarica i suoni della Soundboard dal DB (live), così i suoni aggiunti/caricati
+// dal CMS (/admin/soundboard) si applicano senza riavviare l'emulatore.
+public class UpdateSoundboard extends RCONMessage<UpdateSoundboard.SoundboardJSON> {
+
+    public UpdateSoundboard() {
+        super(SoundboardJSON.class);
+    }
+
+    @Override
+    public void handle(Gson gson, SoundboardJSON object) {
+        var environment = Emulator.getGameEnvironment();
+        environment.getPermissionsManager().reload();
+        environment.getSoundboardManager().reload();
+        SoundboardSettingsSender.sendToActiveRooms(environment.getSoundboardManager(), environment.getRoomManager());
+    }
+
+    static class SoundboardJSON {}
+}

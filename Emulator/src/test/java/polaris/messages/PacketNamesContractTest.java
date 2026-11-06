@@ -1,0 +1,61 @@
+package polaris.messages;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import polaris.messages.incoming.Incoming;
+import polaris.messages.outgoing.Outgoing;
+
+class PacketNamesContractTest {
+    @Test
+    void theKeepAliveFrameHasAName() {
+        PacketNames names = new PacketNames();
+        names.initialize();
+
+        assertEquals("KeepAlive", names.getOutgoingName(PacketNames.KEEP_ALIVE_HEADER));
+    }
+
+    @Test
+    void incomingPacketNameIdsAreUnique() throws Exception {
+        assertPublicFinalPacketIdsAreUnique(Incoming.class);
+    }
+
+    @Test
+    void outgoingPacketNameIdsAreUnique() throws Exception {
+        assertPublicFinalPacketIdsAreUnique(Outgoing.class);
+    }
+
+    private static void assertPublicFinalPacketIdsAreUnique(Class<?> packetClass) throws Exception {
+        Map<Integer, String> seen = new HashMap<>();
+        Map<Integer, String> duplicates = new HashMap<>();
+
+        for (Field field : packetClass.getFields()) {
+            int modifiers = field.getModifiers();
+            if (!Modifier.isPublic(modifiers)
+                    || !Modifier.isStatic(modifiers)
+                    || !Modifier.isFinal(modifiers)
+                    || field.getType() != int.class
+                    // Deprecated aliases keep an old name on an id for the plugin ABI.
+                    || field.isAnnotationPresent(Deprecated.class)) {
+                continue;
+            }
+
+            int packetId = field.getInt(null);
+            if (packetId <= 0) {
+                continue;
+            }
+
+            String previous = seen.putIfAbsent(packetId, field.getName());
+            if (previous != null) {
+                duplicates.put(packetId, previous + " / " + field.getName());
+            }
+        }
+
+        assertTrue(duplicates.isEmpty(), packetClass.getSimpleName() + " has duplicate packet IDs: " + duplicates);
+    }
+}

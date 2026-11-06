@@ -1,10 +1,10 @@
 package fixture.currentwiredsnapshot;
 
-import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.wired.api.WiredDelayedSnapshotProvider;
-import com.eu.habbo.plugin.HabboPlugin;
+import polaris.hotel.users.User;
+import polaris.hotel.wired.api.WiredDelayedSnapshotProvider;
+import polaris.plugin.PolarisPlugin;
 
-public final class WiredSnapshotProviderPlugin extends HabboPlugin {
+public final class WiredSnapshotProviderPlugin extends PolarisPlugin {
     private boolean enabled;
 
     @Override
@@ -23,7 +23,7 @@ public final class WiredSnapshotProviderPlugin extends HabboPlugin {
     }
 
     @Override
-    public boolean hasPermission(Habbo habbo, String key) {
+    public boolean hasPermission(User user, String key) {
         return false;
     }
 

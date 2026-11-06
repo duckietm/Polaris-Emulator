@@ -87,7 +87,7 @@ fi
 
 arguments=(
     -cp "$jar"
-    com.eu.habbo.tools.furni.FurniConsistencyCli
+    polaris.tools.furni.FurniConsistencyCli
     "$source_option" "$(cd -- "$(dirname -- "$items_source")" && pwd)/$(basename -- "$items_source")"
     --furniture-data "$(cd -- "$(dirname -- "$furniture_data")" && pwd)/$(basename -- "$furniture_data")"
     --bundles "$nitro_root/nitro-assets/bundled/furniture"

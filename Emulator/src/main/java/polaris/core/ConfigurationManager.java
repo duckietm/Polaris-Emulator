@@ -1,0 +1,372 @@
+package polaris.core;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.core.config.ConfigRegistry;
+import polaris.plugin.events.emulator.EmulatorConfigUpdatedEvent;
+
+public class ConfigurationManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationManager.class);
+    private static final String EMULATOR_SETTINGS_TABLE = "emulator_settings";
+    private static final String WIRED_SETTINGS_TABLE = "wired_emulator_settings";
+    private static final Set<String> STARTUP_OWNED_KEYS =
+            Set.of("runtime.operational.profile", "persistence.executor.threads");
+
+    /**
+     * Everything readers see, published as one reference. A reload used to clear the live Properties and
+     * refill them while other threads read, and those threads got the defaults for the whole reload.
+     */
+    private record Snapshot(Properties properties, Properties wiredProperties) {}
+
+    private volatile Snapshot snapshot = new Snapshot(new Properties(), new Properties());
+    private final Set<String> dirtyKeys = ConcurrentHashMap.newKeySet();
+    private final String configurationPath;
+    public boolean loaded = false;
+
+    /** True while a reload runs. Readers keep the previous snapshot meanwhile, so nothing waits on it. */
+    public volatile boolean isLoading = false;
+
+    public ConfigurationManager(String configurationPath) {
+        this.configurationPath = configurationPath;
+        this.reload();
+    }
+
+    public void reload() {
+        synchronized (this) {
+            this.isLoading = true;
+            try {
+                Properties properties = new Properties();
+                Properties wiredProperties = new Properties();
+                this.loadBootstrap(properties);
+                if (this.loaded) {
+                    this.loadFromDatabase(properties, wiredProperties);
+                }
+                this.snapshot = new Snapshot(properties, wiredProperties);
+                this.dirtyKeys.clear();
+            } finally {
+                this.isLoading = false;
+            }
+        }
+
+        for (ConfigRegistry.ValidationIssue issue : ConfigRegistry.standard().validate(this)) {
+            LOGGER.error(
+                    "Invalid first-party configuration key {} with value '{}': {}",
+                    issue.key(),
+                    issue.value(),
+                    issue.reason());
+        }
+        LOGGER.info("Configuration Manager -> Loaded!");
+
+        if (Emulator.getPluginManager() != null) {
+            Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
+        }
+    }
+
+    /** config.ini, or the environment when DB_HOSTNAME is set. */
+    private void loadBootstrap(Properties properties) {
+        InputStream input = null;
+
+        String envDbHostname = System.getenv("DB_HOSTNAME");
+
+        boolean useEnvVarsForDbConnection = false;
+
+        if (envDbHostname != null) {
+            useEnvVarsForDbConnection = envDbHostname.length() > 1;
+        }
+
+        if (!useEnvVarsForDbConnection) {
+            try {
+                File f = new File(this.configurationPath);
+                input = new FileInputStream(f);
+                properties.load(input);
+
+            } catch (IOException ex) {
+                LOGGER.error("Failed to load config file.", ex);
+            } finally {
+                if (input != null) {
+                    try {
+                        input.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Failed to close config file input stream.", e);
+                    }
+                }
+            }
+
+        } else {
+
+            Map<String, String> envMapping = new HashMap<>();
+
+            // Database section
+            envMapping.put("db.hostname", "DB_HOSTNAME");
+            envMapping.put("db.port", "DB_PORT");
+            envMapping.put("db.database", "DB_DATABASE");
+            envMapping.put("db.username", "DB_USERNAME");
+            envMapping.put("db.password", "DB_PASSWORD");
+            envMapping.put("db.params", "DB_PARAMS");
+            envMapping.put("db.migrate.on_startup", "DB_MIGRATE_ON_STARTUP");
+
+            // Game Configuration
+            envMapping.put("game.host", "EMU_HOST");
+            envMapping.put("game.port", "EMU_PORT");
+
+            // RCON
+            envMapping.put("rcon.host", "RCON_HOST");
+            envMapping.put("rcon.port", "RCON_PORT");
+            envMapping.put("rcon.allowed", "RCON_ALLOWED");
+
+            // Runtime
+            envMapping.put("runtime.threads", "RT_THREADS");
+            envMapping.put("runtime.operational.profile", "RUNTIME_OPERATIONAL_PROFILE");
+            envMapping.put("persistence.executor.threads", "PERSISTENCE_EXECUTOR_THREADS");
+            envMapping.put("logging.errors.runtime", "RT_LOG_ERRORS");
+            envMapping.put("hotel.timezone", "HOTEL_TIMEZONE");
+
+            for (Map.Entry<String, String> entry : envMapping.entrySet()) {
+                String envValue = System.getenv(entry.getValue());
+
+                if (envValue == null || envValue.length() == 0) {
+                    LOGGER.info("Cannot find environment-value for variable `{}`", entry.getValue());
+                } else {
+                    properties.setProperty(entry.getKey(), envValue);
+                }
+            }
+        }
+    }
+
+    /** Layers the settings tables over what is loaded now, published in one step. */
+    public synchronized void loadFromDatabase() {
+        Snapshot current = this.snapshot;
+        Properties properties = copy(current.properties());
+        Properties wiredProperties = copy(current.wiredProperties());
+        this.loadFromDatabase(properties, wiredProperties);
+        this.snapshot = new Snapshot(properties, wiredProperties);
+    }
+
+    private void loadFromDatabase(Properties properties, Properties wiredProperties) {
+        LOGGER.info("Loading configuration from database...");
+
+        long millis = System.currentTimeMillis();
+        this.loadSettingsTable(EMULATOR_SETTINGS_TABLE, properties, false);
+        this.loadSettingsTable(WIRED_SETTINGS_TABLE, wiredProperties, true);
+
+        LOGGER.info("Configuration -> loaded! ({} MS)", System.currentTimeMillis() - millis);
+    }
+
+    private static Properties copy(Properties source) {
+        Properties copy = new Properties();
+        copy.putAll(source);
+        return copy;
+    }
+
+    public synchronized void saveToDatabase() {
+        Snapshot current = this.snapshot;
+        this.saveSettingsTable(EMULATOR_SETTINGS_TABLE, current.properties(), false);
+        this.saveSettingsTable(WIRED_SETTINGS_TABLE, current.wiredProperties(), true);
+    }
+
+    public String getValue(String key) {
+        return this.getValue(key, "", true);
+    }
+
+    public String getValue(String key, String defaultValue) {
+        return this.getValue(key, defaultValue, false);
+    }
+
+    private String getValue(String key, String defaultValue, boolean logMissing) {
+        String value = this.getValueIfPresent(key);
+        if (value != null) return value;
+
+        if (logMissing) {
+            LOGGER.error("Config key not found {}", key);
+        }
+        return defaultValue;
+    }
+
+    public String getValueIfPresent(String key) {
+        Snapshot current = this.snapshot;
+        String value = this.resolveProperties(current, key).getProperty(key);
+        if (value != null) {
+            return value;
+        }
+
+        if (this.isWiredSettingKey(key)) {
+            return current.properties().getProperty(key);
+        }
+
+        return null;
+    }
+
+    public boolean getBoolean(String key) {
+        return this.getBoolean(key, false);
+    }
+
+    public boolean getBoolean(String key, boolean defaultValue) {
+        String value = this.getValueIfPresent(key);
+        if (value == null) return defaultValue;
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
+            case "1", "true" -> true;
+            case "0", "false" -> false;
+            default -> {
+                LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
+                yield defaultValue;
+            }
+        };
+    }
+
+    public int getInt(String key) {
+        return this.getInt(key, 0);
+    }
+
+    public int getInt(String key, Integer defaultValue) {
+        try {
+            return Integer.parseInt(this.getValue(key, defaultValue.toString()));
+        } catch (Exception e) {
+            LOGGER.error("Failed to parse key {} with value '{}' to type integer.", key, this.getValue(key));
+        }
+        return defaultValue;
+    }
+
+    public double getDouble(String key) {
+        return this.getDouble(key, 0.0);
+    }
+
+    public double getDouble(String key, Double defaultValue) {
+        try {
+            return Double.parseDouble(this.getValue(key, defaultValue.toString()));
+        } catch (Exception e) {
+            LOGGER.error("Failed to parse key {} with value '{}' to type double.", key, this.getValue(key));
+        }
+
+        return defaultValue;
+    }
+
+    public synchronized void update(String key, String value) {
+        this.resolveProperties(key).setProperty(key, value);
+        this.dirtyKeys.add(key);
+    }
+
+    public void register(String key, String value) {
+        this.register(key, value, "");
+    }
+
+    public void register(String key, String value, String comment) {
+        Properties targetProperties = this.resolveProperties(key);
+
+        if (targetProperties.getProperty(key, null) != null) return;
+
+        this.insertSetting(key, value, comment);
+        this.update(key, value);
+    }
+
+    private void loadSettingsTable(String tableName, Properties targetProperties, boolean optional) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
+            if (statement.execute("SELECT * FROM " + tableName)) {
+                try (ResultSet set = statement.getResultSet()) {
+                    while (set.next()) {
+                        String key = set.getString("key");
+                        if (!STARTUP_OWNED_KEYS.contains(key)) {
+                            targetProperties.put(key, set.getString("value"));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            if (optional) {
+                LOGGER.warn("Skipping optional config table {}: {}", tableName, e.getMessage());
+            } else {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    private void saveSettingsTable(String tableName, Properties sourceProperties, boolean wired) {
+        Map<String, String> changes = new HashMap<>();
+        for (String key : this.dirtyKeys) {
+            if (this.isWiredSettingKey(key) == wired && sourceProperties.containsKey(key)) {
+                changes.put(key, sourceProperties.getProperty(key));
+            }
+        }
+        if (changes.isEmpty()) {
+            return;
+        }
+
+        // An upsert: a key changed at runtime that has no row yet (set by config.ini or by a plugin
+        // without register) was lost by a plain UPDATE, silently.
+        String sql = wired
+                ? "INSERT INTO " + tableName + " (`value`, `key`, `comment`) VALUES (?, ?, '')"
+                        + " ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"
+                : "INSERT INTO " + tableName + " (`value`, `key`) VALUES (?, ?)"
+                        + " ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Map.Entry<String, String> entry : changes.entrySet()) {
+                statement.setString(1, entry.getValue());
+                statement.setString(2, entry.getKey());
+                statement.executeUpdate();
+                this.dirtyKeys.remove(entry.getKey());
+            }
+        } catch (SQLException e) {
+            if (WIRED_SETTINGS_TABLE.equals(tableName)) {
+                LOGGER.warn("Skipping wired config save for table {}: {}", tableName, e.getMessage());
+            } else {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    private void insertSetting(String key, String value, String comment) {
+        String tableName = this.isWiredSettingKey(key) ? WIRED_SETTINGS_TABLE : EMULATOR_SETTINGS_TABLE;
+        String sql = this.isWiredSettingKey(key)
+                ? "INSERT INTO " + tableName + " (`key`, `value`, `comment`) VALUES (?, ?, ?)"
+                : "INSERT INTO " + tableName + " (`key`, `value`) VALUES (?, ?)";
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, key);
+            statement.setString(2, value);
+
+            if (this.isWiredSettingKey(key)) {
+                statement.setString(3, comment == null ? "" : comment);
+            }
+
+            statement.execute();
+        } catch (SQLException e) {
+            if (this.isWiredSettingKey(key)) {
+                LOGGER.warn("Unable to insert wired setting {} into {}: {}", key, tableName, e.getMessage());
+            } else {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    private Properties resolveProperties(String key) {
+        return this.resolveProperties(this.snapshot, key);
+    }
+
+    private Properties resolveProperties(Snapshot current, String key) {
+        return this.isWiredSettingKey(key) ? current.wiredProperties() : current.properties();
+    }
+
+    private boolean isWiredSettingKey(String key) {
+        return key != null && (key.startsWith("wired.") || key.startsWith("hotel.wired."));
+    }
+}

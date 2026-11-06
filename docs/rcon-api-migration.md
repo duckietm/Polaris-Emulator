@@ -73,7 +73,7 @@ running unchanged so the CMS can migrate command-by-command.
 
 ### Step 1 — shared registry (implemented)
 
-`com.eu.habbo.messages.command.CommandRegistry` now owns command lookup, payload
+`polaris.messages.command.CommandRegistry` now owns command lookup, payload
 parsing, validation and dispatch, returning a transport-neutral
 `CommandResult(known, status, message)`.
 
@@ -85,7 +85,7 @@ bytes RCON has always returned, so the wire contract in
 [`protocol/rcon-contract.json`](../protocol/rcon-contract.json) is unchanged and
 all existing RCON contract tests pass untouched.
 
-The command classes themselves (`com.eu.habbo.messages.rcon.*`) are **not** moved
+The command classes themselves (`polaris.messages.rcon.*`) are **not** moved
 or renamed in this step, to keep the diff small and reviewable. A later,
 optional cleanup can rename the package to something transport-neutral.
 
@@ -112,7 +112,7 @@ to HTTP while keeping the `{status, message}` body identical to RCON:
 | `known=false`                         | 404 Not Found |
 | `status = STATUS_OK (0)`              | 200 OK |
 | `status = STATUS_ERROR (1)` (validation / domain) | 400 Bad Request |
-| `status = HABBO_NOT_FOUND (2)` / `ROOM_NOT_FOUND (3)` | 404 Not Found |
+| `status = USER_NOT_FOUND (2)` / `ROOM_NOT_FOUND (3)` | 404 Not Found |
 | `status = SYSTEM_ERROR (4)`           | 500 Internal Server Error |
 
 Auth/transport failures map to 401 (bad/missing signature, unknown key, stale

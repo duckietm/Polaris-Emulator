@@ -1,0 +1,38 @@
+package polaris.messages.outgoing.handshake;
+
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.MessageComposer;
+import polaris.messages.outgoing.Outgoing;
+
+/**
+ * DisconnectReason (header 4000): tells the client why the server is ending its session, just before
+ * the connection closes. The client shows the matching hotel text and does not reconnect.
+ */
+public class DisconnectReasonComposer extends MessageComposer {
+    /** The client shows its maintenance text for this code. */
+    public static final int MAINTENANCE = -2;
+
+    public static final int LOGOUT = 0;
+    public static final int JUST_BANNED = 1;
+    public static final int CONCURRENT_LOGIN = 2;
+    public static final int STILL_BANNED = 10;
+    public static final int HOTEL_CLOSED = 12;
+    public static final int HOTEL_CLOSING = 19;
+
+    private final int reason;
+
+    public DisconnectReasonComposer(int reason) {
+        this.reason = reason;
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.ErrorLoginComposer);
+        this.response.appendInt(this.reason);
+        return this.response;
+    }
+
+    public int getReason() {
+        return this.reason;
+    }
+}

@@ -1,0 +1,25 @@
+package polaris.hotel.soundboard;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+class SoundboardSoundTest {
+
+    @Test
+    void minimumRankIsInclusive() {
+        SoundboardSound sound = new SoundboardSound(7, "Staff bell", "staff", "/sounds/staff.mp3", 5);
+
+        assertFalse(sound.isAvailableTo(4));
+        assertTrue(sound.isAvailableTo(5));
+        assertTrue(sound.isAvailableTo(7));
+    }
+
+    @Test
+    void minimumRankNeverDropsBelowOne() {
+        SoundboardSound sound = new SoundboardSound(7, "Public bell", "public", "/sounds/public.mp3", -3);
+
+        assertTrue(sound.isAvailableTo(1));
+    }
+}

@@ -1,0 +1,21 @@
+package polaris.hotel.games.snowwar.events;
+
+import polaris.messages.ServerMessage;
+
+/**
+ * AIR event type 11: a machine generated a new snowball.
+ */
+public class SnowWarMachineAddSnowballEvent extends SnowWarGameEvent {
+
+    private final int machineObjectId;
+
+    public SnowWarMachineAddSnowballEvent(int machineObjectId) {
+        super(TYPE_MACHINE_ADD_SNOWBALL);
+        this.machineObjectId = machineObjectId;
+    }
+
+    @Override
+    protected void serializeFields(ServerMessage response) {
+        response.appendInt(this.machineObjectId);
+    }
+}

@@ -1,0 +1,261 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomLayout;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredQuantifier;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.protocol.WiredOfficialQuantifier;
+import polaris.messages.ServerMessage;
+
+/**
+ * Passes when the resolved user(s) (actor / clicked user / selector / signal) are OUTSIDE {@code radius}
+ * tiles of the trigger furni. Inverse of {@link WiredConditionUserInRange}: structurally identical, but
+ * the per-user distance test is flipped ({@code distance > radius} instead of {@code <= radius}) and the
+ * "missing context" cases pass vacuously (no trigger / no origin tile / no resolved users all mean
+ * nobody is in range, so "not in range" is satisfied), exactly as {@link WiredConditionFurniNotInRange}
+ * mirrors {@link WiredConditionFurniInRange}. Reuses the HAS_ALTITUDE dialog (numeric field reused as the
+ * radius + source + quantifier), so it needs no new client dialog. No furni are selected, so the
+ * furni-picker portion of the dialog is left empty.
+ */
+public class WiredConditionUserNotInRange extends InteractionWiredCondition implements WiredOfficialQuantifier {
+    private static final int COMPARISON_LESS = 0;
+    private static final int COMPARISON_EQUAL = 1;
+    private static final int COMPARISON_GREATER = 2;
+    private static final int QUANTIFIER_ALL = 0;
+    private static final int QUANTIFIER_ANY = 1;
+
+    public static final WiredConditionType type = WiredConditionType.USER_RANGE;
+
+    private int comparison = COMPARISON_EQUAL;
+    private double radius = 0.0D;
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int quantifier = QUANTIFIER_ALL;
+
+    public WiredConditionUserNotInRange(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredConditionUserNotInRange(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        Room room = ctx.room();
+        if (room == null) {
+            return true;
+        }
+
+        RoomLayout layout = room.getLayout();
+        if (layout == null) {
+            return true;
+        }
+
+        UserItem triggerItem = ctx.triggerItem();
+        if (triggerItem == null) {
+            return true;
+        }
+
+        RoomTile origin = layout.getTile(triggerItem.getX(), triggerItem.getY());
+        if (origin == null) {
+            return true;
+        }
+
+        List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        // Its own reading ("all are outside" / "any is outside"), so all holds over none.
+        if (targets.isEmpty()) {
+            return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+        }
+
+        if (this.quantifier == QUANTIFIER_ANY) {
+            return targets.stream().anyMatch(unit -> this.isOutsideRange(origin, unit));
+        }
+
+        return targets.stream().allMatch(unit -> this.isOutsideRange(origin, unit));
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.comparison, this.formatRadius(this.radius), this.userSource, this.quantifier));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.comparison = COMPARISON_EQUAL;
+        this.radius = 0.0D;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = QUANTIFIER_ALL;
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || !wiredData.startsWith("{")) {
+            return;
+        }
+
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException exception) {
+            this.onPickUp();
+            return;
+        }
+
+        if (data == null) {
+            return;
+        }
+
+        this.comparison = this.normalizeComparison(data.comparison);
+        this.radius = this.parseRadiusOrDefault(data.radius);
+        this.userSource = this.normalizeUserSource(data.userSource);
+        this.quantifier = this.normalizeQuantifier(data.quantifier);
+    }
+
+    @Override
+    public void onPickUp() {
+        this.comparison = COMPARISON_EQUAL;
+        this.radius = 0.0D;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = QUANTIFIER_ALL;
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(0);
+
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.formatRadius(this.radius));
+        message.appendInt(2);
+        message.appendInt(this.comparison);
+        message.appendInt(this.userSource);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        int[] params = settings.getIntParams();
+        this.comparison = (params.length > 0) ? this.normalizeComparison(params[0]) : COMPARISON_EQUAL;
+        this.userSource = (params.length > 1) ? this.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
+        this.radius = this.parseRadiusOrDefault(settings.getStringParam());
+
+        return true;
+    }
+
+    /**
+     * The dialog offers three operators against the radius, and until now every one of them behaved
+     * as "within". They now mean what they say, with {@code equals} keeping the historical inclusive
+     * reading so a box saved before this change evaluates exactly as it did.
+     */
+    private boolean matchesRadius(double distance) {
+        return switch (this.comparison) {
+            case COMPARISON_LESS -> distance < this.radius;
+            case COMPARISON_GREATER -> distance > this.radius;
+            default -> distance <= this.radius;
+        };
+    }
+
+    private boolean isOutsideRange(RoomTile origin, RoomUnit unit) {
+        if (unit == null) {
+            return true;
+        }
+
+        RoomTile tile = unit.getCurrentLocation();
+        if (tile == null) {
+            return true;
+        }
+
+        return !this.matchesRadius(origin.distance(tile));
+    }
+
+    int normalizeComparison(int value) {
+        if (value < COMPARISON_LESS || value > COMPARISON_GREATER) {
+            return COMPARISON_EQUAL;
+        }
+
+        return value;
+    }
+
+    int normalizeQuantifier(int value) {
+        return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    double normalizeRadius(double value) {
+        double clampedValue = Math.max(0.0D, value);
+        return BigDecimal.valueOf(clampedValue)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    double parseRadiusOrDefault(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return 0.0D;
+        }
+
+        try {
+            return this.normalizeRadius(new BigDecimal(value.trim()).doubleValue());
+        } catch (NumberFormatException exception) {
+            return 0.0D;
+        }
+    }
+
+    String formatRadius(double value) {
+        BigDecimal decimal = BigDecimal.valueOf(this.normalizeRadius(value)).stripTrailingZeros();
+        return (decimal.scale() < 0 ? decimal.setScale(0, RoundingMode.DOWN) : decimal).toPlainString();
+    }
+
+    static class JsonData {
+        int comparison;
+        String radius;
+        int userSource;
+        int quantifier;
+
+        public JsonData(int comparison, String radius, int userSource, int quantifier) {
+            this.comparison = comparison;
+            this.radius = radius;
+            this.userSource = userSource;
+            this.quantifier = quantifier;
+        }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
+    }
+}

@@ -31,14 +31,14 @@ It focuses on:
 ### 2.2 Main files
 
 - Emulator diagnostics:
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredEngine.java`
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredExecutionGuard.java` (recursion, rate limit, ban, per-room diagnostics)
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredStackExecutor.java` (stack cost estimate)
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredRoomDiagnostics.java`
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredMonitorDataComposer.java`
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredErrorLogs.java` and
+  - `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredEngine.java`
+  - `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredExecutionGuard.java` (recursion, rate limit, ban, per-room diagnostics)
+  - `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredStackExecutor.java` (stack cost estimate)
+  - `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredRoomDiagnostics.java`
+  - `Gameserver/Emulator/src/main/java/polaris/messages/outgoing/wired/WiredMonitorDataComposer.java`
+  - `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredErrorLogs.java` and
     `messages/outgoing/wired/WiredErrorLogsComposer.java` (AIR's error list, 1132 / 1632 / 15)
-  - `Gameserver/Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredRoomLogsPageEvent.java`
+  - `Gameserver/Emulator/src/main/java/polaris/messages/incoming/wired/WiredRoomLogsPageEvent.java`
 - Renderer parsing:
   - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredMonitorDataParser.ts`
   - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredErrorLogsParser.ts`
@@ -133,7 +133,7 @@ This allows safe rollout during migration.
 The defaults above are the values the migration and the Flyway base schema seed (the base schema
 seeds `hotel.wired.message.max_length` as `512`). When a key is missing from both settings tables
 the code uses its own fallback. For the abuse and monitor keys, read in
-`Gameserver/Emulator/src/main/java/com/eu/habbo/plugin/WiredConfigurationBinder.java`, the fallbacks
+`Gameserver/Emulator/src/main/java/polaris/plugin/WiredConfigurationBinder.java`, the fallbacks
 match the table.
 
 ---

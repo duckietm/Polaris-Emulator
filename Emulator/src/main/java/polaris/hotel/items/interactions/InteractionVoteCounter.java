@@ -1,0 +1,100 @@
+package polaris.hotel.items.interactions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.messages.ServerMessage;
+
+public class InteractionVoteCounter extends UserItem {
+
+    private boolean frozen;
+    private int votes;
+    private List<Integer> votedUsers;
+
+    public InteractionVoteCounter(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        if (!this.getExtradata().contains(",")) {
+            this.setExtradata("1,0"); // frozen,votes
+        }
+
+        String[] bits = this.getExtradata().split(",");
+        frozen = bits[0].equals("1");
+        votes = Integer.parseInt(bits[1]);
+        votedUsers = new ArrayList<>();
+    }
+
+    public InteractionVoteCounter(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+
+        if (!extradata.contains(",")) {
+            extradata = "1,0";
+        }
+
+        String[] bits = extradata.split(",");
+        frozen = bits[0].equals("1");
+        votes = Integer.parseInt(bits[1]);
+        votedUsers = new ArrayList<>();
+    }
+
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt((this.isLimited() ? 256 : 0) + 3);
+        serverMessage.appendString(this.frozen ? "0" : "1");
+        serverMessage.appendInt(this.votes);
+        super.serializeExtradata(serverMessage);
+    }
+
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return false;
+    }
+
+    @Override
+    public boolean isWalkable() {
+        return false;
+    }
+
+    private void updateExtradata() {
+        this.setExtradata((this.frozen ? "1" : "0") + "," + this.votes);
+    }
+
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (!((client != null && room != null && room.hasRights(client.getUser()))
+                || (objects.length >= 2 && objects[1] instanceof WiredEffectType))) return;
+
+        this.frozen = !this.frozen;
+
+        if (!frozen) {
+            this.votes = 0;
+            this.votedUsers.clear();
+        }
+
+        updateExtradata();
+        this.needsUpdate(true);
+        room.updateItem(this);
+    }
+
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+
+    public void vote(Room room, int UserId, int vote) {
+        if (frozen) return;
+
+        if (votedUsers.contains(UserId)) return;
+
+        votedUsers.add(UserId);
+
+        votes += vote;
+        updateExtradata();
+        this.needsUpdate(true);
+        room.updateItem(this);
+    }
+}

@@ -8,7 +8,7 @@ identical whether the command is sent over the legacy **RCON** TCP listener or t
 **CMS HTTP API** (see [`rcon-api-migration.md`](./rcon-api-migration.md)). Only the
 request framing and authentication differ between transports.
 
-> Source of truth: `com.eu.habbo.messages.rcon.*` and the registrations in
+> Source of truth: `polaris.messages.rcon.*` and the registrations in
 > `RCONServer`. The machine-readable wire envelope is
 > [`protocol/rcon-contract.json`](../protocol/rcon-contract.json).
 
@@ -123,7 +123,7 @@ Always exactly two fields:
 | -------- | ----------------- | ------- |
 | `0`      | `STATUS_OK`       | Handled successfully. `message` may carry a note (e.g. `"offline"`). |
 | `1`      | `STATUS_ERROR`    | Validation failed, bad input, or the command could not be applied. `message` describes why. |
-| `2`      | `HABBO_NOT_FOUND` | Target user does not exist. |
+| `2`      | `USER_NOT_FOUND`  | Target user does not exist. |
 | `3`      | `ROOM_NOT_FOUND`  | Target room does not exist. |
 | `4`      | `SYSTEM_ERROR`    | Internal error while handling (e.g. SQL failure). |
 
@@ -158,7 +158,7 @@ shown.
 | `int credits` * | > 0, ≤ grant ceiling |
 
 Grants to online or offline users; offline grants go through the economy ledger
-and return `message: "offline"`. `HABBO_NOT_FOUND` if the user does not exist.
+and return `message: "offline"`. `USER_NOT_FOUND` if the user does not exist.
 
 #### `givepixels` — grant pixels (duckets)
 | Field | Constraint |

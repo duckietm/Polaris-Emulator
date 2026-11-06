@@ -1,0 +1,195 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import polaris.hotel.games.Game;
+import polaris.hotel.games.GameTeam;
+import polaris.hotel.games.GameTeamColors;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.protocol.WiredOfficialQuantifier;
+import polaris.messages.ServerMessage;
+
+public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase implements WiredOfficialQuantifier {
+    public static final WiredConditionType type = WiredConditionType.TEAM_HAS_RANK;
+
+    private int teamType = GameTeamColors.RED.type;
+    private int placement = 1;
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int quantifier = QUANTIFIER_ALL;
+
+    public WiredConditionTeamHasRank(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredConditionTeamHasRank(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        Room room = ctx.room();
+
+        // A named team: its place in the room's game, whoever set the stack off or nobody. Only
+        // "the triggering user's team" is about users.
+        if (this.teamType != TEAM_TRIGGERER) {
+            Game game = this.resolveActiveRoomGame(room);
+            GameTeam team = (game != null) ? game.getTeam(this.resolveConfiguredTeamColor(this.teamType)) : null;
+
+            return team != null && this.getTeamRank(game, team) == this.placement;
+        }
+
+        List<RoomUnit> users = this.resolveUsers(ctx, this.userSource);
+
+        return this.matchesQuantifier(users, this.quantifier, roomUnit -> this.matchesUser(ctx, room, roomUnit));
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.teamType, this.placement, this.userSource, this.quantifier));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.resetSettings();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || !wiredData.startsWith("{")) {
+            return;
+        }
+
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException ignored) {
+            this.resetSettings();
+            return;
+        }
+        if (data == null) {
+            return;
+        }
+
+        this.teamType = this.normalizeRankTeamType(data.teamType);
+        this.placement = this.normalizePlacement(data.placement);
+        this.userSource = this.normalizeUserSource(data.userSource);
+        this.quantifier = this.normalizeQuantifier(data.quantifier);
+    }
+
+    @Override
+    public void onPickUp() {
+        this.resetSettings();
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        // Official layout: [team (0 the triggerer's team, 1-4), placement (0 first .. 3 fourth)]; ours follow:
+        // the users whose team counts for team 0. The quantifier goes in its own slot.
+        message.appendInt(3);
+        message.appendInt(this.teamType);
+        message.appendInt(this.placement - 1);
+        message.appendInt(this.userSource);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        int[] params = settings.getIntParams();
+        this.resetSettings();
+
+        if (params.length > 0) this.teamType = this.normalizeRankTeamType(params[0]);
+        if (params.length > 1) this.placement = this.normalizePlacement(params[1] + 1);
+        if (params.length > 2) this.userSource = this.normalizeUserSource(params[2]);
+        this.quantifier = this.normalizeQuantifier(settings.getQuantifierCode());
+
+        return true;
+    }
+
+    private boolean matchesUser(WiredContext ctx, Room room, RoomUnit roomUnit) {
+        UserGameContext context = this.resolveUserGameContext(room, roomUnit);
+        if (context == null) {
+            return false;
+        }
+
+        GameTeamColors requiredTeam = this.resolveRequiredTeamColor(ctx, room, context.game);
+        if (requiredTeam == GameTeamColors.NONE || context.team.teamColor != requiredTeam) {
+            return false;
+        }
+
+        GameTeam team = context.game.getTeam(requiredTeam);
+        if (team == null) {
+            return false;
+        }
+
+        return this.getTeamRank(context.game, team) == this.placement;
+    }
+
+    private GameTeamColors resolveRequiredTeamColor(WiredContext ctx, Room room, polaris.hotel.games.Game game) {
+        if (this.teamType == TEAM_TRIGGERER) {
+            RoomUnit actor = ctx.actor().orElse(null);
+            UserGameContext triggererContext = this.resolveUserGameContext(room, actor);
+
+            if (triggererContext == null || triggererContext.game != game) {
+                return GameTeamColors.NONE;
+            }
+
+            return triggererContext.team.teamColor;
+        }
+
+        return this.resolveConfiguredTeamColor(this.teamType);
+    }
+
+    private void resetSettings() {
+        this.teamType = GameTeamColors.RED.type;
+        this.placement = 1;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = QUANTIFIER_ALL;
+    }
+
+    static class JsonData {
+        int teamType;
+        int placement;
+        int userSource;
+        int quantifier;
+
+        public JsonData(int teamType, int placement, int userSource, int quantifier) {
+            this.teamType = teamType;
+            this.placement = placement;
+            this.userSource = userSource;
+            this.quantifier = quantifier;
+        }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
+    }
+}

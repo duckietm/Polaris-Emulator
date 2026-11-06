@@ -1,0 +1,198 @@
+package polaris.hotel.items.interactions.wired.effects;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+import static polaris.hotel.items.interactions.wired.effects.WiredEffectTestFixtures.base;
+import static polaris.hotel.items.interactions.wired.effects.WiredEffectTestFixtures.installHotel;
+import static polaris.hotel.items.interactions.wired.effects.WiredEffectTestFixtures.json;
+import static polaris.hotel.items.interactions.wired.effects.WiredEffectTestFixtures.row;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import polaris.Emulator;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.ItemInteraction;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomLayout;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredEvent;
+import polaris.hotel.wired.core.WiredServices;
+import polaris.hotel.wired.core.WiredState;
+
+/**
+ * The antenna slot offers the picked antennas (official source 100) and the triggering furni (0);
+ * stored internally as 0 and 1. Picking antennas
+ * used to overwrite either choice with the first picked antenna's id, so "triggering furni" could
+ * not be kept once an antenna was in the list.
+ */
+class WiredEffectSendSignalTest {
+    private static final int ANTENNA_PICKED = 0;
+    private static final int ANTENNA_TRIGGER = 1;
+
+    @Test
+    void theTriggeringFurniChoiceSurvivesPickedAntennas() throws Exception {
+        Room room = mock(Room.class);
+        antenna(room, 401);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installHotel(emulator, room);
+
+            box.saveData(slots(new WiredSettings(new int[] {0, 0}, "", new int[] {401}, 0), 0), null);
+        }
+
+        assertEquals(ANTENNA_TRIGGER, json(box).get("antennaSource").getAsInt());
+    }
+
+    @Test
+    void thePickedChoiceStillFallsBackToTheFirstPickedAntenna() throws Exception {
+        Room room = mock(Room.class);
+        antenna(room, 401);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installHotel(emulator, room);
+
+            box.saveData(slots(new WiredSettings(new int[] {0, 0}, "", new int[] {401}, 0), 100), null);
+        }
+
+        assertEquals(401, json(box).get("antennaSource").getAsInt());
+    }
+
+    @Test
+    void aReloadKeepsTheTriggeringFurniChoiceToo() throws Exception {
+        Room room = mock(Room.class);
+        antenna(room, 401);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        box.loadWiredData(row(stored(ANTENNA_TRIGGER)), room);
+        assertEquals(ANTENNA_TRIGGER, json(box).get("antennaSource").getAsInt());
+
+        box.loadWiredData(row(stored(ANTENNA_PICKED)), room);
+        assertEquals(401, json(box).get("antennaSource").getAsInt());
+    }
+
+    @Test
+    void theOfficialLayoutCarriesTheSplitsTheSlotsAndTheForwardPicks() throws Exception {
+        Room room = mock(Room.class);
+        antenna(room, 401);
+        UserItem forward = mock(UserItem.class);
+        when(forward.getId()).thenReturn(402);
+        when(room.getUserItem(402)).thenReturn(forward);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installHotel(emulator, room);
+
+            WiredSettings settings = slots(new WiredSettings(new int[] {1, 0}, "", new int[] {401}, 0), 100);
+            settings.setFurniSourceTypes(new int[] {100, 100});
+            settings.setUserSourceTypes(new int[] {200});
+            settings.setFurniIds2(new int[] {402});
+            box.saveData(settings, null);
+        }
+
+        assertEquals(true, json(box).get("signalPerFurni").getAsBoolean());
+        assertEquals(false, json(box).get("signalPerUser").getAsBoolean());
+        assertEquals(100, json(box).get("furniForward").getAsInt());
+        assertEquals(200, json(box).get("userForward").getAsInt());
+        assertEquals(402, json(box).getAsJsonArray("forwardItemIds").get(0).getAsInt());
+        assertArrayEquals(new int[] {100, 100}, box.officialFurniSources());
+        assertArrayEquals(new int[] {200}, box.officialUserSources());
+        assertArrayEquals(new int[] {402}, box.officialFurniIds2());
+    }
+
+    /** The official antenna slot: 0 the triggering furni, 100 the picks. */
+    private static WiredSettings slots(WiredSettings settings, int antennaSlot) {
+        settings.setFurniSourceTypes(new int[] {antennaSlot});
+        return settings;
+    }
+
+    @Test
+    void aNonAntennaPickIsRefusedWithTheOfficialKey() {
+        Room room = mock(Room.class);
+        UserItem chair = mock(UserItem.class);
+        when(chair.getId()).thenReturn(402);
+        Item chairBase = base();
+        when(chair.getBaseItem()).thenReturn(chairBase);
+        when(room.getUserItem(402)).thenReturn(chair);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installHotel(emulator, room);
+
+            polaris.messages.incoming.wired.WiredSaveException refused = org.junit.jupiter.api.Assertions.assertThrows(
+                    polaris.messages.incoming.wired.WiredSaveException.class,
+                    () -> box.saveData(slots(new WiredSettings(new int[] {0, 0}, "", new int[] {402}, 0), 100), null));
+            assertEquals("wiredfurni.error.require_antenna_furni", refused.getMessage());
+        }
+    }
+
+    @Test
+    void aSignalChainMayReachItsAntennaAgainAndSharesOneChainCount() throws Exception {
+        Room room = mock(Room.class);
+        RoomLayout layout = mock(RoomLayout.class);
+        when(room.getLayout()).thenReturn(layout);
+        when(layout.getTile(anyShort(), anyShort())).thenReturn(new RoomTile());
+        antenna(room, 401);
+        UserItem antenna = room.getUserItem(401);
+        List<WiredEvent> sent = new ArrayList<>();
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0) {
+            @Override
+            protected boolean dispatchSignalEvent(WiredEvent event) {
+                sent.add(event);
+                return true;
+            }
+        };
+        box.loadWiredData(row(stored(ANTENNA_TRIGGER)), room);
+
+        // A stack that is not a signal starts a chain; the signal still names its antenna in its path.
+        box.execute(signalContext(room, antenna, Set.of()));
+        assertEquals(1, sent.size());
+        assertEquals(Set.of(401), sent.get(0).getSignalPath());
+
+        // AIR: the receiving stack signalling its own antenna again goes through (the loop limit stops loops),
+        // and the new signal carries the same chain count.
+        WiredEvent first = sent.get(0);
+        box.execute(new WiredContext(first, null, mock(WiredServices.class), new WiredState(20)));
+        assertEquals(2, sent.size());
+        assertSame(first.getSignalChain(), sent.get(1).getSignalChain());
+        // A hop adds no call depth.
+        assertEquals(first.getCallStackDepth(), sent.get(1).getCallStackDepth());
+    }
+
+    private static WiredContext signalContext(Room room, UserItem antenna, Set<Integer> path) {
+        WiredEvent event = WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
+                .sourceItem(antenna)
+                .signalPath(path)
+                .build();
+        return new WiredContext(event, null, mock(WiredServices.class), new WiredState(20));
+    }
+
+    private static String stored(int antennaSource) {
+        return "{\"delay\":0,\"itemIds\":[401],\"forwardItemIds\":[],\"antennaSource\":" + antennaSource
+                + ",\"furniForward\":0,\"userForward\":0,\"signalPerFurni\":false,\"signalPerUser\":false,"
+                + "\"channel\":0}";
+    }
+
+    private static void antenna(Room room, int id) {
+        ItemInteraction interaction = mock(ItemInteraction.class);
+        when(interaction.getName()).thenReturn("antenna");
+        Item base = base();
+        when(base.getInteractionType()).thenReturn(interaction);
+        UserItem item = mock(UserItem.class);
+        when(item.getId()).thenReturn(id);
+        when(item.getBaseItem()).thenReturn(base);
+        when(room.getUserItem(id)).thenReturn(item);
+    }
+}

@@ -1,0 +1,118 @@
+package polaris.messages.incoming.wired;
+
+import polaris.hotel.items.interactions.wired.effects.WiredEffectGiveVariable;
+import polaris.hotel.rooms.BuildersClubItemIds;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.variables.RoomWiredVariableWrites;
+import polaris.hotel.users.User;
+import polaris.hotel.wired.WiredVariableChangeOrigin;
+import polaris.hotel.wired.core.WiredInternalVariableSupport;
+import polaris.messages.incoming.MessageHandler;
+
+public class WiredUserVariableUpdateEvent extends MessageHandler {
+    private static final int TARGET_ROOM = RoomWiredVariableWrites.TARGET_ROOM;
+
+    @Override
+    public void handle() throws Exception {
+        // Every write below is a creator-tool write, whatever the manager it lands in. The packet
+        // is read here, in handle(), where the packet-contract catalogue looks for it.
+        int previousOrigin = WiredVariableChangeOrigin.enter(WiredVariableChangeOrigin.CREATOR_TOOLS);
+        try {
+            Room room = currentRoom();
+
+            if (room == null) {
+                return;
+            }
+
+            if (!room.canModifyWired(this.client.getUser())) {
+                room.getUserVariableManager().sendSnapshot(this.client.getUser());
+                return;
+            }
+
+            if (this.packet.bytesAvailable() < 16) {
+                room.getUserVariableManager().sendSnapshot(this.client.getUser());
+                return;
+            }
+
+            int targetType = this.packet.readInt();
+            int targetId = BuildersClubItemIds.fromWire(
+                    room, this.packet.readInt(), targetType == WiredEffectGiveVariable.TARGET_FURNI);
+            int definitionItemId = this.packet.readInt();
+            int value = this.packet.readInt();
+            String variableToken = "";
+
+            if (this.packet.bytesAvailable() > 0) {
+                if (this.packet.bytesAvailable() < 2
+                        || this.packet.bytesAvailable() > 66
+                        || this.packet
+                                        .getBuffer()
+                                        .getUnsignedShort(
+                                                this.packet.getBuffer().readerIndex())
+                                != this.packet.bytesAvailable() - 2) {
+                    return;
+                }
+
+                variableToken = this.packet.readString();
+            }
+
+            if (!variableToken.isEmpty()) {
+                if (definitionItemId == 0) {
+                    updateInternalVariable(room, targetType, targetId, variableToken, value);
+                }
+
+                if (targetType == TARGET_ROOM) {
+                    room.getRoomVariableManager().sendSnapshot(this.client.getUser());
+                } else {
+                    room.getUserVariableManager().sendSnapshot(this.client.getUser());
+                }
+
+                return;
+            }
+
+            if (targetType == RoomWiredVariableWrites.TARGET_FURNI
+                    || targetType == RoomWiredVariableWrites.TARGET_ROOM
+                    || RoomWiredVariableWrites.mayManageUser(room, this.client.getUser(), targetId, definitionItemId)) {
+                RoomWiredVariableWrites.update(room, targetType, targetId, definitionItemId, value);
+            }
+            if (targetType == WiredEffectGiveVariable.TARGET_FURNI) {
+                room.getFurniVariableManager().sendSnapshot(this.client.getUser());
+            } else if (targetType == TARGET_ROOM) {
+                room.getRoomVariableManager().sendSnapshot(this.client.getUser());
+            } else {
+                room.getUserVariableManager().sendSnapshot(this.client.getUser());
+            }
+        } finally {
+            WiredVariableChangeOrigin.exit(previousOrigin);
+        }
+    }
+
+    private static void updateInternalVariable(Room room, int targetType, int targetId, String token, int value) {
+        if (!token.startsWith("internal:")) {
+            return;
+        }
+
+        String key = WiredInternalVariableSupport.normalizeKey(token.substring("internal:".length()));
+
+        if (targetType == TARGET_ROOM) {
+            if ((targetId == 0 || targetId == room.getId())
+                    && WiredInternalVariableSupport.canUseRoomDestination(key)) {
+                WiredInternalVariableSupport.writeRoomValue(room, key, value);
+            }
+
+            return;
+        }
+
+        if (targetType == WiredEffectGiveVariable.TARGET_USER && "@altitude".equals(key)) {
+            User target = room.getUser(targetId);
+
+            if (target != null && target.getRoomUnit() != null) {
+                WiredInternalVariableSupport.writeUserValue(room, target.getRoomUnit(), key, value);
+            }
+        }
+    }
+
+    @Override
+    public int getRatelimit() {
+        return 150;
+    }
+}

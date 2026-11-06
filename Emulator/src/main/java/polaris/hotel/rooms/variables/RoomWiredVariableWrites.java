@@ -1,0 +1,77 @@
+package polaris.hotel.rooms.variables;
+
+import polaris.hotel.items.interactions.wired.effects.WiredEffectGiveVariable;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredVariableClearPolicy;
+
+/**
+ * The value writes of the wired creator tools (variable manage and update), shared by the wired
+ * menu packets and the variables web API. Callers set the change origin; every write goes through
+ * the room's variable managers, so persistence, triggers and client updates follow as usual.
+ *
+ * <p>Target types are the creator-tool packet codes: furni, room, and anything else is a user.
+ */
+public final class RoomWiredVariableWrites {
+    public static final int TARGET_USER = WiredEffectGiveVariable.TARGET_USER;
+    public static final int TARGET_FURNI = WiredEffectGiveVariable.TARGET_FURNI;
+    public static final int TARGET_ROOM = 3;
+
+    private RoomWiredVariableWrites() {}
+
+    /** Gives the holder the variable with this value, replacing any value it had. */
+    public static boolean assign(Room room, int targetType, int targetId, int definitionItemId, int value) {
+        if (targetType == TARGET_FURNI) {
+            UserItem furni = room.getUserItem(targetId);
+            return furni != null && room.getFurniVariableManager().assignVariable(furni, definitionItemId, value, true);
+        }
+        if (targetType == TARGET_ROOM) {
+            return room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
+        }
+        return UserVariableHolders.isInRoom(room, targetId)
+                && room.getUserVariableManager().assignVariable(targetId, definitionItemId, value, true);
+    }
+
+    /**
+     * Whether this editor may change or remove a user's value of the variable. A user in the room is
+     * the editor's to manage; one who is not - offline included - only the definition's owner may reach,
+     * as the clear-all policy already decides. Changing and removing used to reach any user id.
+     */
+    public static boolean mayManageUser(Room room, User editor, int targetId, int definitionItemId) {
+        return UserVariableHolders.isInRoom(room, targetId)
+                || WiredVariableClearPolicy.canClear(room, editor, definitionItemId);
+    }
+
+    /** Changes the value of a variable the holder already has. */
+    public static boolean update(Room room, int targetType, int targetId, int definitionItemId, int value) {
+        if (targetType == TARGET_FURNI) {
+            return room.getFurniVariableManager().updateVariableValue(targetId, definitionItemId, value);
+        }
+        if (targetType == TARGET_ROOM) {
+            return room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
+        }
+        return room.getUserVariableManager().updateVariableValue(targetId, definitionItemId, value);
+    }
+
+    public static boolean remove(Room room, int targetType, int targetId, int definitionItemId) {
+        if (targetType == TARGET_FURNI) {
+            return room.getFurniVariableManager().removeVariable(targetId, definitionItemId);
+        }
+        if (targetType == TARGET_ROOM) {
+            return room.getRoomVariableManager().removeVariable(definitionItemId);
+        }
+        return room.getUserVariableManager().removeVariable(targetId, definitionItemId);
+    }
+
+    /** Takes the variable from every holder; answers how many lost it. Room variables are left alone. */
+    public static int clearAll(Room room, int targetType, int definitionItemId) {
+        if (targetType == TARGET_FURNI) {
+            return room.getFurniVariableManager().clearAllAssignments(definitionItemId);
+        }
+        if (targetType == TARGET_ROOM) {
+            return 0;
+        }
+        return room.getUserVariableManager().clearAllAssignments(definitionItemId);
+    }
+}

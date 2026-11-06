@@ -1,0 +1,227 @@
+package polaris.hotel.items.interactions.wired.chest;
+
+import java.util.ArrayList;
+import java.util.List;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.users.User;
+
+/**
+ * The old instant settlement of wired contract terms (wallet payments, copied furni).
+ *
+ * <p>Refused under the AIR chest model: contract payments go through the wired trade and rewards
+ * come out of chests ({@link WiredTradingManager}, {@link WiredChestPayouts}). Kept for callers
+ * compiled against it; {@link #execute} always answers false and changes nothing.
+ */
+public final class WiredTransactionExecutor {
+    /** The AIR model settles contracts through the wired trade only. */
+    static final boolean AIR_TRADES_ONLY = true;
+
+    private WiredTransactionExecutor() {}
+
+    public static boolean execute(User user, Room room, List<InteractionWiredContract> contracts) {
+        if (AIR_TRADES_ONLY || user == null || room == null) {
+            return false;
+        }
+        if (contracts == null || contracts.isEmpty()) {
+            return true;
+        }
+
+        List<PendingChange> pending = new ArrayList<>();
+
+        for (InteractionWiredContract contract : contracts) {
+            if (contract == null) {
+                continue;
+            }
+            InteractionWiredChest chest = contract.resolveLinkedChest(room);
+
+            for (ContractTerm term : contract.getTerms()) {
+                if (term.amount <= 0) {
+                    continue;
+                }
+
+                if (term.isCurrency()) {
+                    if (!validateCurrency(user, chest, term, pending)) {
+                        return false;
+                    }
+                } else if (term.isFurni()) {
+                    if (!validateFurni(user, chest, term, pending)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        for (PendingChange change : pending) {
+            change.apply();
+        }
+
+        for (InteractionWiredContract contract : contracts) {
+            InteractionWiredChest chest = contract.resolveLinkedChest(room);
+            if (chest != null) {
+                chest.persistContents();
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean validateCurrency(
+            User user, InteractionWiredChest chest, ContractTerm term, List<PendingChange> pending) {
+        if (term.direction == ContractTerm.DIR_PAY) {
+            if (!ChestWiredCurrencyUtil.has(user, term.currencyType, term.amount)) {
+                return false;
+            }
+            if (chest != null) {
+                pending.add(PendingChange.chestAdd(chest, term.currencyType, term.amount));
+            }
+            pending.add(PendingChange.userTake(user, term.currencyType, term.amount));
+            return true;
+        }
+
+        if (chest != null) {
+            if (chest.getContents().count(ChestStorage.KIND_CURRENCY, term.currencyType) < term.amount) {
+                return false;
+            }
+            pending.add(PendingChange.chestTake(chest, term.currencyType, term.amount));
+        }
+        pending.add(PendingChange.userGive(user, term.currencyType, term.amount));
+        return true;
+    }
+
+    private static boolean validateFurni(
+            User user, InteractionWiredChest chest, ContractTerm term, List<PendingChange> pending) {
+        if (term.baseItemId <= 0) {
+            return false;
+        }
+
+        if (term.direction == ContractTerm.DIR_PAY) {
+            if (ChestWiredFurniUtil.countInInventory(user, term.wallItem, term.baseItemId, term.legacyPosterId)
+                    < term.amount) {
+                return false;
+            }
+            pending.add(PendingChange.userFurniTake(user, chest, term));
+            return true;
+        }
+
+        if (chest != null) {
+            if (chest.getContents().count(ChestStorage.KIND_FURNI, term.baseItemId) < term.amount) {
+                return false;
+            }
+            pending.add(PendingChange.chestFurniGive(user, chest, term));
+            return true;
+        }
+
+        pending.add(PendingChange.userFurniMint(user, term));
+        return true;
+    }
+
+    private static final class PendingChange {
+        private enum Kind {
+            USER_TAKE,
+            USER_GIVE,
+            CHEST_TAKE,
+            CHEST_ADD,
+            USER_FURNI_TAKE,
+            CHEST_FURNI_GIVE,
+            USER_FURNI_MINT
+        }
+
+        private final Kind kind;
+        private final User user;
+        private final InteractionWiredChest chest;
+        private final int currencyType;
+        private final int amount;
+        private final ContractTerm furniTerm;
+        private List<ChestFurniStoredItem> furniItems;
+
+        private PendingChange(
+                Kind kind,
+                User user,
+                InteractionWiredChest chest,
+                int currencyType,
+                int amount,
+                ContractTerm furniTerm) {
+            this.kind = kind;
+            this.user = user;
+            this.chest = chest;
+            this.currencyType = currencyType;
+            this.amount = amount;
+            this.furniTerm = furniTerm;
+        }
+
+        static PendingChange userTake(User user, int currencyType, int amount) {
+            return new PendingChange(Kind.USER_TAKE, user, null, currencyType, amount, null);
+        }
+
+        static PendingChange userGive(User user, int currencyType, int amount) {
+            return new PendingChange(Kind.USER_GIVE, user, null, currencyType, amount, null);
+        }
+
+        static PendingChange chestTake(InteractionWiredChest chest, int currencyType, int amount) {
+            return new PendingChange(Kind.CHEST_TAKE, null, chest, currencyType, amount, null);
+        }
+
+        static PendingChange chestAdd(InteractionWiredChest chest, int currencyType, int amount) {
+            return new PendingChange(Kind.CHEST_ADD, null, chest, currencyType, amount, null);
+        }
+
+        static PendingChange userFurniTake(User user, InteractionWiredChest chest, ContractTerm term) {
+            return new PendingChange(Kind.USER_FURNI_TAKE, user, chest, 0, 0, term);
+        }
+
+        static PendingChange chestFurniGive(User user, InteractionWiredChest chest, ContractTerm term) {
+            return new PendingChange(Kind.CHEST_FURNI_GIVE, user, chest, 0, 0, term);
+        }
+
+        static PendingChange userFurniMint(User user, ContractTerm term) {
+            return new PendingChange(Kind.USER_FURNI_MINT, user, null, 0, 0, term);
+        }
+
+        void apply() {
+            switch (this.kind) {
+                case USER_TAKE:
+                    ChestWiredCurrencyUtil.take(this.user, this.currencyType, this.amount);
+                    break;
+                case USER_GIVE:
+                    ChestWiredCurrencyUtil.give(this.user, this.currencyType, this.amount);
+                    break;
+                case CHEST_TAKE:
+                    this.chest.getContents().take(ChestStorage.KIND_CURRENCY, this.currencyType, this.amount);
+                    break;
+                case CHEST_ADD:
+                    this.chest.getContents().add(ChestStorage.KIND_CURRENCY, this.currencyType, this.amount);
+                    break;
+                case USER_FURNI_TAKE:
+                    this.furniItems = ChestWiredFurniUtil.takeFromInventory(
+                            this.user,
+                            this.furniTerm.wallItem,
+                            this.furniTerm.baseItemId,
+                            this.furniTerm.legacyPosterId,
+                            this.furniTerm.amount);
+                    if (this.chest != null && this.furniItems != null && !this.furniItems.isEmpty()) {
+                        ChestWiredFurniUtil.depositToChest(this.chest, this.furniItems);
+                    }
+                    break;
+                case CHEST_FURNI_GIVE:
+                    if (this.furniTerm != null) {
+                        ChestWiredFurniUtil.giveFromChestByType(
+                                this.user,
+                                this.chest,
+                                this.furniTerm.wallItem,
+                                this.furniTerm.baseItemId,
+                                this.furniTerm.legacyPosterId,
+                                this.furniTerm.amount);
+                    }
+                    break;
+                case USER_FURNI_MINT:
+                    if (this.furniTerm != null) {
+                        ChestWiredFurniUtil.mintToInventory(
+                                this.user, this.furniTerm.wallItem, this.furniTerm.baseItemId, this.furniTerm.amount);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}

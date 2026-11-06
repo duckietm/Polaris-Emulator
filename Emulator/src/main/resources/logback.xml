@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
-    <conversionRule conversionWord="morningstarLevel" class="com.eu.habbo.util.logback.ConsoleLevelConverter" />
-    <conversionRule conversionWord="morningstarLogger" class="com.eu.habbo.util.logback.ConsoleLoggerConverter" />
+    <conversionRule conversionWord="morningstarLevel" class="polaris.util.logback.ConsoleLevelConverter" />
+    <conversionRule conversionWord="morningstarLogger" class="polaris.util.logback.ConsoleLoggerConverter" />
 
     <appender name="ConsoleDelegate" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -84,7 +84,7 @@
     </appender>
 
     <appender name="FileErrorsSql" class="ch.qos.logback.classic.AsyncAppender">
-        <filter class="com.eu.habbo.util.logback.SqlExceptionFilter" />
+        <filter class="polaris.util.logback.SqlExceptionFilter" />
         <queueSize>2048</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <neverBlock>false</neverBlock>

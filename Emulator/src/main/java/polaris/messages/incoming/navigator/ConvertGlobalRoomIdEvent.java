@@ -1,0 +1,44 @@
+package polaris.messages.incoming.navigator;
+
+import polaris.Emulator;
+import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.rooms.ForwardToRoomComposer;
+
+/**
+ * Resolves the room a link or a navigator jump names and forwards the sender to it. The client sends
+ * this whenever the target of a jump is not a plain room id (the web {@code openroom} call and the
+ * navigator's own fallback), so the value is either an id in a string or a room name. Only the
+ * forward is sent: entering still goes through the normal room entry, with its bans, doorbell and
+ * password checks.
+ */
+public class ConvertGlobalRoomIdEvent extends MessageHandler {
+    @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        String target = NavigatorInputGuard.normalizeSearch(this.packet.readString());
+
+        if (target.isEmpty()) return;
+
+        int roomId = asRoomId(target);
+
+        if (roomId <= 0) {
+            roomId = Emulator.getGameEnvironment().getRoomManager().findVisibleRoomIdByName(target);
+
+            if (roomId <= 0) return;
+        }
+
+        this.client.sendResponse(new ForwardToRoomComposer(roomId));
+    }
+
+    private static int asRoomId(String target) {
+        try {
+            return Integer.parseInt(target);
+        } catch (NumberFormatException notAnId) {
+            return 0;
+        }
+    }
+}

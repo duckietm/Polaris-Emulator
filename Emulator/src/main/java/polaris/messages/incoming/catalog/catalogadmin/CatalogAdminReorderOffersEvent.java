@@ -1,0 +1,82 @@
+package polaris.messages.incoming.catalog.catalogadmin;
+
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import polaris.hotel.catalog.CatalogPageType;
+import polaris.hotel.catalog.versioning.CatalogChangeOperation;
+import polaris.hotel.catalog.versioning.CatalogEntityType;
+import polaris.hotel.catalog.versioning.CatalogLiveMutationRequest;
+import polaris.hotel.catalog.versioning.CatalogSnapshotPatch;
+import polaris.messages.incoming.MessageHandler;
+import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
+import polaris.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
+
+public class CatalogAdminReorderOffersEvent extends MessageHandler {
+    private static final int MAX_BATCH_SIZE = 1000;
+
+    @Override
+    public void handle() throws Exception {
+        if (!CatalogAdminAccess.check(this.client)) {
+            return;
+        }
+
+        int count = this.packet.readInt();
+        if (count <= 0 || count > MAX_BATCH_SIZE) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid reorder batch size"));
+            return;
+        }
+
+        List<OfferOrder> orders = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            int offerId = this.packet.readInt();
+            int orderNumber = this.packet.readInt();
+            orders.add(new OfferOrder(offerId, orderNumber));
+        }
+
+        CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var liveMutations = CatalogStudioRuntime.services().liveMutations();
+        var live = liveMutations.loadLive();
+        Set<Integer> ids = new HashSet<>();
+        Integer pageId = null;
+        List<CatalogLiveMutationRequest> requests = new ArrayList<>(orders.size());
+        Gson gson = new Gson();
+        for (OfferOrder order : orders) {
+            if (order.offerId() <= 0 || order.orderNumber() < 0 || !ids.add(order.offerId())) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer reorder entry"));
+                return;
+            }
+            var offer = live.offer(pageType, order.offerId()).orElse(null);
+            if (offer == null) {
+                this.client.sendResponse(
+                        new CatalogAdminResultComposer(false, "Live catalog offer not found: " + order.offerId()));
+                return;
+            }
+            if (pageId == null) pageId = offer.pageId();
+            if (offer.pageId() != pageId) {
+                this.client.sendResponse(
+                        new CatalogAdminResultComposer(false, "Every reordered offer must belong to the same page"));
+                return;
+            }
+            requests.add(CatalogAdminLiveRequest.atRevision(
+                    envelope,
+                    live.version().revision(),
+                    this.client.getUser().getUserInfo().getId(),
+                    CatalogEntityType.OFFER,
+                    pageType,
+                    offer.offerId(),
+                    CatalogChangeOperation.MOVE,
+                    gson.toJson(CatalogSnapshotPatch.setOfferOrder(offer, order.orderNumber()))));
+        }
+        var result = liveMutations.applyBatch(requests);
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Offers reordered live at revision " + result.revision()));
+    }
+
+    private record OfferOrder(int offerId, int orderNumber) {}
+}

@@ -24,6 +24,7 @@
 
         <netty.version>4.2.19.Final</netty.version>
         <gson.version>2.15.0</gson.version>
+        <asm.version>9.11</asm.version>
         <mariadb.version>3.5.11</mariadb.version>
         <hikaricp.version>7.1.0</hikaricp.version>
         <dropwizard-metrics.version>4.2.40</dropwizard-metrics.version>
@@ -202,6 +203,14 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                            <!-- ASM only rewrites old plugin jars as they load. Relocated, it stays off
+                                 the plugin-visible classpath, so a plugin bundling its own ASM gets its own. -->
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.objectweb.asm</pattern>
+                                    <shadedPattern>polaris.shaded.asm</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <!-- Every Netty module ships its own version entries; keep them all. -->
@@ -209,7 +218,7 @@
                                     <resource>META-INF/io.netty.versions.properties</resource>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.eu.habbo.Emulator</mainClass>
+                                    <mainClass>polaris.Emulator</mainClass>
                                     <manifestEntries>
                                         <Implementation-Title>${project.name}</Implementation-Title>
                                         <Implementation-Version>${project.version}</Implementation-Version>
@@ -541,6 +550,18 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
+        </dependency>
+
+        <!-- ASM: rewrites the package names old plugin jars were compiled against -->
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>${asm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
+            <version>${asm.version}</version>
         </dependency>
 
         <!-- MariaDB Connector/J (native driver for MariaDB) -->

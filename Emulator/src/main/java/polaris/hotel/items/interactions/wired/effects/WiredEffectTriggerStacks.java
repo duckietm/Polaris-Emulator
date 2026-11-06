@@ -1,0 +1,300 @@
+package polaris.hotel.items.interactions.wired.effects;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
+import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredEffect;
+import polaris.hotel.items.interactions.InteractionWiredTrigger;
+import polaris.hotel.items.interactions.wired.WiredInputGuard;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.core.WiredTextPlaceholderUtil;
+import polaris.messages.ServerMessage;
+import polaris.messages.incoming.wired.WiredSaveException;
+
+public class WiredEffectTriggerStacks extends InteractionWiredEffect {
+    public static final WiredEffectType type = WiredEffectType.CALL_STACKS;
+
+    protected Set<UserItem> items;
+    protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    public WiredEffectTriggerStacks(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.items = new CopyOnWriteArraySet<>();
+    }
+
+    public WiredEffectTriggerStacks(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.items = new CopyOnWriteArraySet<>();
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        List<UserItem> itemsSnapshot = new ArrayList<>(this.items);
+        Set<UserItem> items = new HashSet<>();
+
+        for (UserItem item : itemsSnapshot) {
+            if (item.getRoomId() != this.getRoomId()
+                    || Emulator.getGameEnvironment()
+                                    .getRoomManager()
+                                    .getRoom(this.getRoomId())
+                                    .getUserItem(item.getId())
+                            == null) items.add(item);
+        }
+
+        for (UserItem item : items) {
+            this.items.remove(item);
+        }
+        itemsSnapshot = new ArrayList<>(this.items);
+        message.appendBoolean(false);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(itemsSnapshot.size());
+        for (UserItem item : itemsSnapshot) {
+            message.appendInt(item.getId());
+        }
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(this.getDelay());
+
+        if (this.requiresTriggeringUser()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            for (InteractionWiredTrigger trigger : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!trigger.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(trigger.getBaseItem().getSpriteId());
+                }
+            }
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
+            }
+        } else {
+            message.appendInt(0);
+        }
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        int[] params = settings.getIntParams();
+        // Official: no int params; the furni source is the official source slot.
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+
+        int itemsCount = settings.getFurniIds().length;
+
+        if (itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
+            throw new WiredSaveException("Too many furni selected");
+        }
+
+        if (itemsCount > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
+            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
+        }
+
+        List<UserItem> newItems = new ArrayList<>();
+
+        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
+            for (int i = 0; i < itemsCount; i++) {
+                int itemId = settings.getFurniIds()[i];
+                UserItem it = Emulator.getGameEnvironment()
+                        .getRoomManager()
+                        .getRoom(this.getRoomId())
+                        .getUserItem(itemId);
+
+                if (it == null) throw new WiredSaveException(String.format("Item %s not found", itemId));
+
+                newItems.add(it);
+            }
+        }
+
+        int delay = settings.getDelay();
+
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY))
+            throw new WiredSaveException("Delay too long");
+
+        this.items.clear();
+        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
+            this.items.addAll(newItems);
+        }
+        this.setDelay(delay);
+
+        return true;
+    }
+
+    /**
+     * Maximum recursion depth to prevent infinite loops when trigger stacks call each other.
+     */
+    protected static final int MAX_STACK_DEPTH = 10;
+
+    @Override
+    public void execute(WiredContext ctx) {
+        Room room = ctx.room();
+        RoomUnit roomUnit = ctx.actor().orElse(null);
+
+        // Get the current call stack depth from the event
+        int currentDepth = ctx.event().getCallStackDepth();
+
+        // Prevent excessive recursion depth
+        if (currentDepth >= MAX_STACK_DEPTH) {
+            return;
+        }
+
+        Set<RoomTile> usedTiles = collectTargetTiles(room, ctx);
+        RoomTile ownTile = (room.getLayout() != null) ? room.getLayout().getTile(this.getX(), this.getY()) : null;
+
+        // The called stacks run through their own selectors, add-ons and conditions, and start
+        // from this stack's selection: what its selectors picked, else its triggering user and furni.
+        List<RoomUnit> users = ctx.targets().isUsersModifiedBySelector()
+                ? new ArrayList<>(ctx.targets().users())
+                : ctx.actor().map(List::of).orElse(List.of());
+        List<UserItem> furni = ctx.targets().isItemsModifiedBySelector()
+                ? new ArrayList<>(ctx.targets().items())
+                : ctx.sourceItem().map(List::of).orElse(List.of());
+
+        WiredManager.callStacksAtTiles(
+                usedTiles,
+                room,
+                roomUnit,
+                users,
+                furni,
+                ownTile,
+                currentDepth + 1,
+                this.isNegativeCall(),
+                ctx.contextVariables(),
+                WiredTextPlaceholderUtil.carriedPlaceholders(ctx));
+    }
+
+    /** A negative call runs the called stacks as if their conditions had come out the other way. */
+    protected boolean isNegativeCall() {
+        return false;
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        List<UserItem> itemsSnapshot = new ArrayList<>(this.items);
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        itemsSnapshot.stream().map(UserItem::getId).collect(Collectors.toList()),
+                        this.furniSource));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.items = new CopyOnWriteArraySet<>();
+        String wiredData = set.getString("wired_data");
+
+        JsonData jsonData = WiredMovementPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (jsonData != null) {
+            this.setDelay(WiredMovementPayloadGuard.delay(jsonData.delay));
+            this.furniSource = WiredMovementPayloadGuard.furniSource(jsonData.furniSource);
+            if (jsonData.itemIds != null) {
+                for (Integer id : jsonData.itemIds) {
+                    if (id == null) continue;
+                    UserItem item = room.getUserItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
+                }
+            }
+            if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && !this.items.isEmpty()) {
+                this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
+            }
+        } else {
+            String[] wiredDataOld = wiredData != null ? wiredData.split("\t") : new String[0];
+
+            if (wiredDataOld.length >= 1) {
+                this.setDelay(WiredMovementPayloadGuard.parseDelay(wiredDataOld[0]));
+            }
+            if (wiredDataOld.length == 2) {
+                if (wiredDataOld[1].contains(";")) {
+                    for (String s : wiredDataOld[1].split(";")) {
+                        int itemId = WiredMovementPayloadGuard.parseInt(s, 0);
+                        UserItem item = itemId > 0 ? room.getUserItem(itemId) : null;
+
+                        if (item != null) this.items.add(item);
+                    }
+                }
+            }
+            this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.items.clear();
+        this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.setDelay(0);
+    }
+
+    @Override
+    public WiredEffectType getType() {
+        return type;
+    }
+
+    @Override
+    protected long requiredCooldown() {
+        return COOLDOWN_TRIGGER_STACKS;
+    }
+
+    protected List<UserItem> resolveEffectiveItems(WiredContext ctx) {
+        return WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
+    }
+
+    protected Set<RoomTile> collectTargetTiles(Room room, WiredContext ctx) {
+        Set<RoomTile> usedTiles = new LinkedHashSet<>();
+
+        if (room == null || room.getLayout() == null) {
+            return usedTiles;
+        }
+
+        for (UserItem item : resolveEffectiveItems(ctx)) {
+            if (item == null) {
+                continue;
+            }
+
+            RoomTile tile = room.getLayout().getTile(item.getX(), item.getY());
+            if (tile != null) {
+                usedTiles.add(tile);
+            }
+        }
+
+        return usedTiles;
+    }
+
+    static class JsonData {
+        int delay;
+        List<Integer> itemIds;
+        int furniSource;
+
+        public JsonData(int delay, List<Integer> itemIds, int furniSource) {
+            this.delay = delay;
+            this.itemIds = itemIds;
+            this.furniSource = furniSource;
+        }
+    }
+}

@@ -1,0 +1,44 @@
+package polaris.messages.outgoing.rooms.pets;
+
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.MessageComposer;
+import polaris.messages.outgoing.Outgoing;
+
+/**
+ * Official {@code PetSupplementedNotification} (header 3441): tells the room
+ * which Habbo gave which supplement to which pet, so every client plays the
+ * watering / lighting animation over the plant.
+ */
+public class PetSupplementedNotificationComposer extends MessageComposer {
+
+    private final int petId;
+    private final int userId;
+    private final int supplementType;
+
+    public PetSupplementedNotificationComposer(int petId, int userId, int supplementType) {
+        this.petId = petId;
+        this.userId = userId;
+        this.supplementType = supplementType;
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.PetSupplementedNotificationComposer);
+        this.response.appendInt(this.petId);
+        this.response.appendInt(this.userId);
+        this.response.appendInt(this.supplementType);
+        return this.response;
+    }
+
+    public int getPetId() {
+        return petId;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public int getSupplementType() {
+        return supplementType;
+    }
+}

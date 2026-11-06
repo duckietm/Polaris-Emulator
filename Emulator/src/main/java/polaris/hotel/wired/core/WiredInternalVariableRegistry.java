@@ -1,0 +1,334 @@
+package polaris.hotel.wired.core;
+
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+
+/** Typed capability index for Polaris-owned internal wired variables and their legacy aliases. */
+final class WiredInternalVariableRegistry {
+    private static final BooleanSupplier ALWAYS_ENABLED = () -> true;
+    static final WiredInternalVariableRegistry DEFAULT = builtIns();
+
+    enum Capability {
+        USER_REFERENCE,
+        USER_DESTINATION,
+        FURNI_REFERENCE,
+        FURNI_DESTINATION,
+        ROOM_REFERENCE,
+        ROOM_DESTINATION,
+        CONTEXT_REFERENCE
+    }
+
+    private final Map<String, Definition> definitions;
+    private final Map<String, String> aliases;
+
+    private WiredInternalVariableRegistry(Map<String, Definition> definitions, Map<String, String> aliases) {
+        this.definitions = definitions;
+        this.aliases = aliases;
+    }
+
+    String normalize(String key) {
+        if (key == null) {
+            return "";
+        }
+
+        String trimmed = key.trim();
+        return aliases.getOrDefault(trimmed, trimmed);
+    }
+
+    boolean supports(String key, Capability capability) {
+        Definition definition = definitions.get(normalize(key));
+        return definition != null
+                && definition.enabled().getAsBoolean()
+                && definition.capabilities().contains(capability);
+    }
+
+    Set<String> keys(Capability capability) {
+        Set<String> result = new LinkedHashSet<>();
+        definitions.forEach((key, definition) -> {
+            if (definition.enabled().getAsBoolean() && definition.capabilities().contains(capability)) {
+                result.add(key);
+            }
+        });
+        return Collections.unmodifiableSet(result);
+    }
+
+    Map<String, String> aliases() {
+        return aliases;
+    }
+
+    private static WiredInternalVariableRegistry builtIns() {
+        Builder builder = new Builder();
+        builder.register(
+                Capability.USER_REFERENCE,
+                "@index",
+                "@type",
+                "@gender",
+                "@level",
+                "@achievement_score",
+                "@is_hc",
+                "@has_rights",
+                "@is_group_admin",
+                "@is_owner",
+                "@is_muted",
+                "@is_trading",
+                "@is_frozen",
+                "@effect_id",
+                "@team_score",
+                "@player_score",
+                "@team_color",
+                "@team_type",
+                "@sign",
+                "@dance",
+                "@is_idle",
+                "@handitem_id",
+                "@position_x",
+                "@position_y",
+                "@position",
+                "@direction",
+                "@altitude",
+                "@favourite_group_id",
+                "@room_entry.method",
+                "@room_entry.teleport_id",
+                "@user_id",
+                "@bot_id",
+                "@pet_id",
+                "@pet_owner_id",
+                WiredHabbiconVariables.HABBICON);
+        builder.register(Capability.USER_REFERENCE, WiredTransactionVariables.USER_KEYS.toArray(String[]::new));
+        builder.register(Capability.USER_REFERENCE, WiredSmartVariables.USER_KEYS.toArray(String[]::new));
+        builder.register(
+                Capability.USER_DESTINATION,
+                "@position_x",
+                "@position_y",
+                "@position",
+                "@direction",
+                "@altitude",
+                "@handitem_id",
+                "@effect_id",
+                "@team_score",
+                "@player_score",
+                WiredHabbiconVariables.HABBICON);
+        builder.register(
+                Capability.FURNI_REFERENCE,
+                "~teleport.target_id",
+                "~recolorable_furni.color.rgb",
+                "~recolorable_furni.color.rgb.red",
+                "~recolorable_furni.color.rgb.green",
+                "~recolorable_furni.color.rgb.blue",
+                "@id",
+                "@class_id",
+                "@height",
+                "@state",
+                "@position_x",
+                "@position_y",
+                "@position",
+                "@occupation",
+                "@rotation",
+                "@altitude",
+                "@is_invisible",
+                "@type",
+                "@is_stackable",
+                "@can_stand_on",
+                "@can_sit_on",
+                "@can_lay_on",
+                "@owner_id",
+                "@wallitem_offset",
+                "@dimensions.x",
+                "@dimensions.y");
+        builder.register(Capability.FURNI_REFERENCE, WiredSmartVariables.FURNI_KEYS.toArray(String[]::new));
+        builder.register(
+                Capability.FURNI_REFERENCE,
+                WiredProjectileFlight.POSITION_X,
+                WiredProjectileFlight.POSITION_Y,
+                WiredProjectileFlight.POSITION_ALTITUDE,
+                WiredProjectileFlight.IS_TRAVELING,
+                WiredProjectileFlight.TILES_TRAVELED,
+                WiredProjectileFlight.FURNI_COLLISIONS,
+                WiredProjectileFlight.USER_COLLISIONS);
+        builder.register(
+                Capability.FURNI_DESTINATION,
+                "@state",
+                "@position_x",
+                "@position_y",
+                "@position",
+                "@occupation",
+                "@rotation",
+                "@altitude",
+                "~recolorable_furni.color.rgb",
+                "~recolorable_furni.color.rgb.red",
+                "~recolorable_furni.color.rgb.green",
+                "~recolorable_furni.color.rgb.blue",
+                WiredSmartVariables.CLOCK_PULSE_COUNT);
+        builder.registerWhen(
+                ALWAYS_ENABLED, EnumSet.of(Capability.FURNI_REFERENCE, Capability.FURNI_DESTINATION), "@gravity");
+        builder.registerWhen(
+                ALWAYS_ENABLED, EnumSet.of(Capability.FURNI_REFERENCE, Capability.FURNI_DESTINATION), "@opacity");
+        builder.register(
+                Capability.ROOM_REFERENCE,
+                "@furni_count",
+                "@user_count",
+                "@wired_timer",
+                "@team_red_score",
+                "@team_green_score",
+                "@team_blue_score",
+                "@team_yellow_score",
+                "@team_red_size",
+                "@team_green_size",
+                "@team_blue_size",
+                "@team_yellow_size",
+                "@room_id",
+                "@group_id",
+                "@timezone_server",
+                "@timezone_client",
+                "@current_time",
+                "@current_time.milliseconds_of_seconds",
+                "@current_time.seconds_of_minute",
+                "@current_time.minute_of_hour",
+                "@current_time.hour_of_day",
+                "@current_time.day_of_week",
+                "@current_time.day_of_month",
+                "@current_time.day_of_year",
+                "@current_time.week_of_year",
+                "@current_time.month_of_year",
+                "@current_time.year");
+        builder.register(
+                Capability.ROOM_DESTINATION,
+                "@team_red_score",
+                "@team_green_score",
+                "@team_blue_score",
+                "@team_yellow_score");
+        builder.register(
+                Capability.CONTEXT_REFERENCE,
+                "@selector_furni_count",
+                "@selector_user_count",
+                "@signal_furni_count",
+                "@signal_user_count",
+                "@antenna_id",
+                "@chat_type",
+                "@chat_style",
+                "@event.link.source_room_id",
+                "@event.transaction_failed.reason",
+                WiredHabbiconVariables.EVENT_HABBICON);
+        builder.register(Capability.CONTEXT_REFERENCE, WiredTransactionVariables.COMPLETE_KEYS.toArray(String[]::new));
+        builder.register(
+                Capability.CONTEXT_REFERENCE,
+                "@array.change_type",
+                "@array.index",
+                "@array.source_index",
+                "@array.destination_index",
+                "@array.field_index",
+                "@array.old_value",
+                "@array.new_value",
+                "@array.old_length",
+                "@array.new_length",
+                "@event.variable_update.box_id",
+                "@event.variable_update.change_type",
+                "@event.variable_update.old_value",
+                "@event.variable_update.new_value",
+                "@event.variable_update.difference",
+                "@event.variable_update.change_origin");
+
+        // AIR's part name; boxes saved with our earlier name keep resolving.
+        builder.alias("@current_time.millisecond_of_second", "@current_time.milliseconds_of_seconds");
+        // AIR's part names; boxes saved with ours (.r / .g / .b) keep resolving.
+        builder.alias("~recolorable_furni.color.rgb.r", "~recolorable_furni.color.rgb.red");
+        builder.alias("~recolorable_furni.color.rgb.g", "~recolorable_furni.color.rgb.green");
+        builder.alias("~recolorable_furni.color.rgb.b", "~recolorable_furni.color.rgb.blue");
+        builder.alias(WiredProjectileFlight.LEGACY_IS_TRAVELING, WiredProjectileFlight.IS_TRAVELING);
+        builder.alias(WiredProjectileFlight.LEGACY_TILES_TRAVELED, WiredProjectileFlight.TILES_TRAVELED);
+        builder.alias("@position.x", "@position_x");
+        builder.alias("@position.y", "@position_y");
+        builder.alias("@effect", "@effect_id");
+        builder.alias("@handitems", "@handitem_id");
+        builder.alias("@handitem", "@handitem_id");
+        builder.alias("@team.score", "@team_score");
+        builder.alias("@player.score", "@player_score");
+        builder.alias("@team.color", "@team_color");
+        builder.alias("@team.type", "@team_type");
+        builder.alias("@event.chat.type", "@chat_type");
+        builder.alias("@event.chat.style", "@chat_style");
+        builder.alias("@event.signal.antenna_id", "@antenna_id");
+        builder.alias("@is_mute", "@is_muted");
+        builder.alias("@teams.red.score", "@team_red_score");
+        builder.alias("@teams.green.score", "@team_green_score");
+        builder.alias("@teams.blue.score", "@team_blue_score");
+        builder.alias("@teams.yellow.score", "@team_yellow_score");
+        builder.alias("@teams.red.size", "@team_red_size");
+        builder.alias("@teams.green.size", "@team_green_size");
+        builder.alias("@teams.blue.size", "@team_blue_size");
+        builder.alias("@teams.yellow.size", "@team_yellow_size");
+        return builder.build();
+    }
+
+    static final class Builder {
+        private final Map<String, EnumSet<Capability>> definitions = new LinkedHashMap<>();
+        private final Map<String, BooleanSupplier> availability = new LinkedHashMap<>();
+        private final Map<String, String> aliases = new LinkedHashMap<>();
+
+        Builder register(Capability capability, String... keys) {
+            return registerWhen(ALWAYS_ENABLED, EnumSet.of(capability), keys);
+        }
+
+        Builder registerWhen(BooleanSupplier enabled, Set<Capability> capabilities, String... keys) {
+            if (enabled == null || capabilities == null || capabilities.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Internal variable registration requires availability and capabilities");
+            }
+            for (String key : keys) {
+                validateKey(key);
+                definitions
+                        .computeIfAbsent(key, ignored -> EnumSet.noneOf(Capability.class))
+                        .addAll(capabilities);
+                BooleanSupplier previous = availability.putIfAbsent(key, enabled);
+                if (previous != null && previous != enabled) {
+                    throw new IllegalArgumentException("Conflicting internal variable availability: " + key);
+                }
+            }
+            return this;
+        }
+
+        Builder alias(String alias, String canonicalKey) {
+            validateKey(alias);
+            validateKey(canonicalKey);
+            String previous = aliases.putIfAbsent(alias, canonicalKey);
+            if (previous != null && !previous.equals(canonicalKey)) {
+                throw new IllegalArgumentException("Conflicting internal variable alias: " + alias);
+            }
+            return this;
+        }
+
+        WiredInternalVariableRegistry build() {
+            aliases.forEach((alias, canonicalKey) -> {
+                if (definitions.containsKey(alias)) {
+                    throw new IllegalArgumentException("Internal variable alias shadows canonical key: " + alias);
+                }
+                if (!definitions.containsKey(canonicalKey)) {
+                    throw new IllegalArgumentException("Unknown internal variable alias target: " + canonicalKey);
+                }
+            });
+
+            Map<String, Definition> frozenDefinitions = new LinkedHashMap<>();
+            definitions.forEach((key, capabilities) -> frozenDefinitions.put(
+                    key,
+                    new Definition(
+                            Collections.unmodifiableSet(EnumSet.copyOf(capabilities)),
+                            availability.getOrDefault(key, ALWAYS_ENABLED))));
+            return new WiredInternalVariableRegistry(
+                    Collections.unmodifiableMap(frozenDefinitions),
+                    Collections.unmodifiableMap(new LinkedHashMap<>(aliases)));
+        }
+
+        private static void validateKey(String key) {
+            if (key == null || key.isBlank() || !key.equals(key.trim())) {
+                throw new IllegalArgumentException("Invalid internal variable key");
+            }
+        }
+    }
+
+    private record Definition(Set<Capability> capabilities, BooleanSupplier enabled) {}
+}

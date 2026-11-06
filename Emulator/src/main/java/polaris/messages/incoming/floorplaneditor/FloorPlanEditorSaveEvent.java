@@ -1,0 +1,405 @@
+package polaris.messages.incoming.floorplaneditor;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.permissions.Permission;
+import polaris.hotel.rooms.CustomRoomLayout;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomLayout;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.rooms.RoomTileState;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.messages.ServerMessage;
+import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.generic.alerts.BubbleAlertComposer;
+import polaris.messages.outgoing.generic.alerts.BubbleAlertKeys;
+import polaris.messages.outgoing.generic.alerts.GenericAlertComposer;
+import polaris.messages.outgoing.rooms.ForwardToRoomComposer;
+
+public class FloorPlanEditorSaveEvent extends MessageHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FloorPlanEditorSaveEvent.class);
+
+    public static volatile int MAXIMUM_FLOORPLAN_WIDTH_LENGTH = 64;
+    public static volatile int MAXIMUM_FLOORPLAN_SIZE = 64 * 64;
+
+    private static final int SAVE_COOLDOWN_SECONDS = 3;
+    private static final int MAX_AUTO_PICKUP_ITEMS = 500;
+    private static final Pattern ALLOWED_MAP_CHARS = Pattern.compile("[a-zA-Z0-9\r]+");
+
+    /** A floor plan the packet carried and every check accepted. */
+    private record FloorPlan(
+            String map,
+            String[] rows,
+            int width,
+            int doorX,
+            int doorY,
+            int doorDirection,
+            int wallSize,
+            int floorSize,
+            int wallHeight,
+            boolean autoPickup) {}
+
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        Room room = this.editableRoom();
+
+        if (room == null) return;
+
+        long now = Emulator.getIntUnixTimestamp();
+        if (now - this.client.getUser().getUserStats().lastFloorplanSaveTimestamp < SAVE_COOLDOWN_SECONDS) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key, "Please wait a few seconds before saving again."));
+            return;
+        }
+
+        FloorPlan plan = this.readFloorPlan(room);
+
+        if (plan == null) return;
+
+        Set<UserItem> itemsToPickup = this.findItemsToPickup(room, plan);
+
+        if (itemsToPickup == null || !this.pickUpItems(room, itemsToPickup)) return;
+
+        RoomLayout layout = this.applyLayout(room, plan);
+
+        if (layout != null) {
+            this.saveRoom(room, layout, plan, now);
+        }
+    }
+
+    /** The room the user stands in, when they may edit its floor plan; null otherwise. */
+    private Room editableRoom() {
+        if (!this.client.getUser().hasPermission(Permission.ACC_FLOORPLAN_EDITOR)) {
+            this.client.sendResponse(
+                    new GenericAlertComposer(Emulator.getTexts().getValue("floorplan.permission")));
+            return null;
+        }
+
+        Room room = this.client.getUser().getUserInfo().getCurrentRoom();
+
+        if (room == null) return null;
+
+        if (!(room.getOwnerId() == this.client.getUser().getUserInfo().getId()
+                || this.client.getUser().hasPermission(Permission.ACC_ANYROOMOWNER))) {
+            return null;
+        }
+
+        return room;
+    }
+
+    /**
+     * Reads the map and the fields after it. A malformed map is dropped without an answer; fields out of range are
+     * reported to the user together. Null when the plan cannot be saved.
+     */
+    static boolean exceedsArea(int rows, int width, int maximumArea) {
+        return (long) rows * width > maximumArea;
+    }
+
+    private FloorPlan readFloorPlan(Room room) {
+        StringJoiner errors = new StringJoiner("<br />");
+        String map = this.packet.readString();
+
+        // readString never returns null: a short packet reads as an empty string. The raw text also holds one
+        // separator per row; the area itself is checked on the tiles below.
+        if (map.length() > MAXIMUM_FLOORPLAN_SIZE + MAXIMUM_FLOORPLAN_WIDTH_LENGTH) {
+            LOGGER.warn(
+                    "Floorplan save rejected (oversize): user={} room={} mapLen={}",
+                    this.client.getUser().getUserInfo().getId(),
+                    room.getId(),
+                    map.length());
+            return null;
+        }
+
+        if (!ALLOWED_MAP_CHARS.matcher(map).matches()) {
+            LOGGER.warn(
+                    "Floorplan save rejected (illegal chars): user={} room={}",
+                    this.client.getUser().getUserInfo().getId(),
+                    room.getId());
+            return null;
+        }
+
+        map = map.replace("X", "x");
+
+        String[] mapRows = map.split("\r");
+
+        if (mapRows.length == 0 || mapRows.length > MAXIMUM_FLOORPLAN_WIDTH_LENGTH) {
+            return null;
+        }
+
+        int firstRowSize = mapRows[0].length();
+
+        if (firstRowSize == 0 || firstRowSize > MAXIMUM_FLOORPLAN_WIDTH_LENGTH) {
+            return null;
+        }
+
+        for (String row : mapRows) {
+            if (row.length() != firstRowSize) {
+                return null;
+            }
+        }
+
+        // The area is the tiles, rows times width: the raw length counted the row separators too, so a plan a few
+        // tiles under the limit was refused without a word to the user.
+        if (exceedsArea(mapRows.length, firstRowSize, MAXIMUM_FLOORPLAN_SIZE)) {
+            errors.add("${notification.floorplan_editor.error.message.too_large_area} ("
+                    + "${notification.floorplan_editor.error.message.max} " + MAXIMUM_FLOORPLAN_SIZE
+                    + " ${notification.floorplan_editor.error.message.tiles})");
+        }
+
+        if (Emulator.getConfig().getBoolean("hotel.room.floorplan.check.enabled")) {
+            if (map.replace("x", "").replace("\r", "").isEmpty()) {
+                errors.add("${notification.floorplan_editor.error.message.effective_height_is_0}");
+            }
+        }
+
+        int doorX = this.packet.readInt();
+        int doorY = this.packet.readInt();
+
+        if (doorX < 0 || doorX >= firstRowSize || doorY < 0 || doorY >= mapRows.length) {
+            errors.add("${notification.floorplan_editor.error.message.entry_tile_outside_map}");
+        } else if (mapRows[doorY].charAt(doorX) == 'x') {
+            errors.add("${notification.floorplan_editor.error.message.entry_not_on_tile}");
+        }
+
+        int doorRotation = this.packet.readInt();
+        if (doorRotation < 0 || doorRotation > 7) {
+            errors.add("${notification.floorplan_editor.error.message.invalid_entry_tile_direction}");
+        }
+
+        int wallSize = this.packet.readInt();
+        if (wallSize < -2 || wallSize > 1) {
+            errors.add("${notification.floorplan_editor.error.message.invalid_wall_thickness}");
+        }
+        int floorSize = this.packet.readInt();
+        if (floorSize < -2 || floorSize > 1) {
+            errors.add("${notification.floorplan_editor.error.message.invalid_floor_thickness}");
+        }
+
+        int wallHeight = -1;
+        if (this.packet.bytesAvailable() >= 4) wallHeight = this.packet.readInt();
+
+        if (wallHeight < -1 || wallHeight > 15) {
+            errors.add("${notification.floorplan_editor.error.message.invalid_walls_fixed_height}");
+        }
+
+        boolean autoPickup = false;
+        if (this.packet.bytesAvailable() >= 1) {
+            autoPickup = this.packet.readBoolean();
+        }
+
+        if (errors.length() > 0) {
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key, errors.toString()));
+            return null;
+        }
+
+        return new FloorPlan(
+                map, mapRows, firstRowSize, doorX, doorY, doorRotation, wallSize, floorSize, wallHeight, autoPickup);
+    }
+
+    /**
+     * The furni the new plan takes away from under them: on a tile that becomes void, on a tile whose height changes
+     * and on a tile the plan leaves out. With auto pickup they are returned to be picked up; without it the first
+     * blocking tile is reported and null is returned. Null as well when a tile character cannot be read.
+     */
+    private Set<UserItem> findItemsToPickup(Room room, FloorPlan plan) {
+        Set<RoomTile> locked_tileList = room.getLockedTiles();
+        Set<RoomTile> new_tileList = new HashSet<>();
+        Set<UserItem> itemsToPickup = new HashSet<>();
+        int blockedX = -1;
+        int blockedY = -1;
+        blockingRoomItemScan:
+        for (int y = 0; y < plan.rows().length; y++) {
+            for (int x = 0; x < plan.width(); x++) {
+
+                RoomTile tile = room.getLayout().getTile((short) x, (short) y);
+                new_tileList.add(tile);
+                String square = String.valueOf(plan.rows()[y].charAt(x));
+                short height;
+
+                if (square.equalsIgnoreCase("x") && room.getTopItemAt(x, y) != null) {
+                    if (plan.autoPickup()) {
+                        Set<UserItem> here = room.getItemsAt(x, y);
+                        if (here != null) itemsToPickup.addAll(here);
+                        continue;
+                    }
+                    blockedX = x;
+                    blockedY = y;
+                    break blockingRoomItemScan;
+                }
+
+                try {
+                    if (square.isEmpty()) {
+                        height = 0;
+                    } else if (Emulator.isNumeric(square)) {
+                        height = Short.parseShort(square);
+                    } else {
+                        int idx = "abcdefghijklmnopqrstuvwxyz".indexOf(square.toLowerCase());
+                        if (idx < 0) {
+                            return null;
+                        }
+                        height = (short) Math.min(26, 10 + idx);
+                    }
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+
+                if (tile != null
+                        && tile.state != RoomTileState.INVALID
+                        && height != tile.z
+                        && room.getTopItemAt(x, y) != null) {
+                    if (plan.autoPickup()) {
+                        Set<UserItem> here = room.getItemsAt(x, y);
+                        if (here != null) itemsToPickup.addAll(here);
+                        continue;
+                    }
+                    blockedX = x;
+                    blockedY = y;
+                    break blockingRoomItemScan;
+                }
+            }
+        }
+
+        if (blockedX < 0) {
+            locked_tileList.removeAll(new_tileList);
+            if (!locked_tileList.isEmpty()) {
+                if (plan.autoPickup()) {
+                    for (RoomTile lt : locked_tileList) {
+                        Set<UserItem> here = room.getItemsAt(lt);
+                        if (here != null) itemsToPickup.addAll(here);
+                    }
+                } else {
+                    RoomTile first = locked_tileList.iterator().next();
+                    blockedX = first.x;
+                    blockedY = first.y;
+                }
+            }
+        }
+
+        if (blockedX >= 0) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                    "${notification.floorplan_editor.error.message.change_blocked_by_room_item} (" + blockedX + ", "
+                            + blockedY + ")"));
+            return null;
+        }
+
+        return itemsToPickup;
+    }
+
+    /** Picks the furni up for their owners; false when there are more than the cap allows. */
+    private boolean pickUpItems(Room room, Set<UserItem> itemsToPickup) {
+        if (itemsToPickup.isEmpty()) return true;
+
+        if (itemsToPickup.size() > MAX_AUTO_PICKUP_ITEMS) {
+            LOGGER.warn(
+                    "Floorplan auto-pickup rejected (over cap): user={} room={} itemCount={} cap={}",
+                    this.client.getUser().getUserInfo().getId(),
+                    room.getId(),
+                    itemsToPickup.size(),
+                    MAX_AUTO_PICKUP_ITEMS);
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                    "Too many items would be picked up (" + itemsToPickup.size() + " > " + MAX_AUTO_PICKUP_ITEMS
+                            + "). Remove some furniture manually and save again."));
+            return false;
+        }
+
+        // Room.pickUpItem already hands each furni to its online owner's inventory, or destroys it when it is a
+        // Builders Club or a destroy-on-pickup furni, so nothing more is sent to the owners here.
+        Set<Integer> owners = new HashSet<>();
+        for (UserItem itm : itemsToPickup) {
+            if (itm == null) continue;
+            owners.add(itm.getUserId());
+            room.pickUpItem(itm, null);
+        }
+
+        LOGGER.info(
+                "Floorplan auto-pickup: user={} room={} itemCount={} owners={}",
+                this.client.getUser().getUserInfo().getId(),
+                room.getId(),
+                itemsToPickup.size(),
+                owners.size());
+        return true;
+    }
+
+    /**
+     * Writes the plan into the room's custom layout, or creates one for a room on a model layout. Null when the room
+     * has no layout to show afterwards.
+     */
+    private RoomLayout applyLayout(Room room, FloorPlan plan) {
+        RoomLayout layout = room.getLayout();
+
+        if (layout instanceof CustomRoomLayout) {
+            layout.setDoorX((short) plan.doorX());
+            layout.setDoorY((short) plan.doorY());
+            layout.setDoorDirection(plan.doorDirection());
+            layout.setHeightmap(plan.map());
+            layout.parse();
+
+            if (layout.getDoorTile() == null) {
+                this.client.getUser().alert("Error");
+                ((CustomRoomLayout) layout).needsUpdate(false);
+                Emulator.getGameEnvironment().getRoomManager().unloadRoom(room);
+                return null;
+            }
+            ((CustomRoomLayout) layout).needsUpdate(true);
+            Emulator.getThreading().run((CustomRoomLayout) layout);
+            return layout;
+        }
+
+        CustomRoomLayout inserted = Emulator.getGameEnvironment()
+                .getRoomManager()
+                .insertCustomLayout(room, plan.map(), plan.doorX(), plan.doorY(), plan.doorDirection());
+
+        // The same answer as a layout without a door tile, instead of a save that silently does nothing.
+        if (inserted == null) this.client.getUser().alert("Error");
+
+        return inserted;
+    }
+
+    /** Stores the new layout and settings, then reloads the room and sends everyone in it back in. */
+    private void saveRoom(Room room, RoomLayout layout, FloorPlan plan, long now) {
+        room.setHasCustomLayout(true);
+        room.setNeedsUpdate(true);
+        room.setLayout(layout);
+        room.setWallSize(plan.wallSize());
+        room.setFloorSize(plan.floorSize());
+        room.setWallHeight(plan.wallHeight());
+        room.save();
+
+        this.client.getUser().getUserStats().lastFloorplanSaveTimestamp = now;
+        LOGGER.info(
+                "Floorplan saved: user={} room={} mapLen={} rows={} cols={}",
+                this.client.getUser().getUserInfo().getId(),
+                room.getId(),
+                plan.map().length(),
+                plan.rows().length,
+                plan.width());
+
+        // The id is kept before the unload: a room that does not load back still sends everyone to it, so nobody is
+        // left in a room that is gone.
+        int roomId = room.getId();
+        Collection<User> users = new ArrayList<>(room.getUserCount());
+        users.addAll(room.getUsers());
+        Emulator.getGameEnvironment().getRoomManager().unloadRoom(room);
+        Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
+        ServerMessage message = new ForwardToRoomComposer(roomId).compose();
+        for (User user : users) {
+            user.getClient().sendResponse(message);
+        }
+    }
+}

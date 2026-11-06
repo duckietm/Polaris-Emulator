@@ -1,0 +1,122 @@
+package polaris.hotel.earnings;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+
+/** What each income window button does once the server accepts the claim. */
+class EarningsClaimPathsContractTest {
+
+    private static final Path MANAGER = Path.of("src/main/java/polaris/hotel/earnings/EarningsCenterManager.java");
+    private static final Path CLUB = Path.of("src/main/java/polaris/hotel/users/subscriptions/SubscriptionClub.java");
+
+    /** The HC payday row reported success even when no payday row was paid. */
+    @Test
+    void hcPaydayReportsOnlyAPayoutThatWentThrough() throws Exception {
+        String manager = Files.readString(MANAGER);
+        String club = Files.readString(CLUB);
+
+        assertTrue(manager.contains("return SubscriptionClub.claimUnclaimedPayDays(user) > 0;"));
+        assertFalse(
+                manager.contains("SubscriptionClub.processUnclaimed(user)"),
+                "the login flow (club gift popup, HC achievement) must not run from the income window");
+        assertTrue(club.contains("public static int claimUnclaimedPayDays(User user)"));
+        assertTrue(club.contains("return paid;"));
+        assertTrue(club.contains("claimUnclaimedPayDays(user);\n    }"), "the login still pays the payday rows");
+    }
+
+    /** A copy that failed left the earlier copies of the same item reward in the inventory, with an error shown. */
+    @Test
+    void anItemRewardIsGrantedWholeOrNotAtAll() throws Exception {
+        String manager = Files.readString(MANAGER);
+
+        assertTrue(manager.contains("connection.setAutoCommit(false);"));
+        assertTrue(manager.contains("connection.commit();"));
+        assertTrue(manager.contains("connection.rollback();"));
+        assertTrue(
+                manager.indexOf("connection.commit();") < manager.indexOf("addItems(created);"),
+                "the inventory gets the furni only once they are committed");
+        assertTrue(
+                manager.contains("b.getType() == EarningsReward.TYPE_ITEM, a.getType() == EarningsReward.TYPE_ITEM"),
+                "furni are granted before the rewards that cannot be taken back");
+    }
+
+    /** An item reward was only written to the database, so it stayed out of the open inventory until relog. */
+    @Test
+    void anItemRewardLandsInTheOpenInventory() throws Exception {
+        String manager = Files.readString(MANAGER);
+
+        assertFalse(manager.contains("INSERT INTO items (user_id, item_id, extra_data)"));
+        assertTrue(manager.contains("user.getInventory().getItemsComponent().addItems(created);"));
+        assertTrue(manager.contains("new AddUserItemComposer(created)"));
+        assertTrue(manager.contains("new InventoryRefreshComposer()"));
+    }
+
+    /** With the income window on, the payday waits there (as in AIR) instead of paying straight into the purse. */
+    @Test
+    void hcPaydayWaitsInTheIncomeWindow() throws Exception {
+        String club = Files.readString(CLUB);
+
+        assertTrue(club.contains("boolean claimed = !waits && claimPayDay(online, totalReward, HC_PAYDAY_CURRENCY);"));
+        assertTrue(club.contains("EarningsNotifications.newReward(online, EarningsCategory.HC_PAYDAY);"));
+        assertTrue(club.contains("if (paydayWaitsInIncomeWindow()) return;"), "the login leaves waiting paydays alone");
+    }
+
+    @Test
+    void theWindowCollectsOnlyWhenItAndTheRowAreOn() {
+        java.util.Map<String, String> values = new java.util.HashMap<>();
+        EarningsCenterManager.ConfigSource config = new EarningsCenterManager.ConfigSource() {
+            @Override
+            public boolean getBoolean(String key, boolean defaultValue) {
+                String value = values.get(key);
+                return value == null ? defaultValue : value.equals("1");
+            }
+
+            @Override
+            public int getInt(String key, int defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public String getValue(String key, String defaultValue) {
+                return values.getOrDefault(key, defaultValue);
+            }
+        };
+        EarningsCenterManager.NativeIntegration hcOnly = new EarningsCenterManager.NativeIntegration() {
+            @Override
+            public boolean handles(EarningsCategory category) {
+                return category == EarningsCategory.HC_PAYDAY;
+            }
+
+            @Override
+            public boolean hasClaim(polaris.hotel.users.User user, EarningsCategory category) {
+                return false;
+            }
+
+            @Override
+            public java.util.List<EarningsReward> rewards(polaris.hotel.users.User user, EarningsCategory category) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public boolean claim(polaris.hotel.users.User user, EarningsCategory category) {
+                return false;
+            }
+        };
+        EarningsCenterManager manager =
+                new EarningsCenterManager(config, null, null, hcOnly, java.time.Clock.systemUTC());
+
+        assertFalse(manager.collectsInWindow(EarningsCategory.HC_PAYDAY), "the window is off by default");
+        values.put("earnings.enabled", "1");
+        assertTrue(manager.collectsInWindow(EarningsCategory.HC_PAYDAY));
+        assertFalse(manager.collectsInWindow(EarningsCategory.DAILY_GIFT), "a configured row has no own source");
+        values.put("earnings.hc_payday.native.enabled", "0");
+        assertFalse(manager.collectsInWindow(EarningsCategory.HC_PAYDAY));
+        values.remove("earnings.hc_payday.native.enabled");
+        values.put("earnings.hc_payday.enabled", "0");
+        assertFalse(manager.collectsInWindow(EarningsCategory.HC_PAYDAY));
+    }
+}

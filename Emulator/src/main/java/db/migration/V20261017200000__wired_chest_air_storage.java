@@ -1,10 +1,5 @@
 package db.migration;
 
-import com.eu.habbo.habbohotel.economy.EconomyLedger;
-import com.eu.habbo.habbohotel.economy.EconomyOperation;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.LegacyChestMigration;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.LegacyChestMigration.FurniRow;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.LegacyChestMigration.LegacyChest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,6 +11,11 @@ import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.economy.EconomyLedger;
+import polaris.hotel.economy.EconomyOperation;
+import polaris.hotel.items.interactions.wired.chest.LegacyChestMigration;
+import polaris.hotel.items.interactions.wired.chest.LegacyChestMigration.FurniRow;
+import polaris.hotel.items.interactions.wired.chest.LegacyChestMigration.LegacyChest;
 
 /**
  * Moves the wired chests to the official AIR storage model.

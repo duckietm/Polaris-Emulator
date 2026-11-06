@@ -1,0 +1,2191 @@
+package polaris.hotel.rooms;
+
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntList;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.GameEnvironment;
+import polaris.hotel.bots.Bot;
+import polaris.hotel.games.Game;
+import polaris.hotel.guilds.Guild;
+import polaris.hotel.pets.Pet;
+import polaris.hotel.rooms.variables.RoomArrayVariableManager;
+import polaris.hotel.rooms.variables.RoomFurniVariableManager;
+import polaris.hotel.rooms.variables.RoomUserVariableManager;
+import polaris.hotel.rooms.variables.RoomVariableManager;
+import polaris.hotel.rooms.variables.RoomVariableManagers;
+import polaris.hotel.soundboard.SoundboardRoomMode;
+import polaris.hotel.users.DanceType;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.core.WiredMovementPhysics;
+import polaris.messages.ISerialize;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.rooms.HideDoorbellComposer;
+import polaris.plugin.PluginManager;
+import polaris.plugin.events.rooms.RoomUnloadedEvent;
+import polaris.plugin.events.rooms.RoomUnloadingEvent;
+import polaris.threading.ThreadPooling;
+
+public class Room implements Comparable<Room>, ISerialize, Runnable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Room.class);
+    private static final ThreadFactory LOAD_THREAD_FACTORY =
+            Thread.ofVirtual().name("room-load-", 0).factory();
+    private static final Executor LOAD_COORDINATOR =
+            task -> LOAD_THREAD_FACTORY.newThread(task).start();
+
+    // Manager instances for better separation of concerns
+    private RoomTileManager tileManager;
+    private RoomGameManager gameManager;
+    private RoomTradeManager tradeManager;
+    private RoomPromotionManager promotionManager;
+    private RoomWordQuizManager wordQuizManager;
+    private RoomRightsManager rightsManager;
+    private RoomUnitManager unitManager;
+    private RoomItemManager itemManager;
+    private RoomChatManager chatManager;
+    private RoomRollerManager rollerManager;
+    private RoomMessagingManager messagingManager;
+    private RoomCycleManager cycleManager;
+    private RoomVariableManagers variableManagers;
+
+    public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
+    public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
+    private static final Int2ObjectMap<RoomMoodlightData> defaultMoodData = new Int2ObjectOpenHashMap<>();
+    // Configuration. Loaded from database & updated accordingly.
+    public static volatile boolean USER_CHAT_DELAY = false;
+    public static volatile int MAXIMUM_BOTS = 10;
+    public static volatile int MAXIMUM_PETS = 10;
+    public static volatile int MAXIMUM_FURNI = 8000;
+    public static volatile int MAXIMUM_POSTITNOTES = 200;
+    public static volatile int HAND_ITEM_TIME = 10;
+    public static volatile int IDLE_CYCLES = 240;
+    public static volatile int IDLE_CYCLES_KICK = 480;
+    public static volatile String PREFIX_FORMAT = "[<font color=\"%color%\">%prefix%</font>] ";
+    public static volatile int ROLLERS_MAXIMUM_ROLL_AVATARS = 1;
+    public static volatile boolean MUTEAREA_CAN_WHISPER = false;
+    public static double MAXIMUM_FURNI_HEIGHT = 40d;
+    public static final int WIRED_ACCESS_EVERYONE = 1;
+    public static final int WIRED_ACCESS_USERS_WITH_RIGHTS = 2;
+    public static final int WIRED_ACCESS_GROUP_MEMBERS = 4;
+    public static final int WIRED_ACCESS_GROUP_ADMINS = 8;
+    public static final int WIRED_ACCESS_ALLOWED_INSPECT_MASK = WIRED_ACCESS_EVERYONE
+            | WIRED_ACCESS_USERS_WITH_RIGHTS
+            | WIRED_ACCESS_GROUP_MEMBERS
+            | WIRED_ACCESS_GROUP_ADMINS;
+    public static final int WIRED_ACCESS_ALLOWED_MODIFY_MASK =
+            WIRED_ACCESS_USERS_WITH_RIGHTS | WIRED_ACCESS_GROUP_MEMBERS | WIRED_ACCESS_GROUP_ADMINS;
+    public static final int WIRED_ACCESS_DEFAULT_INSPECT_MASK = 0;
+    public static final int WIRED_ACCESS_DEFAULT_MODIFY_MASK = 0;
+
+    static {
+        for (int i = 1; i <= 3; i++) {
+            RoomMoodlightData data = RoomMoodlightData.fromString("");
+            data.setId(i);
+            defaultMoodData.put(i, data);
+        }
+    }
+
+    public final Object roomUnitLock = new Object();
+    public final List<Integer> userVotes;
+    private final IntList rights;
+    private final Int2IntMap mutedUsers;
+    private final Int2ObjectMap<RoomBan> bannedUsers;
+    private final Int2ObjectMap<RoomMoodlightData> moodlightData;
+    private final RoomDependencies dependencies;
+    private final RoomLifecycle lifecycle;
+    private final RoomDisposer disposer = new RoomDisposer(this);
+    private final RoomGuildService guildService = new RoomGuildService(this);
+    private final RoomMediaSession media = new RoomMediaSession(this);
+    private final RoomPostureService posture = new RoomPostureService(this);
+    private final RoomLoader loader;
+    private final RoomItemPersistence itemPersistence;
+    private final RoomPersistence persistence;
+    private final RoomRepository repository;
+    private final RoomWiredAccessService wiredAccess;
+    private final RoomWiredVisibilityService wiredVisibility = new RoomWiredVisibilityService(this);
+    private final RoomWiredRuntime wiredRuntime = new RoomWiredRuntime(this);
+    private final RoomUserCountPersistence userCountPersistence;
+    public volatile double lastCycleCpuMs = 0.0;
+    public volatile String lastCycleThread = "N/A";
+
+    // Use appropriately. Could potentially cause memory leaks when used incorrectly.
+    public volatile boolean preventUnloading = false;
+    public volatile boolean preventUncaching = false;
+    public Set<ServerMessage> scheduledComposers = ConcurrentHashMap.newKeySet();
+    public final java.util.concurrent.ConcurrentLinkedQueue<Runnable> scheduledTasks =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
+    public String wordQuiz = "";
+    public int noVotes = 0;
+    public int yesVotes = 0;
+    public int wordQuizEnd = 0;
+    public volatile ScheduledFuture<?> roomCycleTask;
+    private int id;
+    private int ownerId;
+    private volatile BiConsumer<Room, Integer> ownerChangeListener;
+    private String ownerName;
+    private String name;
+    private String description;
+    private volatile RoomLayout layout;
+    private boolean overrideModel;
+    private String layoutName;
+    private String password;
+    private RoomState state;
+    private int usersMax;
+    private int score;
+    private int category;
+    private String floorPaint;
+    private String wallPaint;
+    private String backgroundPaint;
+    private int wallSize;
+    private int wallHeight;
+    private int floorSize;
+    private int guild;
+    private String tags;
+    private boolean publicRoom;
+    private boolean staffPromotedRoom;
+    private boolean allowPets;
+    private boolean allowPetsEat;
+    private boolean allowWalkthrough;
+    private boolean allowBotsWalk;
+    private boolean allowEffects;
+    private boolean hideWall;
+    private int chatMode;
+    private int chatWeight;
+    private int chatSpeed;
+    private int chatDistance;
+    private int chatProtection;
+    private int muteOption;
+    private int kickOption;
+    private int banOption;
+    private int pollId;
+    private int tradeMode;
+    private int dateCreated;
+    private boolean moveDiagonally;
+    private boolean allowUnderpass;
+    private boolean muteAllPets;
+    private boolean leaveOnDoorTileEnabled;
+    private boolean idleSleepEnabled;
+    private int idleSleepTimeoutSeconds;
+    private boolean idleAutokickEnabled;
+    private int idleAutokickTimeoutSeconds;
+    private boolean jukeboxActive;
+    private boolean hideWired;
+    private boolean buildersClubTrialLocked;
+    private RoomState buildersClubOriginalState;
+    private volatile boolean needsUpdate;
+    private int rollerSpeed;
+    private volatile Integer transientRollerSpeedOverride;
+    private int lastTimerReset = Emulator.getIntUnixTimestamp();
+    private volatile boolean muted;
+    private volatile RoomSpecialTypes roomSpecialTypes;
+    private TraxManager traxManager;
+
+    public boolean isYoutubeEnabled() {
+        return this.media.youtubeEnabled();
+    }
+
+    public void setYoutubeEnabled(boolean enabled) {
+        this.media.youtubeEnabled(enabled);
+    }
+
+    public boolean isSoundboardEnabled() {
+        return this.media.soundboardEnabled();
+    }
+
+    public void setSoundboardEnabled(boolean enabled) {
+        this.media.soundboardEnabled(enabled);
+    }
+
+    public SoundboardRoomMode getSoundboardMode() {
+        return this.media.soundboardMode();
+    }
+
+    public void setSoundboardMode(SoundboardRoomMode mode) {
+        this.media.soundboardMode(mode);
+    }
+
+    public String getYoutubeCurrentVideo() {
+        return this.media.currentVideo();
+    }
+
+    public String getYoutubeSenderName() {
+        return this.media.senderName();
+    }
+
+    public java.util.List<String> getYoutubePlaylist() {
+        return this.media.playlist();
+    }
+
+    public java.util.Set<Integer> getYoutubeWatchers() {
+        return this.media.watchers();
+    }
+
+    public void setYoutubeVideo(String videoId, String senderName, java.util.List<String> playlist) {
+        this.media.setVideo(videoId, senderName, playlist);
+    }
+
+    public void clearYoutubeVideo() {
+        this.media.clearVideo();
+    }
+
+    public final Map<String, Object> cache;
+
+    Room(int id, int ownerId) {
+        this(id, ownerId, RoomDependencies.runtime());
+    }
+
+    Room(int id, int ownerId, RoomDependencies dependencies) {
+        this.cache = new HashMap<>();
+        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
+        this.itemPersistence = new RoomItemPersistence(this.dependencies.database());
+        this.persistence = new RoomPersistence(this.dependencies.database());
+        this.repository = new RoomRepository(this.dependencies.database());
+        this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        this.id = id;
+        this.ownerId = ownerId;
+        this.userCountPersistence = this.createUserCountPersistence();
+        this.bannedUsers = RoomRightsManager.newBanMap();
+        this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
+        this.mutedUsers = RoomRightsManager.newMuteMap();
+        this.rights = RoomRightsManager.newRightsList();
+        this.userVotes = new ArrayList<>();
+        this.initializeManagers(new RoomChatManager(this, RoomChatManager.DEFAULT_MUTE_TIME_SECONDS, this.mutedUsers));
+        this.loader = this.createLoader();
+    }
+
+    public Room(ResultSet set) throws SQLException {
+        this(set, RoomDependencies.runtime());
+    }
+
+    Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
+        this.cache = new HashMap<>(1000);
+        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
+        this.itemPersistence = new RoomItemPersistence(this.dependencies.database());
+        this.persistence = new RoomPersistence(this.dependencies.database());
+        this.repository = new RoomRepository(this.dependencies.database());
+        this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
+        this.id = initial.id();
+        this.ownerId = initial.ownerId();
+        this.userCountPersistence = this.createUserCountPersistence();
+        this.ownerName = initial.ownerName();
+        this.name = initial.name();
+        this.description = initial.description();
+        this.password = initial.password();
+        this.state = initial.state();
+        this.usersMax = initial.usersMax();
+        this.score = initial.score();
+        this.category = initial.category();
+        this.floorPaint = initial.floorPaint();
+        this.wallPaint = initial.wallPaint();
+        this.backgroundPaint = initial.backgroundPaint();
+        this.wallSize = initial.wallSize();
+        this.wallHeight = initial.wallHeight();
+        this.floorSize = initial.floorSize();
+        this.tags = initial.tags();
+        this.publicRoom = initial.publicRoom();
+        this.staffPromotedRoom = initial.staffPromotedRoom();
+        this.allowPets = initial.allowPets();
+        this.allowPetsEat = initial.allowPetsEat();
+        this.allowWalkthrough = initial.allowWalkthrough();
+        this.hideWall = initial.hideWall();
+        this.setYoutubeEnabled(initial.youtubeEnabled());
+        this.setSoundboardMode(SoundboardRoomMode.fromWire(initial.soundboardMode()));
+        this.chatMode = initial.chatMode();
+        this.chatWeight = initial.chatWeight();
+        this.chatSpeed = initial.chatSpeed();
+        this.chatDistance = initial.chatDistance();
+        this.chatProtection = initial.chatProtection();
+        this.muteOption = initial.muteOption();
+        this.kickOption = initial.kickOption();
+        this.banOption = initial.banOption();
+        this.pollId = initial.pollId();
+        this.guild = initial.guild();
+        this.rollerSpeed = initial.rollerSpeed();
+        this.overrideModel = initial.overrideModel();
+        this.layoutName = initial.layoutName();
+        this.jukeboxActive = initial.jukeboxActive();
+        this.hideWired = initial.hideWired();
+        this.buildersClubTrialLocked = initial.buildersClubTrialLocked();
+        this.buildersClubOriginalState = initial.buildersClubOriginalState();
+
+        this.bannedUsers = RoomRightsManager.newBanMap();
+
+        try (Connection connection = this.dependencies.database().openConnection()) {
+            // Load bans eagerly (needed for entry check before loadData)
+            RoomBanLoader.load(connection, this, this.bannedUsers);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        RoomSnapshot snapshot = RoomSnapshot.complete(initial, set);
+        this.tradeMode = snapshot.postBanLoad().tradeMode();
+        this.dateCreated = snapshot.postBanLoad().dateCreated();
+        this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
+        this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
+        this.muteAllPets = snapshot.postBanLoad().muteAllPets();
+        this.leaveOnDoorTileEnabled = snapshot.postBanLoad().leaveOnDoorTileEnabled();
+        this.idleSleepEnabled = snapshot.postBanLoad().idleSleepEnabled();
+        this.idleSleepTimeoutSeconds = snapshot.postBanLoad().idleSleepTimeoutSeconds();
+        this.idleAutokickEnabled = snapshot.postBanLoad().idleAutokickEnabled();
+        this.idleAutokickTimeoutSeconds = snapshot.postBanLoad().idleAutokickTimeoutSeconds();
+
+        this.allowBotsWalk = true;
+        this.allowEffects = true;
+        this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
+
+        for (String s : snapshot.postBanLoad().moodlightData().split(";")) {
+            RoomMoodlightData data = RoomMoodlightData.fromString(s);
+            this.moodlightData.put(data.getId(), data);
+        }
+
+        this.mutedUsers = RoomRightsManager.newMuteMap();
+
+        this.rights = RoomRightsManager.newRightsList();
+        this.userVotes = new ArrayList<>();
+
+        // Initialize managers
+        this.initializeManagers();
+        this.promotionManager.setPromoted(initial.promoted());
+        this.loader = this.createLoader();
+    }
+
+    /**
+     * Initializes all manager instances for this room.
+     */
+    private void initializeManagers() {
+        this.initializeManagers(new RoomChatManager(this, this.mutedUsers));
+    }
+
+    private void initializeManagers(RoomChatManager chatManager) {
+        this.tileManager = new RoomTileManager(this);
+        this.gameManager = new RoomGameManager(this);
+        this.tradeManager = new RoomTradeManager(this);
+        this.promotionManager = new RoomPromotionManager(this);
+        this.wordQuizManager = new RoomWordQuizManager(this);
+        this.rightsManager = new RoomRightsManager(this, this.rights, this.bannedUsers, this.mutedUsers);
+        this.unitManager = new RoomUnitManager(this);
+        this.itemManager = new RoomItemManager(this);
+        this.chatManager = chatManager;
+        this.rollerManager = new RoomRollerManager(this);
+        this.messagingManager = new RoomMessagingManager(this);
+        this.cycleManager = new RoomCycleManager(this);
+        this.variableManagers = new RoomVariableManagers(this, this.dependencies);
+    }
+
+    // ==================== MANAGER GETTERS ====================
+
+    /**
+     * Gets the tile manager for this room.
+     */
+    public RoomTileManager getTileManager() {
+        return this.tileManager;
+    }
+
+    /**
+     * Gets the game manager for this room.
+     */
+    public RoomGameManager getGameManager() {
+        return this.gameManager;
+    }
+
+    /**
+     * Gets the trade manager for this room.
+     */
+    public RoomTradeManager getTradeManager() {
+        return this.tradeManager;
+    }
+
+    /**
+     * Gets the promotion manager for this room.
+     */
+    public RoomPromotionManager getPromotionManager() {
+        return this.promotionManager;
+    }
+
+    /**
+     * Gets the word quiz manager for this room.
+     */
+    public RoomWordQuizManager getWordQuizManager() {
+        return this.wordQuizManager;
+    }
+
+    /**
+     * Gets the rights manager for this room.
+     */
+    public RoomRightsManager getRightsManager() {
+        return this.rightsManager;
+    }
+
+    /**
+     * Gets the unit manager for this room.
+     */
+    public RoomUnitManager getUnitManager() {
+        return this.unitManager;
+    }
+
+    /**
+     * Gets the item manager for this room.
+     */
+    public RoomItemManager getItemManager() {
+        return this.itemManager;
+    }
+
+    /**
+     * Gets the chat manager for this room.
+     */
+    public RoomChatManager getChatManager() {
+        return this.chatManager;
+    }
+
+    /**
+     * Gets the messaging manager for this room.
+     */
+    public RoomMessagingManager getMessagingManager() {
+        return this.messagingManager;
+    }
+
+    /**
+     * Gets the cycle manager for this room.
+     */
+    public RoomCycleManager getCycleManager() {
+        return this.cycleManager;
+    }
+
+    public RoomUserVariableManager getUserVariableManager() {
+        return this.variableManagers.user();
+    }
+
+    public RoomFurniVariableManager getFurniVariableManager() {
+        return this.variableManagers.furni();
+    }
+
+    public RoomVariableManager getRoomVariableManager() {
+        return this.variableManagers.room();
+    }
+
+    public RoomArrayVariableManager getArrayVariableManager() {
+        return this.variableManagers.array();
+    }
+
+    /**
+     * Gets the roller manager for this room.
+     */
+    public RoomRollerManager getRollerManager() {
+        return this.rollerManager;
+    }
+
+    /**
+     * Checks if the room is currently loading data.
+     */
+    public boolean isLoadingInProgress() {
+        return this.lifecycle.isLoading();
+    }
+
+    /**
+     * Checks if the room data is loaded or is currently being loaded.
+     */
+    public boolean isLoadedOrLoading() {
+        return this.lifecycle.isLoadedOrLoading();
+    }
+
+    long beginLoadTransition() {
+        return this.lifecycle.beginLoad();
+    }
+
+    boolean publishLoadTransition(long generation, Supplier<ScheduledFuture<?>> cycleScheduler) {
+        return this.lifecycle.publishLoad(generation, cycleScheduler);
+    }
+
+    boolean beginUnloadTransition() {
+        return this.lifecycle.beginUnload();
+    }
+
+    void finishUnloadTransition() {
+        this.lifecycle.finishUnload();
+    }
+
+    void quiesceCycleTask() {
+        synchronized (this) {
+            this.lifecycle.quiesceCycle();
+        }
+    }
+
+    void resetIdleCycles() {
+        this.lifecycle.resetIdleCycles();
+    }
+
+    boolean advanceIdleUnload(boolean empty) {
+        return this.lifecycle.advanceIdleUnload(empty);
+    }
+
+    boolean prepareLoadTransition(long generation) {
+        return this.lifecycle.prepareLoad(generation);
+    }
+
+    void failLoadTransition(long generation) {
+        this.lifecycle.failLoad(generation);
+    }
+
+    /**
+     * Starts loading room data asynchronously in the background.
+     * This allows the room to start loading before the user fully enters,
+     * reducing perceived load time.
+     */
+    public void startBackgroundLoad() {
+        this.lifecycle.startBackgroundLoad(LOAD_COORDINATOR, this::loadDataInternal);
+    }
+
+    /**
+     * Waits for background loading to complete if it's in progress.
+     * If loading hasn't started yet, starts loading synchronously.
+     */
+    public void waitForLoad() {
+        if (this.lifecycle.isLoaded()) {
+            return;
+        }
+        CompletableFuture<Void> future = this.lifecycle.loadingFuture();
+
+        if (future != null) {
+            try {
+                future.join();
+            } catch (Exception e) {
+                LOGGER.error("Error waiting for room load", e);
+            }
+        } else {
+            this.loadData();
+        }
+    }
+
+    public void loadData() {
+        RoomLifecycle.LoadAttempt attempt = this.lifecycle.beginOrJoinLoad();
+        CompletableFuture<Void> futureToWait = attempt.future();
+
+        // Wait for existing load outside the lock
+        if (futureToWait != null) {
+            try {
+                futureToWait.join();
+            } catch (Exception e) {
+                LOGGER.error("Error waiting for room load", e);
+            }
+            return;
+        }
+
+        // Load if needed
+        if (attempt.generation() >= 0L) {
+            this.loadDataInternal(attempt.generation());
+        }
+    }
+
+    void loadAccessData() {
+        if (!this.isLoaded()) this.loader.loadAccessData();
+    }
+
+    /**
+     * Internal method that performs the actual room data loading.
+     * Uses parallel loading for independent operations to reduce total load time.
+     */
+    private void loadDataInternal(long generation) {
+        try {
+            this.performLoadData(generation);
+        } catch (Exception exception) {
+            LOGGER.error("Caught exception during room load", exception);
+        } finally {
+            this.failLoadTransition(generation);
+        }
+    }
+
+    private void performLoadData(long generation) {
+        this.loader.load(generation);
+    }
+
+    /**
+     * Re-reads every wired box's stored configuration, dropping in-memory edits that were never
+     * persisted. Backs the AIR 13 wired settings "roll back" button.
+     */
+    public void reloadWiredData() {
+        this.loader.reloadWiredData();
+    }
+
+    private RoomLoader createLoader() {
+        return new RoomLoader(
+                new RoomLoadOperations(this, this.dependencies.database()),
+                () -> Emulator.getThreading().getService());
+    }
+
+    public GameEnvironment gameEnvironment() {
+        return Emulator.getGameEnvironment();
+    }
+
+    PluginManager pluginManager() {
+        return Emulator.getPluginManager();
+    }
+
+    ThreadPooling threading() {
+        return Emulator.getThreading();
+    }
+
+    int currentUnixTimestamp() {
+        return Emulator.getIntUnixTimestamp();
+    }
+
+    private final class RoomCycleTaskSlot implements RoomLifecycle.CycleTaskSlot {
+
+        @Override
+        public ScheduledFuture<?> get() {
+            return Room.this.roomCycleTask;
+        }
+
+        @Override
+        public void set(ScheduledFuture<?> task) {
+            Room.this.roomCycleTask = task;
+        }
+    }
+
+    public void updateTile(RoomTile tile) {
+        this.tileManager.updateTile(tile);
+    }
+
+    public void updateTiles(Collection<RoomTile> tiles) {
+        this.tileManager.updateTiles(tiles);
+    }
+
+    public RoomTileState calculateTileState(RoomTile tile) {
+        return this.tileManager.calculateTileState(tile);
+    }
+
+    public RoomTileState calculateTileState(RoomTile tile, UserItem exclude) {
+        return this.tileManager.calculateTileState(tile, exclude);
+    }
+
+    public boolean tileWalkable(RoomTile t) {
+        return this.tileManager.tileWalkable(t);
+    }
+
+    public boolean tileWalkable(short x, short y) {
+        return this.tileManager.tileWalkable(x, y);
+    }
+
+    public void pickUpItem(UserItem item, User picker) {
+        this.itemManager.pickUpItem(item, picker);
+    }
+
+    public void updateUsersAt(Rectangle rectangle) {
+        for (short i = (short) rectangle.x; i < rectangle.x + rectangle.width; i++) {
+            for (short j = (short) rectangle.y; j < rectangle.y + rectangle.height; j++) {
+                this.updateUsersAt(i, j);
+            }
+        }
+    }
+
+    public void updateUser(User user) {
+        this.updateRoomUnit(user.getRoomUnit());
+    }
+
+    public void updateRoomUnit(RoomUnit roomUnit) {
+        this.posture.update(roomUnit);
+    }
+
+    public void updateUsersAt(short x, short y) {
+        this.unitManager.updateUsersAt(x, y);
+    }
+
+    public void updateUsersAt(short x, short y, Collection<User> users) {
+        this.unitManager.updateUsersAt(x, y, users);
+    }
+
+    public void updateBotsAt(short x, short y) {
+        this.unitManager.updateBotsAt(x, y);
+    }
+
+    public void updatePetsAt(short x, short y) {
+        this.unitManager.updatePetsAt(x, y);
+    }
+
+    public void pickupPetsForUser(User user) {
+        this.unitManager.pickupPetsForUser(user);
+    }
+
+    public void startTrade(User userOne, User userTwo) {
+        this.tradeManager.startTrade(userOne, userTwo);
+    }
+
+    public void stopTrade(RoomTrade trade) {
+        this.tradeManager.stopTrade(trade);
+    }
+
+    public RoomTrade getActiveTradeForUser(User user) {
+        return this.tradeManager.getActiveTradeForUser(user);
+    }
+
+    public synchronized void dispose() {
+        this.lifecycle.dispose(
+                this.preventUnloading,
+                () -> Emulator.getPluginManager()
+                        .fireEvent(new RoomUnloadingEvent(this))
+                        .isCancelled(),
+                this.disposer::dispose,
+                () -> Emulator.getPluginManager().fireEvent(new RoomUnloadedEvent(this)));
+    }
+
+    @Override
+    public int compareTo(Room o) {
+        if (o.getUserCount() != this.getUserCount()) {
+            return o.getCurrentUsers().size() - this.getCurrentUsers().size();
+        }
+
+        return this.id - o.id;
+    }
+
+    @Override
+    public void serialize(ServerMessage message) {
+        RoomSerializer.serialize(this, message);
+    }
+
+    @Override
+    public void run() {
+        synchronized (this) {
+            boolean runCycle = this.lifecycle.isLoaded();
+
+            if (runCycle) {
+                try {
+                    long startTime = System.nanoTime();
+                    this.lastCycleThread = Thread.currentThread().getName();
+                    // Run cycle directly instead of scheduling on thread pool
+                    // This ensures all cycle tasks in the same tick execute synchronously
+                    // preventing wired desync issues
+                    this.cycle();
+                    this.lastCycleCpuMs = (System.nanoTime() - startTime) / 1000000.0;
+                } catch (Exception e) {
+                    LOGGER.error("Caught exception", e);
+                }
+            }
+
+            if (this.needsUpdate) this.persistence.saveLater(this.threading(), this::save);
+        }
+    }
+
+    public void save() {
+        if (this.needsUpdate) {
+            try {
+                this.persistence.save(RoomPersistentStateFactory.capture(this));
+                this.needsUpdate = false;
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    void savePendingItems(List<UserItem> items) {
+        try {
+            this.itemPersistence.save(items);
+        } catch (SQLException exception) {
+            LOGGER.error("Caught SQL exception saving room items", exception);
+        }
+    }
+
+    /**
+     * Updates the user count in the database.
+     * Made public for access by RoomUnitManager.
+     */
+    public void updateDatabaseUserCount() {
+        try {
+            this.repository.updateUserCount(this.id, this.getUserCount());
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    void scheduleDatabaseUserCountUpdate() {
+        this.userCountPersistence.schedule();
+    }
+
+    private RoomUserCountPersistence createUserCountPersistence() {
+        return new RoomUserCountPersistence(
+                this::getUserCount,
+                userCount -> this.repository.updateUserCount(this.id, userCount),
+                this.dependencies.persistence()::execute);
+    }
+
+    private void cycle() {
+        this.cycleManager.cycle();
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public int getOwnerId() {
+        return this.ownerId;
+    }
+
+    public void setOwnerId(int ownerId) {
+        int previousOwnerId = this.ownerId;
+        this.ownerId = ownerId;
+
+        BiConsumer<Room, Integer> listener = this.ownerChangeListener;
+        if (listener != null && previousOwnerId != ownerId) {
+            listener.accept(this, previousOwnerId);
+        }
+    }
+
+    void setOwnerChangeListener(BiConsumer<Room, Integer> ownerChangeListener) {
+        this.ownerChangeListener = ownerChangeListener;
+    }
+
+    public String getOwnerName() {
+        return this.ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+
+        if (this.name.length() > 50) {
+            this.name = this.name.substring(0, 50);
+        }
+
+        if (this.hasGuild()) {
+            Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(this.guild);
+
+            if (guild != null) {
+                guild.setRoomName(name);
+            }
+        }
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+
+        if (this.description.length() > 250) {
+            this.description = this.description.substring(0, 250);
+        }
+    }
+
+    public RoomLayout getLayout() {
+        return this.layout;
+    }
+
+    RoomLayout currentLayout() {
+        return this.layout;
+    }
+
+    String layoutName() {
+        return this.layoutName;
+    }
+
+    public void setLayout(RoomLayout layout) {
+        this.layout = layout;
+    }
+
+    public boolean hasCustomLayout() {
+        return this.overrideModel;
+    }
+
+    public void setHasCustomLayout(boolean overrideModel) {
+        this.overrideModel = overrideModel;
+    }
+
+    public String getPassword() {
+        return this.password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+
+        if (this.password.length() > 20) {
+            this.password = this.password.substring(0, 20);
+        }
+    }
+
+    public RoomState getState() {
+        return this.state;
+    }
+
+    public void setState(RoomState state) {
+        this.state = state;
+    }
+
+    public boolean isBuildersClubTrialLocked() {
+        return this.buildersClubTrialLocked;
+    }
+
+    public void setBuildersClubTrialLocked(boolean buildersClubTrialLocked) {
+        this.buildersClubTrialLocked = buildersClubTrialLocked;
+    }
+
+    public RoomState getBuildersClubOriginalState() {
+        return this.buildersClubOriginalState;
+    }
+
+    public void setBuildersClubOriginalState(RoomState buildersClubOriginalState) {
+        this.buildersClubOriginalState = buildersClubOriginalState;
+    }
+
+    public int getUsersMax() {
+        return this.usersMax;
+    }
+
+    public void setUsersMax(int usersMax) {
+        this.usersMax = usersMax;
+    }
+
+    public int getScore() {
+        return this.score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getCategory() {
+        return this.category;
+    }
+
+    public void setCategory(int category) {
+        this.category = category;
+    }
+
+    public String getFloorPaint() {
+        return this.floorPaint;
+    }
+
+    public void setFloorPaint(String floorPaint) {
+        this.floorPaint = floorPaint;
+    }
+
+    public String getWallPaint() {
+        return this.wallPaint;
+    }
+
+    public void setWallPaint(String wallPaint) {
+        this.wallPaint = wallPaint;
+    }
+
+    public String getBackgroundPaint() {
+        return this.backgroundPaint;
+    }
+
+    public void setBackgroundPaint(String backgroundPaint) {
+        this.backgroundPaint = backgroundPaint;
+    }
+
+    public int getWallSize() {
+        return this.wallSize;
+    }
+
+    public void setWallSize(int wallSize) {
+        this.wallSize = wallSize;
+    }
+
+    public int getWallHeight() {
+        return this.wallHeight;
+    }
+
+    public void setWallHeight(int wallHeight) {
+        this.wallHeight = wallHeight;
+    }
+
+    public int getFloorSize() {
+        return this.floorSize;
+    }
+
+    public void setFloorSize(int floorSize) {
+        this.floorSize = floorSize;
+    }
+
+    public String getTags() {
+        return this.tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public int getTradeMode() {
+        return this.tradeMode;
+    }
+
+    public void setTradeMode(int tradeMode) {
+        this.tradeMode = tradeMode;
+    }
+
+    public int getDateCreated() {
+        return this.dateCreated;
+    }
+
+    public boolean moveDiagonally() {
+        return this.moveDiagonally;
+    }
+
+    public void moveDiagonally(boolean moveDiagonally) {
+        this.moveDiagonally = moveDiagonally;
+        this.layout.moveDiagonally(this.moveDiagonally);
+        this.needsUpdate = true;
+    }
+
+    public int getGuildId() {
+        return this.guild;
+    }
+
+    public boolean hasGuild() {
+        return this.getGuildId() != 0;
+    }
+
+    public boolean belongsToGuild() {
+        return this.guild > 0;
+    }
+
+    public void setGuild(int guild) {
+        this.guild = guild;
+    }
+
+    public String getGuildName() {
+        return this.guildService.name();
+    }
+
+    public boolean isPublicRoom() {
+        return this.publicRoom;
+    }
+
+    public void setPublicRoom(boolean publicRoom) {
+        this.publicRoom = publicRoom;
+    }
+
+    public boolean isStaffPromotedRoom() {
+        return this.staffPromotedRoom;
+    }
+
+    public void setStaffPromotedRoom(boolean staffPromotedRoom) {
+        this.staffPromotedRoom = staffPromotedRoom;
+    }
+
+    public boolean isAllowPets() {
+        return this.allowPets;
+    }
+
+    public void setAllowPets(boolean allowPets) {
+        this.allowPets = allowPets;
+        if (!allowPets) {
+            removeAllPets(ownerId);
+        }
+    }
+
+    public boolean isAllowPetsEat() {
+        return this.allowPetsEat;
+    }
+
+    public void setAllowPetsEat(boolean allowPetsEat) {
+        this.allowPetsEat = allowPetsEat;
+    }
+
+    public boolean isAllowWalkthrough() {
+        return this.allowWalkthrough;
+    }
+
+    public void setAllowWalkthrough(boolean allowWalkthrough) {
+        this.allowWalkthrough = allowWalkthrough;
+    }
+
+    public boolean isAllowUnderpass() {
+        return this.allowUnderpass;
+    }
+
+    public void setAllowUnderpass(boolean allowUnderpass) {
+        this.allowUnderpass = allowUnderpass;
+    }
+
+    public boolean isMuteAllPets() {
+        return this.muteAllPets;
+    }
+
+    public void setMuteAllPets(boolean muteAllPets) {
+        this.muteAllPets = muteAllPets;
+    }
+
+    public boolean isLeaveOnDoorTileEnabled() {
+        return this.leaveOnDoorTileEnabled;
+    }
+
+    public void setLeaveOnDoorTileEnabled(boolean leaveOnDoorTileEnabled) {
+        this.leaveOnDoorTileEnabled = leaveOnDoorTileEnabled;
+    }
+
+    public boolean isIdleSleepEnabled() {
+        return this.idleSleepEnabled;
+    }
+
+    public void setIdleSleepEnabled(boolean idleSleepEnabled) {
+        this.idleSleepEnabled = idleSleepEnabled;
+    }
+
+    public int getIdleSleepTimeoutSeconds() {
+        return this.idleSleepTimeoutSeconds;
+    }
+
+    public void setIdleSleepTimeoutSeconds(int idleSleepTimeoutSeconds) {
+        this.idleSleepTimeoutSeconds = idleSleepTimeoutSeconds;
+    }
+
+    public boolean isIdleAutokickEnabled() {
+        return this.idleAutokickEnabled;
+    }
+
+    public void setIdleAutokickEnabled(boolean idleAutokickEnabled) {
+        this.idleAutokickEnabled = idleAutokickEnabled;
+    }
+
+    public int getIdleAutokickTimeoutSeconds() {
+        return this.idleAutokickTimeoutSeconds;
+    }
+
+    public void setIdleAutokickTimeoutSeconds(int idleAutokickTimeoutSeconds) {
+        this.idleAutokickTimeoutSeconds = idleAutokickTimeoutSeconds;
+    }
+
+    public boolean isAllowBotsWalk() {
+        return this.allowBotsWalk;
+    }
+
+    public void setAllowBotsWalk(boolean allowBotsWalk) {
+        this.allowBotsWalk = allowBotsWalk;
+    }
+
+    public boolean isAllowEffects() {
+        return this.allowEffects;
+    }
+
+    public void setAllowEffects(boolean allowEffects) {
+        this.allowEffects = allowEffects;
+    }
+
+    public boolean isHideWall() {
+        return this.hideWall;
+    }
+
+    public void setHideWall(boolean hideWall) {
+        this.hideWall = hideWall;
+    }
+
+    public Color getBackgroundTonerColor() {
+        return RoomVisualSettings.backgroundTonerColor(this.itemManager);
+    }
+
+    public int getChatMode() {
+        return this.chatMode;
+    }
+
+    public void setChatMode(int chatMode) {
+        this.chatMode = chatMode;
+    }
+
+    public int getChatWeight() {
+        return this.chatWeight;
+    }
+
+    public void setChatWeight(int chatWeight) {
+        this.chatWeight = chatWeight;
+    }
+
+    public int getChatSpeed() {
+        return this.chatSpeed;
+    }
+
+    public void setChatSpeed(int chatSpeed) {
+        this.chatSpeed = chatSpeed;
+    }
+
+    public int getChatDistance() {
+        return this.chatDistance;
+    }
+
+    public void setChatDistance(int chatDistance) {
+        this.chatDistance = chatDistance;
+    }
+
+    public void removeAllPets() {
+        this.unitManager.removeAllPets();
+    }
+
+    /**
+     * Removes all pets from the room except if the owner id is excludeUserId
+     *
+     * @param excludeUserId Habbo id to keep pets
+     */
+    public void removeAllPets(int excludeUserId) {
+        this.unitManager.removeAllPets(excludeUserId);
+    }
+
+    public int getChatProtection() {
+        return this.chatProtection;
+    }
+
+    public void setChatProtection(int chatProtection) {
+        this.chatProtection = chatProtection;
+    }
+
+    public int getMuteOption() {
+        return this.muteOption;
+    }
+
+    public void setMuteOption(int muteOption) {
+        this.muteOption = muteOption;
+    }
+
+    public int getKickOption() {
+        return this.kickOption;
+    }
+
+    public void setKickOption(int kickOption) {
+        this.kickOption = kickOption;
+    }
+
+    public int getBanOption() {
+        return this.banOption;
+    }
+
+    public void setBanOption(int banOption) {
+        this.banOption = banOption;
+    }
+
+    public int getPollId() {
+        return this.pollId;
+    }
+
+    public void setPollId(int pollId) {
+        this.pollId = pollId;
+    }
+
+    public int getRollerSpeed() {
+        return this.rollerSpeed;
+    }
+
+    public void setRollerSpeed(int rollerSpeed) {
+        this.rollerSpeed = rollerSpeed;
+        this.needsUpdate = true;
+    }
+
+    public Integer getTransientRollerSpeedOverride() {
+        return this.transientRollerSpeedOverride;
+    }
+
+    public void setTransientRollerSpeedOverride(Integer rollerSpeed) {
+        this.transientRollerSpeedOverride = rollerSpeed;
+    }
+
+    public String[] filterAnything() {
+        return new String[] {this.getOwnerName(), this.getGuildName(), this.getDescription(), this.getPromotionDesc()};
+    }
+
+    public long getCycleTimestamp() {
+        return this.cycleManager.getCycleTimestamp();
+    }
+
+    public boolean isPromoted() {
+        return this.promotionManager.isPromoted();
+    }
+
+    public RoomPromotion getPromotion() {
+        return this.promotionManager.getPromotion();
+    }
+
+    public String getPromotionDesc() {
+        return this.promotionManager.getPromotionDesc();
+    }
+
+    public void createPromotion(String title, String description, int category) {
+        this.promotionManager.createPromotion(title, description, category);
+    }
+
+    public boolean addGame(Game game) {
+        return this.gameManager.addGame(game);
+    }
+
+    public boolean deleteGame(Game game) {
+        return this.gameManager.deleteGame(game);
+    }
+
+    public Game getGame(Class<? extends Game> gameType) {
+        return this.gameManager.getGame(gameType);
+    }
+
+    public Game getGameOrCreate(Class<? extends Game> gameType) {
+        return this.gameManager.getGameOrCreate(gameType);
+    }
+
+    public Set<Game> getGames() {
+        return this.gameManager.getGames();
+    }
+
+    public int getUserCount() {
+        return this.unitManager.getUserCount();
+    }
+
+    public ConcurrentHashMap<Integer, User> getCurrentUsers() {
+        return this.unitManager.getCurrentUsers();
+    }
+
+    public Collection<User> getUsers() {
+        return this.unitManager.getUsers();
+    }
+
+    public Int2ObjectMap<User> getUserQueue() {
+        return this.unitManager.getUserQueue();
+    }
+
+    public Int2ObjectMap<String> getFurniOwnerNames() {
+        return this.itemManager.getFurniOwnerNames();
+    }
+
+    public String getFurniOwnerName(int userId) {
+        return this.itemManager.getFurniOwnerName(userId);
+    }
+
+    public Int2IntMap getFurniOwnerCount() {
+        return this.itemManager.getFurniOwnerCount();
+    }
+
+    public Int2ObjectMap<RoomMoodlightData> getMoodlightData() {
+        return this.moodlightData;
+    }
+
+    public int getLastTimerReset() {
+        return this.lastTimerReset;
+    }
+
+    public void setLastTimerReset(int lastTimerReset) {
+        this.lastTimerReset = lastTimerReset;
+    }
+
+    public void addToQueue(User user) {
+        this.unitManager.addToQueue(user);
+    }
+
+    public boolean removeFromQueue(User user) {
+        try {
+            this.sendComposer(new HideDoorbellComposer(this.id, user).compose());
+
+            return this.unitManager.removeFromQueue(user.getUserInfo().getId()) != null;
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+
+        return true;
+    }
+
+    public Int2ObjectMap<Bot> getCurrentBots() {
+        return this.unitManager.getCurrentBots();
+    }
+
+    public Int2ObjectMap<Pet> getCurrentPets() {
+        return this.unitManager.getCurrentPets();
+    }
+
+    public Set<String> getWordFilterWords() {
+        return this.chatManager.getWordFilterWords();
+    }
+
+    public RoomSpecialTypes getRoomSpecialTypes() {
+        return this.roomSpecialTypes;
+    }
+
+    void replaceSpecialTypes(RoomSpecialTypes roomSpecialTypes) {
+        this.roomSpecialTypes = roomSpecialTypes;
+    }
+
+    /**
+     * Alias for getRoomSpecialTypes() for shorter access.
+     */
+    public RoomSpecialTypes getSpecialTypes() {
+        return this.roomSpecialTypes;
+    }
+
+    public boolean isPreLoaded() {
+        return this.lifecycle.isPreloaded();
+    }
+
+    public boolean isLoaded() {
+        return this.lifecycle.isLoaded();
+    }
+
+    public long getLifecycleGeneration() {
+        return this.lifecycle.generation();
+    }
+
+    public long getWiredCacheGeneration() {
+        return this.wiredRuntime.cacheGeneration();
+    }
+
+    public long advanceWiredCacheGeneration() {
+        return this.wiredRuntime.advanceCacheGeneration();
+    }
+
+    public RoomWiredRuntime getWiredRuntime() {
+        return this.wiredRuntime;
+    }
+
+    void onFurnitureTopologyChanged(UserItem item, boolean moved) {
+        this.wiredRuntime.onFurnitureTopologyChanged(item, moved);
+    }
+
+    void forgetWiredGravity(UserItem item) {
+        this.wiredRuntime.forgetGravity(item);
+    }
+
+    void forgetWiredOpacity(UserItem item) {
+        this.wiredRuntime.forgetOpacity(item);
+    }
+
+    void forgetWiredOpacityUser(int userId) {
+        this.wiredRuntime.forgetOpacityUser(userId);
+    }
+
+    void disposeWiredRuntimeState() {
+        this.wiredRuntime.dispose();
+    }
+
+    public void setNeedsUpdate(boolean needsUpdate) {
+        this.needsUpdate = needsUpdate;
+    }
+
+    public IntList getRights() {
+        return this.rights;
+    }
+
+    public boolean isMuted() {
+        return this.muted;
+    }
+
+    public void setMuted(boolean muted) {
+        this.muted = muted;
+    }
+
+    public TraxManager getTraxManager() {
+        return this.traxManager;
+    }
+
+    void replaceTraxManager(TraxManager traxManager) {
+        this.traxManager = traxManager;
+    }
+
+    public void addUserItem(UserItem item) {
+        this.itemManager.addUserItem(item);
+    }
+
+    public UserItem getUserItem(int id) {
+        return this.itemManager.getUserItem(id);
+    }
+
+    public long getItemIncarnation(int id) {
+        return this.itemManager.getItemIncarnation(id);
+    }
+
+    void removeUserItem(int id) {
+        this.itemManager.removeUserItem(id);
+    }
+
+    public void removeUserItem(UserItem item) {
+        this.itemManager.removeUserItem(item);
+    }
+
+    /** @see RoomItemManager#claimUserItem(UserItem) */
+    public boolean claimItem(UserItem item) {
+        return this.itemManager.claimUserItem(item);
+    }
+
+    public Set<UserItem> getFloorItems() {
+        return this.itemManager.getFloorItems();
+    }
+
+    public Set<UserItem> getWallItems() {
+        return this.itemManager.getWallItems();
+    }
+
+    public Set<UserItem> getPostItNotes() {
+        return this.itemManager.getPostItNotes();
+    }
+
+    public void addUser(User user) {
+        this.unitManager.addUser(user);
+    }
+
+    public void kickUser(User user, boolean alert) {
+        this.unitManager.kickUser(user, alert);
+    }
+
+    public void removeUser(User user) {
+        this.cleanupYoutubeWatcher(user);
+        this.unitManager.removeUser(user);
+    }
+
+    public void removeUser(User user, boolean sendRemovePacket) {
+        this.cleanupYoutubeWatcher(user);
+        this.unitManager.removeUser(user, sendRemovePacket);
+    }
+
+    private void cleanupYoutubeWatcher(User user) {
+        this.media.removeWatcher(user);
+    }
+
+    public void addBot(Bot bot) {
+        this.unitManager.addBot(bot);
+    }
+
+    public void addPet(Pet pet) {
+        this.unitManager.addPet(pet);
+    }
+
+    public Bot getBot(int botId) {
+        return this.unitManager.getBot(botId);
+    }
+
+    public Bot getBot(RoomUnit roomUnit) {
+        return this.unitManager.getBot(roomUnit);
+    }
+
+    public Bot getBotByRoomUnitId(int id) {
+        return this.unitManager.getBotByRoomUnitId(id);
+    }
+
+    public List<Bot> getBots(String name) {
+        return this.unitManager.getBots(name);
+    }
+
+    public boolean hasBotsAt(final int x, final int y) {
+        return this.unitManager.hasBotsAt(x, y);
+    }
+
+    public Pet getPet(int petId) {
+        return this.unitManager.getPet(petId);
+    }
+
+    public Pet getPet(RoomUnit roomUnit) {
+        return this.unitManager.getPet(roomUnit);
+    }
+
+    public boolean removeBot(Bot bot) {
+        return this.unitManager.removeBot(bot);
+    }
+
+    public void placePet(Pet pet, short x, short y, double z, int rot) {
+        this.unitManager.placePet(pet, x, y, z, rot);
+    }
+
+    public Pet removePet(int petId) {
+        return this.unitManager.removePet(petId);
+    }
+
+    public boolean hasUsersAt(int x, int y) {
+        return this.unitManager.hasUsersAt(x, y);
+    }
+
+    public boolean hasPetsAt(int x, int y) {
+        return this.unitManager.hasPetsAt(x, y);
+    }
+
+    public Set<Bot> getBotsAt(RoomTile tile) {
+        return this.unitManager.getBotsAt(tile);
+    }
+
+    public Set<Pet> getPetsAt(RoomTile tile) {
+        return this.unitManager.getPetsAt(tile);
+    }
+
+    public Set<User> getUsersAt(short x, short y) {
+        return this.unitManager.getUsersAt(x, y);
+    }
+
+    public Set<User> getUsersAt(RoomTile tile) {
+        return this.unitManager.getUsersAt(tile);
+    }
+
+    public Set<RoomUnit> getUsersAndBotsAt(short x, short y) {
+        return this.unitManager.getUsersAndBotsAt(x, y);
+    }
+
+    public Set<RoomUnit> getUsersAndBotsAt(RoomTile tile) {
+        return this.unitManager.getUsersAndBotsAt(tile);
+    }
+
+    public Set<User> getUsersOnItem(UserItem item) {
+        return this.unitManager.getUsersOnItem(item);
+    }
+
+    public Set<Bot> getBotsOnItem(UserItem item) {
+        return this.unitManager.getBotsOnItem(item);
+    }
+
+    public void teleportUserToItem(User user, UserItem item) {
+        this.unitManager.teleportUserToItem(user, item);
+    }
+
+    public void teleportUserToLocation(User user, short x, short y) {
+        this.unitManager.teleportUserToLocation(user, x, y);
+    }
+
+    public void teleportRoomUnitToItem(RoomUnit roomUnit, UserItem item) {
+        this.unitManager.teleportRoomUnitToItem(roomUnit, item);
+    }
+
+    public void teleportRoomUnitToLocation(RoomUnit roomUnit, short x, short y) {
+        this.unitManager.teleportRoomUnitToLocation(roomUnit, x, y);
+    }
+
+    public void teleportRoomUnitToLocation(RoomUnit roomUnit, short x, short y, double z) {
+        this.unitManager.teleportRoomUnitToLocation(roomUnit, x, y, z);
+    }
+
+    public void muteUser(User user, int minutes) {
+        this.chatManager.muteUser(user, minutes);
+    }
+
+    public void unmuteUser(User user) {
+        this.chatManager.unmuteUser(user);
+    }
+
+    public boolean isMuted(User user) {
+        return this.chatManager.isMuted(user);
+    }
+
+    public void userEntered(User user) {
+        this.unitManager.userEntered(user);
+    }
+
+    public void floodMuteUser(User user, int timeOut) {
+        this.chatManager.floodMuteUser(user, timeOut);
+    }
+
+    public void talk(User user, RoomChatMessage roomChatMessage, RoomChatType chatType) {
+        this.chatManager.talk(user, roomChatMessage, chatType);
+    }
+
+    public void talk(
+            final User user, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
+        this.chatManager.talk(user, roomChatMessage, chatType, ignoreWired);
+    }
+
+    public Set<RoomTile> getLockedTiles() {
+        return this.itemManager.getLockedTiles();
+    }
+
+    @Deprecated
+    public Set<UserItem> getItemsAt(int x, int y) {
+        return this.itemManager.getItemsAt(x, y);
+    }
+
+    public Set<UserItem> getItemsAt(RoomTile tile) {
+        return this.itemManager.getItemsAt(tile);
+    }
+
+    public Set<UserItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
+        return this.itemManager.getItemsAt(tile, returnOnFirst);
+    }
+
+    public Set<UserItem> getItemsAt(int x, int y, double minZ) {
+        return this.itemManager.getItemsAt(x, y, minZ);
+    }
+
+    public Set<UserItem> getItemsAt(Class<? extends UserItem> type, int x, int y) {
+        return this.itemManager.getItemsAt(type, x, y);
+    }
+
+    public boolean hasItemsAt(int x, int y) {
+        return this.itemManager.hasItemsAt(x, y);
+    }
+
+    public UserItem getTopItemAt(int x, int y) {
+        return this.itemManager.getTopItemAt(x, y);
+    }
+
+    public UserItem getTopItemAt(int x, int y, UserItem exclude) {
+        return this.itemManager.getTopItemAt(x, y, exclude);
+    }
+
+    public UserItem getTopItemAt(Set<RoomTile> tiles, UserItem exclude) {
+        return this.itemManager.getTopItemAt(tiles, exclude);
+    }
+
+    public double getTopHeightAt(int x, int y) {
+        return this.itemManager.getTopHeightAt(x, y);
+    }
+
+    @Deprecated
+    public UserItem getLowestChair(int x, int y) {
+        return this.itemManager.getLowestChair(x, y);
+    }
+
+    public UserItem getLowestChair(RoomTile tile) {
+        return this.itemManager.getLowestChair(tile);
+    }
+
+    public UserItem getTallestChair(RoomTile tile) {
+        return this.itemManager.getTallestChair(tile);
+    }
+
+    public double getStackHeight(short x, short y, boolean calculateHeightmap, UserItem exclude) {
+        return this.tileManager.getStackHeight(x, y, calculateHeightmap, exclude);
+    }
+
+    public double getStackHeight(short x, short y, boolean calculateHeightmap) {
+        return this.tileManager.getStackHeight(x, y, calculateHeightmap);
+    }
+
+    public boolean hasObjectTypeAt(Class<?> type, int x, int y) {
+        return this.itemManager.hasObjectTypeAt(type, x, y);
+    }
+
+    public boolean canSitOrLayAt(int x, int y) {
+        return this.tileManager.canSitOrLayAt(x, y);
+    }
+
+    public boolean canSitAt(int x, int y) {
+        return this.tileManager.canSitAt(x, y);
+    }
+
+    boolean canWalkAt(RoomTile roomTile) {
+        return this.tileManager.canWalkAt(roomTile);
+    }
+
+    boolean canSitAt(Set<UserItem> items) {
+        return this.tileManager.canSitAt(items);
+    }
+
+    public boolean canLayAt(int x, int y) {
+        return this.tileManager.canLayAt(x, y);
+    }
+
+    boolean canLayAt(Set<UserItem> items) {
+        return this.tileManager.canLayAt(items);
+    }
+
+    public RoomTile getRandomWalkableTile() {
+        return this.tileManager.getRandomWalkableTile();
+    }
+
+    public RoomTile getRandomWalkableTilesAround(RoomUnit roomUnit, RoomTile tile, int radius) {
+        return this.tileManager.getRandomWalkableTilesAround(roomUnit, tile, radius);
+    }
+
+    public User getUser(String username) {
+        return this.unitManager.getUser(username);
+    }
+
+    public User getUser(RoomUnit roomUnit) {
+        return this.unitManager.getUserByRoomUnit(roomUnit);
+    }
+
+    public User getUser(int userId) {
+        return this.unitManager.getUser(userId);
+    }
+
+    public User getUserByRoomUnitId(int roomUnitId) {
+        return this.unitManager.getUserByRoomUnitId(roomUnitId);
+    }
+
+    public void sendComposer(ServerMessage message) {
+        this.messagingManager.sendComposer(message);
+    }
+
+    public void sendComposers(Collection<ServerMessage> messages) {
+        this.messagingManager.sendComposers(messages);
+    }
+
+    public void sendComposerToUsersWithRights(ServerMessage message) {
+        this.messagingManager.sendComposerToUsersWithRights(message);
+    }
+
+    public void petChat(ServerMessage message) {
+        this.messagingManager.petChat(message);
+    }
+
+    public void botChat(ServerMessage message) {
+        this.messagingManager.botChat(message);
+    }
+
+    public RoomRightLevels getGuildRightLevel(User user) {
+        return this.rightsManager.getGuildRightLevel(user);
+    }
+
+    /**
+     * @deprecated Deprecated since 2.5.0. Use {@link #getGuildRightLevel(Habbo)} instead.
+     */
+    @Deprecated
+    public int guildRightLevel(User user) {
+        return this.rightsManager.guildRightLevel(user);
+    }
+
+    public boolean isOwner(User user) {
+        return this.rightsManager.isOwner(user);
+    }
+
+    public boolean hasRights(User user) {
+        return this.rightsManager.hasRights(user);
+    }
+
+    public boolean hasExplicitRights(User user) {
+        return user != null && this.rights.contains(user.getUserInfo().getId());
+    }
+
+    public int getWiredInspectMask() {
+        return this.wiredAccess.inspectMask();
+    }
+
+    public int getWiredModifyMask() {
+        return this.wiredAccess.modifyMask();
+    }
+
+    /** Timezone chosen in the AIR 13 wired settings tab; empty means "hotel default". */
+    public String getWiredTimezone() {
+        return this.wiredAccess.timezone();
+    }
+
+    public boolean canInspectWired(User user) {
+        return this.wiredAccess.canInspect(user);
+    }
+
+    public boolean canModifyWired(User user) {
+        return this.wiredAccess.canModify(user);
+    }
+
+    public boolean canManageWiredSettings(User user) {
+        return this.wiredAccess.canManage(user);
+    }
+
+    public boolean saveWiredSettings(int inspectMask, int modifyMask) {
+        return this.wiredAccess.save(inspectMask, modifyMask);
+    }
+
+    public boolean saveWiredSettings(int inspectMask, int modifyMask, String timezone) {
+        return this.wiredAccess.save(inspectMask, modifyMask, timezone);
+    }
+
+    public void giveRights(User user) {
+        if (user == null) {
+            return;
+        }
+
+        this.giveRights(user.getUserInfo().getId());
+    }
+
+    public void giveRights(int userId) {
+        this.rightsManager.giveRights(userId);
+        this.wiredAccess.publish();
+    }
+
+    public void removeRights(int userId) {
+        this.rightsManager.removeRights(userId);
+        this.wiredAccess.publish();
+    }
+
+    public void removeAllRights() {
+        this.rightsManager.removeAllRights();
+        this.wiredAccess.publish();
+    }
+
+    void refreshRightsInRoom() {
+        this.rightsManager.refreshRightsInRoom();
+    }
+
+    public void refreshRightsForUser(User user) {
+        this.rightsManager.refreshRightsForUser(user);
+    }
+
+    public Map<Integer, String> getUsersWithRights() {
+        return this.rightsManager.getUsersWithRights();
+    }
+
+    public void unbanUser(int userId) {
+        this.rightsManager.unbanUser(userId);
+    }
+
+    public boolean isBanned(User user) {
+        return this.rightsManager.isBanned(user);
+    }
+
+    public Int2ObjectMap<RoomBan> getBannedUsers() {
+        return this.bannedUsers;
+    }
+
+    public void addRoomBan(RoomBan roomBan) {
+        this.rightsManager.addRoomBan(roomBan);
+    }
+
+    public void makeSit(User user) {
+        this.posture.makeSit(user);
+    }
+
+    public void makeStand(User user) {
+        this.posture.makeStand(user);
+    }
+
+    public void giveEffect(User user, int effectId, int duration) {
+        this.unitManager.giveEffect(user, effectId, duration);
+    }
+
+    public void giveEffect(RoomUnit roomUnit, int effectId, int duration) {
+        this.unitManager.giveEffect(roomUnit, effectId, duration);
+    }
+
+    public void giveHandItem(User user, int handItem) {
+        this.unitManager.giveHandItem(user, handItem);
+    }
+
+    public void giveHandItem(RoomUnit roomUnit, int handItem) {
+        this.unitManager.giveHandItem(roomUnit, handItem);
+    }
+
+    public void updateItem(UserItem item) {
+        this.itemManager.updateItem(item);
+    }
+
+    public void updateItemState(UserItem item) {
+        this.itemManager.updateItemState(item);
+    }
+
+    public int getUserFurniCount(int userId) {
+        return this.itemManager.getFurniOwnerCount().get(userId);
+    }
+
+    public int getUserUniqueFurniCount(int userId) {
+        return this.itemManager.getUserUniqueFurniCount(userId);
+    }
+
+    public void ejectUserFurni(int userId) {
+        this.itemManager.ejectUserFurni(userId);
+    }
+
+    public void ejectUserItem(UserItem item) {
+        this.itemManager.ejectUserItem(item);
+    }
+
+    public void ejectAll() {
+        this.itemManager.ejectAll();
+    }
+
+    public void ejectAll(User user) {
+        this.itemManager.ejectAll(user);
+    }
+
+    public void refreshGuild(Guild guild) {
+        this.guildService.refresh(guild);
+    }
+
+    public void refreshGuildColors(Guild guild) {
+        this.guildService.refreshColors(guild);
+    }
+
+    public void refreshGuildRightsInRoom() {
+        this.guildService.refreshRights();
+    }
+
+    public void idle(User user) {
+        this.unitManager.idle(user);
+    }
+
+    public void unIdle(User user) {
+        this.unitManager.unIdle(user);
+    }
+
+    public void dance(User user, DanceType danceType) {
+        this.unitManager.dance(user, danceType);
+    }
+
+    public void dance(RoomUnit unit, DanceType danceType) {
+        this.unitManager.dance(unit, danceType);
+    }
+
+    public void addToWordFilter(String word) {
+        this.chatManager.addToWordFilter(word);
+    }
+
+    public void removeFromWordFilter(String word) {
+        this.chatManager.removeFromWordFilter(word);
+    }
+
+    public void handleWordQuiz(User user, String answer) {
+        this.wordQuizManager.handleWordQuiz(user, answer);
+    }
+
+    public void startWordQuiz(String question, int duration) {
+        this.wordQuizManager.startWordQuiz(question, duration);
+    }
+
+    public boolean hasActiveWordQuiz() {
+        return this.wordQuizManager.hasActiveWordQuiz();
+    }
+
+    public boolean hasVotedInWordQuiz(User user) {
+        return this.wordQuizManager.hasVotedInWordQuiz(user);
+    }
+
+    public void alert(String message) {
+        this.messagingManager.alert(message);
+    }
+
+    public int itemCount() {
+        return this.itemManager.itemCount();
+    }
+
+    public void setJukeBoxActive(boolean jukeBoxActive) {
+        this.jukeboxActive = jukeBoxActive;
+        this.needsUpdate = true;
+    }
+
+    boolean isJukeboxActive() {
+        return this.jukeboxActive;
+    }
+
+    public boolean isHideWired() {
+        return this.hideWired;
+    }
+
+    public void setHideWired(boolean hideWired) {
+        this.wiredVisibility.setHidden(hideWired);
+    }
+
+    void updateHideWiredState(boolean hideWired) {
+        this.hideWired = hideWired;
+    }
+
+    public FurnitureMovementError canPlaceFurnitureAt(UserItem item, User user, RoomTile tile, int rotation) {
+        return this.itemManager.canPlaceFurnitureAt(item, user, tile, rotation);
+    }
+
+    public FurnitureMovementError furnitureFitsAt(RoomTile tile, UserItem item, int rotation) {
+        return this.itemManager.furnitureFitsAt(tile, item, rotation);
+    }
+
+    public FurnitureMovementError furnitureFitsAt(RoomTile tile, UserItem item, int rotation, boolean checkForUnits) {
+        return this.itemManager.furnitureFitsAt(tile, item, rotation, checkForUnits);
+    }
+
+    public FurnitureMovementError furnitureFitsAtWithPhysics(
+            RoomTile tile, UserItem item, int rotation, boolean checkForUnits, WiredMovementPhysics physics) {
+        return this.itemManager.furnitureFitsAtWithPhysics(tile, item, rotation, checkForUnits, physics);
+    }
+
+    public FurnitureMovementError placeFloorFurniAt(UserItem item, RoomTile tile, int rotation, User owner) {
+        return this.itemManager.placeFloorFurniAt(item, tile, rotation, owner);
+    }
+
+    public FurnitureMovementError placeWallFurniAt(UserItem item, String wallPosition, User owner) {
+        return this.itemManager.placeWallFurniAt(item, wallPosition, owner);
+    }
+
+    public FurnitureMovementError moveFurniTo(UserItem item, RoomTile tile, int rotation, User actor) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, actor);
+    }
+
+    public FurnitureMovementError moveFurniTo(
+            UserItem item, RoomTile tile, int rotation, User actor, boolean sendUpdates) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, actor, sendUpdates);
+    }
+
+    public FurnitureMovementError moveFurniTo(
+            UserItem item, RoomTile tile, int rotation, User actor, boolean sendUpdates, boolean checkForUnits) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, actor, sendUpdates, checkForUnits);
+    }
+
+    public FurnitureMovementError moveFurniTo(UserItem item, RoomTile tile, int rotation, double z, User actor) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, z, actor, true, true);
+    }
+
+    public FurnitureMovementError moveFurniTo(
+            UserItem item, RoomTile tile, int rotation, double z, User actor, boolean sendUpdates) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, z, actor, sendUpdates, true);
+    }
+
+    public FurnitureMovementError moveFurniTo(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits) {
+        return this.itemManager.moveFurniTo(item, tile, rotation, z, actor, sendUpdates, checkForUnits);
+    }
+
+    public FurnitureMovementError moveFurniToWithPhysics(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
+        return this.itemManager.moveFurniToWithPhysics(
+                item, tile, rotation, actor, sendUpdates, checkForUnits, physics);
+    }
+
+    public FurnitureMovementError moveFurniToWithPhysics(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
+        return this.itemManager.moveFurniToWithPhysics(
+                item, tile, rotation, z, actor, sendUpdates, checkForUnits, physics);
+    }
+
+    public FurnitureMovementError slideFurniTo(UserItem item, RoomTile tile, int rotation) {
+        return this.itemManager.slideFurniTo(item, tile, rotation);
+    }
+
+    public Set<RoomUnit> getRoomUnits() {
+        return this.unitManager.getRoomUnits();
+    }
+
+    public Set<RoomUnit> getRoomUnits(RoomTile atTile) {
+        return this.unitManager.getRoomUnits(atTile);
+    }
+
+    public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
+        return this.unitManager.getRoomUnitsAt(tile);
+    }
+
+    public long getEstimatedMemoryUsage() {
+        return RoomMemoryEstimator.estimate(this);
+    }
+}

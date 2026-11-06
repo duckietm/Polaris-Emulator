@@ -77,7 +77,8 @@ java -jar Polaris-<version>-jar-with-dependencies.jar
 Polaris keeps its promise to existing plugin authors:
 
 - Plugin jars built for Arcturus/Morningstar **load unchanged** — the Java API
-  still lives in the `com.eu.habbo.*` packages.
+  now lives in `polaris.*`, and old jars are rewritten to the new names as they
+  load (see `docs/plugin-author-guide.md`).
 - Raw SQL written against pre-Polaris table names is translated on the fly by
   the **legacy bridge**. The best-known example: the old `permissions` table
   is now split into `permission_ranks` and `permission_definitions`, and the

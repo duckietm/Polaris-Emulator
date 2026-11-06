@@ -153,7 +153,7 @@ room.sendComposer(PetStatusUpdate(plant))
 room.updateTiles([tile 4,5])
 unit.removeStatus(GESTURE)
 plant.cycle()
-threading.runPersistence(QueryDeleteHabboItem(501))
+threading.runPersistence(QueryDeleteUserItem(501))
 
 == plant / fertiliser on a grown plant
 
@@ -169,7 +169,7 @@ room.sendComposer(RoomUserStatus(unit))
 room.sendComposer(PetStatusUpdate(plant))
 room.updateTiles([tile 4,5])
 unit.removeStatus(GESTURE)
-threading.runPersistence(QueryDeleteHabboItem(501))
+threading.runPersistence(QueryDeleteUserItem(501))
 
 == plant / rebreed 3 on an epic grown plant
 room.claimItem(item)
@@ -182,7 +182,7 @@ room.sendComposer(RoomUserStatus(unit))
 room.sendComposer(PetStatusUpdate(plant))
 room.updateTiles([tile 4,5])
 unit.removeStatus(GESTURE)
-threading.runPersistence(QueryDeleteHabboItem(501))
+threading.runPersistence(QueryDeleteUserItem(501))
 
 == plant / rebreed of the wrong rarity
 
@@ -198,7 +198,7 @@ room.sendComposer(RoomUserStatus(unit))
 room.sendComposer(PetStatusUpdate(plant))
 room.updateTiles([tile 4,5])
 unit.removeStatus(GESTURE)
-threading.runPersistence(QueryDeleteHabboItem(501))
+threading.runPersistence(QueryDeleteUserItem(501))
 
 == plant / rebreed on a dead plant
 
@@ -218,7 +218,7 @@ room.sendComposer(PetStatusUpdate(plant))
 room.updateTiles([tile 4,5])
 progressAchievement(achievement MonsterPlantHealer)
 unit.removeStatus(GESTURE)
-threading.runPersistence(QueryDeleteHabboItem(501))
+threading.runPersistence(QueryDeleteUserItem(501))
 plant sends a packet update
 
 == plant / revival on a living plant

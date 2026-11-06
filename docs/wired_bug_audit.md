@@ -12,11 +12,11 @@ Non tutti i punti qui sotto sono bug già riprodotti al 100%, ma sono:
 
 Riferimenti principali (il progetto ora si chiama Polaris; percorsi aggiornati al layout attuale `Gameserver/...`):
 
-- `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredManager.java`
-- `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredEngine.java`
-- `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/WiredHandler.java`
-- `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredMoveCarryHelper.java`
-- `Gameserver/Emulator/src/main/java/com/eu/habbo/habbohotel/items/interactions/wired`
+- `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredManager.java`
+- `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredEngine.java`
+- `Gameserver/Emulator/src/main/java/polaris/hotel/wired/WiredHandler.java`
+- `Gameserver/Emulator/src/main/java/polaris/hotel/wired/core/WiredMoveCarryHelper.java`
+- `Gameserver/Emulator/src/main/java/polaris/hotel/items/interactions/wired`
 
 I numeri di riga nelle sezioni "Evidenze" si riferiscono al codice al momento dell'audit originale;
 i blocchi "Stato (verifica 2026-09-23)" riportano dove si trova oggi il codice citato.

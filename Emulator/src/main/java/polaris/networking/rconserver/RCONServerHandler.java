@@ -1,0 +1,177 @@
+package polaris.networking.rconserver;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.handler.codec.TooLongFrameException;
+import io.netty.handler.codec.json.JsonObjectDecoder;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
+import java.util.List;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+
+public class RCONServerHandler extends ChannelInboundHandlerAdapter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RCONServerHandler.class);
+
+    // Gson is thread-safe and immutable once built — share one instance instead
+    // of allocating a parser per RCON request.
+    private static final Gson GSON = new Gson();
+    private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
+    private static final Pattern IP_LITERAL = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}|[0-9A-Fa-f.]*:[0-9A-Fa-f:.]*");
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        String address = remoteAddress(ctx);
+
+        if (isAllowed(address, Emulator.getRconServer().allowedAdresses)) {
+            return;
+        }
+
+        ctx.channel().close();
+
+        LOGGER.warn("RCON Remote connection closed: {}. IP not allowed!", address);
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (!(msg instanceof ByteBuf data)) {
+            ctx.fireChannelRead(msg);
+            return;
+        }
+
+        try {
+            int readableBytes = data.readableBytes();
+            int maxPayloadBytes = maxPayloadBytes();
+            if (readableBytes > maxPayloadBytes) {
+                writeAndClose(
+                        ctx,
+                        RconResponse.error(polaris.messages.rcon.RCONMessage.STATUS_ERROR, "payload too large")
+                                .toJson(GSON));
+                LOGGER.warn("Rejected oversized RCON payload: {} bytes (max {})", readableBytes, maxPayloadBytes);
+                return;
+            }
+
+            byte[] d = new byte[readableBytes];
+            data.getBytes(0, d);
+            String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
+            Gson gson = GSON;
+            String response = RconResponse.error(polaris.messages.rcon.RCONMessage.STATUS_ERROR, "invalid request")
+                    .toJson(GSON);
+            String key = "";
+            try {
+                JsonObject object = gson.fromJson(message, JsonObject.class);
+                key = object.get("key").getAsString();
+                response = Emulator.getRconServer()
+                        .handle(ctx, key, object.get("data").toString());
+            } catch (ArrayIndexOutOfBoundsException e) {
+                LOGGER.error("Unknown RCON Message: {}", key);
+            } catch (Exception e) {
+                // Only the key: the payload can carry user data and tokens.
+                LOGGER.error("Invalid RCON Message: {}", key);
+                LOGGER.error("Caught exception", e);
+            }
+
+            writeAndClose(ctx, response);
+        } finally {
+            data.release();
+        }
+    }
+
+    /** Splits the stream into whole JSON objects, refusing one larger than the payload limit. */
+    static JsonObjectDecoder framer() {
+        return new JsonObjectDecoder(maxPayloadBytes());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof TooLongFrameException) {
+            LOGGER.warn("Rejected oversized RCON payload (max {} bytes)", maxPayloadBytes());
+            writeAndClose(
+                    ctx,
+                    RconResponse.error(polaris.messages.rcon.RCONMessage.STATUS_ERROR, "payload too large")
+                            .toJson(GSON));
+            return;
+        }
+        if (cause instanceof CorruptedFrameException) {
+            writeAndClose(
+                    ctx,
+                    RconResponse.error(polaris.messages.rcon.RCONMessage.STATUS_ERROR, "invalid request")
+                            .toJson(GSON));
+            return;
+        }
+        LOGGER.error("RCON connection error", cause);
+        ctx.close();
+    }
+
+    static int maxPayloadBytes() {
+        if (Emulator.getConfig() == null) {
+            return DEFAULT_MAX_PAYLOAD_BYTES;
+        }
+
+        int configured = Emulator.getConfig().getInt("rcon.max_payload_bytes", DEFAULT_MAX_PAYLOAD_BYTES);
+        return configured > 0 ? configured : DEFAULT_MAX_PAYLOAD_BYTES;
+    }
+
+    /**
+     * An address entry is compared as an address, so {@code ::1} also allows {@code 0:0:0:0:0:0:0:1}. Any other entry
+     * is compared as text, as before; nothing here resolves a host name.
+     */
+    static boolean isAllowed(String address, List<String> entries) {
+        InetAddress remote = literal(address);
+
+        for (String entry : entries) {
+            String allowed = entry.trim();
+
+            if (allowed.equalsIgnoreCase(address)) {
+                return true;
+            }
+
+            InetAddress allowedAddress = literal(allowed);
+            if (remote != null && remote.equals(allowedAddress)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static InetAddress literal(String value) {
+        if (value == null || !IP_LITERAL.matcher(value).matches()) {
+            return null;
+        }
+
+        try {
+            return InetAddress.getByName(value);
+        } catch (UnknownHostException | SecurityException e) {
+            return null;
+        }
+    }
+
+    static String remoteAddress(ChannelHandlerContext ctx) {
+        SocketAddress socketAddress = ctx.channel().remoteAddress();
+        if (socketAddress instanceof InetSocketAddress inetSocketAddress && inetSocketAddress.getAddress() != null) {
+            return inetSocketAddress.getAddress().getHostAddress();
+        }
+
+        return socketAddress == null ? "" : socketAddress.toString().replace("/", "");
+    }
+
+    static void writeAndClose(ChannelHandlerContext ctx, String response) {
+        ctx.writeAndFlush(responseBuffer(response)).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    static ByteBuf responseBuffer(String response) {
+        return Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+}

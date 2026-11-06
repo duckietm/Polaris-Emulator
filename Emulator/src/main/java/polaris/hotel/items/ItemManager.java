@@ -1721,7 +1721,7 @@ public class ItemManager {
         int userId = user.getUserInfo().getId();
         try {
             return inTransaction(connection -> {
-                this.deleteRecycled(connection, userId, consumed);
+                this.deleteOwnedItems(connection, userId, consumed);
                 return this.insertRecycleBox(connection, userId, rewardItemId);
             });
         } catch (SQLException e) {
@@ -1733,7 +1733,39 @@ public class ItemManager {
         }
     }
 
-    private void deleteRecycled(Connection connection, int userId, Collection<UserItem> consumed) throws SQLException {
+    /**
+     * Crafts {@code reward} out of {@code consumed} in one transaction: the ingredients' rows are
+     * deleted and the reward's row inserted together, or nothing is.
+     *
+     * @return the reward, or null when nothing was written
+     */
+    public UserItem craftInTransaction(int userId, Item reward, Collection<UserItem> consumed) {
+        if (userId <= 0 || reward == null || consumed == null || consumed.isEmpty()) {
+            return null;
+        }
+
+        // A chest gives back what it holds before its row goes, as QueryDeleteUserItem does.
+        for (UserItem item : consumed) {
+            ChestRelease.releaseToOwner(item);
+        }
+
+        try {
+            return inTransaction(connection -> {
+                this.deleteOwnedItems(connection, userId, consumed);
+                UserItem created = this.createItem(connection, userId, reward, 0, 0, "");
+                if (created == null) {
+                    throw new SQLException("Crafting reward " + reward.getId() + " was refused for user " + userId);
+                }
+                return created;
+            });
+        } catch (SQLException e) {
+            LOGGER.error("Crafting for user {} failed, nothing was written", userId, e);
+            return null;
+        }
+    }
+
+    private void deleteOwnedItems(Connection connection, int userId, Collection<UserItem> consumed)
+            throws SQLException {
         if (consumed.isEmpty()) {
             return;
         }
@@ -1744,7 +1776,7 @@ public class ItemManager {
                 statement.setInt(1, item.getId());
                 statement.setInt(2, userId);
                 if (statement.executeUpdate() != 1) {
-                    throw new SQLException("Recycled item " + item.getId() + " is not owned by user " + userId);
+                    throw new SQLException("Item " + item.getId() + " is not owned by user " + userId);
                 }
             }
         }

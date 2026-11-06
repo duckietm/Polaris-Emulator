@@ -6,7 +6,7 @@ after: inventory=[wood#11, wood#12, stone#13] remaining=0
 inventory.getAndRemove(wood) -> wood#11
 inventory.getAndRemove(wood) -> wood#12
 inventory.getAndRemove(stone) -> stone#13
-items.createItem(throne) -> true
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> true
 achievement(CraftThrone)
 ann <- CraftingResult(recipe throne)
 inventory.addItem(throne#900)
@@ -16,19 +16,17 @@ ann <- RemoveUserItem(11)
 ann <- RemoveUserItem(12)
 ann <- RemoveUserItem(13)
 ann <- InventoryRefresh()
-threading.runPersistence(DeleteItems(stone#13, wood#11, wood#12))
 after: inventory=[throne#900] remaining=0
 
 == name / a secret recipe already discovered
 inventory.getAndRemove(rare) -> rare#21
-items.createItem(chair) -> true
+items.craftInTransaction(chair, consumes rare#21) -> true
 ann <- CraftingResult(recipe chair)
 inventory.addItem(chair#900)
 ann <- AddUserItem(chair#900)
 achievement(Atcg)
 ann <- RemoveUserItem(21)
 ann <- InventoryRefresh()
-threading.runPersistence(DeleteItems(rare#21))
 after: inventory=[chair#900] remaining=0
 
 == name / a secret recipe never discovered
@@ -69,7 +67,7 @@ after: inventory=[wood#11, wood#12, stone#13] remaining=0
 inventory.getAndRemove(wood) -> wood#11
 inventory.getAndRemove(wood) -> wood#12
 inventory.getAndRemove(stone) -> stone#13
-items.createItem(throne) -> true
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> true
 achievement(CraftThrone)
 ann <- CraftingResult(recipe throne)
 inventory.addItem(throne#900)
@@ -79,14 +77,13 @@ ann <- RemoveUserItem(11)
 ann <- RemoveUserItem(12)
 ann <- RemoveUserItem(13)
 ann <- InventoryRefresh()
-threading.runPersistence(DeleteItems(stone#13, wood#11, wood#12))
 after: inventory=[throne#900] remaining=0
 
 == name / the last unit, and the reward is not created
 inventory.getAndRemove(wood) -> wood#11
 inventory.getAndRemove(wood) -> wood#12
 inventory.getAndRemove(stone) -> stone#13
-items.createItem(throne) -> false
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> false
 inventory.addItem(wood#11)
 ann <- AddUserItem(wood#11)
 inventory.addItem(wood#12)
@@ -101,7 +98,7 @@ after: inventory=[wood#11, wood#12, stone#13] remaining=1
 inventory.getAndRemove(wood) -> wood#11
 inventory.getAndRemove(wood) -> wood#12
 inventory.getAndRemove(stone) -> stone#13
-items.createItem(throne) -> false
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> false
 inventory.addItem(wood#11)
 ann <- AddUserItem(wood#11)
 inventory.addItem(wood#12)
@@ -121,7 +118,7 @@ ann <- AlertLimitedSoldOut()
 after: inventory=[wood#11, wood#12, stone#13] remaining=0
 
 == secret / a public recipe laid on the altar
-items.createItem(throne) -> true
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> true
 achievement(CraftThrone)
 ann <- CraftingResult(recipe throne)
 stats.addRecipe(1)
@@ -130,13 +127,10 @@ inventory.addItem(throne#900)
 ann <- AddUserItem(throne#900)
 inventory.remove(wood#11)
 ann <- RemoveUserItem(11)
-threading.runPersistence(DeleteItem(11))
 inventory.remove(wood#12)
 ann <- RemoveUserItem(12)
-threading.runPersistence(DeleteItem(12))
 inventory.remove(stone#13)
 ann <- RemoveUserItem(13)
-threading.runPersistence(DeleteItem(13))
 ann <- InventoryRefresh()
 after: inventory=[throne#900] remaining=0
 
@@ -153,18 +147,17 @@ ann <- CraftingResult(null)
 after: inventory=[rare#21, throne#22] remaining=0
 
 == secret / its ingredients, already discovered
-items.createItem(chair) -> true
+items.craftInTransaction(chair, consumes rare#21) -> true
 ann <- CraftingResult(recipe chair)
 inventory.addItem(chair#900)
 ann <- AddUserItem(chair#900)
 inventory.remove(rare#21)
 ann <- RemoveUserItem(21)
-threading.runPersistence(DeleteItem(21))
 ann <- InventoryRefresh()
 after: inventory=[chair#900] remaining=0
 
 == secret / its ingredients, first time
-items.createItem(chair) -> true
+items.craftInTransaction(chair, consumes rare#21) -> true
 ann <- CraftingResult(recipe chair)
 stats.addRecipe(2)
 achievement(AtcgSecret)
@@ -172,7 +165,6 @@ inventory.addItem(chair#900)
 ann <- AddUserItem(chair#900)
 inventory.remove(rare#21)
 ann <- RemoveUserItem(21)
-threading.runPersistence(DeleteItem(21))
 ann <- InventoryRefresh()
 after: inventory=[chair#900] remaining=0
 
@@ -189,12 +181,12 @@ ann <- CraftingResult(null)
 after: inventory=[rare#21] remaining=0
 
 == secret / the last unit, and the reward is not created
-items.createItem(throne) -> false
+items.craftInTransaction(throne, consumes stone#13, wood#11, wood#12) -> false
 ann <- CraftingResult(null)
 after: inventory=[wood#11, wood#12, stone#13] remaining=1
 
 == secret / the reward is not created
-items.createItem(chair) -> false
+items.craftInTransaction(chair, consumes rare#21) -> false
 ann <- CraftingResult(null)
 after: inventory=[rare#21] remaining=0
 

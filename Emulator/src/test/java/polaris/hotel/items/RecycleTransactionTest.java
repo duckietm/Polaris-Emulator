@@ -121,6 +121,17 @@ class RecycleTransactionTest {
     }
 
     @Test
+    void anIngredientAlreadyGoneCraftsNothing() throws Exception {
+        when(this.delete.executeUpdate()).thenReturn(1, 0);
+
+        // Crafting saved the reward first and deleted the ingredients later in the background.
+        assertNull(new ItemManager().craftInTransaction(42, mock(Item.class), List.of(furni(1), furni(2))));
+
+        verify(this.connection).rollback();
+        verify(this.connection, never()).commit();
+    }
+
+    @Test
     void nothingToRecycleIsRefused() {
         assertNull(new ItemManager().handleRecycle(this.user, "77", List.of()));
     }

@@ -223,7 +223,9 @@ class RoomPlayTestEnforcementTest {
                 new Packet().integer(ITEM).integer(1).integer(2).integer(2));
 
         verify(room, mode.refused ? never() : times(1)).getLayout();
-        verify(actor.client, mode.refused ? times(1) : never()).sendResponse(any(FloorItemUpdateComposer.class));
+        // Refused in playtest, or let through to a layout without that tile: either way the client gets the
+        // position back (a missing tile used to return silently and leave the furni where it was dropped).
+        verify(actor.client, times(1)).sendResponse(any(FloorItemUpdateComposer.class));
     }
 
     @ParameterizedTest

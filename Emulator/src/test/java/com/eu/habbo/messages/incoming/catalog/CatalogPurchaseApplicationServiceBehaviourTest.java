@@ -279,8 +279,17 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
 
         doThrow(new IllegalStateException("room creation failed"))
                 .when((RoomBundleLayout) this.page)
-                .buyRoom(any(Habbo.class));
+                .tryBuyRoom(any(Habbo.class));
         this.buy("room bundle / the room cannot be created", 7, 20, "", 1);
+
+        this.page = this.roomBundlePage(bundle);
+        doAnswer(i -> {
+                    this.record("page.tryBuyRoom(buyer) -> false");
+                    return false;
+                })
+                .when((RoomBundleLayout) this.page)
+                .tryBuyRoom(any(Habbo.class));
+        this.buy("room bundle / the room is not created", 7, 20, "", 1);
     }
 
     // ---------------------------------------------------------------- club and builders club
@@ -487,7 +496,12 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
     private CatalogPage roomBundlePage(CatalogItem item) {
         RoomBundleLayout page = mock(RoomBundleLayout.class, withSettings().name("room bundle page"));
         this.fillPage(page, 0, item);
-        doAnswer(i -> this.record("page.buyRoom(buyer)")).when(page).buyRoom(any(Habbo.class));
+        doAnswer(i -> {
+                    this.record("page.tryBuyRoom(buyer) -> true");
+                    return true;
+                })
+                .when(page)
+                .tryBuyRoom(any(Habbo.class));
         return page;
     }
 

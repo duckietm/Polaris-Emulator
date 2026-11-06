@@ -40,7 +40,11 @@ public class RotateMoveItemEvent extends MessageHandler {
         int rotation = FurnitureDirections.of(item).place(this.packet.readInt());
 
         RoomTile tile = room.getLayout().getTile((short) x, (short) y);
-        if (tile == null) return;
+        if (tile == null) {
+            // The client moved the furni already; without its position back it stayed there until a reload.
+            this.client.sendResponse(new FloorItemUpdateComposer(item));
+            return;
+        }
 
         FurnitureMovementError error = room.canPlaceFurnitureAt(item, this.client.getUser(), tile, rotation);
         if (error != FurnitureMovementError.NONE) {

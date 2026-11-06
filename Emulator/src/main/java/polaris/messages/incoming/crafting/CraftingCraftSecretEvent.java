@@ -18,7 +18,6 @@ import polaris.messages.outgoing.crafting.CraftingResultComposer;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.inventory.RemoveUserItemComposer;
-import polaris.threading.runnables.QueryDeleteUserItem;
 import polaris.util.PacketGuard;
 
 public class CraftingCraftSecretEvent extends MessageHandler {
@@ -65,9 +64,10 @@ public class CraftingCraftSecretEvent extends MessageHandler {
                     return;
                 }
 
+                // The furni on the altar are deleted and the reward created in one transaction.
                 UserItem rewardItem = Emulator.getGameEnvironment()
                         .getItemManager()
-                        .createItem(this.client.getUser().getUserInfo().getId(), recipe.getReward(), 0, 0, "");
+                        .craftInTransaction(this.client.getUser().getUserInfo().getId(), recipe.getReward(), userItems);
 
                 if (rewardItem != null) {
                     this.complete(recipe, rewardItem, userItems);
@@ -112,7 +112,6 @@ public class CraftingCraftSecretEvent extends MessageHandler {
         for (UserItem item : userItems) {
             this.client.getUser().getInventory().getItemsComponent().removeUserItem(item);
             this.client.sendResponse(new RemoveUserItemComposer(item.getGiftAdjustedId()));
-            Emulator.getThreading().runPersistence(new QueryDeleteUserItem(item.getId()));
         }
         this.client.sendResponse(new InventoryRefreshComposer());
     }

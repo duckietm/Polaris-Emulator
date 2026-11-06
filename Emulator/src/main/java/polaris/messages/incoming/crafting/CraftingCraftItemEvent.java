@@ -16,7 +16,6 @@ import polaris.messages.outgoing.crafting.CraftingResultComposer;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.inventory.RemoveUserItemComposer;
-import polaris.threading.runnables.QueryDeleteUserItems;
 
 public class CraftingCraftItemEvent extends MessageHandler {
     @Override
@@ -57,9 +56,12 @@ public class CraftingCraftItemEvent extends MessageHandler {
                 return;
             }
 
+            // The ingredients are deleted and the reward created in one transaction: before, the reward
+            // was saved first and the ingredients deleted later in the background, so a failed delete kept both.
             UserItem rewardItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createItem(this.client.getUser().getUserInfo().getId(), recipe.getReward(), 0, 0, "");
+                    .craftInTransaction(
+                            this.client.getUser().getUserInfo().getId(), recipe.getReward(), toRemove.values());
 
             if (rewardItem != null) {
                 this.complete(recipe, rewardItem, toRemove);
@@ -126,8 +128,6 @@ public class CraftingCraftItemEvent extends MessageHandler {
             CraftingCraftItemEvent.this.client.sendResponse(new RemoveUserItemComposer(object.getGiftAdjustedId()));
         });
         this.client.sendResponse(new InventoryRefreshComposer());
-
-        Emulator.getThreading().runPersistence(new QueryDeleteUserItems(toRemove.values()));
     }
 
     private void restoreItems(Map<Integer, UserItem> items) {

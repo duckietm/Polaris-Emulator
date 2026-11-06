@@ -53,6 +53,19 @@ public class BotsComponent {
         }
     }
 
+    /**
+     * Adds the bot unless the inventory already holds {@code maximum} bots. The check and the add are one step: checked
+     * apart, two pickups at the same moment both saw room for one more and the inventory went past the maximum.
+     */
+    public boolean addBotWithin(Bot bot, int maximum) {
+        synchronized (this.bots) {
+            if (this.bots.size() >= maximum) return false;
+
+            this.bots.put(bot.getId(), bot);
+            return true;
+        }
+    }
+
     public void removeBot(Bot bot) {
         synchronized (this.bots) {
             this.bots.remove(bot.getId());

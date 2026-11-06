@@ -1,5 +1,8 @@
 package polaris.threading.runnables;
 
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.items.FurnitureType;
 import polaris.hotel.items.Item;
@@ -13,6 +16,8 @@ import polaris.messages.outgoing.rooms.items.AddFloorItemComposer;
 import polaris.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 
 public class CrackableExplode implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrackableExplode.class);
+
     private final Room room;
     private final InteractionCrackable userItem;
     private final User user;
@@ -43,49 +48,54 @@ public class CrackableExplode implements Runnable {
             return;
         }
 
-        if (!this.userItem.resetable()) {
+        Item rewardItem = Emulator.getGameEnvironment()
+                .getItemManager()
+                .getCrackableReward(this.userItem.getBaseItem().getId());
+        boolean deleteCrackable = !this.userItem.resetable();
+
+        // The crackable's row goes and the reward's row comes in one transaction: before, the box was
+        // deleted first and a failed reward insert lost it, or a failed delete let it be cracked again.
+        UserItem newItem;
+        try {
+            newItem = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .crackInTransaction(
+                            this.userItem,
+                            deleteCrackable,
+                            this.userItem.allowAnyone()
+                                    ? this.user.getUserInfo().getId()
+                                    : this.userItem.getUserId(),
+                            rewardItem);
+        } catch (SQLException e) {
+            LOGGER.error("Crackable {} could not be paid out, it stays as it was", this.userItem.getId(), e);
+            return;
+        }
+
+        if (deleteCrackable) {
             this.room.removeUserItem(this.userItem);
             this.room.sendComposer(new RemoveFloorItemComposer(this.userItem, true).compose());
             this.userItem.setRoomId(0);
-            Emulator.getGameEnvironment().getItemManager().deleteItem(this.userItem);
         } else {
             this.userItem.reset(this.room);
         }
 
-        Item rewardItem = Emulator.getGameEnvironment()
-                .getItemManager()
-                .getCrackableReward(this.userItem.getBaseItem().getId());
-
-        if (rewardItem != null) {
-            UserItem newItem = Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .createItem(
-                            this.userItem.allowAnyone()
-                                    ? this.user.getUserInfo().getId()
-                                    : this.userItem.getUserId(),
-                            rewardItem,
-                            0,
-                            0,
-                            "");
-
-            if (newItem != null) {
-                // Add to inventory in case if isn't possible place the item or in case is wall item
-                if (this.toInventory || newItem.getBaseItem().getType() == FurnitureType.WALL) {
-                    this.user.getInventory().getItemsComponent().addItem(newItem);
-                    this.user.getClient().sendResponse(new AddUserItemComposer(newItem));
-                    this.user.getClient().sendResponse(new InventoryRefreshComposer());
-                } else {
-                    newItem.setX(this.x);
-                    newItem.setY(this.y);
-                    newItem.setZ(this.room.getStackHeight(this.x, this.y, false));
-                    newItem.setRoomId(this.room.getId());
-                    newItem.needsUpdate(true);
-                    this.room.addUserItem(newItem);
-                    this.room.updateItem(newItem);
-                    this.room.sendComposer(new AddFloorItemComposer(
-                                    newItem, this.room.getFurniOwnerNames().get(newItem.getUserId()))
-                            .compose());
-                }
+        if (newItem != null) {
+            // Add to inventory in case if isn't possible place the item or in case is wall item
+            if (this.toInventory || newItem.getBaseItem().getType() == FurnitureType.WALL) {
+                this.user.getInventory().getItemsComponent().addItem(newItem);
+                this.user.getClient().sendResponse(new AddUserItemComposer(newItem));
+                this.user.getClient().sendResponse(new InventoryRefreshComposer());
+            } else {
+                newItem.setX(this.x);
+                newItem.setY(this.y);
+                newItem.setZ(this.room.getStackHeight(this.x, this.y, false));
+                newItem.setRoomId(this.room.getId());
+                newItem.needsUpdate(true);
+                this.room.addUserItem(newItem);
+                this.room.updateItem(newItem);
+                this.room.sendComposer(new AddFloorItemComposer(
+                                newItem, this.room.getFurniOwnerNames().get(newItem.getUserId()))
+                        .compose());
             }
         }
 

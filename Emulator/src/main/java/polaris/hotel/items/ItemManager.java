@@ -1631,6 +1631,52 @@ public class ItemManager {
         }
     }
 
+    /**
+     * Pays out a broken crackable: deletes its row (unless it resets in place) and creates the reward
+     * in one transaction, so a failure leaves the crackable as it was and no reward behind.
+     *
+     * @param reward the reward furni, or null when the crackable gives nothing
+     * @return the reward created, or null when there is none (no reward, or the owner's web-api limit)
+     * @throws SQLException when nothing was written
+     */
+    public UserItem crackInTransaction(UserItem crackable, boolean deleteCrackable, int ownerId, Item reward)
+            throws SQLException {
+        return inTransaction(connection -> {
+            if (deleteCrackable) {
+                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM items WHERE id = ?")) {
+                    statement.setInt(1, crackable.getId());
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Crackable " + crackable.getId() + " is already gone");
+                    }
+                }
+            }
+
+            return reward == null ? null : this.createItem(connection, ownerId, reward, 0, 0, "");
+        });
+    }
+
+    @FunctionalInterface
+    private interface TransactionWork<T> {
+        T run(Connection connection) throws SQLException;
+    }
+
+    /** Runs {@code work} on one connection and commits it, or rolls everything back when it throws. */
+    private static <T> T inTransaction(TransactionWork<T> work) throws SQLException {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                T result = work.run(connection);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
     public UserItem handleRecycle(User user, String itemId) {
         int rewardItemId = ItemDataGuard.parsePositiveInt(itemId);
         if (user == null
@@ -1672,20 +1718,12 @@ public class ItemManager {
     }
 
     private UserItem recycleInTransaction(User user, int rewardItemId, Collection<UserItem> consumed) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                this.deleteRecycled(connection, user.getUserInfo().getId(), consumed);
-                UserItem box =
-                        this.insertRecycleBox(connection, user.getUserInfo().getId(), rewardItemId);
-                connection.commit();
-                return box;
-            } catch (SQLException | RuntimeException e) {
-                connection.rollback();
-                throw e;
-            } finally {
-                connection.setAutoCommit(true);
-            }
+        int userId = user.getUserInfo().getId();
+        try {
+            return inTransaction(connection -> {
+                this.deleteRecycled(connection, userId, consumed);
+                return this.insertRecycleBox(connection, userId, rewardItemId);
+            });
         } catch (SQLException e) {
             LOGGER.error(
                     "Recycling for user {} failed, nothing was written",

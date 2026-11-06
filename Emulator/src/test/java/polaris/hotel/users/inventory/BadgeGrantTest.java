@@ -2,6 +2,7 @@ package polaris.hotel.users.inventory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -89,6 +90,51 @@ class BadgeGrantTest {
         verify(second, never()).addBadge(any(UserBadge.class));
         verify(third).addBadge(any(UserBadge.class));
         assertEquals(2, granted.size());
+    }
+
+    private static Database databaseInserting(PreparedStatement statement) throws SQLException {
+        Connection connection = mock(Connection.class);
+        when(connection.prepareStatement(anyString(), anyInt())).thenReturn(statement);
+        Database database = mock(Database.class, RETURNS_DEEP_STUBS);
+        when(database.getDataSource().getConnection()).thenReturn(connection);
+        return database;
+    }
+
+    @Test
+    void aCreatedBadgeCarriesTheIdOfItsRow() throws Exception {
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet keys = mock(ResultSet.class);
+        when(keys.next()).thenReturn(true);
+        when(keys.getInt(1)).thenReturn(77);
+        when(statement.getGeneratedKeys()).thenReturn(keys);
+        BadgesComponent badges = mock(BadgesComponent.class);
+        Database database = databaseInserting(statement);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getDatabase).thenReturn(database);
+
+            UserBadge badge = BadgesComponent.createBadge("POLL1", user(4, badges));
+
+            // The id came back 0 when the insert ran on the thread pool after the badge was sent.
+            assertEquals(77, badge.getId());
+            verify(badges).addBadge(badge);
+        }
+    }
+
+    @Test
+    void aBadgeWhoseRowFailedIsNeitherReturnedNorAdded() throws Exception {
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(statement.executeUpdate()).thenThrow(new SQLException("down"));
+        BadgesComponent badges = mock(BadgesComponent.class);
+        Database database = databaseInserting(statement);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getDatabase).thenReturn(database);
+
+            assertNull(BadgesComponent.createBadge("POLL1", user(4, badges)));
+        }
+
+        verify(badges, never()).addBadge(any(UserBadge.class));
     }
 
     @Test

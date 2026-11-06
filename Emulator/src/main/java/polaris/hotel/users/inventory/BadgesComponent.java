@@ -152,9 +152,23 @@ public class BadgesComponent {
         return count;
     }
 
+    /**
+     * Writes the badge and adds it to the user only once its row exists, with its real id; null when it could not be
+     * written. The callers used to insert on the thread pool and publish the badge at once, so the client got id 0
+     * and a failed insert left a badge that was gone at the next login.
+     */
     public static UserBadge createBadge(String code, User user) {
         UserBadge badge = new UserBadge(0, code, 0, user);
-        badge.run();
+        try (Connection connection = connection()) {
+            badge.insert(connection);
+        } catch (SQLException e) {
+            LOGGER.error(
+                    "Could not give badge {} to user {}",
+                    code,
+                    user.getUserInfo().getId(),
+                    e);
+            return null;
+        }
         user.getInventory().getBadgesComponent().addBadge(badge);
         return badge;
     }

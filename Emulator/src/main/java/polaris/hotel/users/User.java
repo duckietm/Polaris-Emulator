@@ -718,7 +718,7 @@ public class User implements Runnable {
     public boolean addBadge(String code, String senderName) {
         if (!this.userInventory.getBadgesComponent().hasBadge(code)) {
             UserBadge badge = BadgesComponent.createBadge(code, this);
-            this.userInventory.getBadgesComponent().addBadge(badge);
+            if (badge == null) return false;
             this.client.sendResponse(new AddUserBadgeComposer(badge, senderName));
             this.client.sendResponse(
                     new AddUserItemComposer(badge.getId(), AddUserItemComposer.AddUserItemCategory.BADGE));

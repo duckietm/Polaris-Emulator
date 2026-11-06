@@ -17,7 +17,9 @@ public class HotelViewClaimBadgeRewardEvent extends MessageHandler {
             if (!badgeCode.isEmpty()) {
                 if (!this.client.getUser().getInventory().getBadgesComponent().hasBadge(badgeCode)) {
                     UserBadge badge = BadgesComponent.createBadge(badgeCode, this.client.getUser());
-                    this.client.sendResponse(new AddUserBadgeComposer(badge));
+                    if (badge != null) {
+                        this.client.sendResponse(new AddUserBadgeComposer(badge));
+                    }
                 }
             }
         }

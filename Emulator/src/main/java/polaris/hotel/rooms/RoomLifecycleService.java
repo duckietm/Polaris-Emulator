@@ -114,11 +114,25 @@ final class RoomLifecycleService {
     void dispose() {
         this.quiesceRoomCycles();
         for (Room room : this.directory.activeRooms().values()) {
-            room.dispose();
+            disposeForShutdown(room);
             room.setOwnerChangeListener(null);
         }
         this.directory.clear();
         this.directoryChanged.run();
+    }
+
+    /**
+     * Unloads a room for the shutdown. A room kept loaded on purpose (a room bundle's model room) returned from
+     * dispose at once, and so did one whose RoomUnloadingEvent a plugin cancelled: neither saved its pending items.
+     * The lock is lifted here, and a room a plugin still keeps loaded saves its items anyway.
+     */
+    static void disposeForShutdown(Room room) {
+        room.preventUnloading = false;
+        room.preventUncaching = false;
+        room.dispose();
+        if (room.isLoaded()) {
+            room.getItemManager().saveAllPendingItems();
+        }
     }
 
     private void remove(Room room) {

@@ -14,9 +14,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,10 @@ public class GuildManager {
 
     private final Int2ObjectMap<Guild> guilds;
 
-    private final Set<ForumView> views = new HashSet<>();
+    /** Forum views of the last {@link #FORUM_VIEW_WINDOW_SECONDS}: written and read by every client's packets. */
+    private final Set<ForumView> views = ConcurrentHashMap.newKeySet();
+
+    private static final int FORUM_VIEW_WINDOW_SECONDS = 7 * 24 * 60 * 60;
 
     public GuildManager() {
         long millis = System.currentTimeMillis();
@@ -75,10 +80,13 @@ public class GuildManager {
         this.views.clear();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                Statement statement = connection.createStatement();
-                ResultSet set = statement.executeQuery("SELECT * FROM guild_forum_views")) {
-            while (set.next()) {
-                this.views.add(new ForumView(set));
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM guild_forum_views WHERE timestamp > ?")) {
+            statement.setInt(1, forumViewCutoff());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    this.views.add(new ForumView(set));
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -831,15 +839,17 @@ public class GuildManager {
     }
 
     public boolean hasViewedForum(int userId, int guildId) {
+        int cutoff = forumViewCutoff();
         return this.views.stream()
-                .anyMatch(v -> v.getUserId() == userId
-                        && v.getGuildId() == guildId
-                        && v.getTimestamp() > (Emulator.getIntUnixTimestamp() - 7 * 24 * 60 * 60));
+                .anyMatch(v -> v.getUserId() == userId && v.getGuildId() == guildId && v.getTimestamp() > cutoff);
     }
 
     public void addView(int userId, int guildId) {
+        // Only the last week counts anywhere, so older views leave memory instead of growing forever.
         ForumView view = new ForumView(userId, guildId, Emulator.getIntUnixTimestamp());
+        int cutoff = view.getTimestamp() - FORUM_VIEW_WINDOW_SECONDS;
 
+        this.views.removeIf(v -> v.getTimestamp() <= cutoff);
         this.views.add(view);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -855,17 +865,25 @@ public class GuildManager {
         }
     }
 
+    /** The forums anyone can read, most viewed in the last week first (the set keeps that order). */
     public Set<Guild> getMostViewed() {
+        int cutoff = forumViewCutoff();
         return this.views.stream()
-                .filter(v -> v.getTimestamp() > (Emulator.getIntUnixTimestamp() - 7 * 24 * 60 * 60))
+                .filter(v -> v.getTimestamp() > cutoff)
                 .collect(Collectors.groupingBy(ForumView::getGuildId))
                 .entrySet()
                 .stream()
-                .sorted(Comparator.comparingInt(
-                        (Map.Entry<Integer, List<ForumView>> a) -> a.getValue().size()))
+                .sorted(Comparator.comparingInt((Map.Entry<Integer, List<ForumView>> a) ->
+                                a.getValue().size())
+                        .reversed())
                 .map(k -> this.getGuild(k.getKey()))
                 .filter(g -> g != null && g.canReadForum() == SettingsState.EVERYONE)
                 .limit(100)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /** Views at or before this second are older than the week that counts. */
+    private static int forumViewCutoff() {
+        return Emulator.getIntUnixTimestamp() - FORUM_VIEW_WINDOW_SECONDS;
     }
 }

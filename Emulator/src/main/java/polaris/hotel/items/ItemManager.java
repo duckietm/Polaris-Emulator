@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1639,49 +1640,108 @@ public class ItemManager {
             return null;
         }
 
+        return this.recycleInTransaction(user, rewardItemId, List.of());
+    }
+
+    /**
+     * Recycles {@code consumed} into a recycler box holding {@code itemId}, in one transaction: the
+     * consumed rows are deleted and the box with its prize row inserted together, or nothing is.
+     *
+     * <p>A crash or a database error therefore never leaves both the prize and the furni that paid
+     * for it, nor a box whose prize row is missing.
+     *
+     * @return the box, or null when nothing was written
+     */
+    public UserItem handleRecycle(User user, String itemId, Collection<UserItem> consumed) {
+        int rewardItemId = ItemDataGuard.parsePositiveInt(itemId);
+        if (user == null
+                || user.getUserInfo() == null
+                || rewardItemId <= 0
+                || consumed == null
+                || consumed.isEmpty()
+                || Emulator.getGameEnvironment().getCatalogManager().ecotronItem == null) {
+            return null;
+        }
+
+        // A chest gives back what it holds before its row goes, as QueryDeleteUserItem does.
+        for (UserItem item : consumed) {
+            ChestRelease.releaseToOwner(item);
+        }
+
+        return this.recycleInTransaction(user, rewardItemId, consumed);
+    }
+
+    private UserItem recycleInTransaction(User user, int rewardItemId, Collection<UserItem> consumed) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                this.deleteRecycled(connection, user.getUserInfo().getId(), consumed);
+                UserItem box =
+                        this.insertRecycleBox(connection, user.getUserInfo().getId(), rewardItemId);
+                connection.commit();
+                return box;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            LOGGER.error(
+                    "Recycling for user {} failed, nothing was written",
+                    user.getUserInfo().getId(),
+                    e);
+            return null;
+        }
+    }
+
+    private void deleteRecycled(Connection connection, int userId, Collection<UserItem> consumed) throws SQLException {
+        if (consumed.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement statement =
+                connection.prepareStatement("DELETE FROM items WHERE id = ? AND user_id = ?")) {
+            for (UserItem item : consumed) {
+                statement.setInt(1, item.getId());
+                statement.setInt(2, userId);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Recycled item " + item.getId() + " is not owned by user " + userId);
+                }
+            }
+        }
+    }
+
+    private UserItem insertRecycleBox(Connection connection, int userId, int rewardItemId) throws SQLException {
         String extradata = Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-"
                 + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
                 + Calendar.getInstance().get(Calendar.YEAR);
+        Item ecotron = Emulator.getGameEnvironment().getCatalogManager().ecotronItem;
 
-        UserItem item = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO items (user_id, item_id, extra_data) VALUES (?, ?, ?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, user.getUserInfo().getId());
-            statement.setInt(
-                    2,
-                    Emulator.getGameEnvironment()
-                            .getCatalogManager()
-                            .ecotronItem
-                            .getId());
+        int boxId;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO items (user_id, item_id, extra_data) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, ecotron.getId());
             statement.setString(3, extradata);
             statement.execute();
 
             try (ResultSet set = statement.getGeneratedKeys()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(
-                        "INSERT INTO items_presents (item_id, base_item_reward) VALUES (?, ?)")) {
-                    while (set.next() && item == null) {
-                        preparedStatement.setInt(1, set.getInt(1));
-                        preparedStatement.setInt(2, rewardItemId);
-                        preparedStatement.addBatch();
-                        item = new InteractionDefault(
-                                set.getInt(1),
-                                user.getUserInfo().getId(),
-                                Emulator.getGameEnvironment().getCatalogManager().ecotronItem,
-                                extradata,
-                                0,
-                                0);
-                    }
-
-                    preparedStatement.executeBatch();
+                if (!set.next()) {
+                    throw new SQLException("Recycler box was not created");
                 }
+                boxId = set.getInt(1);
             }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
         }
 
-        return item;
+        try (PreparedStatement statement =
+                connection.prepareStatement("INSERT INTO items_presents (item_id, base_item_reward) VALUES (?, ?)")) {
+            statement.setInt(1, boxId);
+            statement.setInt(2, rewardItemId);
+            statement.executeUpdate();
+        }
+
+        return new InteractionDefault(boxId, userId, ecotron, extradata, 0, 0);
     }
 
     /** The reward of opening {@code box}, or null when nothing came out; see {@link #openRecycleBox}. */

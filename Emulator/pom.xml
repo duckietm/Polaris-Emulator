@@ -36,13 +36,13 @@
         <jsoup.version>1.23.2</jsoup.version>
         <slf4j.version>2.0.20</slf4j.version>
         <error-prone-annotations.version>2.51.0</error-prone-annotations.version>
-        <logback.version>1.6.5</logback.version>
+        <logback.version>1.6.6</logback.version>
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.3</junit.version>
         <javaparser.version>3.28.2</javaparser.version>
-        <flyway.version>13.11.1</flyway.version>
+        <flyway.version>13.12.0</flyway.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <mockito.version>5.24.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>
@@ -51,7 +51,7 @@
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-deploy-plugin.version>3.2.0</maven-deploy-plugin.version>
         <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
-        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+        <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
         <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
         <maven-install-plugin.version>3.2.0</maven-install-plugin.version>
         <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
@@ -62,7 +62,7 @@
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
-        <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
+        <jacoco-plugin.version>0.8.16</jacoco-plugin.version>
         <!-- Measured 39.4% of the instructions on the tests that run without Docker (CI runs more). Keep the minimum
              a few points under what is measured, and raise it when the coverage rises. -->
         <jacoco.minimum.instruction.coveredratio>0.35</jacoco.minimum.instruction.coveredratio>

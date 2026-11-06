@@ -76,7 +76,14 @@ public class YoutubeManager {
         }
     }
 
-    private final ConcurrentHashMap<Integer, ArrayList<YoutubePlaylist>> playlists = new ConcurrentHashMap<>();
+    // Filled into a new map by load and swapped in once every playlist was read: the TVs had no playlist while a
+    // reload ran.
+    private volatile ConcurrentHashMap<Integer, ArrayList<YoutubePlaylist>> playlists = new ConcurrentHashMap<>();
+
+    /** A YouTube API call that does not answer must not hold a loader thread for ever. */
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+
+    private static final int READ_TIMEOUT_MS = 10_000;
     private final ConcurrentHashMap<String, YoutubePlaylist> playlistCache = new ConcurrentHashMap<>();
 
     private String getApiKey() {
@@ -85,8 +92,8 @@ public class YoutubeManager {
     }
 
     public void load() {
-        this.playlists.clear();
         this.playlistCache.clear();
+        ConcurrentHashMap<Integer, ArrayList<YoutubePlaylist>> loaded = new ConcurrentHashMap<>();
 
         long millis = System.currentTimeMillis();
 
@@ -115,7 +122,7 @@ public class YoutubeManager {
                             try {
                                 playlist = this.getPlaylistDataById(playlistId);
                                 if (playlist != null) {
-                                    this.addPlaylistToItem(itemId, playlist);
+                                    addPlaylistTo(loaded, itemId, playlist);
                                     LOGGER.info(
                                             "YouTube Manager -> Successfully loaded playlist {} for base item #{}",
                                             playlistId,
@@ -142,11 +149,18 @@ public class YoutubeManager {
 
             youtubeDataLoaderPool.shutdown();
             try {
-                youtubeDataLoaderPool.awaitTermination(60, TimeUnit.SECONDS);
+                if (!youtubeDataLoaderPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                    // Each reload used to leave the stuck threads of the last one behind.
+                    LOGGER.warn("YouTube Manager -> Playlists still loading after 60 s; stopping them");
+                    youtubeDataLoaderPool.shutdownNow();
+                }
             } catch (InterruptedException e) {
                 LOGGER.error("Interrupted while waiting for YouTube playlist loading to finish.", e);
+                youtubeDataLoaderPool.shutdownNow();
                 Thread.currentThread().interrupt();
             }
+
+            this.playlists = loaded;
 
             LOGGER.info("YouTube Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
         });
@@ -166,7 +180,7 @@ public class YoutubeManager {
         URL playlistInfo = URI.create("https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id="
                         + playlistId + "&maxResults=1&key=" + apiKey)
                 .toURL();
-        HttpsURLConnection playlistCon = (HttpsURLConnection) playlistInfo.openConnection();
+        HttpsURLConnection playlistCon = withTimeouts((HttpsURLConnection) playlistInfo.openConnection());
         if (playlistCon.getResponseCode() != 200) {
             InputStream errorInputStream = playlistCon.getErrorStream();
             InputStreamReader playlistISR = new InputStreamReader(errorInputStream);
@@ -212,7 +226,7 @@ public class YoutubeManager {
                         .toURL();
             }
 
-            HttpsURLConnection con = (HttpsURLConnection) playlistItems.openConnection();
+            HttpsURLConnection con = withTimeouts((HttpsURLConnection) playlistItems.openConnection());
 
             InputStream is = con.getInputStream();
             InputStreamReader isr = new InputStreamReader(is);
@@ -240,7 +254,7 @@ public class YoutubeManager {
                 VideoItems = URI.create("https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id="
                                 + commaSeparatedVideos + "&maxResults=50&key=" + apiKey)
                         .toURL();
-                HttpsURLConnection con1 = (HttpsURLConnection) VideoItems.openConnection();
+                HttpsURLConnection con1 = withTimeouts((HttpsURLConnection) VideoItems.openConnection());
                 InputStream is1 = con1.getInputStream();
                 InputStreamReader isr1 = new InputStreamReader(is1);
                 BufferedReader br1 = new BufferedReader(isr1);
@@ -280,9 +294,20 @@ public class YoutubeManager {
     }
 
     public void addPlaylistToItem(int itemId, YoutubePlaylist playlist) {
-        ArrayList<YoutubePlaylist> itemPlaylists = this.playlists.computeIfAbsent(itemId, k -> new ArrayList<>());
+        addPlaylistTo(this.playlists, itemId, playlist);
+    }
+
+    private static void addPlaylistTo(
+            ConcurrentHashMap<Integer, ArrayList<YoutubePlaylist>> playlists, int itemId, YoutubePlaylist playlist) {
+        ArrayList<YoutubePlaylist> itemPlaylists = playlists.computeIfAbsent(itemId, k -> new ArrayList<>());
         synchronized (itemPlaylists) {
             itemPlaylists.add(playlist);
         }
+    }
+
+    private static HttpsURLConnection withTimeouts(HttpsURLConnection connection) {
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        return connection;
     }
 }

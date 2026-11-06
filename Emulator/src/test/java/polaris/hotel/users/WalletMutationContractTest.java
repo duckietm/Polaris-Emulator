@@ -58,7 +58,9 @@ class WalletMutationContractTest {
         assertTrue(
                 user.contains("event.type!=type||event.points!=-points"),
                 "a successful exact points debit must preserve currency type and amount");
-        assertTrue(marketplace.contains("event.credits!=-price"));
-        assertTrue(marketplace.contains("event.type!=MARKETPLACE_CURRENCY||event.points!=-price"));
+        // The purchase asks for exactly -price, the payout for exactly what the offers earned.
+        assertTrue(marketplace.contains("returnprepareMarketplaceMutation(buyer,-price);"));
+        assertTrue(marketplace.contains("event.credits!=delta"));
+        assertTrue(marketplace.contains("event.type!=MARKETPLACE_CURRENCY||event.points!=delta"));
     }
 }

@@ -4,11 +4,9 @@ import it.unimi.dsi.fastutil.ints.IntCollection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -772,23 +770,7 @@ public class User implements Runnable {
         int currentTimestamp = Emulator.getIntUnixTimestamp();
         int twentyFourHoursInSeconds = 24 * 60 * 60; // 24 hours in seconds
 
-        Map<Integer, List<Integer>> newLog = new HashMap<>();
-
-        for (Map.Entry<Integer, List<Integer>> ltdLog : this.userStats.ltdPurchaseLog.entrySet()) {
-            List<Integer> filteredTimestamps = new ArrayList<>();
-
-            for (Integer time : ltdLog.getValue()) {
-                if (currentTimestamp - time <= twentyFourHoursInSeconds) {
-                    filteredTimestamps.add(time);
-                }
-            }
-
-            if (!filteredTimestamps.isEmpty()) {
-                newLog.put(ltdLog.getKey(), filteredTimestamps);
-            }
-        }
-
-        this.userStats.ltdPurchaseLog = newLog;
+        this.userStats.pruneLtdLog(currentTimestamp, twentyFourHoursInSeconds);
     }
 
     public void respect(User target) {

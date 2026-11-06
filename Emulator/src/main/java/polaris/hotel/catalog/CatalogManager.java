@@ -104,6 +104,7 @@ import polaris.hotel.users.UserGender;
 import polaris.hotel.users.UserInventory;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.users.UserStats;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.users.inventory.EffectsComponent;
 import polaris.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
@@ -2192,9 +2193,8 @@ public class CatalogManager {
         }
 
         for (String b : purchasedEvent.badges) {
-            UserBadge badge = new UserBadge(0, b, 0, user);
-            Emulator.getThreading().run(badge);
-            user.getInventory().getBadgesComponent().addBadge(badge);
+            UserBadge badge = BadgesComponent.createBadge(b, user);
+            if (badge == null) continue;
             user.getClient().sendResponse(new AddUserBadgeComposer(badge));
             Map<String, String> keys = new HashMap<>();
             keys.put("display", "BUBBLE");

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -66,6 +67,7 @@ import polaris.hotel.pets.PetManager;
 import polaris.hotel.quests.QuestProgressEvents;
 import polaris.hotel.users.ChatStyleRepository;
 import polaris.hotel.users.User;
+import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserGender;
 import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserInventory;
@@ -124,6 +126,7 @@ class CatalogPurchaseItemBehaviourTest {
     private boolean createItemFails;
     private boolean createPetFails;
     private boolean guildMember = true;
+    private int nextBadgeId = 900;
     private SoundTrack track;
 
     private CatalogManager manager;
@@ -304,6 +307,17 @@ class CatalogPurchaseItemBehaviourTest {
                     throw new SQLException("stubbed atomic transaction");
                 });
         this.statics.add(transaction);
+        MockedStatic<BadgesComponent> badgeRows = mockStatic(BadgesComponent.class, CALLS_REAL_METHODS);
+        badgeRows
+                .when(() -> BadgesComponent.createBadge(anyString(), any(User.class)))
+                .thenAnswer(i -> {
+                    User owner = i.getArgument(1);
+                    UserBadge badge = new UserBadge(this.nextBadgeId++, i.getArgument(0), 0, owner);
+                    this.record("BadgesComponent.createBadge(" + badge.getCode() + ") -> id " + badge.getId());
+                    owner.getInventory().getBadgesComponent().addBadge(badge);
+                    return badge;
+                });
+        this.statics.add(badgeRows);
 
         this.composer(AlertPurchaseFailedComposer.class, "AlertPurchaseFailed");
         this.composer(AlertPurchaseUnavailableComposer.class, "AlertPurchaseUnavailable");
@@ -667,7 +681,7 @@ class CatalogPurchaseItemBehaviourTest {
             if (!name.startsWith("Mock for")) return name;
         }
         if (value instanceof Enum<?> e) return e.name();
-        if (value instanceof polaris.hotel.users.UserBadge badge) return "badge " + badge.getCode();
+        if (value instanceof UserBadge badge) return "badge " + badge.getCode();
         if (value instanceof Number || value instanceof String || value instanceof Boolean)
             return String.valueOf(value);
         return value.getClass().getSimpleName().replaceAll("\\$MockitoMock\\$.*", "");

@@ -17,6 +17,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserManager;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.messages.outgoing.users.AddUserBadgeComposer;
 
 public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
@@ -55,11 +56,12 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
                     continue;
                 }
 
-                UserBadge badge = new UserBadge(0, badgeCode, 0, user);
+                UserBadge badge = BadgesComponent.createBadge(badgeCode, user);
+                if (badge == null) {
+                    this.status = RCONMessage.STATUS_ERROR;
+                    continue;
+                }
 
-                badge.run();
-
-                user.getInventory().getBadgesComponent().addBadge(badge);
                 user.getClient().sendResponse(new AddUserBadgeComposer(badge));
 
                 this.message = Emulator.getTexts()

@@ -723,8 +723,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     if (baseItem.getType() == FurnitureType.BADGE) {
                         if (!badgeFound) {
                             if (user != null) {
+                                // Written on this connection first, so the badge the recipient holds has its id.
                                 UserBadge badge = new UserBadge(0, baseItem.getName(), 0, user);
-                                Emulator.getThreading().run(badge);
+                                badge.insert(connection);
                                 user.getInventory().getBadgesComponent().addBadge(badge);
                             } else {
                                 try (PreparedStatement statement = connection.prepareStatement(

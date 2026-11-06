@@ -34,6 +34,7 @@ import polaris.hotel.rooms.RoomWiredDisableSupport;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserItem;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.wired.WiredGiveRewardItem;
 import polaris.hotel.wired.WiredTriggerType;
 import polaris.hotel.wired.api.WiredStack;
@@ -1706,9 +1707,8 @@ public final class WiredManager {
                 return false;
             }
 
-            UserBadge badge = new UserBadge(0, rewardReceived.value, 0, user);
-            Emulator.getThreading().run(badge);
-            user.getInventory().getBadgesComponent().addBadge(badge);
+            UserBadge badge = BadgesComponent.createBadge(rewardReceived.value, user);
+            if (badge == null) return false;
             user.getClient().sendResponse(new AddUserBadgeComposer(badge));
             completeReward(user, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_BADGE);
             return true;

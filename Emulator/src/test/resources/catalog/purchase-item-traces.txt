@@ -61,12 +61,12 @@ threading.run(item#504)
 RentableFurnitureManager.track(item#504)
 inventory.addItems([item#504])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 902
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer rent_chair)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[504]})
+buyer <- AddUserItem({BADGE=[902], OWNED_FURNI=[504]})
 buyer <- PurchaseOK(offer rent_chair)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -168,12 +168,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#504, item#505])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 902
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer display_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[504, 505]})
+buyer <- AddUserItem({BADGE=[902], OWNED_FURNI=[504, 505]})
 buyer <- PurchaseOK(offer display_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -291,12 +291,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 2) -> true
 inventory.addItems([item#500])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 900
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer chair_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[500]})
+buyer <- AddUserItem({BADGE=[900], OWNED_FURNI=[500]})
 buyer <- PurchaseOK(offer chair_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -333,12 +333,12 @@ guild.setForum(true)
 guild.run()
 inventory.addItems([item#503])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 902
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer guild_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[503]})
+buyer <- AddUserItem({BADGE=[902], OWNED_FURNI=[503]})
 buyer <- PurchaseOK(offer guild_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -364,12 +364,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#502])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 901
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer hopper_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[502]})
+buyer <- AddUserItem({BADGE=[901], OWNED_FURNI=[502]})
 buyer <- PurchaseOK(offer hopper_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -386,12 +386,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#504])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 903
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer disc_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[504]})
+buyer <- AddUserItem({BADGE=[903], OWNED_FURNI=[504]})
 buyer <- PurchaseOK(offer disc_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -413,12 +413,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#500, item#501])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 900
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer tele_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[500, 501]})
+buyer <- AddUserItem({BADGE=[900], OWNED_FURNI=[500, 501]})
 buyer <- PurchaseOK(offer tele_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -434,12 +434,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#502, item#503])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 901
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer display_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[502, 503]})
+buyer <- AddUserItem({BADGE=[901], OWNED_FURNI=[502, 503]})
 buyer <- PurchaseOK(offer display_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -455,12 +455,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 2, badges 
 CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
 inventory.addItems([item#500, item#501])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 900
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer trophy_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[500, 501]})
+buyer <- AddUserItem({BADGE=[900], OWNED_FURNI=[500, 501]})
 buyer <- PurchaseOK(offer trophy_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -483,12 +483,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 0, points 0, items 1, badges 
 CatalogPaymentService.tryTake(credits 0, type 5, points 0) -> true
 inventory.addItems([item#503])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 901
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer chair_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[503]})
+buyer <- AddUserItem({BADGE=[901], OWNED_FURNI=[503]})
 buyer <- PurchaseOK(offer chair_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase
@@ -502,12 +502,12 @@ plugin event UserCatalogItemPurchasedEvent(credits 5, points 2, items 1, badges 
 CatalogPaymentService.tryTake(credits 0, type 5, points 2) -> true
 inventory.addItems([item#502])
 plugin event UserCatalogFurnitureBoughtEvent
-threading.run(badge ACH_1)
+BadgesComponent.createBadge(ACH_1) -> id 900
 inventory.addBadge(badge ACH_1)
 buyer <- AddUserBadge(badge ACH_1)
 buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
 stats.addPurchase(offer chair_badge)
-buyer <- AddUserItem({BADGE=[0], OWNED_FURNI=[502]})
+buyer <- AddUserItem({BADGE=[900], OWNED_FURNI=[502]})
 buyer <- PurchaseOK(offer chair_badge)
 QuestProgressEvents.progress(BUY_CATALOG_FURNI)
 ChatStyleRepository.grantForPurchase

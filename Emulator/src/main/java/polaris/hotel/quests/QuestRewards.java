@@ -9,6 +9,7 @@ import polaris.hotel.items.Item;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserItem;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.quests.ActiveDailyTasksComposer;
@@ -176,10 +177,8 @@ public final class QuestRewards {
         if (user.getInventory().getBadgesComponent().hasBadge(badgeCode)) {
             return;
         }
-        UserBadge badge = new UserBadge(0, badgeCode, 0, user);
-        badge.run();
-        user.getInventory().getBadgesComponent().addBadge(badge);
-        if (user.getClient() != null) {
+        UserBadge badge = BadgesComponent.createBadge(badgeCode, user);
+        if (badge != null && user.getClient() != null) {
             user.getClient().sendResponse(new AddUserBadgeComposer(badge));
         }
     }

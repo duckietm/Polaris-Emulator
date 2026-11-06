@@ -36,6 +36,7 @@ import polaris.hotel.pets.PetManager;
 import polaris.hotel.rooms.BuildersClubRoomSupport;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserInventory;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.users.subscriptions.Subscription;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import polaris.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
@@ -255,13 +256,8 @@ final class CatalogPurchaseApplicationService {
                             .getInventory()
                             .getBadgesComponent()
                             .hasBadge(i.getName())) {
-                        UserBadge badge = new UserBadge(0, i.getName(), 0, this.client.getUser());
-                        this.threading.run(badge);
-                        this.client
-                                .getUser()
-                                .getInventory()
-                                .getBadgesComponent()
-                                .addBadge(badge);
+                        UserBadge badge = BadgesComponent.createBadge(i.getName(), this.client.getUser());
+                        if (badge == null) return;
                         this.client.sendResponse(new AddUserBadgeComposer(badge));
                         Map<String, String> keys = new HashMap<>();
                         keys.put("display", "BUBBLE");

@@ -7,8 +7,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,61 +222,56 @@ public class ItemsComponent {
                 ChestRelease.releaseAll(this.items.values().stream()
                         .filter(UserItem::needsDelete)
                         .toList());
-                try (Connection connection =
-                        Emulator.getDatabase().getDataSource().getConnection()) {
-                    try (PreparedStatement updateStmt = connection.prepareStatement(
-                            "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, x = ?, y = ?, z = ?, rot = ?, extra_data = ?, limited_data = ? WHERE id = ?")) {
-                        try (PreparedStatement deleteStmt =
-                                connection.prepareStatement("DELETE FROM items WHERE id = ?")) {
-
-                            int updateCount = 0;
-                            int deleteCount = 0;
-
-                            for (UserItem item : this.items.values()) {
-                                if (item.needsDelete()) {
-                                    deleteStmt.setInt(1, item.getId());
-                                    deleteStmt.addBatch();
-                                    deleteCount++;
-                                    item.needsUpdate(false);
-                                    item.needsDelete(false);
-                                } else if (item.needsUpdate()) {
-                                    updateStmt.setInt(1, item.getUserId());
-                                    updateStmt.setInt(2, item.getRoomId());
-                                    updateStmt.setString(3, item.getWallPosition());
-                                    updateStmt.setInt(4, item.getX());
-                                    updateStmt.setInt(5, item.getY());
-                                    updateStmt.setDouble(6, item.getZ());
-                                    updateStmt.setInt(7, item.getRotation());
-                                    updateStmt.setString(8, item.getExtradata());
-                                    updateStmt.setString(9, item.getLimitedStack() + ":" + item.getLimitedSells());
-                                    updateStmt.setInt(10, item.getId());
-                                    updateStmt.addBatch();
-                                    updateCount++;
-                                    item.needsUpdate(false);
-                                }
-
-                                if (updateCount > 0 && updateCount % 100 == 0) {
-                                    updateStmt.executeBatch();
-                                }
-                                if (deleteCount > 0 && deleteCount % 100 == 0) {
-                                    deleteStmt.executeBatch();
-                                }
-                            }
-
-                            if (deleteCount % 100 != 0) {
-                                deleteStmt.executeBatch();
-                            }
-                            if (updateCount % 100 != 0) {
-                                updateStmt.executeBatch();
-                            }
-                        }
-                    }
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception during batch item save", e);
-                }
+                saveOnDispose(this.items.values());
             }
 
             this.items.clear();
+        }
+    }
+
+    /**
+     * Writes what the inventory still holds unsaved when its owner leaves. The batch used to write fewer columns than
+     * a single save (no rent expiry, no underpass, the shown extra data instead of the stored one) and cleared every
+     * flag before running, so a failed batch or a renewed rent was lost at logout. It now writes the same row as
+     * {@link UserItem#run()}, clears a flag only once written, and retries the updates one by one if the batch fails.
+     */
+    static void saveOnDispose(Collection<UserItem> inventory) {
+        List<UserItem> deletes = new ArrayList<>();
+        List<UserItem> updates = new ArrayList<>();
+        for (UserItem item : inventory) {
+            if (item.needsDelete()) deletes.add(item);
+            else if (item.needsUpdate()) updates.add(item);
+        }
+        if (deletes.isEmpty() && updates.isEmpty()) return;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement deleteStmt = connection.prepareStatement("DELETE FROM items WHERE id = ?");
+                PreparedStatement updateStmt = connection.prepareStatement(UserItem.UPDATE_ROW_SQL)) {
+            for (UserItem item : deletes) {
+                deleteStmt.setInt(1, item.getId());
+                deleteStmt.addBatch();
+            }
+            long[] generations = new long[updates.size()];
+            for (int i = 0; i < updates.size(); i++) {
+                generations[i] = updates.get(i).bindRow(updateStmt);
+                updateStmt.addBatch();
+            }
+            if (!deletes.isEmpty()) deleteStmt.executeBatch();
+            if (!updates.isEmpty()) updateStmt.executeBatch();
+
+            for (UserItem item : deletes) {
+                item.needsUpdate(false);
+                item.needsDelete(false);
+            }
+            for (int i = 0; i < updates.size(); i++) {
+                updates.get(i).markSaved(generations[i]);
+            }
+        } catch (SQLException e) {
+            // Deletions are not retried through run(): it would release a wired chest's content a second time.
+            LOGGER.error("Batch item save failed at logout; saving the updated items one by one", e);
+            for (UserItem item : updates) {
+                if (item.needsUpdate()) item.run();
+            }
         }
     }
 }

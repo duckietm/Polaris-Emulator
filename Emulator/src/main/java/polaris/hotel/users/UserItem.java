@@ -417,35 +417,50 @@ public abstract class UserItem implements Runnable, IEventTriggers {
                     statement.execute();
                 }
             } else if (this.needsUpdate) {
-                long generation = this.saveGeneration.get();
-
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, x = ?, y = ?, z = ?, rot = ?, extra_data = ?, limited_data = ?, expires = ?, allow_underpass = ? WHERE id = ?")) {
-                    statement.setInt(1, this.databaseUserId);
-                    statement.setInt(2, this.roomId);
-                    statement.setString(3, this.wallPosition);
-                    statement.setInt(4, this.x);
-                    statement.setInt(5, this.y);
-                    statement.setDouble(
-                            6, Math.max(-9999, Math.min(9999, Math.round(this.z * Math.pow(10, 6)) / Math.pow(10, 6))));
-                    statement.setInt(7, this.rotation);
-                    statement.setString(8, this instanceof InteractionGuildGate ? "" : this.getDatabaseExtraData());
-                    statement.setString(9, this.limitedStack + ":" + this.limitedSells);
-                    statement.setInt(10, this.expiresTimestamp);
-                    statement.setInt(11, this.allowUnderpass ? 1 : 0);
-                    statement.setInt(12, this.id);
+                try (PreparedStatement statement = connection.prepareStatement(UPDATE_ROW_SQL)) {
+                    long generation = this.bindRow(statement);
                     statement.execute();
+                    // Cleared only once written: a failed update used to be forgotten until the next change.
+                    this.markSaved(generation);
                 } catch (SQLException e) {
                     LOGGER.error("Caught SQL exception", e);
                     LOGGER.error("SQLException trying to save item: {}", this.toString());
                 }
-
-                if (this.saveGeneration.get() == generation) this.needsUpdate = false;
             }
 
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
+    }
+
+    /** The one statement that writes an item's row; {@link #bindRow} fills it. */
+    public static final String UPDATE_ROW_SQL =
+            "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, x = ?, y = ?, z = ?, rot = ?, extra_data = ?, limited_data = ?, expires = ?, allow_underpass = ? WHERE id = ?";
+
+    /**
+     * Binds this item's columns to {@link #UPDATE_ROW_SQL}, for a single save or a batch, and returns the change
+     * generation they reflect, to hand to {@link #markSaved} once the row is written.
+     */
+    public long bindRow(PreparedStatement statement) throws SQLException {
+        long generation = this.saveGeneration.get();
+        statement.setInt(1, this.databaseUserId);
+        statement.setInt(2, this.roomId);
+        statement.setString(3, this.wallPosition);
+        statement.setInt(4, this.x);
+        statement.setInt(5, this.y);
+        statement.setDouble(6, Math.max(-9999, Math.min(9999, Math.round(this.z * Math.pow(10, 6)) / Math.pow(10, 6))));
+        statement.setInt(7, this.rotation);
+        statement.setString(8, this instanceof InteractionGuildGate ? "" : this.getDatabaseExtraData());
+        statement.setString(9, this.limitedStack + ":" + this.limitedSells);
+        statement.setInt(10, this.expiresTimestamp);
+        statement.setInt(11, this.allowUnderpass ? 1 : 0);
+        statement.setInt(12, this.id);
+        return generation;
+    }
+
+    /** The row written by {@link #bindRow} is saved, unless the item changed again since. */
+    public void markSaved(long generation) {
+        if (this.saveGeneration.get() == generation) this.needsUpdate = false;
     }
 
     /** Unix timestamp the rent period ends at, {@link RentableFurniture#NEVER} when the furni is owned outright. */

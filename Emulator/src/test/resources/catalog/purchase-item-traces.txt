@@ -469,6 +469,40 @@ threading.run(CatalogPurchaseLogEntry)
 returned
 purchasing flag false
 
+== mixed limited / a sale that cannot be recorded is refunded
+items.createItem(chair, stack 100, number 17, "") -> item#501
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+limited.limitedSoldOrThrow(58, item#501) -> SQLException
+buyer <- AlertPurchaseFailed(0)
+items.deleteItem(item#501)
+limited.restoreNumber(58, 17)
+CatalogPaymentService.refund(credits 5, type 5, points 0)
+returned
+purchasing flag false
+
+== mixed limited / the sale is recorded once, before delivery
+items.createItem(chair, stack 100, number 17, "") -> item#500
+plugin event UserCatalogItemPurchasedEvent(credits 5, points 0, items 1, badges [ACH_1])
+CatalogPaymentService.tryTake(credits 5, type 5, points 0) -> true
+limited.limitedSoldOrThrow(58, item#500)
+inventory.addItems([item#500])
+plugin event UserCatalogFurnitureBoughtEvent
+BadgesComponent.createBadge(ACH_1) -> id 900
+inventory.addBadge(badge ACH_1)
+buyer <- AddUserBadge(badge ACH_1)
+buyer <- BubbleAlert(received.badge, {display=BUBBLE, image=${image.library.url}album1584/ACH_1.gif, message=<commands.generic.cmd_badge.received %username% %itemname% %limit% %badge% %pagename%>})
+stats.addLtdLog(58, 1000)
+stats.addPurchase(offer ltd_chair_badge)
+buyer <- AddUserItem({BADGE=[900], OWNED_FURNI=[500]})
+buyer <- PurchaseOK(offer ltd_chair_badge)
+QuestProgressEvents.progress(BUY_CATALOG_FURNI)
+ChatStyleRepository.grantForPurchase
+buyer <- InventoryRefresh()
+threading.run(CatalogPurchaseLogEntry)
+returned
+purchasing flag false
+
 == payment / a plugin raises the price above the balance
 items.createItem(chair, stack 0, number 0, "") -> item#501
 plugin event UserCatalogItemPurchasedEvent(credits 5005, points 2, items 1, badges [ACH_1])

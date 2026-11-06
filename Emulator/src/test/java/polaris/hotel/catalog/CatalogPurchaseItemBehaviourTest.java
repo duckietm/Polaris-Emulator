@@ -127,6 +127,7 @@ class CatalogPurchaseItemBehaviourTest {
     private boolean createPetFails;
     private boolean guildMember = true;
     private int nextBadgeId = 900;
+    private boolean limitedSaleFails;
     private SoundTrack track;
 
     private CatalogManager manager;
@@ -484,6 +485,26 @@ class CatalogPurchaseItemBehaviourTest {
     }
 
     @Test
+    void aLimitedMixedOffer() throws Exception {
+        CatalogItem bundle = this.offer(
+                58,
+                "ltd_chair_badge",
+                5,
+                0,
+                base(1, "chair", FurnitureType.FLOOR),
+                base(4, "ACH_1", FurnitureType.BADGE));
+        when(bundle.isLimited()).thenReturn(true);
+        CatalogLimitedConfiguration config = this.limitedConfig(58, 3);
+        when(config.pollNumber()).thenReturn(OptionalInt.of(17));
+
+        this.buy("mixed limited / the sale is recorded once, before delivery", bundle, 1, "", false);
+        this.limitedSaleFails = true;
+        // The failure used to be logged after delivery, leaving the number free in the database.
+        this.buy("mixed limited / a sale that cannot be recorded is refunded", bundle, 1, "", false);
+        this.limitedSaleFails = false;
+    }
+
+    @Test
     void anOfferWithoutBaseItems() throws Exception {
         this.soldChatStyle = 4;
         this.buy("mixed / chat style offer without base items", this.offer(51, "bubble_style", 5, 0), 1, "", false);
@@ -760,7 +781,7 @@ class CatalogPurchaseItemBehaviourTest {
         return item;
     }
 
-    private CatalogLimitedConfiguration limitedConfig(int itemId, int available) {
+    private CatalogLimitedConfiguration limitedConfig(int itemId, int available) throws SQLException {
         CatalogLimitedConfiguration config = mock(CatalogLimitedConfiguration.class);
         when(config.available()).thenReturn(available);
         when(config.getTotalSet()).thenReturn(100);
@@ -770,6 +791,14 @@ class CatalogPurchaseItemBehaviourTest {
         doAnswer(i -> this.record("limited.restoreNumber(" + i.getArgument(0) + ")"))
                 .when(config)
                 .restoreNumber(anyInt());
+        doAnswer(i -> {
+                    this.record("limited.limitedSoldOrThrow(" + i.getArgument(0) + ", " + this.label(i.getArgument(2))
+                            + ")" + (this.limitedSaleFails ? " -> SQLException" : ""));
+                    if (this.limitedSaleFails) throw new SQLException("stubbed limited sale");
+                    return null;
+                })
+                .when(config)
+                .limitedSoldOrThrow(anyInt(), any(), any());
         this.manager.limitedNumbers.put(itemId, config);
         return config;
     }

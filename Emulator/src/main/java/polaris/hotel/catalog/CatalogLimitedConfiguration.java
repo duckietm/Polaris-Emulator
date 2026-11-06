@@ -66,11 +66,21 @@ public class CatalogLimitedConfiguration implements Runnable {
     }
 
     public void limitedSold(int catalogItemId, User user, UserItem item) {
+        try {
+            this.limitedSoldOrThrow(catalogItemId, user, item);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    /**
+     * Records the sale of {@code item}'s number to {@code user} and reports a failure, so a purchase can be undone
+     * instead of delivering a number the database still holds as free.
+     */
+    public void limitedSoldOrThrow(int catalogItemId, User user, UserItem item) throws SQLException {
         synchronized (this.limitedNumbers) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                 this.limitedSold(connection, catalogItemId, user, item);
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
         }
     }

@@ -3,6 +3,8 @@ package polaris.hotel.items;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,7 +14,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -493,9 +494,10 @@ public class ItemManager {
     public static volatile boolean RECYCLER_ENABLED = true;
 
     private final Int2ObjectMap<Item> items;
-    private final Int2ObjectMap<CrackableReward> crackableRewards;
+    // Rebuilt whole by their loaders and swapped in: a reload used to empty them while rooms and jukeboxes read them.
+    private volatile Int2ObjectMap<CrackableReward> crackableRewards;
     private final ItemInteractionRegistry interactionsList;
-    private final Map<String, SoundTrack> soundTracks;
+    private volatile Map<String, SoundTrack> soundTracks;
     private final YoutubeManager youtubeManager;
     private final WiredHighscoreManager highscoreManager;
     private final TreeMap<Integer, NewUserGift> newuserGifts;
@@ -506,7 +508,7 @@ public class ItemManager {
         this.items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
         this.crackableRewards = new Int2ObjectOpenHashMap<>();
         this.interactionsList = new ItemInteractionRegistry();
-        this.soundTracks = new HashMap<>();
+        this.soundTracks = new ConcurrentHashMap<>();
         this.youtubeManager = new YoutubeManager();
         this.highscoreManager = new WiredHighscoreManager();
         this.newuserGifts = new TreeMap<>();
@@ -1275,28 +1277,39 @@ public class ItemManager {
         return this.getItemInteraction(InteractionDefault.class);
     }
 
+    /**
+     * Adds and updates the base items, and drops the ones whose row is gone. A base item deleted from the furni
+     * editor used to stay in memory until the next restart.
+     */
     public void loadItems() {
+        IntSet loaded = new IntOpenHashSet();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery(BASE_ITEMS_SQL)) {
             while (set.next()) {
+                int id = set.getInt("id");
+                loaded.add(id);
                 try {
-                    // Item proxyItem =
-                    int id = set.getInt("id");
                     if (!this.items.containsKey(id)) this.items.put(id, new Item(set));
                     else this.items.get(id).update(set);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load Item ({})", set.getInt("id"));
+                    LOGGER.error("Failed to load Item ({})", id);
                     LOGGER.error("Caught exception", e);
                 }
             }
         } catch (SQLException e) {
+            // A partial read says nothing about which rows are gone: keep every item.
             LOGGER.error("Caught SQL exception", e);
+            return;
+        }
+
+        synchronized (this.items) {
+            this.items.keySet().removeIf((int id) -> !loaded.contains(id));
         }
     }
 
     public void loadCrackable() {
-        this.crackableRewards.clear();
+        Int2ObjectMap<CrackableReward> rewards = new Int2ObjectOpenHashMap<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM items_crackable");
                 ResultSet set = statement.executeQuery()) {
@@ -1309,13 +1322,16 @@ public class ItemManager {
                     LOGGER.error("Caught exception", e);
                     continue;
                 }
-                this.crackableRewards.put(set.getInt("item_id"), reward);
+                rewards.put(set.getInt("item_id"), reward);
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+            return;
         }
+        this.crackableRewards = rewards;
     }
 
     public void loadPlants() {
@@ -1359,8 +1375,8 @@ public class ItemManager {
     }
 
     public int getCrackableCount(int itemId) {
-        if (this.crackableRewards.containsKey(itemId)) return this.crackableRewards.get(itemId).count;
-        else return 0;
+        CrackableReward reward = this.crackableRewards.get(itemId);
+        return reward == null ? 0 : reward.count;
     }
 
     public int calculateCrackState(int count, int max, Item baseItem) {
@@ -1381,17 +1397,18 @@ public class ItemManager {
     }
 
     public void loadSoundTracks() {
-        this.soundTracks.clear();
-
+        Map<String, SoundTrack> tracks = new ConcurrentHashMap<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM soundtracks");
                 ResultSet set = statement.executeQuery()) {
             while (set.next()) {
-                this.soundTracks.put(set.getString("code"), new SoundTrack(set));
+                tracks.put(set.getString("code"), new SoundTrack(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+        this.soundTracks = tracks;
     }
 
     public SoundTrack getSoundTrack(String code) {
@@ -1399,8 +1416,8 @@ public class ItemManager {
     }
 
     public SoundTrack getSoundTrack(int id) {
-        for (Map.Entry<String, SoundTrack> entry : this.soundTracks.entrySet()) {
-            if (entry.getValue().getId() == id) return entry.getValue();
+        for (SoundTrack track : this.soundTracks.values()) {
+            if (track.getId() == id) return track;
         }
 
         return null;

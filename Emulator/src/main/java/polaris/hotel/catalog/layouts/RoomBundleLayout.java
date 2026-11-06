@@ -151,19 +151,25 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     public void buyRoom(User user) {
-        this.buyRoom(user, user.getUserInfo().getId(), user.getUserInfo().getUsername());
+        this.tryBuyRoom(user);
+    }
+
+    public void buyRoom(User user, int userId, String userName) {
+        this.tryBuyRoom(user, userId, userName);
+    }
+
+    /** {@link #tryBuyRoom(Habbo, int, String)} for the buyer's own account. */
+    public boolean tryBuyRoom(User user) {
+        return this.tryBuyRoom(
+                user, user.getUserInfo().getId(), user.getUserInfo().getUsername());
     }
 
     /**
-     * Copies the bundle's room, with its furni, custom model and bots, to a new room of the buyer.
-     *
-     * <p>Every failure throws, so a purchase already paid for is refunded by the caller: the copy is
-     * written in one transaction, and a room limit reached meanwhile, a missing template room or a
-     * database error leave neither a room nor a charge behind.
-     *
-     * @throws IllegalStateException when the room cannot be created
+     * Copies the bundle's room to the user and says whether the copy exists. The room, its furni, its custom model and
+     * its bots are written in one transaction, so a database error leaves nothing behind; before, each statement was
+     * committed on its own and every error was only logged, so the buyer paid for a room that was missing or empty.
      */
-    public void buyRoom(User user, int userId, String userName) {
+    public boolean tryBuyRoom(User user, int userId, String userName) {
         if (!this.loaded) {
             this.loadItems(Emulator.getGameEnvironment().getRoomManager().loadRoom(this.roomId));
         }
@@ -177,13 +183,11 @@ public class RoomBundleLayout extends SingleBundle {
 
             if (count >= max) {
                 user.getClient().sendResponse(new CanCreateRoomComposer(count, max));
-                throw new IllegalStateException("Room limit reached for user " + userId);
+                return false;
             }
         }
 
-        if (this.room == null) {
-            throw new IllegalStateException("Room bundle " + this.getId() + " has no template room");
-        }
+        if (this.room == null) return false;
 
         this.room.save();
 
@@ -196,48 +200,53 @@ public class RoomBundleLayout extends SingleBundle {
         }
 
         this.getCatalogItems();
-        int roomId;
+        int roomId = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
                 roomId = this.copyRoom(connection, userId, userName);
+                if (roomId == 0) {
+                    connection.rollback();
+                    return false;
+                }
                 connection.commit();
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException e) {
                 connection.rollback();
                 throw e;
             } finally {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Room bundle " + this.getId() + " could not be copied", e);
+            LOGGER.error("Room bundle {} could not be copied for user {}", this.getId(), userId, e);
+            return false;
         }
 
+        // The copy is committed. A room that does not load now keeps its rows and loads on the next visit; only the
+        // wall and floor settings below are skipped. Before, a null room here threw and the buyer was refunded for a
+        // room that existed.
         Room r = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
-        if (r == null) {
-            // The room is committed and paid for: it loads when its owner enters it.
-            LOGGER.warn("Room {} bought from bundle {} could not be loaded right away", roomId, this.getId());
-            return;
+        if (r != null) {
+            r.setWallHeight(this.room.getWallHeight());
+            r.setFloorSize(this.room.getFloorSize());
+            r.setWallPaint(this.room.getWallPaint());
+            r.setFloorPaint(this.room.getFloorPaint());
+            r.setScore(0);
+            r.setNeedsUpdate(true);
         }
 
-        r.setWallHeight(this.room.getWallHeight());
-        r.setFloorSize(this.room.getFloorSize());
-        r.setWallPaint(this.room.getWallPaint());
-        r.setFloorPaint(this.room.getFloorPaint());
-        r.setScore(0);
-        r.setNeedsUpdate(true);
-        Map<String, String> keys = new HashMap<>();
-        keys.put("ROOMNAME", r.getName());
-        keys.put("ROOMID", r.getId() + "");
-        keys.put("OWNER", r.getOwnerName());
-        keys.put("image", "${image.library.url}/notifications/room_bundle_" + this.getId() + ".png");
-
-        if (user != null) {
+        if (user != null && r != null) {
+            Map<String, String> keys = new HashMap<>();
+            keys.put("ROOMNAME", r.getName());
+            keys.put("ROOMID", r.getId() + "");
+            keys.put("OWNER", r.getOwnerName());
+            keys.put("image", "${image.library.url}/notifications/room_bundle_" + this.getId() + ".png");
             user.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.PURCHASING_ROOM.key, keys));
         }
+        return true;
     }
 
-    /** Writes the copy on the given connection; the caller owns the transaction. */
+    /** Writes the copy on {@code connection} and returns the new room id, or 0 when the room row was not created. */
     private int copyRoom(Connection connection, int userId, String userName) throws SQLException {
         int roomId = 0;
         try (PreparedStatement statement = connection.prepareStatement(
@@ -254,13 +263,12 @@ public class RoomBundleLayout extends SingleBundle {
             }
         }
 
-        if (roomId == 0) {
-            throw new SQLException("Template room " + this.room.getId() + " was not copied");
-        }
+        if (roomId == 0) return 0;
 
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
-                        + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))")) {
+                        + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
+                Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, userId);
             statement.setInt(2, roomId);
             statement.setString(3, "0:0");
@@ -311,7 +319,6 @@ public class RoomBundleLayout extends SingleBundle {
                 statement.executeBatch();
             }
         }
-
         return roomId;
     }
 }

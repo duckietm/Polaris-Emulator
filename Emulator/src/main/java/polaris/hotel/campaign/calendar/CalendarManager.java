@@ -12,10 +12,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,9 @@ import polaris.plugin.events.users.calendar.UserClaimRewardEvent;
 public class CalendarManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CalendarCampaign.class);
 
-    private static final Map<Integer, CalendarCampaign> calendarCampaigns = new HashMap<>();
+    // Loaded into a new map and swapped in: a reload used to clear the map the calendar packets were reading.
+    private static final AtomicReference<Map<Integer, CalendarCampaign>> calendarCampaigns =
+            new AtomicReference<>(new ConcurrentHashMap<>());
     public static double HC_MODIFIER;
 
     public CalendarManager() {
@@ -40,14 +43,15 @@ public class CalendarManager {
     }
 
     public void dispose() {
-        calendarCampaigns.clear();
+        calendarCampaigns.set(new ConcurrentHashMap<>());
     }
 
+    /** Loads the campaigns into a new map and publishes it; a failed query keeps the campaigns loaded. */
     public boolean reload() {
-        this.dispose();
+        Map<Integer, CalendarCampaign> loaded = new ConcurrentHashMap<>();
         try {
             SqlQueries.query("SELECT * FROM calendar_campaigns WHERE enabled = 1", CalendarCampaign::new)
-                    .forEach(c -> calendarCampaigns.put(c.getId(), c));
+                    .forEach(c -> loaded.put(c.getId(), c));
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return false;
@@ -58,7 +62,7 @@ public class CalendarManager {
                             "SELECT * FROM calendar_rewards",
                             rs -> Map.entry(rs.getInt("campaign_id"), new CalendarRewardObject(rs)))
                     .forEach(entry -> {
-                        CalendarCampaign campaign = calendarCampaigns.get(entry.getKey());
+                        CalendarCampaign campaign = loaded.get(entry.getKey());
                         if (campaign != null) {
                             campaign.addReward(entry.getValue());
                         }
@@ -68,6 +72,7 @@ public class CalendarManager {
             return false;
         }
 
+        calendarCampaigns.set(loaded);
         HC_MODIFIER = Emulator.getConfig().getDouble("hotel.calendar.pixels.hc_modifier", 2.0);
 
         return true;
@@ -101,11 +106,11 @@ public class CalendarManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        calendarCampaigns.put(campaign.getId(), campaign);
+        calendarCampaigns.get().put(campaign.getId(), campaign);
     }
 
     public boolean deleteCampaign(CalendarCampaign campaign) {
-        calendarCampaigns.remove(campaign.getId());
+        calendarCampaigns.get().remove(campaign.getId());
 
         try {
             return SqlQueries.update("DELETE FROM calendar_campaigns WHERE id = ? LIMIT 1", campaign.getId()) > 0;
@@ -116,14 +121,14 @@ public class CalendarManager {
     }
 
     public CalendarCampaign getCalendarCampaign(String campaignName) {
-        return calendarCampaigns.values().stream()
+        return calendarCampaigns.get().values().stream()
                 .filter(cc -> Objects.equals(cc.getName(), campaignName))
                 .findFirst()
                 .orElse(null);
     }
 
     public Map<Integer, CalendarCampaign> getCalendarCampaigns() {
-        return calendarCampaigns;
+        return calendarCampaigns.get();
     }
 
     /** The days the client can ask for: 0 .. totalDays - 1, as the calendar renders them. */
@@ -160,7 +165,7 @@ public class CalendarManager {
     }
 
     public void claimCalendarReward(User user, String campaignName, int day, boolean force) {
-        CalendarCampaign campaign = calendarCampaigns.values().stream()
+        CalendarCampaign campaign = calendarCampaigns.get().values().stream()
                 .filter(cc -> Objects.equals(cc.getName(), campaignName))
                 .findFirst()
                 .orElse(null);

@@ -15,7 +15,8 @@ import polaris.hotel.users.User;
 public class PollManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PollManager.class);
 
-    private final Map<Integer, Poll> activePolls = new HashMap<>();
+    // Loaded into a new map and swapped in: a reload used to clear the map poll packets were reading.
+    private volatile Map<Integer, Poll> activePolls = new HashMap<>();
 
     public PollManager() {
         this.loadPolls();
@@ -39,45 +40,44 @@ public class PollManager {
     }
 
     public void loadPolls() {
-        synchronized (this.activePolls) {
-            this.activePolls.clear();
-
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-                try (Statement statement = connection.createStatement()) {
-                    try (ResultSet set = statement.executeQuery("SELECT * FROM polls")) {
-                        while (set.next()) {
-                            this.activePolls.put(set.getInt("id"), new Poll(set));
-                        }
+        Map<Integer, Poll> loaded = new HashMap<>();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet set = statement.executeQuery("SELECT * FROM polls")) {
+                    while (set.next()) {
+                        loaded.put(set.getInt("id"), new Poll(set));
                     }
+                }
 
-                    try (ResultSet set =
-                            statement.executeQuery("SELECT * FROM polls_questions ORDER BY parent_id, `order` ASC")) {
-                        while (set.next()) {
-                            Poll poll = this.getPoll(set.getInt("poll_id"));
+                try (ResultSet set =
+                        statement.executeQuery("SELECT * FROM polls_questions ORDER BY parent_id, `order` ASC")) {
+                    while (set.next()) {
+                        Poll poll = loaded.get(set.getInt("poll_id"));
 
-                            if (poll != null) {
-                                PollQuestion question = new PollQuestion(set);
+                        if (poll != null) {
+                            PollQuestion question = new PollQuestion(set);
 
-                                if (set.getInt("parent_id") <= 0) {
-                                    poll.addQuestion(question);
-                                    // Sub-questions only show for some answers, so the reward follows the last main
-                                    // one.
-                                    poll.lastQuestionId = question.id;
-                                } else {
-                                    PollQuestion parentQuestion = poll.getQuestion(set.getInt("parent_id"));
+                            if (set.getInt("parent_id") <= 0) {
+                                poll.addQuestion(question);
+                                // Sub-questions only show for some answers, so the reward follows the last main
+                                // one.
+                                poll.lastQuestionId = question.id;
+                            } else {
+                                PollQuestion parentQuestion = poll.getQuestion(set.getInt("parent_id"));
 
-                                    if (parentQuestion != null) {
-                                        parentQuestion.addSubQuestion(question);
-                                    }
+                                if (parentQuestion != null) {
+                                    parentQuestion.addSubQuestion(question);
                                 }
                             }
                         }
                     }
                 }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return;
         }
+        this.activePolls = loaded;
     }
 
     public Poll getPoll(int pollId) {

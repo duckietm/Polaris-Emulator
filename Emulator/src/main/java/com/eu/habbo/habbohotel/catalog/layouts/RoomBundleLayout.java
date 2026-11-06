@@ -160,7 +160,8 @@ public class RoomBundleLayout extends SingleBundle {
 
     /** {@link #tryBuyRoom(Habbo, int, String)} for the buyer's own account. */
     public boolean tryBuyRoom(Habbo habbo) {
-        return this.tryBuyRoom(habbo, habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername());
+        return this.tryBuyRoom(
+                habbo, habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername());
     }
 
     /**
@@ -248,77 +249,76 @@ public class RoomBundleLayout extends SingleBundle {
     /** Writes the copy on {@code connection} and returns the new room id, or 0 when the room row was not created. */
     private int copyRoom(Connection connection, int userId, String userName) throws SQLException {
         int roomId = 0;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setString(2, userName);
+            statement.setInt(3, this.room.getId());
+            statement.execute();
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    roomId = set.getInt(1);
+                }
+            }
+        }
+
+        if (roomId == 0) return 0;
+
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
+                        + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, roomId);
+            statement.setString(3, "0:0");
+            statement.setInt(4, 0);
+            statement.setInt(5, this.room.getId());
+            statement.execute();
+        }
+
+        if (this.room.hasCustomLayout()) {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)",
+                    "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)",
                     Statement.RETURN_GENERATED_KEYS)) {
-                statement.setInt(1, userId);
-                statement.setString(2, userName);
+                statement.setInt(1, roomId);
+                statement.setString(2, "custom_" + roomId);
                 statement.setInt(3, this.room.getId());
                 statement.execute();
-                try (ResultSet set = statement.getGeneratedKeys()) {
-                    if (set.next()) {
-                        roomId = set.getInt(1);
-                    }
-                }
             }
+        }
 
-            if (roomId == 0) return 0;
-
+        if (Emulator.getConfig().getBoolean("bundle.bots.enabled")) {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
-                            + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
+                    "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS)) {
-                statement.setInt(1, userId);
-                statement.setInt(2, roomId);
-                statement.setString(3, "0:0");
-                statement.setInt(4, 0);
-                statement.setInt(5, this.room.getId());
-                statement.execute();
-            }
-
-            if (this.room.hasCustomLayout()) {
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-                    statement.setInt(1, roomId);
-                    statement.setString(2, "custom_" + roomId);
-                    statement.setInt(3, this.room.getId());
-                    statement.execute();
-                }
-            }
-
-            if (Emulator.getConfig().getBoolean("bundle.bots.enabled")) {
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-                    synchronized (this.room.getCurrentBots()) {
-                        statement.setInt(1, userId);
-                        statement.setInt(2, roomId);
-                        for (Bot bot : this.room.getCurrentBots().values()) {
-                            statement.setString(3, bot.getName());
-                            statement.setString(4, bot.getMotto());
-                            statement.setString(5, bot.getFigure());
-                            statement.setString(6, bot.getGender().name());
-                            statement.setInt(7, bot.getRoomUnit().getX());
-                            statement.setInt(8, bot.getRoomUnit().getY());
-                            statement.setDouble(9, bot.getRoomUnit().getZ());
-                            StringBuilder text = new StringBuilder();
-                            for (String s : bot.getChatLines()) {
-                                text.append(s).append("\r");
-                            }
-                            statement.setString(10, text.toString());
-                            statement.setString(11, bot.isChatAuto() ? "1" : "0");
-                            statement.setString(12, bot.isChatRandom() ? "1" : "0");
-                            statement.setInt(13, bot.getChatDelay());
-                            statement.setInt(
-                                    14, bot.getRoomUnit().getDanceType().getType());
-                            statement.setString(15, bot.getType());
-                            statement.addBatch();
+                synchronized (this.room.getCurrentBots()) {
+                    statement.setInt(1, userId);
+                    statement.setInt(2, roomId);
+                    for (Bot bot : this.room.getCurrentBots().values()) {
+                        statement.setString(3, bot.getName());
+                        statement.setString(4, bot.getMotto());
+                        statement.setString(5, bot.getFigure());
+                        statement.setString(6, bot.getGender().name());
+                        statement.setInt(7, bot.getRoomUnit().getX());
+                        statement.setInt(8, bot.getRoomUnit().getY());
+                        statement.setDouble(9, bot.getRoomUnit().getZ());
+                        StringBuilder text = new StringBuilder();
+                        for (String s : bot.getChatLines()) {
+                            text.append(s).append("\r");
                         }
+                        statement.setString(10, text.toString());
+                        statement.setString(11, bot.isChatAuto() ? "1" : "0");
+                        statement.setString(12, bot.isChatRandom() ? "1" : "0");
+                        statement.setInt(13, bot.getChatDelay());
+                        statement.setInt(14, bot.getRoomUnit().getDanceType().getType());
+                        statement.setString(15, bot.getType());
+                        statement.addBatch();
                     }
-                    statement.executeBatch();
                 }
+                statement.executeBatch();
             }
+        }
         return roomId;
     }
 }

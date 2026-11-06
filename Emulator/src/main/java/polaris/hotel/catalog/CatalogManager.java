@@ -360,10 +360,16 @@ public class CatalogManager {
         Emulator.getPluginManager().fireEvent(new EmulatorLoadCatalogManagerEvent());
 
         this.loadLimitedNumbers();
-        this.loadCatalogPages();
+        // The pages are filled before they are published: they used to go live empty and get their items seconds
+        // later, so a purchase or a gift during :update_catalogue found the page without its offer.
+        Map<Integer, CatalogPage> pages = this.buildCatalogPages();
         this.loadBuildersClubCatalogPages();
         this.loadCatalogFeaturedPages();
-        this.loadCatalogItems();
+        if (pages != null) {
+            this.loadCatalogItems(pages);
+            replacePageMap(this.catalogPages, pages);
+            LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
+        }
         this.loadBuildersClubCatalogItems();
         this.loadClubOffers();
         this.loadTargetOffers();
@@ -494,9 +500,13 @@ public class CatalogManager {
         return this.rareValuesPayloadCache;
     }
 
+    /**
+     * Reads the limited numbers and applies them under the lock every reader takes. The map was cleared first and
+     * filled after the query, without that lock: a limited purchase in between found no configuration, and a
+     * configuration an in-flight purchase held was dropped with the numbers it would give back. A configuration that
+     * exists keeps its object and takes the new numbers; a failed query changes nothing.
+     */
     private synchronized void loadLimitedNumbers() {
-        this.limitedNumbers.clear();
-
         Map<Integer, LinkedList<Integer>> limiteds = new HashMap<>();
         Int2IntMap totals = new Int2IntOpenHashMap();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -517,19 +527,26 @@ public class CatalogManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
 
-        for (Map.Entry<Integer, LinkedList<Integer>> set : limiteds.entrySet()) {
-            this.limitedNumbers.put(
-                    set.getKey(),
-                    new CatalogLimitedConfiguration(
-                            set.getKey(),
-                            set.getValue(),
-                            totals.get(set.getKey().intValue())));
+        synchronized (this.limitedNumbers) {
+            this.limitedNumbers.keySet().retainAll(limiteds.keySet());
+            for (Map.Entry<Integer, LinkedList<Integer>> set : limiteds.entrySet()) {
+                int total = totals.get(set.getKey().intValue());
+                CatalogLimitedConfiguration existing = this.limitedNumbers.get(set.getKey());
+                if (existing != null) {
+                    existing.replaceNumbers(set.getValue(), total);
+                } else {
+                    this.limitedNumbers.put(
+                            set.getKey(), new CatalogLimitedConfiguration(set.getKey(), set.getValue(), total));
+                }
+            }
         }
     }
 
-    private synchronized void loadCatalogPages() {
+    /** The catalog pages as the database holds them, linked to their parents; null when it could not be read. */
+    private synchronized Map<Integer, CatalogPage> buildCatalogPages() {
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -555,6 +572,7 @@ public class CatalogManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return null;
         }
 
         for (CatalogPage object : pages.values()) {
@@ -575,9 +593,7 @@ public class CatalogManager {
             }
         }
 
-        replacePageMap(this.catalogPages, pages);
-
-        LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
+        return pages;
     }
 
     private synchronized void loadBuildersClubCatalogPages() {
@@ -668,7 +684,7 @@ public class CatalogManager {
         this.replaceFeaturedPages(loadedFeaturedPages);
     }
 
-    private synchronized void loadCatalogItems() {
+    private synchronized void loadCatalogItems(Map<Integer, CatalogPage> pages) {
         this.offerDefs.clear();
         this.clubItems.clear();
         catalogItemAmount = 0;
@@ -690,7 +706,7 @@ public class CatalogManager {
                     continue;
                 }
 
-                CatalogPage page = this.catalogPages.get(set.getInt("page_id"));
+                CatalogPage page = pages.get(set.getInt("page_id"));
 
                 if (page == null) continue;
 
@@ -717,9 +733,9 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        for (CatalogPage page : this.catalogPages.values()) {
+        for (CatalogPage page : pages.values()) {
             for (Integer id : page.getIncluded()) {
-                CatalogPage p = this.catalogPages.get(id.intValue());
+                CatalogPage p = pages.get(id.intValue());
 
                 if (p != null) {
                     page.getCatalogItems().putAll(p.getCatalogItems());

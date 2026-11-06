@@ -29,14 +29,17 @@ public class PetPickupEvent extends MessageHandler {
             if (this.client.getUser().getUserInfo().getId() == pet.getUserId()
                     || room.getOwnerId() == this.client.getUser().getUserInfo().getId()
                     || this.client.getUser().hasPermission(Permission.ACC_ANYROOMOWNER)) {
-                if (!this.client.getUser().hasPermission(Permission.ACC_UNLIMITED_PETS)
-                        && this.client
-                                        .getUser()
-                                        .getInventory()
-                                        .getPetsComponent()
-                                        .getPets()
-                                        .size()
-                                >= PetManager.MAXIMUM_PET_INVENTORY_SIZE) {
+                // The maximum is the picker's own: a room owner clearing a visitor's pet is not stopped by how
+                // many pets they hold. Reserving the place before the pet leaves the room keeps two pickups at
+                // the same moment from both passing the check.
+                boolean ownPet = this.client.getUser().getUserInfo().getId() == pet.getUserId();
+                boolean reserved = ownPet && !this.client.getUser().hasPermission(Permission.ACC_UNLIMITED_PETS);
+                if (reserved
+                        && !this.client
+                                .getUser()
+                                .getInventory()
+                                .getPetsComponent()
+                                .addPetWithin(pet, PetManager.MAXIMUM_PET_INVENTORY_SIZE)) {
                     this.client
                             .getUser()
                             .alert(Emulator.getTexts()
@@ -55,9 +58,10 @@ public class PetPickupEvent extends MessageHandler {
                 pet.removeFromRoom();
                 pet.run(); // Run synchronously to ensure DB is updated before returning pet to inventory
 
-                if (this.client.getUser().getUserInfo().getId() == pet.getUserId()) {
+                if (ownPet) {
                     this.client.sendResponse(new AddPetComposer(pet));
-                    this.client.getUser().getInventory().getPetsComponent().addPet(pet);
+                    if (!reserved)
+                        this.client.getUser().getInventory().getPetsComponent().addPet(pet);
                 } else {
                     User user = Emulator.getGameEnvironment().getUserManager().getUser(pet.getUserId());
 

@@ -231,10 +231,23 @@ public class BotManager {
                     || (currentRoom != null
                             && (currentRoom.getOwnerId() == user.getUserInfo().getId()
                                     || user.hasPermission(Permission.ACC_PLACEFURNI)))) {
-                if (user != null
-                        && !user.hasPermission(Permission.ACC_UNLIMITED_BOTS)
-                        && user.getInventory().getBotsComponent().getBots().size()
-                                >= BotManager.MAXIMUM_BOT_INVENTORY_SIZE) {
+                // The bot goes back to its owner, who may not be the one picking it up (a room owner
+                // or staff clearing a visitor's bot): handing it to the picker left two copies of the
+                // same bot id, one in their inventory while the database named the visitor.
+                User receiver = receiverInfo.getId()
+                                == (user == null ? -1 : user.getUserInfo().getId())
+                        ? user
+                        : Emulator.getGameEnvironment().getUserManager().getUser(receiverInfo.getId());
+
+                // The maximum is the picker's own: someone clearing another user's bot out of their room is
+                // not stopped by how many bots they hold themselves. Reserving the place before the bot leaves
+                // the room keeps two pickups at the same moment from both passing the check.
+                boolean reserved =
+                        receiver != null && receiver == user && !user.hasPermission(Permission.ACC_UNLIMITED_BOTS);
+                if (reserved
+                        && !user.getInventory()
+                                .getBotsComponent()
+                                .addBotWithin(bot, BotManager.MAXIMUM_BOT_INVENTORY_SIZE)) {
                     user.alert(Emulator.getTexts()
                             .getValue("error.bots.max.inventory")
                             .replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
@@ -249,15 +262,8 @@ public class BotManager {
                 bot.needsUpdate(true);
                 Emulator.getThreading().run(bot);
 
-                // The bot goes back to its owner, who may not be the one picking it up (a room owner
-                // or staff clearing a visitor's bot): handing it to the picker left two copies of the
-                // same bot id, one in their inventory while the database named the visitor.
-                User receiver = receiverInfo.getId()
-                                == (user == null ? -1 : user.getUserInfo().getId())
-                        ? user
-                        : Emulator.getGameEnvironment().getUserManager().getUser(receiverInfo.getId());
                 if (receiver != null) {
-                    receiver.getInventory().getBotsComponent().addBot(bot);
+                    if (!reserved) receiver.getInventory().getBotsComponent().addBot(bot);
                     receiver.getClient().sendResponse(new AddBotComposer(bot));
                 }
             }

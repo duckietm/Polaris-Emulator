@@ -1,5 +1,6 @@
 package polaris.messages.outgoing.inventory;
 
+import java.util.List;
 import polaris.hotel.pets.Pet;
 import polaris.hotel.users.User;
 import polaris.messages.ServerMessage;
@@ -19,9 +20,11 @@ public class InventoryPetsComposer extends MessageComposer {
 
         this.response.appendInt(1);
         this.response.appendInt(1);
-        this.response.appendInt(this.user.getInventory().getPetsComponent().getPetsCount());
+        // One copy for the count and the list: they were read apart, and a pet added in between broke the packet.
+        List<Pet> pets = this.user.getInventory().getPetsComponent().getPetsSnapshot();
+        this.response.appendInt(pets.size());
 
-        for (Pet pet : this.user.getInventory().getPetsComponent().getPets().values()) {
+        for (Pet pet : pets) {
             pet.serialize(this.response);
         }
 

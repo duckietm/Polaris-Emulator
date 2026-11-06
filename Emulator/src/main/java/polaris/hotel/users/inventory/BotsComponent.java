@@ -4,7 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +61,25 @@ public class BotsComponent {
 
     public Map<Integer, Bot> getBots() {
         return this.bots;
+    }
+
+    /**
+     * A copy taken under the lock, for sending: the inventory composer iterated the live map while another user's
+     * pickup added to it, and failed with a ConcurrentModificationException that left the inventory empty.
+     */
+    public List<Bot> getBotsSnapshot() {
+        synchronized (this.bots) {
+            return new ArrayList<>(this.bots.values());
+        }
+    }
+
+    /** Takes every bot out of the inventory at once: a bot added between a copy and a clear was lost. */
+    public List<Bot> takeAllBots() {
+        synchronized (this.bots) {
+            List<Bot> taken = new ArrayList<>(this.bots.values());
+            this.bots.clear();
+            return taken;
+        }
     }
 
     public void dispose() {

@@ -817,14 +817,7 @@ public class RoomManager {
             return;
         }
 
-        if (room.getUserCount() >= room.getUsersMax()
-                && !user.hasPermission(Permission.ACC_FULLROOMS)
-                && !room.hasRights(user)) {
-            // AIR 13: a full room queues the visitor (RoomQueueStatus, our 2208)
-            // instead of bouncing it with CantConnect(REASON_FULL).
-            RoomVisitorQueueSupport.enqueue(room, user);
-            user.getUserInfo().setLoadingRoom(0);
-            user.getClient().sendResponse(new HotelViewComposer());
+        if (this.queuedBecauseFull(user, room)) {
             return;
         }
 
@@ -882,6 +875,12 @@ public class RoomManager {
     }
 
     public void enterRoom(final User user, final Room room) {
+        // Checked again here: the client asks for the heightmap a round trip after the room was opened,
+        // and every visitor who opened a room with one free place in the meantime would otherwise enter.
+        if (user.getUserInfo().getLoadingRoom() == room.getId() && this.queuedBecauseFull(user, room)) {
+            return;
+        }
+
         if (!this.placeAtDoor(user, room)) {
             return;
         }
@@ -915,6 +914,25 @@ public class RoomManager {
         if (!user.getUserStats().nux && (room.isOwner(user) || room.isPublicRoom())) {
             UserNuxEvent.handle(user);
         }
+    }
+
+    /**
+     * A full room queues the visitor (AIR 13 RoomQueueStatus, our 2208) instead of bouncing it with
+     * CantConnect(REASON_FULL); staff with the full-rooms permission and users with rights always enter.
+     *
+     * @return true when the visitor was queued and sent to the hotel view
+     */
+    boolean queuedBecauseFull(final User user, final Room room) {
+        if (room.getUserCount() < room.getUsersMax()
+                || user.hasPermission(Permission.ACC_FULLROOMS)
+                || room.hasRights(user)) {
+            return false;
+        }
+
+        RoomVisitorQueueSupport.enqueue(room, user);
+        user.getUserInfo().setLoadingRoom(0);
+        user.getClient().sendResponse(new HotelViewComposer());
+        return true;
     }
 
     /** Puts the entering user on the door tile of the room; false when the room has no usable door and the user went back to the hotel view. */

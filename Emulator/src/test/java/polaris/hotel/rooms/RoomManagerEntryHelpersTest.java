@@ -3,13 +3,23 @@ package polaris.hotel.rooms;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
+import polaris.Emulator;
+import polaris.hotel.GameEnvironment;
+import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.users.User;
+import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.UserManager;
 import polaris.hotel.users.UserStats;
+import polaris.messages.outgoing.hotelview.HotelViewComposer;
 
 class RoomManagerEntryHelpersTest {
 
@@ -69,6 +79,57 @@ class RoomManagerEntryHelpersTest {
         User staff = mock(User.class);
         when(staff.hasPermission(Permission.ACC_ENTERANYROOM)).thenReturn(true);
         assertTrue(RoomManager.mayPrefetchRoomData(staff, room(RoomState.LOCKED)));
+    }
+
+    @Test
+    void aRoomThatFilledUpBeforeTheHeightmapQueuesTheVisitor() throws Exception {
+        Room room = mock(Room.class);
+        when(room.getId()).thenReturn(4141);
+        when(room.getUserCount()).thenReturn(10);
+        when(room.getUsersMax()).thenReturn(10);
+        User visitor = visitorLoading(4141);
+        GameEnvironment environment = mock(GameEnvironment.class);
+        when(environment.getUserManager()).thenReturn(mock(UserManager.class));
+        Field field = Emulator.class.getDeclaredField("gameEnvironment");
+        field.setAccessible(true);
+        Object original = field.get(null);
+        field.set(null, environment);
+        try {
+            // The capacity was only checked when the room was opened: everyone who opened it while one
+            // place was free entered a round trip later, past usersMax and past the queue.
+            new RoomManager(false).enterRoom(visitor, room);
+        } finally {
+            RoomVisitorQueueSupport.remove(room, visitor);
+            field.set(null, original);
+        }
+
+        verify(room, never()).addUser(visitor);
+        verify(visitor.getUserInfo()).setLoadingRoom(0);
+        verify(visitor.getClient()).sendResponse(any(HotelViewComposer.class));
+    }
+
+    @Test
+    void staffAndRightsHoldersEnterAFullRoom() {
+        Room room = mock(Room.class);
+        when(room.getUserCount()).thenReturn(10);
+        when(room.getUsersMax()).thenReturn(10);
+        User staff = visitorLoading(4142);
+        when(staff.hasPermission(Permission.ACC_FULLROOMS)).thenReturn(true);
+        User rights = visitorLoading(4142);
+        when(room.hasRights(rights)).thenReturn(true);
+
+        assertFalse(new RoomManager(false).queuedBecauseFull(staff, room));
+        assertFalse(new RoomManager(false).queuedBecauseFull(rights, room));
+    }
+
+    private static User visitorLoading(int roomId) {
+        User user = mock(User.class);
+        UserInfo info = mock(UserInfo.class);
+        when(info.getId()).thenReturn(7);
+        when(info.getLoadingRoom()).thenReturn(roomId);
+        when(user.getUserInfo()).thenReturn(info);
+        when(user.getClient()).thenReturn(mock(GameClient.class));
+        return user;
     }
 
     private static Room room(RoomState state) {

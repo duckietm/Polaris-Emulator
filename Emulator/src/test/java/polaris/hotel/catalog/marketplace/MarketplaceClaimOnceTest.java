@@ -18,14 +18,11 @@ class MarketplaceClaimOnceTest {
     private static final Path SOURCE = Path.of("src/main/java/polaris/hotel/catalog/marketplace/MarketPlace.java");
 
     @Test
-    void theClaimIsKeyedOnTheSellerAndTheSoldState() throws Exception {
-        String source = Files.readString(SOURCE);
-
-        assertTrue(
-                source.contains(
-                        "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0"),
-                "the claim must name the seller, the state it is claiming from, and an offer not paid out yet:\n"
-                        + source);
+    void theClaimIsKeyedOnTheSellerAndTheSoldState() {
+        // The claim names the seller, the state it is claiming from, and an offer not paid out yet.
+        assertEquals(
+                "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0",
+                MarketPlacePayoutTransaction.CLAIM_OFFER);
     }
 
     /**

@@ -2137,6 +2137,8 @@ public class CatalogManager {
             boolean free,
             UserCatalogItemPurchasedEvent purchasedEvent,
             LegacyPurchase purchase) {
+        this.recordLegacyLimitedSale(item, user, purchasedEvent, purchase);
+
         // Bots and pets reach the buyer's inventory only now that the purchase is paid: on a failure before this
         // the buyer never sees them, as with the atomic bot and pet path.
         for (Bot bot : purchase.createdBots) {
@@ -2179,12 +2181,6 @@ public class CatalogManager {
 
             Emulator.getPluginManager()
                     .fireEvent(new UserCatalogFurnitureBoughtEvent(user, item, purchasedEvent.itemsList));
-
-            if (purchase.limitedConfiguration != null) {
-                for (UserItem itm : purchasedEvent.itemsList) {
-                    purchase.limitedConfiguration.limitedSold(item.getId(), user, itm);
-                }
-            }
         }
 
         if (!purchasedEvent.badges.isEmpty()
@@ -2255,10 +2251,37 @@ public class CatalogManager {
      * Undoes a purchase that was not delivered: deletes what was created, takes bots and pets back out of the
      * inventory, returns a reserved limited number to the pool and refunds a payment already taken.
      */
+    /**
+     * One number, one sale, written before anything reaches the buyer, as the atomic path does: the sale used to be
+     * recorded after delivery for every item, with its SQL errors swallowed, so a failed write left the number free in
+     * the database (sold again after a reload) and the second half of a teleporter pair always failed. A failure
+     * now undoes the purchase. Once written, the number is the buyer's and is not given back.
+     */
+    private void recordLegacyLimitedSale(
+            CatalogItem item, User user, UserCatalogItemPurchasedEvent purchasedEvent, LegacyPurchase purchase) {
+        if (purchase.limitedConfiguration == null || purchasedEvent.itemsList == null) return;
+
+        UserItem limitedItem = null;
+        for (UserItem candidate : purchasedEvent.itemsList) {
+            if (limitedItem == null || candidate.getId() < limitedItem.getId()) limitedItem = candidate;
+        }
+        if (limitedItem == null) return;
+
+        try {
+            purchase.limitedConfiguration.limitedSoldOrThrow(item.getId(), user, limitedItem);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Limited sale of offer " + item.getId() + " could not be recorded", e);
+        }
+        purchase.limitedNumber = 0;
+    }
+
     private void undoLegacyPurchase(CatalogItem item, User user, LegacyPurchase purchase) {
         for (UserItem createdItem : purchase.createdItems) {
-            if (createdItem != null)
-                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+            if (createdItem == null) continue;
+            // The rows go and so do the items: a failure after delivery left items in the inventory whose rows
+            // had been deleted.
+            user.getInventory().getItemsComponent().removeUserItem(createdItem.getId());
+            Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
         }
         for (Bot bot : purchase.createdBots) {
             user.getInventory().getBotsComponent().removeBot(bot);

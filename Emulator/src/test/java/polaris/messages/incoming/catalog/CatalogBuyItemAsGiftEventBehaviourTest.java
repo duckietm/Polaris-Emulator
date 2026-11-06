@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.mockingDetails;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -127,6 +129,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     private int creations = 0;
     private boolean tryTakeResult = true;
     private boolean giftCreated = true;
+    private boolean giftDeleteFails;
     private boolean recipientOnline = true;
     private boolean recipientInDatabase = true;
     private int recipientBadgeCount = 0;
@@ -253,6 +256,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
                 });
         when(itemManager.createGift(anyString(), any(Item.class), anyString(), anyInt(), anyInt()))
                 .thenAnswer(call -> giftCreated ? userItem(9000, call.getArgument(1)) : null);
+        when(itemManager.tryDeleteItem(any())).thenAnswer(call -> !giftDeleteFails);
 
         catalogManager = traced(CatalogManager.class, "catalogManager");
         setField(catalogManager, "catalogPages", pages);
@@ -524,6 +528,23 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalStateException("database gone"));
         assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
+    }
+
+    @Test
+    void aLimitedSaleThatCannotBeRecordedUndoesTheGift() throws Exception {
+        makeLimited();
+        doThrow(new SQLException("stubbed limited sale"))
+                .when(limitedConfiguration)
+                .limitedSoldOrThrow(anyInt(), any(), any());
+
+        // The failure used to be logged, leaving the number free in the database to be sold again.
+        assertGift(gift(FREE_WRAP_SPRITE, true, "sale refused"));
+
+        reset();
+        giftDeleteFails = true;
+        // The box stays with the recipient, so the sender is not refunded as well.
+        assertGift(gift(FREE_WRAP_SPRITE, true, "sale refused, box kept"));
+        giftDeleteFails = false;
     }
 
     @Test
@@ -923,7 +944,9 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             String line = lines.get(i);
             String call = line.contains("(") ? line.substring(0, line.indexOf('(')) : line;
 
-            if (call.equals("limitedConfiguration.limitedSold") || call.equals("itemManager.deleteItem")) {
+            if (call.equals("limitedConfiguration.limitedSold")
+                    || call.equals("limitedConfiguration.limitedSoldOrThrow")
+                    || call.equals("itemManager.deleteItem")) {
                 int end = i;
                 while (end < lines.size() && lines.get(end).startsWith(call + "(")) end++;
                 ordered.addAll(lines.subList(i, end).stream().sorted().toList());
@@ -1120,9 +1143,11 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             "createGiftContent",
             "createGift",
             "deleteItem",
+            "tryDeleteItem",
             "insertTeleportPair",
             "insertHopper",
             "limitedSold",
+            "limitedSoldOrThrow",
             "addLtdLog",
             "alert",
             "addItem",

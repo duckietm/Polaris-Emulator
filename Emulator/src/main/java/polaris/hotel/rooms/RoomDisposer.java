@@ -3,11 +3,13 @@ package polaris.hotel.rooms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.hotel.bots.Bot;
+import polaris.hotel.items.interactions.InteractionYoutubeTV;
 import polaris.hotel.items.interactions.games.InteractionGameTimer;
 import polaris.hotel.items.interactions.games.InteractionGameUpCounter;
 import polaris.hotel.pets.Pet;
 import polaris.hotel.rooms.raidprotection.RaidProtectionManager;
 import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.messages.outgoing.hotelview.HotelViewComposer;
 
@@ -50,6 +52,12 @@ final class RoomDisposer {
             }
 
             this.room.getGameManager().dispose();
+            // A playlist that advances by itself would keep the TV and the room alive after the unload.
+            for (UserItem item : this.room.getFloorItems()) {
+                if (item instanceof InteractionYoutubeTV tv) {
+                    tv.cancelAdvancement();
+                }
+            }
             this.room.removeAllPets(this.room.getOwnerId());
             this.room.getItemManager().saveAllPendingItems();
 

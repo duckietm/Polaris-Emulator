@@ -80,6 +80,8 @@ public class YoutubeRequestStateChange extends MessageHandler {
                 room.sendComposer(new YoutubeStateChangeComposer(tv.getId(), 2).compose());
                 break;
             case RESUME:
+                // A second resume used to start a second advancing chain next to the first.
+                tv.cancelAdvancement();
                 tv.playing = true;
                 tv.startedWatchingAt = Emulator.getIntUnixTimestamp();
                 tv.autoAdvance = Emulator.getThreading()

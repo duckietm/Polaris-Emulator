@@ -54,6 +54,37 @@ final class RoomDirectory {
         return room;
     }
 
+    /**
+     * Registers a room read again from the database, unless the active instance of that id
+     * is loaded or loading.
+     *
+     * <p>Replacing a loaded room splits it in two: the people inside stay on the old
+     * instance, which keeps ticking, and everyone entering afterwards gets the new one.
+     * An instance nobody has loaded is replaced, so the reload still refreshes it.
+     *
+     * @return the active instance - the one just registered, or the loaded one kept
+     */
+    Room registerUnlessLoaded(Room room) {
+        Room[] replaced = new Room[1];
+        Room active = this.activeRooms.compute(room.getId(), (id, existing) -> {
+            if (existing != null && existing.isLoadedOrLoading()) {
+                return existing;
+            }
+            replaced[0] = existing;
+            return room;
+        });
+        if (active != room) {
+            return active;
+        }
+
+        if (replaced[0] != null) {
+            this.untrack(replaced[0]);
+        }
+        room.setOwnerChangeListener(this::ownerChanged);
+        this.track(room);
+        return room;
+    }
+
     void track(Room room) {
         if (this.roomsByOwner
                 .computeIfAbsent(room.getOwnerId(), ignored -> ConcurrentHashMap.newKeySet())

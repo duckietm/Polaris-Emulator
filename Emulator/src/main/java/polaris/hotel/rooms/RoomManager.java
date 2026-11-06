@@ -261,6 +261,15 @@ public class RoomManager {
         return active;
     }
 
+    /** @see RoomDirectory#registerUnlessLoaded(Room) */
+    Room registerActiveRoomUnlessLoaded(Room room) {
+        Room active = this.roomDirectory.registerUnlessLoaded(room);
+        if (active == room) {
+            this.roomSearchService.invalidate();
+        }
+        return active;
+    }
+
     public void loadRoomModels() {
         this.roomModelRepository.reload();
     }
@@ -292,7 +301,7 @@ public class RoomManager {
                 while (set.next()) {
                     Room room = new Room(set, this.roomDependencies());
                     room.preventUncaching = true;
-                    this.registerActiveRoom(room);
+                    this.registerActiveRoomUnlessLoaded(room);
                 }
             }
         } catch (SQLException e) {

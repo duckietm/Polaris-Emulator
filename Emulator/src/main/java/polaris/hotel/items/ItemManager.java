@@ -1619,9 +1619,19 @@ public class ItemManager {
     }
 
     public void deleteItem(UserItem item) {
+        this.tryDeleteItem(item);
+    }
+
+    /**
+     * Deletes the item's rows and says whether that worked, for an undo that must not hand back what it paid for when
+     * the item is still there.
+     *
+     * @return false when the database refused; true when the rows are gone or there were none
+     */
+    public boolean tryDeleteItem(UserItem item) {
         if (item == null || item.isTemporary()) {
             // A temporary furni has no rows to delete.
-            return;
+            return true;
         }
 
         // A wired chest gives what it holds back to its owner before its row goes.
@@ -1645,7 +1655,9 @@ public class ItemManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
         }
+        return true;
     }
 
     /**

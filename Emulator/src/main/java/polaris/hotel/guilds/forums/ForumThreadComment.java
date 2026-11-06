@@ -5,8 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
@@ -20,7 +20,7 @@ import polaris.plugin.events.guilds.forums.GuildForumThreadCommentCreated;
 public class ForumThreadComment implements Runnable, ISerialize {
     private static final Logger LOGGER = LoggerFactory.getLogger(ForumThreadComment.class);
 
-    private static final Map<Integer, ForumThreadComment> forumCommentsCache = new HashMap<>();
+    private static final Map<Integer, ForumThreadComment> forumCommentsCache = new ConcurrentHashMap<>();
     private final int commentId;
     private final int threadId;
     private final int userId;

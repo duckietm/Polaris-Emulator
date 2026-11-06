@@ -35,6 +35,20 @@ public class CatalogLimitedConfiguration implements Runnable {
         }
     }
 
+    /**
+     * Takes the numbers a catalog reload read from the database, keeping this object: a purchase that holds it can
+     * still give a number back. The numbers are ordered as a new configuration would order them.
+     */
+    public void replaceNumbers(LinkedList<Integer> availableNumbers, int totalSet) {
+        LinkedList<Integer> ordered =
+                new CatalogLimitedConfiguration(this.itemId, availableNumbers, totalSet).limitedNumbers;
+        synchronized (this.limitedNumbers) {
+            this.limitedNumbers.clear();
+            this.limitedNumbers.addAll(ordered);
+            this.totalSet = totalSet;
+        }
+    }
+
     public int getNumber() {
         synchronized (this.limitedNumbers) {
             return this.limitedNumbers.pop();

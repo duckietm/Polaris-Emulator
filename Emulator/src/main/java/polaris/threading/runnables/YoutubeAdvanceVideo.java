@@ -18,7 +18,16 @@ public class YoutubeAdvanceVideo implements Runnable {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.tv.getRoomId());
 
-        if (room == null) return;
+        // An unloaded room keeps its instance, and a reloaded one has a new object for the same furni:
+        // the chain stops instead of changing the video under the TV the visitors see now.
+        if (room == null
+                || !room.isLoaded()
+                || room.getUserItem(this.tv.getId()) != this.tv
+                || this.tv.currentPlaylist == null
+                || this.tv.currentPlaylist.getVideos().isEmpty()) {
+            this.tv.autoAdvance = null;
+            return;
+        }
 
         int nextIndex = tv.currentPlaylist.getVideos().indexOf(tv.currentVideo) + 1;
         if (nextIndex >= tv.currentPlaylist.getVideos().size()) nextIndex = 0;

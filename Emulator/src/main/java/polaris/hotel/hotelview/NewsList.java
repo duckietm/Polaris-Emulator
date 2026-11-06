@@ -12,7 +12,8 @@ import polaris.Emulator;
 public class NewsList {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewsList.class);
 
-    private final ArrayList<NewsWidget> newsWidgets;
+    // Loaded into a new list and swapped in: the hotel view read the list while a reload had emptied it.
+    private volatile ArrayList<NewsWidget> newsWidgets;
 
     public NewsList() {
         this.newsWidgets = new ArrayList<>();
@@ -20,18 +21,19 @@ public class NewsList {
     }
 
     public void reload() {
-        synchronized (this.newsWidgets) {
-            this.newsWidgets.clear();
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    Statement statement = connection.createStatement();
-                    ResultSet set = statement.executeQuery("SELECT * FROM hotelview_news ORDER BY id DESC LIMIT 10")) {
-                while (set.next()) {
-                    this.newsWidgets.add(new NewsWidget(set));
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+        ArrayList<NewsWidget> loaded = new ArrayList<>();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet set = statement.executeQuery("SELECT * FROM hotelview_news ORDER BY id DESC LIMIT 10")) {
+            while (set.next()) {
+                loaded.add(new NewsWidget(set));
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return;
         }
+
+        this.newsWidgets = loaded;
     }
 
     public ArrayList<NewsWidget> getNewsWidgets() {

@@ -1,5 +1,6 @@
 package polaris.messages.outgoing.hotelview;
 
+import java.util.List;
 import polaris.Emulator;
 import polaris.hotel.hotelview.NewsList;
 import polaris.hotel.hotelview.NewsWidget;
@@ -13,9 +14,12 @@ public class NewsListComposer extends MessageComposer {
         this.response.init(Outgoing.NewsWidgetsComposer);
         NewsList newsList = Emulator.getGameEnvironment().getHotelViewManager().getNewsList();
 
-        this.response.appendInt(newsList.getNewsWidgets().size());
+        // One read: a reload swaps the list, and the count must describe the widgets written after it.
+        List<NewsWidget> widgets = newsList.getNewsWidgets();
 
-        for (NewsWidget widget : newsList.getNewsWidgets()) {
+        this.response.appendInt(widgets.size());
+
+        for (NewsWidget widget : widgets) {
             this.response.appendInt(widget.getId());
             this.response.appendString(widget.getTitle());
             this.response.appendString(widget.getMessage());

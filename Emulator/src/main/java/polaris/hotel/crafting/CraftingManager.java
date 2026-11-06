@@ -14,7 +14,9 @@ import polaris.hotel.items.Item;
 public class CraftingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CraftingManager.class);
 
-    private final Map<Item, CraftingAltar> altars;
+    // Built whole by reload and swapped in: a reload used to clear the altars and fill them after the query, so a
+    // player crafting during :update_catalogue found no recipe, and a failed query left crafting empty.
+    private volatile Map<Item, CraftingAltar> altars;
 
     public CraftingManager() {
         this.altars = new HashMap<>();
@@ -23,7 +25,15 @@ public class CraftingManager {
     }
 
     public void reload() {
-        this.dispose();
+        this.saveRemaining();
+
+        Map<Item, CraftingAltar> loaded = loadAltars();
+        if (loaded != null) this.altars = loaded;
+    }
+
+    /** The altars and their recipes as the database holds them now; null when it could not be read. */
+    private static Map<Item, CraftingAltar> loadAltars() {
+        Map<Item, CraftingAltar> altars = new HashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM crafting_altars_recipes "
@@ -35,55 +45,46 @@ public class CraftingManager {
                 while (set.next()) {
                     Item item = Emulator.getGameEnvironment().getItemManager().getItem(set.getInt("altar_id"));
 
-                    if (item != null) {
-                        if (!this.altars.containsKey(item)) {
-                            this.altars.put(item, new CraftingAltar(item));
-                        }
+                    if (item == null) continue;
 
-                        CraftingAltar altar = this.altars.get(item);
+                    CraftingAltar altar = altars.computeIfAbsent(item, CraftingAltar::new);
+                    CraftingRecipe recipe = altar.getRecipe(set.getInt("crafting_recipes_ingredients.recipe_id"));
 
-                        if (altar != null) {
-                            CraftingRecipe recipe =
-                                    altar.getRecipe(set.getInt("crafting_recipes_ingredients.recipe_id"));
+                    if (recipe == null) {
+                        recipe = new CraftingRecipe(set);
+                        altar.addRecipe(recipe);
+                    }
 
-                            if (recipe == null) {
-                                recipe = new CraftingRecipe(set);
-                                altar.addRecipe(recipe);
-                            }
+                    Item ingredientItem = Emulator.getGameEnvironment()
+                            .getItemManager()
+                            .getItem(set.getInt("crafting_recipes_ingredients.item_id"));
 
-                            Item ingredientItem = Emulator.getGameEnvironment()
-                                    .getItemManager()
-                                    .getItem(set.getInt("crafting_recipes_ingredients.item_id"));
-
-                            if (ingredientItem != null) {
-                                recipe.addIngredient(ingredientItem, set.getInt("crafting_recipes_ingredients.amount"));
-                                altar.addIngredient(ingredientItem);
-                            } else {
-                                LOGGER.error(
-                                        "Unknown ingredient item {}",
-                                        set.getInt("crafting_recipes_ingredients.item_id"));
-                            }
-                        }
+                    if (ingredientItem != null) {
+                        recipe.addIngredient(ingredientItem, set.getInt("crafting_recipes_ingredients.amount"));
+                        altar.addIngredient(ingredientItem);
+                    } else {
+                        LOGGER.error("Unknown ingredient item {}", set.getInt("crafting_recipes_ingredients.item_id"));
                     }
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return null;
         }
+
+        return altars;
     }
 
     public int getRecipesWithItemCount(final Item item) {
-        final int[] i = {0};
+        int count = 0;
 
-        synchronized (this.altars) {
-            for (CraftingAltar altar : this.altars.values()) {
-                if (altar.hasIngredient(item)) {
-                    i[0]++;
-                }
+        for (CraftingAltar altar : this.altars.values()) {
+            if (altar.hasIngredient(item)) {
+                count++;
             }
         }
 
-        return i[0];
+        return count;
     }
 
     public CraftingRecipe getRecipe(String recipeName) {
@@ -103,7 +104,8 @@ public class CraftingManager {
         return this.altars.get(item);
     }
 
-    public void dispose() {
+    /** Writes how many of each limited recipe are left, so a reload or a restart reads the count it reached. */
+    private void saveRemaining() {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement =
                         connection.prepareStatement("UPDATE crafting_recipes SET remaining = ? WHERE id = ? LIMIT 1")) {
@@ -121,7 +123,10 @@ public class CraftingManager {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
+    }
 
-        this.altars.clear();
+    public void dispose() {
+        this.saveRemaining();
+        this.altars = new HashMap<>();
     }
 }

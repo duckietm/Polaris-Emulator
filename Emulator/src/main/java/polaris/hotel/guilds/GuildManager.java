@@ -36,12 +36,14 @@ public class GuildManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildManager.class);
 
-    private final Map<GuildPartType, Map<Integer, GuildPart>> guildParts;
+    // The badge parts and the forum views are loaded into new collections and swapped in: a reload used to clear them
+    // while guild creation and the forum read them, and a failed query left them empty.
+    private volatile Map<GuildPartType, Map<Integer, GuildPart>> guildParts;
 
     private final Int2ObjectMap<Guild> guilds;
 
     /** Forum views of the last {@link #FORUM_VIEW_WINDOW_SECONDS}: written and read by every client's packets. */
-    private final Set<ForumView> views = ConcurrentHashMap.newKeySet();
+    private volatile Set<ForumView> views = ConcurrentHashMap.newKeySet();
 
     private static final int FORUM_VIEW_WINDOW_SECONDS = 7 * 24 * 60 * 60;
 
@@ -57,27 +59,29 @@ public class GuildManager {
     }
 
     public void loadGuildParts() {
-        this.guildParts.clear();
+        Map<GuildPartType, Map<Integer, GuildPart>> parts = new HashMap<>();
 
         for (GuildPartType t : GuildPartType.values()) {
-            this.guildParts.put(t, new HashMap<>());
+            parts.put(t, new HashMap<>());
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM guilds_elements")) {
             while (set.next()) {
-                this.guildParts
-                        .get(GuildPartType.valueOf(set.getString("type").toUpperCase()))
+                parts.get(GuildPartType.valueOf(set.getString("type").toUpperCase()))
                         .put(set.getInt("id"), new GuildPart(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+
+        this.guildParts = parts;
     }
 
     public void loadGuildViews() {
-        this.views.clear();
+        Set<ForumView> loaded = ConcurrentHashMap.newKeySet();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement =
@@ -85,12 +89,15 @@ public class GuildManager {
             statement.setInt(1, forumViewCutoff());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    this.views.add(new ForumView(set));
+                    loaded.add(new ForumView(set));
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+
+        this.views = loaded;
     }
 
     public Guild createGuild(

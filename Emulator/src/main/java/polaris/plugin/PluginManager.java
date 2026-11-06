@@ -27,7 +27,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
@@ -69,6 +71,8 @@ public class PluginManager {
     private final Object dispatchStateLock = new Object();
     private volatile DispatchSnapshot dispatchSnapshot = DispatchSnapshot.empty();
     private volatile boolean reloading;
+    /** Told the class loader of every plugin being unloaded, so what it registered elsewhere leaves with it. */
+    private final List<Consumer<ClassLoader>> unloadHooks = new CopyOnWriteArrayList<>();
 
     public PluginManager() {
         this(() -> false);
@@ -330,6 +334,14 @@ public class PluginManager {
         LOGGER.info("Disposed Plugin Manager!");
     }
 
+    /**
+     * Runs {@code hook} with the class loader of each plugin being unloaded, before the loader is closed. The packet
+     * manager uses it to drop the plugin's handlers and callables.
+     */
+    public void onPluginUnload(Consumer<ClassLoader> hook) {
+        this.unloadHooks.add(Objects.requireNonNull(hook));
+    }
+
     private void disposePluginsInternal() {
         for (PolarisPlugin p : this.plugins) {
             if (p != null) {
@@ -341,6 +353,13 @@ public class PluginManager {
                 } finally {
                     // Released even when onDisable threw: the class loader stayed in memory and the jar locked.
                     CommandHandler.removeCommandsLoadedBy(p.classLoader);
+                    for (Consumer<ClassLoader> hook : this.unloadHooks) {
+                        try {
+                            hook.accept(p.classLoader);
+                        } catch (RuntimeException ex) {
+                            LOGGER.error("Failed to release what {} registered", p.configuration.name, ex);
+                        }
+                    }
                     closeQuietly(p.stream, p.configuration.name);
                     closeQuietly(p.classLoader, p.configuration.name);
                 }

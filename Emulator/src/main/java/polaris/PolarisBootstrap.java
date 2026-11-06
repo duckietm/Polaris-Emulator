@@ -213,6 +213,8 @@ final class PolarisBootstrap {
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);
+        // A plugin unloaded by :update_plugins takes its packet handlers and callables with it.
+        runtime.pluginManager().onPluginUnload(gameServer.getPacketManager()::removeLoadedBy);
         ExecutorService catalogReloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "CatalogReload");
             thread.setDaemon(true);

@@ -2,9 +2,10 @@ package polaris.messages;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -650,14 +651,15 @@ public class PacketManager {
     private static final List<Integer> logList = new ArrayList<>();
     public static volatile boolean DEBUG_SHOW_PACKETS = false;
     public static volatile boolean MULTI_THREADED_PACKET_HANDLING = false;
+    // Written at runtime by plugins and read by every packet thread.
     private final Map<Integer, Class<? extends MessageHandler>> incoming;
     private final Map<Integer, List<ICallable>> callables;
     private final PacketNames names;
     private final PacketErrorLogLimiter errorLog = new PacketErrorLogLimiter(60_000);
 
     public PacketManager() throws Exception {
-        this.incoming = new HashMap<>();
-        this.callables = new HashMap<>();
+        this.incoming = new ConcurrentHashMap<>();
+        this.callables = new ConcurrentHashMap<>();
         this.names = new PacketNames();
         this.names.initialize();
 
@@ -712,17 +714,41 @@ public class PacketManager {
     public void registerHandler(Integer header, Class<? extends MessageHandler> handler) throws Exception {
         if (header < 0) return;
 
-        if (this.incoming.containsKey(header)) {
+        if (this.incoming.putIfAbsent(header, handler) != null) {
             throw new Exception(
                     "Header already registered. Failed to register " + handler.getName() + " with header " + header);
         }
-
-        this.incoming.putIfAbsent(header, handler);
     }
 
     public void registerCallable(Integer header, ICallable callable) {
-        this.callables.putIfAbsent(header, new ArrayList<>());
-        this.callables.get(header).add(callable);
+        this.callables
+                .computeIfAbsent(header, ignored -> new CopyOnWriteArrayList<>())
+                .add(callable);
+    }
+
+    /**
+     * Drops the handlers and callables a plugin's class loader defined, when that plugin is unloaded. They used to
+     * stay: the old callables kept running on every packet with their jar closed, and the reloaded plugin could not
+     * register its handlers again because the header was taken.
+     *
+     * @return how many handlers and callables were removed
+     */
+    public int removeLoadedBy(ClassLoader loader) {
+        if (loader == null) return 0;
+
+        int removed = 0;
+        for (Map.Entry<Integer, Class<? extends MessageHandler>> entry : this.incoming.entrySet()) {
+            if (entry.getValue().getClassLoader() == loader && this.incoming.remove(entry.getKey(), entry.getValue())) {
+                removed++;
+            }
+        }
+        for (List<ICallable> list : this.callables.values()) {
+            int before = list.size();
+            list.removeIf(callable -> callable.getClass().getClassLoader() == loader);
+            removed += before - list.size();
+        }
+        this.callables.values().removeIf(List::isEmpty);
+        return removed;
     }
 
     public void unregisterCallables(Integer header, ICallable callable) {
@@ -793,8 +819,9 @@ public class PacketManager {
                 handler.client = client;
                 handler.packet = packet;
 
-                if (this.callables.containsKey(packet.getMessageId())) {
-                    for (ICallable callable : this.callables.get(packet.getMessageId())) {
+                List<ICallable> packetCallables = this.callables.get(packet.getMessageId());
+                if (packetCallables != null) {
+                    for (ICallable callable : packetCallables) {
                         callable.call(handler);
                     }
                 }

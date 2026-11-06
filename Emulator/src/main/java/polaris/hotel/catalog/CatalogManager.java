@@ -2601,9 +2601,10 @@ public class CatalogManager {
             int totalPoints)
             throws SQLException {
         int userId = user.getUserInfo().getId();
+        AtomicFurniturePurchase purchase;
         try {
             String operationId = EconomyOperationId.create("catalog:" + userId + ":" + item.getId());
-            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(user, operationId, connection -> {
+            purchase = CatalogPurchaseTransaction.execute(user, operationId, connection -> {
                 Set<UserItem> createdItems = new HashSet<>();
                 Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
                 boolean includesMusicDisc = false;
@@ -2746,14 +2747,17 @@ public class CatalogManager {
                 return new CatalogPurchaseTransaction.PreparedPurchase<>(
                         result, charges.credits(), charges.points(), charges.pointsType());
             });
-
-            this.publishAtomicFurniturePurchase(user, purchase);
-            if (limitedConfiguration != null) {
-                user.getUserStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
-            }
         } catch (SQLException | RuntimeException exception) {
             if (limitedConfiguration != null && limitedNumber > 0) limitedConfiguration.restoreNumber(limitedNumber);
             throw exception;
+        }
+
+        // Committed: the number is sold in the database. A failure while handing the purchase over (the buyer gone
+        // offline, say) used to reach the catch above and put the number back in the pool, where the next buyer
+        // drew it and failed on the sold row.
+        this.publishAtomicFurniturePurchase(user, purchase);
+        if (limitedConfiguration != null) {
+            user.getUserStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
         }
     }
 

@@ -205,10 +205,16 @@ final class CatalogPurchaseApplicationService {
                 return;
             }
 
+            // Every outcome but a room that exists gives the price back: buyRoom said nothing, so a room it could not
+            // create, or one past the room limit, kept the payment.
+            boolean bought;
             try {
-                page.buyRoom(this.client.getHabbo());
+                bought = page.tryBuyRoom(this.client.getHabbo());
             } catch (RuntimeException e) {
                 LOGGER.error("Room bundle purchase failed for user {}", this.buyerId(), e);
+                bought = false;
+            }
+            if (!bought) {
                 CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, pointsType, paidPoints);
                 this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 return;

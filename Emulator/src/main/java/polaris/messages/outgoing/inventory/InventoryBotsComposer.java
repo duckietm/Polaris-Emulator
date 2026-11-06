@@ -1,6 +1,6 @@
 package polaris.messages.outgoing.inventory;
 
-import java.util.Map;
+import java.util.List;
 import polaris.hotel.bots.Bot;
 import polaris.hotel.users.User;
 import polaris.messages.ServerMessage;
@@ -18,9 +18,9 @@ public class InventoryBotsComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.InventoryBotsComposer);
 
-        Map<Integer, Bot> userBots = this.user.getInventory().getBotsComponent().getBots();
+        List<Bot> userBots = this.user.getInventory().getBotsComponent().getBotsSnapshot();
         this.response.appendInt(userBots.size());
-        for (Bot bot : userBots.values()) {
+        for (Bot bot : userBots) {
             this.response.appendInt(bot.getId());
             this.response.appendString(bot.getName());
             this.response.appendString(bot.getMotto());

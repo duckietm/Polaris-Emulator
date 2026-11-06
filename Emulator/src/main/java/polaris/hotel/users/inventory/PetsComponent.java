@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,22 @@ public class PetsComponent {
 
     public Int2ObjectMap<Pet> getPets() {
         return this.pets;
+    }
+
+    /** A copy taken under the lock: the synchronized map does not lock its iterator. */
+    public List<Pet> getPetsSnapshot() {
+        synchronized (this.pets) {
+            return new ArrayList<>(this.pets.values());
+        }
+    }
+
+    /** Takes every pet out of the inventory at once: a pet added between a copy and a clear was lost. */
+    public List<Pet> takeAllPets() {
+        synchronized (this.pets) {
+            List<Pet> taken = new ArrayList<>(this.pets.values());
+            this.pets.clear();
+            return taken;
+        }
     }
 
     public int getPetsCount() {

@@ -1,6 +1,5 @@
 package polaris.hotel.commands;
 
-import java.util.ArrayList;
 import java.util.List;
 import polaris.Emulator;
 import polaris.hotel.gameclients.GameClient;
@@ -57,9 +56,7 @@ public class EmptyPetsInventoryCommand extends Command {
             }
 
             if (user != null) {
-                List<Pet> pets = new ArrayList<>(
-                        user.getInventory().getPetsComponent().getPets().values());
-                user.getInventory().getPetsComponent().getPets().clear();
+                List<Pet> pets = user.getInventory().getPetsComponent().takeAllPets();
                 pets.forEach(
                         object -> Emulator.getGameEnvironment().getPetManager().deletePet(object));
 

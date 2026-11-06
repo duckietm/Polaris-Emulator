@@ -45,7 +45,7 @@ $env:POLARIS_DB_PASSWORD = '<local secret>'
 $jar = Get-ChildItem '.\Emulator\target\*-jar-with-dependencies.jar' |
   Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
 java -cp $jar.FullName `
-  com.eu.habbo.tools.furni.FurniConsistencyCli `
+  polaris.tools.furni.FurniConsistencyCli `
   --jdbc-url 'jdbc:mariadb://127.0.0.1:3306/habbo' `
   --db-user 'root' `
   --db-password-env 'POLARIS_DB_PASSWORD' `

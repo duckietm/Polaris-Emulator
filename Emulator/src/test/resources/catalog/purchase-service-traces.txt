@@ -214,14 +214,14 @@ purchasing flag true
 
 == room bundle / badge already owned
 CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
-page.tryBuyRoom(buyer) -> true
+page.buyRoom(buyer)
 buyer <- PurchaseOK()
 returned
 purchasing flag false
 
 == room bundle / bought
 CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
-page.tryBuyRoom(buyer) -> true
+page.buyRoom(buyer)
 buyer <- PurchaseOK()
 threading.run(badge ACH_ROOM)
 inventory.addBadge(badge ACH_ROOM)
@@ -232,7 +232,7 @@ purchasing flag false
 
 == room bundle / infinite credits and points
 CatalogPaymentService.tryTake(credits 0, type 5, points 0) -> true
-page.tryBuyRoom(buyer) -> true
+page.buyRoom(buyer)
 buyer <- PurchaseOK()
 threading.run(badge ACH_ROOM)
 inventory.addBadge(badge ACH_ROOM)
@@ -275,14 +275,6 @@ purchasing flag false
 
 == room bundle / the room cannot be created
 CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
-CatalogPaymentService.refund(credits 50, type 5, points 5)
-buyer <- AlertPurchaseFailed(0)
-returned
-purchasing flag false
-
-== room bundle / the room is not created
-CatalogPaymentService.tryTake(credits 50, type 5, points 5) -> true
-page.tryBuyRoom(buyer) -> false
 CatalogPaymentService.refund(credits 50, type 5, points 5)
 buyer <- AlertPurchaseFailed(0)
 returned

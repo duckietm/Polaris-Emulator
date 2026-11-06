@@ -1,0 +1,87 @@
+package polaris.hotel.items;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.interactions.InteractionTeleport;
+import polaris.hotel.items.interactions.InteractionWiredRoomLinker;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+
+class InteractionWiredRoomLinkerTest {
+
+    private static Item base() {
+        Item base = mock(Item.class);
+        when(base.getType()).thenReturn(FurnitureType.FLOOR);
+        return base;
+    }
+
+    @Test
+    void theRoomLinkerInteractionNameResolvesToTheLinker() {
+        TestItemManager manager = new TestItemManager();
+        manager.loadDefaults();
+
+        assertSame(
+                InteractionWiredRoomLinker.class,
+                manager.getItemInteraction("wf_room_linker").getType());
+    }
+
+    @Test
+    void aLinkerIsATeleporterSoItIsBoughtAndResolvedAsAPair() {
+        assertTrue(InteractionTeleport.class.isAssignableFrom(InteractionWiredRoomLinker.class));
+    }
+
+    @Test
+    void clickingALinkerStartsNoTeleport() throws Exception {
+        InteractionWiredRoomLinker linker = new InteractionWiredRoomLinker(7, 1, base(), "", 0, 0);
+        Room room = mock(Room.class);
+        GameClient client = mock(GameClient.class);
+
+        linker.onClick(client, room, new Object[0]);
+
+        verifyNoInteractions(room, client);
+        assertTrue("0".equals(linker.getExtradata()), "a linker keeps no teleport state");
+    }
+
+    @Test
+    void aLinkerCanBeStoodOnAndIsNotAUsableTeleporter() {
+        InteractionWiredRoomLinker linker = new InteractionWiredRoomLinker(7, 1, base(), "", 0, 0);
+
+        assertTrue(linker.canWalkOn(mock(RoomUnit.class), mock(Room.class), new Object[0]));
+        assertTrue(linker.isWalkable());
+        assertFalse(linker.isUsable());
+        assertFalse(linker.invalidatesToRoomKick());
+    }
+
+    @Test
+    void aGiftPurchasePairsEveryTeleporterKindIncludingTheLinker() throws Exception {
+        String source = Files.readString(
+                Path.of("src/main/java/polaris/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java"));
+
+        assertTrue(source.contains("InteractionTeleport.class.isAssignableFrom("), "pairs by assignability");
+        assertFalse(source.contains("== InteractionTeleport.class"), "no exact-class pairing left");
+    }
+
+    @Test
+    void theRoomSendsALinkerAsAFurniNobodyUses() {
+        InteractionWiredRoomLinker linker = new InteractionWiredRoomLinker(7, 1, base(), "", 0, 0);
+
+        // Teleporters are sent as usable by everyone; the linker falls through to isUsable(), which is false.
+        assertTrue(FurnitureUsagePolicy.of(linker) == FurnitureUsagePolicy.NOBODY);
+        assertTrue(FurnitureUsagePolicy.of(mock(InteractionTeleport.class)) == FurnitureUsagePolicy.EVERYBODY);
+    }
+
+    private static final class TestItemManager extends ItemManager {
+        private void loadDefaults() {
+            loadItemInteractions();
+        }
+    }
+}

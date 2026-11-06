@@ -1,0 +1,70 @@
+package polaris.messages.incoming.housekeeping;
+
+import polaris.Emulator;
+import polaris.hotel.rooms.Room;
+import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
+
+/**
+ * Toggle room-wide mute. Habbo's Room.setMuted is boolean, not duration-
+ * scoped, so the wire `minutes` arg picks the semantic: minutes==0 =>
+ * unmute, minutes>0 => mute. An emulator-side scheduled unmute could
+ * use the value as a timer, but for now the mute stays until the
+ * operator unmutes manually — the minutes is reserved as a forward-
+ * compat field on the wire.
+ */
+public class HousekeepingMuteRoomEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
+    private static final String ACTION_KEY = "room.mute";
+
+    @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        if (!this.allowed()) {
+            return;
+        }
+
+        int roomId = this.packet.readInt();
+        int minutes = this.packet.readInt();
+
+        if (roomId <= 0 || minutes < 0) {
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
+            return;
+        }
+
+        Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
+
+        if (room == null) {
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
+            return;
+        }
+
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)) {
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
+        room.setMuted(minutes > 0);
+
+        polaris.hotel.modtool.HousekeepingAuditLog.log(
+                this.client.getUser().getUserInfo().getId(),
+                this.client.getUser().getUserInfo().getUsername(),
+                ACTION_KEY,
+                polaris.hotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
+                roomId,
+                room.getName(),
+                "roomId=" + roomId + " minutes=" + minutes + " muted=" + (minutes > 0),
+                this.client.getUser().getUserInfo().getIpLogin());
+        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
+    }
+}

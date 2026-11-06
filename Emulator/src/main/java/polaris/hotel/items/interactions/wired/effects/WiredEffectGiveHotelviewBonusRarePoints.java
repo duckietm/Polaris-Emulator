@@ -1,0 +1,189 @@
+package polaris.hotel.items.interactions.wired.effects;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import polaris.WiredPlatform;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredEffect;
+import polaris.hotel.items.interactions.InteractionWiredTrigger;
+import polaris.hotel.items.interactions.wired.WiredInputGuard;
+import polaris.hotel.items.interactions.wired.WiredNumericInputGuard;
+import polaris.hotel.items.interactions.wired.WiredRewardPolicy;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.User;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.hotelview.BonusRareComposer;
+
+public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEffect {
+    // The amount travels in the string slot and the user source in the int slot, which is
+    // exactly what the amount dialog reads - the box asked for a number through a window that
+    // said "what should the user say?", and the swap costs no migration.
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
+
+    private int amount = 0;
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    public WiredEffectGiveHotelviewBonusRarePoints(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredEffectGiveHotelviewBonusRarePoints(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.amount + "");
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(type.code);
+        message.appendInt(this.getDelay());
+
+        if (this.requiresTriggeringUser()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            for (InteractionWiredTrigger object : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!object.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(object.getBaseItem().getSpriteId());
+                }
+            }
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
+            }
+        } else {
+            message.appendInt(0);
+        }
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // Value out of nothing: the amount cap bounds one firing, not a room full of them.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
+        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
+                settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
+        if (nextAmount <= 0) {
+            return false;
+        }
+        int maxDelay = WiredPlatform.configuration() == null
+                ? 20
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", WiredInputGuard.DEFAULT_MAX_DELAY);
+        if (settings.getDelay() > maxDelay) {
+            return false;
+        }
+        this.amount = nextAmount;
+
+        int[] params = settings.getIntParams();
+        // Official: no int params; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+
+        this.setDelay(settings.getDelay());
+
+        return true;
+    }
+
+    @Override
+    public WiredEffectType getType() {
+        return type;
+    }
+
+    @Override
+    public void execute(WiredContext ctx) {
+        Room room = ctx.room();
+        if (room == null || this.amount <= 0) return;
+        // 5 is the type the hotel ships with in emulator_settings; the same fallback saveData uses
+        // for its own reads, so a missing row degrades to the default instead of failing the stack.
+        int pointsType = WiredPlatform.configuration() == null
+                ? 5
+                : WiredPlatform.configuration().getInt("hotelview.promotional.points.type", 5);
+
+        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+            User user = room.getUser(unit);
+            if (user == null) continue;
+            user.givePoints(pointsType, this.amount);
+            if (user.getClient() != null) {
+                user.getClient().sendResponse(new BonusRareComposer(user));
+            }
+        }
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson().toJson(new JsonData(this.getDelay(), this.amount, this.userSource));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
+        this.amount = 0;
+
+        // The guard answers null for anything it cannot parse, truncated documents included,
+        // so the defaults below cover a corrupt row instead of the load failing on it.
+        JsonData data = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (data != null) {
+            this.setDelay(data.delay);
+            this.amount = Math.min(Math.max(data.amount, 0), WiredNumericInputGuard.maxRewardAmount());
+            this.userSource = data.userSource;
+        } else {
+            String[] legacy = wiredData == null ? new String[0] : wiredData.split("\t");
+            if (legacy.length >= 2) {
+                super.setDelay(Integer.parseInt(legacy[0]));
+
+                try {
+                    this.amount = Math.min(
+                            Math.max(Integer.parseInt(legacy[1]), 0), WiredNumericInputGuard.maxRewardAmount());
+                } catch (NumberFormatException ignored) {
+                    this.amount = 0;
+                }
+            }
+            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.amount = 0;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.setDelay(0);
+    }
+
+    @Override
+    public boolean requiresTriggeringUser() {
+        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    static class JsonData {
+        int delay;
+        int amount;
+        int userSource;
+
+        public JsonData(int delay, int amount, int userSource) {
+            this.delay = delay;
+            this.amount = amount;
+            this.userSource = userSource;
+        }
+    }
+}

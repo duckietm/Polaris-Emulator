@@ -1,0 +1,7 @@
+{
+  "name": "PolarisPlugin base class fixture",
+  "description": "Validates that a plugin extending PolarisPlugin loads from the assembled Polaris JAR",
+  "author": "Polaris tests",
+  "version": "1.0.0",
+  "main": "fixture.polarisplugin.PolarisNamedPlugin"
+}

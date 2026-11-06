@@ -8,6 +8,14 @@ baseline. `PackagedJarContractIT` then loads both resulting plugin jars,
 individually, through the real plugin manager with only the assembled Polaris
 jar as their parent classpath.
 
+Both fixtures keep the old `com.eu.habbo` names on purpose: they stand for jars
+compiled before the rename, and they load because the plugin manager rewrites
+them with `polaris/plugin/legacy-names.txt` (see `RemappingPluginClassLoader`).
+
+`polaris-plugin` is compiled against the assembled jar with the current names
+(`polaris.*`, `PolarisPlugin`, `User`), so a plugin written today is proven to
+load through the same plugin manager.
+
 The fixture covers plugin metadata, lifecycle, resources, event registration,
 the legacy database-data-source signature, and representative bundled
 libraries. The packaged probe separately freezes released Polaris's

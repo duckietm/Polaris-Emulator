@@ -1,0 +1,1089 @@
+package polaris.hotel.modtool;
+
+import io.netty.channel.Channel;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import java.net.InetSocketAddress;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.gameclients.SessionResumeManager;
+import polaris.hotel.permissions.Permission;
+import polaris.hotel.permissions.Rank;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomState;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.UserManager;
+import polaris.messages.ClientMessage;
+import polaris.messages.outgoing.generic.alerts.ModerationCautionComposer;
+import polaris.messages.outgoing.generic.alerts.UserBannedComposer;
+import polaris.messages.outgoing.handshake.DisconnectReasonComposer;
+import polaris.messages.outgoing.modtool.IssueDeletedComposer;
+import polaris.messages.outgoing.modtool.ModToolIssueHandledComposer;
+import polaris.messages.outgoing.modtool.ModToolIssueInfoComposer;
+import polaris.messages.outgoing.modtool.ModToolUserInfoComposer;
+import polaris.messages.outgoing.users.BanInfoComposer;
+import polaris.networking.gameserver.auth.AccessTokenService;
+import polaris.plugin.events.support.SupportRoomActionEvent;
+import polaris.plugin.events.support.SupportTicketEvent;
+import polaris.plugin.events.support.SupportTicketStatusChangedEvent;
+import polaris.plugin.events.support.SupportUserAlertedEvent;
+import polaris.plugin.events.support.SupportUserAlertedReason;
+import polaris.plugin.events.support.SupportUserBannedEvent;
+import polaris.threading.runnables.InsertModToolIssue;
+
+public class ModToolManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModToolManager.class);
+
+    private final Int2ObjectMap<ModToolCategory> category;
+    private final Map<String, Set<String>> presets;
+    private final Map<Integer, ModToolIssue> tickets;
+    private final Int2ObjectMap<CfhCategory> cfhCategories;
+
+    public ModToolManager() {
+        long millis = System.currentTimeMillis();
+        this.category = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+        this.presets = new HashMap<>();
+        this.tickets = new HashMap<>();
+        this.cfhCategories = new Int2ObjectOpenHashMap<>();
+        this.loadModTool();
+        LOGGER.info("ModTool Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+    }
+
+    public static void requestUserInfo(GameClient client, ClientMessage packet) {
+        int userId = packet.readInt();
+
+        if (userId <= 0) return;
+
+        String query = Emulator.getGameEnvironment().getPermissionsManager().isNormalizedSchemaEnabled()
+                ? "SELECT users.*, users_settings.*, permission_ranks.rank_name, permission_ranks.id AS rank_id "
+                        + "FROM users "
+                        + "INNER JOIN users_settings ON users.id = users_settings.user_id "
+                        + "INNER JOIN permission_ranks ON permission_ranks.id = users.rank "
+                        + "WHERE users.id = ? LIMIT 1"
+                : "SELECT users.*, users_settings.*, permissions.rank_name, permissions.acc_hide_mail AS hide_mail, permissions.id AS rank_id FROM users INNER JOIN users_settings ON users.id = users_settings.user_id INNER JOIN permissions ON permissions.id = users.rank WHERE users.id = ? LIMIT 1";
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    boolean hideMail = Emulator.getGameEnvironment()
+                                    .getPermissionsManager()
+                                    .isNormalizedSchemaEnabled()
+                            ? Emulator.getGameEnvironment()
+                                    .getPermissionsManager()
+                                    .getRank(set.getInt("rank_id"))
+                                    .hasPermission("acc_hide_mail", false)
+                            : set.getBoolean("hide_mail");
+
+                    client.sendResponse(new ModToolUserInfoComposer(set, hideMail));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+    }
+
+    public synchronized void loadModTool() {
+        this.category.clear();
+        this.presets.clear();
+        this.cfhCategories.clear();
+
+        this.presets.put("user", new HashSet<>());
+        this.presets.put("room", new HashSet<>());
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.loadCategory(connection);
+            this.loadPresets(connection);
+            this.loadTickets(connection);
+            this.loadCfhCategories(connection);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    private void loadCategory(Connection connection) {
+        try (Statement statement = connection.createStatement();
+                ResultSet set = statement.executeQuery("SELECT * FROM support_issue_categories")) {
+            while (set.next()) {
+                this.category.put(set.getInt("id"), new ModToolCategory(set.getString("name")));
+
+                try (PreparedStatement settings =
+                        connection.prepareStatement("SELECT * FROM support_issue_presets WHERE category = ?")) {
+                    settings.setInt(1, set.getInt("id"));
+                    try (ResultSet presets = settings.executeQuery()) {
+                        while (presets.next()) {
+                            this.category.get(set.getInt("id")).addPreset(new ModToolPreset(presets));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    private void loadPresets(Connection connection) {
+        synchronized (this.presets) {
+            try (Statement statement = connection.createStatement();
+                    ResultSet set = statement.executeQuery("SELECT * FROM support_presets")) {
+                while (set.next()) {
+                    this.presets.get(set.getString("type")).add(set.getString("preset"));
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    private void loadTickets(Connection connection) {
+        synchronized (this.tickets) {
+            try (Statement statement = connection.createStatement();
+                    ResultSet set = statement.executeQuery(
+                            "SELECT S.username as sender_username, R.username AS reported_username, M.username as mod_username, support_tickets.* FROM support_tickets INNER JOIN users as S ON S.id = sender_id INNER JOIN users AS R ON R.id = reported_id INNER JOIN users AS M ON M.id = mod_id WHERE state != 0")) {
+                while (set.next()) {
+                    this.tickets.put(set.getInt("id"), new ModToolIssue(set));
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    private void loadCfhCategories(Connection connection) {
+        try (Statement statement = connection.createStatement();
+                ResultSet set = statement.executeQuery(
+                        "SELECT " + "support_cfh_topics.id, "
+                                + "support_cfh_topics.category_id, "
+                                + "support_cfh_topics.name_internal, "
+                                + "support_cfh_topics.action, "
+                                + "support_cfh_topics.auto_reply,"
+                                + "support_cfh_topics.ignore_target, "
+                                + "support_cfh_categories.name_internal AS category_name_internal, "
+                                + "support_cfh_categories.id AS support_cfh_category_id, "
+                                + "support_cfh_topics.default_sanction AS default_sanction "
+                                + "FROM support_cfh_topics "
+                                + "LEFT JOIN support_cfh_categories ON support_cfh_categories.id = support_cfh_topics.category_id")) {
+            while (set.next()) {
+                if (!this.cfhCategories.containsKey(set.getInt("support_cfh_category_id"))) {
+                    this.cfhCategories.put(
+                            set.getInt("support_cfh_category_id"),
+                            new CfhCategory(set.getInt("id"), set.getString("category_name_internal")));
+                }
+
+                this.cfhCategories
+                        .get(set.getInt("support_cfh_category_id"))
+                        .addTopic(new CfhTopic(set, this.getIssuePreset(set.getInt("default_sanction"))));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public CfhTopic getCfhTopic(int topicId) {
+        for (CfhCategory category : this.getCfhCategories().values()) {
+            for (CfhTopic topic : category.getTopics().values()) {
+                if (topic.id == topicId) {
+                    return topic;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public ModToolPreset getIssuePreset(int id) {
+        if (id == 0) return null;
+
+        for (ModToolCategory object : this.category.values()) {
+            ModToolPreset preset = object.getPresets().get(id);
+            if (preset != null) {
+                return preset;
+            }
+        }
+
+        return null;
+    }
+
+    public void quickTicket(User reported, String reason, String message) {
+        ModToolIssue issue = new ModToolIssue(
+                0,
+                reason,
+                reported.getUserInfo().getId(),
+                reported.getUserInfo().getUsername(),
+                0,
+                message,
+                ModToolTicketType.AUTOMATIC);
+
+        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
+        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+    }
+
+    public ArrayList<ModToolChatLog> getRoomChatlog(int roomId) {
+        ArrayList<ModToolChatLog> chatlogs = new ArrayList<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.username, users.id, chatlogs_room.* FROM chatlogs_room INNER JOIN users ON users.id = chatlogs_room.user_from_id WHERE room_id = ? ORDER BY timestamp DESC LIMIT 150")) {
+            statement.setInt(1, roomId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    chatlogs.add(new ModToolChatLog(
+                            set.getInt("timestamp"),
+                            set.getInt("id"),
+                            set.getString("username"),
+                            set.getString("message")));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return chatlogs;
+    }
+
+    public ArrayList<ModToolChatLog> getUserChatlog(int userId) {
+        ArrayList<ModToolChatLog> chatlogs = new ArrayList<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.username, users.id, chatlogs_room.* FROM chatlogs_room INNER JOIN users ON users.id = chatlogs_room.user_from_id WHERE user_from_id = ? ORDER BY chatlogs_room.timestamp DESC LIMIT 150")) {
+            statement.setInt(1, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    chatlogs.add(new ModToolChatLog(
+                            set.getInt("timestamp"),
+                            set.getInt("id"),
+                            set.getString("username"),
+                            set.getString("message")));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return chatlogs;
+    }
+
+    public ArrayList<ModToolChatLog> getMessengerChatlog(int userOneId, int userTwoId) {
+        ArrayList<ModToolChatLog> chatLogs = new ArrayList<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.username, chatlogs_private.* FROM chatlogs_private INNER JOIN users ON users.id = user_from_id WHERE (user_from_id = ? AND user_to_id = ?) OR (user_from_id = ? AND user_to_id = ?) ORDER BY chatlogs_private.timestamp DESC LIMIT 50")) {
+            statement.setInt(1, userOneId);
+            statement.setInt(2, userTwoId);
+            statement.setInt(3, userTwoId);
+            statement.setInt(4, userOneId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    chatLogs.add(new ModToolChatLog(
+                            set.getInt("timestamp"),
+                            set.getInt("chatlogs_private.user_from_id"),
+                            set.getString("users.username"),
+                            set.getString("message")));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return chatLogs;
+    }
+
+    public ArrayList<ModToolRoomVisit> getUserRoomVisitsAndChatlogs(int userId) {
+        ArrayList<ModToolRoomVisit> chatlogs = new ArrayList<>();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT rooms.name, users.username, room_enter_log.timestamp AS enter_timestamp, room_enter_log.exit_timestamp, chatlogs_room.* FROM room_enter_log INNER JOIN rooms ON room_enter_log.room_id = rooms.id INNER JOIN users ON room_enter_log.user_id = users.id LEFT JOIN chatlogs_room ON room_enter_log.user_id = chatlogs_room.user_from_id AND room_enter_log.room_id = chatlogs_room.room_id AND chatlogs_room.timestamp >= room_enter_log.timestamp AND chatlogs_room.timestamp < room_enter_log.exit_timestamp WHERE chatlogs_room.user_from_id = ? ORDER BY room_enter_log.timestamp DESC LIMIT 500")) {
+            statement.setInt(1, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                int userid = 0;
+                String username = "unknown";
+
+                while (set.next()) {
+                    ModToolRoomVisit visit = null;
+
+                    for (ModToolRoomVisit v : chatlogs) {
+                        if (v.timestamp == set.getInt("enter_timestamp")
+                                && v.exitTimestamp == set.getInt("exit_timestamp")) {
+                            visit = v;
+                        }
+                    }
+
+                    if (visit == null) {
+                        visit = new ModToolRoomVisit(
+                                set.getInt("room_id"),
+                                set.getString("name"),
+                                set.getInt("enter_timestamp"),
+                                set.getInt("exit_timestamp"));
+                        chatlogs.add(visit);
+                    }
+                    visit.chat.add(new ModToolChatLog(
+                            set.getInt("timestamp"),
+                            set.getInt("user_from_id"),
+                            set.getString("username"),
+                            set.getString("message")));
+
+                    if (userid == 0) userid = set.getInt("user_from_id");
+
+                    if (username.equals("unknown")) username = set.getString("username");
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return chatlogs;
+    }
+
+    public Set<ModToolRoomVisit> getUserRoomVisits(int userId) {
+        Set<ModToolRoomVisit> roomVisits = new HashSet<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT rooms.name, room_enter_log.* FROM room_enter_log INNER JOIN rooms ON rooms.id = room_enter_log.room_id WHERE user_id = ? ORDER BY timestamp DESC LIMIT 50")) {
+            statement.setInt(1, userId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    roomVisits.add(new ModToolRoomVisit(set));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return roomVisits;
+    }
+
+    public Set<ModToolRoomVisit> getVisitsForRoom(
+            Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp) {
+        return this.getVisitsForRoom(room, amount, groupUser, fromTimestamp, toTimestamp, "");
+    }
+
+    public Set<ModToolRoomVisit> getVisitsForRoom(
+            Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp, String excludeUsername) {
+        Set<ModToolRoomVisit> roomVisits = new HashSet<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT * FROM (" + "SELECT "
+                        + "users.username as name, "
+                        + "room_enter_log.* "
+                        + "FROM"
+                        + "`room_enter_log` "
+                        + "INNER JOIN "
+                        + "users "
+                        + "ON "
+                        + "users.id = room_enter_log.user_id "
+                        + "WHERE "
+                        + "room_enter_log.room_id = ? "
+                        + (fromTimestamp > 0 ? "AND timestamp >= ? " : "")
+                        + (toTimestamp > 0 ? "AND exit_timestamp <= ? " : "")
+                        + "AND users.username != ? "
+                        + "ORDER BY "
+                        + "timestamp "
+                        + "DESC LIMIT ?) x "
+                        + (groupUser ? "GROUP BY user_id" : "")
+                        + ";")) {
+            statement.setInt(1, room.getId());
+
+            if (fromTimestamp > 0) statement.setInt(2, fromTimestamp);
+
+            if (toTimestamp > 0) statement.setInt((fromTimestamp > 0 ? 3 : 2), toTimestamp);
+
+            statement.setString((toTimestamp > 0 ? fromTimestamp > 0 ? 4 : 3 : 2), excludeUsername);
+
+            int columnAmount = 3;
+            if (fromTimestamp > 0) columnAmount++;
+
+            if (toTimestamp > 0) columnAmount++;
+
+            statement.setInt(columnAmount, amount);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    roomVisits.add(new ModToolRoomVisit(set));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return roomVisits;
+    }
+
+    /**
+     * Expiry of a ban that starts now. A permanent ban arrives as a duration close to
+     * {@link Integer#MAX_VALUE}, and adding it to the current time wrapped to a negative
+     * expiry: the ban was stored as already expired and never enforced.
+     */
+    /** A sanction length in hours as seconds, kept inside an int: a long ban stays long instead of wrapping negative. */
+    public static int hoursToSeconds(long hours) {
+        return clampSeconds(hours * 3600L);
+    }
+
+    /** A sanction length in days as seconds, kept inside an int. */
+    public static int daysToSeconds(long days) {
+        return clampSeconds(days * 86400L);
+    }
+
+    private static int clampSeconds(long seconds) {
+        if (seconds <= 0) {
+            return 0;
+        }
+
+        return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) seconds;
+    }
+
+    /** An absolute expiry timestamp from a length in seconds, kept inside an int. */
+    public static int banExpiry(int now, int duration) {
+        long expiry = (long) now + duration;
+
+        return expiry > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expiry;
+    }
+
+    public ModToolBan createOfflineUserBan(int userId, int staffId, int duration, String reason, ModToolBanType type) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO bans (user_id, ip, machine_id, user_staff_id, ban_expire, ban_reason, type) VALUES (?, (SELECT ip_current FROM users WHERE id = ?), (SELECT machine_id FROM users WHERE id = ?), ?, ?, ?, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, userId);
+            statement.setInt(3, userId);
+            statement.setInt(4, staffId);
+            statement.setInt(5, banExpiry(Emulator.getIntUnixTimestamp(), duration));
+            statement.setString(6, reason);
+            statement.setString(7, type.getType());
+
+            statement.executeUpdate();
+            // As for an online ban: the tokens already issued end with it.
+            AccessTokenService.revokeAll(connection, userId);
+
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    try (PreparedStatement selectBanStatement =
+                            connection.prepareStatement("SELECT * FROM bans WHERE id = ? LIMIT 1")) {
+                        selectBanStatement.setInt(1, set.getInt(1));
+
+                        try (ResultSet selectSet = selectBanStatement.executeQuery()) {
+                            if (selectSet.next()) {
+                                return new ModToolBan(selectSet);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return null;
+    }
+
+    public void alert(User moderator, User target, String message) {
+        alert(moderator, target, message, SupportUserAlertedReason.ALERT);
+    }
+
+    public void alert(User moderator, User target, String message, SupportUserAlertedReason reason) {
+        if (!moderator.hasPermission(Permission.ACC_SUPPORTTOOL)) {
+            ScripterManager.scripterDetected(
+                    moderator.getClient(),
+                    Emulator.getTexts()
+                            .getValue("scripter.warning.modtools.alert")
+                            .replace("%username%", moderator.getUserInfo().getUsername())
+                            .replace("%message%", message));
+            return;
+        }
+
+        if (target == null || !canModerateTarget(moderator, target.getUserInfo().getId())) {
+            return;
+        }
+
+        SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(moderator, target, message, reason);
+
+        if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled()) return;
+
+        // A caution is not a message like any other: the client shows it as a warning and puts the
+        // rules one click away.
+        if (reason == SupportUserAlertedReason.CAUTION) {
+            String link = Emulator.getConfig().getValue("hotel.habboway.url", "");
+
+            alertedEvent
+                    .target
+                    .getClient()
+                    .sendResponse(
+                            link.isEmpty()
+                                    ? new UserBannedComposer(alertedEvent.message)
+                                    : new ModerationCautionComposer(alertedEvent.message, link));
+            return;
+        }
+
+        alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
+    }
+
+    public void kick(User moderator, User target, String message) {
+        if (moderator == null
+                || target == null
+                || !moderator.hasPermission(Permission.ACC_SUPPORTTOOL)
+                || target.hasPermission(Permission.ACC_UNKICKABLE)
+                || !canModerateTarget(moderator, target.getUserInfo().getId())) {
+            return;
+        }
+
+        if (target.getUserInfo().getCurrentRoom() != null) {
+            Emulator.getGameEnvironment()
+                    .getRoomManager()
+                    .leaveRoom(target, target.getUserInfo().getCurrentRoom());
+        }
+        this.alert(moderator, target, message, SupportUserAlertedReason.KICKED);
+    }
+
+    public List<ModToolBan> ban(
+            int targetUserId, User moderator, String reason, int duration, ModToolBanType type, int cfhTopic) {
+        if (moderator == null) return null;
+
+        List<ModToolBan> bans = new ArrayList<>();
+        User target = Emulator.getGameEnvironment().getUserManager().getUser(targetUserId);
+        UserInfo offlineInfo = target != null ? target.getUserInfo() : UserManager.getOfflineUserInfo(targetUserId);
+
+        if (offlineInfo == null) {
+            return bans;
+        }
+
+        if (!canModerateTarget(moderator, targetUserId)) {
+            return bans;
+        }
+
+        // if machine id is empty, downgrade ban type to IP ban
+        if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER)
+                && (offlineInfo == null || offlineInfo.getMachineID().isEmpty())) {
+            type = ModToolBanType.IP;
+        }
+
+        // if ip address is empty, downgrade ban type to account ban
+        if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER)
+                && (offlineInfo == null || offlineInfo.getIpLogin().isEmpty())) {
+            type = ModToolBanType.ACCOUNT;
+        }
+
+        ModToolBan ban = new ModToolBan(
+                targetUserId,
+                offlineInfo != null ? offlineInfo.getIpLogin() : "offline",
+                offlineInfo != null ? offlineInfo.getMachineID() : "offline",
+                moderator.getUserInfo().getId(),
+                banExpiry(Emulator.getIntUnixTimestamp(), duration),
+                reason,
+                type,
+                cfhTopic);
+        Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, target, ban));
+        Emulator.getThreading().run(ban);
+        bans.add(ban);
+
+        if (target != null) {
+            // Official class_2799 BanInfo: the target sees the ban alert with its expiry before
+            // the connection is dropped (HabboAlertDialogManager.handleBanInfoMessage).
+            if (target.getClient() != null) {
+                target.getClient()
+                        .sendResponse(new BanInfoComposer(targetUserId, reason, duration < 0 ? -1 : duration, ""));
+            }
+
+            Emulator.getGameServer()
+                    .getGameClientManager()
+                    .disconnectWithReason(target.getClient(), DisconnectReasonComposer.JUST_BANNED);
+        }
+
+        // A parked/ghost session keeps the Habbo resumable during the reconnect
+        // grace window, and its client was already detached so forceDisposeClient
+        // above is a no-op for it. Evict it explicitly so a ban applied while the
+        // target is parked cannot be resumed.
+        SessionResumeManager.getInstance().disposeGhostSession(targetUserId);
+
+        // The other accounts on the same address or machine, each banned once: never the target again,
+        // never the moderator (the highest rank passes canModerateTarget for itself), never an account
+        // reached through both the address and the machine twice, and no more than
+        // MAX_SHARED_ACCOUNT_BANS of them - behind a proxy every online user shares one address.
+        if (target != null) {
+            Set<User> sharing = new LinkedHashSet<>();
+            if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER) && !ban.ip.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getUsersWithIP(ban.ip));
+            }
+            if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER) && !ban.machineId.equals("offline")) {
+                sharing.addAll(Emulator.getGameServer().getGameClientManager().getUsersWithMachineId(ban.machineId));
+            }
+
+            for (User h : sharedAccountsToBan(sharing, targetUserId, moderator)) {
+                ModToolBan shared = new ModToolBan(
+                        h.getUserInfo().getId(),
+                        h.getUserInfo().getIpLogin(),
+                        h.getClient() != null ? h.getClient().getMachineId() : "offline",
+                        moderator.getUserInfo().getId(),
+                        ban.expireDate,
+                        reason,
+                        type,
+                        cfhTopic);
+                Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, shared));
+                Emulator.getThreading().run(shared);
+                bans.add(shared);
+                Emulator.getGameServer()
+                        .getGameClientManager()
+                        .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
+            }
+        }
+
+        return bans;
+    }
+
+    /** The most accounts one ban carries over to through a shared address or machine. */
+    static final int MAX_SHARED_ACCOUNT_BANS = 50;
+
+    /**
+     * The accounts sharing the banned one's address or machine that the ban carries over to: not the
+     * target, not the moderator, only ranks the moderator may moderate, and at most
+     * {@link #MAX_SHARED_ACCOUNT_BANS}.
+     */
+    static List<User> sharedAccountsToBan(Collection<User> sharing, int targetUserId, User moderator) {
+        int moderatorId = moderator.getUserInfo().getId();
+        List<User> accounts = new ArrayList<>();
+
+        for (User h : sharing) {
+            if (accounts.size() >= MAX_SHARED_ACCOUNT_BANS) break;
+            if (h == null) continue;
+
+            int id = h.getUserInfo().getId();
+            if (id == targetUserId || id == moderatorId || !canModerateTarget(moderator, id)) continue;
+
+            accounts.add(h);
+        }
+
+        return accounts;
+    }
+
+    public static boolean canModerateTarget(User moderator, int targetUserId) {
+        if (moderator == null || targetUserId <= 0) return false;
+
+        UserInfo targetInfo = Emulator.getGameEnvironment().getUserManager().getUserInfo(targetUserId);
+        if (targetInfo == null) return false;
+
+        int moderatorRankId = moderator.getUserInfo().getRank().getId();
+        int targetRankId = targetInfo.getRank().getId();
+
+        return targetRankId < moderatorRankId || isCoreRank(moderatorRankId) && targetRankId <= moderatorRankId;
+    }
+
+    private static boolean isCoreRank(int rankId) {
+        int highestRankId = 0;
+        for (Rank rank : Emulator.getGameEnvironment().getPermissionsManager().getAllRanks()) {
+            highestRankId = Math.max(highestRankId, rank.getId());
+        }
+
+        return highestRankId > 0 && rankId >= highestRankId;
+    }
+
+    public void roomAction(Room room, User moderator, boolean kickUsers, boolean lockDoor, boolean changeTitle) {
+        if (room == null
+                || moderator == null
+                || !moderator.hasPermission(Permission.ACC_SUPPORTTOOL)
+                || !canModerateTarget(moderator, room.getOwnerId())) {
+            return;
+        }
+
+        SupportRoomActionEvent roomActionEvent =
+                new SupportRoomActionEvent(moderator, room, kickUsers, lockDoor, changeTitle);
+        Emulator.getPluginManager().fireEvent(roomActionEvent);
+
+        if (roomActionEvent.changeTitle) {
+            room.setName(Emulator.getTexts().getValue("hotel.room.inappropriate.title"));
+            room.setNeedsUpdate(true);
+        }
+
+        if (roomActionEvent.lockDoor) {
+            room.setState(RoomState.LOCKED);
+            room.setNeedsUpdate(true);
+        }
+
+        if (roomActionEvent.kickUsers) {
+            for (User user : room.getUsers()) {
+                if (!(user.hasPermission(Permission.ACC_UNKICKABLE)
+                        || user.hasPermission(Permission.ACC_SUPPORTTOOL)
+                        || room.isOwner(user))) {
+                    room.kickUser(user, false);
+                }
+            }
+        }
+    }
+
+    public ModToolBan checkForBan(int userId) {
+        ModToolBan ban = null;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM bans WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') ORDER BY timestamp LIMIT 1")) {
+            statement.setInt(1, userId);
+            statement.setInt(2, Emulator.getIntUnixTimestamp());
+
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    ban = new ModToolBan(set);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return ban;
+    }
+
+    @Deprecated
+    public boolean hasIPBan(Channel user) {
+        if (user == null) return false;
+
+        if (user.remoteAddress() == null || ((InetSocketAddress) user.remoteAddress()).getAddress() == null)
+            return false;
+
+        return this.hasIPBan(
+                ((InetSocketAddress) user.remoteAddress()).getAddress().getHostAddress());
+    }
+
+    public boolean hasIPBan(String ipAddress) {
+        boolean banned = false;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM bans WHERE ip = ? AND (type = 'ip' OR type = 'super')  AND ban_expire > ? LIMIT 1")) {
+            statement.setString(1, ipAddress);
+            statement.setInt(2, Emulator.getIntUnixTimestamp());
+
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    banned = true;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+        return banned;
+    }
+
+    public boolean hasMACBan(GameClient user) {
+        if (user == null) return false;
+
+        if (user.getMachineId().isEmpty()) {
+            return false;
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM bans WHERE machine_id = ? AND (type = 'machine' OR type = 'super') AND ban_expire > ? LIMIT 1")) {
+            statement.setString(1, user.getMachineId());
+            statement.setInt(2, Emulator.getIntUnixTimestamp());
+
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return false;
+    }
+
+    /** Lifts a user's active bans with no rank check, for callers that have made their own. */
+    public boolean unban(String username) {
+        return this.unban(username, null);
+    }
+
+    /**
+     * Lifts the active bans of a user that {@code moderator} may lift: their own, those of a lower
+     * rank, a peer's when the moderator holds the highest rank, and those with no staff member
+     * recorded. Without that, any rank allowed to unban lifted a ban an administrator had placed. A
+     * null moderator lifts every active ban. The "unbanned" note is a bound parameter: the localized
+     * text used to be concatenated into the statement.
+     */
+    public boolean unban(String username, User moderator) {
+        int now = Emulator.getIntUnixTimestamp();
+        int moderatorId = moderator == null ? 0 : moderator.getUserInfo().getId();
+        int moderatorRankId = moderator == null
+                ? Integer.MAX_VALUE
+                : moderator.getUserInfo().getRank().getId();
+        int highestLiftableRankId =
+                moderator == null || isCoreRank(moderatorRankId) ? moderatorRankId : moderatorRankId - 1;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(UNBAN_SQL)) {
+            statement.setInt(1, now);
+            statement.setString(2, Emulator.getTexts().getValue("unbanned"));
+            statement.setString(3, username);
+            statement.setInt(4, now);
+            statement.setInt(5, moderatorId);
+            statement.setInt(6, highestLiftableRankId);
+            statement.execute();
+            return statement.getUpdateCount() > 0;
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return false;
+    }
+
+    static final String UNBAN_SQL = "UPDATE bans INNER JOIN users ON bans.user_id = users.id"
+            + " LEFT JOIN users staff ON staff.id = bans.user_staff_id"
+            + " SET bans.ban_expire = ?, bans.ban_reason = CONCAT(?, ': ', bans.ban_reason)"
+            + " WHERE users.username = ? AND bans.ban_expire > ?"
+            + " AND (staff.id IS NULL OR staff.id = ? OR staff.`rank` <= ?)";
+
+    public void pickTicket(ModToolIssue issue, User user) {
+        issue.modId = user.getUserInfo().getId();
+        issue.modName = user.getUserInfo().getUsername();
+        issue.state = ModToolTicketState.PICKED;
+
+        this.updateTicketToMods(issue);
+        issue.updateInDatabase();
+    }
+
+    public void updateTicketToMods(ModToolIssue issue) {
+        SupportTicketStatusChangedEvent event = new SupportTicketStatusChangedEvent(null, issue);
+
+        if (!Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+            Emulator.getGameEnvironment()
+                    .getUserManager()
+                    .sendPacketToUsersWithPermission(
+                            new ModToolIssueInfoComposer(issue).compose(), Permission.ACC_SUPPORTTOOL);
+        }
+    }
+
+    public void addTicket(ModToolIssue issue) {
+        if (Emulator.getPluginManager()
+                .fireEvent(new SupportTicketEvent(null, issue))
+                .isCancelled()) return;
+
+        if (issue.id == 0) {
+            new InsertModToolIssue(issue).run();
+        }
+
+        synchronized (this.tickets) {
+            this.tickets.put(issue.id, issue);
+        }
+    }
+
+    public void removeTicket(ModToolIssue issue) {
+        this.removeTicket(issue.id);
+    }
+
+    public void removeTicket(int issueId) {
+        boolean removed;
+        synchronized (this.tickets) {
+            removed = this.tickets.remove(issueId) != null;
+        }
+
+        if (removed) {
+            Emulator.getGameEnvironment()
+                    .getUserManager()
+                    .sendPacketToUsersWithPermission(
+                            new IssueDeletedComposer(issueId).compose(), Permission.ACC_SUPPORTTOOL);
+        }
+    }
+
+    /**
+     * Closes a call the reporter withdrew themselves, which is what the pending-call dialog offers
+     * when somebody logs back in with a report still open. The call simply goes away: no verdict is
+     * sent back, nobody is sanctioned, and the moderators' list loses the row.
+     */
+    public void closeTicketAsWithdrawn(ModToolIssue issue) {
+        issue.state = ModToolTicketState.CLOSED;
+        issue.closedTimestamp = Emulator.getIntUnixTimestamp();
+        issue.sanctioned = false;
+        issue.updateInDatabase();
+
+        this.updateTicketToMods(issue);
+        this.removeTicket(issue);
+    }
+
+    public void closeTicketAsUseless(ModToolIssue issue, User sender) {
+        issue.state = ModToolTicketState.CLOSED;
+        // The reporter's own "my reports" window shows when the report was decided and
+        // whether it ended in a sanction; useless means nobody was sanctioned.
+        issue.closedTimestamp = Emulator.getIntUnixTimestamp();
+        issue.sanctioned = false;
+        issue.updateInDatabase();
+
+        if (sender != null) {
+            sender.getClient().sendResponse(new ModToolIssueHandledComposer(ModToolIssueHandledComposer.USELESS));
+        }
+
+        this.updateTicketToMods(issue);
+
+        this.removeTicket(issue);
+    }
+
+    public void closeTicketAsAbusive(ModToolIssue issue, User sender) {
+        issue.state = ModToolTicketState.CLOSED;
+        issue.closedTimestamp = Emulator.getIntUnixTimestamp();
+        issue.sanctioned = false;
+        issue.updateInDatabase();
+        if (sender != null) {
+            sender.getClient().sendResponse(new ModToolIssueHandledComposer(ModToolIssueHandledComposer.ABUSIVE));
+        }
+
+        // Reporter (the user who opened the CFH) gets their abusive
+        // counter bumped — the legacy stat shown in the User Info table.
+        bumpUserSettingCounter(issue.senderId, "cfh_abusive");
+
+        this.updateTicketToMods(issue);
+
+        this.removeTicket(issue);
+    }
+
+    public void closeTicketAsHandled(ModToolIssue issue, User sender) {
+        issue.state = ModToolTicketState.CLOSED;
+        issue.closedTimestamp = Emulator.getIntUnixTimestamp();
+        issue.sanctioned = true;
+        issue.updateInDatabase();
+
+        if (sender != null) {
+            sender.getClient().sendResponse(new ModToolIssueHandledComposer(ModToolIssueHandledComposer.HANDLED));
+        }
+
+        this.updateTicketToMods(issue);
+
+        this.removeTicket(issue);
+    }
+
+    public boolean hasPendingTickets(int userId) {
+        synchronized (this.tickets) {
+            for (Map.Entry<Integer, ModToolIssue> map : this.tickets.entrySet()) {
+                if (map.getValue().senderId == userId) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public int totalBans(int userId) {
+        int total = 0;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT COUNT(*) as total FROM bans WHERE user_id = ?")) {
+            statement.setInt(1, userId);
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    total = set.getInt("total");
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return total;
+    }
+
+    public Int2ObjectMap<ModToolCategory> getCategory() {
+        return this.category;
+    }
+
+    public ModToolCategory getCategory(int id) {
+        return this.category.get(id);
+    }
+
+    public Map<String, Set<String>> getPresets() {
+        return this.presets;
+    }
+
+    public Map<Integer, ModToolIssue> getTickets() {
+        return this.tickets;
+    }
+
+    public ModToolIssue getTicket(int ticketId) {
+        return this.tickets.get(ticketId);
+    }
+
+    /**
+     * The call for help this moderator is handling for this player, if there is one. A message sent
+     * to them while it is open is an answer to that report, not a moderation warning out of the blue.
+     */
+    public ModToolIssue pickedTicketOf(int moderatorId, int reporterId) {
+        synchronized (this.tickets) {
+            for (ModToolIssue issue : this.tickets.values()) {
+                if (issue.senderId != reporterId) continue;
+
+                if (issue.modId != moderatorId) continue;
+
+                if (issue.state != ModToolTicketState.PICKED) continue;
+
+                return issue;
+            }
+        }
+
+        return null;
+    }
+
+    public Int2ObjectMap<CfhCategory> getCfhCategories() {
+        return this.cfhCategories;
+    }
+
+    public List<ModToolIssue> openTicketsForUser(User user) {
+        List<ModToolIssue> issues = new ArrayList<>();
+        synchronized (this.tickets) {
+            for (ModToolIssue object : this.tickets.values()) {
+                if (object.senderId == user.getUserInfo().getId() && object.state == ModToolTicketState.OPEN) {
+                    issues.add(object);
+                }
+            }
+        }
+
+        return issues;
+    }
+
+    /**
+     * Increments a single integer counter on `users_settings` for the
+     * given user. Used by the moderation sanction handlers to bump the
+     * legacy counters that `ModToolUserInfoComposer` surfaces (cfh_warnings,
+     * cfh_bans, cfh_abusive, tradelock_amount) — historically these were
+     * only ever incremented by the CFH submission path, so a user could
+     * accumulate any number of bans/mutes without the User Info table
+     * reflecting it.
+     *
+     * Restricted to a whitelisted column name to keep the dynamic SQL
+     * safe; the caller passes a Permission-style constant.
+     */
+    public static void bumpUserSettingCounter(int userId, String column) {
+        switch (column) {
+            case "cfh_warnings":
+            case "cfh_bans":
+            case "cfh_abusive":
+            case "tradelock_amount":
+                break;
+            default:
+                LOGGER.warn("Refusing to bump unrecognized user_settings column: {}", column);
+                return;
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users_settings SET " + column + " = " + column + " + 1 WHERE user_id = ?")) {
+            statement.setInt(1, userId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception bumping {} for user {}", column, userId, e);
+        }
+    }
+}

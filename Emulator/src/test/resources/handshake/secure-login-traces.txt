@@ -3,14 +3,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -54,14 +54,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -105,14 +105,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -155,14 +155,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -206,10 +206,10 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> false
 clients.disposeClient(client)
@@ -219,14 +219,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -269,14 +269,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -319,14 +319,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 info.setLook(hd-180-1)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
@@ -370,15 +370,15 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 info.setMachineID(machine-9)
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -421,10 +421,10 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> false
 client <- GenericAlert(closed for maintenance)
 clients.disposeClient(client)
@@ -434,22 +434,22 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
-handle threw NullPointerException: Cannot invoke "com.eu.habbo.habbohotel.users.HabboInfo.getId()" because the return value of "com.eu.habbo.habbohotel.users.Habbo.getHabboInfo()" is null
+habbos.loadUser(ticket-1) -> ann
+handle threw NullPointerException: Cannot invoke "polaris.hotel.users.UserInfo.getId()" because the return value of "polaris.hotel.users.User.getUserInfo()" is null
 
 == fresh / plugin cancels the login
 client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -486,10 +486,10 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 clients.forceDisposeClient(client)
 
 == fresh / saved searches already given
@@ -497,14 +497,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -542,14 +542,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -595,14 +595,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -654,14 +654,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -707,14 +707,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -764,14 +764,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -814,14 +814,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -864,14 +864,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -914,14 +914,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -964,14 +964,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1014,14 +1014,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1063,14 +1063,14 @@ client <- NewNavigatorSavedSearches([search official-root, search my, search fav
 client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1113,15 +1113,15 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> previous session
 clients.disconnectWithReason(previous session, 2)
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1165,14 +1165,14 @@ clients.findClientBySsoTicket(ticket-1) -> earlier connection
 clients.disposeClient(earlier connection)
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1215,16 +1215,16 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> null
+habbos.loadUser(ticket-1) -> null
 recovery.consume(recovery-1) -> OptionalInt[7]
-habbos.loadHabboById(7) -> ann
+habbos.loadUserById(7) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1267,9 +1267,9 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> null
+habbos.loadUser(ticket-1) -> null
 recovery.consume(recovery-1) -> OptionalInt[7]
-habbos.loadHabboById(7) -> null
+habbos.loadUserById(7) -> null
 clients.disposeClient(client)
 
 == lookup / recovery token unknown
@@ -1277,7 +1277,7 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> null
+habbos.loadUser(ticket-1) -> null
 recovery.consume(recovery-1) -> OptionalInt.empty
 clients.disposeClient(client)
 
@@ -1286,7 +1286,7 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> null
+habbos.loadUser(ticket-1) -> null
 clients.disposeClient(client)
 
 == resume / banned meanwhile
@@ -1296,7 +1296,7 @@ db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> ann
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 client.setMachineId(stored-machine)
 ann.passesConnectionSecurityChecks() -> false
 clients.forceDisposeClient(client)
@@ -1308,7 +1308,7 @@ db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> ann
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 client.setMachineId(stored-machine)
 ann.passesConnectionSecurityChecks() -> true
 maintenance.canLogin(3) -> true
@@ -1349,7 +1349,7 @@ db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> ann
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 client.setMachineId(stored-machine)
 ann.passesConnectionSecurityChecks() -> true
 maintenance.canLogin(3) -> true
@@ -1389,7 +1389,7 @@ db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> ann
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 client.setMachineId(stored-machine)
 ann.passesConnectionSecurityChecks() -> true
 maintenance.canLogin(3) -> false
@@ -1402,14 +1402,14 @@ clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> null
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1454,7 +1454,7 @@ db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
 resume.resumeSession(7) -> ann
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 client.setMachineId(stored-machine)
 ann.passesConnectionSecurityChecks() -> true
 maintenance.canLogin(3) -> true
@@ -1492,14 +1492,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1542,14 +1542,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1594,14 +1594,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1644,14 +1644,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1695,14 +1695,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1745,14 +1745,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1795,14 +1795,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1846,14 +1846,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1897,14 +1897,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -1949,14 +1949,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -2000,14 +2000,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -2050,14 +2050,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -2100,14 +2100,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 20
     SecureLoginOK(false, 0, next-token-7)
@@ -2149,14 +2149,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
@@ -2201,14 +2201,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
@@ -2252,14 +2252,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
@@ -2303,14 +2303,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 20
     SecureLoginOK(false, 0, next-token-7)
@@ -2352,14 +2352,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
@@ -2404,14 +2404,14 @@ client.setSsoTicket(ticket-1)
 clients.findClientBySsoTicket(ticket-1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket-1)
-habbos.loadHabbo(ticket-1) -> ann
+habbos.loadUser(ticket-1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
@@ -2419,7 +2419,7 @@ client <- batch of 22
     UserEffectsList(ann, [])
     UserClothes(ann)
     UserHabbicons(Snapshot)
-    AddHabboItem([4, 2], HABBICON)
+    AddUserItem([4, 2], HABBICON)
     AvatarEffectSelected(4)
     NewUserIdentity(ann)
     UserPermissions(ann)
@@ -2470,14 +2470,14 @@ client.setSsoTicket(ticket1)
 clients.findClientBySsoTicket(ticket1) -> null
 db.prepare(SELECT id FROM users WHERE auth_ticket = ? LIMIT 1)
 db.setString(1, ticket1)
-habbos.loadHabbo(ticket1) -> ann
+habbos.loadUser(ticket1) -> ann
 clients.claimAuthenticatedSession(7, client) -> null
 ann.setClient(client)
-client.setHabbo(ann)
+client.setUser(ann)
 maintenance.canLogin(3) -> true
 ann.connect() -> true
 threading.run(ann)
-habbos.addHabbo(ann)
+habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)

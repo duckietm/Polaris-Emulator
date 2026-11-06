@@ -1,0 +1,264 @@
+package polaris.hotel.items.interactions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.hotel.bots.Bot;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomLayout;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.rooms.RoomUnitType;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserGender;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.messages.ServerMessage;
+
+public class InteractionDefault extends UserItem {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InteractionDefault.class);
+
+    public InteractionDefault(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public InteractionDefault(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt((this.isLimited() ? 256 : 0));
+        serverMessage.appendString(this.getExtradata());
+
+        super.serializeExtradata(serverMessage);
+    }
+
+    @Override
+    public boolean isWalkable() {
+        return this.getBaseItem().allowWalk();
+    }
+
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return true;
+    }
+
+    @Override
+    public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
+        super.onMove(room, oldLocation, newLocation);
+
+        if (room.getItemsAt(oldLocation).stream()
+                .noneMatch(item -> item.getClass().isAssignableFrom(InteractionRoller.class))) {
+            for (RoomUnit unit : room.getRoomUnits()) {
+                if (!oldLocation.unitIsOnFurniOnTile(unit, this.getBaseItem()))
+                    continue; // If the unit was previously on the furni...
+                if (newLocation.unitIsOnFurniOnTile(unit, this.getBaseItem())) continue; // but is not anymore...
+
+                try {
+                    this.onWalkOff(unit, room, new Object[] {oldLocation, newLocation}); // the unit walked off!
+                } catch (Exception ignored) {
+
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (room != null
+                && (client == null
+                        || this.canToggle(client.getUser(), room)
+                        || (objects.length >= 2
+                                && objects[1] instanceof WiredEffectType
+                                && objects[1] == WiredEffectType.TOGGLE_STATE))) {
+            if (objects != null && objects.length > 0) {
+                if (objects[0] instanceof Integer) {
+                    if (this.getExtradata().length() == 0) this.setExtradata("0");
+
+                    if (this.getBaseItem().getStateCount() > 0) {
+                        int currentState = 0;
+
+                        try {
+                            currentState = Integer.parseInt(this.getExtradata());
+                        } catch (NumberFormatException e) {
+                            LOGGER.error(
+                                    "Incorrect extradata ({}) for item ID ({}) of type ({})",
+                                    this.getExtradata(),
+                                    this.getId(),
+                                    this.getBaseItem().getName());
+                        }
+
+                        this.setExtradata(
+                                "" + (currentState + 1) % this.getBaseItem().getStateCount());
+                        this.needsUpdate(true);
+
+                        room.updateItemState(this);
+                    }
+                }
+            }
+
+            // After the new state is set, so the stack's conditions see the state the click made.
+            super.onClick(client, room, objects);
+        }
+    }
+
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+
+    /** The official swim effect a pool tile puts on the avatar. */
+    public static final int SWIM_EFFECT_ID = 29;
+
+    private static void countSwim(User user, int effectId) {
+        if (effectId == SWIM_EFFECT_ID) {
+            polaris.hotel.quests.QuestProgressEvents.progress(user, polaris.hotel.quests.QuestGoalType.SWIM, 1);
+        }
+    }
+
+    @Override
+    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOn(roomUnit, room, objects);
+
+        if (roomUnit != null) {
+            if (this.getBaseItem().getEffectF() > 0 || this.getBaseItem().getEffectM() > 0) {
+                if (roomUnit.getRoomUnitType().equals(RoomUnitType.USER)) {
+                    User user = room.getUser(roomUnit);
+
+                    if (user != null) {
+                        if (user.getUserInfo().getGender().equals(UserGender.M)
+                                && this.getBaseItem().getEffectM() > 0
+                                && user.getRoomUnit().getEffectId()
+                                        != this.getBaseItem().getEffectM()) {
+                            room.giveEffect(user, this.getBaseItem().getEffectM(), -1);
+                            countSwim(user, this.getBaseItem().getEffectM());
+                            return;
+                        }
+
+                        if (user.getUserInfo().getGender().equals(UserGender.F)
+                                && this.getBaseItem().getEffectF() > 0
+                                && user.getRoomUnit().getEffectId()
+                                        != this.getBaseItem().getEffectF()) {
+                            room.giveEffect(user, this.getBaseItem().getEffectF(), -1);
+                            countSwim(user, this.getBaseItem().getEffectF());
+                        }
+                    }
+                } else if (roomUnit.getRoomUnitType().equals(RoomUnitType.BOT)) {
+                    Bot bot = room.getBot(roomUnit);
+
+                    if (bot != null) {
+                        if (bot.getGender().equals(UserGender.M)
+                                && this.getBaseItem().getEffectM() > 0
+                                && roomUnit.getEffectId() != this.getBaseItem().getEffectM()) {
+                            room.giveEffect(
+                                    bot.getRoomUnit(), this.getBaseItem().getEffectM(), -1);
+                            return;
+                        }
+                        if (bot.getGender().equals(UserGender.F)
+                                && this.getBaseItem().getEffectF() > 0
+                                && roomUnit.getEffectId() != this.getBaseItem().getEffectF()) {
+                            room.giveEffect(
+                                    bot.getRoomUnit(), this.getBaseItem().getEffectF(), -1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOff(roomUnit, room, objects);
+
+        if (roomUnit != null) {
+            if (this.getBaseItem().getEffectF() > 0 || this.getBaseItem().getEffectM() > 0) {
+                int nextEffectM = 0;
+                int nextEffectF = 0;
+
+                if (objects != null && objects.length == 2) {
+                    if (objects[0] instanceof RoomTile && objects[1] instanceof RoomTile) {
+                        RoomTile goalTile = (RoomTile) objects[0];
+                        UserItem topItem =
+                                room.getTopItemAt(goalTile.x, goalTile.y, (objects[0] != objects[1]) ? this : null);
+
+                        if (topItem != null
+                                && (topItem.getBaseItem().getEffectM()
+                                                == this.getBaseItem().getEffectM()
+                                        || topItem.getBaseItem().getEffectF()
+                                                == this.getBaseItem().getEffectF())) {
+                            return;
+                        }
+
+                        if (topItem != null) {
+                            nextEffectM = topItem.getBaseItem().getEffectM();
+                            nextEffectF = topItem.getBaseItem().getEffectF();
+                        }
+                    }
+                }
+
+                if (roomUnit.getRoomUnitType().equals(RoomUnitType.USER)) {
+                    User user = room.getUser(roomUnit);
+
+                    if (user != null) {
+
+                        if (user.getUserInfo().getGender().equals(UserGender.M)
+                                && this.getBaseItem().getEffectM() > 0) {
+                            room.giveEffect(user, nextEffectM, -1);
+                            return;
+                        }
+
+                        if (user.getUserInfo().getGender().equals(UserGender.F)
+                                && this.getBaseItem().getEffectF() > 0) {
+                            room.giveEffect(user, nextEffectF, -1);
+                        }
+                    }
+                } else if (roomUnit.getRoomUnitType().equals(RoomUnitType.BOT)) {
+                    Bot bot = room.getBot(roomUnit);
+
+                    if (bot != null) {
+                        if (bot.getGender().equals(UserGender.M)
+                                && this.getBaseItem().getEffectM() > 0) {
+                            room.giveEffect(roomUnit, nextEffectM, -1);
+                            return;
+                        }
+
+                        if (bot.getGender().equals(UserGender.F)
+                                && this.getBaseItem().getEffectF() > 0) {
+                            room.giveEffect(roomUnit, nextEffectF, -1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean canToggle(User user, Room room) {
+        if (room.hasRights(user)) return true;
+
+        if (!user.getUserStats().isRentingSpace()) return false;
+
+        UserItem rentSpace = room.getUserItem(user.getUserStats().rentedItemId);
+
+        return rentSpace != null
+                && RoomLayout.squareInSquare(
+                        RoomLayout.getRectangle(
+                                rentSpace.getX(),
+                                rentSpace.getY(),
+                                rentSpace.getBaseItem().getWidth(),
+                                rentSpace.getBaseItem().getLength(),
+                                rentSpace.getRotation()),
+                        RoomLayout.getRectangle(
+                                this.getX(),
+                                this.getY(),
+                                this.getBaseItem().getWidth(),
+                                this.getBaseItem().getLength(),
+                                this.getRotation()));
+    }
+
+    @Override
+    public boolean allowWiredResetState() {
+        return true;
+    }
+}

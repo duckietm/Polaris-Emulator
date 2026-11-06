@@ -1,0 +1,97 @@
+package polaris.messages.outgoing.friends;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import polaris.hotel.messenger.MessengerBuddy;
+import polaris.hotel.users.User;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.MessageComposer;
+import polaris.messages.outgoing.Outgoing;
+
+public class UserSearchResultComposer extends MessageComposer {
+    private final Set<MessengerBuddy> users;
+    private final Set<MessengerBuddy> friends;
+    private final User user;
+
+    private static Comparator<MessengerBuddy> COMPARATOR = Comparator.comparing(
+                    (MessengerBuddy b) -> b.getUsername().length())
+            .thenComparing(
+                    (MessengerBuddy b, MessengerBuddy b2) -> b.getUsername().compareToIgnoreCase(b2.getUsername()));
+
+    public UserSearchResultComposer(Set<MessengerBuddy> users, Set<MessengerBuddy> friends, User user) {
+        this.users = users;
+        this.friends = friends;
+        this.user = user;
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.UserSearchResultComposer);
+        List<MessengerBuddy> u = new ArrayList<>();
+
+        for (MessengerBuddy buddy : this.users) {
+            if (!this.inFriendList(buddy)) {
+                u.add(buddy);
+            }
+        }
+
+        List<MessengerBuddy> friends = new ArrayList<>(this.friends);
+
+        u.sort(UserSearchResultComposer.COMPARATOR);
+        friends.sort(UserSearchResultComposer.COMPARATOR);
+
+        // Online as the friend list shows it (hidden status reads as offline); follow only when online.
+        this.response.appendInt(friends.size());
+        for (MessengerBuddy buddy : friends) {
+            boolean online = buddy.isVisibleOnline();
+            this.response.appendInt(buddy.getId());
+            this.response.appendString(buddy.getUsername());
+            this.response.appendString(buddy.getMotto());
+            this.response.appendBoolean(online);
+            this.response.appendBoolean(online && buddy.getId() > 0);
+            this.response.appendString("");
+            this.response.appendInt(1);
+            this.response.appendString(buddy.getLook());
+            this.response.appendString("");
+        }
+
+        this.response.appendInt(u.size());
+        // Non-friends: online only when they do not hide it; only friends can be followed.
+        for (MessengerBuddy buddy : u) {
+            boolean online = buddy.isVisibleOnline();
+            this.response.appendInt(buddy.getId());
+            this.response.appendString(buddy.getUsername());
+            this.response.appendString(buddy.getMotto());
+            this.response.appendBoolean(online);
+            this.response.appendBoolean(false);
+            this.response.appendString("");
+            this.response.appendInt(1);
+            this.response.appendString(online ? buddy.getLook() : "");
+            this.response.appendString("");
+        }
+
+        return this.response;
+    }
+
+    private boolean inFriendList(MessengerBuddy buddy) {
+        for (MessengerBuddy friend : this.friends) {
+            if (friend.getUsername().equals(buddy.getUsername())) return true;
+        }
+
+        return false;
+    }
+
+    public Set<MessengerBuddy> getUsers() {
+        return users;
+    }
+
+    public Set<MessengerBuddy> getFriends() {
+        return friends;
+    }
+
+    public User getUser() {
+        return user;
+    }
+}

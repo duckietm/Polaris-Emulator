@@ -1,0 +1,238 @@
+package polaris.hotel.modtool;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.Normalizer;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.messenger.Message;
+import polaris.hotel.rooms.RoomChatMessage;
+import polaris.hotel.users.User;
+import polaris.messages.outgoing.friends.FriendChatMessageComposer;
+import polaris.plugin.events.users.UserTriggerWordFilterEvent;
+
+public class WordFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WordFilter.class);
+
+    private static final Pattern DIACRITICS_AND_FRIENDS =
+            Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
+    private static final Pattern PUNCTUATION = Pattern.compile("[,.;:'\"]");
+    private static final Pattern NON_ASCII = Pattern.compile("[^\\p{ASCII}*$]");
+    private static final Pattern MARKS = Pattern.compile("\\p{M}");
+    private static final Pattern ONLY_MARKS = Pattern.compile("^\\p{M}*$]");
+    private static final Pattern ONE_OR_BAR = Pattern.compile("[1|]");
+    public static volatile boolean ENABLED_FRIENDCHAT = true;
+    public static volatile String DEFAULT_REPLACEMENT = "bobba";
+    protected volatile Set<WordFilterWord> autoReportWords = ConcurrentHashMap.newKeySet();
+    protected volatile Set<WordFilterWord> hideMessageWords = ConcurrentHashMap.newKeySet();
+    protected volatile Set<WordFilterWord> words = ConcurrentHashMap.newKeySet();
+
+    public WordFilter() {
+        long start = System.currentTimeMillis();
+        this.reload();
+        LOGGER.info("WordFilter -> Loaded! ({} MS)", System.currentTimeMillis() - start);
+    }
+
+    @SuppressWarnings("unused")
+    private static String stripDiacritics(String str) {
+        str = Normalizer.normalize(str, Normalizer.Form.NFD);
+        str = DIACRITICS_AND_FRIENDS.matcher(str).replaceAll("");
+        return str;
+    }
+
+    public synchronized void reload() {
+        if (!Emulator.getConfig().getBoolean("hotel.wordfilter.enabled")) return;
+
+        // Built aside and published at the end: other threads read these sets while a reload runs, and clearing
+        // them in place left the filter empty for the length of the query.
+        Set<WordFilterWord> autoReport = ConcurrentHashMap.newKeySet();
+        Set<WordFilterWord> hideMessage = ConcurrentHashMap.newKeySet();
+        Set<WordFilterWord> all = ConcurrentHashMap.newKeySet();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
+            try (ResultSet set = statement.executeQuery("SELECT * FROM wordfilter")) {
+                while (set.next()) {
+                    WordFilterWord word;
+
+                    try {
+                        word = new WordFilterWord(set);
+                    } catch (SQLException e) {
+                        LOGGER.error("Caught SQL exception", e);
+                        continue;
+                    }
+
+                    if (!word.prefixOnly) {
+                        if (word.autoReport) autoReport.add(word);
+                        else if (word.hideMessage) hideMessage.add(word);
+                    }
+
+                    all.add(word);
+                }
+            }
+
+            this.autoReportWords = autoReport;
+            this.hideMessageWords = hideMessage;
+            this.words = all;
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public String normalise(String message) {
+        String text = Normalizer.normalize(StringUtils.stripAccents(message), Normalizer.Form.NFKD);
+        text = PUNCTUATION.matcher(text).replaceAll(" ").replace("I", "l");
+        text = NON_ASCII.matcher(text).replaceAll("");
+        text = MARKS.matcher(text).replaceAll(" ");
+        text = ONLY_MARKS.matcher(text).replaceAll("");
+        text = ONE_OR_BAR.matcher(text).replaceAll("i");
+
+        return DIACRITICS_AND_FRIENDS
+                .matcher(text.replace("2", "z")
+                        .replace("3", "e")
+                        .replace("4", "a")
+                        .replace("5", "s")
+                        .replace("8", "b")
+                        .replace("0", "o")
+                        .replace(" ", " ")
+                        .replace("$", "s")
+                        .replace("ß", "b")
+                        .trim())
+                .replaceAll(" ");
+    }
+
+    public boolean autoReportCheck(RoomChatMessage roomChatMessage) {
+        String message = this.normalise(roomChatMessage.getMessage()).toLowerCase();
+
+        for (WordFilterWord word : this.autoReportWords) {
+            if (message.contains(word.key)) {
+                Emulator.getGameEnvironment()
+                        .getModToolManager()
+                        .quickTicket(roomChatMessage.getUser(), "Automatic WordFilter", roomChatMessage.getMessage());
+
+                if (Emulator.getConfig().getBoolean("notify.staff.chat.auto.report")) {
+                    Emulator.getGameEnvironment()
+                            .getUserManager()
+                            .sendPacketToUsersWithPermission(
+                                    new FriendChatMessageComposer(new Message(
+                                                    roomChatMessage
+                                                            .getUser()
+                                                            .getUserInfo()
+                                                            .getId(),
+                                                    0,
+                                                    Emulator.getTexts()
+                                                            .getValue("warning.auto.report")
+                                                            .replace(
+                                                                    "%user%",
+                                                                    roomChatMessage
+                                                                            .getUser()
+                                                                            .getUserInfo()
+                                                                            .getUsername())
+                                                            .replace("%word%", word.key)))
+                                            .compose(),
+                                    "acc_staff_chat");
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean hideMessageCheck(String message) {
+        message = this.normalise(message).toLowerCase();
+
+        for (WordFilterWord word : this.hideMessageWords) {
+            if (message.contains(word.key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public String[] filter(String[] messages) {
+        for (int i = 0; i < messages.length; i++) {
+            messages[i] = this.filter(messages[i], null);
+        }
+
+        return messages;
+    }
+
+    public String filter(String message, User user) {
+        String filteredMessage = message;
+        if (Emulator.getConfig().getBoolean("hotel.wordfilter.normalise")) {
+            filteredMessage = this.normalise(filteredMessage);
+        }
+
+        boolean foundShit = false;
+
+        for (WordFilterWord word : this.words) {
+            if (word.prefixOnly) continue;
+
+            if (Strings.CI.contains(filteredMessage, word.key)) {
+                if (user != null) {
+                    if (Emulator.getPluginManager()
+                            .fireEvent(new UserTriggerWordFilterEvent(user, word))
+                            .isCancelled()) continue;
+                }
+                filteredMessage = filteredMessage.replace("(?i)" + word.key, word.replacement);
+                foundShit = true;
+
+                if (user != null && word.muteTime > 0) {
+                    user.mute(word.muteTime, false);
+                }
+            }
+        }
+
+        if (!foundShit) {
+            return message;
+        }
+
+        return filteredMessage;
+    }
+
+    public void filter(RoomChatMessage roomChatMessage, User user) {
+        String message = roomChatMessage.getMessage().toLowerCase();
+
+        if (Emulator.getConfig().getBoolean("hotel.wordfilter.normalise")) {
+            message = this.normalise(message);
+        }
+
+        for (WordFilterWord word : this.words) {
+            if (word.prefixOnly) continue;
+
+            if (Strings.CI.contains(message, word.key)) {
+                if (user != null) {
+                    if (Emulator.getPluginManager()
+                            .fireEvent(new UserTriggerWordFilterEvent(user, word))
+                            .isCancelled()) continue;
+                }
+
+                message = message.replace(word.key, word.replacement);
+                roomChatMessage.filtered = true;
+            }
+        }
+
+        if (roomChatMessage.filtered) {
+            roomChatMessage.setMessage(message);
+        }
+    }
+
+    public Set<WordFilterWord> getWords() {
+        return new HashSet<>(this.words);
+    }
+
+    public void addWord(WordFilterWord word) {
+        this.words.add(word);
+    }
+}

@@ -19,11 +19,14 @@ This document covers two things: what the rename actually changed, and how the
 
 ## What stays the same — on purpose
 
-Existing plugin jars must keep loading without a recompile, so the binary API
-surface is untouched:
+Existing plugin jars must keep loading without a recompile:
 
-- The Java packages stay `com.eu.habbo.*` — `HabboPlugin`, `Emulator`, the
-  event system, everything a plugin compiles against.
+- The Java packages moved from `com.eu.habbo.*` to `polaris.*`, `HabboPlugin`
+  became `PolarisPlugin` and `Habbo` became `User`. Jars compiled against the
+  old names are rewritten as they load, from the table in
+  `polaris/plugin/legacy-names.txt`, so they link against the new names
+  unchanged. `PluginAbiCompatibilityTest` rewrites the old ABI baselines the
+  same way before comparing, so the guarantee stays checked.
 - `Emulator.getDatabase().getDataSource()` still returns a `HikariDataSource`.
 - The `plugin.json` format and the `plugins/` folder work exactly as before.
 

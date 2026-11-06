@@ -1,0 +1,735 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.rooms.variables.UserVariableHolders;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.arrays.WiredArrayAddress;
+import polaris.hotel.wired.arrays.WiredArrayDefinitionSupport;
+import polaris.hotel.wired.arrays.WiredArrayEditorSupport;
+import polaris.hotel.wired.arrays.WiredArrayRuntimeSupport;
+import polaris.hotel.wired.arrays.WiredArrayVariableDefinition;
+import polaris.hotel.wired.arrays.WiredArrayVariableType;
+import polaris.hotel.wired.arrays.WiredArrayView;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredContextVariableSupport;
+import polaris.hotel.wired.core.WiredInternalVariableSupport;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredPointerVariableSupport;
+import polaris.hotel.wired.core.WiredQuantifier;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.protocol.WiredOfficialQuantifier;
+import polaris.hotel.wired.protocol.WiredOfficialVariableIds;
+import polaris.hotel.wired.protocol.WiredVariableIds;
+import polaris.hotel.wired.protocol.WiredVariableTargets;
+import polaris.messages.ServerMessage;
+
+/**
+ * The official "has variable" (AIR code 35, and its not twin). Int params {@code [target]} (furni 0, user 1, context
+ * -20); variable ids {@code [variable]}; the furni and users in the official source slots, the quantifier in its slot.
+ * AIR sends no string; ours carries an array variable's existence check as JSON. Older clients sent the variable token
+ * as the string, followed by a tab and that JSON; still read.
+ */
+public class WiredConditionHasVariable extends InteractionWiredCondition
+        implements WiredOfficialQuantifier, WiredOfficialVariableIds {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredConditionHasVariable.class);
+
+    protected static final int TARGET_USER = 0;
+    protected static final int TARGET_FURNI = 1;
+    protected static final int TARGET_CONTEXT = 2;
+    protected static final int TARGET_ROOM = 3;
+    protected static final int QUANTIFIER_ALL = 0;
+    protected static final int QUANTIFIER_ANY = 1;
+    protected static final int ARRAY_EXISTS = 0;
+    protected static final int ARRAY_ENTRY_EXISTS = 1;
+    private static final String CUSTOM_TOKEN_PREFIX = "custom:";
+    private static final String INTERNAL_TOKEN_PREFIX = "internal:";
+
+    public static final WiredConditionType type = WiredConditionType.HAS_VAR;
+
+    protected final Set<UserItem> selectedItems = new LinkedHashSet<>();
+    protected int targetType = TARGET_USER;
+    protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+    protected int quantifier = QUANTIFIER_ALL;
+    protected String variableToken = "";
+    protected int variableItemId = 0;
+    protected int arrayExistenceMode = ARRAY_EXISTS;
+    protected WiredArrayAddress arrayAddress = new WiredArrayAddress();
+
+    public WiredConditionHasVariable(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredConditionHasVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        this.refresh();
+
+        List<UserItem> serializedItems = new ArrayList<>();
+        if (this.targetType == TARGET_FURNI && this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
+            serializedItems.addAll(this.selectedItems);
+        }
+
+        message.appendBoolean(false);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(serializedItems.size());
+
+        for (UserItem item : serializedItems) {
+            message.appendInt(item.getId());
+        }
+
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.serializeStringData(room));
+        // Official layout: [variable target (furni 0, user 1, global -10, context -20)], the variable as the
+        // variable id, the furni and users in the official source slots, the quantifier (0 all, 1 any) in its slot.
+        message.appendInt(1);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        int[] params = settings.getIntParams();
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        this.targetType =
+                (params.length > 0) ? normalizeTargetType(WiredVariableTargets.fromOfficial(params[0])) : TARGET_USER;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = normalizeQuantifier(settings.getQuantifierCode());
+        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+        String arrayText;
+        if (WiredVariableIds.present(settings.getVariableIds())) {
+            this.setVariableToken(WiredVariableIds.tokenAt(settings.getVariableIds(), 0));
+            int tab = text.indexOf('\t');
+            arrayText = tab >= 0 ? text.substring(tab + 1) : text;
+        } else {
+            String[] stringParts = splitStringData(text);
+            this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
+            arrayText = stringParts.length > 1 ? stringParts[1] : null;
+        }
+        ArrayData arrayData = parseArrayData(arrayText);
+        this.arrayExistenceMode = arrayData.existenceMode == ARRAY_ENTRY_EXISTS ? ARRAY_ENTRY_EXISTS : ARRAY_EXISTS;
+        this.arrayAddress = arrayData.address;
+
+        // No variable, or one of another domain, saves too (AIR): Has then never passes and Not Has always does.
+        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, this.variableItemId);
+        if (arrayDefinition != null
+                && this.arrayExistenceMode == ARRAY_ENTRY_EXISTS
+                && !WiredArrayEditorSupport.isAddressableIndex(this.arrayAddress, arrayDefinition)) return false;
+
+        this.selectedItems.clear();
+
+        if (this.targetType == TARGET_FURNI && this.furniSource == WiredSourceUtil.SOURCE_SELECTED && room != null) {
+            int[] furniIds = settings.getFurniIds();
+            if (furniIds.length > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
+                return false;
+            }
+
+            for (int furniId : furniIds) {
+                UserItem item = room.getUserItem(furniId);
+
+                if (item != null) {
+                    this.selectedItems.add(item);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        return this.evaluateWithNegation(ctx, false);
+    }
+
+    protected boolean evaluateWithNegation(WiredContext ctx, boolean negative) {
+        Room room = ctx.room();
+
+        if (room == null) {
+            return false;
+        }
+        if (this.variableToken == null || this.variableToken.isEmpty()) {
+            return negative;
+        }
+
+        // A pointer is checked as the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0 && isCustomVariableToken(this.variableToken)) return negative;
+
+        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, variableId);
+        if (arrayDefinition != null) {
+            boolean match = this.evaluateArray(ctx, arrayDefinition);
+            return negative ? !match : match;
+        }
+
+        return switch (this.targetType) {
+            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, negative, variableId);
+            case TARGET_CONTEXT -> {
+                boolean contextMatch = this.matchesContext(ctx, room, variableId);
+                yield negative ? !contextMatch : contextMatch;
+            }
+            case TARGET_ROOM -> {
+                boolean roomMatch = this.matchesRoom(room, variableId);
+                yield negative ? !roomMatch : roomMatch;
+            }
+            default -> this.evaluateUserTargets(ctx, room, negative, variableId);
+        };
+    }
+
+    private boolean evaluateUserTargets(WiredContext ctx, Room room, boolean negative, int variableId) {
+        List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        if (targets.isEmpty()) {
+            boolean overEmpty = WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+            return negative ? !overEmpty : overEmpty;
+        }
+
+        boolean match = (this.quantifier == QUANTIFIER_ANY)
+                ? this.matchesAnyUser(room, targets, variableId)
+                : this.matchesAllUsers(room, targets, variableId);
+
+        return negative ? !match : match;
+    }
+
+    private boolean evaluateFurniTargets(WiredContext ctx, Room room, boolean negative, int variableId) {
+        this.refresh();
+
+        List<UserItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
+        if (targets.isEmpty()) {
+            boolean overEmpty = WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+            return negative ? !overEmpty : overEmpty;
+        }
+
+        boolean match = (this.quantifier == QUANTIFIER_ANY)
+                ? this.matchesAnyFurni(room, targets, variableId)
+                : this.matchesAllFurni(room, targets, variableId);
+
+        return negative ? !match : match;
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        this.refresh();
+
+        List<Integer> itemIds = new ArrayList<>();
+        for (UserItem item : this.selectedItems) {
+            if (item != null) itemIds.add(item.getId());
+        }
+
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        itemIds,
+                        this.targetType,
+                        this.variableToken,
+                        this.variableItemId,
+                        this.userSource,
+                        this.furniSource,
+                        this.quantifier,
+                        this.arrayExistenceMode,
+                        this.arrayAddress));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) return;
+
+        try {
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+
+                if (data == null) return;
+
+                this.targetType = normalizeTargetType(data.targetType);
+                this.userSource = normalizeUserSource(data.userSource);
+                this.furniSource = normalizeFurniSource(data.furniSource);
+                this.quantifier = normalizeQuantifier(data.quantifier);
+                this.arrayExistenceMode =
+                        data.arrayExistenceMode == ARRAY_ENTRY_EXISTS ? ARRAY_ENTRY_EXISTS : ARRAY_EXISTS;
+                this.arrayAddress = data.arrayAddress == null ? new WiredArrayAddress() : data.arrayAddress;
+                this.setVariableToken(normalizeVariableToken(
+                        (data.variableToken != null)
+                                ? data.variableToken
+                                : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
+
+                if (room != null && data.itemIds != null) {
+                    for (Integer itemId : data.itemIds) {
+                        if (itemId == null || itemId <= 0) continue;
+
+                        UserItem item = room.getUserItem(itemId);
+                        if (item != null) this.selectedItems.add(item);
+                    }
+                }
+
+                return;
+            }
+
+            this.setVariableToken(normalizeVariableToken(wiredData));
+        } catch (Exception e) {
+            LOGGER.error("Failed to load wired variable condition data for item {}", this.getId(), e);
+            this.onPickUp();
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.targetType = TARGET_USER;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = QUANTIFIER_ALL;
+        this.selectedItems.clear();
+        this.arrayExistenceMode = ARRAY_EXISTS;
+        this.arrayAddress = new WiredArrayAddress();
+        this.setVariableToken("");
+    }
+
+    private boolean evaluateArray(WiredContext ctx, WiredArrayVariableDefinition definition) {
+        int source =
+                definition.getArrayVariableType() == WiredArrayVariableType.FURNI ? this.furniSource : this.userSource;
+        List<WiredArrayRuntimeSupport.Owner> owners =
+                WiredArrayRuntimeSupport.resolveOwners(ctx, this.selectedItems, definition, source);
+        if (owners.isEmpty()) return WiredQuantifier.overEmpty(this.quantifier != QUANTIFIER_ANY);
+
+        boolean any = this.quantifier == QUANTIFIER_ANY;
+        for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            boolean match;
+            if (this.arrayExistenceMode == ARRAY_EXISTS) {
+                match = definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT
+                        ? ctx.contextVariables().hasArray(definition.getId())
+                        : ctx.room().getArrayVariableManager().hasValue(definition, owner.id());
+            } else {
+                Integer index = WiredArrayRuntimeSupport.resolveIndex(
+                        ctx, this.selectedItems, this.arrayAddress, definition, owner);
+                WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+                match = index != null && value != null && value.getEntry(index) != null;
+            }
+            if (any && match) return true;
+            if (!any && !match) return false;
+        }
+        return !any;
+    }
+
+    private WiredArrayVariableDefinition resolveArrayDefinition(Room room, int variableId) {
+        if (!isCustomVariableToken(this.variableToken)) return null;
+        WiredArrayVariableType type =
+                switch (this.targetType) {
+                    case TARGET_FURNI -> WiredArrayVariableType.FURNI;
+                    case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT;
+                    case TARGET_ROOM -> WiredArrayVariableType.ROOM;
+                    default -> WiredArrayVariableType.USER;
+                };
+        WiredArrayVariableDefinition definition = WiredArrayDefinitionSupport.resolve(room, type.code(), variableId);
+        return definition != null && definition.isArray() ? definition : null;
+    }
+
+    protected boolean matchesAnyUser(Room room, List<RoomUnit> targets) {
+        return this.matchesAnyUser(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAnyUser(Room room, List<RoomUnit> targets, int variableId) {
+        for (RoomUnit roomUnit : targets) {
+            if (this.matchesUser(room, roomUnit, variableId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected boolean matchesAllUsers(Room room, List<RoomUnit> targets) {
+        return this.matchesAllUsers(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAllUsers(Room room, List<RoomUnit> targets, int variableId) {
+        for (RoomUnit roomUnit : targets) {
+            if (!this.matchesUser(room, roomUnit, variableId)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected boolean matchesAnyFurni(Room room, List<UserItem> targets) {
+        return this.matchesAnyFurni(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAnyFurni(Room room, List<UserItem> targets, int variableId) {
+        for (UserItem item : targets) {
+            if (this.matchesFurni(room, item, variableId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected boolean matchesAllFurni(Room room, List<UserItem> targets) {
+        return this.matchesAllFurni(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAllFurni(Room room, List<UserItem> targets, int variableId) {
+        for (UserItem item : targets) {
+            if (!this.matchesFurni(room, item, variableId)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected boolean matchesUser(Room room, RoomUnit roomUnit) {
+        return this.matchesUser(room, roomUnit, this.variableItemId);
+    }
+
+    private boolean matchesUser(Room room, RoomUnit roomUnit, int variableId) {
+        if (room == null || roomUnit == null) {
+            return false;
+        }
+
+        if (isCustomVariableToken(this.variableToken)) {
+            int holder = UserVariableHolders.of(room, roomUnit);
+
+            return holder != 0 && room.getUserVariableManager().hasVariable(holder, variableId);
+        }
+
+        if (isInternalVariableToken(this.variableToken)) {
+            return this.hasUserInternalVariable(room, roomUnit, getInternalVariableKey(this.variableToken));
+        }
+
+        return false;
+    }
+
+    protected boolean matchesFurni(Room room, UserItem item) {
+        return this.matchesFurni(room, item, this.variableItemId);
+    }
+
+    private boolean matchesFurni(Room room, UserItem item, int variableId) {
+        if (room == null || item == null) {
+            return false;
+        }
+
+        if (isCustomVariableToken(this.variableToken)) {
+            return room.getFurniVariableManager().hasVariable(item.getId(), variableId);
+        }
+
+        if (isInternalVariableToken(this.variableToken)) {
+            return this.hasFurniInternalVariable(room, item, getInternalVariableKey(this.variableToken));
+        }
+
+        return false;
+    }
+
+    protected boolean matchesContext(WiredContext ctx, Room room) {
+        return this.matchesContext(ctx, room, this.variableItemId);
+    }
+
+    private boolean matchesContext(WiredContext ctx, Room room, int variableId) {
+        if (ctx == null || room == null) {
+            return false;
+        }
+
+        if (isCustomVariableToken(this.variableToken)) {
+            return WiredContextVariableSupport.hasVariable(ctx, variableId);
+        }
+
+        if (isInternalVariableToken(this.variableToken)) {
+            return WiredInternalVariableSupport.readContextValue(ctx, getInternalVariableKey(this.variableToken))
+                    != null;
+        }
+
+        return false;
+    }
+
+    protected boolean matchesRoom(Room room) {
+        return this.matchesRoom(room, this.variableItemId);
+    }
+
+    private boolean matchesRoom(Room room, int variableId) {
+        if (room == null) {
+            return false;
+        }
+
+        if (isCustomVariableToken(this.variableToken)) {
+            return room.getRoomVariableManager().hasVariable(variableId);
+        }
+
+        if (isInternalVariableToken(this.variableToken)) {
+            return this.hasRoomInternalVariable(getInternalVariableKey(this.variableToken));
+        }
+
+        return false;
+    }
+
+    protected boolean hasUserInternalVariable(Room room, RoomUnit roomUnit, String key) {
+        return WiredInternalVariableSupport.hasUserValue(room, roomUnit, key);
+    }
+
+    protected boolean hasFurniInternalVariable(UserItem item, String key) {
+        return WiredInternalVariableSupport.hasFurniValue(item, key);
+    }
+
+    protected boolean hasFurniInternalVariable(Room room, UserItem item, String key) {
+        return WiredInternalVariableSupport.hasFurniValue(room, item, key);
+    }
+
+    protected boolean hasRoomInternalVariable(String key) {
+        return WiredInternalVariableSupport.hasRoomValue(
+                Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()), key);
+    }
+
+    protected void refresh() {
+        Set<UserItem> staleItems = new HashSet<>();
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        if (room == null) {
+            staleItems.addAll(this.selectedItems);
+        } else {
+            for (UserItem item : this.selectedItems) {
+                if (item == null || item.getRoomId() != room.getId()) {
+                    staleItems.add(item);
+                }
+            }
+        }
+
+        this.selectedItems.removeAll(staleItems);
+    }
+
+    protected void setVariableToken(String token) {
+        this.variableToken = normalizeVariableToken(token);
+        this.variableItemId = getCustomItemId(this.variableToken);
+    }
+
+    /** AIR sends no string; ours carries an array variable's existence check as JSON. */
+    private String serializeStringData(Room room) {
+        if (this.resolveArrayDefinition(room, this.variableItemId) == null) return "";
+        return WiredManager.getGson().toJson(new ArrayData(this.arrayExistenceMode, this.arrayAddress));
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return WiredVariableIds.list(WiredVariableIds.toWireForHolder(this.targetType, this.variableToken));
+    }
+
+    private static String[] splitStringData(String value) {
+        return value == null || value.isEmpty() ? new String[0] : value.split("\\t", 2);
+    }
+
+    private static ArrayData parseArrayData(String json) {
+        if (json == null || json.isBlank()) return new ArrayData();
+        try {
+            ArrayData data = WiredManager.getGson().fromJson(json, ArrayData.class);
+            if (data == null) return new ArrayData();
+            if (data.address == null) data.address = new WiredArrayAddress();
+            return data;
+        } catch (RuntimeException ignored) {
+            return new ArrayData();
+        }
+    }
+
+    protected boolean hasRoomEntryMethod(User user) {
+        if (user == null) return false;
+
+        String roomEntryMethod = user.getUserInfo().getRoomEntryMethod();
+
+        return roomEntryMethod != null
+                && !roomEntryMethod.trim().isEmpty()
+                && !"unknown".equalsIgnoreCase(roomEntryMethod);
+    }
+
+    protected TeamEffectData getTeamEffectData(int effectValue) {
+        if (effectValue <= 0) return null;
+
+        if (effectValue >= 223 && effectValue <= 226) return new TeamEffectData(effectValue - 222, 0);
+        if (effectValue >= 33 && effectValue <= 36) return new TeamEffectData(effectValue - 32, 1);
+        if (effectValue >= 40 && effectValue <= 43) return new TeamEffectData(effectValue - 39, 2);
+
+        return null;
+    }
+
+    protected static int normalizeTargetType(int value) {
+        return switch (value) {
+            case TARGET_FURNI, TARGET_CONTEXT, TARGET_ROOM -> value;
+            default -> TARGET_USER;
+        };
+    }
+
+    protected static int normalizeQuantifier(int value) {
+        return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected static int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    protected static int normalizeFurniSource(int value) {
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL ->
+                value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
+    }
+
+    protected static boolean isCustomVariableToken(String token) {
+        return token != null && token.startsWith(CUSTOM_TOKEN_PREFIX);
+    }
+
+    protected static boolean isInternalVariableToken(String token) {
+        return token != null && token.startsWith(INTERNAL_TOKEN_PREFIX);
+    }
+
+    protected static int getCustomItemId(String token) {
+        if (!isCustomVariableToken(token)) return 0;
+
+        try {
+            return Integer.parseInt(token.substring(CUSTOM_TOKEN_PREFIX.length()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    protected static String getInternalVariableKey(String token) {
+        return isInternalVariableToken(token)
+                ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length()))
+                : "";
+    }
+
+    protected static String normalizeVariableToken(String token) {
+        if (token == null) return "";
+
+        String normalized = token.trim();
+        if (normalized.isEmpty()) return "";
+        if (isCustomVariableToken(normalized)) return normalized;
+        if (isInternalVariableToken(normalized))
+            return INTERNAL_TOKEN_PREFIX
+                    + WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
+
+        try {
+            int parsed = Integer.parseInt(normalized);
+            return (parsed > 0) ? (CUSTOM_TOKEN_PREFIX + parsed) : "";
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    protected static class JsonData {
+        List<Integer> itemIds;
+        int targetType;
+        String variableToken;
+        int variableItemId;
+        int userSource;
+        int furniSource;
+        int quantifier;
+        int arrayExistenceMode;
+        WiredArrayAddress arrayAddress;
+
+        public JsonData(
+                List<Integer> itemIds,
+                int targetType,
+                String variableToken,
+                int variableItemId,
+                int userSource,
+                int furniSource,
+                int quantifier) {
+            this(
+                    itemIds,
+                    targetType,
+                    variableToken,
+                    variableItemId,
+                    userSource,
+                    furniSource,
+                    quantifier,
+                    ARRAY_EXISTS,
+                    new WiredArrayAddress());
+        }
+
+        public JsonData(
+                List<Integer> itemIds,
+                int targetType,
+                String variableToken,
+                int variableItemId,
+                int userSource,
+                int furniSource,
+                int quantifier,
+                int arrayExistenceMode,
+                WiredArrayAddress arrayAddress) {
+            this.itemIds = itemIds;
+            this.targetType = targetType;
+            this.variableToken = variableToken;
+            this.variableItemId = variableItemId;
+            this.userSource = userSource;
+            this.furniSource = furniSource;
+            this.quantifier = quantifier;
+            this.arrayExistenceMode = arrayExistenceMode;
+            this.arrayAddress = arrayAddress;
+        }
+    }
+
+    protected static class ArrayData {
+        int existenceMode = ARRAY_EXISTS;
+        WiredArrayAddress address = new WiredArrayAddress();
+
+        ArrayData() {}
+
+        ArrayData(int existenceMode, WiredArrayAddress address) {
+            this.existenceMode = existenceMode;
+            this.address = address == null ? new WiredArrayAddress() : address;
+        }
+    }
+
+    protected static class TeamEffectData {
+        final int colorId;
+        final int typeId;
+
+        protected TeamEffectData(int colorId, int typeId) {
+            this.colorId = colorId;
+            this.typeId = typeId;
+        }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.quantifier;
+    }
+}

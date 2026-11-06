@@ -1,0 +1,302 @@
+package polaris.hotel.gameclients;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.User;
+import polaris.messages.outgoing.rooms.users.RoomUserEffectComposer;
+
+public class SessionResumeManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionResumeManager.class);
+
+    private static SessionResumeManager instance;
+
+    /** The shortest window a restored ticket gets: a page reload behind a proxy can take this long. */
+    static final int RESTORED_TICKET_MIN_SECONDS = 120;
+
+    private final ConcurrentHashMap<Integer, GhostSession> ghostSessions = new ConcurrentHashMap<>();
+
+    public static SessionResumeManager getInstance() {
+        if (instance == null) {
+            instance = new SessionResumeManager();
+        }
+        return instance;
+    }
+
+    public int getGracePeriodSeconds() {
+        return Emulator.getConfig().getInt("session.reconnect.grace.seconds", 30);
+    }
+
+    /**
+     * How long a ticket put back for a reconnect stays usable. A reload behind a proxy can take longer
+     * than the grace period, so it is never shorter than that; after it the ticket is cleared, so a
+     * ticket seen once cannot be used days later.
+     */
+    public int getRestoredTicketSeconds() {
+        return restoredTicketSeconds(getGracePeriodSeconds());
+    }
+
+    static int restoredTicketSeconds(int graceSeconds) {
+        return Math.max(graceSeconds, RESTORED_TICKET_MIN_SECONDS);
+    }
+
+    public int getPausedEffectId() {
+        return Emulator.getConfig().getInt("session.reconnect.effect.id", 170);
+    }
+
+    public boolean parkUser(User user, String ssoTicket) {
+        int graceSeconds = getGracePeriodSeconds();
+        if (graceSeconds <= 0) {
+            return false;
+        }
+
+        int userId = user.getUserInfo().getId();
+
+        GhostSession existing = ghostSessions.remove(userId);
+        if (existing != null && existing.disposeFuture != null) {
+            existing.disposeFuture.cancel(false);
+        }
+
+        LOGGER.info(
+                "[SessionResume] Parking {} (id={}) for {}s grace period",
+                user.getUserInfo().getUsername(),
+                userId,
+                graceSeconds);
+
+        if (ssoTicket != null && !ssoTicket.isEmpty()) {
+            restoreSsoTicket(userId, ssoTicket);
+        }
+
+        int previousEffectId = 0;
+        int previousEffectEnd = 0;
+        RoomUnit unit = user.getRoomUnit();
+        if (unit != null) {
+            previousEffectId = unit.getEffectId();
+            previousEffectEnd = unit.getEffectEndTimestamp();
+        }
+
+        ScheduledFuture<?> future = schedule(
+                () -> {
+                    GhostSession ghost = ghostSessions.remove(userId);
+                    if (ghost != null) {
+                        LOGGER.info(
+                                "[SessionResume] Grace period expired for {} (id={}) - performing full disconnect",
+                                ghost.user.getUserInfo().getUsername(),
+                                userId);
+                        performFullDisconnect(ghost.user);
+                    }
+                },
+                graceSeconds * 1000);
+
+        if (future == null) {
+            // The scheduler refused the grace-expiry task (pool saturated or
+            // shutting down). Parking now would leave a GhostSession that nothing
+            // can ever reap (the Habbo + room refs pinned for the JVM lifetime),
+            // so disconnect immediately instead.
+            performFullDisconnect(user);
+            return false;
+        }
+
+        ghostSessions.put(userId, new GhostSession(user, ssoTicket, future, previousEffectId, previousEffectEnd));
+
+        applyPausedEffect(user);
+
+        return true;
+    }
+
+    public User resumeSession(int userId) {
+        GhostSession ghost = ghostSessions.remove(userId);
+        if (ghost == null) {
+            return null;
+        }
+
+        if (ghost.disposeFuture != null) {
+            ghost.disposeFuture.cancel(false);
+        }
+
+        LOGGER.info(
+                "[SessionResume] Resuming session for {} (id={})",
+                ghost.user.getUserInfo().getUsername(),
+                userId);
+
+        restorePausedEffect(ghost);
+
+        return ghost.user;
+    }
+
+    public boolean hasGhostSession(int userId) {
+        return ghostSessions.containsKey(userId);
+    }
+
+    /**
+     * Evicts a parked session immediately, cancelling its scheduled disposal and
+     * fully disconnecting the Habbo. Used when an external decision (such as a ban)
+     * must take effect during the reconnect grace window rather than waiting for a
+     * resume attempt to re-run its checks. Returns true if a ghost was evicted.
+     */
+    public boolean disposeGhostSession(int userId) {
+        GhostSession ghost = ghostSessions.remove(userId);
+        if (ghost == null) {
+            return false;
+        }
+
+        if (ghost.disposeFuture != null) {
+            ghost.disposeFuture.cancel(false);
+        }
+
+        LOGGER.info("[SessionResume] Evicting parked session for user {} (forced disposal)", userId);
+        performFullDisconnect(ghost.user);
+        return true;
+    }
+
+    public void disposeAll() {
+        for (GhostSession ghost : ghostSessions.values()) {
+            if (ghost.disposeFuture != null) {
+                ghost.disposeFuture.cancel(false);
+            }
+            performFullDisconnect(ghost.user);
+        }
+        ghostSessions.clear();
+    }
+
+    private void performFullDisconnect(User user) {
+        try {
+            user.getUserInfo().setOnline(false);
+            user.disconnect();
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Error during deferred disconnect", e);
+        }
+
+        // NON svuotare il ticket SSO qui. Dietro Cloudflare la pagina si ricarica
+        // lentamente (~15s) e la grace (5s) scade prima che la nuova connessione
+        // arrivi: svuotando il ticket si cancellava quello NUOVO appena scritto dal
+        // CMS per il refresh → "non-existing SSO token" → bisognava refreshare 2 volte.
+        // Il ticket vive col suo TTL (auth_ticket_expires_at) e viene sovrascritto dal
+        // CMS al prossimo /client o azzerato al logout.
+    }
+
+    private void restoreSsoTicket(int userId, String ssoTicket) {
+        // Restore the old ticket ONLY if no fresh ticket has been written in the
+        // meantime. On a hard-refresh the CMS writes a NEW auth_ticket for the same
+        // user before this parking restore runs; without the guard we'd clobber it
+        // with the old ticket, so the new connection's SSO wouldn't be found and the
+        // client would get "session expired" on the first attempt. The guard means:
+        // normal reconnect (ticket cleared to '' after login) -> restore; hard-refresh
+        // (CMS already wrote a new ticket) -> leave the new ticket untouched.
+        try {
+            int updated = updateTicket(
+                    "UPDATE users SET auth_ticket = ? WHERE id = ? AND (auth_ticket = '' OR auth_ticket IS NULL) LIMIT 1",
+                    ssoTicket,
+                    userId);
+            if (updated > 0) {
+                LOGGER.info("[SessionResume] Restored SSO ticket for user {} during grace period", userId);
+                schedule(() -> expireRestoredTicket(userId, ssoTicket), getRestoredTicketSeconds() * 1000L);
+            } else {
+                LOGGER.info(
+                        "[SessionResume] Skipped SSO restore for user {} — a newer ticket is already present (likely a fresh login/hard-refresh)",
+                        userId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to restore SSO ticket for user " + userId, e);
+        }
+    }
+
+    /**
+     * Clears the ticket put back for a reconnect once its window has passed. Only that ticket: a newer
+     * one the CMS wrote in the meantime is left alone, and a reconnect that used it has consumed it.
+     */
+    private void expireRestoredTicket(int userId, String ssoTicket) {
+        try {
+            int cleared = updateTicket(
+                    "UPDATE users SET auth_ticket = '' WHERE auth_ticket = ? AND id = ? LIMIT 1", ssoTicket, userId);
+            if (cleared > 0) {
+                LOGGER.info("[SessionResume] Cleared the unused restored SSO ticket for user {}", userId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to clear the restored SSO ticket for user " + userId, e);
+        }
+    }
+
+    /** One ticket update: the ticket is the first parameter, the user id the second. */
+    private static int updateTicket(String sql, String ssoTicket, int userId) throws Exception {
+        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
+                var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, ssoTicket);
+            statement.setInt(2, userId);
+            return statement.executeUpdate();
+        }
+    }
+
+    private static ScheduledFuture<?> schedule(Runnable task, long delayMillis) {
+        return Emulator.getThreading().run(task, delayMillis);
+    }
+
+    private void applyPausedEffect(User user) {
+        int effectId = getPausedEffectId();
+        if (effectId <= 0) return;
+        try {
+            RoomUnit unit = user.getRoomUnit();
+            Room room = user.getUserInfo() == null ? null : user.getUserInfo().getCurrentRoom();
+            if (unit == null || room == null) return;
+            int endTimestamp = Emulator.getIntUnixTimestamp() + getGracePeriodSeconds() + 10;
+            unit.setEffectId(effectId, endTimestamp);
+            room.sendComposer(new RoomUserEffectComposer(unit).compose());
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to apply paused effect", e);
+        }
+    }
+
+    private void restorePausedEffect(GhostSession ghost) {
+        try {
+            User user = ghost.user;
+            RoomUnit unit = user.getRoomUnit();
+            Room room = user.getUserInfo() == null ? null : user.getUserInfo().getCurrentRoom();
+            if (unit == null || room == null) return;
+
+            int pausedEffectId = getPausedEffectId();
+            if (unit.getEffectId() == pausedEffectId) {
+                unit.setEffectId(ghost.previousEffectId, ghost.previousEffectEnd);
+                room.sendComposer(new RoomUserEffectComposer(unit).compose());
+            }
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to restore previous effect", e);
+        }
+    }
+
+    private void clearSsoTicket(int userId) {
+        try (var connection = Emulator.getDatabase().getDataSource().getConnection();
+                var statement = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
+            statement.setString(1, "");
+            statement.setInt(2, userId);
+            statement.execute();
+        } catch (Exception e) {
+            LOGGER.error("[SessionResume] Failed to clear SSO ticket for user " + userId, e);
+        }
+    }
+
+    private static class GhostSession {
+        final User user;
+        final String ssoTicket;
+        final ScheduledFuture<?> disposeFuture;
+        final int previousEffectId;
+        final int previousEffectEnd;
+
+        GhostSession(
+                User user,
+                String ssoTicket,
+                ScheduledFuture<?> disposeFuture,
+                int previousEffectId,
+                int previousEffectEnd) {
+            this.user = user;
+            this.ssoTicket = ssoTicket;
+            this.disposeFuture = disposeFuture;
+            this.previousEffectId = previousEffectId;
+            this.previousEffectEnd = previousEffectEnd;
+        }
+    }
+}

@@ -1,0 +1,82 @@
+package polaris.messages.outgoing.wired;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import polaris.hotel.rooms.variables.RoomWiredVariableCatalog;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.MessageComposer;
+import polaris.messages.outgoing.Outgoing;
+
+/**
+ * Official AIR 13 {@code AllVariablesDiff}: the variables the client has to drop and the ones it has
+ * to add or replace, so its wired variable cache matches {@code allVariablesHash} again.
+ */
+public class WiredAllVariablesDiffComposer extends MessageComposer {
+    private final int allVariablesHash;
+    private final boolean lastChunk;
+    private final List<String> removedVariables;
+    private final List<RoomWiredVariableCatalog.Variable> addedOrUpdated;
+
+    public WiredAllVariablesDiffComposer(
+            int allVariablesHash,
+            boolean lastChunk,
+            List<String> removedVariables,
+            List<RoomWiredVariableCatalog.Variable> addedOrUpdated) {
+        this.allVariablesHash = allVariablesHash;
+        this.lastChunk = lastChunk;
+        this.removedVariables = (removedVariables != null) ? removedVariables : Collections.emptyList();
+        this.addedOrUpdated = (addedOrUpdated != null) ? addedOrUpdated : Collections.emptyList();
+    }
+
+    /** Writes one {@code WiredVariable} block exactly as the official client reads it. */
+    public static void appendVariable(ServerMessage response, RoomWiredVariableCatalog.Variable variable) {
+        response.appendString(variable.getVariableId());
+        response.appendInt(variable.getVariableType());
+        response.appendString(variable.getVariableName());
+        response.appendInt(variable.getAvailabilityType());
+        response.appendInt(variable.getVariableTarget());
+        response.appendBoolean(variable.isAlwaysAvailable());
+        response.appendBoolean(variable.canCreateAndDelete());
+        response.appendBoolean(variable.hasValue());
+        response.appendBoolean(variable.canWriteValue());
+        response.appendBoolean(variable.canInterceptChanges());
+        response.appendBoolean(variable.isInvisible());
+        response.appendBoolean(variable.requiresExecutionContext()); // a pointer only exists while a stack runs
+        response.appendBoolean(variable.canReadCreationTime());
+        response.appendBoolean(variable.canReadLastUpdateTime());
+
+        Map<Integer, String> textConnector = variable.getTextConnector();
+        response.appendBoolean(variable.hasTextConnector());
+        if (variable.hasTextConnector()) {
+            response.appendInt(textConnector.size());
+            for (Map.Entry<Integer, String> mapping : textConnector.entrySet()) {
+                response.appendInt(mapping.getKey());
+                response.appendString(mapping.getValue());
+            }
+            String fallback = variable.getTextConnectorFallback();
+            response.appendBoolean(fallback != null); // hasTextConnectorFallback
+            if (fallback != null) response.appendString(fallback);
+        }
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.WiredAllVariablesDiffComposer);
+        this.response.appendInt(this.allVariablesHash);
+        this.response.appendBoolean(this.lastChunk);
+
+        this.response.appendInt(this.removedVariables.size());
+        for (String variableId : this.removedVariables) {
+            this.response.appendString(variableId);
+        }
+
+        this.response.appendInt(this.addedOrUpdated.size());
+        for (RoomWiredVariableCatalog.Variable variable : this.addedOrUpdated) {
+            this.response.appendInt(variable.hash());
+            appendVariable(this.response, variable);
+        }
+
+        return this.response;
+    }
+}

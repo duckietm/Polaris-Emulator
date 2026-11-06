@@ -1,0 +1,78 @@
+package polaris.messages.incoming.rooms.items;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.economy.EconomyLedger;
+import polaris.hotel.economy.EconomyMutationResult;
+import polaris.hotel.economy.EconomyOperation;
+
+/**
+ * Deleting a redeemable furni and crediting what it is worth, in one transaction.
+ *
+ * <p>Shared by the redeem packet and the :redeem command: both have to be all or
+ * nothing, or a failure between the two leaves the furni and the currency.
+ */
+public final class RedeemItemTransaction {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedeemItemTransaction.class);
+    private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1";
+
+    private RedeemItemTransaction() {}
+
+    public static EconomyMutationResult commit(int itemId, int userId, int currencyType, int amount, String itemName) {
+        if (itemId <= 0 || userId <= 0 || amount <= 0) return null;
+
+        Connection connection = null;
+        try {
+            connection = Emulator.getDatabase().getDataSource().getConnection();
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement delete = connection.prepareStatement(DELETE_ITEM)) {
+                delete.setInt(1, itemId);
+                delete.setInt(2, userId);
+                if (delete.executeUpdate() != 1) {
+                    connection.rollback();
+                    return null;
+                }
+            }
+
+            EconomyMutationResult walletMutation = EconomyLedger.apply(
+                    connection,
+                    new EconomyOperation(
+                            "furniture-redeem:" + itemId,
+                            userId,
+                            userId,
+                            "furniture_redeem",
+                            "furniture.redeem",
+                            currencyType,
+                            amount,
+                            itemId,
+                            itemName));
+
+            connection.commit();
+            return walletMutation;
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+            }
+            LOGGER.error("Atomic redemption failed for item {} and user {}", itemId, userId, e);
+            return null;
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException e) {
+                    LOGGER.warn("Failed to close redemption transaction connection", e);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,221 @@
+package polaris.core;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.guilds.forums.ForumThread;
+import polaris.hotel.messenger.history.MessengerHistoryServices;
+import polaris.hotel.users.User;
+import polaris.messages.incoming.friends.SearchUserEvent;
+import polaris.messages.outgoing.users.UserDataComposer;
+import polaris.threading.runnables.AchievementUpdater;
+
+public class CleanerThread implements Runnable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CleanerThread.class);
+
+    private static final int DELAY = 10000;
+    private static final int RELOAD_HALL_OF_FAME = 1800;
+    private static final int RELOAD_NEWS_LIST = 3600;
+    private static final int REMOVE_INACTIVE_ROOMS = 120;
+    private static final int REMOVE_INACTIVE_GUILDS = 60;
+    private static final int REMOVE_INACTIVE_TOURS = 600;
+    private static final int SAVE_ERROR_LOGS = 30;
+    private static final int CLEAR_CACHED_VALUES = 60 * 60;
+    private static final int CLEAN_MESSENGER_HISTORY = 60 * 60;
+    private static final int CALLBACK_TIME = 60 * 15;
+    /** When the daily counters were last refilled, so a restart does not refill them again. */
+    static final String LAST_DAILY_REFILL_KEY = "hotel.refill.daily.last";
+
+    static final String LAST_DAILY_REFILL_SQL = "INSERT INTO emulator_settings (`key`, `value`) VALUES (?, ?) "
+            + "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+
+    private static int LAST_HOF_RELOAD = Emulator.getIntUnixTimestamp();
+    private static int LAST_NL_RELOAD = Emulator.getIntUnixTimestamp();
+    private static int LAST_INACTIVE_ROOMS_CLEARED = Emulator.getIntUnixTimestamp();
+    private static int LAST_INACTIVE_GUILDS_CLEARED = Emulator.getIntUnixTimestamp();
+    private static int LAST_INACTIVE_TOURS_CLEARED = Emulator.getIntUnixTimestamp();
+    private static int LAST_ERROR_LOGS_SAVED = Emulator.getIntUnixTimestamp();
+    private static int LAST_DAILY_REFILL = 0;
+    private static int LAST_CALLBACK = Emulator.getIntUnixTimestamp();
+    private static int LAST_USER_CACHE_CLEARED = Emulator.getIntUnixTimestamp();
+    private static int LAST_MESSENGER_HISTORY_CLEANED = Emulator.getIntUnixTimestamp();
+
+    public CleanerThread() {
+        LAST_DAILY_REFILL = Emulator.getConfig().getInt(LAST_DAILY_REFILL_KEY, 0);
+        this.databaseCleanup();
+        Emulator.getThreading().run(this, DELAY);
+
+        Emulator.getThreading().run(new AchievementUpdater());
+
+        //  Emulator.getThreading().run(new HTTPVersionCheck(), 10000);
+    }
+
+    @Override
+    public void run() {
+        Emulator.getThreading().run(this, DELAY);
+
+        int time = Emulator.getIntUnixTimestamp();
+
+        if (time - LAST_HOF_RELOAD > RELOAD_HALL_OF_FAME) {
+            Emulator.getGameEnvironment().getHotelViewManager().getHallOfFame().reload();
+            LAST_HOF_RELOAD = time;
+        }
+
+        if (time - LAST_NL_RELOAD > RELOAD_NEWS_LIST) {
+            Emulator.getGameEnvironment().getHotelViewManager().getNewsList().reload();
+            LAST_NL_RELOAD = time;
+        }
+
+        if (time - LAST_INACTIVE_ROOMS_CLEARED > REMOVE_INACTIVE_ROOMS) {
+            Emulator.getGameEnvironment().getRoomManager().clearInactiveRooms();
+            LAST_INACTIVE_ROOMS_CLEARED = time;
+        }
+
+        if (time - LAST_INACTIVE_GUILDS_CLEARED > REMOVE_INACTIVE_GUILDS) {
+            Emulator.getGameEnvironment().getGuildManager().clearInactiveGuilds();
+            ForumThread.clearCache();
+            LAST_INACTIVE_GUILDS_CLEARED = time;
+        }
+
+        if (time - LAST_INACTIVE_TOURS_CLEARED > REMOVE_INACTIVE_TOURS) {
+            Emulator.getGameEnvironment().getGuideManager().cleanup();
+            LAST_INACTIVE_TOURS_CLEARED = time;
+        }
+
+        if (time - LAST_ERROR_LOGS_SAVED > SAVE_ERROR_LOGS) {
+            Emulator.getDatabaseLogger().save();
+            LAST_ERROR_LOGS_SAVED = time;
+        }
+
+        if (time - LAST_CALLBACK > CALLBACK_TIME) {
+            //  Emulator.getThreading().run(new HTTPPostStatus());
+            LAST_CALLBACK = time;
+        }
+
+        this.refillDailyRespectsIfDue(time);
+
+        if (time - LAST_USER_CACHE_CLEARED > CLEAR_CACHED_VALUES) {
+            this.clearCachedValues();
+            LAST_USER_CACHE_CLEARED = time;
+        }
+
+        if (time - LAST_MESSENGER_HISTORY_CLEANED > CLEAN_MESSENGER_HISTORY) {
+            try {
+                MessengerHistoryServices.create().cleanupRetention();
+            } catch (RuntimeException exception) {
+                LOGGER.error("Unable to clean messenger history", exception);
+            }
+            LAST_MESSENGER_HISTORY_CLEANED = time;
+        }
+
+        SearchUserEvent.cleanExpiredCache();
+    }
+
+    void databaseCleanup() {
+        int time = Emulator.getIntUnixTimestamp();
+        this.refillDailyRespectsIfDue(time);
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("UPDATE users SET online = '0' WHERE online = '1'");
+                statement.execute("UPDATE rooms SET users = '0' WHERE users > 0");
+                statement.execute("DELETE FROM room_mutes WHERE ends < " + time);
+                statement.execute("DELETE FROM room_bans WHERE ends < " + time);
+                statement.execute(
+                        "DELETE users_favorite_rooms FROM users_favorite_rooms LEFT JOIN rooms ON room_id = rooms.id WHERE rooms.id IS NULL");
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE users_effects SET total = total - 1 WHERE activation_timestamp + duration < ? AND activation_timestamp > 0 AND duration > 0")) {
+                statement.setInt(1, Emulator.getIntUnixTimestamp());
+                statement.execute();
+            }
+
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("DELETE FROM users_effects WHERE total <= 0");
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        LOGGER.info("Database -> Cleaned!");
+    }
+
+    static boolean dailyRefillDue(int time, int lastRefill, int cooldown) {
+        return lastRefill <= 0 || time - lastRefill > cooldown;
+    }
+
+    private void refillDailyRespectsIfDue(int time) {
+        if (dailyRefillDue(time, LAST_DAILY_REFILL, Emulator.getConfig().getInt("hotel.refill.daily"))) {
+            this.refillDailyRespects();
+        }
+    }
+
+    public void refillDailyRespects() {
+        int time = Emulator.getIntUnixTimestamp();
+        ConfigurationManager config = Emulator.getConfig();
+        int respects = config.getInt("hotel.daily.respect");
+        int petRespects = config.getInt("hotel.daily.respect.pets");
+        // Official respectReplenishesLeft: how many daily-respect buybacks the day grants.
+        int replenishes = config.getInt("hotel.daily.respect.replenishes", 1);
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE users_settings SET daily_respect_points = ?, daily_pet_respect_points = ?, daily_respect_replenishes = ?")) {
+                statement.setInt(1, respects);
+                statement.setInt(2, petRespects);
+                statement.setInt(3, replenishes);
+                statement.executeUpdate();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(LAST_DAILY_REFILL_SQL)) {
+                statement.setString(1, LAST_DAILY_REFILL_KEY);
+                statement.setString(2, String.valueOf(time));
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        LAST_DAILY_REFILL = time;
+
+        if (Emulator.isReady) {
+            for (User user : Emulator.getGameEnvironment()
+                    .getUserManager()
+                    .getOnlineUsers()
+                    .values()) {
+                // One user whose client is gone must not stop the others, nor make the refill run again.
+                try {
+                    user.getUserStats().respectPointsToGive = respects;
+                    user.getUserStats().petRespectPointsToGive = petRespects;
+                    user.getUserStats().respectReplenishesLeft = replenishes;
+                    user.getClient().sendResponse(new UserDataComposer(user));
+                } catch (Exception e) {
+                    LOGGER.error("Caught exception", e);
+                }
+            }
+        }
+    }
+
+    private void clearCachedValues() {
+        User user;
+        for (Map.Entry<Integer, User> map :
+                Emulator.getGameEnvironment().getUserManager().getOnlineUsers().entrySet()) {
+            user = map.getValue();
+
+            try {
+                if (user != null) {
+                    user.clearCaches();
+                }
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+            }
+        }
+    }
+}

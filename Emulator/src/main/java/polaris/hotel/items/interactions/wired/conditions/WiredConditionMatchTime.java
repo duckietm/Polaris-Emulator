@@ -1,0 +1,271 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalTime;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredRoomTime;
+import polaris.messages.ServerMessage;
+
+public class WiredConditionMatchTime extends InteractionWiredCondition {
+    private static final int MODE_SKIP = 0;
+    private static final int MODE_EXACT = 1;
+    private static final int MODE_RANGE = 2;
+
+    /** An official "use" flag and range as our mode: off, a single value, or a range. */
+    static int mode(boolean use, int from, int to) {
+        return !use ? MODE_SKIP : (from == to ? MODE_EXACT : MODE_RANGE);
+    }
+
+    public static final WiredConditionType type = WiredConditionType.MATCH_TIME;
+
+    private int hourMode = MODE_SKIP;
+    private int hourFrom = 0;
+    private int hourTo = 0;
+    private int minuteMode = MODE_SKIP;
+    private int minuteFrom = 0;
+    private int minuteTo = 0;
+    private int secondMode = MODE_SKIP;
+    private int secondFrom = 0;
+    private int secondTo = 0;
+    /** AIR's timezone dropdown (the string param): a zone id, or empty for the room's wired timezone. */
+    private String timezone = "";
+
+    public WiredConditionMatchTime(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredConditionMatchTime(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.timezone);
+        // Official layout: [useSeconds, useMinutes, useHours, secondMin, secondMax, minuteMin, minuteMax,
+        // hourMin, hourMax]; an exact value is a range of one.
+        message.appendInt(9);
+        message.appendInt(this.secondMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.minuteMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.hourMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.secondFrom);
+        message.appendInt(this.secondMode == MODE_RANGE ? this.secondTo : this.secondFrom);
+        message.appendInt(this.minuteFrom);
+        message.appendInt(this.minuteMode == MODE_RANGE ? this.minuteTo : this.minuteFrom);
+        message.appendInt(this.hourFrom);
+        message.appendInt(this.hourMode == MODE_RANGE ? this.hourTo : this.hourFrom);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        int[] params = settings.getIntParams();
+
+        this.secondFrom = (params.length > 3) ? this.normalizeMinuteOrSecond(params[3]) : 0;
+        this.secondTo = (params.length > 4) ? this.normalizeMinuteOrSecond(params[4]) : 59;
+        this.minuteFrom = (params.length > 5) ? this.normalizeMinuteOrSecond(params[5]) : 0;
+        this.minuteTo = (params.length > 6) ? this.normalizeMinuteOrSecond(params[6]) : 59;
+        this.hourFrom = (params.length > 7) ? this.normalizeHour(params[7]) : 0;
+        this.hourTo = (params.length > 8) ? this.normalizeHour(params[8]) : 23;
+        this.secondMode = mode(params.length > 0 && params[0] == 1, this.secondFrom, this.secondTo);
+        this.minuteMode = mode(params.length > 1 && params[1] == 1, this.minuteFrom, this.minuteTo);
+        this.hourMode = mode(params.length > 2 && params[2] == 1, this.hourFrom, this.hourTo);
+        this.timezone = WiredRoomTime.normalizeTimezone(settings.getStringParam());
+
+        return true;
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        LocalTime now = WiredRoomTime.now((ctx != null) ? ctx.room() : null, this.timezone)
+                .toLocalTime();
+
+        return this.matchesTimePart(now.getHour(), this.hourMode, this.hourFrom, this.hourTo)
+                && this.matchesTimePart(now.getMinute(), this.minuteMode, this.minuteFrom, this.minuteTo)
+                && this.matchesTimePart(now.getSecond(), this.secondMode, this.secondFrom, this.secondTo);
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.hourMode,
+                        this.hourFrom,
+                        this.hourTo,
+                        this.minuteMode,
+                        this.minuteFrom,
+                        this.minuteTo,
+                        this.secondMode,
+                        this.secondFrom,
+                        this.secondTo,
+                        this.timezone.isEmpty() ? null : this.timezone));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.reset();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
+
+        if (wiredData.startsWith("{")) {
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.reset();
+                return;
+            }
+
+            if (data == null) {
+                return;
+            }
+
+            this.hourMode = this.normalizeMode(data.hourMode);
+            this.hourFrom = this.normalizeHour(data.hourFrom);
+            this.hourTo = this.normalizeHour(data.hourTo);
+            this.minuteMode = this.normalizeMode(data.minuteMode);
+            this.minuteFrom = this.normalizeMinuteOrSecond(data.minuteFrom);
+            this.minuteTo = this.normalizeMinuteOrSecond(data.minuteTo);
+            this.secondMode = this.normalizeMode(data.secondMode);
+            this.secondFrom = this.normalizeMinuteOrSecond(data.secondFrom);
+            this.secondTo = this.normalizeMinuteOrSecond(data.secondTo);
+            // Boxes saved before the timezone dropdown follow the room's wired timezone.
+            this.timezone = WiredRoomTime.normalizeTimezone(data.timezone);
+            return;
+        }
+
+        String[] data = wiredData.split("\t");
+        if (data.length != 9) {
+            return;
+        }
+
+        try {
+            this.hourMode = this.normalizeMode(Integer.parseInt(data[0]));
+            this.hourFrom = this.normalizeHour(Integer.parseInt(data[1]));
+            this.hourTo = this.normalizeHour(Integer.parseInt(data[2]));
+            this.minuteMode = this.normalizeMode(Integer.parseInt(data[3]));
+            this.minuteFrom = this.normalizeMinuteOrSecond(Integer.parseInt(data[4]));
+            this.minuteTo = this.normalizeMinuteOrSecond(Integer.parseInt(data[5]));
+            this.secondMode = this.normalizeMode(Integer.parseInt(data[6]));
+            this.secondFrom = this.normalizeMinuteOrSecond(Integer.parseInt(data[7]));
+            this.secondTo = this.normalizeMinuteOrSecond(Integer.parseInt(data[8]));
+        } catch (NumberFormatException ignored) {
+            this.reset();
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.reset();
+    }
+
+    private void reset() {
+        this.hourMode = MODE_SKIP;
+        this.hourFrom = 0;
+        this.hourTo = 0;
+        this.minuteMode = MODE_SKIP;
+        this.minuteFrom = 0;
+        this.minuteTo = 0;
+        this.secondMode = MODE_SKIP;
+        this.secondFrom = 0;
+        this.secondTo = 0;
+        this.timezone = "";
+    }
+
+    private boolean matchesTimePart(int currentValue, int mode, int fromValue, int toValue) {
+        switch (mode) {
+            case MODE_EXACT:
+                return currentValue == fromValue;
+            case MODE_RANGE:
+                if (fromValue <= toValue) {
+                    return currentValue >= fromValue && currentValue <= toValue;
+                }
+
+                return currentValue >= fromValue || currentValue <= toValue;
+            default:
+                return true;
+        }
+    }
+
+    int normalizeMode(int value) {
+        if (value < MODE_SKIP || value > MODE_RANGE) {
+            return MODE_SKIP;
+        }
+
+        return value;
+    }
+
+    int normalizeHour(int value) {
+        return Math.max(0, Math.min(23, value));
+    }
+
+    int normalizeMinuteOrSecond(int value) {
+        return Math.max(0, Math.min(59, value));
+    }
+
+    static class JsonData {
+        int hourMode;
+        int hourFrom;
+        int hourTo;
+        int minuteMode;
+        int minuteFrom;
+        int minuteTo;
+        int secondMode;
+        int secondFrom;
+        int secondTo;
+        String timezone;
+
+        public JsonData(
+                int hourMode,
+                int hourFrom,
+                int hourTo,
+                int minuteMode,
+                int minuteFrom,
+                int minuteTo,
+                int secondMode,
+                int secondFrom,
+                int secondTo,
+                String timezone) {
+            this.hourMode = hourMode;
+            this.hourFrom = hourFrom;
+            this.hourTo = hourTo;
+            this.minuteMode = minuteMode;
+            this.minuteFrom = minuteFrom;
+            this.minuteTo = minuteTo;
+            this.secondMode = secondMode;
+            this.secondFrom = secondFrom;
+            this.secondTo = secondTo;
+            this.timezone = timezone;
+        }
+    }
+}

@@ -1,0 +1,328 @@
+package polaris.core.config;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import polaris.core.ConfigurationManager;
+
+public final class ConfigRegistry {
+
+    private static final ConfigRegistry STANDARD = new ConfigRegistry(standardDefinitions());
+    private final Map<String, ConfigKey> keys;
+
+    public ConfigRegistry(List<ConfigKey> definitions) {
+        Map<String, ConfigKey> indexed = new LinkedHashMap<>();
+        for (ConfigKey definition : definitions) {
+            if (indexed.putIfAbsent(definition.name(), definition) != null) {
+                throw new IllegalArgumentException("Duplicate configuration key " + definition.name());
+            }
+        }
+        this.keys = Map.copyOf(indexed);
+    }
+
+    public static ConfigRegistry standard() {
+        return STANDARD;
+    }
+
+    public Set<String> names() {
+        return this.keys.keySet();
+    }
+
+    public List<ValidationIssue> validate(ConfigurationManager configuration) {
+        List<ValidationIssue> issues = new ArrayList<>();
+        for (ConfigKey key : this.keys.values()) {
+            String value = configuration.getValueIfPresent(key.name());
+            if (value == null) {
+                continue;
+            }
+            try {
+                key.validate(value);
+            } catch (RuntimeException exception) {
+                issues.add(new ValidationIssue(key.name(), value, exception.getMessage()));
+            }
+        }
+        return List.copyOf(issues);
+    }
+
+    public String renderMarkdown() {
+        StringBuilder reference = new StringBuilder();
+        reference.append("# Polaris startup configuration reference\n\n");
+        reference.append(
+                "Unknown keys remain allowed for plugins. Database-backed hotel settings are documented separately from this startup-file registry.\n\n");
+        reference.append("| Key | Type | Default | Environment | Restart | Live reload | Description |\n");
+        reference.append("| --- | --- | --- | --- | --- | --- | --- |\n");
+        this.keys.values().stream()
+                .sorted(java.util.Comparator.comparing(ConfigKey::name))
+                .forEach(key -> reference
+                        .append("| `")
+                        .append(key.name())
+                        .append("` | ")
+                        .append(key.type().name().toLowerCase(java.util.Locale.ROOT))
+                        .append(" | `")
+                        .append(escape(key.defaultValue()))
+                        .append("` | ")
+                        .append(key.environmentAlias().isBlank() ? "—" : "`" + key.environmentAlias() + "`")
+                        .append(" | ")
+                        .append(key.restartRequired() ? "yes" : "no")
+                        .append(" | ")
+                        .append(key.liveReload() ? "yes" : "no")
+                        .append(" | ")
+                        .append(key.description())
+                        .append(" |\n"));
+        return reference.toString();
+    }
+
+    private static String escape(String value) {
+        return value.replace("|", "\\|").replace("`", "\\`");
+    }
+
+    private static List<ConfigKey> standardDefinitions() {
+        List<ConfigKey> keys = new ArrayList<>();
+        add(
+                keys,
+                ConfigKey.ValueType.STRING,
+                "",
+                true,
+                "db.hostname",
+                "db.database",
+                "db.username",
+                "db.password",
+                "db.params",
+                "db.migrations.backup.directory",
+                "db.migrations.backup.executable",
+                "game.host",
+                "rcon.host",
+                "rcon.allowed",
+                "enc.e",
+                "enc.n",
+                "enc.d",
+                "nitro.secure.config.root",
+                "nitro.secure.gamedata.root",
+                "nitro.secure.master_key",
+                "login.remember.jwt.secret",
+                "ws.host",
+                "ws.whitelist",
+                "client.release.allowed",
+                "habbo.console.style");
+        add(
+                keys,
+                ConfigKey.ValueType.INTEGER,
+                "0",
+                true,
+                "db.port",
+                "db.migrations.backup.keep",
+                "db.migrations.backup.timeout_seconds",
+                "db.pool.minsize",
+                "db.pool.maxsize",
+                "db.integrity.audit.sample_limit",
+                "db.integrity.audit.query_timeout_seconds",
+                "db.integrity.audit.max_duration_seconds",
+                "game.port",
+                "rcon.port",
+                "nitro.secure.session_ttl_sec",
+                "login.remember.duration.days",
+                "login.sso.ticket.ttl.seconds",
+                "login.news.limit",
+                "db.slow_query.threshold_ms",
+                "db.slow_query.max_sql_length",
+                "ws.port",
+                "session.reconnect.grace.seconds");
+        keys.add(definition("session.recovery.ttl.seconds", ConfigKey.ValueType.INTEGER, "120", true));
+        keys.add(definition("shutdown.drain.timeout.seconds", ConfigKey.ValueType.INTEGER, "15", true));
+        keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("runtime.operational.profile", ConfigKey.ValueType.STRING, "custom", true));
+        keys.add(definition("persistence.executor.threads", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("db.persistence.queue.capacity", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("http.blocking.queue.capacity", ConfigKey.ValueType.INTEGER, "128", true));
+        keys.add(definition("execution.backpressure.pause.timeout_ms", ConfigKey.ValueType.INTEGER, "2000", true));
+        keys.add(definition("io.packet.handler.threads", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("io.packet.handler.queue.capacity", ConfigKey.ValueType.INTEGER, "256", true));
+        keys.add(definition("io.packet.handler.queue.low_watermark", ConfigKey.ValueType.INTEGER, "192", true));
+        keys.add(definition("io.packet.handler.per_connection.capacity", ConfigKey.ValueType.INTEGER, "32", true));
+        keys.add(definition("io.packet.handler.per_connection.low_watermark", ConfigKey.ValueType.INTEGER, "16", true));
+        keys.add(definition("io.packet.handler.per_connection.pending", ConfigKey.ValueType.INTEGER, "16", true));
+        keys.add(definition("runtime.resilience.mode", ConfigKey.ValueType.STRING, "observe", true));
+        keys.add(definition("runtime.resilience.sample.interval_ms", ConfigKey.ValueType.INTEGER, "1000", true));
+        keys.add(definition("runtime.resilience.degraded.percent", ConfigKey.ValueType.INTEGER, "75", true));
+        keys.add(definition("runtime.resilience.critical.percent", ConfigKey.ValueType.INTEGER, "95", true));
+        keys.add(definition("runtime.resilience.database.critical_waiters", ConfigKey.ValueType.INTEGER, "2", true));
+        keys.add(definition("runtime.resilience.degraded.windows", ConfigKey.ValueType.INTEGER, "3", true));
+        keys.add(definition("runtime.resilience.critical.windows", ConfigKey.ValueType.INTEGER, "2", true));
+        keys.add(definition("runtime.resilience.recovery.windows", ConfigKey.ValueType.INTEGER, "10", true));
+        keys.add(definition("runtime.resilience.scheduler.critical_queue", ConfigKey.ValueType.INTEGER, "10000", true));
+        keys.add(definition("runtime.resilience.circuit.failure_percent", ConfigKey.ValueType.INTEGER, "50", true));
+        keys.add(definition("runtime.resilience.circuit.window", ConfigKey.ValueType.INTEGER, "20", true));
+        keys.add(definition("runtime.resilience.circuit.minimum_calls", ConfigKey.ValueType.INTEGER, "10", true));
+        keys.add(definition("runtime.resilience.circuit.open_ms", ConfigKey.ValueType.INTEGER, "30000", true));
+        keys.add(definition("runtime.resilience.circuit.half_open_calls", ConfigKey.ValueType.INTEGER, "3", true));
+        keys.add(definition("stress.max_bots", ConfigKey.ValueType.INTEGER, "5000", true));
+        keys.add(definition("stress.max_items", ConfigKey.ValueType.INTEGER, "100000", true));
+        keys.add(definition("stress.max_rollers", ConfigKey.ValueType.INTEGER, "50000", true));
+        keys.add(definition("stress.max_wired_stacks", ConfigKey.ValueType.INTEGER, "50000", true));
+        keys.add(definition("stress.max_wired_events_per_second", ConfigKey.ValueType.INTEGER, "100", true));
+        keys.add(definition("stress.max_total_entities", ConfigKey.ValueType.INTEGER, "200000", true));
+        keys.add(definition("stress.max_chat_per_second", ConfigKey.ValueType.INTEGER, "10000", true));
+        keys.add(definition("stress.max_duration_seconds", ConfigKey.ValueType.INTEGER, "3600", true));
+        keys.add(definition("io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
+        keys.add(definition("io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
+        keys.add(definition("io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
+        add(
+                keys,
+                ConfigKey.ValueType.LONG,
+                "0",
+                true,
+                "db.pool.connection_timeout_ms",
+                "db.pool.idle_timeout_ms",
+                "db.pool.max_lifetime_ms",
+                "db.pool.validation_timeout_ms",
+                "db.pool.leak_detection_ms");
+        add(
+                keys,
+                ConfigKey.ValueType.BOOLEAN,
+                "false",
+                true,
+                "db.migrate.on_startup",
+                "db.migrations.backup.enabled",
+                "enc.enabled",
+                "nitro.secure.assets.enabled",
+                "nitro.secure.api.enabled",
+                "nitro.secure.api.required",
+                "login.remember.enabled",
+                "db.slow_query.enabled",
+                "ws.enabled",
+                "crypto.ws.enabled",
+                "stress.enabled",
+                "cms.api.enabled",
+                "e2e.enabled");
+        keys.add(definition("session.recovery.enabled", ConfigKey.ValueType.BOOLEAN, "false", true));
+        keys.add(new ConfigKey(
+                "polaris.events.honor_priority",
+                ConfigKey.ValueType.BOOLEAN,
+                "false",
+                "",
+                ConfigKey.Source.STARTUP,
+                false,
+                true,
+                List.of(),
+                "Enables priority-ordered, cancellation-aware plugin event dispatch."));
+        keys.add(definition("db.integrity.audit.mode", ConfigKey.ValueType.STRING, "warn", true));
+        keys.add(definition("cms.api.allowed", ConfigKey.ValueType.STRING, "127.0.0.1;::1", true));
+        keys.add(definition("execution.backpressure.mode", ConfigKey.ValueType.STRING, "observe", true));
+        // Read on every remember request, so a change applies without a restart.
+        keys.add(definition("login.remember.cookie.name", ConfigKey.ValueType.STRING, "octane_remember", false));
+        keys.add(definition("login.remember.cookie.samesite", ConfigKey.ValueType.STRING, "Strict", false));
+        keys.add(definition("login.remember.cookie.secure", ConfigKey.ValueType.BOOLEAN, "true", false));
+        return List.copyOf(keys);
+    }
+
+    private static void add(
+            List<ConfigKey> keys,
+            ConfigKey.ValueType type,
+            String defaultValue,
+            boolean restartRequired,
+            String... names) {
+        for (String name : names) {
+            keys.add(definition(name, type, defaultValue, restartRequired));
+        }
+    }
+
+    private static ConfigKey definition(
+            String name, ConfigKey.ValueType type, String defaultValue, boolean restartRequired) {
+        return new ConfigKey(
+                name,
+                type,
+                defaultValue,
+                environmentAlias(name),
+                ConfigKey.Source.STARTUP,
+                restartRequired,
+                false,
+                List.of(),
+                description(name));
+    }
+
+    private static String environmentAlias(String name) {
+        return switch (name) {
+            case "db.hostname" -> "DB_HOSTNAME";
+            case "db.port" -> "DB_PORT";
+            case "db.database" -> "DB_DATABASE";
+            case "db.username" -> "DB_USERNAME";
+            case "db.password" -> "DB_PASSWORD";
+            case "db.params" -> "DB_PARAMS";
+            case "db.migrate.on_startup" -> "DB_MIGRATE_ON_STARTUP";
+            case "game.host" -> "EMU_HOST";
+            case "game.port" -> "EMU_PORT";
+            case "rcon.host" -> "RCON_HOST";
+            case "rcon.port" -> "RCON_PORT";
+            case "rcon.allowed" -> "RCON_ALLOWED";
+            case "runtime.operational.profile" -> "RUNTIME_OPERATIONAL_PROFILE";
+            case "persistence.executor.threads" -> "PERSISTENCE_EXECUTOR_THREADS";
+            default -> "";
+        };
+    }
+
+    private static String description(String name) {
+        if (name.startsWith("db.pool.")) {
+            return "Database connection-pool setting.";
+        }
+        if (name.startsWith("db.migrations.")) {
+            return "Migration backup setting.";
+        }
+        if (name.startsWith("db.integrity.")) {
+            return "Startup integrity-audit setting.";
+        }
+        if (name.startsWith("db.slow_query.")) {
+            return "Sanitized slow-query diagnostic setting.";
+        }
+        if (name.equals("db.persistence.queue.capacity")) {
+            return "Persistence queue override; zero uses the selected operational profile.";
+        }
+        if (name.startsWith("db.")) {
+            return "Database startup setting.";
+        }
+        if (name.startsWith("nitro.secure.")) {
+            return "Nitro secure-asset runtime setting.";
+        }
+        if (name.startsWith("login.")) {
+            return "Built-in login endpoint setting.";
+        }
+        if (name.startsWith("rcon.")) {
+            return "RCON listener setting.";
+        }
+        if (name.startsWith("cms.api.")) {
+            return "CMS HTTP API setting.";
+        }
+        if (name.startsWith("stress.")) {
+            return "Opt-in transient room stress-lab setting.";
+        }
+        if (name.startsWith("persistence.executor.")) {
+            return "Dedicated persistence executor override; zero uses the selected operational profile.";
+        }
+        if (name.equals("runtime.operational.profile")) {
+            return "Operational sizing preset: custom, small, medium, or large.";
+        }
+        if (name.startsWith("game.")) {
+            return "Game listener setting.";
+        }
+        if (name.startsWith("http.blocking.")) {
+            return "Blocking HTTP worker setting.";
+        }
+        if (name.startsWith("execution.backpressure.") || name.startsWith("io.packet.handler.")) {
+            return "Inbound execution backpressure setting.";
+        }
+        if (name.startsWith("io.netty.")) {
+            return "Netty channel flow-control setting.";
+        }
+        if (name.startsWith("ws.") || name.startsWith("crypto.ws.")) {
+            return "WebSocket listener setting.";
+        }
+        if (name.startsWith("enc.")) {
+            return "Legacy transport encryption setting.";
+        }
+        return "Polaris startup setting.";
+    }
+
+    public record ValidationIssue(String key, String value, String reason) {}
+}

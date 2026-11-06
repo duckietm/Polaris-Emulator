@@ -1,0 +1,466 @@
+package polaris.hotel.games.battlebanzai;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.achievements.AchievementManager;
+import polaris.hotel.games.Game;
+import polaris.hotel.games.GamePlayer;
+import polaris.hotel.games.GameState;
+import polaris.hotel.games.GameTeam;
+import polaris.hotel.games.GameTeamColors;
+import polaris.hotel.items.interactions.games.InteractionGameTimer;
+import polaris.hotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiSphere;
+import polaris.hotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiTile;
+import polaris.hotel.items.interactions.games.battlebanzai.gates.InteractionBattleBanzaiGate;
+import polaris.hotel.items.interactions.games.battlebanzai.scoreboards.InteractionBattleBanzaiScoreboard;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.rooms.RoomUserAction;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.messages.outgoing.rooms.users.RoomUserActionComposer;
+import polaris.threading.runnables.BattleBanzaiTilesFlicker;
+
+public class BattleBanzaiGame extends Game {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BattleBanzaiGame.class);
+
+    public static final int effectId = 32;
+
+    public static final int POINTS_HIJACK_TILE = Emulator.getConfig().getInt("hotel.banzai.points.tile.steal", 0);
+
+    public static final int POINTS_FILL_TILE = Emulator.getConfig().getInt("hotel.banzai.points.tile.fill", 0);
+
+    public static final int POINTS_LOCK_TILE = Emulator.getConfig().getInt("hotel.banzai.points.tile.lock", 1);
+
+    /**
+     * Maximum number of pending flood-fill tasks allowed in the queue.
+     * This prevents memory exhaustion from rapid tile locking via wireds.
+     */
+    private static final int MAX_PENDING_FILL_TASKS = Emulator.getConfig().getInt("hotel.banzai.fill.max_queue", 50);
+
+    /**
+     * Minimum interval in milliseconds between flood-fill calculations for the same game.
+     * This prevents abuse via rapid wired triggering.
+     */
+    private static final int FLOOD_FILL_COOLDOWN_MS = Emulator.getConfig().getInt("hotel.banzai.fill.cooldown_ms", 100);
+
+    private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+            Emulator.getConfig().getInt("hotel.banzai.fill.threads", 2),
+            Emulator.getConfig().getInt("hotel.banzai.fill.threads", 2),
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(MAX_PENDING_FILL_TASKS),
+            new ThreadPoolExecutor.DiscardOldestPolicy() // Drop oldest task when queue is full
+            );
+
+    private final Map<GameTeamColors, Set<UserItem>> lockedTiles;
+    private final Map<Integer, UserItem> gameTiles;
+    private volatile long lastFloodFillTime = 0;
+    private int tileCount;
+    private int countDown;
+    private int countDown2;
+
+    public BattleBanzaiGame(Room room) {
+        super(BattleBanzaiGameTeam.class, BattleBanzaiGamePlayer.class, room, true);
+
+        this.lockedTiles = new HashMap<>();
+        this.gameTiles = new ConcurrentHashMap<>();
+
+        room.setAllowEffects(true);
+    }
+
+    @Override
+    public void initialise() {
+        if (!this.state.equals(GameState.IDLE)) return;
+
+        /* The first countdown is activated for the first two seconds emitting only the blue light (second interaction),
+           the second, after another two seconds, completely activates the sphere (third interaction).
+        */
+        this.countDown = 3;
+        this.countDown2 = 2;
+
+        this.resetMap();
+
+        synchronized (this.teams) {
+            for (GameTeam t : this.teams.values()) {
+                t.initialise();
+            }
+        }
+
+        for (UserItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class)) {
+            item.setExtradata("1");
+            this.room.updateItemState(item);
+        }
+
+        this.start();
+    }
+
+    @Override
+    public boolean addUser(User user, GameTeamColors teamColor) {
+        return super.addUser(user, teamColor);
+    }
+
+    @Override
+    public void start() {
+        if (!this.state.equals(GameState.IDLE)) return;
+
+        super.start();
+
+        this.refreshGates();
+
+        this.scheduleTick(0);
+    }
+
+    @Override
+    public void run() {
+        try {
+            if (this.state.equals(GameState.IDLE)) return;
+
+            if (this.countDown > 0) {
+                this.countDown--;
+
+                if (this.countDown == 0) {
+                    for (UserItem item :
+                            this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class)) {
+                        item.setExtradata("1");
+                        this.room.updateItemState(item);
+                        if (this.countDown2 > 0) {
+                            this.countDown2--;
+                            if (this.countDown2 == 0) {
+                                item.setExtradata("2");
+                                this.room.updateItemState(item);
+                            }
+                        }
+                    }
+                }
+
+                if (this.countDown > 1) {
+                    this.scheduleTick(500);
+
+                    return;
+                }
+            }
+
+            this.scheduleTick(1000);
+
+            if (this.state.equals(GameState.PAUSED)) return;
+
+            int total = 0;
+            synchronized (this.lockedTiles) {
+                for (Map.Entry<GameTeamColors, Set<UserItem>> set : this.lockedTiles.entrySet()) {
+                    total += set.getValue().size();
+                }
+            }
+
+            GameTeam highestScore = null;
+
+            synchronized (this.teams) {
+                for (Map.Entry<GameTeamColors, GameTeam> set : this.teams.entrySet()) {
+                    if (highestScore == null
+                            || highestScore.getTotalScore() < set.getValue().getTotalScore()) {
+                        highestScore = set.getValue();
+                    }
+                }
+            }
+
+            if (highestScore != null) {
+                for (UserItem item :
+                        this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class)) {
+                    item.setExtradata((highestScore.teamColor.type + 2) + "");
+                    this.room.updateItemState(item);
+                }
+            }
+
+            if (total >= this.tileCount && this.tileCount != 0) {
+                for (InteractionGameTimer timer :
+                        room.getRoomSpecialTypes().getGameTimers().values()) {
+                    if (timer.isRunning()) {
+                        timer.endGame(room);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+    }
+
+    @Override
+    public void onEnd() {
+        GameTeam winningTeam = null;
+
+        boolean singleTeamGame = this.teams.values().stream()
+                        .filter(t -> t.getMembers().size() > 0)
+                        .count()
+                == 1;
+
+        for (GameTeam team : this.teams.values()) {
+            if (!singleTeamGame) {
+                for (GamePlayer player : team.getMembers()) {
+                    if (player.getScoreAchievementValue() > 0) {
+                        AchievementManager.progressAchievement(
+                                player.getUser(),
+                                Emulator.getGameEnvironment()
+                                        .getAchievementManager()
+                                        .getAchievement("BattleBallPlayer"));
+                    }
+                }
+            }
+
+            if (winningTeam == null || team.getTotalScore() > winningTeam.getTotalScore()) {
+                winningTeam = team;
+            }
+        }
+
+        if (winningTeam != null) {
+            if (!singleTeamGame) {
+                for (GamePlayer player : winningTeam.getMembers()) {
+                    if (player.getScoreAchievementValue() > 0) {
+                        this.room.sendComposer(
+                                new RoomUserActionComposer(player.getUser().getRoomUnit(), RoomUserAction.WAVE)
+                                        .compose());
+                        AchievementManager.progressAchievement(
+                                player.getUser(),
+                                Emulator.getGameEnvironment()
+                                        .getAchievementManager()
+                                        .getAchievement("BattleBallWinner"));
+                    }
+                }
+            }
+
+            for (UserItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class)) {
+                item.setExtradata((6 + winningTeam.teamColor.type) + "");
+                this.room.updateItemState(item);
+            }
+            synchronized (this.lockedTiles) {
+                Emulator.getThreading()
+                        .run(new BattleBanzaiTilesFlicker(
+                                this.lockedTiles.get(winningTeam.teamColor), winningTeam.teamColor, this.room));
+            }
+        }
+
+        super.onEnd();
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+
+        this.refreshGates();
+
+        for (UserItem tile : this.gameTiles.values()) {
+            // A tile picked up during the game is someone's inventory item now: leave it alone.
+            if (tile.getRoomId() != this.room.getId()) continue;
+
+            if (tile.getExtradata().equals("1")) {
+                tile.setExtradata("0");
+                this.room.updateItem(tile);
+            }
+        }
+        synchronized (this.lockedTiles) {
+            this.lockedTiles.clear();
+        }
+    }
+
+    /** Takes the field from the tiles in the room now; the tiles of an earlier game that left the room go. */
+    synchronized void resetMap() {
+        this.tileCount = 0;
+        this.gameTiles.clear();
+        for (UserItem item : this.room.getFloorItems()) {
+            if (item instanceof InteractionBattleBanzaiTile) {
+                item.setExtradata("1");
+                this.room.updateItemState(item);
+                this.tileCount++;
+                this.gameTiles.put(item.getId(), item);
+            }
+
+            if (item instanceof InteractionBattleBanzaiScoreboard) {
+                item.setExtradata("0");
+                this.room.updateItemState(item);
+            }
+        }
+    }
+
+    public void tileLocked(GameTeamColors teamColor, UserItem item, User user) {
+        this.tileLocked(teamColor, item, user, false);
+    }
+
+    public void tileLocked(GameTeamColors teamColor, UserItem item, User user, boolean doNotCheckFill) {
+        synchronized (this.lockedTiles) {
+            if (item instanceof InteractionBattleBanzaiTile) {
+                if (!this.lockedTiles.containsKey(teamColor)) {
+                    this.lockedTiles.put(teamColor, new HashSet<>());
+                }
+
+                this.lockedTiles.get(teamColor).add(item);
+            }
+
+            if (user != null) {
+                AchievementManager.progressAchievement(
+                        user,
+                        Emulator.getGameEnvironment().getAchievementManager().getAchievement("BattleBallTilesLocked"));
+            }
+
+            if (doNotCheckFill) return;
+
+            // Rate limit flood-fill calculations to prevent memory exhaustion from rapid wired triggering
+            long now = System.currentTimeMillis();
+            if (now - this.lastFloodFillTime < FLOOD_FILL_COOLDOWN_MS) {
+                return;
+            }
+            this.lastFloodFillTime = now;
+
+            // Check if executor queue is getting too full (additional safety check)
+            if (executor.getQueue().size() >= MAX_PENDING_FILL_TASKS - 5) {
+                LOGGER.warn(
+                        "Battle Banzai flood-fill queue is nearly full, skipping calculation to prevent memory issues");
+                return;
+            }
+
+            final int x = item.getX();
+            final int y = item.getY();
+
+            // The fill runs on another thread, so it works on a snapshot of the positions taken under the lock.
+            final Map<Integer, UserItem> tilesByPosition = new HashMap<>();
+            for (UserItem gameTile : this.gameTiles.values()) {
+                tilesByPosition.put(BattleBanzaiAreaFill.key(gameTile.getX(), gameTile.getY()), gameTile);
+            }
+
+            final Set<Integer> ownLocked = new HashSet<>();
+            final Set<Integer> foreignLocked = new HashSet<>();
+            for (Map.Entry<GameTeamColors, Set<UserItem>> entry : this.lockedTiles.entrySet()) {
+                Set<Integer> target = entry.getKey() == teamColor ? ownLocked : foreignLocked;
+
+                for (UserItem lockedTile : entry.getValue()) {
+                    target.add(BattleBanzaiAreaFill.key(lockedTile.getX(), lockedTile.getY()));
+                }
+            }
+
+            try {
+                executor.execute(() -> {
+                    Set<Integer> field = tilesByPosition.keySet();
+                    List<Integer> largestArea = null;
+
+                    int[][] neighbours = {{x, y - 1}, {x, y + 1}, {x - 1, y}, {x + 1, y}};
+                    for (int[] start : neighbours) {
+                        List<Integer> area =
+                                BattleBanzaiAreaFill.enclosedArea(start[0], start[1], field, ownLocked, foreignLocked);
+
+                        if (area != null && (largestArea == null || area.size() > largestArea.size())) {
+                            largestArea = area;
+                        }
+                    }
+
+                    if (largestArea == null) return;
+
+                    int filled = 0;
+                    for (int position : largestArea) {
+                        UserItem userItem = tilesByPosition.get(position);
+
+                        // Another team may have locked the tile while the fill was running.
+                        if (userItem == null || this.isLockedByAnotherTeam(userItem, teamColor)) continue;
+
+                        this.tileLocked(teamColor, userItem, user, true);
+
+                        userItem.setExtradata((2 + (teamColor.type * 3)) + "");
+                        this.room.updateItem(userItem);
+                        filled++;
+                    }
+
+                    this.refreshCounters(teamColor);
+                    if (user != null && user.getUserInfo().getGamePlayer() != null) {
+                        user.getUserInfo().getGamePlayer().addScore(BattleBanzaiGame.POINTS_LOCK_TILE * filled);
+                    }
+                });
+            } catch (RejectedExecutionException e) {
+                LOGGER.warn("Battle Banzai flood-fill task rejected - queue is full");
+            }
+        }
+    }
+
+    private boolean isLockedByAnotherTeam(UserItem item, GameTeamColors color) {
+        synchronized (this.lockedTiles) {
+            for (Map.Entry<GameTeamColors, Set<UserItem>> entry : this.lockedTiles.entrySet()) {
+                if (entry.getKey() != color && entry.getValue().contains(item)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void refreshCounters() {
+        for (GameTeam team : this.teams.values()) {
+            if (team.getMembers().isEmpty()) continue;
+
+            this.refreshCounters(team.teamColor);
+        }
+    }
+
+    public void refreshCounters(GameTeamColors teamColors) {
+        if (!this.teams.containsKey(teamColors)) return;
+
+        int totalScore = this.teams.get(teamColors).getTotalScore();
+
+        Map<Integer, InteractionBattleBanzaiScoreboard> scoreBoards =
+                this.room.getRoomSpecialTypes().getBattleBanzaiScoreboards(teamColors);
+
+        for (InteractionBattleBanzaiScoreboard scoreboard : scoreBoards.values()) {
+            if (scoreboard.getExtradata().isEmpty()) {
+                scoreboard.setExtradata("0");
+            }
+
+            int oldScore = Integer.parseInt(scoreboard.getExtradata());
+
+            if (oldScore == totalScore) continue;
+
+            scoreboard.setExtradata(totalScore + "");
+            this.room.updateItemState(scoreboard);
+        }
+    }
+
+    private void refreshGates() {
+        Collection<InteractionBattleBanzaiGate> gates =
+                this.room.getRoomSpecialTypes().getBattleBanzaiGates().values();
+        Set<RoomTile> tilesToUpdate = new HashSet<>(gates.size());
+        for (UserItem item : gates) {
+            tilesToUpdate.add(this.room.getLayout().getTile(item.getX(), item.getY()));
+        }
+
+        this.room.updateTiles(tilesToUpdate);
+    }
+
+    public void markTile(User user, InteractionBattleBanzaiTile tile, int state) {
+        if (!this.gameTiles.containsKey(tile.getId())) return;
+
+        int check = state - (user.getUserInfo().getGamePlayer().getTeamColor().type * 3);
+        if (check == 0 || check == 1) {
+            state++;
+
+            if (state % 3 == 2) {
+                user.getUserInfo().getGamePlayer().addScore(BattleBanzaiGame.POINTS_LOCK_TILE);
+                this.tileLocked(user.getUserInfo().getGamePlayer().getTeamColor(), tile, user);
+            } else {
+                user.getUserInfo().getGamePlayer().addScore(BattleBanzaiGame.POINTS_FILL_TILE);
+            }
+        } else {
+            state = user.getUserInfo().getGamePlayer().getTeamColor().type * 3;
+
+            user.getUserInfo().getGamePlayer().addScore(BattleBanzaiGame.POINTS_HIJACK_TILE);
+        }
+
+        this.refreshCounters(user.getUserInfo().getGamePlayer().getTeamColor());
+        tile.setExtradata(state + "");
+        this.room.updateItem(tile);
+    }
+}

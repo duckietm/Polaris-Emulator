@@ -1,0 +1,364 @@
+# Names that plugin jars compiled before the rename link against, and what they became.
+# Read by LegacyNames: the plugin classloader rewrites old plugin bytecode with it, and
+# PluginAbiCompatibilityTest rewrites the ABI baselines with it before comparing.
+# package <old prefix> <new prefix>   longest prefix wins
+# type <old internal name> <new internal name>
+# method <old name> <new name>   applied to classes that extend or implement emulator classes
+# field <new owner> <old name> <new name>
+
+package com/eu/habbo/habbohotel/habboway/ polaris/hotel/hotelway/
+package com/eu/habbo/messages/incoming/habboway/ polaris/messages/incoming/hotelway/
+package com/eu/habbo/messages/outgoing/habboway/ polaris/messages/outgoing/hotelway/
+package com/eu/habbo/habbohotel/ polaris/hotel/
+package com/eu/habbo/ polaris/
+
+type com/eu/habbo/crypto/HabboDiffieHellman polaris/crypto/PolarisDiffieHellman
+type com/eu/habbo/crypto/HabboEncryption polaris/crypto/PolarisEncryption
+type com/eu/habbo/crypto/HabboRC4 polaris/crypto/PolarisRC4
+type com/eu/habbo/crypto/HabboRSACrypto polaris/crypto/PolarisRSACrypto
+type com/eu/habbo/crypto/exceptions/HabboCryptoException polaris/crypto/exceptions/PolarisCryptoException
+type com/eu/habbo/habbohotel/habboway/HabboWayQuiz polaris/hotel/hotelway/HotelWayQuiz
+type com/eu/habbo/habbohotel/habboway/HabboWayQuizSessions polaris/hotel/hotelway/HotelWayQuizSessions
+type com/eu/habbo/habbohotel/items/interactions/InteractionHabboClubGate polaris/hotel/items/interactions/InteractionClubGate
+type com/eu/habbo/habbohotel/items/interactions/InteractionHabboClubHopper polaris/hotel/items/interactions/InteractionClubHopper
+type com/eu/habbo/habbohotel/items/interactions/InteractionHabboClubTeleportTile polaris/hotel/items/interactions/InteractionClubTeleportTile
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionFurniHaveHabbo polaris/hotel/items/interactions/wired/conditions/WiredConditionFurniHaveUser
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboCount polaris/hotel/items/interactions/wired/conditions/WiredConditionUserCount
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasCredits polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasCredits
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasDuckets polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasDuckets
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasEffect polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasEffect
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasHandItem polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasHandItem
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasHighscorePoints polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasHighscorePoints
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasMinItems polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasMinItems
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasRank polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasRank
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboHasRights polaris/hotel/items/interactions/wired/conditions/WiredConditionUserHasRights
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboIsFemale polaris/hotel/items/interactions/wired/conditions/WiredConditionUserIsFemale
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboIsMale polaris/hotel/items/interactions/wired/conditions/WiredConditionUserIsMale
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboLacksCredits polaris/hotel/items/interactions/wired/conditions/WiredConditionUserLacksCredits
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboLacksDiamonds polaris/hotel/items/interactions/wired/conditions/WiredConditionUserLacksDiamonds
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboLacksDuckets polaris/hotel/items/interactions/wired/conditions/WiredConditionUserLacksDuckets
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboNotHasRights polaris/hotel/items/interactions/wired/conditions/WiredConditionUserNotHasRights
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboNotOwnsFurni polaris/hotel/items/interactions/wired/conditions/WiredConditionUserNotOwnsFurni
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboOwnsBadge polaris/hotel/items/interactions/wired/conditions/WiredConditionUserOwnsBadge
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboOwnsFurni polaris/hotel/items/interactions/wired/conditions/WiredConditionUserOwnsFurni
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionHabboWearsBadge polaris/hotel/items/interactions/wired/conditions/WiredConditionUserWearsBadge
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotFurniHaveHabbo polaris/hotel/items/interactions/wired/conditions/WiredConditionNotFurniHaveUser
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboCount polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserCount
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboHasEffect polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserHasEffect
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboHasHandItem polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserHasHandItem
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboHasHighscorePoints polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserHasHighscorePoints
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboHasRank polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserHasRank
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboOwnsBadge polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserOwnsBadge
+type com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionNotHabboWearsBadge polaris/hotel/items/interactions/wired/conditions/WiredConditionNotUserWearsBadge
+type com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectBotFollowHabbo polaris/hotel/items/interactions/wired/effects/WiredEffectBotFollowUser
+type com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectBotTalkToHabbo polaris/hotel/items/interactions/wired/effects/WiredEffectBotTalkToUser
+type com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectKickHabbo polaris/hotel/items/interactions/wired/effects/WiredEffectKickUser
+type com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMuteHabbo polaris/hotel/items/interactions/wired/effects/WiredEffectMuteUser
+type com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOpenHabboPages polaris/hotel/items/interactions/wired/effects/WiredEffectOpenUserPages
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerBotReachedHabbo polaris/hotel/items/interactions/wired/triggers/WiredTriggerBotReachedUser
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboClicksFurni polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserClicksFurni
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboClicksTile polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserClicksTile
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboClicksUser polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserClicksUser
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboEntersRoom polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserEntersRoom
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboIdles polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserIdles
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboLeavesRoom polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserLeavesRoom
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboPerformsAction polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserPerformsAction
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboSaysKeyword polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserSaysKeyword
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboStartsDancing polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserStartsDancing
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboStopsDancing polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserStopsDancing
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboUnidles polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserUnidles
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboWalkOffFurni polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserWalkOffFurni
+type com/eu/habbo/habbohotel/items/interactions/wired/triggers/WiredTriggerHabboWalkOnFurni polaris/hotel/items/interactions/wired/triggers/WiredTriggerUserWalkOnFurni
+type com/eu/habbo/habbohotel/mentions/HabboMention polaris/hotel/mentions/UserMention
+type com/eu/habbo/habbohotel/users/Habbo polaris/hotel/users/User
+type com/eu/habbo/habbohotel/users/HabboBadge polaris/hotel/users/UserBadge
+type com/eu/habbo/habbohotel/users/HabboGender polaris/hotel/users/UserGender
+type com/eu/habbo/habbohotel/users/HabboInfo polaris/hotel/users/UserInfo
+type com/eu/habbo/habbohotel/users/HabboInventory polaris/hotel/users/UserInventory
+type com/eu/habbo/habbohotel/users/HabboItem polaris/hotel/users/UserItem
+type com/eu/habbo/habbohotel/users/HabboManager polaris/hotel/users/UserManager
+type com/eu/habbo/habbohotel/users/HabboNavigatorPersonalDisplayMode polaris/hotel/users/UserNavigatorPersonalDisplayMode
+type com/eu/habbo/habbohotel/users/HabboNavigatorWindowSettings polaris/hotel/users/UserNavigatorWindowSettings
+type com/eu/habbo/habbohotel/users/HabboStats polaris/hotel/users/UserStats
+type com/eu/habbo/habbohotel/users/cache/HabboOfferPurchase polaris/hotel/users/cache/UserOfferPurchase
+type com/eu/habbo/habbohotel/users/subscriptions/SubscriptionHabboClub polaris/hotel/users/subscriptions/SubscriptionClub
+type com/eu/habbo/messages/incoming/guilds/GetHabboGuildBadgesMessageEvent polaris/messages/incoming/guilds/GetUserGuildBadgesMessageEvent
+type com/eu/habbo/messages/outgoing/generic/alerts/StaffAlertAndOpenHabboWayComposer polaris/messages/outgoing/generic/alerts/UserBannedComposer
+type com/eu/habbo/messages/outgoing/generic/alerts/StaffAlertWIthLinkAndOpenHabboWayComposer polaris/messages/outgoing/generic/alerts/ModerationCautionComposer
+type com/eu/habbo/messages/outgoing/habboway/HabboWayQuizComposer1 polaris/messages/outgoing/hotelway/HotelWayQuizComposer
+type com/eu/habbo/messages/outgoing/habboway/HabboWayQuizComposer2 polaris/messages/outgoing/hotelway/QuizDataComposer
+type com/eu/habbo/messages/outgoing/inventory/AddHabboItemComposer polaris/messages/outgoing/inventory/AddUserItemComposer
+type com/eu/habbo/messages/outgoing/inventory/RemoveHabboItemComposer polaris/messages/outgoing/inventory/RemoveUserItemComposer
+type com/eu/habbo/messages/outgoing/inventory/RemoveHabboItemsComposer polaris/messages/outgoing/inventory/RemoveUserItemsComposer
+type com/eu/habbo/messages/outgoing/unknown/HabboMallComposer polaris/messages/outgoing/catalog/TargetedOfferNotFoundComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownHabboWayQuizComposer polaris/messages/outgoing/hotelway/QuizResultsComposer
+type com/eu/habbo/plugin/HabboPlugin polaris/plugin/PolarisPlugin
+type com/eu/habbo/plugin/HabboPluginConfiguration polaris/plugin/PluginConfiguration
+type com/eu/habbo/plugin/events/games/GameHabboJoinEvent polaris/plugin/events/games/GameUserJoinEvent
+type com/eu/habbo/plugin/events/games/GameHabboLeaveEvent polaris/plugin/events/games/GameUserLeaveEvent
+type com/eu/habbo/plugin/events/users/HabboAddedToRoomEvent polaris/plugin/events/users/UserAddedToRoomEvent
+type com/eu/habbo/threading/HabboExecutorService polaris/threading/PolarisExecutorService
+type com/eu/habbo/threading/runnables/BotFollowHabbo polaris/threading/runnables/BotFollowUser
+type com/eu/habbo/threading/runnables/HabboGiveHandItemToHabbo polaris/threading/runnables/UserGiveHandItemToUser
+type com/eu/habbo/threading/runnables/HabboGiveHandItemToPet polaris/threading/runnables/UserGiveHandItemToPet
+type com/eu/habbo/threading/runnables/HabboItemNewState polaris/threading/runnables/UserItemNewState
+type com/eu/habbo/threading/runnables/PetFollowHabbo polaris/threading/runnables/PetFollowUser
+type com/eu/habbo/threading/runnables/QueryDeleteHabboBadge polaris/threading/runnables/QueryDeleteUserBadge
+type com/eu/habbo/threading/runnables/QueryDeleteHabboItem polaris/threading/runnables/QueryDeleteUserItem
+type com/eu/habbo/threading/runnables/QueryDeleteHabboItems polaris/threading/runnables/QueryDeleteUserItems
+type com/eu/habbo/messages/outgoing/inventory/AddHabboItemComposer$AddHabboItemCategory polaris/messages/outgoing/inventory/AddUserItemComposer$AddUserItemCategory
+type com/eu/habbo/habbohotel/earnings/EarningsCenterManager$HabboRewardApplier polaris/hotel/earnings/EarningsCenterManager$UserRewardApplier
+type com/eu/habbo/habbohotel/users/inventory/EffectsComponent$HabboEffect polaris/hotel/users/inventory/EffectsComponent$UserEffect
+
+method addHabbo addUser
+method addHabboItem addUserItem
+method addHabboOfferPurchase addUserOfferPurchase
+method admitNextQueuedHabbo admitNextQueuedUser
+method botReachedHabbo botReachedUser
+method canHabboReadForum canUserReadForum
+method claimHabboItem claimUserItem
+method containsHabbo containsUser
+method createRoomForHabbo createRoomForUser
+method floodMuteHabbo floodMuteUser
+method forHabbo forUser
+method fromHabbo fromUser
+method fromHabboItem fromUserItem
+method getAchievementProgressForHabbo getAchievementProgressForUser
+method getActiveGuideTourByHabbo getActiveGuideTourByUser
+method getActiveTradeForHabbo getActiveTradeForUser
+method getAndRemoveHabboItem getAndRemoveUserItem
+method getAndRemoveUnrentedHabboItem getAndRemoveUnrentedUserItem
+method getBadgesOfflineHabbo getBadgesOfflineUser
+method getBannedHabbos getBannedUsers
+method getControlledHabbo getControlledUser
+method getCurrentHabbos getCurrentUsers
+method getFollowingHabboId getFollowingUserId
+method getGuideTourByHabbo getGuideTourByUser
+method getHabbo getUser
+method getHabboByRoomUnit getUserByRoomUnit
+method getHabboByRoomUnitId getUserByRoomUnitId
+method getHabboCount getUserCount
+method getHabboInfo getUserInfo
+method getHabboItem getUserItem
+method getHabboManager getUserManager
+method getHabboOfferPurchase getUserOfferPurchase
+method getHabboQueue getUserQueue
+method getHabboStats getUserStats
+method getHabbos getUsers
+method getHabbosAndBotsAt getUsersAndBotsAt
+method getHabbosAt getUsersAt
+method getHabbosOnItem getUsersOnItem
+method getHabbosWithIP getUsersWithIP
+method getHabbosWithMachineId getUsersWithMachineId
+method getMutedHabbos getMutedUsers
+method getOfflineHabboInfo getOfflineUserInfo
+method getOnlineHabbos getOnlineUsers
+method getOpenReportedHabboTicket getOpenReportedUserTicket
+method getOwnedRoomsForHabbo getOwnedRoomsForUser
+method getPlayerForHabbo getPlayerForUser
+method getRecipesForHabbo getRecipesForUser
+method getRequestingHabbo getRequestingUser
+method getRoomTradeUserForHabbo getRoomTradeUserForUser
+method getRoomsForHabbo getRoomsForUser
+method getTargetHabbo getTargetUser
+method getTeamForHabbo getTeamForUser
+method hasHabbo hasUser
+method hasHabbosAt hasUsersAt
+method hasOtherHabbosAt hasOtherUsersAt
+method isAuthenticHabbo isAuthenticUser
+method isHabboClubOffer isClubOffer
+method isShowHabbo isShowUser
+method kickHabbo kickUser
+method loadHabbo loadUser
+method loadHabboById loadUserById
+method loadHabboItem loadUserItem
+method loadRoomsForHabbo loadRoomsForUser
+method moveHabboSmooth moveUserSmooth
+method muteHabbo muteUser
+method offlineHabboInfo offlineUserInfo
+method onlineHabbo onlineUser
+method onlineHabbos onlineUsers
+method openTicketsForHabbo openTicketsForUser
+method parkHabbo parkUser
+method pickupPetsForHabbo pickupPetsForUser
+method processHabboChatCounter processUserChatCounter
+method processHabboEffect processUserEffect
+method processHabboHandItem processUserHandItem
+method processHabboIdle processUserIdle
+method processHabboKick processUserKick
+method processHabboMute processUserMute
+method processHabboQueue processUserQueue
+method queuedHabboIds queuedUserIds
+method randomToyHabboItem randomToyUserItem
+method refreshRightsForHabbo refreshRightsForUser
+method removeHabbo removeUser
+method removeHabboItem removeUserItem
+method resolveHabbos resolveUsers
+method resolveLastHabbo resolveLastUser
+method resolveMessageSourceHabbo resolveMessageSourceUser
+method restoreHabboItemsAfterFailedTake restoreUserItemsAfterFailedTake
+method roomCategoriesForHabbo roomCategoriesForUser
+method sendComposerToHabbosWithRights sendComposerToUsersWithRights
+method sendPacketToHabbosWithPermission sendPacketToUsersWithPermission
+method setHabbo setUser
+method startFollowingHabbo startFollowingUser
+method stopFollowingHabbo stopFollowingUser
+method takeHabboItemsAtomically takeUserItemsAtomically
+method teleportHabboToItem teleportUserToItem
+method teleportHabboToLocation teleportUserToLocation
+method triggerBotReachedHabbo triggerBotReachedUser
+method unbanHabbo unbanUser
+method unloadRoomsForHabbo unloadRoomsForUser
+method unmuteHabbo unmuteUser
+method updateHabbo updateUser
+method updateHabbosAt updateUsersAt
+
+field polaris/messages/outgoing/Outgoing AddHabboItemComposer AddUserItemComposer
+field polaris/messages/outgoing/Outgoing RemoveHabboItemComposer RemoveUserItemComposer
+field polaris/messages/outgoing/Outgoing StaffAlertAndOpenHabboWayComposer UserBannedComposer
+field polaris/messages/outgoing/Outgoing StaffAlertWIthLinkAndOpenHabboWayComposer ModerationCautionComposer
+field polaris/messages/outgoing/Outgoing HabboMallComposer TargetedOfferNotFoundComposer
+field polaris/messages/outgoing/Outgoing HabboWayQuizComposer2 QuizDataComposer
+field polaris/messages/outgoing/Outgoing HabboWayQuizComposer1 HotelWayQuizComposer
+field polaris/messages/outgoing/Outgoing UnknownHabboWayQuizComposer QuizResultsComposer
+field polaris/messages/incoming/Incoming GetHabboGuildBadgesMessageEvent GetUserGuildBadgesMessageEvent
+
+# Public fields and constants (the owner is the class that declares them; subclasses are resolved)
+field polaris/WiredCompatibilityDiagnostics$FailurePoint CONDITION_HABBO_COUNT_LEGACY CONDITION_USER_COUNT_LEGACY
+field polaris/WiredCompatibilityDiagnostics$FailurePoint CONDITION_NOT_HABBO_COUNT_LEGACY CONDITION_NOT_USER_COUNT_LEGACY
+field polaris/WiredCompatibilityDiagnostics$FailurePoint EFFECT_MUTE_HABBO_LEGACY EFFECT_MUTE_USER_LEGACY
+field polaris/hotel/catalog/ClubOffer WINDOW_HABBO_CLUB WINDOW_CLUB
+field polaris/hotel/items/FurnitureType HABBO_CLUB CLUB
+field polaris/hotel/items/RedeemableSubscriptionType HABBO_CLUB CLUB
+field polaris/hotel/modtool/ModToolChatLog habboId userId
+field polaris/hotel/modtool/ModToolSanctionItem habboId userId
+field polaris/hotel/modtool/ScripterEvent habbo user
+field polaris/hotel/rooms/FurnitureMovementError TILE_HAS_HABBOS TILE_HAS_USERS
+field polaris/hotel/users/inventory/EffectsComponent habbo user
+field polaris/hotel/users/subscriptions/Subscription HABBO_CLUB CLUB
+field polaris/hotel/wired/WiredConditionType FURNI_HAVE_HABBO FURNI_HAVE_USER
+field polaris/hotel/wired/WiredConditionType NOT_FURNI_HAVE_HABBO NOT_FURNI_HAVE_USER
+field polaris/hotel/wired/core/WiredEvent$Type BOT_REACHED_HABBO BOT_REACHED_USER
+field polaris/messages/outgoing/achievements/talenttrack/TalentTrackComposer habbo user
+field polaris/messages/outgoing/events/calendar/AdventCalendarProductComposer habbo user
+field polaris/messages/outgoing/guilds/forums/GuildForumDataComposer habbo user
+field polaris/messages/outgoing/inventory/UserEffectsListComposer habbo user
+field polaris/plugin/events/bots/BotServerItemEvent habbo user
+field polaris/plugin/events/furniture/FurnitureUserEvent habbo user
+field polaris/plugin/events/games/GameUserEvent habbo user
+field polaris/plugin/events/guilds/GuildFavoriteSetEvent habbo user
+field polaris/plugin/events/guilds/GuildGivenAdminEvent habbo user
+field polaris/plugin/events/guilds/GuildPurchasedEvent habbo user
+field polaris/plugin/events/guilds/GuildRemovedFavoriteEvent habbo user
+field polaris/plugin/events/marketplace/MarketPlaceItemOfferedEvent habbo user
+field polaris/plugin/events/rooms/UserVoteRoomEvent habbo user
+field polaris/plugin/events/users/UserAddedToRoomEvent habbosToSendEnter usersToSendEnter
+field polaris/plugin/events/users/UserEvent habbo user
+field polaris/plugin/events/users/UserExitRoomEvent$UserExitRoomReason KICKED_HABBO KICKED_USER
+field polaris/threading/runnables/YouAreAPirate habbo user
+field polaris/threading/runnables/freeze/FreezeThrowSnowball habbo user
+field polaris/hotel/items/interactions/wired/conditions/WiredConditionTeamGameBase$UserGameContext habbo user
+field polaris/messages/rcon/RCONMessage HABBO_NOT_FOUND USER_NOT_FOUND
+field polaris/hotel/rooms/Room HABBO_CHAT_DELAY USER_CHAT_DELAY
+field polaris/hotel/rooms/RoomChatManager HABBO_CHAT_DELAY USER_CHAT_DELAY
+field polaris/hotel/items/interactions/wired/conditions/WiredConditionTriggererMatch ENTITY_HABBO ENTITY_USER
+field polaris/messages/outgoing/rooms/items/rentablespaces/RentableSpaceInfoComposer CANT_RENT_NO_HABBO_CLUB CANT_RENT_NO_CLUB
+method habboEntered userEntered
+field polaris/plugin/events/users/UserAddedToRoomEvent visibleHabbos visibleUsers
+
+# Outgoing composers renamed after the renderer's parsers
+type com/eu/habbo/messages/outgoing/unknown/CloseWebPageComposer polaris/messages/outgoing/generic/RestoreClientComposer
+type com/eu/habbo/messages/outgoing/unknown/ConvertedForwardToRoomComposer polaris/messages/outgoing/navigator/ConvertedRoomIdComposer
+type com/eu/habbo/messages/outgoing/unknown/EpicPopupFrameComposer polaris/messages/outgoing/quests/EpicPopupComposer
+type com/eu/habbo/messages/outgoing/unknown/ExtendClubMessageComposer polaris/messages/outgoing/catalog/ClubExtendOfferComposer
+type com/eu/habbo/messages/outgoing/unknown/MessengerErrorComposer polaris/messages/outgoing/friends/AcceptFriendResultComposer
+type com/eu/habbo/messages/outgoing/unknown/MinimailNewMessageComposer polaris/messages/outgoing/friends/MiniMailNewComposer
+type com/eu/habbo/messages/outgoing/unknown/ModToolSanctionDataComposer polaris/messages/outgoing/modtool/CfhSanctionComposer
+type com/eu/habbo/messages/outgoing/unknown/MostUselessErrorAlertComposer polaris/messages/outgoing/polls/PollErrorComposer
+type com/eu/habbo/messages/outgoing/unknown/RemoveRoomEventComposer polaris/messages/outgoing/rooms/promotions/RoomEventCancelComposer
+type com/eu/habbo/messages/outgoing/unknown/RentableItemBuyOutPriceComposer polaris/messages/outgoing/rooms/items/rentablespaces/FurniRentOrBuyoutOfferComposer
+type com/eu/habbo/messages/outgoing/unknown/RoomCategoryUpdateMessageComposer polaris/messages/outgoing/rooms/ShowEnforceRoomCategoryDialogComposer
+type com/eu/habbo/messages/outgoing/unknown/RoomMessagesPostedCountComposer polaris/messages/outgoing/rooms/RoomMessageNotificationComposer
+type com/eu/habbo/messages/outgoing/unknown/RoomUnknown3Composer polaris/messages/outgoing/rooms/users/YouAreSpectatorComposer
+type com/eu/habbo/messages/outgoing/unknown/TalentTrackEmailFailedComposer polaris/messages/outgoing/users/ChangeEmailResultComposer
+type com/eu/habbo/messages/outgoing/unknown/TalentTrackEmailVerifiedComposer polaris/messages/outgoing/users/EmailStatusComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownAdManagerComposer polaris/messages/outgoing/generic/InterstitialComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownCatalogPageOfferComposer polaris/messages/outgoing/catalog/SeasonalCalendarDailyOfferComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownCompetitionComposer polaris/messages/outgoing/rooms/competition/CompetitionVotingInfoComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownFurniModelComposer polaris/messages/outgoing/rooms/items/FurniturePostItPlacedComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownGuild2Composer polaris/messages/outgoing/guilds/GroupDetailsChangedComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownHelperComposer polaris/messages/outgoing/modtool/CallForHelpPendingCallsDeletedComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownHintComposer polaris/messages/outgoing/generic/ElementPointerComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownMessengerErrorComposer polaris/messages/outgoing/friends/InstantMessageErrorComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownPollQuestionComposer polaris/messages/outgoing/polls/QuestionFinishedComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownRoomDesktopComposer polaris/messages/outgoing/rooms/BotSkillListUpdateComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownRoomViewerComposer polaris/messages/outgoing/handshake/IdentityAccountsComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownStatusComposer polaris/messages/outgoing/users/AccountSafetyLockStatusChangeComposer
+type com/eu/habbo/messages/outgoing/unknown/UnknownTradeComposer polaris/messages/outgoing/trading/TradingNotOpenComposer
+type com/eu/habbo/messages/outgoing/unknown/UnkownPetPackageComposer polaris/messages/outgoing/furniture/FurnitureAliasesComposer
+type com/eu/habbo/messages/outgoing/unknown/WatchAndEarnRewardComposer polaris/messages/outgoing/generic/OfferRewardDeliveredComposer
+type com/eu/habbo/messages/outgoing/unknown/WelcomeGiftComposer polaris/messages/outgoing/users/WelcomeGiftStatusComposer
+type com/eu/habbo/messages/outgoing/unknown/WelcomeGiftErrorComposer polaris/messages/outgoing/users/WelcomeGiftChangeEmailResultComposer
+field polaris/messages/outgoing/Outgoing CloseWebPageComposer RestoreClientComposer
+field polaris/messages/outgoing/Outgoing ConvertedForwardToRoomComposer ConvertedRoomIdComposer
+field polaris/messages/outgoing/Outgoing EpicPopupFrameComposer EpicPopupComposer
+field polaris/messages/outgoing/Outgoing ExtendClubMessageComposer ClubExtendOfferComposer
+field polaris/messages/outgoing/Outgoing MessengerErrorComposer AcceptFriendResultComposer
+field polaris/messages/outgoing/Outgoing MinimailNewMessageComposer MiniMailNewComposer
+field polaris/messages/outgoing/Outgoing ModToolSanctionDataComposer CfhSanctionComposer
+field polaris/messages/outgoing/Outgoing MostUselessErrorAlertComposer PollErrorComposer
+field polaris/messages/outgoing/Outgoing RemoveRoomEventComposer RoomEventCancelComposer
+field polaris/messages/outgoing/Outgoing RentableItemBuyOutPriceComposer FurniRentOrBuyoutOfferComposer
+field polaris/messages/outgoing/Outgoing RoomCategoryUpdateMessageComposer ShowEnforceRoomCategoryDialogComposer
+field polaris/messages/outgoing/Outgoing RoomMessagesPostedCountComposer RoomMessageNotificationComposer
+field polaris/messages/outgoing/Outgoing RoomUnknown3Composer YouAreSpectatorComposer
+field polaris/messages/outgoing/Outgoing TalentTrackEmailFailedComposer ChangeEmailResultComposer
+field polaris/messages/outgoing/Outgoing TalentTrackEmailVerifiedComposer EmailStatusComposer
+field polaris/messages/outgoing/Outgoing UnknownAdManagerComposer InterstitialComposer
+field polaris/messages/outgoing/Outgoing UnknownCatalogPageOfferComposer SeasonalCalendarDailyOfferComposer
+field polaris/messages/outgoing/Outgoing UnknownCompetitionComposer CompetitionVotingInfoComposer
+field polaris/messages/outgoing/Outgoing UnknownFurniModelComposer FurniturePostItPlacedComposer
+field polaris/messages/outgoing/Outgoing UnknownGuild2Composer GroupDetailsChangedComposer
+field polaris/messages/outgoing/Outgoing UnknownHelperComposer CallForHelpPendingCallsDeletedComposer
+field polaris/messages/outgoing/Outgoing UnknownHintComposer ElementPointerComposer
+field polaris/messages/outgoing/Outgoing UnknownMessengerErrorComposer InstantMessageErrorComposer
+field polaris/messages/outgoing/Outgoing UnknownRoomDesktopComposer BotSkillListUpdateComposer
+field polaris/messages/outgoing/Outgoing UnknownRoomViewerComposer IdentityAccountsComposer
+field polaris/messages/outgoing/Outgoing UnknownStatusComposer AccountSafetyLockStatusChangeComposer
+field polaris/messages/outgoing/Outgoing UnknownTradeComposer TradingNotOpenComposer
+field polaris/messages/outgoing/Outgoing UnkownPetPackageComposer FurnitureAliasesComposer
+field polaris/messages/outgoing/Outgoing WatchAndEarnRewardComposer OfferRewardDeliveredComposer
+field polaris/messages/outgoing/Outgoing WelcomeGiftComposer WelcomeGiftStatusComposer
+field polaris/messages/outgoing/Outgoing WelcomeGiftErrorComposer WelcomeGiftChangeEmailResultComposer
+type com/eu/habbo/messages/incoming/handshake/IsFirstLoginOfDayComposer polaris/messages/outgoing/handshake/IsFirstLoginOfDayComposer
+
+# Composers moved out of messages/outgoing/unknown and core into their area
+type com/eu/habbo/messages/outgoing/unknown/CompetitionEntrySubmitResultComposer polaris/messages/outgoing/rooms/competition/CompetitionEntrySubmitResultComposer
+type com/eu/habbo/messages/outgoing/unknown/IgnoredUsersComposer polaris/messages/outgoing/users/IgnoredUsersComposer
+type com/eu/habbo/messages/outgoing/unknown/QuizResultsComposer polaris/messages/outgoing/hotelway/QuizResultsComposer
+type com/eu/habbo/messages/outgoing/unknown/RoomAdErrorComposer polaris/messages/outgoing/rooms/promotions/RoomAdErrorComposer
+type com/eu/habbo/messages/outgoing/unknown/TargetedOfferNotFoundComposer polaris/messages/outgoing/catalog/TargetedOfferNotFoundComposer
+type com/eu/habbo/messages/outgoing/unknown/UserClassificationComposer polaris/messages/outgoing/modtool/UserClassificationComposer
+type com/eu/habbo/core/RoomUserPetComposer polaris/messages/outgoing/rooms/users/RoomUserPetComposer
+
+# Room variable stores grouped under hotel/rooms/variables; the heavy-room registry joins the wired engine
+type com/eu/habbo/habbohotel/rooms/HeavyWiredRooms polaris/hotel/wired/core/HeavyWiredRooms
+type com/eu/habbo/habbohotel/rooms/RoomArrayVariableManager polaris/hotel/rooms/variables/RoomArrayVariableManager
+type com/eu/habbo/habbohotel/rooms/RoomArrayVariableRepository polaris/hotel/rooms/variables/RoomArrayVariableRepository
+type com/eu/habbo/habbohotel/rooms/RoomFurniVariableManager polaris/hotel/rooms/variables/RoomFurniVariableManager
+type com/eu/habbo/habbohotel/rooms/RoomUserVariableManager polaris/hotel/rooms/variables/RoomUserVariableManager
+type com/eu/habbo/habbohotel/rooms/RoomUserVariableRepository polaris/hotel/rooms/variables/RoomUserVariableRepository
+type com/eu/habbo/habbohotel/rooms/RoomUserVariableStore polaris/hotel/rooms/variables/RoomUserVariableStore
+type com/eu/habbo/habbohotel/rooms/RoomVariableAssignment polaris/hotel/rooms/variables/RoomVariableAssignment
+type com/eu/habbo/habbohotel/rooms/RoomVariableChanges polaris/hotel/rooms/variables/RoomVariableChanges
+type com/eu/habbo/habbohotel/rooms/RoomVariableManager polaris/hotel/rooms/variables/RoomVariableManager
+type com/eu/habbo/habbohotel/rooms/RoomVariableManagers polaris/hotel/rooms/variables/RoomVariableManagers
+type com/eu/habbo/habbohotel/rooms/UserVariableHolders polaris/hotel/rooms/variables/UserVariableHolders
+type com/eu/habbo/habbohotel/rooms/UserVariableLocks polaris/hotel/rooms/variables/UserVariableLocks
+type com/eu/habbo/habbohotel/rooms/WiredArrayPersistenceDelta polaris/hotel/rooms/variables/WiredArrayPersistenceDelta
+type com/eu/habbo/habbohotel/rooms/RoomWiredVariableCatalog polaris/hotel/rooms/variables/RoomWiredVariableCatalog
+type com/eu/habbo/habbohotel/rooms/RoomWiredVariableWrites polaris/hotel/rooms/variables/RoomWiredVariableWrites
+type com/eu/habbo/habbohotel/rooms/WiredVariableGiveScope polaris/hotel/rooms/variables/WiredVariableGiveScope
+
+# Commands named like the rest
+type com/eu/habbo/habbohotel/commands/UpdateAchievements polaris/hotel/commands/UpdateAchievementsCommand

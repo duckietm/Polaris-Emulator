@@ -1,0 +1,97 @@
+package polaris.hotel.rooms;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import polaris.hotel.soundboard.SoundboardRoomMode;
+import polaris.hotel.users.User;
+import polaris.messages.outgoing.rooms.youtube.YouTubeRoomBroadcastComposer;
+import polaris.messages.outgoing.rooms.youtube.YouTubeRoomWatchersComposer;
+
+final class RoomMediaSession {
+
+    private final Room room;
+    private final List<String> playlist = new CopyOnWriteArrayList<>();
+    private final Set<Integer> watchers = ConcurrentHashMap.newKeySet();
+    private boolean youtubeEnabled;
+    private SoundboardRoomMode soundboardMode = SoundboardRoomMode.OFF;
+    private String currentVideo = "";
+    private String senderName = "";
+
+    RoomMediaSession(Room room) {
+        this.room = room;
+    }
+
+    boolean youtubeEnabled() {
+        return this.youtubeEnabled;
+    }
+
+    void youtubeEnabled(boolean enabled) {
+        this.youtubeEnabled = enabled;
+    }
+
+    boolean soundboardEnabled() {
+        return this.soundboardMode.enabled();
+    }
+
+    void soundboardEnabled(boolean enabled) {
+        this.soundboardMode = enabled ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF;
+    }
+
+    SoundboardRoomMode soundboardMode() {
+        return this.soundboardMode;
+    }
+
+    void soundboardMode(SoundboardRoomMode mode) {
+        this.soundboardMode = mode;
+    }
+
+    String currentVideo() {
+        return this.currentVideo;
+    }
+
+    String senderName() {
+        return this.senderName;
+    }
+
+    List<String> playlist() {
+        return this.playlist;
+    }
+
+    Set<Integer> watchers() {
+        return this.watchers;
+    }
+
+    void setVideo(String videoId, String senderName, List<String> playlist) {
+        this.currentVideo = videoId;
+        this.senderName = senderName;
+        this.playlist.clear();
+        if (playlist != null) {
+            this.playlist.addAll(playlist);
+        }
+    }
+
+    void clearVideo() {
+        this.currentVideo = "";
+        this.senderName = "";
+        this.playlist.clear();
+    }
+
+    void removeWatcher(User user) {
+        if (user == null) {
+            return;
+        }
+
+        int userId = user.getUserInfo().getId();
+        if (!this.currentVideo.isEmpty() && user.getUserInfo().getUsername().equals(this.senderName)) {
+            this.clearVideo();
+            this.room.sendComposer(new YouTubeRoomBroadcastComposer("", "", Collections.emptyList()).compose());
+        }
+
+        if (this.watchers.remove(userId)) {
+            this.room.sendComposer(new YouTubeRoomWatchersComposer(this.watchers).compose());
+        }
+    }
+}

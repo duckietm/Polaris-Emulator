@@ -1,0 +1,275 @@
+package polaris.database;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Bounded executor for blocking database writes that must not compete with
+ * room and wired scheduling.
+ */
+public final class PersistenceExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PersistenceExecutor.class);
+    private static final int DEFAULT_QUEUE_CAPACITY = 2_048;
+    private static final int RECENT_FAILURE_CAPACITY = 64;
+    private static final long DEFAULT_SUBMISSION_TIMEOUT_MILLIS = 5_000L;
+
+    private final PersistenceOperationMonitor operationMonitor =
+            new PersistenceOperationMonitor(RECENT_FAILURE_CAPACITY);
+    private final int queueCapacity;
+    private final long submissionTimeoutNanos;
+    private final AtomicInteger highWaterMark = new AtomicInteger();
+    private final AtomicLong saturationCount = new AtomicLong();
+    private final AtomicLong totalSubmissionWaitNanos = new AtomicLong();
+    private final ThreadLocal<Boolean> persistenceWorker = ThreadLocal.withInitial(() -> false);
+    private final ThreadPoolExecutor executor;
+    private final AtomicBoolean accepting = new AtomicBoolean(true);
+
+    public PersistenceExecutor(int threads, int queueCapacity) {
+        this(threads, queueCapacity, DEFAULT_SUBMISSION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @param submissionTimeout how long a caller waits for room in a full queue before the task is
+     *     rejected: an unbounded wait froze every packet thread for as long as the database was slow.
+     */
+    PersistenceExecutor(int threads, int queueCapacity, long submissionTimeout, TimeUnit unit) {
+        if (threads < 1) {
+            throw new IllegalArgumentException("threads must be positive");
+        }
+        if (queueCapacity < 1) {
+            throw new IllegalArgumentException("queueCapacity must be positive");
+        }
+
+        this.queueCapacity = queueCapacity;
+        this.submissionTimeoutNanos = Math.max(0L, unit.toNanos(submissionTimeout));
+        ThreadFactory platformThreadFactory =
+                Thread.ofPlatform().name("Polaris-JDBC-", 0).factory();
+        ThreadFactory threadFactory = task -> platformThreadFactory.newThread(() -> {
+            this.persistenceWorker.set(true);
+            try {
+                task.run();
+            } finally {
+                this.persistenceWorker.remove();
+            }
+        });
+        this.executor = new ThreadPoolExecutor(
+                threads,
+                threads,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(queueCapacity),
+                threadFactory,
+                this::enqueueOnSaturation);
+        this.executor.prestartAllCoreThreads();
+    }
+
+    public static PersistenceExecutor forRuntimeThreads(int runtimeThreads) {
+        return forRuntimeThreads(runtimeThreads, DEFAULT_QUEUE_CAPACITY);
+    }
+
+    public static PersistenceExecutor forRuntimeThreads(int runtimeThreads, int queueCapacity) {
+        int threads = Math.max(2, Math.min(8, runtimeThreads));
+        return new PersistenceExecutor(threads, queueCapacity);
+    }
+
+    public void execute(Runnable task) {
+        Runnable requiredTask = Objects.requireNonNull(task, "task");
+        this.execute(operationType(requiredTask), requiredTask);
+    }
+
+    public void execute(String operationType, Runnable task) {
+        Runnable requiredTask = Objects.requireNonNull(task, "task");
+        PersistenceOperationMonitor.Operation operation = this.operationMonitor.started(operationType);
+        Runnable guarded = this.guard(operation, requiredTask);
+        try {
+            if (!this.accepting.get()) {
+                throw new RejectedExecutionException("Persistence executor is not accepting work");
+            }
+
+            this.executor.execute(guarded);
+            this.recordQueueDepth();
+        } catch (RejectedExecutionException exception) {
+            this.operationMonitor.rejected(operation, exception);
+            throw exception;
+        }
+    }
+
+    public int getQueueDepth() {
+        return this.executor.getQueue().size();
+    }
+
+    public int getQueueCapacity() {
+        return this.executor.getQueue().size() + this.executor.getQueue().remainingCapacity();
+    }
+
+    public int getActiveCount() {
+        return this.executor.getActiveCount();
+    }
+
+    public boolean awaitIdle(long timeout, TimeUnit unit) {
+        long timeoutNanos = Math.max(0L, unit.toNanos(timeout));
+        long startedAt = System.nanoTime();
+        long remainingNanos = timeoutNanos;
+        while (this.operationMonitor.activeCount() > 0L) {
+            if (remainingNanos <= 0L) {
+                return false;
+            }
+            try {
+                TimeUnit.NANOSECONDS.sleep(Math.min(remainingNanos, TimeUnit.MILLISECONDS.toNanos(10)));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+            remainingNanos = timeoutNanos - Math.max(0L, System.nanoTime() - startedAt);
+        }
+        return true;
+    }
+
+    public PersistenceOperationMonitor.Snapshot operationSnapshot() {
+        return this.operationMonitor.snapshot();
+    }
+
+    public Metrics metrics() {
+        return new Metrics(
+                this.getActiveCount(),
+                this.getQueueDepth(),
+                this.queueCapacity,
+                this.highWaterMark.get(),
+                this.saturationCount.get(),
+                this.totalSubmissionWaitNanos.get(),
+                this.accepting.get());
+    }
+
+    public void shutDown() {
+        this.shutDown(35, TimeUnit.SECONDS);
+    }
+
+    void shutDown(long timeout, TimeUnit unit) {
+        this.accepting.set(false);
+        this.executor.shutdown();
+
+        boolean interrupted = false;
+        boolean terminated = false;
+        try {
+            terminated = this.executor.awaitTermination(Math.max(0L, timeout), unit);
+        } catch (InterruptedException exception) {
+            interrupted = true;
+        }
+
+        if (!terminated) {
+            List<Runnable> queued = this.executor.shutdownNow();
+            if (!interrupted) {
+                try {
+                    terminated = this.executor.awaitTermination(Math.max(0L, timeout), unit);
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+            // The queued writes run only once no worker is left: run beside a worker still busy, an
+            // older queued UPDATE could land after a newer one for the same row.
+            if (terminated) {
+                for (Runnable task : queued) {
+                    task.run();
+                }
+            } else if (!queued.isEmpty()) {
+                LOGGER.error(
+                        "Persistence executor left {} queued tasks unrun: workers were still active", queued.size());
+            }
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+        if (terminated) {
+            LOGGER.info("Persistence executor stopped after draining accepted work");
+        } else {
+            LOGGER.error("Persistence executor workers remained active during shutdown");
+        }
+    }
+
+    private void enqueueOnSaturation(Runnable task, ThreadPoolExecutor executor) {
+        if (executor.isShutdown()) {
+            throw new RejectedExecutionException("Persistence executor is shutting down");
+        }
+
+        this.saturationCount.incrementAndGet();
+        this.highWaterMark.accumulateAndGet(this.queueCapacity, Math::max);
+        if (this.persistenceWorker.get()) {
+            task.run();
+            return;
+        }
+
+        long startedAt = System.nanoTime();
+        try {
+            if (!executor.getQueue().offer(task, this.submissionTimeoutNanos, TimeUnit.NANOSECONDS)) {
+                LOGGER.error(
+                        "Persistence queue stayed full for {} ms; a task was rejected so the caller is not held",
+                        TimeUnit.NANOSECONDS.toMillis(this.submissionTimeoutNanos));
+                throw new RejectedExecutionException("Persistence queue stayed full");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new RejectedExecutionException("Interrupted while waiting for persistence capacity", exception);
+        } finally {
+            this.totalSubmissionWaitNanos.addAndGet(Math.max(0L, System.nanoTime() - startedAt));
+        }
+
+        if (executor.isShutdown() && executor.remove(task)) {
+            throw new RejectedExecutionException("Persistence executor shut down while accepting work");
+        }
+
+        this.recordQueueDepth();
+    }
+
+    private void recordQueueDepth() {
+        this.highWaterMark.accumulateAndGet(this.executor.getQueue().size(), Math::max);
+    }
+
+    private Runnable guard(PersistenceOperationMonitor.Operation operation, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+                this.operationMonitor.succeeded(operation);
+            } catch (Exception exception) {
+                this.operationMonitor.failed(operation, exception);
+                LOGGER.error(
+                        "Persistence task failed: operationId={}, operationType={}",
+                        operation.operationId(),
+                        operation.operationType(),
+                        exception);
+            } catch (Error error) {
+                this.operationMonitor.failed(operation, error);
+                LOGGER.error(
+                        "Persistence task failed: operationId={}, operationType={}",
+                        operation.operationId(),
+                        operation.operationType(),
+                        error);
+                throw error;
+            }
+        };
+    }
+
+    private static String operationType(Runnable task) {
+        String simpleName = task.getClass().getSimpleName();
+        return simpleName.isBlank() || simpleName.contains("$$Lambda") ? "anonymous" : simpleName;
+    }
+
+    public record Metrics(
+            int activeCount,
+            int queueDepth,
+            int queueCapacity,
+            int highWaterMark,
+            long saturationCount,
+            long totalSubmissionWaitNanos,
+            boolean accepting) {}
+}

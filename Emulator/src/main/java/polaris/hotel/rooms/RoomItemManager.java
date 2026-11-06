@@ -1,0 +1,852 @@
+package polaris.hotel.rooms;
+
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.hotel.items.FurnitureDirectionsRuntime;
+import polaris.hotel.items.FurnitureType;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWired;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.core.WiredMovementPhysics;
+
+/**
+ * Manages all items/furniture within a room.
+ * Handles loading, adding, removing, querying, and picking up items.
+ */
+public class RoomItemManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomItemManager.class);
+
+    private final Room room;
+    private final RoomItemIndex index;
+    private final RoomItemMovementService movement;
+    private final RoomItemOperations operations;
+    private final RoomItemOwnershipService ownership;
+    private final RoomItemPlacementService placement;
+    private final RoomItemRegistry registry;
+
+    // Tile cache for item lookups
+    public final ConcurrentHashMap<RoomTile, Set<UserItem>> tileCache;
+
+    public RoomItemManager(Room room) {
+        this.room = room;
+        this.index = new RoomItemIndex(room);
+        this.operations = new RoomItemOperations(room);
+        this.registry = new RoomItemRegistry(room);
+        this.ownership = new RoomItemOwnershipService(room, this.index, this.registry);
+        this.placement = new RoomItemPlacementService(room, this.index, this);
+        this.movement = new RoomItemMovementService(room, this, this.placement);
+        this.tileCache = this.index.tileCache();
+    }
+
+    // ==================== LOADING ====================
+
+    /**
+     * Loads items from the database.
+     */
+    public void loadItems(Connection connection) {
+        synchronized (this.index.items()) {
+            this.index.items().clear();
+        }
+        this.index.buildersClubIds().clear();
+
+        // Everything comes through this connection: a load holds it, so asking the pool for another
+        // per item can starve the pool when several rooms load at once.
+        Set<Integer> buildersClub = this.readBuildersClubItems(connection);
+        this.readOwnerNames(connection, !buildersClub.isEmpty());
+
+        Set<String> floorNames = new HashSet<>();
+        try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM items WHERE room_id = ?")) {
+            statement.setInt(1, this.room.getId());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    UserItem item = this.room.gameEnvironment().getItemManager().loadUserItem(set);
+                    if (item != null) {
+                        this.ownership.add(item, buildersClub.contains(item.getId()), false);
+                        if (item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.FLOOR) {
+                            floorNames.add(item.getBaseItem().getName());
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+        // Read the furni directions in the background now, so wired and rotations find them cached.
+        floorNames.forEach(FurnitureDirectionsRuntime::prefetch);
+
+        if (this.itemCount() > Room.MAXIMUM_FURNI) {
+            LOGGER.error(
+                    "Room ID: {} has exceeded the furniture limit ({} > {}).",
+                    this.room.getId(),
+                    this.itemCount(),
+                    Room.MAXIMUM_FURNI);
+        }
+    }
+
+    private Set<Integer> readBuildersClubItems(Connection connection) {
+        Set<Integer> ids = new HashSet<>();
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT builders_club_items.item_id FROM builders_club_items "
+                        + "INNER JOIN items ON items.id = builders_club_items.item_id WHERE items.room_id = ?")) {
+            statement.setInt(1, this.room.getId());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    ids.add(set.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception reading Builders Club items of room {}", this.room.getId(), e);
+        }
+        return ids;
+    }
+
+    /** The names of everyone owning items here, in one query instead of a profile load per owner. */
+    private void readOwnerNames(Connection connection, boolean hasBuildersClubItems) {
+        Int2ObjectMap<String> names = this.index.ownerNames();
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT DISTINCT users.id, users.username FROM items "
+                        + "INNER JOIN users ON users.id = items.user_id WHERE items.room_id = ? "
+                        + "AND items.id NOT IN (SELECT item_id FROM builders_club_items)")) {
+            statement.setInt(1, this.room.getId());
+            try (ResultSet set = statement.executeQuery()) {
+                synchronized (names) {
+                    while (set.next()) {
+                        int userId = set.getInt(1);
+                        names.put(
+                                userId,
+                                hasBuildersClubItems && userId == BuildersClubRoomSupport.VIRTUAL_OWNER_ID
+                                        ? BuildersClubRoomSupport.DISPLAY_OWNER_NAME
+                                        : set.getString(2));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception reading item owner names of room {}", this.room.getId(), e);
+        }
+    }
+
+    /**
+     * Loads wired data for items.
+     */
+    public void loadWiredData(Connection connection) {
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT id, wired_data FROM items WHERE room_id = ? AND wired_data<>''")) {
+            statement.setInt(1, this.room.getId());
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    int itemId = 0;
+                    UserItem item = null;
+                    try {
+                        itemId = set.getInt("id");
+                        item = this.getUserItem(itemId);
+
+                        if (item instanceof InteractionWired wired) {
+                            wired.loadWiredData(set, this.room);
+                        }
+                    } catch (Exception exception) {
+                        if (item instanceof InteractionWired) {
+                            this.registry.quarantineWired(item);
+                        }
+                        LOGGER.error(
+                                "Quarantined malformed wired item room={} item={} type={} cause={}",
+                                this.room.getId(),
+                                itemId,
+                                item == null ? "unknown" : item.getClass().getSimpleName(),
+                                exception.getClass().getSimpleName());
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+    }
+
+    // ==================== ITEM RETRIEVAL ====================
+
+    /**
+     * Gets an item by ID.
+     */
+    public UserItem getUserItem(int id) {
+        return this.index.get(id);
+    }
+
+    /**
+     * The database id of the furni the client knows by {@code wireId} here: a Builders Club wire id becomes the
+     * furni's database id (0 when no furni here holds it), any other id is returned unchanged.
+     * Use {@link BuildersClubItemIds#fromWire(Room, int)} from handlers.
+     */
+    public int itemIdFromWire(int wireId) {
+        return BuildersClubItemIds.isBandId(wireId)
+                ? this.index.buildersClubIds().itemOf(wireId)
+                : wireId;
+    }
+
+    /** Returns the current in-room incarnation for an item ID, or zero when absent. */
+    public long getItemIncarnation(int id) {
+        return this.index.itemIncarnation(id);
+    }
+
+    /**
+     * Gets the total item count.
+     */
+    public int itemCount() {
+        return this.index.size();
+    }
+
+    /**
+     * Gets all floor items.
+     */
+    public Set<UserItem> getFloorItems() {
+        return this.index.floorItems();
+    }
+
+    /**
+     * Gets all wall items.
+     */
+    public Set<UserItem> getWallItems() {
+        return this.index.wallItems();
+    }
+
+    /**
+     * Gets all post-it notes.
+     */
+    public Set<UserItem> getPostItNotes() {
+        return this.index.postItNotes();
+    }
+
+    /**
+     * Gets the room items map.
+     */
+    public Int2ObjectMap<UserItem> getRoomItems() {
+        return this.index.items();
+    }
+
+    // ==================== ITEM POSITION QUERIES ====================
+
+    /**
+     * Gets items at a position (deprecated version using int).
+     */
+    @Deprecated
+    public Set<UserItem> getItemsAt(int x, int y) {
+        RoomTile tile = this.room.getLayout().getTile((short) x, (short) y);
+
+        if (tile != null) {
+            return this.getItemsAt(tile);
+        }
+
+        return new HashSet<>(0);
+    }
+
+    /**
+     * Gets items at a tile.
+     */
+    public Set<UserItem> getItemsAt(RoomTile tile) {
+        return getItemsAt(tile, false);
+    }
+
+    /**
+     * Gets items at a tile with option to return on first match.
+     */
+    public Set<UserItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
+        return this.index.itemsAt(tile, returnOnFirst);
+    }
+
+    /**
+     * Gets items at a position above a minimum Z height.
+     */
+    public Set<UserItem> getItemsAt(int x, int y, double minZ) {
+        Set<UserItem> items = new HashSet<>();
+
+        for (UserItem item : this.getItemsAt(x, y)) {
+            if (item.getZ() < minZ) {
+                continue;
+            }
+
+            items.add(item);
+        }
+        return items;
+    }
+
+    /**
+     * Gets items of a specific type at a position.
+     */
+    public Set<UserItem> getItemsAt(Class<? extends UserItem> type, int x, int y) {
+        Set<UserItem> items = new HashSet<>();
+
+        for (UserItem item : this.getItemsAt(x, y)) {
+            if (!item.getClass().equals(type)) {
+                continue;
+            }
+
+            items.add(item);
+        }
+        return items;
+    }
+
+    /**
+     * Checks if there are items at a position.
+     */
+    public boolean hasItemsAt(int x, int y) {
+        RoomTile tile = this.room.getLayout().getTile((short) x, (short) y);
+
+        if (tile == null) {
+            return false;
+        }
+
+        return this.getItemsAt(tile, true).size() > 0;
+    }
+
+    /**
+     * Gets the top item at a position.
+     */
+    public UserItem getTopItemAt(int x, int y) {
+        return this.getTopItemAt(x, y, null);
+    }
+
+    /**
+     * Gets the top item at a position excluding a specific item.
+     */
+    public UserItem getTopItemAt(int x, int y, UserItem exclude) {
+        RoomTile tile = this.room.getLayout().getTile((short) x, (short) y);
+
+        if (tile == null) {
+            return null;
+        }
+
+        UserItem highestItem = null;
+
+        for (UserItem item : this.getItemsAt(x, y)) {
+            if (exclude != null && exclude == item) {
+                continue;
+            }
+
+            if (highestItem != null
+                    && highestItem.getZ() + Item.getCurrentHeight(highestItem)
+                            > item.getZ() + Item.getCurrentHeight(item)) {
+                continue;
+            }
+
+            highestItem = item;
+        }
+
+        return highestItem;
+    }
+
+    /**
+     * Gets the top walkable item at a position, considering underpass.
+     * If the topmost item is elevated enough to walk under, returns the highest item at walk surface level instead.
+     */
+    public UserItem getWalkableItemAt(int x, int y) {
+        UserItem topItem = this.getTopItemAt(x, y);
+        if (topItem == null) {
+            return null;
+        }
+
+        // If underpass is disabled for this room and this item, just return the top item
+        if (!this.room.isAllowUnderpass() && !topItem.isAllowUnderpass()) {
+            return topItem;
+        }
+
+        // If the top item is walkable, just return it
+        if (topItem.isWalkable()
+                || topItem.getBaseItem().allowWalk()
+                || topItem.getBaseItem().allowSit()
+                || topItem.getBaseItem().allowLay()) {
+            return topItem;
+        }
+
+        // Check for underpass: get the walk surface height
+        double walkSurface =
+                this.room.getLayout() != null ? this.room.getLayout().getHeightAtSquare(x, y) : 0;
+        UserItem walkSurfaceItem = null;
+
+        for (UserItem item : this.getItemsAt(x, y)) {
+            if (item.isWalkable()
+                    || item.getBaseItem().allowWalk()
+                    || item.getBaseItem().allowSit()
+                    || item.getBaseItem().allowLay()) {
+                double itemTop = item.getZ() + Item.getCurrentHeight(item);
+                if (itemTop > walkSurface) {
+                    walkSurface = itemTop;
+                    walkSurfaceItem = item;
+                }
+            }
+        }
+
+        // If there's enough clearance under the top blocking item, return the walk surface item
+        if (topItem.getZ() - walkSurface >= RoomLayout.UNDERPASS_HEIGHT) {
+            return walkSurfaceItem;
+        }
+
+        return topItem;
+    }
+
+    /**
+     * Gets the top item from a set of tiles.
+     */
+    public UserItem getTopItemAt(Set<RoomTile> tiles, UserItem exclude) {
+        UserItem highestItem = null;
+        for (RoomTile tile : tiles) {
+
+            if (tile == null) {
+                continue;
+            }
+
+            for (UserItem item : this.getItemsAt(tile.x, tile.y)) {
+                if (exclude != null && exclude == item) {
+                    continue;
+                }
+
+                if (highestItem != null
+                        && highestItem.getZ() + Item.getCurrentHeight(highestItem)
+                                > item.getZ() + Item.getCurrentHeight(item)) {
+                    continue;
+                }
+
+                highestItem = item;
+            }
+        }
+
+        return highestItem;
+    }
+
+    /**
+     * Gets the top height at a position including items.
+     */
+    public double getTopHeightAt(int x, int y) {
+        UserItem item = this.getTopItemAt(x, y);
+
+        if (item != null) {
+            return (item.getZ()
+                    + Item.getCurrentHeight(item)
+                    - (item.getBaseItem().allowSit() ? 1 : 0));
+        } else {
+            return this.room.getLayout().getHeightAtSquare(x, y);
+        }
+    }
+
+    /**
+     * Gets the lowest chair at a position.
+     */
+    @Deprecated
+    public UserItem getLowestChair(int x, int y) {
+        if (this.room.getLayout() == null) {
+            return null;
+        }
+
+        RoomTile tile = this.room.getLayout().getTile((short) x, (short) y);
+
+        if (tile != null) {
+            return this.getLowestChair(tile);
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the lowest chair at a tile.
+     */
+    public UserItem getLowestChair(RoomTile tile) {
+        UserItem lowestChair = null;
+
+        Set<UserItem> items = this.getItemsAt(tile);
+        if (items != null && !items.isEmpty()) {
+            for (UserItem item : items) {
+
+                if (!item.getBaseItem().allowSit()) {
+                    continue;
+                }
+
+                if (lowestChair != null && lowestChair.getZ() < item.getZ()) {
+                    continue;
+                }
+
+                lowestChair = item;
+            }
+        }
+
+        return lowestChair;
+    }
+
+    /**
+     * Gets the tallest chair at a tile.
+     */
+    public UserItem getTallestChair(RoomTile tile) {
+        UserItem lowestChair = null;
+
+        Set<UserItem> items = this.getItemsAt(tile);
+        if (items != null && !items.isEmpty()) {
+            for (UserItem item : items) {
+
+                if (!item.getBaseItem().allowSit()) {
+                    continue;
+                }
+
+                if (lowestChair != null
+                        && lowestChair.getZ() + Item.getCurrentHeight(lowestChair)
+                                > item.getZ() + Item.getCurrentHeight(item)) {
+                    continue;
+                }
+
+                lowestChair = item;
+            }
+        }
+
+        return lowestChair;
+    }
+
+    // ==================== ITEM MANIPULATION ====================
+
+    /**
+     * Adds an item to the room.
+     */
+    public void addUserItem(UserItem item) {
+        this.ownership.add(item);
+    }
+
+    /**
+     * Removes an item by ID.
+     */
+    public void removeUserItem(int id) {
+        this.removeUserItem(this.getUserItem(id));
+    }
+
+    /**
+     * Removes an item from the room.
+     */
+    public void removeUserItem(UserItem item) {
+        this.ownership.remove(item);
+    }
+
+    /**
+     * Removes an item from the room and reports whether this call is the one that did it.
+     *
+     * @see RoomItemOwnershipService#remove(UserItem)
+     */
+    public boolean claimUserItem(UserItem item) {
+        return this.ownership.remove(item);
+    }
+
+    // ==================== ITEM UPDATES ====================
+
+    /**
+     * Updates an item's display.
+     */
+    public void updateItem(UserItem item) {
+        this.operations.updateItem(item);
+    }
+
+    /**
+     * Updates an item's state.
+     */
+    public void updateItemState(UserItem item) {
+        this.operations.updateItemState(item);
+    }
+
+    // ==================== FURNITURE OWNER MANAGEMENT ====================
+
+    /**
+     * Gets furniture owner names map.
+     */
+    public Int2ObjectMap<String> getFurniOwnerNames() {
+        return this.index.ownerNames();
+    }
+
+    /**
+     * Gets furniture owner count map.
+     */
+    public Int2IntMap getFurniOwnerCount() {
+        return this.index.ownerCounts();
+    }
+
+    /**
+     * Gets the username for a furniture owner.
+     */
+    public String getFurniOwnerName(int oduserId) {
+        return this.index.ownerNames().get(oduserId);
+    }
+
+    /**
+     * Gets the furniture count for a user.
+     */
+    public int getUserFurniCount(int userId) {
+        return this.index.ownerCounts().get(userId);
+    }
+
+    /**
+     * Gets the unique furniture count for a user.
+     */
+    public int getUserUniqueFurniCount(int userId) {
+        return this.ownership.uniqueItemCount(userId);
+    }
+
+    // ==================== PICKUP AND EJECT ====================
+
+    /**
+     * Picks up an item from the room.
+     */
+    public void pickUpItem(UserItem item, User picker) {
+        this.ownership.pickUp(item, picker);
+    }
+
+    /**
+     * Ejects all furniture belonging to a user.
+     */
+    /** Removes Place Furni's temporary copies in one batched removal (picker -1). */
+    public void removeTemporaryItems(java.util.Collection<UserItem> items) {
+        this.ownership.removeTemporaryItems(items);
+    }
+
+    public void ejectUserFurni(int userId) {
+        this.ownership.ejectUserFurniture(userId);
+    }
+
+    /**
+     * Ejects a single user item.
+     */
+    public void ejectUserItem(UserItem item) {
+        this.ownership.pickUp(item, null);
+    }
+
+    /**
+     * Ejects all items from the room.
+     */
+    public void ejectAll() {
+        this.ejectAll(null);
+    }
+
+    /**
+     * Ejects all items from the room except those belonging to the specified Habbo.
+     */
+    public void ejectAll(User user) {
+        this.ownership.ejectAll(user);
+    }
+
+    /**
+     * Ejects all items from the room except the Builders Club furni, which only {@code :pickallbc} removes.
+     */
+    public void ejectAllExceptBuildersClub() {
+        this.ownership.ejectAllExceptBuildersClub();
+    }
+
+    /**
+     * Removes every Builders Club furni from the room.
+     */
+    public void removeBuildersClubItems(User picker) {
+        this.ownership.removeBuildersClubItems(picker);
+    }
+
+    // ==================== LOCKED TILES ====================
+
+    /**
+     * Gets all tiles that are locked by furniture.
+     */
+    public Set<RoomTile> getLockedTiles() {
+        Set<RoomTile> lockedTiles = new HashSet<>();
+
+        synchronized (this.index.items()) {
+            for (UserItem item : this.index.items().values()) {
+                if (item.getBaseItem().getType() != FurnitureType.FLOOR) {
+                    continue;
+                }
+
+                boolean found = false;
+                for (RoomTile tile : lockedTiles) {
+                    if (tile.x == item.getX() && tile.y == item.getY()) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    if (item.getRotation() == 0 || item.getRotation() == 4) {
+                        for (short y = 0; y < item.getBaseItem().getLength(); y++) {
+                            for (short x = 0; x < item.getBaseItem().getWidth(); x++) {
+                                RoomTile tile = this.room.getLayout().getTile((short) (item.getX() + x), (short)
+                                        (item.getY() + y));
+
+                                if (tile != null) {
+                                    lockedTiles.add(tile);
+                                }
+                            }
+                        }
+                    } else {
+                        for (short y = 0; y < item.getBaseItem().getWidth(); y++) {
+                            for (short x = 0; x < item.getBaseItem().getLength(); x++) {
+                                RoomTile tile = this.room.getLayout().getTile((short) (item.getX() + x), (short)
+                                        (item.getY() + y));
+
+                                if (tile != null) {
+                                    lockedTiles.add(tile);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return lockedTiles;
+    }
+
+    // ==================== DISPOSAL ====================
+
+    /**
+     * Saves all items that need updates to the database.
+     */
+    public void saveAllPendingItems() {
+        List<UserItem> pendingItems;
+        synchronized (this.index.items()) {
+            pendingItems = this.index.items().values().stream()
+                    .filter(UserItem::needsUpdate)
+                    .toList();
+        }
+
+        this.room.savePendingItems(pendingItems);
+    }
+
+    /**
+     * Clears the item manager state.
+     */
+    public void clear() {
+        this.index.clear();
+    }
+
+    /**
+     * Disposes the item manager.
+     */
+    public void dispose() {
+        this.clear();
+    }
+
+    // ==================== FURNITURE PLACEMENT ====================
+
+    /**
+     * Checks if an item has a certain object type at a position.
+     */
+    public boolean hasObjectTypeAt(Class<?> type, int x, int y) {
+        return this.placement.hasObjectTypeAt(type, x, y);
+    }
+
+    /**
+     * Checks if furniture can be placed at a position.
+     */
+    public FurnitureMovementError canPlaceFurnitureAt(UserItem item, User user, RoomTile tile, int rotation) {
+        return this.placement.canPlaceFurnitureAt(item, user, tile, rotation);
+    }
+
+    /**
+     * Checks if furniture fits at a location.
+     */
+    public FurnitureMovementError furnitureFitsAt(RoomTile tile, UserItem item, int rotation) {
+        return furnitureFitsAt(tile, item, rotation, true);
+    }
+
+    /**
+     * Checks if furniture fits at a location with unit check option.
+     */
+    public FurnitureMovementError furnitureFitsAt(RoomTile tile, UserItem item, int rotation, boolean checkForUnits) {
+        return this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits);
+    }
+
+    public FurnitureMovementError furnitureFitsAtWithPhysics(
+            RoomTile tile, UserItem item, int rotation, boolean checkForUnits, WiredMovementPhysics physics) {
+        return this.movement.furnitureFitsAtWithPhysics(tile, item, rotation, checkForUnits, physics);
+    }
+
+    /**
+     * Places a floor furniture item at a position.
+     */
+    public FurnitureMovementError placeFloorFurniAt(UserItem item, RoomTile tile, int rotation, User owner) {
+        return this.placement.placeFloorFurniture(item, tile, rotation, owner);
+    }
+
+    /**
+     * Places a wall furniture item at a position.
+     */
+    public FurnitureMovementError placeWallFurniAt(UserItem item, String wallPosition, User owner) {
+        return this.placement.placeWallFurniture(item, wallPosition, owner);
+    }
+
+    /**
+     * Moves furniture to a new position with an explicit Z height.
+     */
+    public FurnitureMovementError moveFurniTo(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits) {
+        return this.movement.moveFurniTo(item, tile, rotation, z, actor, sendUpdates, checkForUnits);
+    }
+
+    public FurnitureMovementError moveFurniToWithPhysics(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
+        return this.movement.moveFurniToWithPhysics(
+                item, tile, rotation, z, actor, sendUpdates, checkForUnits, physics);
+    }
+
+    /**
+     * Moves furniture to a new position.
+     */
+    public FurnitureMovementError moveFurniTo(UserItem item, RoomTile tile, int rotation, User actor) {
+        return this.movement.moveFurniTo(item, tile, rotation, actor);
+    }
+
+    /**
+     * Moves furniture to a new position with send updates option.
+     */
+    public FurnitureMovementError moveFurniTo(
+            UserItem item, RoomTile tile, int rotation, User actor, boolean sendUpdates) {
+        return this.movement.moveFurniTo(item, tile, rotation, actor, sendUpdates);
+    }
+
+    /**
+     * Moves furniture to a new position with full options.
+     */
+    public FurnitureMovementError moveFurniTo(
+            UserItem item, RoomTile tile, int rotation, User actor, boolean sendUpdates, boolean checkForUnits) {
+        return this.movement.moveFurniTo(item, tile, rotation, actor, sendUpdates, checkForUnits);
+    }
+
+    public FurnitureMovementError moveFurniToWithPhysics(
+            UserItem item,
+            RoomTile tile,
+            int rotation,
+            User actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
+        return this.movement.moveFurniToWithPhysics(item, tile, rotation, actor, sendUpdates, checkForUnits, physics);
+    }
+
+    /**
+     * Slides furniture to a new position.
+     */
+    public FurnitureMovementError slideFurniTo(UserItem item, RoomTile tile, int rotation) {
+        return this.movement.slideFurniTo(item, tile, rotation);
+    }
+}

@@ -33,7 +33,7 @@ if ($null -eq $jar -or ($null -ne $latestSource -and $latestSource.LastWriteTime
 $sourceOption = if ($ItemsJson) { '--items' } else { '--items-sql-dump' }
 $arguments = @(
     '-cp', $jar.FullName,
-    'com.eu.habbo.tools.furni.FurniConsistencyCli',
+    'polaris.tools.furni.FurniConsistencyCli',
     $sourceOption, (Resolve-Path -LiteralPath $ItemsSource).Path,
     '--furniture-data', (Resolve-Path -LiteralPath $FurnitureData).Path,
     '--bundles', (Join-Path $NitroRoot 'nitro-assets\bundled\furniture'),

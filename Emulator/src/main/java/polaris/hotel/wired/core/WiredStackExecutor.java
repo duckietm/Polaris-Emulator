@@ -1,0 +1,617 @@
+package polaris.hotel.wired.core;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.LongSupplier;
+import polaris.WiredPlatform;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.InteractionWiredEffect;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.InteractionWiredTrigger;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraExecutionLimit;
+import polaris.hotel.items.interactions.wired.triggers.WiredTriggerUserClicksUser;
+import polaris.hotel.items.interactions.wired.triggers.WiredTriggerUserSaysKeyword;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.api.IWiredCondition;
+import polaris.hotel.wired.api.IWiredEffect;
+import polaris.hotel.wired.api.WiredStack;
+import polaris.plugin.events.furniture.wired.WiredStackExecutedEvent;
+import polaris.plugin.events.furniture.wired.WiredStackTriggeredEvent;
+
+/** Internal owner of one-stack WIRED orchestration and legacy plugin callbacks. */
+final class WiredStackExecutor {
+
+    interface Hooks {
+        List<InteractionWiredEffect> executeSelectors(WiredStack stack, WiredContext context);
+
+        void applySelectionFilterExtras(
+                WiredStack stack, WiredContext context, List<InteractionWiredEffect> executedSelectors);
+
+        boolean selectorsHaveRequiredTargets(List<InteractionWiredEffect> executedSelectors, WiredContext context);
+
+        void captureArrayEntries(Room room, WiredStack stack, WiredContext context);
+
+        void finalizeSelectors(List<InteractionWiredEffect> executedSelectors, WiredContext context, long currentTime);
+
+        void executeEffects(WiredStack stack, List<IWiredEffect> effects, WiredContext context, long currentTime);
+    }
+
+    @FunctionalInterface
+    interface DiagnosticSink {
+        void log(Room room, String format, Object... arguments);
+    }
+
+    private enum Mode {
+        EVENT,
+        DIRECT
+    }
+
+    private final WiredServices services;
+    private final int maxStepsPerStack;
+    private final ThreadLocal<WiredChainBudget> chainBudget = new ThreadLocal<>();
+    private int maxStacksPerChain = WiredChainBudget.DEFAULT_MAX_STACKS;
+    private final WiredConditionEvaluator conditionEvaluator;
+    private final WiredEffectPlanner effectPlanner;
+    private final WiredExecutionGuard executionGuard;
+    private final Hooks hooks;
+    private final LongSupplier clock;
+    private final DiagnosticSink diagnostics;
+    private final WiredStructuredDiagnostics structuredDiagnostics;
+
+    WiredStackExecutor(
+            WiredServices services,
+            int maxStepsPerStack,
+            WiredConditionEvaluator conditionEvaluator,
+            WiredEffectPlanner effectPlanner,
+            WiredExecutionGuard executionGuard,
+            Hooks hooks,
+            LongSupplier clock,
+            DiagnosticSink diagnostics,
+            WiredStructuredDiagnostics structuredDiagnostics) {
+        this.services = Objects.requireNonNull(services, "services");
+        this.maxStepsPerStack = maxStepsPerStack;
+        this.conditionEvaluator = Objects.requireNonNull(conditionEvaluator, "conditionEvaluator");
+        this.effectPlanner = Objects.requireNonNull(effectPlanner, "effectPlanner");
+        this.executionGuard = Objects.requireNonNull(executionGuard, "executionGuard");
+        this.hooks = Objects.requireNonNull(hooks, "hooks");
+        this.clock = Objects.requireNonNull(clock, "clock");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        this.structuredDiagnostics = Objects.requireNonNull(structuredDiagnostics, "structuredDiagnostics");
+    }
+
+    boolean executeEvent(WiredStack stack, WiredEvent event, long currentTime, boolean negateConditions) {
+        return execute(stack, event, currentTime, negateConditions, Mode.EVENT);
+    }
+
+    boolean executeDirect(WiredStack stack, WiredEvent event, boolean negateConditions) {
+        if (stack == null || event == null || event.getRoom() == null) {
+            return false;
+        }
+        return execute(stack, event, this.clock.getAsLong(), negateConditions, Mode.DIRECT);
+    }
+
+    private boolean execute(WiredStack stack, WiredEvent event, long currentTime, boolean negateConditions, Mode mode) {
+        // The outermost stack on this thread opens the chain's budget; stacks its
+        // signals and stack calls run before it returns share it.
+        WiredChainBudget budget = this.chainBudget.get();
+        if (budget != null) {
+            return execute(stack, event, currentTime, negateConditions, mode, budget);
+        }
+        budget = new WiredChainBudget(this.maxStacksPerChain, WiredChainBudget.DEFAULT_MAX_TARGETS);
+        this.chainBudget.set(budget);
+        try {
+            return execute(stack, event, currentTime, negateConditions, mode, budget);
+        } finally {
+            this.chainBudget.remove();
+        }
+    }
+
+    private boolean execute(
+            WiredStack stack,
+            WiredEvent event,
+            long currentTime,
+            boolean negateConditions,
+            Mode mode,
+            WiredChainBudget budget) {
+        Room room = event.getRoom();
+        if (budget.isExhausted()) {
+            return false;
+        }
+        WiredTextInputCaptureSupport.CaptureResult captureResult = null;
+        if (mode == Mode.EVENT) {
+            captureResult = resolveTextInputCapture(stack, event);
+            if (!captureResult.matches()) {
+                return false;
+            }
+        }
+
+        // A called stack runs without its trigger firing, so a trigger that needs a user is no
+        // reason to skip it: the call passes on whoever the caller had.
+        if (!event.isStackCall()
+                && stack.trigger().requiresActor()
+                && event.getActor().isEmpty()) {
+            return false;
+        }
+        if (!stackHasExecutableOutcome(stack, event)) {
+            return false;
+        }
+
+        WiredState state = new WiredState(this.maxStepsPerStack);
+        WiredContext context = new WiredContext(event, stack.triggerItem(), stack, this.services, state, null);
+        if (captureResult != null) {
+            WiredTextInputCaptureSupport.applyToContext(context, room, captureResult);
+        }
+        seedStackCallSelection(event, context);
+        WiredRoomDiagnostics roomDiagnostics = this.executionGuard.diagnostics(room.getId());
+        state.step();
+
+        int stackCost = estimateStackCost(stack, this.executionGuard.currentChainDepth(room.getId()));
+        String monitorSourceLabel = monitorSourceLabel(stack.triggerItem(), event);
+        int monitorSourceId = monitorSourceId(stack.triggerItem());
+        logMatchedStack(room, stack, event, negateConditions, mode);
+
+        // Habbo flips a trigger when it fires, also when its conditions then fail. A called stack
+        // flashes its actions but not its trigger, which did not fire.
+        if (!event.isStackCall() && stack.triggerItem() instanceof InteractionWiredTrigger firedTrigger) {
+            firedTrigger.flashBox(room);
+        }
+
+        // A stack its Execution Limit already blocks stops before the selectors: it used to scan every selected furni
+        // and only then be refused.
+        WiredExtraExecutionLimit executionLimitExtra = executionLimitExtra(room, stack);
+        if (executionLimitExtra != null && !executionLimitExtra.canExecuteAt(currentTime)) {
+            logExecutionLimitBlocked(room, stack, mode, executionLimitExtra);
+            return false;
+        }
+
+        List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
+        if (stack.hasEffects()) {
+            executedSelectors = this.hooks.executeSelectors(stack, context);
+            this.hooks.applySelectionFilterExtras(stack, context, executedSelectors);
+        }
+        if (!this.hooks.selectorsHaveRequiredTargets(executedSelectors, context)) {
+            return false;
+        }
+
+        this.hooks.captureArrayEntries(room, stack, context);
+        WiredConditionEvaluator.Outcome conditionOutcome =
+                this.conditionEvaluator.evaluateForExecution(stack, context, negateConditions);
+        boolean conditionsPassed = conditionOutcome.execute();
+        List<IWiredEffect> executableEffects = this.effectPlanner.executableEffects(stack, conditionsPassed);
+        boolean hasSpecialOutcome = conditionsPassed && hasSpecialTriggerOutcome(stack, event);
+        if (!shouldContinueAfterConditionCheck(stack, room, conditionsPassed, executableEffects, hasSpecialOutcome)) {
+            return false;
+        }
+
+        if (!budget.tryAdmit(selectedTargets(context))) {
+            if (budget.shouldReport()) {
+                roomDiagnostics.recordRecursionTimeout(
+                        currentTime,
+                        "Wired chain stopped: it ran " + budget.exhaustedReason(),
+                        monitorSourceLabel,
+                        monitorSourceId);
+                this.diagnostics.log(
+                        room,
+                        "Wired chain stopped at stack {}: it ran {} ({} stacks, {} targets so far)",
+                        stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                        budget.exhaustedReason(),
+                        budget.stacks(),
+                        budget.targets());
+            }
+            return false;
+        }
+
+        if (!fireTriggeredEvent(stack, event)) {
+            this.diagnostics.log(
+                    room, mode == Mode.DIRECT ? "Direct stack cancelled by plugin" : "Stack cancelled by plugin");
+            return false;
+        }
+
+        // Moving or toggling a thousand furni costs far more than one: the selection counts too.
+        int chargedCost = stackCost + selectionCost(context);
+        if (!roomDiagnostics.tryConsumeExecutionBudget(
+                chargedCost,
+                currentTime,
+                monitorSourceLabel,
+                monitorSourceId,
+                () -> stackMonitorReason(stack, event, chargedCost))) {
+            this.diagnostics.log(
+                    room,
+                    mode == Mode.DIRECT ? "Execution cap blocked direct stack {}" : "Execution cap blocked stack {}",
+                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null");
+            return false;
+        }
+
+        // The Execution Limit slot is taken only once the room budget admitted the stack: a stack the budget refused
+        // used to spend a slot without running.
+        if (executionLimitExtra != null && !executionLimitExtra.tryAcquireExecutionSlot(currentTime)) {
+            logExecutionLimitBlocked(room, stack, mode, executionLimitExtra);
+            return false;
+        }
+
+        // The stack runs: the conditions that passed record it now (once a day, once per user, a cooldown).
+        if (conditionsPassed) {
+            this.conditionEvaluator.commit(conditionOutcome, context);
+        }
+
+        if (mode == Mode.EVENT) {
+            applyClickUserOptions(stack, event, conditionsPassed);
+        }
+
+        RoomUnit actor = event.getActor().orElse(null);
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
+            trigger.recordExecution(actor, currentTime);
+        }
+        activateExtras(room, stack.triggerItem(), actor, currentTime);
+        this.hooks.finalizeSelectors(executedSelectors, context, currentTime);
+
+        if (!executableEffects.isEmpty()) {
+            this.hooks.executeEffects(stack, executableEffects, context, currentTime);
+        }
+
+        reportUnresolvedSources(roomDiagnostics, state, monitorSourceLabel, monitorSourceId);
+
+        fireExecutedEvent(stack, event);
+        long elapsedMs = state.elapsedMs();
+        roomDiagnostics.recordExecution(
+                elapsedMs,
+                this.clock.getAsLong(),
+                monitorSourceLabel,
+                monitorSourceId,
+                () -> executionMonitorReason(stack, elapsedMs));
+        this.structuredDiagnostics.execution(
+                room.getId(),
+                monitorSourceId,
+                event.getType(),
+                executableEffects.size(),
+                elapsedMs,
+                WiredStructuredDiagnostics.Outcome.EXECUTED);
+        return true;
+    }
+
+    /**
+     * A chain that fires and finds nothing to act on used to be completely silent: no error, no log,
+     * nothing in the monitor. Whoever built it had no way to tell "the trigger never fired" from "the
+     * effect had no furni". One line per firing, naming the sources that came back empty.
+     */
+    private void reportUnresolvedSources(
+            WiredRoomDiagnostics diagnostics, WiredState state, String sourceLabel, int sourceId) {
+        if (state.unresolvedFurniSources().isEmpty()
+                && state.unresolvedUserSources().isEmpty()) {
+            return;
+        }
+
+        StringBuilder reason = new StringBuilder("Nothing to act on:");
+        if (!state.unresolvedFurniSources().isEmpty()) {
+            reason.append(" furni source ").append(describeSources(state.unresolvedFurniSources()));
+        }
+        if (!state.unresolvedUserSources().isEmpty()) {
+            reason.append(" user source ").append(describeSources(state.unresolvedUserSources()));
+        }
+
+        diagnostics.recordNoTargets(this.clock.getAsLong(), reason.toString(), sourceLabel, sourceId);
+    }
+
+    private static String describeSources(Set<Integer> sources) {
+        StringBuilder names = new StringBuilder();
+        for (Integer source : sources) {
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(describeSource(source));
+        }
+        return names.toString();
+    }
+
+    private static String describeSource(int source) {
+        return switch (source) {
+            case WiredSourceUtil.SOURCE_TRIGGER -> "the triggering item";
+            case WiredSourceUtil.SOURCE_CLICKED_USER -> "the clicked user";
+            case WiredSourceUtil.SOURCE_SELECTED -> "the picked furni";
+            case WiredSourceUtil.SOURCE_SELECTOR -> "the selector";
+            case WiredSourceUtil.SOURCE_SIGNAL -> "the signal";
+            default -> "source " + source;
+        };
+    }
+
+    private void logMatchedStack(Room room, WiredStack stack, WiredEvent event, boolean negateConditions, Mode mode) {
+        if (mode == Mode.DIRECT) {
+            this.diagnostics.log(
+                    room,
+                    "Direct stack execution for item {} (conditions: {}, effects: {}, negated: {})",
+                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                    stack.conditions().size(),
+                    stack.effects().size(),
+                    negateConditions);
+            return;
+        }
+
+        this.diagnostics.log(
+                room,
+                "Trigger matched: {} at item {} (conditions: {}, effects: {})",
+                event.getType(),
+                stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                stack.conditions().size(),
+                stack.effects().size());
+    }
+
+    private boolean shouldContinueAfterConditionCheck(
+            WiredStack stack,
+            Room room,
+            boolean conditionsPassed,
+            List<IWiredEffect> executableEffects,
+            boolean hasSpecialOutcome) {
+        if (stack.hasConditions()) {
+            this.diagnostics.log(
+                    room, "Evaluating {} conditions...", stack.conditions().size());
+            if (!conditionsPassed && !executableEffects.isEmpty()) {
+                this.diagnostics.log(room, "Conditions failed, executing negative effects");
+                return true;
+            }
+            if (!conditionsPassed) {
+                this.diagnostics.log(room, "Conditions failed, aborting stack");
+                return false;
+            }
+            if (hasSpecialOutcome || !executableEffects.isEmpty()) {
+                return true;
+            }
+            this.diagnostics.log(room, "Conditions passed, but no executable effects remain");
+            return false;
+        }
+
+        if (!conditionsPassed) {
+            this.diagnostics.log(room, "No conditions in stack, negated execution aborted");
+            return false;
+        }
+        if (hasSpecialOutcome || !executableEffects.isEmpty()) {
+            this.diagnostics.log(room, "No conditions in stack, proceeding to effects");
+            return true;
+        }
+        this.diagnostics.log(room, "No conditions in stack, but no executable effects remain");
+        return false;
+    }
+
+    private static WiredTextInputCaptureSupport.CaptureResult resolveTextInputCapture(
+            WiredStack stack, WiredEvent event) {
+        if (stack == null || event == null) {
+            return WiredTextInputCaptureSupport.CaptureResult.noMatch();
+        }
+        if (event.getType() != WiredEvent.Type.USER_SAYS
+                || !(stack.triggerItem() instanceof WiredTriggerUserSaysKeyword)) {
+            return stack.trigger().matches(stack.triggerItem(), event)
+                    ? WiredTextInputCaptureSupport.CaptureResult.matched(new LinkedHashMap<>())
+                    : WiredTextInputCaptureSupport.CaptureResult.noMatch();
+        }
+        return WiredTextInputCaptureSupport.resolve(stack, event);
+    }
+
+    /**
+     * A stack call hands the called stack the caller's selection, as Habbo does: whatever the
+     * caller's selectors picked (or its triggering user and furni) is what the called stack's
+     * "selected" sources start from. The called stack's own selectors still run after this.
+     */
+    private static void seedStackCallSelection(WiredEvent event, WiredContext context) {
+        if (!event.isStackCall()) {
+            return;
+        }
+
+        if (!event.getForwardedUsers().isEmpty()) {
+            context.targets().setUsers(event.getForwardedUsers());
+        }
+
+        if (!event.getForwardedItems().isEmpty()) {
+            context.targets().setItems(event.getForwardedItems());
+        }
+    }
+
+    private static boolean stackHasExecutableOutcome(WiredStack stack, WiredEvent event) {
+        if (stack == null) {
+            return false;
+        }
+        if (stack.hasEffects()) {
+            return true;
+        }
+        return hasSpecialTriggerOutcome(stack, event);
+    }
+
+    private static boolean hasSpecialTriggerOutcome(WiredStack stack, WiredEvent event) {
+        if (stack == null) {
+            return false;
+        }
+        if (stack.triggerItem() instanceof WiredTriggerUserSaysKeyword keywordTrigger) {
+            return keywordTrigger.isHideMessage();
+        }
+        if (event != null
+                && event.getType() == WiredEvent.Type.USER_CLICKS_USER
+                && stack.triggerItem() instanceof WiredTriggerUserClicksUser clickTrigger) {
+            return clickTrigger.isBlockMenuOpen() || clickTrigger.isDoNotRotate();
+        }
+        return false;
+    }
+
+    private static void applyClickUserOptions(WiredStack stack, WiredEvent event, boolean conditionsPassed) {
+        if (conditionsPassed
+                && event.getType() == WiredEvent.Type.USER_CLICKS_USER
+                && stack.triggerItem() instanceof WiredTriggerUserClicksUser clickTrigger
+                && event.getActor().isPresent()) {
+            WiredTriggerUserClicksUser.applyRuntimeOptions(
+                    event.getActor().get(), clickTrigger.isBlockMenuOpen(), clickTrigger.isDoNotRotate());
+        }
+    }
+
+    private static void activateExtras(Room room, UserItem triggerItem, RoomUnit roomUnit, long currentTime) {
+        if (triggerItem == null || room.getRoomSpecialTypes() == null) {
+            return;
+        }
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras != null) {
+            for (InteractionWiredExtra extra : extras) {
+                extra.activateBox(room, roomUnit, currentTime);
+            }
+        }
+    }
+
+    private void logExecutionLimitBlocked(
+            Room room, WiredStack stack, Mode mode, WiredExtraExecutionLimit executionLimitExtra) {
+        this.diagnostics.log(
+                room,
+                mode == Mode.DIRECT
+                        ? "Execution limit blocked direct stack {} (max {} in {} ms)"
+                        : "Execution limit blocked stack {} (max {} in {} ms)",
+                stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                executionLimitExtra.getMaxExecutions(),
+                executionLimitExtra.getTimeWindowMs());
+    }
+
+    private static WiredExtraExecutionLimit executionLimitExtra(Room room, WiredStack stack) {
+        InteractionWiredExtra extra = stackExtra(room, stack, WiredExtraExecutionLimit.class);
+        return extra instanceof WiredExtraExecutionLimit limit ? limit : null;
+    }
+
+    private static <T extends InteractionWiredExtra> InteractionWiredExtra stackExtra(
+            Room room, WiredStack stack, Class<T> extraClass) {
+        if (room == null || stack == null || stack.triggerItem() == null || room.getRoomSpecialTypes() == null) {
+            return null;
+        }
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes()
+                .getExtras(stack.triggerItem().getX(), stack.triggerItem().getY());
+        if (extras == null || extras.isEmpty()) {
+            return null;
+        }
+        for (InteractionWiredExtra extra : extras) {
+            if (extraClass.isInstance(extra)) {
+                return extra;
+            }
+        }
+        return null;
+    }
+
+    private static boolean fireTriggeredEvent(WiredStack stack, WiredEvent event) {
+        if (!(stack.triggerItem() instanceof InteractionWiredTrigger trigger)) {
+            return true;
+        }
+        WiredStackTriggeredEvent pluginEvent = new WiredStackTriggeredEvent(
+                event.getRoom(), event.getActor().orElse(null), trigger, legacyEffects(stack), legacyConditions(stack));
+        return !WiredPlatform.pluginManager().fireEvent(pluginEvent).isCancelled();
+    }
+
+    private static void fireExecutedEvent(WiredStack stack, WiredEvent event) {
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
+            WiredPlatform.pluginManager()
+                    .fireEvent(new WiredStackExecutedEvent(
+                            event.getRoom(),
+                            event.getActor().orElse(null),
+                            trigger,
+                            legacyEffects(stack),
+                            legacyConditions(stack)));
+        }
+    }
+
+    private static Set<InteractionWiredEffect> legacyEffects(WiredStack stack) {
+        Set<InteractionWiredEffect> legacyEffects = new HashSet<>();
+        for (IWiredEffect effect : stack.effects()) {
+            if (effect instanceof InteractionWiredEffect wiredEffect) {
+                legacyEffects.add(wiredEffect);
+            }
+        }
+        return legacyEffects;
+    }
+
+    private static Set<InteractionWiredCondition> legacyConditions(WiredStack stack) {
+        Set<InteractionWiredCondition> legacyConditions = new HashSet<>();
+        for (IWiredCondition condition : stack.conditions()) {
+            if (condition instanceof InteractionWiredCondition wiredCondition) {
+                legacyConditions.add(wiredCondition);
+            }
+        }
+        return legacyConditions;
+    }
+
+    /** One unit per ten selected furni or users, once the selectors have run. */
+    /** Tests only: a small chain cap keeps a looping chain short. */
+    void setMaxStacksPerChain(int maxStacksPerChain) {
+        this.maxStacksPerChain = Math.max(1, maxStacksPerChain);
+    }
+
+    static int selectedTargets(WiredContext context) {
+        if (context == null || context.targets() == null) {
+            return 0;
+        }
+        return context.targets().items().size() + context.targets().users().size();
+    }
+
+    static int selectionCost(WiredContext context) {
+        if (context == null || context.targets() == null) {
+            return 0;
+        }
+        WiredTargets targets = context.targets();
+        return (targets.items().size() + targets.users().size()) / SELECTION_PER_COST_UNIT;
+    }
+
+    static final int SELECTION_PER_COST_UNIT = 10;
+
+    private static int estimateStackCost(WiredStack stack, int recursionDepth) {
+        int cost = 1 + Math.max(0, stack.conditions().size());
+        for (IWiredEffect effect : stack.effects()) {
+            if (effect == null) {
+                continue;
+            }
+            cost += effect.isSelector() ? 2 : 3;
+            if (WiredDelay.isDelayed(effect.getDelay())) {
+                cost += 4;
+            }
+        }
+        return Math.max(1, cost + Math.max(0, recursionDepth) * 2);
+    }
+
+    private static String monitorSourceLabel(UserItem triggerItem, WiredEvent event) {
+        if (triggerItem != null
+                && triggerItem.getBaseItem() != null
+                && triggerItem.getBaseItem().getInteractionType() != null) {
+            return triggerItem.getBaseItem().getInteractionType().getName();
+        }
+        return event != null && event.getType() != null ? event.getType().name() : "room";
+    }
+
+    private static int monitorSourceId(UserItem triggerItem) {
+        return triggerItem != null ? triggerItem.getId() : 0;
+    }
+
+    private static String stackMonitorReason(WiredStack stack, WiredEvent event, int stackCost) {
+        int selectors = 0;
+        int delayedEffects = 0;
+        for (IWiredEffect effect : stack.effects()) {
+            if (effect == null) {
+                continue;
+            }
+            if (effect.isSelector()) {
+                selectors++;
+            }
+            if (WiredDelay.isDelayed(effect.getDelay())) {
+                delayedEffects++;
+            }
+        }
+        return String.format(
+                "Trigger %s with %d condition(s), %d effect(s), %d selector(s), %d delayed effect(s) and estimated cost %d",
+                event.getType().name(),
+                stack.conditions().size(),
+                stack.effects().size(),
+                selectors,
+                delayedEffects,
+                stackCost);
+    }
+
+    private static String executionMonitorReason(WiredStack stack, long elapsedMs) {
+        return String.format(
+                "Stack with %d condition(s) and %d effect(s) completed in %dms",
+                stack.conditions().size(), stack.effects().size(), elapsedMs);
+    }
+}

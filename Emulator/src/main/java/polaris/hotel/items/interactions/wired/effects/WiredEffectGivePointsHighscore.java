@@ -1,0 +1,197 @@
+package polaris.hotel.items.interactions.wired.effects;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredEffect;
+import polaris.hotel.items.interactions.InteractionWiredHighscore;
+import polaris.hotel.items.interactions.InteractionWiredTrigger;
+import polaris.hotel.items.interactions.wired.WiredNumericInputGuard;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.hotel.wired.highscores.WiredHighscoreManager;
+import polaris.messages.ServerMessage;
+
+/**
+ * Records a score for the resolved users on every highscore board in the room.
+ *
+ * <p>Until now a board could only be written by {@link polaris.hotel.games.Game#onEnd()},
+ * which is reached through a game timer. A room that scored with wired alone - no teams, no timer -
+ * had no way to put anything on a board at all, and said nothing about why.
+ *
+ * <p>Every entry counts as a win, so a "most wins" board treats one firing as one win. The other
+ * three board types ignore the flag and read the amount.
+ *
+ * <p>Server-only: it reuses the {@link WiredEffectType#EFFECT_AMOUNT} dialog - one number plus a
+ * user-source selector - so it needs no new client window. The amount is capped per firing by
+ * {@link WiredNumericInputGuard#maxRewardAmount()}; a leaderboard position is not currency, so it is
+ * not behind the reward permission.
+ */
+public class WiredEffectGivePointsHighscore extends InteractionWiredEffect {
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
+
+    private int amount = 0;
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    public WiredEffectGivePointsHighscore(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredEffectGivePointsHighscore(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.amount + "");
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(type.code);
+        message.appendInt(this.getDelay());
+
+        if (this.requiresTriggeringUser()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            for (InteractionWiredTrigger object : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!object.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(object.getBaseItem().getSpriteId());
+                }
+            }
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
+            }
+        } else {
+            message.appendInt(0);
+        }
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
+                settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
+        if (nextAmount <= 0) {
+            return false;
+        }
+
+        int[] params = settings.getIntParams();
+        this.amount = nextAmount;
+        // Official: no int params; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.setDelay(settings.getDelay());
+
+        return true;
+    }
+
+    @Override
+    public WiredEffectType getType() {
+        return type;
+    }
+
+    @Override
+    public void execute(WiredContext ctx) {
+        Room room = ctx.room();
+        if (room == null || this.amount <= 0 || room.getRoomSpecialTypes() == null) return;
+
+        List<Integer> userIds = new ArrayList<>();
+        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+            User user = room.getUser(unit);
+            if (user != null && user.getUserInfo() != null) {
+                userIds.add(user.getUserInfo().getId());
+            }
+        }
+
+        // No users resolved means no row: an entry with an empty user list would render as a blank
+        // line on the board, which is worse than not appearing at all. resolveUsers has already
+        // noted the empty source, so the firing still reports NO_TARGETS rather than going quiet.
+        if (userIds.isEmpty()) {
+            return;
+        }
+
+        int now = Emulator.getIntUnixTimestamp();
+
+        WiredHighscoreManager highscores =
+                Emulator.getGameEnvironment().getItemManager().getHighscoreManager();
+
+        for (UserItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
+            // A box called "give points" adds to what the user has, it does not file a fresh result
+            // every time it fires. Appending left a classic board showing the same person five times
+            // with the same ten points instead of once with fifty, and no way to reach a total at
+            // all. The official give-score box accumulates too - it just does it inside the game and
+            // writes once when the game ends, which is the path this box exists to work without.
+            highscores.addScore(item.getId(), userIds, this.amount, now);
+
+            ((InteractionWiredHighscore) item).reloadData();
+            room.updateItem(item);
+        }
+    }
+
+    @Override
+    @Deprecated
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson().toJson(new JsonData(this.amount, this.getDelay(), this.userSource));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        // Through the shared guard: an unreadable row is no configuration, not a failed furni load.
+        JsonData data = WiredEffectPayloadGuard.fromJson(set.getString("wired_data"), JsonData.class);
+
+        if (data != null) {
+            // The cap belongs to the box, not to the moment it was saved.
+            this.amount = WiredNumericInputGuard.clampAmount(data.amount, WiredNumericInputGuard.maxRewardAmount());
+            this.setDelay(WiredEffectPayloadGuard.delay(data.delay));
+            this.userSource = data.userSource;
+            return;
+        }
+
+        this.amount = 0;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.setDelay(0);
+    }
+
+    @Override
+    public void onPickUp() {
+        this.amount = 0;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.setDelay(0);
+    }
+
+    @Override
+    public boolean requiresTriggeringUser() {
+        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    static class JsonData {
+        int amount;
+        int delay;
+        int userSource;
+
+        public JsonData(int amount, int delay, int userSource) {
+            this.amount = amount;
+            this.delay = delay;
+            this.userSource = userSource;
+        }
+    }
+}

@@ -1,0 +1,147 @@
+package polaris.hotel.items.interactions.wired.conditions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import polaris.WiredCompatibilityDiagnostics;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.wired.WiredConditionType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.messages.ServerMessage;
+
+public class WiredConditionNotUserCount extends InteractionWiredCondition {
+    public static final WiredConditionType type = WiredConditionType.NOT_USER_COUNT;
+
+    private int lowerLimit = 10;
+    private int upperLimit = 20;
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    public WiredConditionNotUserCount(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredConditionNotUserCount(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
+        int count = (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
+                ? ctx.room().getUserCount()
+                : WiredSourceUtil.resolveUsers(ctx, this.userSource).size();
+
+        return count < this.lowerLimit || count > this.upperLimit;
+    }
+
+    @Deprecated
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson().toJson(new JsonData(this.lowerLimit, this.upperLimit, this.userSource));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
+
+        if (wiredData.startsWith("{")) {
+            WiredConditionUserCount.JsonData data =
+                    WiredManager.getGson().fromJson(wiredData, WiredConditionUserCount.JsonData.class);
+            this.applyLimits(data.lowerLimit, data.upperLimit);
+            this.userSource = WiredConditionInputGuard.normalizeUserSource(data.userSource);
+        } else {
+            String[] data = wiredData.split(":");
+            if (data.length >= 2) {
+                try {
+                    this.applyLimits(Integer.parseInt(data[0].trim()), Integer.parseInt(data[1].trim()));
+                } catch (NumberFormatException ignored) {
+                    // malformed legacy data — keep the constructed defaults
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.CONDITION_NOT_USER_COUNT_LEGACY,
+                            this.getRoomId(),
+                            this.getId(),
+                            ignored);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.lowerLimit = 10;
+        this.upperLimit = 20;
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(2);
+        message.appendInt(this.lowerLimit);
+        message.appendInt(this.upperLimit);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if (settings.getIntParams().length < 2) return false;
+        int[] params = settings.getIntParams();
+        this.applyLimits(params[0], params[1]);
+        // Official layout: [min, max], the users in the official source slot.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+
+        return true;
+    }
+
+    private void applyLimits(int lowerLimit, int upperLimit) {
+        int[] limits = WiredConditionInputGuard.normalizeUserCountRange(lowerLimit, upperLimit);
+        this.lowerLimit = limits[0];
+        this.upperLimit = limits[1];
+    }
+
+    static class JsonData {
+        int lowerLimit;
+        int upperLimit;
+        int userSource;
+
+        public JsonData(int lowerLimit, int upperLimit, int userSource) {
+            this.lowerLimit = lowerLimit;
+            this.upperLimit = upperLimit;
+            this.userSource = userSource;
+        }
+    }
+}

@@ -1,0 +1,49 @@
+package polaris.hotel.items.interactions.wired;
+
+import java.util.ArrayList;
+import java.util.List;
+import polaris.WiredCompatibilityDiagnostics;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.users.UserItem;
+
+public final class WiredLegacyDataGuard {
+    public static final int DEFAULT_MAX_DELAY = 20;
+
+    private WiredLegacyDataGuard() {}
+
+    public static int parseDelay(String value) {
+        try {
+            int parsed = Integer.parseInt(value == null ? "" : value.trim());
+            return Math.max(0, Math.min(parsed, DEFAULT_MAX_DELAY));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    public static List<UserItem> parseRoomItems(String value, Room room) {
+        List<UserItem> items = new ArrayList<>();
+        if (room == null || value == null || value.isBlank()) {
+            return items;
+        }
+
+        for (String part : value.split(";")) {
+            try {
+                int itemId = Integer.parseInt(part.trim());
+                if (itemId <= 0) {
+                    continue;
+                }
+
+                UserItem item = room.getUserItem(itemId);
+                if (item != null) {
+                    items.add(item);
+                }
+            } catch (NumberFormatException e) {
+                // Ignore malformed legacy ids and keep loading the remaining items.
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.LEGACY_DATA_LIST_ENTRY, room.getId(), 0, e);
+            }
+        }
+
+        return items;
+    }
+}

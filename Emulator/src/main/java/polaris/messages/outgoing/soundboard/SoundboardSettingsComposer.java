@@ -1,0 +1,61 @@
+package polaris.messages.outgoing.soundboard;
+
+import java.util.List;
+import polaris.hotel.permissions.Rank;
+import polaris.hotel.soundboard.SoundboardRoomMode;
+import polaris.hotel.soundboard.SoundboardSound;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.MessageComposer;
+import polaris.messages.outgoing.Outgoing;
+
+// Sent on room enter (and on toggle): whether the soundboard is active in this
+// room + the available pads. The client shows the toolbar icon only if enabled.
+public class SoundboardSettingsComposer extends MessageComposer {
+    private final SoundboardRoomMode mode;
+    private final int cooldownSeconds;
+    private final List<SoundboardSound> sounds;
+
+    public SoundboardSettingsComposer(boolean enabled, List<SoundboardSound> sounds) {
+        this(enabled, Rank.DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS, sounds);
+    }
+
+    public SoundboardSettingsComposer(boolean enabled, int cooldownSeconds, List<SoundboardSound> sounds) {
+        this(enabled ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF, cooldownSeconds, sounds);
+    }
+
+    public SoundboardSettingsComposer(SoundboardRoomMode mode, int cooldownSeconds, List<SoundboardSound> sounds) {
+        this.mode = mode;
+        this.cooldownSeconds = Math.max(0, cooldownSeconds);
+        this.sounds = sounds;
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.SoundboardSettingsComposer);
+        this.response.appendBoolean(this.mode.enabled());
+        this.response.appendInt(this.cooldownSeconds);
+        this.response.appendInt(this.sounds.size());
+        for (SoundboardSound sound : this.sounds) {
+            this.response.appendInt(sound.id);
+            this.response.appendString(sound.name);
+            this.response.appendString(sound.url);
+        }
+
+        // Classnames go in a block AFTER the records, never as a trailing
+        // field inside the loop: a client that predates them can stop reading
+        // here, while one that reads a per-record optional field would steal
+        // bytes from the next record and cascade-corrupt the list.
+        // The client prefers the classname and resolves it against
+        // gamedata/SoundData.json; url stays as the override for clips hosted
+        // outside the asset tree.
+        for (SoundboardSound sound : this.sounds) {
+            this.response.appendString(sound.classname);
+        }
+
+        // Last, after the classname block: who may play. A client that predates it stops reading
+        // above and still sees the boolean (any mode but off reads as on); the server refuses a
+        // player without rights in the rights mode either way.
+        this.response.appendInt(this.mode.wireCode());
+        return this.response;
+    }
+}

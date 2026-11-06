@@ -1,0 +1,172 @@
+package polaris.hotel.items;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Neutral furnidata reader. Supports a single JSON/JSONC file or a split-tier
+ * directory ({@code core/custom/seasonal} with {@code manifest.json(c)}).
+ * Never throws: any IO/parse error yields an empty list (the caller decides the
+ * fallback). All resolved paths are guarded against escaping the base dir.
+ */
+public class FurnidataReader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FurnidataReader.class);
+    private static final List<String> DEFAULT_TIERS = Arrays.asList("core", "custom", "seasonal");
+    private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.jsonc", "manifest.json");
+    private static final List<String> SECTIONS = Arrays.asList("roomitemtypes", "wallitemtypes");
+
+    private final Path source;
+    private final long maxBytes;
+    private final java.util.Map<String, Integer> defaultDirections = new java.util.HashMap<>();
+
+    public FurnidataReader(Path source, long maxBytes) {
+        this.source = source;
+        this.maxBytes = maxBytes;
+    }
+
+    /**
+     * The floor furni {@code defaultdir} values seen by the last {@link #read()}, keyed by the
+     * lowercased base classname (the {@code *N} colour suffix stripped).
+     */
+    public java.util.Map<String, Integer> defaultDirections() {
+        return java.util.Collections.unmodifiableMap(this.defaultDirections);
+    }
+
+    public List<FurnidataEntry> read() {
+        this.defaultDirections.clear();
+        List<FurnidataEntry> out = new ArrayList<>();
+        try {
+            if (this.source == null || !Files.exists(this.source)) return out;
+
+            if (Files.isDirectory(this.source)) {
+                readSplitDir(this.source, out);
+            } else if (FurnidataJson.isSupportedDocument(this.source)) {
+                String content = readJsoncCapped(this.source);
+                if (content != null) {
+                    parseRoot(FurnidataJson.parseObject(content), out);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("FurnidataReader failed to read {} — returning empty", this.source, e);
+            return new ArrayList<>();
+        }
+        return out;
+    }
+
+    private void readSplitDir(Path base, List<FurnidataEntry> out) {
+        List<String> tiers = readManifestList(base, "tiers", DEFAULT_TIERS);
+        Path baseNorm = base.toAbsolutePath().normalize();
+
+        for (String tier : tiers) {
+            Path tierDir = base.resolve(tier);
+            if (!isInside(baseNorm, tierDir) || !Files.isDirectory(tierDir)) continue;
+
+            for (String fileName : readManifestList(tierDir, "files", List.of())) {
+                Path file = tierDir.resolve(fileName);
+                if (!isInside(baseNorm, file)) {
+                    LOGGER.warn("FurnidataReader: ignoring out-of-base file {}", file);
+                    continue;
+                }
+                if (!Files.exists(file) || !FurnidataJson.isSupportedDocument(file)) continue;
+                try {
+                    String content = readJsoncCapped(file);
+                    if (content != null) parseRoot(FurnidataJson.parseObject(content), out);
+                } catch (Exception e) {
+                    LOGGER.warn("FurnidataReader: failed to parse {}", file, e);
+                }
+            }
+        }
+    }
+
+    private List<String> readManifestList(Path dir, String key, List<String> fallback) {
+        for (String name : MANIFEST_NAMES) {
+            Path m = dir.resolve(name);
+            if (!Files.exists(m)) continue;
+            try {
+                String raw = readJsoncCapped(m);
+                if (raw == null) continue;
+                JsonObject obj = FurnidataJson.parseObject(raw);
+                if (obj.has(key) && obj.get(key).isJsonArray()) {
+                    List<String> list = new ArrayList<>();
+                    for (JsonElement el : obj.getAsJsonArray(key)) list.add(el.getAsString());
+                    if (!list.isEmpty()) return list;
+                }
+            } catch (Exception e) {
+                LOGGER.warn("FurnidataReader: bad manifest {}", m, e);
+            }
+        }
+        return fallback;
+    }
+
+    private void parseRoot(JsonObject root, List<FurnidataEntry> out) {
+        for (String section : SECTIONS) {
+            if (!root.has(section)) continue;
+            JsonObject sectionObj = root.getAsJsonObject(section);
+            if (!sectionObj.has("furnitype")) continue;
+            FurnitureType type = section.equals("roomitemtypes") ? FurnitureType.FLOOR : FurnitureType.WALL;
+            JsonArray types = sectionObj.getAsJsonArray("furnitype");
+            for (JsonElement el : types) {
+                JsonObject o = el.getAsJsonObject();
+                if (!o.has("id")
+                        || o.get("id").isJsonNull()
+                        || !o.has("classname")
+                        || o.get("classname").isJsonNull()) continue;
+                if (type == FurnitureType.FLOOR) {
+                    this.recordDefaultDirection(o);
+                }
+                out.add(new FurnidataEntry(
+                        o.get("id").getAsInt(),
+                        o.get("classname").getAsString(),
+                        type,
+                        (o.has("name") && !o.get("name").isJsonNull())
+                                ? o.get("name").getAsString()
+                                : "",
+                        (o.has("description") && !o.get("description").isJsonNull())
+                                ? o.get("description").getAsString()
+                                : ""));
+            }
+        }
+    }
+
+    private void recordDefaultDirection(JsonObject o) {
+        JsonElement value = o.get("defaultdir");
+        if (value == null || !value.isJsonPrimitive()) return;
+        try {
+            int direction = value.getAsInt();
+            String classname = o.get("classname").getAsString();
+            int star = classname.indexOf('*');
+            String key = (star >= 0 ? classname.substring(0, star) : classname)
+                    .trim()
+                    .toLowerCase(java.util.Locale.ROOT);
+            if (!key.isEmpty() && direction >= 0 && direction <= 7) {
+                this.defaultDirections.put(key, direction);
+            }
+        } catch (RuntimeException ignored) {
+            // a defaultdir that is not a number is left out
+        }
+    }
+
+    /** Returns the JSONC content, or null if the file exceeds the byte cap. */
+    private String readJsoncCapped(Path path) throws Exception {
+        long size = Files.size(path);
+        if (size > this.maxBytes) {
+            LOGGER.warn("FurnidataReader: {} is {} bytes, over cap {} — refusing", path, size, this.maxBytes);
+            return null;
+        }
+        return Files.readString(path, StandardCharsets.UTF_8);
+    }
+
+    private static boolean isInside(Path baseNorm, Path candidate) {
+        return candidate.toAbsolutePath().normalize().startsWith(baseNorm);
+    }
+}

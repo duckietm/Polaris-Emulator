@@ -1,0 +1,58 @@
+package polaris.messages.incoming.soundboard;
+
+import polaris.Emulator;
+import polaris.hotel.GameEnvironment;
+import polaris.hotel.soundboard.SoundboardCatalogCommand;
+import polaris.hotel.soundboard.SoundboardCatalogResult;
+import polaris.hotel.soundboard.SoundboardManager;
+import polaris.hotel.users.User;
+import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.soundboard.SoundboardCatalogResultComposer;
+
+public class SoundboardCatalogUpsertEvent extends MessageHandler {
+
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        User user = this.client.getUser();
+        if (!SoundboardManagementAccess.canManage(user)) {
+            this.sendResult(SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.FORBIDDEN));
+            return;
+        }
+
+        int id = this.packet.readInt();
+        String name = this.packet.readString();
+        String url = this.packet.readString();
+        int minRank = this.packet.readInt();
+        boolean enabled = this.packet.readBoolean();
+
+        // Trailing field: a client that predates the asset-backed soundboard
+        // simply does not send it, and keeps addressing pads by URL.
+        String classname = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
+
+        // Trailing again, after the classname: the pad's own cooldown in seconds. Without it an
+        // update keeps the stored value.
+        int cooldownSeconds =
+                this.packet.bytesAvailable() > 0 ? this.packet.readInt() : SoundboardCatalogCommand.KEEP_COOLDOWN;
+
+        SoundboardCatalogCommand command =
+                new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled, cooldownSeconds);
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        SoundboardManager manager = environment.getSoundboardManager();
+        SoundboardCatalogResult result = manager.upsert(user.getUserInfo().getId(), command);
+        this.sendResult(result);
+        if (result.successful()) {
+            SoundboardSettingsSender.sendToActiveRooms(manager, environment.getRoomManager());
+        }
+    }
+
+    private void sendResult(SoundboardCatalogResult result) {
+        this.client.sendResponse(
+                new SoundboardCatalogResultComposer(SoundboardCatalogResultComposer.Operation.UPSERT, result)
+                        .compose());
+    }
+}

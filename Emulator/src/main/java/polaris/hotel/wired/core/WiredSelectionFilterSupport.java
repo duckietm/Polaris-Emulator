@@ -1,0 +1,275 @@
+package polaris.hotel.wired.core;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import polaris.Emulator;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraFilterFurni;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraFilterFurniByVariable;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraFilterUser;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraFilterUsersByVariable;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+
+final class WiredSelectionFilterSupport {
+    private static final ThreadLocal<Integer> FILTER_DEPTH = ThreadLocal.withInitial(() -> 0);
+
+    private WiredSelectionFilterSupport() {}
+
+    /**
+     * Applies the stack's filter add-ons to what its selectors picked, as in Habbo: a filter narrows the
+     * selection, and with no selector of its kind it starts from nothing, so the kind ends up empty
+     * instead of keeping the triggering user or furni. Other sources (the triggering user, users in the
+     * room, ...) are never filtered.
+     */
+    static void applySelectorFilters(Room room, UserItem triggerItem, WiredContext ctx) {
+        if (ctx == null) {
+            return;
+        }
+
+        if (ctx.targets().isItemsModifiedBySelector()) {
+            ctx.targets()
+                    .setItems(filterItems(room, triggerItem, ctx, ctx.targets().items()));
+        } else if (hasFurniFilter(room, triggerItem, ctx)) {
+            ctx.targets().setItems(List.of());
+        }
+
+        if (ctx.targets().isUsersModifiedBySelector()) {
+            ctx.targets()
+                    .setUsers(filterUsers(room, triggerItem, ctx, ctx.targets().users()));
+        } else if (hasUserFilter(room, triggerItem, ctx)) {
+            ctx.targets().setUsers(List.of());
+        }
+    }
+
+    /** Whether the stack has a furni filter that would narrow a selection (a configured amount, or by variable). */
+    static boolean hasFurniFilter(Room room, UserItem triggerItem, WiredContext ctx) {
+        if (shouldBypass(room, triggerItem, ctx)) {
+            return false;
+        }
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null) {
+            return false;
+        }
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterFurniByVariable
+                    || (extra instanceof WiredExtraFilterFurni furni && furni.resolveAmount(ctx) > 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the stack has a user filter that would narrow a selection (a configured amount, or by variable). */
+    static boolean hasUserFilter(Room room, UserItem triggerItem, WiredContext ctx) {
+        if (shouldBypass(room, triggerItem, ctx)) {
+            return false;
+        }
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null) {
+            return false;
+        }
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterUsersByVariable
+                    || (extra instanceof WiredExtraFilterUser user && user.resolveAmount(ctx) > 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static List<UserItem> filterItems(Room room, UserItem triggerItem, WiredContext ctx, Iterable<UserItem> values) {
+        List<UserItem> items = toItemList(values);
+
+        if (items.isEmpty() || shouldBypass(room, triggerItem, ctx)) {
+            return items;
+        }
+
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null || extras.isEmpty()) {
+            return items;
+        }
+
+        int furniLimit = Integer.MAX_VALUE;
+        boolean furniRandom = false;
+        List<WiredExtraFilterFurniByVariable> variableFilters = new ArrayList<>();
+
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterFurni) {
+                // A filter that was never configured carries 0, which means "no limit" rather than
+                // "nothing": applying it would silently empty every selection the stack makes.
+                int amount = ((WiredExtraFilterFurni) extra).resolveAmount(ctx);
+                if (amount > 0) {
+                    furniLimit = Math.min(furniLimit, amount);
+                    furniRandom |= ((WiredExtraFilterFurni) extra).isRandomPick();
+                }
+            } else if (extra instanceof WiredExtraFilterFurniByVariable) {
+                variableFilters.add((WiredExtraFilterFurniByVariable) extra);
+            }
+        }
+
+        if (furniLimit == Integer.MAX_VALUE && variableFilters.isEmpty()) {
+            return items;
+        }
+
+        variableFilters.sort((left, right) -> Integer.compare(left.getId(), right.getId()));
+
+        try (FilterScope ignored = enterScope()) {
+            Iterable<UserItem> filteredItems = items;
+
+            for (WiredExtraFilterFurniByVariable extra : variableFilters) {
+                filteredItems = extra.filterItems(room, ctx, filteredItems);
+            }
+
+            if (furniLimit != Integer.MAX_VALUE) {
+                filteredItems = limitIterable(filteredItems, furniLimit, furniRandom);
+            }
+
+            return toItemList(filteredItems);
+        }
+    }
+
+    static List<RoomUnit> filterUsers(Room room, UserItem triggerItem, WiredContext ctx, Iterable<RoomUnit> values) {
+        List<RoomUnit> users = toUserList(values);
+
+        if (users.isEmpty() || shouldBypass(room, triggerItem, ctx)) {
+            return users;
+        }
+
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        if (extras == null || extras.isEmpty()) {
+            return users;
+        }
+
+        int userLimit = Integer.MAX_VALUE;
+        boolean userRandom = false;
+        List<WiredExtraFilterUsersByVariable> variableFilters = new ArrayList<>();
+
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraFilterUser) {
+                // Same as the furni filter: 0 is the unconfigured state and must not limit anything.
+                int amount = ((WiredExtraFilterUser) extra).resolveAmount(ctx);
+                if (amount > 0) {
+                    userLimit = Math.min(userLimit, amount);
+                    // The official user filter always keeps a random N.
+                    userRandom = true;
+                }
+            } else if (extra instanceof WiredExtraFilterUsersByVariable) {
+                variableFilters.add((WiredExtraFilterUsersByVariable) extra);
+            }
+        }
+
+        if (userLimit == Integer.MAX_VALUE && variableFilters.isEmpty()) {
+            return users;
+        }
+
+        variableFilters.sort((left, right) -> Integer.compare(left.getId(), right.getId()));
+
+        try (FilterScope ignored = enterScope()) {
+            Iterable<RoomUnit> filteredUsers = users;
+
+            for (WiredExtraFilterUsersByVariable extra : variableFilters) {
+                filteredUsers = extra.filterUsers(room, ctx, filteredUsers);
+            }
+
+            if (userLimit != Integer.MAX_VALUE) {
+                filteredUsers = limitIterable(filteredUsers, userLimit, userRandom);
+            }
+
+            return toUserList(filteredUsers);
+        }
+    }
+
+    private static boolean shouldBypass(Room room, UserItem triggerItem, WiredContext ctx) {
+        return room == null
+                || triggerItem == null
+                || ctx == null
+                || room.getRoomSpecialTypes() == null
+                || FILTER_DEPTH.get() > 0;
+    }
+
+    private static FilterScope enterScope() {
+        FILTER_DEPTH.set(FILTER_DEPTH.get() + 1);
+        return new FilterScope();
+    }
+
+    /** The first N in selection order, or a random N (the user filter, and furni filters set to random). */
+    private static <T> List<T> limitIterable(Iterable<T> values, int limit, boolean random) {
+        List<T> result = new ArrayList<>();
+
+        if (values == null || limit <= 0) {
+            return result;
+        }
+
+        for (T value : values) {
+            if (value != null) {
+                result.add(value);
+            }
+        }
+
+        if (result.size() <= limit) {
+            return result;
+        }
+
+        if (random) {
+            Collections.shuffle(result, Emulator.getRandom());
+        }
+        return new ArrayList<>(result.subList(0, limit));
+    }
+
+    private static List<UserItem> toItemList(Iterable<UserItem> values) {
+        List<UserItem> result = new ArrayList<>();
+
+        if (values == null) {
+            return result;
+        }
+
+        for (UserItem item : values) {
+            if (item != null) {
+                result.add(item);
+            }
+        }
+
+        return result;
+    }
+
+    private static List<RoomUnit> toUserList(Iterable<RoomUnit> values) {
+        List<RoomUnit> result = new ArrayList<>();
+
+        if (values == null) {
+            return result;
+        }
+
+        for (RoomUnit unit : values) {
+            if (unit != null) {
+                result.add(unit);
+            }
+        }
+
+        return result;
+    }
+
+    static void clearThreadLocalsForCurrentThread() {
+        FILTER_DEPTH.remove();
+    }
+
+    private static final class FilterScope implements AutoCloseable {
+        @Override
+        public void close() {
+            int depth = FILTER_DEPTH.get() - 1;
+
+            if (depth <= 0) {
+                FILTER_DEPTH.remove();
+            } else {
+                FILTER_DEPTH.set(depth);
+            }
+        }
+    }
+}

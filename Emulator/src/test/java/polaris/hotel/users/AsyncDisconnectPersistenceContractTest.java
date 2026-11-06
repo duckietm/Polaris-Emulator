@@ -1,0 +1,61 @@
+package polaris.hotel.users;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+
+class AsyncDisconnectPersistenceContractTest {
+
+    @Test
+    void disconnectReleasesItsMonitorBeforeDurableSaves() throws Exception {
+        String source = source("User.java");
+        int disconnect = source.indexOf("public void disconnect()");
+        int monitor = source.indexOf("synchronized (this)", disconnect);
+        int leaveRoom = source.indexOf(".leaveRoom(", monitor);
+        int removeUser = source.indexOf("userManager.removeUser(this)", leaveRoom);
+        int submit = source.indexOf("submitDisconnectPersistence(", removeUser);
+        int persistence = source.indexOf("private void persistDisconnect()", submit);
+        int userSave = source.indexOf("this.run()", persistence);
+        int inventorySave = source.indexOf("this.getInventory().dispose()", userSave);
+        int achievementSave = source.indexOf("AchievementManager.saveAchievements(this)", inventorySave);
+        int statsSave = source.indexOf("this.userStats.dispose()", achievementSave);
+
+        assertTrue(disconnect > -1);
+        assertFalse(source.contains("public synchronized void disconnect()"));
+        assertTrue(monitor > disconnect);
+        assertTrue(leaveRoom > monitor);
+        assertTrue(submit > removeUser);
+        assertTrue(userSave > persistence);
+        assertTrue(inventorySave > userSave);
+        assertTrue(achievementSave > inventorySave);
+        assertTrue(statsSave > achievementSave);
+    }
+
+    @Test
+    void loginWaitsAgainAfterItDisposesADuplicateSession() throws Exception {
+        String source = source("UserManager.java");
+        int publicLoad = source.indexOf("public User loadUser(");
+        int ticketQuery = source.indexOf("SELECT * FROM users WHERE auth_ticket", publicLoad);
+        int load = source.indexOf("private User loadUser(int userId", ticketQuery);
+        int firstWait = source.indexOf("awaitDisconnectPersistence(userId)", load);
+        int cloneCheck = source.indexOf("this.cloneCheck(userId)", firstWait);
+        int forceDispose = source.indexOf("disconnectWithReason(", cloneCheck);
+        int secondWait = source.indexOf("awaitDisconnectPersistence(userId)", forceDispose);
+        int reload = source.indexOf("DetachedRows.read(query, binder::bind)", secondWait);
+
+        assertTrue(ticketQuery > publicLoad);
+        assertTrue(load > ticketQuery);
+        assertTrue(firstWait > load);
+        assertTrue(cloneCheck > firstWait);
+        assertTrue(forceDispose > cloneCheck);
+        assertTrue(secondWait > forceDispose);
+        assertTrue(reload > secondWait);
+    }
+
+    private static String source(String file) throws Exception {
+        return Files.readString(Path.of("src/main/java/polaris/hotel/users", file));
+    }
+}

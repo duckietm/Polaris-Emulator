@@ -1,0 +1,194 @@
+package polaris.hotel.items.interactions.wired.effects;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import polaris.WiredPlatform;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredEffect;
+import polaris.hotel.items.interactions.InteractionWiredTrigger;
+import polaris.hotel.items.interactions.wired.WiredRewardPolicy;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.User;
+import polaris.hotel.wired.WiredEffectType;
+import polaris.hotel.wired.core.WiredContext;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredSourceUtil;
+import polaris.messages.ServerMessage;
+import polaris.messages.outgoing.wired.WiredEnvironmentComposer;
+
+public class WiredEffectGiveAchievement extends InteractionWiredEffect {
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TEXT;
+
+    private String achievement = "";
+    private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+
+    public WiredEffectGiveAchievement(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredEffectGiveAchievement(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.achievement);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(type.code);
+        message.appendInt(this.getDelay());
+
+        if (this.requiresTriggeringUser()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            for (InteractionWiredTrigger object : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!object.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(object.getBaseItem().getSpriteId());
+                }
+            }
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
+            }
+        } else {
+            message.appendInt(0);
+        }
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // An achievement pays its badge, score and level rewards hotel-wide.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
+        String nextAchievement = settings.getStringParam();
+        if (nextAchievement != null) {
+            nextAchievement = nextAchievement.trim();
+        }
+        if (nextAchievement == null || nextAchievement.isEmpty()) {
+            return false;
+        }
+        this.achievement = nextAchievement;
+
+        int[] params = settings.getIntParams();
+        // Official: no int params; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+
+        this.setDelay(settings.getDelay());
+
+        Room room = gameClient.getUser().getUserInfo().getCurrentRoom();
+        if (room != null) room.sendComposer(new WiredEnvironmentComposer(room).compose());
+        return true;
+    }
+
+    public String getAchievementCode() {
+        return this.achievement;
+    }
+
+    @Override
+    public void onPlace(Room room) {
+        super.onPlace(room);
+        room.sendComposer(new WiredEnvironmentComposer(room).compose());
+    }
+
+    @Override
+    public void onPickUp(Room room) {
+        super.onPickUp(room);
+        room.sendComposer(new WiredEnvironmentComposer(room).compose());
+    }
+
+    @Override
+    public WiredEffectType getType() {
+        return type;
+    }
+
+    /** The achievement this box hands out; read by the AIR 13 {@code WiredEnvironment} packet. */
+    public String getAchievement() {
+        return this.achievement;
+    }
+
+    @Override
+    public void execute(WiredContext ctx) {
+        Room room = ctx.room();
+        if (WiredPlatform.gameEnvironment() == null) return;
+        polaris.hotel.achievements.Achievement ach =
+                WiredPlatform.gameEnvironment().getAchievementManager().getAchievement(this.achievement);
+        if (ach == null) return;
+
+        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+            User user = room.getUser(unit);
+            if (user == null) continue;
+            polaris.hotel.achievements.AchievementManager.progressAchievement(user, ach);
+        }
+    }
+
+    @Override
+    @Deprecated
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson().toJson(new JsonData(this.achievement, this.getDelay(), this.userSource));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
+
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            this.achievement = data.achievement != null ? data.achievement : "";
+            this.setDelay(data.delay);
+            this.userSource = data.userSource;
+        } else {
+            String[] data = wiredData.split("\t");
+            this.achievement = "";
+
+            if (data.length >= 2) {
+                super.setDelay(Integer.parseInt(data[0]));
+
+                this.achievement = data[1];
+            }
+
+            this.needsUpdate(true);
+            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.achievement = "";
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.setDelay(0);
+    }
+
+    @Override
+    public boolean requiresTriggeringUser() {
+        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
+    static class JsonData {
+        String achievement;
+        int delay;
+        int userSource;
+
+        public JsonData(String achievement, int delay, int userSource) {
+            this.achievement = achievement;
+            this.delay = delay;
+            this.userSource = userSource;
+        }
+    }
+}

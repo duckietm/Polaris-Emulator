@@ -1,0 +1,200 @@
+package polaris.hotel.wired.core;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import polaris.hotel.items.interactions.InteractionWiredCondition;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraOrEval;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredConditionOperator;
+import polaris.hotel.wired.api.IWiredCondition;
+import polaris.hotel.wired.api.WiredStack;
+
+/**
+ * Internal owner of WIRED condition grouping, evaluation modes and negation.
+ *
+ * <p>The engine remains the public execution surface. This collaborator deliberately receives the
+ * existing mutable execution context and evaluates conditions in the same physical order so step
+ * accounting, plugin-visible condition instances and diagnostics remain behavior-compatible.
+ */
+final class WiredConditionEvaluator {
+
+    @FunctionalInterface
+    interface DiagnosticSink {
+        void log(Room room, String format, Object... arguments);
+    }
+
+    private final DiagnosticSink diagnostics;
+
+    WiredConditionEvaluator(DiagnosticSink diagnostics) {
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+    }
+
+    /**
+     * Whether the stack runs, and the conditions that passed. Those are committed (see {@link IWiredCondition#commit})
+     * only by the stack that actually runs; a negated stack commits none, its conditions only say when it must not.
+     */
+    record Outcome(boolean execute, List<IWiredCondition> passed) {}
+
+    boolean outcomeForExecution(WiredStack stack, WiredContext context, boolean negateConditions) {
+        return evaluateForExecution(stack, context, negateConditions).execute();
+    }
+
+    Outcome evaluateForExecution(WiredStack stack, WiredContext context, boolean negateConditions) {
+        if (!stack.hasConditions()) {
+            return new Outcome(!negateConditions, List.of());
+        }
+
+        List<IWiredCondition> passed = new ArrayList<>();
+        boolean conditionsPassed = evaluate(stack, context, passed);
+        diagnostics.log(context.room(), "Conditions result: {}", conditionsPassed ? "PASSED" : "FAILED");
+        if (negateConditions) {
+            return new Outcome(!conditionsPassed, List.of());
+        }
+        return new Outcome(conditionsPassed, conditionsPassed ? List.copyOf(passed) : List.of());
+    }
+
+    /** Records the passes of the conditions of a stack that runs; one failing condition does not stop the others. */
+    void commit(Outcome outcome, WiredContext context) {
+        for (IWiredCondition condition : outcome.passed()) {
+            try {
+                condition.commit(context);
+            } catch (RuntimeException exception) {
+                diagnostics.log(
+                        context.room(),
+                        "  Condition {} failed to record its pass: {}",
+                        condition.getClass().getSimpleName(),
+                        exception.toString());
+            }
+        }
+    }
+
+    private boolean evaluate(WiredStack stack, WiredContext context, List<IWiredCondition> passed) {
+        Set<Integer> evaluated = evaluatedConditionIds(stack, context.room());
+        if (evaluated.isEmpty()) {
+            return evaluateByMode(
+                    stack.conditions(),
+                    context,
+                    stack.conditionEvaluationMode(),
+                    stack.conditionEvaluationValue(),
+                    passed);
+        }
+
+        // The evaluation add-on's mode covers the conditions picked in it; every other condition must still pass.
+        List<IWiredCondition> picked = new ArrayList<>();
+        List<IWiredCondition> others = new ArrayList<>();
+        for (IWiredCondition condition : stack.conditions()) {
+            if (condition instanceof InteractionWiredCondition box && evaluated.contains(box.getId())) {
+                picked.add(condition);
+            } else {
+                others.add(condition);
+            }
+        }
+
+        // Both groups are evaluated, so every passing condition flashes as before.
+        boolean othersPassed = evaluateByMode(others, context, WiredExtraOrEval.MODE_ALL, 1, passed);
+        boolean pickedPassed = evaluateByMode(
+                picked, context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue(), passed);
+        return othersPassed && pickedPassed;
+    }
+
+    /** The conditions the stack's evaluation add-on picked; empty when its mode applies to all of them. */
+    private static Set<Integer> evaluatedConditionIds(WiredStack stack, Room room) {
+        UserItem trigger = stack.triggerItem();
+        if (trigger == null || room == null || room.getRoomSpecialTypes() == null) return Set.of();
+
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras(trigger.getX(), trigger.getY())) {
+            if (extra instanceof WiredExtraOrEval orEval) return orEval.getEvaluatedConditionIds();
+        }
+        return Set.of();
+    }
+
+    private boolean evaluateByMode(
+            List<IWiredCondition> conditions,
+            WiredContext context,
+            int evaluationMode,
+            int evaluationValue,
+            List<IWiredCondition> passed) {
+        if (conditions == null || conditions.isEmpty()) {
+            return true;
+        }
+
+        Room room = context.room();
+        Map<String, List<Boolean>> groupedOrResults = new LinkedHashMap<>();
+        int matchedRequirements = 0;
+        int totalRequirements = 0;
+
+        for (IWiredCondition condition : conditions) {
+            context.state().step();
+
+            boolean result = condition.evaluate(context);
+            String conditionKey = conditionGroupKey(condition);
+            if (result) {
+                passed.add(condition);
+            }
+
+            // A passing condition flashes with its trigger; a failed one stays at rest.
+            if (result && condition instanceof InteractionWiredCondition conditionBox) {
+                conditionBox.flashBox(room);
+            }
+
+            if (condition.operator() == WiredConditionOperator.OR) {
+                groupedOrResults
+                        .computeIfAbsent(conditionKey, ignored -> new ArrayList<>())
+                        .add(result);
+                diagnostics.log(
+                        room,
+                        "  Condition (OR group {}) {}: {}",
+                        conditionKey,
+                        condition.getClass().getSimpleName(),
+                        result ? "PASS" : "FAIL");
+                continue;
+            }
+
+            totalRequirements++;
+
+            if (result) {
+                matchedRequirements++;
+            }
+
+            diagnostics.log(room, "  Condition {}: {}", condition.getClass().getSimpleName(), result ? "PASS" : "FAIL");
+        }
+
+        for (Map.Entry<String, List<Boolean>> entry : groupedOrResults.entrySet()) {
+            totalRequirements++;
+
+            boolean groupPassed = entry.getValue().stream().anyMatch(Boolean::booleanValue);
+            if (groupPassed) {
+                matchedRequirements++;
+            }
+
+            diagnostics.log(room, "  Condition (OR result {}) : {}", entry.getKey(), groupPassed ? "PASS" : "FAIL");
+        }
+
+        boolean matches =
+                WiredExtraOrEval.matchesMode(evaluationMode, matchedRequirements, totalRequirements, evaluationValue);
+
+        diagnostics.log(
+                room,
+                "Condition eval mode {} value {} matched {}/{} logical requirements => {}",
+                evaluationMode,
+                evaluationValue,
+                matchedRequirements,
+                totalRequirements,
+                matches ? "PASS" : "FAIL");
+        return matches;
+    }
+
+    private static String conditionGroupKey(IWiredCondition condition) {
+        if (condition instanceof InteractionWiredCondition interactionCondition) {
+            return String.valueOf(interactionCondition.getType());
+        }
+
+        return condition.getClass().getName();
+    }
+}

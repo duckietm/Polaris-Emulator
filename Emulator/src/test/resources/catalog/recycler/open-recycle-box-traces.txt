@@ -1,11 +1,11 @@
 == box / a box without a date
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, , true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 
@@ -13,18 +13,18 @@ room <- UpdateStackHeight(4, 5, 1, 640.0)
 items.openRecycleBox(box) -> EMPTY
 ann <- RoomUserWhisper(RoomChatMessage(text:error.recycler.box.empty))
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 
 == box / the box's tile is gone
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 
 == box / the opening fails
 items.openRecycleBox(box) -> FAILED
@@ -32,11 +32,11 @@ items.openRecycleBox(box) -> FAILED
 == box / the reward goes to the inventory
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 
@@ -55,11 +55,11 @@ room <- UpdateStackHeight(4, 5, 1, 640.0)
 == gate / rights in the room, their own box
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 
@@ -69,11 +69,11 @@ room <- UpdateStackHeight(4, 5, 1, 640.0)
 == gate / staff in someone's room, their own box
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 
@@ -83,11 +83,11 @@ room <- UpdateStackHeight(4, 5, 1, 640.0)
 == gate / the owner opens their own box
 items.openRecycleBox(box) -> OPENED
 inventory.addItem(reward)
-ann <- AddHabboItem(reward)
+ann <- AddUserItem(reward)
 ann <- InventoryRefresh()
 ann <- PresentItemOpened(reward, 24-10-2026, true)
 room <- RemoveFloorItem(box)
-room.removeHabboItem(box)
+room.removeUserItem(box)
 room.updateTile(tile 4,5)
 room <- UpdateStackHeight(4, 5, 1, 640.0)
 

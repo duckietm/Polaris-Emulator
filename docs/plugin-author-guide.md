@@ -16,9 +16,22 @@ Place `plugin.json` at the root of the jar:
 }
 ```
 
-The main class extends `com.eu.habbo.plugin.HabboPlugin` and implements
+The main class extends `polaris.plugin.PolarisPlugin` and implements
 `onEnable`, `onDisable`, and `hasPermission`. Keep plugin-owned resources in
 the jar and load them through the plugin classloader.
+
+### Plugins compiled against the old names
+
+Before the rename the emulator lived in `com.eu.habbo.*`, the base class was
+`HabboPlugin` and users were `Habbo` (`getHabbo()`, `HabboInfo`, `HabboItem`...).
+Those jars still load without a recompile: the plugin manager rewrites each
+class as it loads it, using `polaris/plugin/legacy-names.txt` in the emulator
+jar. Packages, renamed classes, renamed methods and the renamed packet
+constants are all translated; a method of the plugin's own is renamed only when
+its class extends or implements an emulator class. String constants that are
+exactly an old class name or an old method name are translated too, so
+`Class.forName("com.eu.habbo...")` and `getMethod("getHabbo")` keep working.
+Names built at runtime (string concatenation) cannot be translated.
 
 ## Events
 
@@ -68,7 +81,7 @@ replacement rather than removal during routine modernization.
 ## Compatibility guidance
 
 - Compile against a released Polaris API or the intended Morningstar baseline.
-- Do not bundle classes in `com.eu.habbo.*` or shadow server dependencies.
+- Do not bundle classes in `polaris.*` (or the old `com.eu.habbo.*`) or shadow server dependencies.
 - Treat bundled third-party libraries as compatibility-sensitive, not as a
   promise that every library will remain forever.
 - Test the precompiled jar against the assembled

@@ -4,8 +4,8 @@
      purpose, and quiet third-party loggers. A test failure is reported by JUnit
      with its own trace, so the log only needs enough to locate an unexpected error. -->
 <configuration>
-    <conversionRule conversionWord="morningstarLevel" class="com.eu.habbo.util.logback.ConsoleLevelConverter" />
-    <conversionRule conversionWord="morningstarLogger" class="com.eu.habbo.util.logback.ConsoleLoggerConverter" />
+    <conversionRule conversionWord="morningstarLevel" class="polaris.util.logback.ConsoleLevelConverter" />
+    <conversionRule conversionWord="morningstarLogger" class="polaris.util.logback.ConsoleLoggerConverter" />
 
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

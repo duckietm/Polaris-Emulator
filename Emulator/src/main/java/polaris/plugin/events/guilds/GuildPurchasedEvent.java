@@ -1,0 +1,14 @@
+package polaris.plugin.events.guilds;
+
+import polaris.hotel.guilds.Guild;
+import polaris.hotel.users.User;
+
+public class GuildPurchasedEvent extends GuildEvent {
+
+    public final User user;
+
+    public GuildPurchasedEvent(Guild guild, User user) {
+        super(guild);
+        this.user = user;
+    }
+}

@@ -1,0 +1,1108 @@
+package polaris.hotel.rooms;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.bots.Bot;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionStackWalkHelper;
+import polaris.hotel.items.interactions.InteractionTileWalkMagic;
+import polaris.hotel.items.interactions.InteractionWater;
+import polaris.hotel.items.interactions.InteractionWaterItem;
+import polaris.hotel.items.interactions.interfaces.ConditionalGate;
+import polaris.hotel.pets.Pet;
+import polaris.hotel.pets.RideablePet;
+import polaris.hotel.users.DanceType;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
+import polaris.hotel.wired.WiredUserActionType;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredMoveCarryHelper;
+import polaris.hotel.wired.core.WiredUserMovementHelper;
+import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
+import polaris.plugin.Event;
+import polaris.plugin.events.roomunit.RoomUnitLookAtPointEvent;
+import polaris.plugin.events.roomunit.RoomUnitSetGoalEvent;
+import polaris.plugin.events.users.UserIdleEvent;
+import polaris.plugin.events.users.UserTakeStepEvent;
+import polaris.threading.runnables.RoomUnitKick;
+import polaris.util.pathfinding.Rotation;
+
+public class RoomUnit {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomUnit.class);
+
+    public boolean isWiredTeleporting = false;
+    public boolean isLeavingTeleporter = false;
+    private final ConcurrentHashMap<RoomUnitStatus, String> status;
+    private final Map<String, Object> cacheable;
+    public boolean canRotate = true;
+    public boolean animateWalk = false;
+    public boolean cmdTeleport = false;
+    public boolean cmdSit = false;
+    public boolean cmdStand = false;
+    public boolean cmdLay = false;
+    public boolean sitUpdate = false;
+    public boolean isTeleporting = false;
+    public boolean isKicked;
+    public int kickCount = 0;
+    private int id;
+    private RoomTile startLocation;
+    private RoomTile botStartLocation;
+    private RoomTile previousLocation;
+    private double previousLocationZ;
+    private RoomTile currentLocation;
+    private RoomTile goalLocation;
+    private double z;
+    private int tilesWalked;
+    private boolean inRoom;
+    private boolean canWalk;
+    private boolean fastWalk = false;
+    /** Build tool mode: furniture this user places or moves is marked to allow walking underneath. Reset per room visit. */
+    private boolean buildUnderpass = false;
+
+    private boolean buildHeightEnabled = false;
+    private double buildHeight = 0.0D;
+
+    private boolean statusUpdate = false;
+    private boolean invisible = false;
+    private boolean canLeaveRoomByDoor = true;
+    private RoomUserRotation bodyRotation = RoomUserRotation.NORTH;
+    private RoomUserRotation headRotation = RoomUserRotation.NORTH;
+    private DanceType danceType;
+    private RoomUnitType roomUnitType;
+    private volatile Deque<RoomTile> path = new ConcurrentLinkedDeque<>();
+    /** The tile of the step being announced, while its walk triggers run; null otherwise. */
+    private volatile RoomTile steppingTo;
+
+    private int handItem;
+    private long handItemTimestamp;
+    private long lastRollerTime;
+    private long moveStatusTimestamp;
+    private int walkTimeOut;
+    private int effectId;
+    private int effectEndTimestamp;
+    // The effect the give effect box (52) put on, with its priority; -1 when none did.
+    private int wiredEffectId;
+    private int wiredEffectPriority = -1;
+    private ScheduledFuture<?> moveBlockingTask;
+
+    private int idleTimer;
+    private boolean idle;
+    private Room room;
+    private RoomRightLevels rightsLevel = RoomRightLevels.NONE;
+    private Set<Integer> overridableTiles;
+
+    public RoomUnit() {
+        this.id = 0;
+        this.inRoom = false;
+        this.canWalk = true;
+        this.status = new ConcurrentHashMap<>();
+        this.cacheable = new HashMap<>();
+        this.roomUnitType = RoomUnitType.UNKNOWN;
+        this.danceType = DanceType.NONE;
+        this.handItem = 0;
+        this.handItemTimestamp = 0;
+        this.walkTimeOut = Emulator.getIntUnixTimestamp();
+        this.effectId = 0;
+        this.isKicked = false;
+        this.overridableTiles = new HashSet<>();
+    }
+
+    public void clearWalking() {
+        this.goalLocation = null;
+        this.startLocation = this.currentLocation;
+        this.inRoom = false;
+        this.moveStatusTimestamp = 0L;
+
+        this.status.clear();
+
+        this.cacheable.clear();
+    }
+
+    public void stopWalking() {
+        synchronized (this.status) {
+            this.status.remove(RoomUnitStatus.MOVE);
+            this.setGoalLocation(this.currentLocation);
+        }
+    }
+
+    /**
+     * One tick of a walking unit. Returns false when the unit took a step, was stopped by what lies ahead or failed:
+     * {@link RoomCycleManager#cycleRoomUnit} then sends its status and skips the sit and lay checks. Returns true when
+     * there was nothing to do (no path, at its goal, a plugin cancelled the step), and the cycle goes on to those
+     * checks. A ridden pet returns whether its status needs sending.
+     */
+    public boolean cycle(Room room) {
+        this.steppingTo = null;
+        try {
+            User rider = null;
+            if (this.getRoomUnitType() == RoomUnitType.PET) {
+                Pet pet = room.getPet(this);
+                if (pet instanceof RideablePet) {
+                    rider = ((RideablePet) pet).getRider();
+                }
+            }
+
+            if (rider != null) {
+                return this.followRider(rider);
+            }
+
+            if (!this.isWalking() && !this.isKicked && this.stopAtGoal(room)) {
+                return true;
+            }
+
+            // AIR: the first step off a seat or a bed is the user's "stand" action.
+            if (this.clearWalkingStatuses() && this.roomUnitType == RoomUnitType.USER) {
+                WiredManager.triggerUserPerformsAction(room, this, WiredUserActionType.STAND, -1);
+            }
+
+            if (this.path == null || this.path.isEmpty()) {
+                return true;
+            }
+
+            boolean canfastwalk = true;
+            User userT = room.getUser(this);
+            if (userT != null) {
+                if (userT.getUserInfo().getRiding() != null) {
+                    canfastwalk = false;
+                }
+            }
+
+            RoomTile next = this.path.poll();
+            boolean overrideChecks = next != null && this.canOverrideTile(next);
+
+            if (this.path.isEmpty()) {
+                this.sitUpdate = true;
+
+                // The last step onto someone is refused unless the room is walkthrough (Habbo: avatars share a tile).
+                if (next != null && next.hasUnits() && !overrideChecks && !room.isAllowWalkthrough()) {
+                    return false;
+                }
+            }
+
+            if (canfastwalk && this.fastWalk && this.path.size() > 1) {
+                next = this.path.poll();
+            }
+
+            if (next == null) {
+                return true;
+            }
+
+            User user = room.getUser(this);
+
+            this.status.remove(RoomUnitStatus.DEAD);
+
+            if (user != null && this.stepIsCancelled(room, user, next)) {
+                return true;
+            }
+
+            UserItem item = room.getItemManager().getWalkableItemAt(next.x, next.y);
+            boolean canSitNextTile = room.canSitAt(next.x, next.y);
+            boolean canLayNextTile = room.canLayAt(next.x, next.y);
+
+            if (this.blockedAhead(room, next, overrideChecks, canSitNextTile, canLayNextTile)) {
+                return false;
+            }
+
+            if (canSitNextTile) {
+                UserItem tallestChair = room.getTallestChair(next);
+
+                if (tallestChair != null) {
+                    item = tallestChair;
+                }
+            }
+
+            if (this.stopsShortOfTheSeat(next, item, user, overrideChecks)) {
+                return false;
+            }
+
+            double zHeight = 0.0D;
+
+            if (user != null) {
+                if (user.getUserInfo().getRiding() != null) {
+                    zHeight += 1.0D;
+                }
+            }
+
+            if (!this.walkOverFurni(room, next, item, user)) {
+                return false;
+            }
+
+            zHeight = stepHeight(room, next, item, zHeight);
+
+            this.setPreviousLocation(this.getCurrentLocation());
+
+            this.setStatus(RoomUnitStatus.MOVE, next.x + "," + next.y + "," + zHeight);
+            if (user != null && user.getUserInfo().getRiding() != null) {
+                this.carryRiddenPet(room, user.getUserInfo().getRiding().getRoomUnit(), next, zHeight);
+            }
+
+            this.setZ(zHeight);
+            this.setCurrentLocation(room.getLayout().getTile(next.x, next.y));
+            this.steppingTo = null;
+            this.resetIdleTimer();
+
+            if (user != null) {
+                this.leaveIfOnTheDoor(room, user, next);
+            }
+
+            return false;
+
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+            return false;
+        } finally {
+            this.steppingTo = null;
+        }
+    }
+
+    /**
+     * Whether the next tile cannot be stepped onto (not walkable, too high, too deep a fall); the walk then ends
+     * there. The last step onto a chair or bed is never blocked here.
+     */
+    private boolean blockedAhead(
+            Room room, RoomTile next, boolean overrideChecks, boolean canSitNextTile, boolean canLayNextTile) {
+        if (this.path.isEmpty() && (canSitNextTile || canLayNextTile)) {
+            return false;
+        }
+
+        double height = next.getStackHeight() - this.currentLocation.getStackHeight();
+        if (!overrideChecks && canMoveToTile(room, next, height, canSitNextTile, canLayNextTile)) {
+            this.path.clear();
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the unit stops in front of the seat it walks to: a sit or lay goal without a seat within one step's
+     * height, or a bed for a user riding a pet.
+     */
+    private boolean stopsShortOfTheSeat(RoomTile next, UserItem item, User user, boolean overrideChecks) {
+        if (next.equals(this.goalLocation)
+                && (next.state == RoomTileState.SIT || next.state == RoomTileState.LAY)
+                && !overrideChecks
+                && (item == null || item.getZ() - this.getZ() > RoomLayout.MAXIMUM_STEP_HEIGHT)) {
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        if (user != null
+                && user.getUserInfo() != null
+                && user.getUserInfo().getRiding() != null
+                && next.equals(this.goalLocation)
+                && next.state == RoomTileState.LAY) {
+            this.status.remove(RoomUnitStatus.MOVE);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Tells the furni the unit is stepping over: walk off the one it leaves, walk on (or along) the one it steps onto,
+     * and turns the unit towards the step. Returns false when a gate refuses the unit, which then stays where it is,
+     * facing as before, and has its status sent.
+     */
+    private boolean walkOverFurni(Room room, RoomTile next, UserItem item, User user) throws Exception {
+        // The walk triggers below fire in the tick that announces the step; their conditions count this unit
+        // on the tile it steps to, as in Habbo. Behaviour observed in plus-emulator/PlusEMU f1f78291.
+        this.steppingTo = next;
+        UserItem userItem = room.getTopItemAt(this.getX(), this.getY());
+        if (userItem != null) {
+            if (userItem != item || !itemOccupiesTile(userItem, next.x, next.y)) {
+                userItem.onWalkOff(this, room, new Object[] {this.getCurrentLocation(), next});
+            }
+        }
+
+        this.tilesWalked++;
+
+        RoomUserRotation oldRotation = this.getBodyRotation();
+        this.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
+        if (item == null) {
+            return true;
+        }
+
+        if (item != userItem || !itemOccupiesTile(item, this.getX(), this.getY())) {
+            if (item.canWalkOn(this, room, null)) {
+                item.onWalkOn(this, room, new Object[] {this.getCurrentLocation(), next});
+            } else if (item instanceof ConditionalGate) {
+                this.steppingTo = null;
+                this.setRotation(oldRotation);
+                this.tilesWalked--;
+                this.setGoalLocation(this.currentLocation);
+                this.status.remove(RoomUnitStatus.MOVE);
+                room.sendComposer(new RoomUserStatusComposer(this).compose());
+
+                if (user != null) {
+                    ((ConditionalGate) item).onRejected(this, this.getRoom(), new Object[] {});
+                }
+                return false;
+            }
+        } else {
+            item.onWalk(this, room, new Object[] {this.getCurrentLocation(), next});
+        }
+
+        return true;
+    }
+
+    /**
+     * The height the unit stands at on the next tile, added to {@code zHeight} (one when riding): on top of the furni
+     * there (a chair or bed without its own height), or the floor. A stack helper on the tile sets it on its own.
+     */
+    private static double stepHeight(Room room, RoomTile next, UserItem item, double zHeight) {
+        if (item != null) {
+            zHeight += item.getZ();
+
+            if (!item.getBaseItem().allowSit() && !item.getBaseItem().allowLay()) {
+                zHeight += Item.getCurrentHeight(item);
+            }
+        } else {
+            zHeight += room.getLayout().getHeightAtSquare(next.x, next.y);
+        }
+
+        Optional<UserItem> stackHelper = room.getItemsAt(next).stream()
+                .filter(i -> i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper)
+                .findAny();
+        if (stackHelper.isPresent()) {
+            zHeight = stackHelper.get().getZ();
+        }
+
+        return zHeight;
+    }
+
+    /** A ridden pet goes where its rider is; returns whether its status needs sending. */
+    private boolean followRider(User rider) {
+        if (this.status.containsKey(RoomUnitStatus.MOVE)
+                && !rider.getRoomUnit().getStatusMap().containsKey(RoomUnitStatus.MOVE)) {
+            this.status.remove(RoomUnitStatus.MOVE);
+        }
+
+        if (rider.getRoomUnit().getCurrentLocation().x != this.getX()
+                || rider.getRoomUnit().getCurrentLocation().y != this.getY()) {
+            this.status.put(
+                    RoomUnitStatus.MOVE,
+                    rider.getRoomUnit().getCurrentLocation().x + ","
+                            + rider.getRoomUnit().getCurrentLocation().y + ","
+                            + (rider.getRoomUnit().getCurrentLocation().getStackHeight()));
+            this.setPreviousLocation(rider.getRoomUnit().getPreviousLocation());
+            this.setPreviousLocationZ(rider.getRoomUnit().getPreviousLocation().getStackHeight());
+            this.setCurrentLocation(rider.getRoomUnit().getCurrentLocation());
+            this.setZ(rider.getRoomUnit().getCurrentLocation().getStackHeight());
+        }
+
+        return this.statusUpdate;
+    }
+
+    /**
+     * A unit at its goal drops its move status; returns true when there was none to drop, and then also stops the
+     * pet its user rides.
+     */
+    private boolean stopAtGoal(Room room) {
+        if (this.status.remove(RoomUnitStatus.MOVE) != null) {
+            return false;
+        }
+
+        User userT = room.getUser(this);
+        if (userT != null && userT.getUserInfo() != null && userT.getUserInfo().getRiding() != null) {
+            RoomUnit ridingRoomUnit = userT.getUserInfo().getRiding().getRoomUnit();
+            if (ridingRoomUnit != null) {
+                ridingRoomUnit.status.remove(RoomUnitStatus.MOVE);
+            }
+        }
+        return true;
+    }
+
+    /** Drops sit, move, lay and every other status a step ends; true when the unit sat or lay. */
+    private boolean clearWalkingStatuses() {
+        boolean postured = false;
+        if (this.status.remove(RoomUnitStatus.SIT) != null) {
+            this.statusUpdate = true;
+            postured = true;
+        }
+        if (this.status.remove(RoomUnitStatus.MOVE) != null) {
+            this.statusUpdate = true;
+        }
+        if (this.status.remove(RoomUnitStatus.LAY) != null) {
+            this.statusUpdate = true;
+            postured = true;
+        }
+
+        for (Map.Entry<RoomUnitStatus, String> set : this.status.entrySet()) {
+            if (set.getKey().removeWhenWalking) {
+                this.status.remove(set.getKey());
+            }
+        }
+        return postured;
+    }
+
+    /** Wakes an idle user who walks, then lets plugins cancel the step; returns whether one did. */
+    private boolean stepIsCancelled(Room room, User user, RoomTile next) {
+        if (this.isIdle()) {
+            UserIdleEvent event = new UserIdleEvent(user, UserIdleEvent.IdleReason.WALKED, false);
+            Emulator.getPluginManager().fireEvent(event);
+
+            if (!event.isCancelled()) {
+                if (!event.idle) {
+                    room.unIdle(user);
+                    this.idleTimer = 0;
+                }
+            }
+        }
+
+        if (Emulator.getPluginManager().isRegistered(UserTakeStepEvent.class, false)) {
+            Event e = new UserTakeStepEvent(user, room.getLayout().getTile(this.getX(), this.getY()), next);
+            Emulator.getPluginManager().fireEvent(e);
+
+            return e.isCancelled();
+        }
+
+        return false;
+    }
+
+    /** The pet a user rides takes the same step, one unit lower, and its status is sent at once. */
+    private void carryRiddenPet(Room room, RoomUnit ridingUnit, RoomTile next, double zHeight) {
+        if (ridingUnit == null) {
+            return;
+        }
+
+        ridingUnit.setPreviousLocationZ(this.getZ());
+        ridingUnit.setRotation(RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
+        ridingUnit.setPreviousLocation(this.getCurrentLocation());
+        ridingUnit.setGoalLocation(this.getGoal());
+        ridingUnit.setStatus(RoomUnitStatus.MOVE, next.x + "," + next.y + "," + (zHeight - 1.0));
+        room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+    }
+
+    /** A user who steps onto the door tile leaves the room half a second later, where the room allows it. */
+    private void leaveIfOnTheDoor(Room room, User user, RoomTile next) {
+        UserItem topItem = room.getTopItemAt(next.x, next.y);
+
+        boolean isAtDoor = next.x == room.getLayout().getDoorX()
+                && next.y == room.getLayout().getDoorY();
+        boolean publicRoomKicks =
+                !room.isPublicRoom() || Emulator.getConfig().getBoolean("hotel.room.public.doortile.kick");
+        boolean invalidated = topItem != null && topItem.invalidatesToRoomKick();
+
+        if (room.isLeaveOnDoorTileEnabled()
+                && this.canLeaveRoomByDoor
+                && isAtDoor
+                && publicRoomKicks
+                && !invalidated
+                && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
+            Emulator.getThreading().run(new RoomUnitKick(user, room, false), 500);
+        }
+    }
+
+    private static boolean itemOccupiesTile(UserItem item, short x, short y) {
+        int width = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
+        int length = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
+
+        if (item.getRotation() == 2 || item.getRotation() == 6) {
+            int swap = width;
+            width = length;
+            length = swap;
+        }
+
+        return RoomLayout.pointInSquare(
+                item.getX(), item.getY(), item.getX() + width - 1, item.getY() + length - 1, x, y);
+    }
+
+    private static boolean canMoveToTile(
+            Room room, RoomTile next, double height, boolean canSitNextTile, boolean canLayNextTile) {
+        return (!room.tileWalkable(next)
+                        || (!RoomLayout.ALLOW_FALLING && height < -RoomLayout.MAXIMUM_STEP_HEIGHT)
+                        || (next.state == RoomTileState.OPEN && height > RoomLayout.MAXIMUM_STEP_HEIGHT))
+                && !canSitNextTile
+                && !canLayNextTile;
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public RoomTile getCurrentLocation() {
+        return this.currentLocation;
+    }
+
+    /**
+     * Where wired conditions count this unit: the tile it is stepping to while its step is being announced (walk
+     * triggers fire then), otherwise its current tile.
+     */
+    public RoomTile getWiredLocation() {
+        RoomTile stepping = this.steppingTo;
+        return stepping != null ? stepping : this.currentLocation;
+    }
+
+    public void setCurrentLocation(RoomTile location) {
+        if (location != null) {
+            if (this.currentLocation != null) {
+                this.currentLocation.removeUnit(this);
+            }
+            this.currentLocation = location;
+            location.addUnit(this);
+        }
+    }
+
+    public short getX() {
+        return this.currentLocation == null ? 0 : this.currentLocation.x;
+    }
+
+    public short getY() {
+        return this.currentLocation == null ? 0 : this.currentLocation.y;
+    }
+
+    public double getZ() {
+        return this.z;
+    }
+
+    public void setZ(double z) {
+        this.z = z;
+
+        if (this.room != null) {
+            Bot bot = this.room.getBot(this);
+            if (bot != null) {
+                bot.needsUpdate(true);
+            }
+        }
+    }
+
+    public boolean isInRoom() {
+        return this.inRoom;
+    }
+
+    public synchronized void setInRoom(boolean inRoom) {
+        this.inRoom = inRoom;
+    }
+
+    public RoomUnitType getRoomUnitType() {
+        return this.roomUnitType;
+    }
+
+    public synchronized void setRoomUnitType(RoomUnitType roomUnitType) {
+        this.roomUnitType = roomUnitType;
+    }
+
+    public void setRotation(RoomUserRotation rotation) {
+        this.bodyRotation = rotation;
+        this.headRotation = rotation;
+    }
+
+    public RoomUserRotation getBodyRotation() {
+        return this.bodyRotation;
+    }
+
+    public void setBodyRotation(RoomUserRotation bodyRotation) {
+        this.bodyRotation = bodyRotation;
+    }
+
+    public RoomUserRotation getHeadRotation() {
+        return this.headRotation;
+    }
+
+    public void setHeadRotation(RoomUserRotation headRotation) {
+        this.headRotation = headRotation;
+    }
+
+    public DanceType getDanceType() {
+        return this.danceType;
+    }
+
+    public synchronized void setDanceType(DanceType danceType) {
+        this.danceType = danceType;
+    }
+
+    public void setCanWalk(boolean value) {
+        this.canWalk = value;
+    }
+
+    public boolean canWalk() {
+        return this.canWalk;
+    }
+
+    public boolean isFastWalk() {
+        return this.fastWalk;
+    }
+
+    public boolean isBuildUnderpass() {
+        return this.buildUnderpass;
+    }
+
+    public void setBuildUnderpass(boolean buildUnderpass) {
+        this.buildUnderpass = buildUnderpass;
+    }
+
+    public boolean isBuildHeightEnabled() {
+        return this.buildHeightEnabled;
+    }
+
+    public double getBuildHeight() {
+        return this.buildHeight;
+    }
+
+    /** The build height the user picked, in tiles above the floor of the square the item lands on. */
+    public void setBuildHeight(boolean enabled, double height) {
+        this.buildHeightEnabled = enabled;
+        this.buildHeight = enabled ? height : 0.0D;
+    }
+
+    public void setFastWalk(boolean fastWalk) {
+        this.fastWalk = fastWalk;
+    }
+
+    public RoomTile getStartLocation() {
+        return this.startLocation;
+    }
+
+    public int tilesWalked() {
+        return this.tilesWalked;
+    }
+
+    public RoomTile getGoal() {
+        return this.goalLocation;
+    }
+
+    public void setGoalLocation(RoomTile goalLocation) {
+        if (goalLocation != null) {
+            this.setGoalLocation(goalLocation, false);
+        }
+    }
+
+    public void setGoalLocation(RoomTile goalLocation, boolean noReset) {
+        if (Emulator.getPluginManager().isRegistered(RoomUnitSetGoalEvent.class, false)) {
+            Event event = new RoomUnitSetGoalEvent(this.room, this, goalLocation);
+            Emulator.getPluginManager().fireEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+        }
+
+        this.startLocation = this.currentLocation;
+
+        if (goalLocation != null && !noReset) {
+            boolean isWalking = this.hasStatus(RoomUnitStatus.MOVE);
+            RoomTile previousGoal = this.goalLocation;
+            Deque<RoomTile> previousPath = this.path;
+            this.goalLocation = goalLocation;
+            this.findPath(); // /< Quadral: this is where we start formulating a path
+            boolean foundRoute = this.path != previousPath && !this.path.isEmpty();
+            if (foundRoute) {
+                this.tilesWalked = isWalking ? this.tilesWalked : 0;
+                this.cmdSit = false;
+            } else if (isWalking && previousPath != null && !previousPath.isEmpty()) {
+                // Habbo ignores a goal with no route while the unit walks: the walk goes on to its old goal.
+                this.goalLocation = previousGoal;
+            } else {
+                this.goalLocation = this.currentLocation;
+            }
+        }
+    }
+
+    public void setLocation(RoomTile location) {
+        if (location != null) {
+            this.startLocation = location;
+            setPreviousLocation(location);
+            setCurrentLocation(location);
+            this.goalLocation = location;
+            this.botStartLocation = location;
+        }
+    }
+
+    public RoomTile getBotStartLocation() {
+        return this.botStartLocation;
+    }
+
+    public void setBotStartLocation(RoomTile botStartLocation) {
+        this.botStartLocation = botStartLocation;
+    }
+
+    public RoomTile getPreviousLocation() {
+        return this.previousLocation;
+    }
+
+    public void setPreviousLocation(RoomTile previousLocation) {
+        this.previousLocation = previousLocation;
+        this.previousLocationZ = this.z;
+    }
+
+    public double getPreviousLocationZ() {
+        return this.previousLocationZ;
+    }
+
+    public void setPreviousLocationZ(double z) {
+        this.previousLocationZ = z;
+    }
+
+    public void setPathFinderRoom(Room room) {
+        this.room = room;
+    }
+
+    public void findPath() {
+        if (!canFindPath()) {
+            return;
+        }
+
+        Deque<RoomTile> newPath = this.room
+                .getLayout()
+                .getPathfinder()
+                .findPath(this.currentLocation, this.goalLocation, this.goalLocation, this);
+        if (newPath != null && !newPath.isEmpty()) {
+            this.path = new ConcurrentLinkedDeque<>(newPath);
+        }
+    }
+
+    private boolean canFindPath() {
+        return this.room != null
+                && this.room.getLayout() != null
+                && this.goalLocation != null
+                && (this.goalLocation.isWalkable()
+                        || this.room.canSitOrLayAt(this.goalLocation.x, this.goalLocation.y)
+                        || this.canOverrideTile(this.goalLocation));
+    }
+
+    public boolean isAtGoal() {
+        if (this.currentLocation == null) return true;
+        return this.currentLocation.equals(this.goalLocation);
+    }
+
+    public boolean isWalking() {
+        return !this.isAtGoal() && this.canWalk;
+    }
+
+    public String getStatus(RoomUnitStatus key) {
+        return this.status.get(key);
+    }
+
+    public ConcurrentHashMap<RoomUnitStatus, String> getStatusMap() {
+        return this.status;
+    }
+
+    public void removeStatus(RoomUnitStatus key) {
+        if (key == RoomUnitStatus.MOVE) {
+            this.moveStatusTimestamp = 0L;
+        }
+        this.status.remove(key);
+    }
+
+    public void setStatus(RoomUnitStatus key, String value) {
+        if (key != null && value != null) {
+            if (key == RoomUnitStatus.MOVE) {
+                this.moveStatusTimestamp = System.currentTimeMillis();
+                WiredMoveCarryHelper.clearStatusComposerSuppression(this);
+                WiredUserMovementHelper.clearStatusComposerSuppression(this);
+            }
+
+            this.status.put(key, value);
+        }
+    }
+
+    public boolean hasStatus(RoomUnitStatus key) {
+        return this.status.containsKey(key);
+    }
+
+    public void clearStatus() {
+        this.moveStatusTimestamp = 0L;
+        this.status.clear();
+    }
+
+    public void statusUpdate(boolean update) {
+        this.statusUpdate = update;
+    }
+
+    public boolean needsStatusUpdate() {
+        return this.statusUpdate;
+    }
+
+    public Map<String, Object> getCacheable() {
+        return this.cacheable;
+    }
+
+    public int getHandItem() {
+        return this.handItem;
+    }
+
+    public long getLastRollerTime() {
+        return this.lastRollerTime;
+    }
+
+    public void setLastRollerTime(long lastRollerTime) {
+        this.lastRollerTime = lastRollerTime;
+    }
+
+    public long getMoveStatusTimestamp() {
+        return this.moveStatusTimestamp;
+    }
+
+    public boolean canBeRolled() {
+        return System.currentTimeMillis() - this.lastRollerTime >= 480;
+    }
+
+    public void setHandItem(int handItem) {
+        this.handItem = handItem;
+        this.handItemTimestamp = System.currentTimeMillis();
+    }
+
+    public long getHandItemTimestamp() {
+        return this.handItemTimestamp;
+    }
+
+    public int getEffectId() {
+        return this.effectId;
+    }
+
+    public void setEffectId(int effectId, int endTimestamp) {
+        this.effectId = effectId;
+        this.effectEndTimestamp = endTimestamp;
+    }
+
+    public int getEffectEndTimestamp() {
+        return this.effectEndTimestamp;
+    }
+
+    /**
+     * The priority of the effect a give effect box put on, or -1 when the unit wears no such effect
+     * any more (another source changed it since).
+     */
+    public int getWiredEffectPriority() {
+        return this.wiredEffectPriority >= 0 && this.effectId != 0 && this.effectId == this.wiredEffectId
+                ? this.wiredEffectPriority
+                : -1;
+    }
+
+    public void setWiredEffect(int effectId, int priority) {
+        this.wiredEffectId = effectId;
+        this.wiredEffectPriority = effectId != 0 ? priority : -1;
+    }
+
+    public int getWalkTimeOut() {
+        return this.walkTimeOut;
+    }
+
+    public void setWalkTimeOut(int walkTimeOut) {
+        this.walkTimeOut = walkTimeOut;
+    }
+
+    public void increaseIdleTimer() {
+        this.idleTimer++;
+    }
+
+    public boolean isIdle() {
+        return this.idle || this.idleTimer > Room.IDLE_CYCLES;
+    }
+
+    public int getIdleTimer() {
+        return this.idleTimer;
+    }
+
+    public void resetIdleTimer() {
+        this.idleTimer = 0;
+        this.idle = false;
+    }
+
+    public void setIdle() {
+        this.idle = true;
+    }
+
+    public void lookAtPoint(RoomTile location) {
+        if (!this.canRotate) {
+            return;
+        }
+
+        if (Emulator.getPluginManager().isRegistered(RoomUnitLookAtPointEvent.class, false)) {
+            Event lookAtPointEvent = new RoomUnitLookAtPointEvent(this.room, this, location);
+            Emulator.getPluginManager().fireEvent(lookAtPointEvent);
+
+            if (lookAtPointEvent.isCancelled()) {
+                return;
+            }
+        }
+
+        if (this.status.containsKey(RoomUnitStatus.LAY)) {
+            return;
+        }
+
+        if (!this.status.containsKey(RoomUnitStatus.SIT)) {
+            this.bodyRotation =
+                    (RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), location.x, location.y)]);
+        }
+
+        RoomUserRotation rotation =
+                (RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), location.x, location.y)]);
+
+        if (RoomUserRotation.rotationDistance(rotation.getValue(), this.bodyRotation.getValue()) <= 1) {
+            this.headRotation = rotation;
+        }
+    }
+
+    public Deque<RoomTile> getPath() {
+        return this.path;
+    }
+
+    public void setPath(Deque<RoomTile> path) {
+        this.path = (path == null) ? new ConcurrentLinkedDeque<>() : new ConcurrentLinkedDeque<>(path);
+    }
+
+    public RoomRightLevels getRightsLevel() {
+        return this.rightsLevel;
+    }
+
+    public void setRightsLevel(RoomRightLevels rightsLevel) {
+        this.rightsLevel = rightsLevel;
+    }
+
+    public boolean isInvisible() {
+        return this.invisible;
+    }
+
+    public void setInvisible(boolean invisible) {
+        this.invisible = invisible;
+    }
+
+    public Room getRoom() {
+        return room;
+    }
+
+    public void setRoom(Room room) {
+        this.room = room;
+    }
+
+    public boolean canOverrideTile(RoomTile tile) {
+        if (tile == null || room == null || room.getLayout() == null) {
+            return false;
+        }
+
+        if (room.getItemsAt(tile).stream().anyMatch(i -> i.canOverrideTile(this, room, tile))) {
+            return true;
+        }
+
+        int tileIndex = (tile.x & 0xFF) | (tile.y << 12);
+        return this.overridableTiles.contains(tileIndex);
+    }
+
+    /** Whether tiles were granted to this unit to walk on whatever their state. */
+    public boolean hasOverrideTiles() {
+        return !this.overridableTiles.isEmpty();
+    }
+
+    public void addOverrideTile(RoomTile tile) {
+        int tileIndex = (tile.x & 0xFF) | (tile.y << 12);
+        if (!this.overridableTiles.contains(tileIndex)) {
+            this.overridableTiles.add(tileIndex);
+        }
+    }
+
+    public void removeOverrideTile(RoomTile tile) {
+        if (room == null || room.getLayout() == null) {
+            return;
+        }
+
+        int tileIndex = (tile.x & 0xFF) | (tile.y << 12);
+        this.overridableTiles.remove(tileIndex);
+    }
+
+    public void clearOverrideTiles() {
+        this.overridableTiles.clear();
+    }
+
+    public boolean canLeaveRoomByDoor() {
+        return canLeaveRoomByDoor;
+    }
+
+    public void setCanLeaveRoomByDoor(boolean canLeaveRoomByDoor) {
+        this.canLeaveRoomByDoor = canLeaveRoomByDoor;
+    }
+
+    public boolean canForcePosture() {
+        if (this.room == null) {
+            return false;
+        }
+
+        User user = this.room.getUser(this);
+
+        if (user != null && user.getUserInfo() != null && user.getUserInfo().getRiding() != null) {
+            return false;
+        }
+
+        // A swimmer cannot sit or lay, as in Habbo, also off the water tile.
+        if (isSwimEffect(this.getEffectId())) {
+            return false;
+        }
+
+        UserItem topItem = this.room.getTopItemAt(this.getX(), this.getY());
+
+        return topItem == null
+                || (!(topItem instanceof InteractionWater) && !(topItem instanceof InteractionWaterItem));
+    }
+
+    /** The swimming effects (29 and 30 for the two genders, 185 the swim ring). */
+    static boolean isSwimEffect(int effectId) {
+        return effectId == 29 || effectId == 30 || effectId == 185;
+    }
+
+    public RoomTile getClosestTile(List<RoomTile> tiles) {
+        return tiles.stream()
+                .min(Comparator.comparingDouble(a -> a.distance(this.getCurrentLocation())))
+                .orElse(null);
+    }
+
+    public RoomTile getClosestAdjacentTile(short x, short y, boolean diagonal) {
+        if (room == null) {
+            return null;
+        }
+
+        RoomTile baseTile = room.getLayout().getTile(x, y);
+
+        if (baseTile == null) {
+            return null;
+        }
+
+        List<Integer> rotations = new ArrayList<>();
+        rotations.add(RoomUserRotation.SOUTH.getValue());
+        rotations.add(RoomUserRotation.NORTH.getValue());
+        rotations.add(RoomUserRotation.EAST.getValue());
+        rotations.add(RoomUserRotation.WEST.getValue());
+
+        if (diagonal) {
+            rotations.add(RoomUserRotation.NORTH_EAST.getValue());
+            rotations.add(RoomUserRotation.NORTH_WEST.getValue());
+            rotations.add(RoomUserRotation.SOUTH_EAST.getValue());
+            rotations.add(RoomUserRotation.SOUTH_WEST.getValue());
+        }
+
+        return this.getClosestTile(rotations.stream()
+                .map(rotation -> room.getLayout().getTileInFront(baseTile, rotation))
+                .filter(t -> t != null
+                        && t.isWalkable()
+                        && (this.getCurrentLocation().equals(t) || !room.hasUsersAt(t.x, t.y)))
+                .collect(Collectors.toList()));
+    }
+
+    public ScheduledFuture<?> getMoveBlockingTask() {
+        return moveBlockingTask;
+    }
+
+    public void setMoveBlockingTask(ScheduledFuture<?> moveBlockingTask) {
+        this.moveBlockingTask = moveBlockingTask;
+    }
+}

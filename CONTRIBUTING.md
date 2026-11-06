@@ -21,10 +21,18 @@ add characterization tests against the unchanged implementation, confirm they
 pass, and keep them unchanged through the extraction. Bug fixes start with a
 narrow failing reproduction.
 
+New tests check behaviour, not source text: call the code and assert on what it
+returns, sends or stores. A test that reads a `.java` file and looks for a
+fragment (`source.contains("...")`) fails on every rename or reformat while the
+behaviour is unchanged, and passes when equivalent code is written differently.
+The existing ones are converted when the code they guard is next touched.
+
 ## Compatibility
 
-- Keep public `com.eu.habbo.*` classes, signatures, fields, live collections,
-  plugin metadata, and plugin classloading behavior compatible.
+- Keep public `polaris.*` classes, signatures, fields, live collections,
+  plugin metadata, and plugin classloading behavior compatible. A rename of a
+  public name needs its entry in `polaris/plugin/legacy-names.txt`, or old
+  plugin jars stop linking.
 - Preserve packet field order and types.
 - Keep database migrations self-contained in Polaris and never edit a released
   migration.

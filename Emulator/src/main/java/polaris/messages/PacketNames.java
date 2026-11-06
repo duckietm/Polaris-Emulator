@@ -1,0 +1,76 @@
+package polaris.messages;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.messages.incoming.Incoming;
+import polaris.messages.outgoing.Outgoing;
+
+public class PacketNames {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PacketNames.class);
+
+    /**
+     * The header of the empty frame GameClientManager.CFKeepAlive sends every client every 30 seconds, so a
+     * proxy such as Cloudflare does not close an idle websocket. No packet has it; the client ignores it.
+     */
+    public static final int KEEP_ALIVE_HEADER = -1;
+
+    private final HashMap<Integer, String> incoming;
+    private final HashMap<Integer, String> outgoing;
+
+    public PacketNames() {
+        this.incoming = new HashMap<>();
+        this.outgoing = new HashMap<>();
+    }
+
+    public void initialize() {
+        RuntimeValidationReport report = new RuntimeValidationReport();
+        report.merge(PacketRuntimeValidator.validatePacketNameClass("Incoming", Incoming.class));
+        report.merge(PacketRuntimeValidator.validatePacketNameClass("Outgoing", Outgoing.class));
+        report.logErrors(LOGGER, "Packet name validation");
+
+        PacketNames.getNames(Incoming.class, this.incoming);
+        PacketNames.getNames(Outgoing.class, this.outgoing);
+        this.outgoing.putIfAbsent(KEEP_ALIVE_HEADER, "KeepAlive");
+    }
+
+    public String getIncomingName(int key) {
+        return this.incoming.getOrDefault(key, "Unknown");
+    }
+
+    public String getOutgoingName(int key) {
+        return this.outgoing.getOrDefault(key, "Unknown");
+    }
+
+    private static void getNames(Class<?> clazz, HashMap<Integer, String> target) {
+        for (Field field : clazz.getFields()) {
+            int modifiers = field.getModifiers();
+            // Deprecated constants are aliases of a name that is already in the table.
+            if (field.isAnnotationPresent(Deprecated.class)) {
+                continue;
+            }
+
+            if (Modifier.isPublic(modifiers)
+                    && Modifier.isStatic(modifiers)
+                    && Modifier.isFinal(modifiers)
+                    && field.getType() == int.class) {
+                try {
+                    int packetId = field.getInt(null);
+                    if (packetId > 0) {
+                        if (target.containsKey(packetId)) {
+                            LOGGER.warn("Duplicate packet id found {} for {}.", packetId, clazz.getSimpleName());
+                            continue;
+                        }
+
+                        target.put(packetId, field.getName());
+                    }
+                } catch (IllegalAccessException e) {
+                    LOGGER.error("Failed to read field integer.", e);
+                }
+            }
+        }
+    }
+}

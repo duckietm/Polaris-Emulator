@@ -1,0 +1,100 @@
+package polaris.hotel.rooms;
+
+import polaris.hotel.items.FurnitureType;
+import polaris.hotel.items.interactions.VariableHeightItem;
+import polaris.hotel.users.UserItem;
+import polaris.messages.outgoing.rooms.items.FloorItemUpdateComposer;
+import polaris.messages.outgoing.rooms.items.ItemStateComposer;
+import polaris.messages.outgoing.rooms.items.WallItemUpdateComposer;
+
+final class RoomItemOperations {
+
+    private final Room room;
+
+    RoomItemOperations(Room room) {
+        this.room = room;
+    }
+
+    void updateItem(UserItem item) {
+        if (!this.room.isLoaded()
+                || item == null
+                || item.getRoomId() != this.room.getId()
+                || item.getBaseItem() == null) {
+            return;
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
+            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
+            this.room.updateTiles(this.room
+                    .getLayout()
+                    .getTilesAt(
+                            this.room.currentLayout().getTile(item.getX(), item.getY()),
+                            item.getBaseItem().getWidth(),
+                            item.getBaseItem().getLength(),
+                            item.getRotation()));
+
+            if (RoomAreaHideSupport.isControllerItem(item)) {
+                RoomAreaHideSupport.sendState(this.room, item);
+            }
+            this.room.onFurnitureTopologyChanged(item, true);
+        } else if (item.getBaseItem().getType() == FurnitureType.WALL) {
+            this.room.sendComposer(new WallItemUpdateComposer(item).compose());
+        }
+    }
+
+    void updateItemState(UserItem item) {
+        if (item == null) {
+            return;
+        }
+
+        if (RoomAreaHideSupport.isControllerItem(item)) {
+            this.updateItem(item);
+            return;
+        }
+
+        // Inside a wired firing the state goes out with the firing's other states, ahead of its movements.
+        if (!WiredFurniStateBatch.defer(this.room, item)) {
+            this.room.sendComposer(
+                    item.isLimited()
+                            ? new FloorItemUpdateComposer(item).compose()
+                            : new ItemStateComposer(item).compose());
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
+            if (this.room.currentLayout() == null) {
+                return;
+            }
+
+            this.room
+                    .getTileManager()
+                    .refreshTiles(this.room
+                            .getLayout()
+                            .getTilesAt(
+                                    this.room.currentLayout().getTile(item.getX(), item.getY()),
+                                    item.getBaseItem().getWidth(),
+                                    item.getBaseItem().getLength(),
+                                    item.getRotation()));
+
+            if (item instanceof VariableHeightItem multiHeight) {
+                multiHeight.updateUnitsOnItem(this.room);
+            }
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR
+                && (RoomConfInvisSupport.isControllerItem(item) || RoomConfInvisSupport.isTarget(item))) {
+            RoomConfInvisSupport.sendState(this.room);
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomHanditemBlockSupport.isControllerItem(item)) {
+            RoomHanditemBlockSupport.sendState(this.room);
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomChooserDisableSupport.isControllerItem(item)) {
+            RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
+            this.room.onFurnitureTopologyChanged(item, false);
+        }
+    }
+}

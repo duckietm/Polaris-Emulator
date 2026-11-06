@@ -1,6 +1,5 @@
 package db.migration;
 
-import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectLog;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +10,7 @@ import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.items.interactions.wired.effects.WiredEffectLog;
 
 /**
  * Moves the stored level of every "write to logs" box ({@code wf_act_log}, {@code wf_act_neg_log}) to

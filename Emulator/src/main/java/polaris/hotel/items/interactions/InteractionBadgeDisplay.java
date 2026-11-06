@@ -1,0 +1,71 @@
+package polaris.hotel.items.interactions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.UserItem;
+import polaris.messages.ServerMessage;
+
+public class InteractionBadgeDisplay extends UserItem {
+    public InteractionBadgeDisplay(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public InteractionBadgeDisplay(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt(2 + (this.isLimited() ? 256 : 0));
+        serverMessage.appendInt(4);
+        serverMessage.appendString("0");
+        // Official `FurnitureBadgeDisplayWidgetHandler.handleEngravingRequest` (AIR 13) reads the
+        // string array as [1] badge code, [2] owner name, [3] engraving date. The stored extradata
+        // is "<username>	<date>	<badge code>".
+        String[] data = this.getExtradata().split((char) 9 + "");
+        if (data.length == 3) {
+            serverMessage.appendString(data[2]);
+            serverMessage.appendString(data[0]);
+            serverMessage.appendString(data[1]);
+        } else {
+            serverMessage.appendString(this.getExtradata());
+            serverMessage.appendString("Unknown User");
+            serverMessage.appendString("Unknown Date");
+        }
+
+        super.serializeExtradata(serverMessage);
+    }
+
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return true;
+    }
+
+    @Override
+    public boolean isWalkable() {
+        return false;
+    }
+
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        super.onClick(client, room, objects);
+    }
+
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+
+    @Override
+    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOn(roomUnit, room, objects);
+    }
+
+    @Override
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOff(roomUnit, room, objects);
+    }
+}

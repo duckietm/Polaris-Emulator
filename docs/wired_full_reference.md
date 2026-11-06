@@ -14,15 +14,15 @@ It covers:
 
 Primary runtime sources used for this reference (paths are relative to `Gameserver/`):
 
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/items/ItemManager.java` (item registration)
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredManager.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredEngine.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredEventDispatcher.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredStackExecutor.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredExecutionGuard.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredRoomDiagnostics.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/tick/WiredTickService.java`
-- `Emulator/src/main/java/com/eu/habbo/habbohotel/items/interactions/wired/` (the wired boxes themselves)
+- `Emulator/src/main/java/polaris/hotel/items/ItemManager.java` (item registration)
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredManager.java`
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredEngine.java`
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredEventDispatcher.java`
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredStackExecutor.java`
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredExecutionGuard.java`
+- `Emulator/src/main/java/polaris/hotel/wired/core/WiredRoomDiagnostics.java`
+- `Emulator/src/main/java/polaris/hotel/wired/tick/WiredTickService.java`
+- `Emulator/src/main/java/polaris/hotel/items/interactions/wired/` (the wired boxes themselves)
 
 This file describes runtime behavior and the configuration surface, not the client UI layout in detail. See also:
 
@@ -351,63 +351,63 @@ Value-or-variable settings:
 
 ### `wf_trg_walks_on_furni`
 
-- **Class:** `WiredTriggerHabboWalkOnFurni`
+- **Class:** `WiredTriggerUserWalkOnFurni`
 - **Behavior:** fires when a room unit steps onto a furni (the furni's walk-on hook, also one-way gates). Triggering user: the unit that moved. Source furni: the furni stepped on. With picked furni it matches the picked furni or any furni on the same tile as one of them, so a picked tile stack works whichever layer is on top.
 - **Main settings:** int param 0 = furni source (`0` any furni stepped on, `100` picked furni, `200` furni chosen by the stack's selectors; other values fall back to `0`). With no int params the source is `100` when furni were sent, else `0`. Picked furni are only kept for source `100`. The editor offers up to `hotel.wired.furni.selection.count` furni (default 5).
 - **Notes:** source `0` fires for every furni anyone walks onto in the room. Walk events that no stack listens to are not counted toward the room's wired rate limit (1000 events of one type per second by default), so busy floors do not use up a room's wired limits.
 
 ### `wf_trg_walks_off_furni`
 
-- **Class:** `WiredTriggerHabboWalkOffFurni`
+- **Class:** `WiredTriggerUserWalkOffFurni`
 - **Behavior:** fires when a room unit leaves a furni's tile (walking, rollers, teleports). Same matching as `wf_trg_walks_on_furni`: picked furni or anything on the same tile as a picked furni.
 - **Main settings:** same as `wf_trg_walks_on_furni` (int param 0 = furni source `0`/`100`/`200`, picked furni).
 - **Notes:** a user leaving the room while standing on the furni does not fire it (that walk-off call carries no movement data). Source `0` fires for every furni left anywhere in the room.
 
 ### `wf_trg_click_furni`
 
-- **Class:** `WiredTriggerHabboClicksFurni`
+- **Class:** `WiredTriggerUserClicksFurni`
 - **Behavior:** fires when a user clicks a furni (the client's click-furni packet, handled in `ClickFurniEvent`). It runs straight away and is separate from the use/toggle handler. Triggering user: the clicker. Source furni: the clicked furni. Matching is by exact furni id, not by tile.
 - **Main settings:** int param 0 = furni source: `0` = the trigger box itself, `100` = picked furni, `200` = selector furni. With no int params the source is `100` when furni were sent, else `0`. Picked furni are only kept for source `100`.
 - **Notes:** with source `0` the stack fires only when someone clicks the wired box itself. To react to state changes caused by the click, use `wf_trg_stuff_state` / `wf_trg_state_changed`.
 
 ### `wf_trg_click_tile`
 
-- **Class:** `WiredTriggerHabboClicksTile`
-- **Behavior:** fires when a user clicks invisible click-tile furni (interaction `room_invisible_click_tile`). Subclass of `WiredTriggerHabboClicksFurni` with its own event, and the clicked furni must be a click tile.
+- **Class:** `WiredTriggerUserClicksTile`
+- **Behavior:** fires when a user clicks invisible click-tile furni (interaction `room_invisible_click_tile`). Subclass of `WiredTriggerUserClicksFurni` with its own event, and the clicked furni must be a click tile.
 - **Main settings:** as `wf_trg_click_furni` (int param 0 = furni source, picked furni). Picking anything other than click tiles fails with `wiredfurni.error.require_click_tiles`.
 - **Notes:** source `0` (the box itself) can never match, because the box is not a click tile. Use picked tiles (`100`) or selectors (`200`).
 
 ### `wf_trg_click_user`
 
-- **Class:** `WiredTriggerHabboClicksUser`
+- **Class:** `WiredTriggerUserClicksUser`
 - **Behavior:** fires when a user clicks another user's avatar (`ClickUserEvent` or the wired user-selected packet). Triggering user: the clicker. The clicked user is on the event and can be reached with the "clicked user" source (`11`). Only users can be clicked targets. Clicking a bot or pet does not fire it.
 - **Main settings:** int params `[blockMenuOpen, doNotRotate]` (each `1` = on, default off).
 - **Notes:** the two options only apply when the stack's conditions pass. Block menu tells the client not to open the avatar menu. Do not rotate ignores the clicker's turn-to-look for 500 ms.
 
 ### `wf_trg_user_performs_action`
 
-- **Class:** `WiredTriggerHabboPerformsAction`
+- **Class:** `WiredTriggerUserPerformsAction`
 - **Behavior:** fires when a user performs the chosen avatar action. Actions come from the action packet (wave, blow kiss, laugh, thumbs up, relax/sleep, awake), sit/stand/lay posture changes, the sign packet and the dance packet.
 - **Main settings:** int params `[action, signFilter, signId, danceFilter, danceId]`. Action is one of `1` wave, `2` blow kiss, `3` laugh, `4` awake, `5` relax, `6` sit, `7` stand, `8` lay, `9` sign, `10` dance, `11` thumbs up (anything else becomes `1`). Sign id is 0–17 (default 0). Dance id is 1–4 (default 1). The id filters only apply when their flag is `1` and the action is sign or dance.
 - **Notes:** pairs with the matching positive and negative action conditions, which read the last action cached on the user.
 
 ### `wf_trg_enter_room`
 
-- **Class:** `WiredTriggerHabboEntersRoom`
+- **Class:** `WiredTriggerUserEntersRoom`
 - **Behavior:** fires when a user (not a bot) enters the room. It also fires when a user who used `:invisible` becomes visible again. Triggering user: the one who entered.
 - **Main settings:** string param = optional username filter (case-insensitive exact match). Empty = anyone.
 - **Notes:** fires before the room's own `habboEntered` handling.
 
 ### `wf_trg_leave_room`
 
-- **Class:** `WiredTriggerHabboLeavesRoom`
+- **Class:** `WiredTriggerUserLeavesRoom`
 - **Behavior:** fires when a user (not a bot) is removed from the room. It fires before the user is taken out, so the stack still sees them in the room at their last tile.
 - **Main settings:** string param = optional username filter (case-insensitive). Empty = anyone.
 - **Notes:** a user leaving while standing on furni does not also fire `wf_trg_walks_off_furni`.
 
 ### `wf_trg_says_something`
 
-- **Class:** `WiredTriggerHabboSaysKeyword`
+- **Class:** `WiredTriggerUserSaysKeyword`
 - **Behavior:** fires when a unit talks or shouts text that matches. Whispers never fire it. Bot speech fires it too (bot chat and the bot talk effects), and so does a chat command line. Text and keyword are compared lower-cased and trimmed.
 - **Main settings:** int params `[matchMode, hideMessage, ownerOnly]`. Match mode: `0` contains (default), `1` exact, `2` any message (the keyword is cleared). String param = keyword.
 - **Notes:** in modes 0/1 an empty keyword never matches. With owner only, just the room owner can fire it, and bots cannot. Hide message applies only when the stack would actually run (conditions pass): the speaker sees their line as a whisper to themselves and nobody else sees it.
@@ -503,7 +503,7 @@ Value-or-variable settings:
 
 ### `wf_trg_bot_reached_avtr`
 
-- **Class:** `WiredTriggerBotReachedHabbo`
+- **Class:** `WiredTriggerBotReachedUser`
 - **Behavior:** fires when a bot reaches a user. That happens with the bot follow effect (once when the bot comes within 2 tiles, again only after they separate), the bot give-hand-item effect, and a butler bot serving. The event's actor is the bot. The triggering user for effects and conditions is the user who was reached.
 - **Main settings:** string param = bot name. Int param 0 = bot source: `100` by name (default), `200` bots chosen by selectors.
 - **Notes:** the same walk-to routine runs when a user walks over to hand an item to someone. Then the walker is a user and does not match a bot name.
@@ -538,27 +538,27 @@ Value-or-variable settings:
 
 ### `wf_trg_starts_dancing`
 
-- **Class:** `WiredTriggerHabboStartsDancing`
+- **Class:** `WiredTriggerUserStartsDancing`
 - **Behavior:** fires when a room unit goes from not dancing to dancing (`RoomUnitManager.dance`). Triggering user: the dancer.
 - **Main settings:** none (dialog code 11).
 - **Notes:** switching from one dance to another does not fire it.
 
 ### `wf_trg_stops_dancing`
 
-- **Class:** `WiredTriggerHabboStopsDancing`
+- **Class:** `WiredTriggerUserStopsDancing`
 - **Behavior:** fires when a dancing room unit stops dancing through `RoomUnitManager.dance`. That includes going idle while dancing. Triggering user: that unit.
 - **Main settings:** none (dialog code 11).
 - **Notes:** sitting or lying on furni clears the dance directly and does not fire it.
 
 ### `wf_trg_idles`
 
-- **Class:** `WiredTriggerHabboIdles`
+- **Class:** `WiredTriggerUserIdles`
 - **Behavior:** fires when a user goes idle: the automatic sleep timeout (only when not dancing), the relax/sleep action, or `:afk`. Users only. Triggering user: that user.
 - **Main settings:** none (dialog code 11).
 
 ### `wf_trg_unidles`
 
-- **Class:** `WiredTriggerHabboUnidles`
+- **Class:** `WiredTriggerUserUnidles`
 - **Behavior:** fires when an idle user becomes active again, for example by walking, chatting, an action or a wired teleport. It only fires if the user really was idle. Users only.
 - **Main settings:** none (dialog code 11).
 
@@ -598,19 +598,19 @@ Value-or-variable settings:
 
 ### `wf_trg_click_bot`
 
-- **Class:** `WiredTriggerHabboClicksUser`
+- **Class:** `WiredTriggerUserClicksUser`
 - **Behavior:** alias of `wf_trg_click_user`; same runtime.
 - **Notes:** the click handlers only accept users as the clicked target, so clicking a bot does not fire it.
 
 ### `wf_trg_double_click_furni`
 
-- **Class:** `WiredTriggerHabboClicksFurni`
+- **Class:** `WiredTriggerUserClicksFurni`
 - **Behavior:** alias of `wf_trg_click_furni`; same runtime.
 - **Notes:** there is no double-click detection, so every single click fires it.
 
 ### `wf_trg_anti_afk`
 
-- **Class:** `WiredTriggerHabboUnidles`
+- **Class:** `WiredTriggerUserUnidles`
 - **Behavior:** alias of `wf_trg_unidles`; same runtime.
 
 ### `wf_trg_username_as_trigger`
@@ -618,7 +618,7 @@ Value-or-variable settings:
 - **Class:** `WiredTriggerUsernameAsTrigger`
 - **Behavior:** fires when a user's talk or shout contains their own username (case-insensitive, trimmed). Users only, no whispers. It has its own event, raised from the same chat line as `wf_trg_says_something`.
 - **Main settings:** saved like `wf_trg_says_something` (int params `[matchMode, hideMessage, ownerOnly]`, string param). Match mode and keyword are stored but ignored. Hide message and owner only apply.
-- **Notes:** subclass of `WiredTriggerHabboSaysKeyword`. Dialog code 31, so the client leaves out the keyword and match controls.
+- **Notes:** subclass of `WiredTriggerUserSaysKeyword`. Dialog code 31, so the client leaves out the keyword and match controls.
 
 ### `wf_trg_cnd_collision`
 
@@ -627,23 +627,23 @@ Value-or-variable settings:
 
 ### `wf_trg_user_exits_room`
 
-- **Class:** `WiredTriggerHabboLeavesRoom`
+- **Class:** `WiredTriggerUserLeavesRoom`
 - **Behavior:** alias of `wf_trg_leave_room`; same runtime.
 
 ### `wf_trg_exact_keyword`
 
-- **Class:** `WiredTriggerHabboSaysKeyword`
+- **Class:** `WiredTriggerUserSaysKeyword`
 - **Behavior:** alias of `wf_trg_says_something`; same runtime.
 - **Notes:** the default match mode is still "contains". Exact matching needs match mode `1` saved in the dialog.
 
 ### `wf_trg_says_command`
 
-- **Class:** `WiredTriggerHabboSaysKeyword`
+- **Class:** `WiredTriggerUserSaysKeyword`
 - **Behavior:** alias of `wf_trg_says_something`; same runtime.
 
 ### `wf_trg_habbo_says_command`
 
-- **Class:** `WiredTriggerHabboSaysKeyword`
+- **Class:** `WiredTriggerUserSaysKeyword`
 - **Behavior:** alias of `wf_trg_says_something`; same runtime.
 
 ### `wf_trg_other_collides_user`
@@ -751,7 +751,7 @@ Value-or-variable settings:
 
 ### `wf_act_open_habbo_pages`
 
-- **Class:** `WiredEffectOpenHabboPages`
+- **Class:** `WiredEffectOpenUserPages`
 - **Behavior:** pushes an in-client link (for example `habbopages/...` or `catalog/open/...`) to every resolved user's client.
 - **Main settings:** string param = link (trimmed, leading `/` removed, not empty); int[0] = user source; delay. Dialog type `EFFECT_TEXT`.
 - **Notes:** anyone may use the safe namespaces (catalog, habbopages, navigator, inventory, avatar-editor, games, groups, help and others). Any other namespace needs `ACC_SUPERWIRED` unless `hotel.wired.link.restrict_namespaces = 0`. The check runs on save only; stored links are not re-checked on load.
@@ -994,14 +994,14 @@ Value-or-variable settings:
 
 ### `wf_act_kick_user`
 
-- **Class:** `WiredEffectKickHabbo`
+- **Class:** `WiredEffectKickUser`
 - **Behavior:** gives each resolved user effect 4, whispers the optional message in an alert bubble, and kicks them from the room 2 seconds later.
 - **Main settings:** string param = optional message (cut to `hotel.wired.message.max_length`, 100); int[0] = user source; delay. Dialog type `KICK_USER` (19).
 - **Notes:** users with `ACC_UNKICKABLE` and the room owner are not kicked; they get a whisper instead.
 
 ### `wf_act_mute_triggerer`
 
-- **Class:** `WiredEffectMuteHabbo`
+- **Class:** `WiredEffectMuteUser`
 - **Behavior:** mutes each resolved user in the room for the configured number of minutes and whispers them the optional message.
 - **Main settings:** int params `[minutes 1-1440, user source]`; string param = message; delay. Dialog type `MUTE_TRIGGER` (20).
 - **Notes:** users with rights in the room are skipped. The minutes are clamped to 1-1440 on save and again when the box fires.
@@ -1042,7 +1042,7 @@ Value-or-variable settings:
 
 ### `wf_act_bot_follow_avatar`
 
-- **Class:** `WiredEffectBotFollowHabbo`
+- **Class:** `WiredEffectBotFollowUser`
 - **Behavior:** mode 1 makes the resolved bots follow users: each bot is handed one resolved user in turn, so several bots spread over several users. Mode 0 makes the bots stop following.
 - **Main settings:** string param = bot name (tabs removed, cut to 100); int params `[mode 0 stop / 1 start, user source (0, 11, 200, 201), bot source]`; delay. Dialog type `BOT_FOLLOW_AVATAR` (25).
 - **Notes:** stopping needs no resolved user.
@@ -1056,7 +1056,7 @@ Value-or-variable settings:
 
 ### `wf_act_bot_talk_to_avatar`
 
-- **Class:** `WiredEffectBotTalkToHabbo`
+- **Class:** `WiredEffectBotTalkToUser`
 - **Behavior:** for each resolved user, every resolved bot either says `username: message` aloud (mode 0) or whispers the message to that user (mode 1).
 - **Main settings:** string param = `botName<TAB>message` (message cut to 100); int params `[mode 0 talk / 1 whisper, user source, bot source, bubble width (-1 room setting)]`; delay. Dialog type `BOT_TALK_TO_AVATAR` (27).
 - **Notes:** placeholders are filled from each target user (same set as `wf_act_bot_talk`). A line swallowed by a "user says" trigger is not spoken.
@@ -1506,7 +1506,7 @@ Value-or-variable settings:
 
 ### `wf_act_bot_talk_to_avatar_custom`
 
-- **Class:** `WiredEffectBotTalkToHabbo`
+- **Class:** `WiredEffectBotTalkToUser`
 - **Behavior:** for each resolved user, each resolved bot either whispers the message to that user (mode 1) or says `username: message` in public chat (mode 0).
 - **Main settings:** string = `botName<TAB>message`, with the same caps as bot talk. Ints `[mode, userSource, botSource, bubbleWidth]`, where `mode` must be 0 or 1. The delay may be at most `hotel.wired.max_delay`.
 - **Notes:** the placeholders are the same as bot talk, filled per target user. If the text matches a say trigger, that trigger handles it instead.
@@ -1825,21 +1825,21 @@ Conventions used in the entries below:
 
 ### `wf_cnd_not_habbo_has_credits`
 
-- **Class:** `WiredConditionHabboLacksCredits`
+- **Class:** `WiredConditionUserLacksCredits`
 - **Behavior:** for each resolved user (deduplicated), passes when their credits do NOT compare to the amount with the chosen operator. Uses the `all` or `any` quantifier. An empty user set fails. A unit that is not a Habbo never matches.
 - **Main settings:** ints `[teamType (stored, unused; 1-4, default 1), operator (six-code, default 5 >=), amount (0-1,000,000), user source, quantifier (default 0 all)]` (dialog `USER_AMOUNT`, 51).
 - **Notes:** with the default `>=` it passes when the user has fewer credits than the amount. Rows saved before the operator existed read as `>=`. The positive twin is `wf_cnd_habbo_has_credits`.
 
 ### `wf_cnd_not_habbo_has_diamonds`
 
-- **Class:** `WiredConditionHabboLacksDiamonds`
+- **Class:** `WiredConditionUserLacksDiamonds`
 - **Behavior:** same as `wf_cnd_not_habbo_has_credits`, but reads diamonds (currency type 5): passes when the diamonds do NOT compare to the amount.
 - **Main settings:** ints `[teamType (unused), operator (six-code, default >=), amount (0-1,000,000), user source, quantifier]` (dialog 51).
 - **Notes:** there is no positive diamonds box.
 
 ### `wf_cnd_not_habbo_has_duckets`
 
-- **Class:** `WiredConditionHabboLacksDuckets`
+- **Class:** `WiredConditionUserLacksDuckets`
 - **Behavior:** same as `wf_cnd_not_habbo_has_credits`, but reads duckets (currency type 0).
 - **Main settings:** ints `[teamType (unused), operator (six-code, default >=), amount (0-1,000,000), user source, quantifier]` (dialog 51).
 - **Notes:** the positive twin is `wf_cnd_habbo_has_duckets`.
@@ -1883,13 +1883,13 @@ Conventions used in the entries below:
 
 ### `wf_cnd_habbo_owns_furni`
 
-- **Class:** `WiredConditionHabboOwnsFurni`
+- **Class:** `WiredConditionUserOwnsFurni`
 - **Behavior:** takes the base types of the resolved furni and checks the triggering user's inventory (furni not placed in a room). With `all` the user must own every type; with `any` (the default) at least one. Always about the triggering user; there is no user source. Fails when no furni type resolves or there is no triggering user.
 - **Main settings:** ints `[furni source, quantifier (default 1 any)]`, plus the picked furni, which only supply types (dialog `FURNI_PROPERTY`, 59).
 
 ### `wf_cnd_habbo_not_owns_furni`
 
-- **Class:** `WiredConditionHabboNotOwnsFurni`
+- **Class:** `WiredConditionUserNotOwnsFurni`
 - **Behavior:** passes when the triggering user fails the `wf_cnd_habbo_owns_furni` check with the same quantifier. Passes when no furni type resolves or there is no triggering user. Fails when the room is missing, or when the triggerer is not a Habbo.
 - **Main settings:** same as `wf_cnd_habbo_owns_furni`.
 
@@ -1914,21 +1914,21 @@ Conventions used in the entries below:
 
 ### `wf_cnd_habbo_has_at_least_x_items`
 
-- **Class:** `WiredConditionHabboHasMinItems`
+- **Class:** `WiredConditionUserHasMinItems`
 - **Behavior:** compares each resolved user's inventory item count (furni not placed in a room) to the amount. Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** ints `[teamType (unused), operator (six-code, default 5 >=), amount (0-1,000,000), user source, quantifier (default all)]` (dialog 51).
 - **Notes:** rows saved before the operator existed read as `>=`.
 
 ### `wf_cnd_habbo_owns_badge`
 
-- **Class:** `WiredConditionHabboOwnsBadge`
+- **Class:** `WiredConditionUserOwnsBadge`
 - **Behavior:** passes when the resolved users own the badge in their inventory (worn or not; the code is case-insensitive). Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** the string is the badge code (trimmed, max 64 chars). Ints `[user source, quantifier (default 1 any)]` (dialog `ACTOR_WEARS_BADGE`, 11).
 - **Notes:** `wf_cnd_wearing_badge` checks worn badges only.
 
 ### `wf_cnd_not_habbo_owns_badge`
 
-- **Class:** `WiredConditionNotHabboOwnsBadge`
+- **Class:** `WiredConditionNotUserOwnsBadge`
 - **Behavior:** negation of `wf_cnd_habbo_owns_badge`: with `all` it passes when not every user owns the badge, with `any` when none does. An empty user set passes.
 - **Main settings:** same as `wf_cnd_habbo_owns_badge` (dialog `NOT_ACTOR_WEARS_BADGE`, 22).
 
@@ -1941,7 +1941,7 @@ Conventions used in the entries below:
 
 ### `wf_cnd_furnis_hv_avtrs`
 
-- **Class:** `WiredConditionFurniHaveHabbo`
+- **Class:** `WiredConditionFurniHaveUser`
 - **Behavior:** passes when a user, bot or pet currently stands on any tile of the resolved furni's footprint. With "all" every target needs someone on it; otherwise at least one does. Fails when there is nothing to check.
 - **Main settings:** ints `[all flag (1 = all, default any), furni source]`, plus the picked furni (dialog `FURNI_HAVE_HABBO`, 1).
 - **Notes:** in a one-int save, a first value above 1 is read as the furni source (old client layout). The negative twin is `wf_cnd_not_hv_avtrs`.
@@ -1961,20 +1961,20 @@ Conventions used in the entries below:
 
 ### `wf_cnd_user_count_in`
 
-- **Class:** `WiredConditionHabboCount`
+- **Class:** `WiredConditionUserCount`
 - **Behavior:** passes when the count is between the lower and upper limit, both inclusive. With source `0` the count is the number of Habbos in the room (bots and pets are not counted). With any other source it is the size of the resolved user set.
 - **Main settings:** ints `[lower, upper, user source]`. At least two are needed. Limits are clamped to 0-1,000 and swapped if lower > upper. The default is 0-50 (dialog `USER_COUNT`, 5).
 - **Notes:** the user source is saved with the box and survives a room reload.
 
 ### `wf_cnd_wearing_effect`
 
-- **Class:** `WiredConditionHabboHasEffect`
+- **Class:** `WiredConditionUserHasEffect`
 - **Behavior:** passes when the resolved users' current effect id equals the configured id. Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** ints `[effect id (0-10,000), user source, quantifier (default 1 any)]`. At least one int is needed (dialog `ACTOR_WEARS_EFFECT`, 12).
 
 ### `wf_cnd_wearing_badge`
 
-- **Class:** `WiredConditionHabboWearsBadge`
+- **Class:** `WiredConditionUserWearsBadge`
 - **Behavior:** passes when the resolved users wear the badge in a badge slot (the code is case-insensitive). Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** the string is the badge code (trimmed, tabs and newlines become spaces, max 64 chars). Ints `[user source, quantifier (default 1 any)]` (dialog 11).
 - **Notes:** to check ownership instead of wearing, use `wf_cnd_habbo_owns_badge`.
@@ -2008,7 +2008,7 @@ Conventions used in the entries below:
 
 ### `wf_cnd_not_hv_avtrs`
 
-- **Class:** `WiredConditionNotFurniHaveHabbo`
+- **Class:** `WiredConditionNotFurniHaveUser`
 - **Behavior:** with "all" it passes when no resolved furni has a user, bot or pet on it. Otherwise it passes when at least one furni is free. It passes when there is nothing to check.
 - **Main settings:** same as `wf_cnd_furnis_hv_avtrs` (dialog `NOT_FURNI_HAVE_HABBO`, 14).
 
@@ -2020,20 +2020,20 @@ Conventions used in the entries below:
 
 ### `wf_cnd_not_user_count`
 
-- **Class:** `WiredConditionNotHabboCount`
+- **Class:** `WiredConditionNotUserCount`
 - **Behavior:** passes when the count is below the lower limit or above the upper limit. It is counted the same way as `wf_cnd_user_count_in`.
 - **Main settings:** ints `[lower, upper, user source]`, clamped the same way. The default is 10-20 (dialog `NOT_USER_COUNT`, 16).
 - **Notes:** the user source is saved with the box and survives a room reload.
 
 ### `wf_cnd_not_wearing_fx`
 
-- **Class:** `WiredConditionNotHabboHasEffect`
+- **Class:** `WiredConditionNotUserHasEffect`
 - **Behavior:** negation of `wf_cnd_wearing_effect`: with `all` it passes when not every user wears the effect, with `any` when none does. An empty user set fails.
 - **Main settings:** same as `wf_cnd_wearing_effect` (dialog `NOT_ACTOR_WEARS_EFFECT`, 23).
 
 ### `wf_cnd_not_wearing_b`
 
-- **Class:** `WiredConditionNotHabboWearsBadge`
+- **Class:** `WiredConditionNotUserWearsBadge`
 - **Behavior:** negation of `wf_cnd_wearing_badge`: with `all` it passes when not every user wears the badge, with `any` when none does. An empty user set passes.
 - **Main settings:** same as `wf_cnd_wearing_badge` (dialog 22).
 
@@ -2077,14 +2077,14 @@ Conventions used in the entries below:
 
 ### `wf_cnd_has_handitem`
 
-- **Class:** `WiredConditionHabboHasHandItem`
+- **Class:** `WiredConditionUserHasHandItem`
 - **Behavior:** passes when the resolved users hold the configured handitem id. Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** ints `[handitem id (0-10,000), user source, quantifier (default all)]`. At least one int is needed (dialog `ACTOR_HAS_HANDITEM`, 25).
 - **Notes:** id 0 matches empty hands.
 
 ### `wf_cnd_not_has_handitem`
 
-- **Class:** `WiredConditionNotHabboHasHandItem`
+- **Class:** `WiredConditionNotUserHasHandItem`
 - **Behavior:** the result of `wf_cnd_has_handitem` with the same quantifier, turned around. An empty user set fails.
 - **Main settings:** same as `wf_cnd_has_handitem` (dialog `NOT_ACTOR_HAS_HANDITEM`, 31).
 
@@ -2194,14 +2194,14 @@ Conventions used in the entries below:
 
 ### `wf_cnd_habbo_has_rank`
 
-- **Class:** `WiredConditionHabboHasRank`
+- **Class:** `WiredConditionUserHasRank`
 - **Behavior:** compares each resolved user's permission rank id (read live) with the configured rank. Uses the `all` or `any` quantifier. An empty user set fails. A unit that is not a Habbo never matches.
 - **Main settings:** ints `[rank (1-1,000, default 1), comparison (six-code, default 5 >=), user source (stored as sent), quantifier (default all)]` (dialog `USER_RANK`, 62).
 - **Notes:** the negative twin is `wf_cnd_not_habbo_has_rank`.
 
 ### `wf_cnd_not_habbo_has_rank`
 
-- **Class:** `WiredConditionNotHabboHasRank`
+- **Class:** `WiredConditionNotUserHasRank`
 - **Behavior:** the per-user comparison of `wf_cnd_habbo_has_rank` turned around, under the same quantifier (`all`: every user fails the comparison; `any`: at least one does). An empty user set fails, and non-Habbos never match.
 - **Main settings:** same as `wf_cnd_habbo_has_rank` (dialog 62).
 
@@ -2240,13 +2240,13 @@ Conventions used in the entries below:
 
 ### `wf_cnd_x_points_leaderboard`
 
-- **Class:** `WiredConditionHabboHasHighscorePoints`
+- **Class:** `WiredConditionUserHasHighscorePoints`
 - **Behavior:** takes each resolved user's best score across the selected highscore boards, including team entries that name them, and compares it with the number. A user with no entry has 0. Uses the `all` or `any` quantifier. Fails when no board is selected or no user resolves. A unit that is not a Habbo fails `all` and is skipped under `any`.
 - **Main settings:** ints `[points (at least 0), comparison (six-code, default 5 >=), user source (stored as sent), quantifier (default all)]`, plus the picked scoreboard furni (dialog `USER_HIGHSCORE_POINTS`, 67).
 
 ### `wf_cnd_not_x_points_leaderboard`
 
-- **Class:** `WiredConditionNotHabboHasHighscorePoints`
+- **Class:** `WiredConditionNotUserHasHighscorePoints`
 - **Behavior:** the per-user comparison of `wf_cnd_x_points_leaderboard` turned around, under the same quantifier. Fails when no board is selected or no user resolves.
 - **Main settings:** same as `wf_cnd_x_points_leaderboard`.
 
@@ -2317,14 +2317,14 @@ Conventions used in the entries below:
 
 ### `wf_cnd_habbo_has_credits`
 
-- **Class:** `WiredConditionHabboHasCredits`
+- **Class:** `WiredConditionUserHasCredits`
 - **Behavior:** passes when the resolved users' credits compare to the amount with the chosen operator. Uses the `all` or `any` quantifier. An empty user set fails. Non-Habbos never match.
 - **Main settings:** ints `[teamType (unused), operator (six-code, default 5 >=), amount (0-1,000,000), user source, quantifier (default all)]` (dialog 51).
 - **Notes:** the negative twin is `wf_cnd_not_habbo_has_credits`.
 
 ### `wf_cnd_habbo_has_duckets`
 
-- **Class:** `WiredConditionHabboHasDuckets`
+- **Class:** `WiredConditionUserHasDuckets`
 - **Behavior:** same as `wf_cnd_habbo_has_credits`, for duckets (currency type 0).
 - **Main settings:** same int layout as `wf_cnd_habbo_has_credits` (dialog 51).
 - **Notes:** the negative twin is `wf_cnd_not_habbo_has_duckets`.
@@ -2338,25 +2338,25 @@ Conventions used in the entries below:
 
 ### `wf_cnd_habbo_is_male`
 
-- **Class:** `WiredConditionHabboIsMale`
+- **Class:** `WiredConditionUserIsMale`
 - **Behavior:** passes when the resolved users' gender is M. Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** ints `[user source, quantifier (default 1 any)]`. The badge text slot of the storage it reuses is ignored (dialog `USER_ATTRIBUTE`, 49).
 
 ### `wf_cnd_habbo_is_female`
 
-- **Class:** `WiredConditionHabboIsFemale`
+- **Class:** `WiredConditionUserIsFemale`
 - **Behavior:** passes when the resolved users' gender is F. Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** same as `wf_cnd_habbo_is_male` (dialog 49).
 
 ### `wf_cnd_habbo_has_rights`
 
-- **Class:** `WiredConditionHabboHasRights`
+- **Class:** `WiredConditionUserHasRights`
 - **Behavior:** passes when the resolved users have rights in the room (owner, group rights or granted rights). Uses the `all` or `any` quantifier. An empty user set fails.
 - **Main settings:** ints `[user source, quantifier (default 1 any)]` (dialog 49).
 
 ### `wf_cnd_not_habbo_has_rights`
 
-- **Class:** `WiredConditionHabboNotHasRights`
+- **Class:** `WiredConditionUserNotHasRights`
 - **Behavior:** checks per user that they do NOT have rights. With `any` it passes when at least one resolved Habbo lacks rights; with `all` when every one does. An empty user set fails. Non-Habbos never match.
 - **Main settings:** same as `wf_cnd_habbo_has_rights` (dialog `NOT_USER_ATTRIBUTE`, 50).
 
@@ -2410,33 +2410,33 @@ Conventions used in the entries below:
 
 ### `wf_cnd_tgr_furni_hv_avtrs`
 
-- **Class:** `WiredConditionFurniHaveHabbo`
+- **Class:** `WiredConditionFurniHaveUser`
 - **Behavior:** alias of `wf_cnd_furnis_hv_avtrs`; same runtime.
 - **Notes:** the default furni source `0` already checks the triggering furni.
 
 ### `wf_cnd_not_tgr_furni_hv_avtrs`
 
-- **Class:** `WiredConditionNotFurniHaveHabbo`
+- **Class:** `WiredConditionNotFurniHaveUser`
 - **Behavior:** alias of `wf_cnd_not_hv_avtrs`; same runtime.
 
 ### `wf_cnd_wears_effect`
 
-- **Class:** `WiredConditionHabboHasEffect`
+- **Class:** `WiredConditionUserHasEffect`
 - **Behavior:** alias of `wf_cnd_wearing_effect`; same runtime.
 
 ### `wf_cnd_not_wears_effect`
 
-- **Class:** `WiredConditionNotHabboHasEffect`
+- **Class:** `WiredConditionNotUserHasEffect`
 - **Behavior:** alias of `wf_cnd_not_wearing_fx`; same runtime.
 
 ### `wf_cnd_wears_handitem`
 
-- **Class:** `WiredConditionHabboHasHandItem`
+- **Class:** `WiredConditionUserHasHandItem`
 - **Behavior:** alias of `wf_cnd_has_handitem`; same runtime.
 
 ### `wf_cnd_not_wears_handitem`
 
-- **Class:** `WiredConditionNotHabboHasHandItem`
+- **Class:** `WiredConditionNotUserHasHandItem`
 - **Behavior:** alias of `wf_cnd_not_has_handitem`; same runtime.
 
 ### `wf_cnd_trgr_stuff_matches`
@@ -2488,12 +2488,12 @@ Conventions used in the entries below:
 
 ### `wf_cnd_furnis_hv_avtrs_custom`
 
-- **Class:** `WiredConditionFurniHaveHabbo`
+- **Class:** `WiredConditionFurniHaveUser`
 - **Behavior:** alias of `wf_cnd_furnis_hv_avtrs`; same runtime.
 
 ### `wf_cnd_x_habbos_on_furni`
 
-- **Class:** `WiredConditionFurniHaveHabbo`
+- **Class:** `WiredConditionFurniHaveUser`
 - **Behavior:** alias of `wf_cnd_furnis_hv_avtrs`; same runtime.
 - **Notes:** there is no count setting; it only checks whether someone is on the furni. To count, use `wf_cnd_slc_quantity` with a selector.
 
@@ -3036,16 +3036,16 @@ Keys registered on the same class share one runtime. The class decides the behav
 
 - `InteractionWiredChestCurrency`: `wf_storage_coins1`, `wf_storage_coins2`
 - `InteractionWiredChestFurni`: `wf_storage_furni1`, `wf_storage_furni2`, `wf_storage_furni_starter`
-- `WiredConditionFurniHaveHabbo`: `wf_cnd_furnis_hv_avtrs`, `wf_cnd_tgr_furni_hv_avtrs`, `wf_cnd_furnis_hv_avtrs_custom`, `wf_cnd_x_habbos_on_furni`
+- `WiredConditionFurniHaveUser`: `wf_cnd_furnis_hv_avtrs`, `wf_cnd_tgr_furni_hv_avtrs`, `wf_cnd_furnis_hv_avtrs_custom`, `wf_cnd_x_habbos_on_furni`
 - `WiredConditionFurniTypeMatch`: `wf_cnd_stuff_is`, `wf_cnd_trgr_stuff_matches`
 - `WiredConditionGroupMember`: `wf_cnd_actor_in_group`, `wf_cnd_habbo_in_group`
-- `WiredConditionHabboHasEffect`: `wf_cnd_wearing_effect`, `wf_cnd_wears_effect`
-- `WiredConditionHabboHasHandItem`: `wf_cnd_has_handitem`, `wf_cnd_wears_handitem`
+- `WiredConditionUserHasEffect`: `wf_cnd_wearing_effect`, `wf_cnd_wears_effect`
+- `WiredConditionUserHasHandItem`: `wf_cnd_has_handitem`, `wf_cnd_wears_handitem`
 - `WiredConditionMatchStatePosition`: `wf_cnd_match_snapshot`, `wf_cnd_match_snapshot_new`, `wf_cnd_furni_state_pattern`, `wf_cnd_is_state`, `wf_cnd_trg_state_is`
 - `WiredConditionNoBattleBanzaiRunning`: `wf_cnd_not_battlebanzai`, `wf_cnd_not_battlebz`
-- `WiredConditionNotFurniHaveHabbo`: `wf_cnd_not_hv_avtrs`, `wf_cnd_not_tgr_furni_hv_avtrs`
-- `WiredConditionNotHabboHasEffect`: `wf_cnd_not_wearing_fx`, `wf_cnd_not_wears_effect`
-- `WiredConditionNotHabboHasHandItem`: `wf_cnd_not_has_handitem`, `wf_cnd_not_wears_handitem`
+- `WiredConditionNotFurniHaveUser`: `wf_cnd_not_hv_avtrs`, `wf_cnd_not_tgr_furni_hv_avtrs`
+- `WiredConditionNotUserHasEffect`: `wf_cnd_not_wearing_fx`, `wf_cnd_not_wears_effect`
+- `WiredConditionNotUserHasHandItem`: `wf_cnd_not_has_handitem`, `wf_cnd_not_wears_handitem`
 - `WiredConditionNotInGroup`: `wf_cnd_not_in_group`, `wf_cnd_not_habbo_in_group`
 - `WiredConditionNotMatchStatePosition`: `wf_cnd_not_match_snap`, `wf_cnd_not_match_snap_new`
 - `WiredConditionNotTriggererMatch`: `wf_cnd_not_triggerer_match`, `wf_cnd_not_trg_by_user`
@@ -3057,7 +3057,7 @@ Keys registered on the same class share one runtime. The class decides the behav
 - `WiredEffectAlert`: `wf_act_alert`, `wf_act_alert_habbo`
 - `WiredEffectBotDance`: `wf_act_bot_start_dance`, `wf_act_bot_stop_dance`
 - `WiredEffectBotGiveHandItem`: `wf_act_bot_give_handitem`, `wf_act_bot_give_handitem_or_effect`
-- `WiredEffectBotTalkToHabbo`: `wf_act_bot_talk_to_avatar`, `wf_act_bot_talk_to_avatar_custom`
+- `WiredEffectBotTalkToUser`: `wf_act_bot_talk_to_avatar`, `wf_act_bot_talk_to_avatar_custom`
 - `WiredEffectBotTalk`: `wf_act_bot_talk`, `wf_act_bot_talk_custom`
 - `WiredEffectBotTeleport`: `wf_act_bot_teleport`, `wf_act_teleport_bots_to_furni`
 - `WiredEffectChangeFurniDirection`: `wf_act_move_to_dir`, `wf_act_allign_furni_stack`
@@ -3090,11 +3090,11 @@ Keys registered on the same class share one runtime. The class decides the behav
 - `WiredExtraVariableFxProgressBar`: `wf_xtra_varfx_prog`, `wf_xtra_var_fx_progress`
 - `WiredExtraVariableFxStatusBar`: `wf_xtra_varfx_status`, `wf_xtra_var_fx_status`
 - `WiredTriggerCollision`: `wf_trg_collision`, `wf_trg_cnd_collision`, `wf_trg_other_collides_user`, `wf_trg_user_collides_bot`, `wf_trg_user_collides_other`
-- `WiredTriggerHabboClicksFurni`: `wf_trg_click_furni`, `wf_trg_double_click_furni`
-- `WiredTriggerHabboClicksUser`: `wf_trg_click_user`, `wf_trg_click_bot`
-- `WiredTriggerHabboLeavesRoom`: `wf_trg_leave_room`, `wf_trg_user_exits_room`
-- `WiredTriggerHabboSaysKeyword`: `wf_trg_says_something`, `wf_trg_exact_keyword`, `wf_trg_says_command`, `wf_trg_habbo_says_command`
-- `WiredTriggerHabboUnidles`: `wf_trg_unidles`, `wf_trg_anti_afk`
+- `WiredTriggerUserClicksFurni`: `wf_trg_click_furni`, `wf_trg_double_click_furni`
+- `WiredTriggerUserClicksUser`: `wf_trg_click_user`, `wf_trg_click_bot`
+- `WiredTriggerUserLeavesRoom`: `wf_trg_leave_room`, `wf_trg_user_exits_room`
+- `WiredTriggerUserSaysKeyword`: `wf_trg_says_something`, `wf_trg_exact_keyword`, `wf_trg_says_command`, `wf_trg_habbo_says_command`
+- `WiredTriggerUserUnidles`: `wf_trg_unidles`, `wf_trg_anti_afk`
 
 Other shared runtime notes:
 

@@ -1,0 +1,180 @@
+package polaris.networking.gameserver;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.core.ConfigurationManager;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.gameclients.GameClientManager;
+import polaris.messages.PacketManager;
+import polaris.networking.Server;
+import polaris.networking.ServerBindException;
+import polaris.networking.gameserver.decoders.GameByteDecoder;
+import polaris.networking.gameserver.decoders.GameByteFrameDecoder;
+import polaris.networking.gameserver.decoders.GameClientMessageLogger;
+import polaris.networking.gameserver.decoders.GameMessageHandler;
+import polaris.networking.gameserver.decoders.GameMessageRateLimit;
+import polaris.networking.gameserver.decoders.GamePolicyDecoder;
+import polaris.networking.gameserver.decoders.PacketDispatchLatencyHandler;
+import polaris.networking.gameserver.decoders.PacketDispatchMarker;
+import polaris.networking.gameserver.encoders.GameServerMessageEncoder;
+import polaris.networking.gameserver.encoders.GameServerMessageLogger;
+import polaris.networking.gameserver.handlers.IdleTimeoutHandler;
+import polaris.networking.gameserver.handlers.SustainedUnwritableHandler;
+
+public class GameServer extends Server {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
+
+    private final PacketManager packetManager;
+    private final GameClientManager gameClientManager;
+    private ServerBootstrap webSocketBootstrap;
+    private volatile boolean webSocketListening;
+    private volatile Channel webSocketChannel;
+
+    public GameServer(String host, int port) throws Exception {
+        super(
+                "Game Server",
+                host,
+                port,
+                configuration().getInt("io.bossgroup.threads"),
+                configuration().getInt("io.workergroup.threads"));
+        this.packetManager = new PacketManager();
+        this.gameClientManager = new GameClientManager();
+    }
+
+    @Override
+    public void initializePipeline() {
+        super.initializePipeline();
+
+        this.serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast("logger", new LoggingHandler());
+                ch.pipeline()
+                        .addLast(
+                                "outboundBackpressure",
+                                new SustainedUnwritableHandler(configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
+
+                // Decoders.
+                ch.pipeline().addLast(new GamePolicyDecoder());
+                ch.pipeline().addLast(new GameByteFrameDecoder());
+                ch.pipeline().addLast(new GameByteDecoder());
+
+                if (PacketManager.DEBUG_SHOW_PACKETS) {
+                    ch.pipeline().addLast(new GameClientMessageLogger());
+                }
+                ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
+                ch.pipeline().addLast("gameClientRegistrar", new GameMessageHandler.ClientRegistrar());
+                ch.pipeline().addLast(new GameMessageRateLimit());
+                ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
+                ch.pipeline()
+                        .addLast(
+                                "packetExecutionAdmission",
+                                GamePacketExecutionGroup.admissionHandler("packetDispatchLatency"));
+                ch.pipeline()
+                        .addLast(
+                                GamePacketExecutionGroup.get(),
+                                "packetDispatchLatency",
+                                new PacketDispatchLatencyHandler());
+                ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
+
+                // Encoders.
+                ch.pipeline().addLast(new GameServerMessageEncoder());
+
+                if (PacketManager.DEBUG_SHOW_PACKETS) {
+                    ch.pipeline().addLast(new GameServerMessageLogger());
+                }
+            }
+        });
+
+        initializeWebSocketServer();
+    }
+
+    private void initializeWebSocketServer() {
+        this.webSocketListening = false;
+        if (!configuration().getBoolean("ws.enabled", false)) {
+            return;
+        }
+
+        String wsHost = configuration().getValue("ws.host", "0.0.0.0");
+        int wsPort = configuration().getInt("ws.port", 2096);
+
+        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer(
+                configuredUnwritableTimeoutSeconds(), configuration().getInt("http.blocking.pool.size", 8));
+
+        this.webSocketBootstrap = new ServerBootstrap();
+        this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());
+        this.webSocketBootstrap.channel(NioServerSocketChannel.class);
+        configureTransportOptions(this.webSocketBootstrap);
+        this.webSocketBootstrap.childHandler(wsInitializer);
+
+        ChannelFuture wsFuture = this.bind(this.webSocketBootstrap, wsHost, wsPort);
+        wsFuture.awaitUninterruptibly();
+
+        if (!wsFuture.isSuccess()) {
+            throw new ServerBindException("WebSocket Server", wsHost, wsPort, wsFuture.cause());
+        } else {
+            this.webSocketChannel = wsFuture.channel();
+            this.webSocketListening = true;
+            wsFuture.channel().closeFuture().addListener(ignored -> this.webSocketListening = false);
+            LOGGER.info("WebSocket server started on {}:{} (SSL: {})", wsHost, wsPort, wsInitializer.isSslEnabled());
+            polaris.networking.gameserver.cms.CmsApiHandler.logStartupStatus(wsHost, wsPort);
+            polaris.networking.gameserver.wired.WiredVariableApiHandler.logStartupStatus(wsHost, wsPort);
+
+            if (configuration().getBoolean("crypto.ws.signing.enabled", false)) {
+                try {
+                    polaris.networking.gameserver.crypto.CryptoSigningKeyManager.get();
+                    LOGGER.info(
+                            "[ws-crypto] signing public key ready: {}",
+                            polaris.networking.gameserver.crypto.CryptoSigningKeyManager.publicKeyBase64());
+                } catch (Exception e) {
+                    LOGGER.error("[ws-crypto] failed to warm signing keypair", e);
+                }
+            }
+        }
+    }
+
+    private static ConfigurationManager configuration() {
+        return Emulator.getConfig();
+    }
+
+    public PacketManager getPacketManager() {
+        return this.packetManager;
+    }
+
+    public GameClientManager getGameClientManager() {
+        return this.gameClientManager;
+    }
+
+    public boolean isWebSocketListening() {
+        return this.webSocketListening && this.webSocketChannel != null && this.webSocketChannel.isActive();
+    }
+
+    @Override
+    public void stop() {
+        this.webSocketListening = false;
+        if (this.webSocketChannel != null) {
+            if (!this.webSocketChannel.close().awaitUninterruptibly(5, TimeUnit.SECONDS)) {
+                LOGGER.warn("WebSocket listener did not close within 5 s, continuing");
+            }
+        }
+        for (GameClient client :
+                new ArrayList<>(this.gameClientManager.getSessions().values())) {
+            this.gameClientManager.forceDisposeClient(client);
+        }
+
+        BlockingHttpExecutionGroup.shutdown();
+        GamePacketExecutionGroup.shutdown();
+
+        super.stop();
+    }
+}

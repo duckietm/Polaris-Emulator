@@ -1,11 +1,11 @@
 # Plugin ABI baselines
 
-Plugins are loaded from `plugins/` with a `URLClassLoader` that delegates to the
-emulator's own classloader (`com.eu.habbo.plugin.PluginManager`). That means plugin
-jars link against the **entire public/protected surface** of the emulator at the
-bytecode level — there is no separate "plugin API". That surface is a frozen ABI:
-it may grow, it must never break. This directory makes that rule mechanically
-enforced instead of aspirational.
+Plugins are loaded from `plugins/` with a `RemappingPluginClassLoader` that
+delegates to the emulator's own classloader (`polaris.plugin.PluginManager`). That
+means plugin jars link against the **entire public/protected surface** of the
+emulator at the bytecode level — there is no separate "plugin API". That surface is
+a frozen ABI: it may grow, it must never break. This directory makes that rule
+mechanically enforced instead of aspirational.
 
 There are two baselines, enforced by `PluginAbiCompatibilityTest` (a unit test,
 so it runs on every `mvn test` / `mvn verify` and in CI):
@@ -39,6 +39,27 @@ Any token not covered by the baseline's tolerance (the accepted list for 3.5.5,
 nothing for the Polaris baseline) fails the test with a message listing exactly
 what broke.
 
+## Old names
+
+Both baselines were compiled before the emulator moved from `com.eu.habbo` to
+`polaris` and renamed `Habbo` to `User` (`HabboPlugin` to `PolarisPlugin`,
+`getHabbo()` to `getUser()`, `habbo` fields to `user`, …). Old plugin jars still
+link because the plugin classloader rewrites each of their classes with the table
+in `src/main/resources/polaris/plugin/legacy-names.txt`: package prefixes, renamed
+types, renamed methods (only on classes that extend or implement an emulator class)
+and renamed fields (resolved through superclasses).
+
+The gate checks exactly that guarantee. Before comparing, it rewrites every class
+of a baseline jar with the same table, as the plugin classloader would rewrite an
+old plugin, and writes the result to `target/abi-check/<baseline>-current-names.jar`.
+The accepted-divergence files keep their tokens in the old names — their reviewed
+digests do not change — and each token is translated to the current names in
+memory before it is matched, so the token above is checked as
+`method polaris.hotel.rooms.Room#getUserCount() METHOD_REMOVED`.
+
+A rename of a public or protected name is therefore binary compatible only with its
+line in `legacy-names.txt`; without it the gate reports the old name as removed.
+
 Note that *binary* compatibility is stricter than source compatibility: e.g.
 changing a return type to a supertype, or replacing a public field with a getter,
 compiles fine against existing plugin *source* but crashes existing plugin *jars*
@@ -53,7 +74,9 @@ The playbook that is always ABI-safe:
 - change method *bodies* freely;
 - change anything `private`/package-private freely;
 - keep old public/protected members as thin forwarders to the new structure;
-- deprecate with `@Deprecated` (never remove).
+- deprecate with `@Deprecated` (never remove);
+- rename a public/protected type, method or field only together with its entry
+  in `legacy-names.txt` (see *Old names*).
 
 ## Maintenance (maintainer approval required)
 
@@ -70,12 +93,15 @@ Because additions are binary-compatible, this never loosens the gate:
 
 ```
 gh release download vX.Y.Z -p "Polaris-*-jar-with-dependencies.jar" -D /tmp/polaris-release
-cd $(mktemp -d) && unzip -q /tmp/polaris-release/Polaris-*-jar-with-dependencies.jar "com/eu/habbo/*"
-jar --create --file <repo>/Emulator/abi-baseline/polaris-release-api.jar com
+cd $(mktemp -d) && unzip -q /tmp/polaris-release/Polaris-*-jar-with-dependencies.jar "polaris/*" -x "polaris/shaded/*"
+jar --create --file <repo>/Emulator/abi-baseline/polaris-release-api.jar polaris
 ```
 
-then regenerate the accepted lists (the polaris one should collapse to empty)
-and record the release version + jar sha256 in this README's provenance section.
+(releases before the rename ship `com/eu/habbo/*` instead; extract that path for
+them). A baseline already in the current names passes through the rewrite
+unchanged. Then regenerate the accepted lists (the polaris one should collapse to
+empty) and record the release version + jar sha256 in this README's provenance
+section. Keep the Morningstar baseline as it is: it stands for the oldest plugins.
 
 ## Out of scope
 

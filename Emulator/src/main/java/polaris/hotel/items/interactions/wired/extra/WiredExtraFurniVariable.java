@@ -1,0 +1,239 @@
+package polaris.hotel.items.interactions.wired.extra;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionWiredExtra;
+import polaris.hotel.items.interactions.wired.WiredLargePayload;
+import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.rooms.variables.RoomWiredVariableCatalog;
+import polaris.hotel.wired.arrays.WiredArrayDefinition;
+import polaris.hotel.wired.arrays.WiredArrayDefinitionState;
+import polaris.hotel.wired.arrays.WiredArrayDefinitionSupport;
+import polaris.hotel.wired.arrays.WiredArrayVariableDefinition;
+import polaris.hotel.wired.arrays.WiredArrayVariableType;
+import polaris.hotel.wired.arrays.WiredVariableDefinitionData;
+import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredRoomStats;
+import polaris.messages.ServerMessage;
+import polaris.messages.incoming.wired.WiredSaveException;
+
+public class WiredExtraFurniVariable extends InteractionWiredExtra
+        implements WiredArrayVariableDefinition, WiredLargePayload {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredExtraFurniVariable.class);
+    public static final int CODE = 71;
+    public static final int AVAILABILITY_ROOM_ACTIVE = 1;
+    public static final int AVAILABILITY_PERMANENT = 10;
+
+    private String variableName = "";
+    private boolean hasValue = false;
+    private int availability = AVAILABILITY_ROOM_ACTIVE;
+    private final WiredArrayDefinitionState array = new WiredArrayDefinitionState();
+
+    public WiredExtraFurniVariable(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
+
+    public WiredExtraFurniVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return false;
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        int[] intParams = settings.getIntParams();
+        WiredVariableDefinitionData definitionData;
+        try {
+            definitionData = WiredArrayDefinitionSupport.readEditorData(settings.getStringParam());
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+        String normalizedName = WiredVariableNameValidator.normalizeForSave(definitionData.name);
+
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+
+        if (room == null) {
+            throw new WiredSaveException("Room not found");
+        }
+
+        WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
+        int nextAvailability = normalizeAvailability((intParams.length > 1) ? intParams[1] : AVAILABILITY_ROOM_ACTIVE);
+
+        if (nextAvailability == AVAILABILITY_PERMANENT && !WiredRoomStats.canBecomePermanent(room, this)) {
+            throw new WiredSaveException(WiredRoomStats.PERMANENT_LIMIT_ERROR);
+        }
+
+        WiredArrayDefinition nextArrayDefinition;
+        try {
+            nextArrayDefinition =
+                    WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
+
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+
+        try {
+            room.getArrayVariableManager()
+                    .updateDefinition(this, nextArrayDefinition, nextAvailability == AVAILABILITY_PERMANENT, () -> {
+                        this.variableName = normalizedName;
+                        this.array.assign(nextArrayDefinition);
+                        this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
+                        this.availability = nextAvailability;
+
+                        room.getFurniVariableManager().handleDefinitionUpdated(this);
+                    });
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+        return true;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableName, this.hasValue, this.availability, this.array.persisted(this.variableName)));
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.array.editorString(this.variableName));
+        message.appendInt(2);
+        message.appendInt(this.hasValue ? 1 : 0);
+        message.appendInt(this.availability);
+        message.appendInt(0);
+        message.appendInt(CODE);
+        message.appendInt(0);
+        message.appendInt(0);
+        WiredVariableEditorContext.append(
+                message,
+                room,
+                RoomWiredVariableCatalog.TARGET_FURNI,
+                this.getId(),
+                WiredVariableEditorContext.CONTEXT_FURNI_VARIABLE_INFO_AND_HOLDERS);
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
+
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
+
+            if (data != null) {
+                this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
+                this.hasValue = data.hasValue;
+                this.availability = normalizeAvailability(data.availability);
+                if (data.definition != null) {
+                    this.array.restore(
+                            data.definition,
+                            LOGGER,
+                            "furni",
+                            this.getId(),
+                            room == null ? this.getRoomId() : room.getId());
+                    if (this.array.isArray()) this.hasValue = true;
+                    if (this.array.isUnavailable()) this.hasValue = false;
+                }
+            }
+
+            return;
+        }
+
+        this.variableName = WiredVariableNameValidator.normalizeLegacy(wiredData);
+    }
+
+    @Override
+    public void onPickUp() {
+        this.variableName = "";
+        this.hasValue = false;
+        this.availability = AVAILABILITY_ROOM_ACTIVE;
+        this.array.clear();
+    }
+
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
+
+    @Override
+    public boolean hasConfiguration() {
+        return true;
+    }
+
+    public String getVariableName() {
+        return this.variableName;
+    }
+
+    public boolean hasValue() {
+        return this.hasValue;
+    }
+
+    public int getAvailability() {
+        return this.availability;
+    }
+
+    public boolean isPermanentAvailability() {
+        return this.availability == AVAILABILITY_PERMANENT;
+    }
+
+    @Override
+    public WiredArrayVariableType getArrayVariableType() {
+        return WiredArrayVariableType.FURNI;
+    }
+
+    @Override
+    public WiredArrayDefinition getArrayDefinition() {
+        return this.array.definition();
+    }
+
+    @Override
+    public boolean isArrayUnavailable() {
+        return this.array.isUnavailable();
+    }
+
+    @Override
+    public boolean isArrayPermanent() {
+        return this.isPermanentAvailability();
+    }
+
+    private static int normalizeAvailability(int value) {
+        if (value == AVAILABILITY_PERMANENT) {
+            return AVAILABILITY_PERMANENT;
+        }
+
+        return AVAILABILITY_ROOM_ACTIVE;
+    }
+
+    static class JsonData {
+        String variableName;
+        boolean hasValue;
+        int availability;
+        WiredVariableDefinitionData definition;
+
+        JsonData(String variableName, boolean hasValue, int availability, WiredVariableDefinitionData definition) {
+            this.variableName = variableName;
+            this.hasValue = hasValue;
+            this.availability = availability;
+            this.definition = definition;
+        }
+    }
+}

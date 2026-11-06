@@ -14,7 +14,6 @@ import polaris.Emulator;
 import polaris.hotel.earnings.EarningsCategory;
 import polaris.hotel.earnings.EarningsNotifications;
 import polaris.hotel.economy.EconomyMutationResult;
-import polaris.hotel.economy.EconomyOperationId;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.users.LedgerWalletMutation;
 import polaris.hotel.users.User;
@@ -665,47 +664,54 @@ public class MarketPlace {
             return 0;
         }
 
-        int credits = 0;
         int sellerId = client.getUser().getUserInfo().getId();
         List<MarketPlaceOffer> claimed = new ArrayList<>();
-
-        synchronized (client.getUser().getInventory()) {
-            for (MarketPlaceOffer offer : offers) {
-                if (offer.getState().equals(MarketPlaceState.SOLD)) {
-                    if (removeUser(offer, sellerId)) {
-                        client.getUser().getInventory().removeMarketplaceOffer(offer);
-                        credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
-                        claimed.add(offer);
-                    }
-                }
+        List<Integer> offerIds = new ArrayList<>();
+        int credits = 0;
+        for (MarketPlaceOffer offer : offers) {
+            if (offer.getState().equals(MarketPlaceState.SOLD)) {
+                credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
+                claimed.add(offer);
+                offerIds.add(offer.getOfferId());
             }
         }
-
         offers.clear();
 
         if (claimed.isEmpty() || credits == 0) {
             return 0;
         }
 
-        // The payout says whether it happened (a plugin or the ledger can refuse it). When it did not, the offers are
-        // handed back as unclaimed: they used to stay claimed with nothing paid and no way to claim them again.
-        String operationId = EconomyOperationId.create("marketplace-payout:" + sellerId);
-        boolean paid = MARKETPLACE_CURRENCY == 0
-                ? client.getUser().applyCredits(credits, "marketplace.payout", operationId, sellerId)
-                : client.getUser()
-                        .applyPoints(MARKETPLACE_CURRENCY, credits, "marketplace.payout", operationId, sellerId);
+        // A plugin can refuse the payout, but not change it: the amount is what the offers earned.
+        PreparedCharge payout = prepareMarketplaceMutation(client.getUser(), credits);
+        if (payout == null) return 0;
 
-        if (!paid) {
-            synchronized (client.getUser().getInventory()) {
-                for (MarketPlaceOffer offer : claimed) {
-                    if (releaseClaim(offer, sellerId)) {
-                        client.getUser().getInventory().addMarketplaceOffer(offer);
-                    }
-                }
+        // The offers are flagged as paid out and the wallet credited together, or neither happens and the offers stay
+        // claimable; the in-memory offers only leave once the transaction committed.
+        EconomyMutationResult mutation = LedgerWalletMutation.coordinated(client.getUser(), () -> {
+            EconomyMutationResult committed;
+            try (Connection connection = openConnection()) {
+                committed = MarketPlacePayoutTransaction.commit(
+                        connection, sellerId, offerIds, payout.currencyType(), payout.delta());
+            } catch (SQLException e) {
+                LOGGER.error("Marketplace payout could not reach the database for user {}", sellerId, e);
+                return null;
             }
-            LOGGER.warn("Marketplace payout of {} refused for user {}; offers released", credits, sellerId);
+            if (committed != null) {
+                LedgerWalletMutation.applyCommitted(client.getUser(), payout.currencyType(), committed.balanceAfter());
+            }
+            return committed;
+        });
+        if (mutation == null) {
+            LOGGER.warn("Marketplace payout of {} not made for user {}; offers stay claimable", credits, sellerId);
             return 0;
         }
+
+        synchronized (client.getUser().getInventory()) {
+            for (MarketPlaceOffer offer : claimed) {
+                client.getUser().getInventory().removeMarketplaceOffer(offer);
+            }
+        }
+        publishMarketplaceCharge(client, payout);
 
         for (MarketPlaceOffer offer : claimed) {
             offer.needsUpdate(true);
@@ -715,51 +721,9 @@ public class MarketPlace {
         return credits;
     }
 
-    /** The claim methods share one way to the database. */
+    /** The payout's way to the database. */
     private static Connection openConnection() throws SQLException {
         return Emulator.getDatabase().getDataSource().getConnection();
-    }
-
-    /** Undoes {@link #removeUser} for an offer whose payout did not go through. */
-    private static boolean releaseClaim(MarketPlaceOffer offer, int sellerId) {
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE marketplace_items SET seller_claimed = 0 WHERE id = ? AND user_id = ? AND seller_claimed = 1")) {
-            statement.setInt(1, offer.getOfferId());
-            statement.setInt(2, sellerId);
-            return statement.executeUpdate() > 0;
-        } catch (SQLException e) {
-            LOGGER.error("Marketplace claim of offer {} could not be released", offer.getOfferId(), e);
-            return false;
-        }
-    }
-
-    /**
-     * Takes a sold offer's proceeds, once.
-     *
-     * <p>The offer is marked as paid out with {@code seller_claimed}. It used to be detached by setting its
-     * {@code user_id} to -1, which a database with the {@code fk_market_user} foreign key refuses, so the seller
-     * was never paid. The row keeps its seller and its sold state, so the price history still counts the sale.
-     *
-     * <p>The update carried no condition beyond the id, so two sessions of the same
-     * seller could each claim the same sold offer and each be paid for it. Keyed on the
-     * seller and the sold state, only the first one gets the row - and an offer that is
-     * not this user's, or not sold, is never claimable at all.
-     *
-     * @return whether this caller is the one that claimed it
-     */
-    private static boolean removeUser(MarketPlaceOffer offer, int sellerId) {
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE marketplace_items SET seller_claimed = 1 WHERE id = ? AND user_id = ? AND state = ? AND seller_claimed = 0")) {
-            statement.setInt(1, offer.getOfferId());
-            statement.setInt(2, sellerId);
-            statement.setInt(3, MarketPlaceState.SOLD.getState());
-            return statement.executeUpdate() > 0;
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-            return false;
-        }
     }
 
     public static int calculateCommision(int price) {
@@ -768,16 +732,21 @@ public class MarketPlace {
     }
 
     private static PreparedCharge prepareMarketplaceCharge(User buyer, int price) {
+        return prepareMarketplaceMutation(buyer, -price);
+    }
+
+    /** Asks the plugins about a marketplace wallet change; null when one refused it or tried to change it. */
+    private static PreparedCharge prepareMarketplaceMutation(User user, int delta) {
         if (MARKETPLACE_CURRENCY == 0) {
-            UserCreditsEvent event = new UserCreditsEvent(buyer, -price);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != -price) return null;
+            UserCreditsEvent event = new UserCreditsEvent(user, delta);
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != delta) return null;
             return new PreparedCharge(-1, event.credits);
         }
 
-        UserPointsEvent event = new UserPointsEvent(buyer, -price, MARKETPLACE_CURRENCY);
+        UserPointsEvent event = new UserPointsEvent(user, delta, MARKETPLACE_CURRENCY);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()
                 || event.type != MARKETPLACE_CURRENCY
-                || event.points != -price) return null;
+                || event.points != delta) return null;
         return new PreparedCharge(event.type, event.points);
     }
 

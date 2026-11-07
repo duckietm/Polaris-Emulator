@@ -24,6 +24,7 @@ import polaris.networking.gameserver.auth.NitroSecureApiHandler;
 import polaris.networking.gameserver.auth.NitroSecureAssetHandler;
 import polaris.networking.gameserver.badges.BadgeHttpHandler;
 import polaris.networking.gameserver.badges.BadgeLeaderboardHttpHandler;
+import polaris.networking.gameserver.battleball.BattleBallHttpHandler;
 import polaris.networking.gameserver.cms.CmsApiHandler;
 import polaris.networking.gameserver.codec.WebSocketCodec;
 import polaris.networking.gameserver.crypto.WsHandshakeHandler;
@@ -184,6 +185,11 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionWobble",
                         BlockingHttpExecutionGroup.admissionHandler("wobbleHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "wobbleHttpHandler", new WobbleHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionBattleBall",
+                        BlockingHttpExecutionGroup.admissionHandler("battleBallHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "battleBallHttpHandler", new BattleBallHttpHandler());
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());

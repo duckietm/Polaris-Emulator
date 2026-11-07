@@ -33,6 +33,8 @@ public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
         "werewolfHttpHandler",
         "blockingHttpAdmissionWobble",
         "wobbleHttpHandler",
+        "blockingHttpAdmissionBattleBall",
+        "battleBallHttpHandler",
         "blockingHttpAdmissionStats",
         "emuStatsHttpHandler",
     };

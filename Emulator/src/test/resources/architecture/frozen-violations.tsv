@@ -427,6 +427,10 @@ U|polaris/hotel/games/Game.java|CALL|getGameEnvironment|6
 U|polaris/hotel/games/Game.java|CALL|getIntUnixTimestamp|4
 U|polaris/hotel/games/Game.java|CALL|getPluginManager|8
 U|polaris/hotel/games/Game.java|CALL|getThreading|1
+U|polaris/hotel/games/battleball/BattleBallManager.java|CALL|getConfig|2
+U|polaris/hotel/games/battleball/BattleBallManager.java|CALL|getDatabase|1
+U|polaris/hotel/games/battleball/BattleBallManager.java|CALL|getGameEnvironment|1
+U|polaris/hotel/games/battleball/BattleBallManager.java|CALL|getThreading|1
 U|polaris/hotel/games/battlebanzai/BattleBanzaiGame.java|CALL|getConfig|7
 U|polaris/hotel/games/battlebanzai/BattleBanzaiGame.java|CALL|getGameEnvironment|3
 U|polaris/hotel/games/battlebanzai/BattleBanzaiGame.java|CALL|getThreading|4

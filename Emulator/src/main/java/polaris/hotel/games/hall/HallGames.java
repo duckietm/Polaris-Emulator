@@ -39,7 +39,7 @@ public final class HallGames {
             case "chess" -> new Chess();
             case "poker" -> new Poker();
             case "snails" -> new SnailRace();
-            case "quiz" -> new Quiz(QuizBank.QUESTIONS);
+            case "quiz" -> new Quiz(QuizBank.questions());
             case "tetris" -> new TetrisDuel();
             case "diving" -> new Diving();
             case "kart" -> new KartRace();

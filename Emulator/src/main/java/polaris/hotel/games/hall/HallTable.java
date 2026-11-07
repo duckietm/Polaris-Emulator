@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import polaris.hotel.games.GameTexts;
 
 /**
  * A table of the game hall: its players in their seats (people and robots), the game they play, whose move it is and
@@ -24,7 +25,7 @@ public final class HallTable {
     }
 
     static final int MAX_TIMEOUTS = 3;
-    private static final String[] BOT_NAMES = {"Renard Rusé", "Gédéon", "Mistigri", "Pompon", "Bérénice", "Filou"};
+    private static final String[] BOT_NAMES = {"Cunning Fox", "Gideon", "Whiskers", "Pompom", "Bernice", "Rascal"};
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",
         "hr-515-33.hd-600-1.ch-635-73.lg-716-82.sh-735-68",
@@ -118,7 +119,7 @@ public final class HallTable {
         if (this.state == State.PLAYING) throw new HallException("already_started");
         if (this.seats.size() >= this.size) throw new HallException("table_full");
 
-        for (String name : BOT_NAMES) {
+        for (String name : GameTexts.botNames("hall", BOT_NAMES)) {
             if (this.seats.stream().noneMatch(seat -> seat.name.equals(name))) {
                 int look = this.random.nextInt(BOT_FIGURES.length);
 

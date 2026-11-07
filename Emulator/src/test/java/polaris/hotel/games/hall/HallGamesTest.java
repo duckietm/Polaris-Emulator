@@ -3,6 +3,7 @@ package polaris.hotel.games.hall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
@@ -391,18 +392,31 @@ class HallGamesTest {
     // ---- The quiz
 
     @Test
-    void theQuizBankIsComplete() {
-        assertTrue(QuizBank.QUESTIONS.size() >= 50);
+    void theQuizBankIsCompleteInEveryLanguage() {
+        List<Quiz.Question> english = QuizBank.questions("en");
 
-        for (Quiz.Question question : QuizBank.QUESTIONS) {
-            assertEquals(4, question.answers().size(), question.text());
-            assertTrue(question.right() >= 0 && question.right() < 4, question.text());
+        assertTrue(english.size() >= 50);
+
+        for (String language : QuizBank.LANGUAGES) {
+            List<Quiz.Question> questions = QuizBank.questions(language);
+
+            // Every language asks the same questions, in the same order, with the same right answer.
+            assertEquals(english.size(), questions.size(), language);
+
+            for (int index = 0; index < questions.size(); index++) {
+                Quiz.Question question = questions.get(index);
+
+                assertEquals(4, question.answers().size(), language + ": " + question.text());
+                assertEquals(english.get(index).right(), question.right(), language + ": " + question.text());
+            }
         }
+
+        assertSame(english, QuizBank.questions("xx"));
     }
 
     @Test
     void aRightQuickAnswerScoresMore() {
-        Quiz quiz = new Quiz(QuizBank.QUESTIONS);
+        Quiz quiz = new Quiz(QuizBank.questions("en"));
 
         quiz.start(2, new Random(3));
         quiz.tick(NOW, null);
@@ -418,7 +432,7 @@ class HallGamesTest {
         JsonObject move = new JsonObject();
 
         for (int answer = 0; answer < 4; answer++) {
-            Quiz probe = new Quiz(QuizBank.QUESTIONS);
+            Quiz probe = new Quiz(QuizBank.questions("en"));
 
             probe.start(2, new Random(3));
             probe.tick(NOW, null);

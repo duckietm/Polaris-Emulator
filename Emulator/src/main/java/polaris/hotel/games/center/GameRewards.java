@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.games.GameTexts;
 
 /**
  * Gives a game's reward to a player, online or not: a piece of furniture (in a gift), a set of clothes, a badge, or
@@ -105,10 +106,11 @@ final class GameRewards {
 
     static String currencyName(int type) {
         return switch (type) {
-            case -1 -> "crédits";
-            case 0 -> "duckets";
-            case 5 -> "diamants";
-            default -> "points (" + type + ")";
+            case -1 -> GameTexts.text("gamecenter.currency.credits", "credits");
+            case 0 -> GameTexts.text("gamecenter.currency.duckets", "duckets");
+            case 5 -> GameTexts.text("gamecenter.currency.diamonds", "diamonds");
+            default -> GameTexts.text("gamecenter.currency.points", "points (%type%)")
+                    .replace("%type%", String.valueOf(type));
         };
     }
 
@@ -211,7 +213,9 @@ final class GameRewards {
 
             if (content == null || wrapping == null) return null;
 
-            String extra = "1\t" + content.getId() + "\t0\t0\t0\tGagné au Game Center !\t0\t0";
+            String extra = "1\t" + content.getId() + "\t0\t0\t0\t"
+                    + GameTexts.text("gamecenter.reward.gift", "Won at the Game Center!").replace("\t", " ")
+                    + "\t0\t0";
 
             environment().getItemManager().createGift(info.getUsername(), wrapping, extra, 0, 0);
         }

@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import polaris.hotel.games.GameTexts;
 
 /**
  * One game of BattleBall: Rebound!, as Habbo's original game plays it (rules read from Kepler's BattleBall and the
@@ -73,17 +74,17 @@ public final class BattleBallMatch {
 
     private static final String[] BOT_NAMES = {
         "Bondi",
-        "Rebond",
-        "Zébulon",
+        "Bounce",
+        "Zebby",
         "Balthazar",
-        "Pépite",
+        "Nugget",
         "Ricochet",
-        "Tagada",
+        "Zoom",
         "Boing",
-        "Rubis",
-        "Comète",
+        "Ruby",
+        "Comet",
         "Hop",
-        "Biloute"
+        "Pogo"
     };
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",
@@ -264,7 +265,7 @@ public final class BattleBallMatch {
         int chosen = this.freeTeam(team);
         String name = null;
 
-        for (String candidate : BOT_NAMES) {
+        for (String candidate : GameTexts.botNames("battleball", BOT_NAMES)) {
             if (this.byName(candidate) == null) {
                 name = candidate;
                 break;

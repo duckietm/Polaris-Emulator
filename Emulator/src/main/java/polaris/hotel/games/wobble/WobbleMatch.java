@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Random;
+import polaris.hotel.games.GameTexts;
 
 /**
  * One Wobble Squabble duel: two fighters on a beam over the pool, each trying to stay balanced while knocking the other
@@ -53,7 +54,7 @@ public final class WobbleMatch {
     private static final long MAX_CATCH_UP_MS = 10_000L;
     private static final int LOG_SIZE = 40;
 
-    private static final String[] BOT_NAMES = {"Bouée", "Plouf", "Mimosa", "Gaston", "Lili", "Barnabé"};
+    private static final String[] BOT_NAMES = {"Buoy", "Splash", "Mimosa", "Gaston", "Lili", "Barney"};
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",
         "hr-515-33.hd-600-1.ch-635-73.lg-716-82.sh-735-68",
@@ -202,11 +203,13 @@ public final class WobbleMatch {
 
         if (free < 0) throw new WobbleException("table_full");
 
-        int index = this.random.nextInt(BOT_NAMES.length);
+        String[] names = GameTexts.botNames("wobble", BOT_NAMES);
+        int index = this.random.nextInt(BOT_FIGURES.length);
+        String name = names[this.random.nextInt(names.length)];
 
         this.sides[free] = new Fighter(
-                this.nextBotId--, BOT_NAMES[index], BOT_FIGURES[index], BOT_GENDERS[index], true, ++this.joins, now);
-        this.event("join", BOT_NAMES[index], "");
+                this.nextBotId--, name, BOT_FIGURES[index], BOT_GENDERS[index], true, ++this.joins, now);
+        this.event("join", name, "");
     }
 
     public void removeBot(int hostId) {

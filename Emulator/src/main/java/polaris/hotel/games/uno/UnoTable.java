@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import polaris.hotel.games.GameTexts;
 
 /**
  * One UNO table: eight chairs around it, the players and robots sitting on them, the deck, the pile, whose turn it is
@@ -149,10 +150,11 @@ public final class UnoTable {
         if (this.state == State.PLAYING) throw new UnoException("already_started");
         if (this.seats.size() >= this.rules.maxPlayers()) throw new UnoException("table_full");
 
-        int index = (-this.nextBotId - 1) % BOT_NAMES.length;
+        String[] names = GameTexts.botNames("uno", BOT_NAMES);
+        int index = (-this.nextBotId - 1) % BOT_FIGURES.length;
         Seat bot = new Seat(
                 this.nextBotId--,
-                BOT_NAMES[index],
+                names[(-this.nextBotId - 1) % names.length],
                 BOT_FIGURES[index],
                 BOT_GENDERS[index],
                 true,

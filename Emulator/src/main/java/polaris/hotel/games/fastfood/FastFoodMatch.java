@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Random;
+import polaris.hotel.games.GameTexts;
 
 /**
  * One game of Fast Food, as Habbo's original game (BaseJump, 2010) plays it: each player has a table, two diners
@@ -75,7 +76,7 @@ public final class FastFoodMatch {
             new Food("cake", 0.70, 2.8, 0.14),
             new Food("tray", 0.62, 3.0, 0.13));
 
-    private static final String[] BOT_NAMES = {"Mamie Lasagne", "Chef Tartine", "Croquette", "Pistache", "Gaufrette"};
+    private static final String[] BOT_NAMES = {"Granny Lasagna", "Chef Toast", "Crumble", "Pistachio", "Waffle"};
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",
         "hr-515-33.hd-600-1.ch-635-73.lg-716-82.sh-735-68",
@@ -279,7 +280,7 @@ public final class FastFoodMatch {
 
         String name = null;
 
-        for (String candidate : BOT_NAMES) {
+        for (String candidate : GameTexts.botNames("fastfood", BOT_NAMES)) {
             if (this.byName(candidate) == null) {
                 name = candidate;
                 break;

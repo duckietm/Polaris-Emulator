@@ -27,6 +27,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.core.Scheduler;
+import polaris.hotel.catalog.CatalogPaymentService;
+import polaris.hotel.permissions.Permission;
+import polaris.hotel.users.User;
+import polaris.hotel.games.GameTexts;
 
 /**
  * Habbi's Game Center for the games other than SnowStorm (which keeps its own): the free games of the day (fewer
@@ -423,7 +429,10 @@ public final class GameCenter {
                 if (what != null) given.add(what);
             }
 
-            if (!given.isEmpty()) GameRewards.tell(userId, "Bravo ! Tu gagnes " + String.join(", ", given) + ".");
+            if (!given.isEmpty()) GameRewards.tell(
+                        userId,
+                        GameTexts.text("gamecenter.reward.game", "Well done! You win %rewards%.")
+                                .replace("%rewards%", String.join(", ", given)));
         }
     }
 
@@ -461,8 +470,11 @@ public final class GameCenter {
                 if (!given.isEmpty())
                     GameRewards.tell(
                             userId,
-                            "Classement de la semaine : tu finis " + rank + (rank == 1 ? "er" : "e") + " et tu gagnes "
-                                    + String.join(", ", given) + ".");
+                            GameTexts.text(
+                                            "gamecenter.reward.week",
+                                            "The week's leaderboard: you finish #%rank% and win %rewards%.")
+                                    .replace("%rank%", String.valueOf(rank))
+                                    .replace("%rewards%", String.join(", ", given)));
             }
         }
     }

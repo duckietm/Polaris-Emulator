@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
+import polaris.hotel.games.GameTexts;
 
 /**
  * One village: up to twelve seats round the fire, the players and robots sitting on them, their roles, and the game
@@ -155,13 +156,13 @@ public final class WerewolfGame {
         "Marcel",
         "Lulu",
         "Hector",
-        "Firmin",
+        "Felix",
         "Jojo",
-        "Pépette",
-        "Germaine",
+        "Poppy",
+        "Greta",
         "Raymond",
-        "Ginette",
-        "Léon",
+        "Ginny",
+        "Leon",
         "Mimi"
     };
     private static final String[] BOT_FIGURES = {
@@ -262,12 +263,13 @@ public final class WerewolfGame {
         if (this.state == State.PLAYING) throw new WerewolfException("already_started");
         if (this.seats.size() >= this.rules.maxPlayers()) throw new WerewolfException("table_full");
 
+        String[] names = GameTexts.botNames("werewolf", BOT_NAMES);
         String name = null;
         int index = 0;
 
-        for (int candidate = 0; candidate < BOT_NAMES.length; candidate++) {
-            if (this.byName(BOT_NAMES[candidate]) == null) {
-                name = BOT_NAMES[candidate];
+        for (int candidate = 0; candidate < names.length; candidate++) {
+            if (this.byName(names[candidate]) == null) {
+                name = names[candidate];
                 index = candidate;
                 break;
             }
@@ -275,8 +277,8 @@ public final class WerewolfGame {
 
         // A big village: the names run out, the robots get a number.
         for (int number = 2; name == null; number++) {
-            for (int candidate = 0; candidate < BOT_NAMES.length && name == null; candidate++) {
-                String numbered = BOT_NAMES[candidate] + " " + number;
+            for (int candidate = 0; candidate < names.length && name == null; candidate++) {
+                String numbered = names[candidate] + " " + number;
 
                 if (this.byName(numbered) == null) {
                     name = numbered;

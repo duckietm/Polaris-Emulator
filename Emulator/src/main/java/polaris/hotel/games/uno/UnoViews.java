@@ -15,7 +15,8 @@ public final class UnoViews {
         summary.addProperty("id", table.id());
         summary.addProperty("host", host == null ? "" : host.name);
         summary.addProperty("players", table.seats().size());
-        summary.addProperty("maxPlayers", table.maxPlayers());
+        summary.addProperty("maxPlayers", table.rules().maxPlayers());
+        summary.add("rules", table.rules().toJson());
         summary.addProperty("state", table.state().name().toLowerCase());
         return summary;
     }
@@ -37,6 +38,7 @@ public final class UnoViews {
             JsonObject entry = new JsonObject();
 
             entry.addProperty("userId", seat.userId);
+            entry.addProperty("chair", seat.chair);
             entry.addProperty("name", seat.name);
             entry.addProperty("figure", seat.figure);
             entry.addProperty("gender", seat.gender);
@@ -54,6 +56,7 @@ public final class UnoViews {
         view.addProperty("colour", String.valueOf(table.colour()));
         view.addProperty("direction", table.direction());
         view.addProperty("deck", table.deckSize());
+        view.addProperty("pendingDraw", table.pendingDraw());
         view.addProperty("turnSecondsLeft", playing ? Math.max(0L, (table.turnEndsAt() - now + 999L) / 1000L) : 0L);
         view.addProperty("yourTurn", myTurn);
         view.addProperty("drew", myTurn && table.drew());
@@ -64,8 +67,8 @@ public final class UnoViews {
             for (String card : me.hand) {
                 JsonObject entry = new JsonObject();
                 boolean playable = myTurn
-                        && (!table.drew() || card.equals(table.drawnCard()))
-                        && UnoCards.playable(card, me.hand, table.top(), table.colour());
+                        ? (!table.drew() || card.equals(table.drawnCard())) && table.playable(me, card)
+                        : playing && table.mayJumpIn(me, card);
 
                 entry.addProperty("code", card);
                 entry.addProperty("playable", playable);
@@ -93,6 +96,7 @@ public final class UnoViews {
         for (UnoTable.Event event : table.log()) {
             JsonObject entry = new JsonObject();
 
+            entry.addProperty("seq", event.seq());
             entry.addProperty("type", event.type());
             entry.addProperty("name", event.name());
             entry.addProperty("arg", event.arg());

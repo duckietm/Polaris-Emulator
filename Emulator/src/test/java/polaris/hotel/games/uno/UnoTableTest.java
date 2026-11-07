@@ -14,12 +14,20 @@ class UnoTableTest {
     private static final long NOW = 1_000_000L;
 
     private static UnoTable table(int players) {
-        UnoTable table = new UnoTable(1, 6, 25_000L, new Random(7));
+        return table(players, UnoRules.standard(6, 25));
+    }
 
-        for (int id = 1; id <= players; id++) table.join(id, "P" + id, "", "M", NOW);
+    private static UnoTable table(int players, UnoRules rules) {
+        UnoTable table = new UnoTable(1, rules, new Random(7));
+
+        for (int id = 1; id <= players; id++) table.join(id, "P" + id, "", "M", id - 1, NOW);
 
         table.start(1, NOW);
         return table;
+    }
+
+    private static UnoRules rules(boolean stackTwo, boolean stackFour, boolean jumpIn, boolean noSpecialFinish) {
+        return new UnoRules(6, 7, 25, stackTwo, stackFour, jumpIn, noSpecialFinish, false, true, true);
     }
 
     private static int code(UnoException e) {
@@ -185,10 +193,10 @@ class UnoTableTest {
 
     @Test
     void robotsPlayATurnByThemselves() {
-        UnoTable table = new UnoTable(1, 4, 25_000L, new Random(3));
+        UnoTable table = new UnoTable(1, UnoRules.standard(4, 25), new Random(3));
 
-        table.join(1, "P1", "", "M", NOW);
-        table.addBot(1, NOW);
+        table.join(1, "P1", "", "M", -1, NOW);
+        table.addBot(1, -1, NOW);
         table.start(1, NOW);
 
         int robot = table.seats().get(1).userId();
@@ -218,5 +226,108 @@ class UnoTableTest {
     void robotsChooseTheirCommonestColour() {
         assertEquals('B', UnoBot.favouriteColour(List.of("WC", "B1", "B2", "R3"), "WC", new Random(1)));
         assertEquals("R7", UnoBot.choose(List.of("WF", "WC", "R7"), 'R'));
+    }
+
+    @Test
+    void stackedDrawCardsAddUpForTheNextPlayer() {
+        UnoTable table = table(3, rules(true, true, false, false));
+
+        table.arrange(1, List.of("RD", "B9", "G1"), "R5", 0);
+        table.arrange(2, List.of("BD", "WF", "G2"), "R5", 0);
+        table.arrange(1, List.of("RD", "B9", "G1"), "R5", 0);
+        table.play(1, "RD", ' ', NOW);
+
+        assertEquals(1, table.turn());
+        assertEquals(2, table.pendingDraw());
+        // Only a stacking card goes on it.
+        assertEquals(
+                "must_stack",
+                assertThrows(UnoException.class, () -> table.play(2, "G2", ' ', NOW))
+                        .code());
+
+        table.play(2, "WF", 'G', NOW);
+        assertEquals(6, table.pendingDraw());
+
+        table.draw(3, NOW);
+        assertEquals(7 + 6, table.handSizes().get(3));
+        assertEquals(0, table.pendingDraw());
+        assertEquals(0, table.turn());
+    }
+
+    @Test
+    void withoutTheFourRuleAPlusFourDoesNotGoOnAPlusTwo() {
+        UnoTable table = table(2, rules(true, false, false, false));
+
+        table.arrange(1, List.of("RD", "B9"), "R5", 0);
+        table.arrange(2, List.of("WF", "G2"), "R5", 0);
+        table.arrange(1, List.of("RD", "B9"), "R5", 0);
+        table.play(1, "RD", ' ', NOW);
+
+        assertThrows(UnoException.class, () -> table.play(2, "WF", 'G', NOW));
+    }
+
+    @Test
+    void theSameCardJumpsInOutOfTurn() {
+        UnoTable table = table(3, rules(false, false, true, false));
+
+        table.arrange(3, List.of("R5", "B1"), "R5", 0);
+
+        table.play(3, "R5", ' ', NOW);
+
+        assertEquals(0, table.turn());
+        assertEquals("R5", table.top());
+        assertEquals(1, table.handSizes().get(3));
+    }
+
+    @Test
+    void withoutTheRuleNobodyJumpsIn() {
+        UnoTable table = table(3);
+
+        table.arrange(3, List.of("R5", "B1"), "R5", 0);
+
+        assertEquals(
+                "not_your_turn",
+                assertThrows(UnoException.class, () -> table.play(3, "R5", ' ', NOW))
+                        .code());
+    }
+
+    @Test
+    void theLastCardCannotBeASpecialOneWithThatRule() {
+        UnoTable table = table(2, rules(false, false, false, true));
+
+        table.arrange(1, List.of("RS"), "R5", 0);
+
+        assertEquals(
+                "special_finish",
+                assertThrows(UnoException.class, () -> table.play(1, "RS", ' ', NOW))
+                        .code());
+    }
+
+    @Test
+    void playersChooseTheirChairAndTurnsFollowTheChairs() {
+        UnoTable table = new UnoTable(1, UnoRules.standard(4, 25), new Random(1));
+
+        table.join(1, "P1", "", "M", 5, NOW);
+        table.join(2, "P2", "", "M", 2, NOW);
+
+        assertEquals(2, table.seats().get(0).userId());
+        assertEquals(
+                "chair_taken",
+                assertThrows(UnoException.class, () -> table.sit(1, 2)).code());
+
+        table.sit(1, 0);
+        assertEquals(1, table.seats().get(0).userId());
+    }
+
+    @Test
+    void robotsCanBeTurnedOff() {
+        UnoRules noBots = new UnoRules(4, 7, 25, false, false, false, false, false, true, false);
+        UnoTable table = new UnoTable(1, noBots, new Random(1));
+
+        table.join(1, "P1", "", "M", -1, NOW);
+
+        assertEquals(
+                "no_bots",
+                assertThrows(UnoException.class, () -> table.addBot(1, -1, NOW)).code());
     }
 }

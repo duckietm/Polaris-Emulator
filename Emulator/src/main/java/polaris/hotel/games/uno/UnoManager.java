@@ -70,7 +70,7 @@ public final class UnoManager {
 
         switch (action) {
             case "create" -> this.create(userId, body, now);
-            case "join" -> this.join(userId, intOf(body, "tableId"), now);
+            case "join" -> this.join(userId, intOf(body, "tableId"), intOf(body, "chair", -1), now);
             case "leave" -> this.leave(userId);
             default -> this.onTable(userId, action, body, now);
         }
@@ -84,17 +84,22 @@ public final class UnoManager {
         if (this.tables.size() >= setting("uno.tables.max", 20)) throw new UnoException("too_many_tables");
 
         User user = this.player(userId);
-        int maxPlayers = Math.min(setting("uno.players.max", 6), Math.max(2, intOf(body, "maxPlayers")));
-        UnoTable table = new UnoTable(
-                this.nextTableId.getAndIncrement(), maxPlayers, setting("uno.turn.seconds", 25) * 1000L, this.random);
+        UnoRules rules = UnoRules.from(
+                rulesOf(body), UnoRules.standard(4, setting("uno.turn.seconds", 25)), setting("uno.players.max", 6));
+        UnoTable table = new UnoTable(this.nextTableId.getAndIncrement(), rules, this.random);
 
         table.join(
-                userId, user.getUserInfo().getUsername(), user.getUserInfo().getLook(), gender(user), now);
+                userId,
+                user.getUserInfo().getUsername(),
+                user.getUserInfo().getLook(),
+                gender(user),
+                intOf(body, "chair", -1),
+                now);
         this.tables.put(table.id(), table);
         this.tableOfUser.put(userId, table.id());
     }
 
-    private void join(int userId, int tableId, long now) {
+    private void join(int userId, int tableId, int chair, long now) {
         UnoTable table = this.tables.get(tableId);
 
         if (table == null) throw new UnoException("no_table");
@@ -110,6 +115,7 @@ public final class UnoManager {
                     user.getUserInfo().getUsername(),
                     user.getUserInfo().getLook(),
                     gender(user),
+                    chair,
                     now);
         }
 
@@ -140,7 +146,10 @@ public final class UnoManager {
             boolean playing = table.state() == UnoTable.State.PLAYING;
 
             switch (action) {
-                case "bot" -> table.addBot(userId, now);
+                case "bot" -> table.addBot(userId, intOf(body, "chair", -1), now);
+                case "sit" -> table.sit(userId, intOf(body, "chair", -1));
+                case "rules" ->
+                    table.setRules(userId, UnoRules.from(rulesOf(body), table.rules(), setting("uno.players.max", 6)));
                 case "bot/remove" -> table.removeBot(userId, intOf(body, "userId"));
                 case "start" -> table.start(userId, now);
                 case "play" -> table.play(userId, stringOf(body, "card"), firstChar(stringOf(body, "colour")), now);
@@ -283,11 +292,21 @@ public final class UnoManager {
     }
 
     private static int intOf(JsonObject body, String key) {
+        return intOf(body, key, 0);
+    }
+
+    private static int intOf(JsonObject body, String key, int fallback) {
         try {
-            return body != null && body.has(key) ? body.get(key).getAsInt() : 0;
+            return body != null && body.has(key) ? body.get(key).getAsInt() : fallback;
         } catch (RuntimeException e) {
-            return 0;
+            return fallback;
         }
+    }
+
+    private static JsonObject rulesOf(JsonObject body) {
+        return body != null && body.has("rules") && body.get("rules").isJsonObject()
+                ? body.getAsJsonObject("rules")
+                : null;
     }
 
     private static String stringOf(JsonObject body, String key) {

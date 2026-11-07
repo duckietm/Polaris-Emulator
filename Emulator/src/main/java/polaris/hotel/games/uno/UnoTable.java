@@ -3,6 +3,7 @@ package polaris.hotel.games.uno;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -10,8 +11,9 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * One UNO table: its seats (players and robots), the deck, the pile and whose turn it is. Every action takes the time
- * in milliseconds, so the rules run the same in the tests. Not thread-safe: the manager locks the table.
+ * One UNO table: eight chairs around it, the players and robots sitting on them, the deck, the pile, whose turn it is
+ * and the rules its host chose. Turns go round the chairs in order. Every action takes the time in milliseconds, so the
+ * rules run the same in the tests. Not thread-safe: the manager locks the table.
  */
 public final class UnoTable {
 
@@ -29,6 +31,7 @@ public final class UnoTable {
         final String gender;
         final boolean bot;
         final List<String> hand = new ArrayList<>();
+        int chair;
         boolean declared;
         /** When the player was left with one card without saying UNO (0: not exposed). */
         long exposedAt;
@@ -37,12 +40,13 @@ public final class UnoTable {
         long lastSeen;
         int missedTurns;
 
-        Seat(int userId, String name, String figure, String gender, boolean bot, long now) {
+        Seat(int userId, String name, String figure, String gender, boolean bot, int chair, long now) {
             this.userId = userId;
             this.name = name;
             this.figure = figure;
             this.gender = gender;
             this.bot = bot;
+            this.chair = chair;
             this.lastSeen = now;
         }
 
@@ -59,12 +63,11 @@ public final class UnoTable {
         }
     }
 
-    /** Something that happened, for the table's log: its kind, who, and a card or a count. */
-    public record Event(String type, String name, String arg) {}
+    /** Something that happened: its number (to show each once), its kind, who, and a card or a count. */
+    public record Event(long seq, String type, String name, String arg) {}
 
-    public static final int HAND_SIZE = 7;
     public static final int MIN_PLAYERS = 2;
-    private static final int LOG_SIZE = 6;
+    private static final int LOG_SIZE = 8;
     private static final int MAX_MISSED_TURNS = 3;
     private static final long BOT_DELAY_MS = 1300L;
     private static final long BOT_CATCH_MS = 2500L;
@@ -79,13 +82,12 @@ public final class UnoTable {
     private static final String[] BOT_GENDERS = {"M", "F", "M", "F", "M"};
 
     private final int id;
-    private final int maxPlayers;
-    private final long turnMs;
     private final Random random;
     private final List<Seat> seats = new ArrayList<>();
     private final Deque<String> deck = new ArrayDeque<>();
     private final List<String> pile = new ArrayList<>();
     private final Deque<Event> log = new ArrayDeque<>();
+    private UnoRules rules;
     private State state = State.WAITING;
     private char colour = 'R';
     private int turn;
@@ -94,38 +96,65 @@ public final class UnoTable {
     private long botActsAt;
     private boolean drew;
     private String drawnCard;
+    /** Cards waiting for the player whose turn it is (stacked +2 and +4). */
+    private int pendingDraw;
+
     private int winnerId;
     private String winnerName = "";
     private long version;
+    private long eventSeq;
     private int nextBotId = -1;
 
-    public UnoTable(int id, int maxPlayers, long turnMs, Random random) {
+    public UnoTable(int id, UnoRules rules, Random random) {
         this.id = id;
-        this.maxPlayers = Math.max(MIN_PLAYERS, Math.min(6, maxPlayers));
-        this.turnMs = turnMs;
+        this.rules = rules;
         this.random = random;
     }
 
     // ---- Seats
 
-    public void join(int userId, String name, String figure, String gender, long now) {
+    /** Sits a player down, on the chair asked for when it is free, otherwise on the first free one. */
+    public void join(int userId, String name, String figure, String gender, int chair, long now) {
         if (this.state == State.PLAYING) throw new UnoException("already_started");
-        if (this.seats.size() >= this.maxPlayers) throw new UnoException("table_full");
         if (this.seat(userId) != null) return;
+        if (this.seats.size() >= this.rules.maxPlayers()) throw new UnoException("table_full");
 
-        this.seats.add(new Seat(userId, name, figure, gender, false, now));
+        this.seats.add(new Seat(userId, name, figure, gender, false, this.freeChair(chair), now));
+        this.sortSeats();
         this.event("join", name, "");
     }
 
-    public void addBot(int hostId, long now) {
-        this.requireHost(hostId);
+    /** Moves a player to another free chair, before the game. */
+    public void sit(int userId, int chair) {
+        Seat seat = this.seat(userId);
+
+        if (seat == null) throw new UnoException("no_table");
         if (this.state == State.PLAYING) throw new UnoException("already_started");
-        if (this.seats.size() >= this.maxPlayers) throw new UnoException("table_full");
+        if (chair < 0 || chair >= UnoRules.MAX_CHAIRS || this.chairTaken(chair)) throw new UnoException("chair_taken");
+
+        seat.chair = chair;
+        this.sortSeats();
+        this.version++;
+    }
+
+    public void addBot(int hostId, int chair, long now) {
+        this.requireHost(hostId);
+        if (!this.rules.bots()) throw new UnoException("no_bots");
+        if (this.state == State.PLAYING) throw new UnoException("already_started");
+        if (this.seats.size() >= this.rules.maxPlayers()) throw new UnoException("table_full");
 
         int index = (-this.nextBotId - 1) % BOT_NAMES.length;
-        Seat bot = new Seat(this.nextBotId--, BOT_NAMES[index], BOT_FIGURES[index], BOT_GENDERS[index], true, now);
+        Seat bot = new Seat(
+                this.nextBotId--,
+                BOT_NAMES[index],
+                BOT_FIGURES[index],
+                BOT_GENDERS[index],
+                true,
+                this.freeChair(chair),
+                now);
 
         this.seats.add(bot);
+        this.sortSeats();
         this.event("join", bot.name, "");
     }
 
@@ -139,6 +168,23 @@ public final class UnoTable {
 
         this.seats.remove(bot);
         this.event("leave", bot.name, "");
+    }
+
+    /** The host changes the rules before the game; robots go when they are no longer allowed. */
+    public void setRules(int hostId, UnoRules next) {
+        this.requireHost(hostId);
+        if (this.state == State.PLAYING) throw new UnoException("already_started");
+        if (next.maxPlayers() < this.seats.size() && (next.bots() || this.humans() > next.maxPlayers())) {
+            throw new UnoException("too_many_seated");
+        }
+
+        this.rules = next;
+
+        if (!next.bots()) this.seats.removeIf(seat -> seat.bot);
+
+        while (this.seats.size() > next.maxPlayers()) this.seats.remove(this.seats.size() - 1);
+
+        this.event("rules", "", "");
     }
 
     /** A player leaves: during a game their cards go under the deck, and a last player standing wins. */
@@ -196,6 +242,7 @@ public final class UnoTable {
         this.winnerId = 0;
         this.winnerName = "";
         this.direction = 1;
+        this.pendingDraw = 0;
 
         for (Seat seat : this.seats) {
             seat.hand.clear();
@@ -203,7 +250,7 @@ public final class UnoTable {
             seat.exposedAt = 0L;
             seat.missedTurns = 0;
 
-            for (int card = 0; card < HAND_SIZE; card++) seat.hand.add(this.deck.pollFirst());
+            for (int card = 0; card < this.rules.handSize(); card++) seat.hand.add(this.deck.pollFirst());
         }
 
         // The first card of the pile is a number card.
@@ -222,16 +269,34 @@ public final class UnoTable {
         this.startTurn(now);
     }
 
+    /**
+     * Plays a card: on one's turn, or out of turn with the very same card as the pile when the table jumps in (the turn
+     * then goes on from that player).
+     */
     public void play(int userId, String card, char chosenColour, long now) {
-        Seat seat = this.current(userId);
+        if (this.state != State.PLAYING) throw new UnoException("not_playing");
 
+        Seat seat = this.seat(userId);
+
+        if (seat == null) throw new UnoException("not_playing");
         if (!UnoCards.isCard(card) || !seat.hand.contains(card)) throw new UnoException("no_card");
-        if (this.drew && !card.equals(this.drawnCard)) throw new UnoException("drawn_only");
-        if (!UnoCards.matches(card, this.top(), this.colour)) throw new UnoException("not_playable");
-        if ("WF".equals(card) && !UnoCards.mayPlayDrawFour(this.without(seat.hand, card), this.colour)) {
-            throw new UnoException("draw_four_rule");
+
+        int index = this.seats.indexOf(seat);
+        boolean jumping = index != this.turn;
+
+        if (jumping) {
+            if (!this.mayJumpIn(seat, card)) throw new UnoException("not_your_turn");
+        } else {
+            if (this.drew && !card.equals(this.drawnCard)) throw new UnoException("drawn_only");
+            if (!this.playable(seat, card)) throw new UnoException(this.refusal(seat, card));
         }
+
         if (UnoCards.isWild(card) && !UnoCards.isColour(chosenColour)) throw new UnoException("choose_colour");
+
+        if (jumping) {
+            this.turn = index;
+            this.event("jump", seat.name, card);
+        }
 
         seat.hand.remove(card);
         seat.missedTurns = 0;
@@ -244,13 +309,14 @@ public final class UnoTable {
             return;
         }
 
-        if (seat.hand.size() == 1 && !seat.declared) {
+        if (seat.hand.size() == 1 && !seat.declared && this.rules.unoPenalty()) {
             seat.exposedAt = now;
             seat.exposureChecked = false;
         }
 
         char value = card.charAt(1);
         boolean twoPlayers = this.seats.size() == 2;
+        boolean stacking = this.rules.stackTwo() || this.rules.stackFour();
 
         if (value == 'R') {
             if (twoPlayers) {
@@ -262,35 +328,66 @@ public final class UnoTable {
         } else if (value == 'S') {
             this.advance(2, now);
         } else if (value == 'D' || value == 'F') {
-            Seat next = this.seats.get(this.index(1));
             int count = value == 'D' ? 2 : 4;
 
-            this.give(next, count);
-            this.event("draw_penalty", next.name, String.valueOf(count));
-            this.advance(2, now);
+            if (stacking) {
+                // The next player stacks a card on it or draws them all.
+                this.pendingDraw += count;
+                this.advance(1, now);
+            } else {
+                Seat next = this.seats.get(this.index(1));
+
+                this.give(next, count);
+                this.event("draw_penalty", next.name, String.valueOf(count));
+                this.advance(2, now);
+            }
         } else {
             this.advance(1, now);
         }
     }
 
-    /** Draws one card; a card that cannot be played ends the turn, a playable one may be played or kept. */
+    /**
+     * Draws: the stacked cards when some wait (then the turn passes), otherwise one card (or until one fits, with that
+     * rule); a card that cannot be played ends the turn, a playable one may be played or kept.
+     */
     public void draw(int userId, long now) {
         Seat seat = this.current(userId);
 
         if (this.drew) throw new UnoException("already_drew");
 
-        List<String> drawn = this.give(seat, 1);
-
         seat.missedTurns = 0;
-        this.event("draw", seat.name, "1");
 
-        if (drawn.isEmpty() || !UnoCards.playable(drawn.get(0), seat.hand, this.top(), this.colour)) {
+        if (this.pendingDraw > 0) {
+            int count = this.pendingDraw;
+
+            this.pendingDraw = 0;
+            this.give(seat, count);
+            this.event("draw_penalty", seat.name, String.valueOf(count));
+            this.advance(1, now);
+            return;
+        }
+
+        String drawn = null;
+        int count = 0;
+
+        do {
+            List<String> given = this.give(seat, 1);
+
+            if (given.isEmpty()) break;
+
+            count++;
+            drawn = given.get(0);
+        } while (this.rules.drawUntilPlayable() && !this.playable(seat, drawn) && count < 30);
+
+        this.event("draw", seat.name, String.valueOf(count));
+
+        if (drawn == null || !this.playable(seat, drawn)) {
             this.advance(1, now);
             return;
         }
 
         this.drew = true;
-        this.drawnCard = drawn.get(0);
+        this.drawnCard = drawn;
         this.version++;
     }
 
@@ -324,7 +421,7 @@ public final class UnoTable {
         Seat target = this.seat(targetId);
 
         if (catcher == null || target == null || this.state != State.PLAYING) throw new UnoException("not_playing");
-        if (!catchable(target)) throw new UnoException("no_catch");
+        if (!this.rules.unoPenalty() || !catchable(target)) throw new UnoException("no_catch");
 
         target.exposedAt = 0L;
         this.give(target, 2);
@@ -332,8 +429,8 @@ public final class UnoTable {
     }
 
     /**
-     * The clock: a player who let the time run out draws and passes (three times running, they leave), robots play,
-     * and a robot may catch a player who forgot UNO. Answers the ids of the players who were removed.
+     * The clock: a player who let the time run out draws (the stacked cards too) and passes (three times running, they
+     * leave), robots play, jump in and catch a player who forgot UNO. Answers the ids of the players who were removed.
      */
     public List<Integer> tick(long now) {
         List<Integer> removed = new ArrayList<>();
@@ -341,7 +438,7 @@ public final class UnoTable {
         if (this.state != State.PLAYING || this.seats.isEmpty()) return removed;
 
         this.botCatches(now);
-
+        if (this.state == State.PLAYING) this.botJumps(now);
         if (this.state != State.PLAYING) return removed;
 
         Seat seat = this.seats.get(this.turn);
@@ -354,6 +451,11 @@ public final class UnoTable {
             if (seat.missedTurns >= MAX_MISSED_TURNS) {
                 removed.add(seat.userId);
                 this.leave(seat.userId);
+            } else if (this.pendingDraw > 0) {
+                int missed = seat.missedTurns;
+
+                this.draw(seat.userId, now);
+                seat.missedTurns = missed;
             } else {
                 if (!this.drew) this.give(seat, 1);
                 this.event("timeout", seat.name, "");
@@ -365,6 +467,8 @@ public final class UnoTable {
     }
 
     private void botCatches(long now) {
+        if (!this.rules.unoPenalty()) return;
+
         Seat catcher = null;
 
         for (Seat seat : this.seats) {
@@ -386,12 +490,27 @@ public final class UnoTable {
         }
     }
 
+    /** A robot holding the very same card as the pile sometimes jumps in. */
+    private void botJumps(long now) {
+        if (!this.rules.jumpIn() || now - this.turnEndsAt + this.turnMs() < 700L) return;
+
+        for (int index = 0; index < this.seats.size(); index++) {
+            Seat seat = this.seats.get(index);
+
+            if (!seat.bot || index == this.turn || !seat.hand.contains(this.top())) continue;
+            if (!this.mayJumpIn(seat, this.top()) || this.random.nextInt(100) >= 15) continue;
+
+            this.play(seat.userId, this.top(), ' ', now);
+            return;
+        }
+    }
+
     private void botPlays(Seat bot, long now) {
         List<String> choices = new ArrayList<>();
 
         for (String card : bot.hand) {
             if (this.drew && !card.equals(this.drawnCard)) continue;
-            if (UnoCards.playable(card, bot.hand, this.top(), this.colour)) choices.add(card);
+            if (this.playable(bot, card)) choices.add(card);
         }
 
         if (choices.isEmpty()) {
@@ -407,6 +526,41 @@ public final class UnoTable {
         this.play(bot.userId, card, UnoBot.favouriteColour(bot.hand, card, this.random), now);
     }
 
+    // ---- What may be played
+
+    /** Whether this card of the player whose turn it is can go on the pile now, with the table's rules. */
+    public boolean playable(Seat seat, String card) {
+        if (this.rules.noSpecialFinish() && seat.hand.size() == 1 && !UnoCards.isNumber(card)) return false;
+
+        if (this.pendingDraw > 0) {
+            char top = this.top().charAt(1);
+
+            if (card.equals("WF")) return this.rules.stackFour();
+
+            return card.charAt(1) == 'D' && top == 'D' && this.rules.stackTwo();
+        }
+
+        return UnoCards.playable(card, seat.hand, this.top(), this.colour);
+    }
+
+    /** Out of turn: the very same card as the pile (a number or an action, not a wild), with nothing stacked. */
+    public boolean mayJumpIn(Seat seat, String card) {
+        return this.rules.jumpIn()
+                && this.state == State.PLAYING
+                && this.pendingDraw == 0
+                && !UnoCards.isWild(card)
+                && card.equals(this.top())
+                && !(this.rules.noSpecialFinish() && seat.hand.size() == 1 && !UnoCards.isNumber(card));
+    }
+
+    private String refusal(Seat seat, String card) {
+        if (this.rules.noSpecialFinish() && seat.hand.size() == 1 && !UnoCards.isNumber(card)) return "special_finish";
+        if (this.pendingDraw > 0) return "must_stack";
+        if ("WF".equals(card)) return "draw_four_rule";
+
+        return "not_playable";
+    }
+
     // ---- Turns
 
     private void advance(int steps, long now) {
@@ -418,10 +572,14 @@ public final class UnoTable {
         return Math.floorMod(this.turn + steps * this.direction, this.seats.size());
     }
 
+    private long turnMs() {
+        return this.rules.turnSeconds() * 1000L;
+    }
+
     private void startTurn(long now) {
         this.drew = false;
         this.drawnCard = null;
-        this.turnEndsAt = now + this.turnMs;
+        this.turnEndsAt = now + this.turnMs();
         this.botActsAt = now + BOT_DELAY_MS + this.random.nextInt(900);
         this.version++;
     }
@@ -430,6 +588,7 @@ public final class UnoTable {
         this.state = State.FINISHED;
         this.winnerId = seat.userId;
         this.winnerName = seat.name;
+        this.pendingDraw = 0;
         this.event("win", seat.name, "");
     }
 
@@ -466,11 +625,47 @@ public final class UnoTable {
     }
 
     private void event(String type, String name, String arg) {
-        this.log.addLast(new Event(type, name, arg));
+        this.log.addLast(new Event(++this.eventSeq, type, name, arg));
 
         while (this.log.size() > LOG_SIZE) this.log.pollFirst();
 
         this.version++;
+    }
+
+    // ---- Chairs
+
+    private int freeChair(int wanted) {
+        if (wanted >= 0 && wanted < UnoRules.MAX_CHAIRS && !this.chairTaken(wanted)) return wanted;
+
+        // Spread out: the first free chair in an order that keeps the players facing each other.
+        for (int chair : new int[] {0, 4, 2, 6, 1, 5, 3, 7}) {
+            if (!this.chairTaken(chair)) return chair;
+        }
+
+        throw new UnoException("table_full");
+    }
+
+    private boolean chairTaken(int chair) {
+        for (Seat seat : this.seats) {
+            if (seat.chair == chair) return true;
+        }
+
+        return false;
+    }
+
+    private void sortSeats() {
+        this.seats.sort(Comparator.comparingInt(seat -> seat.chair));
+        this.version++;
+    }
+
+    private int humans() {
+        int count = 0;
+
+        for (Seat seat : this.seats) {
+            if (!seat.bot) count++;
+        }
+
+        return count;
     }
 
     // ---- Lookups
@@ -489,13 +684,6 @@ public final class UnoTable {
         if (this.hostId() != userId) throw new UnoException("not_host");
     }
 
-    private List<String> without(List<String> hand, String card) {
-        List<String> rest = new ArrayList<>(hand);
-
-        rest.remove(card);
-        return rest;
-    }
-
     static boolean catchable(Seat seat) {
         return seat.hand.size() == 1 && !seat.declared && seat.exposedAt > 0L;
     }
@@ -508,7 +696,7 @@ public final class UnoTable {
         return null;
     }
 
-    /** The host is the first player (not robot) at the table. */
+    /** The host is the first player (not robot) who sat down, in chair order. */
     public int hostId() {
         for (Seat seat : this.seats) {
             if (!seat.bot) return seat.userId;
@@ -529,8 +717,8 @@ public final class UnoTable {
         return this.id;
     }
 
-    public int maxPlayers() {
-        return this.maxPlayers;
+    public UnoRules rules() {
+        return this.rules;
     }
 
     public State state() {
@@ -563,6 +751,10 @@ public final class UnoTable {
 
     public String drawnCard() {
         return this.drawnCard;
+    }
+
+    public int pendingDraw() {
+        return this.pendingDraw;
     }
 
     public int deckSize() {

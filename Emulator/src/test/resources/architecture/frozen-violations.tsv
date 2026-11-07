@@ -444,6 +444,10 @@ U|polaris/hotel/games/freeze/FreezeGame.java|CALL|getGameEnvironment|2
 U|polaris/hotel/games/freeze/FreezeGame.java|CALL|getRandom|2
 U|polaris/hotel/games/freeze/FreezeGame.java|CALL|getThreading|3
 U|polaris/hotel/games/freeze/FreezeGamePlayer.java|CALL|getGameEnvironment|1
+U|polaris/hotel/games/hall/HallManager.java|CALL|getConfig|2
+U|polaris/hotel/games/hall/HallManager.java|CALL|getDatabase|1
+U|polaris/hotel/games/hall/HallManager.java|CALL|getGameEnvironment|1
+U|polaris/hotel/games/hall/HallManager.java|CALL|getThreading|1
 U|polaris/hotel/games/snowwar/SnowWarGame.java|CALL|getConfig|4
 U|polaris/hotel/games/snowwar/SnowWarGame.java|CALL|getGameEnvironment|1
 U|polaris/hotel/games/snowwar/SnowWarGame.java|CALL|getThreading|4

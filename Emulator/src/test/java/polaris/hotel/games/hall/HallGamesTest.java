@@ -1,0 +1,423 @@
+package polaris.hotel.games.hall;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import java.util.List;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
+
+class HallGamesTest {
+
+    private static final long NOW = 1_000_000L;
+
+    private static JsonObject at(int x, int y) {
+        JsonObject move = new JsonObject();
+
+        move.addProperty("x", x);
+        move.addProperty("y", y);
+        return move;
+    }
+
+    private static JsonObject chess(String from, String to) {
+        JsonObject move = new JsonObject();
+
+        move.addProperty("from", square(from));
+        move.addProperty("to", square(to));
+        return move;
+    }
+
+    private static int square(String name) {
+        return (8 - (name.charAt(1) - '0')) * 8 + (name.charAt(0) - 'a');
+    }
+
+    // ---- Tic-tac-toe
+
+    @Test
+    void fiveInARowWins() {
+        TicTacToe game = new TicTacToe();
+
+        game.start(2, new Random(1));
+
+        for (int i = 0; i < 4; i++) {
+            game.play(0, at(5 + i, 5));
+            game.play(1, at(5 + i, 8));
+        }
+
+        assertThrows(HallException.class, () -> game.play(1, at(0, 0)));
+        assertThrows(HallException.class, () -> game.play(0, at(5, 5)));
+
+        game.play(0, at(9, 5));
+
+        assertTrue(game.finished());
+        assertEquals(List.of(0), game.winners());
+        assertEquals(5, game.view(0).getAsJsonArray("line").size());
+    }
+
+    @Test
+    void theTicTacToeRobotBlocksFour() {
+        TicTacToe game = new TicTacToe();
+
+        game.start(2, new Random(1));
+
+        for (int i = 0; i < 3; i++) {
+            game.play(0, at(3 + i, 3));
+            game.play(1, at(10 + i, 15));
+        }
+
+        game.play(0, at(6, 3));
+        game.bot(1, new Random(2));
+
+        assertTrue(game.cell(2, 3) == 2 || game.cell(7, 3) == 2);
+    }
+
+    // ---- Four in a row
+
+    @Test
+    void fourDiscsInAColumnWin() {
+        ConnectFour game = new ConnectFour();
+
+        game.start(2, new Random(1));
+
+        for (int i = 0; i < 3; i++) {
+            game.play(0, at(0, 0));
+            game.play(1, at(1, 0));
+        }
+
+        game.play(0, at(0, 0));
+
+        assertTrue(game.finished());
+        assertEquals(List.of(0), game.winners());
+    }
+
+    @Test
+    void aFullColumnRefusesDiscs() {
+        ConnectFour game = new ConnectFour();
+
+        game.start(2, new Random(1));
+
+        for (int i = 0; i < 6; i++) game.play(i % 2, at(3, 0));
+
+        assertEquals(
+                "bad_move",
+                assertThrows(HallException.class, () -> game.play(0, at(3, 0))).code());
+    }
+
+    @Test
+    void theFourInARowRobotTakesAWin() {
+        ConnectFour game = new ConnectFour();
+
+        game.start(2, new Random(1));
+        game.play(0, at(0, 0));
+        game.play(1, at(3, 0));
+        game.play(0, at(0, 0));
+        game.play(1, at(4, 0));
+        game.play(0, at(6, 0));
+        game.play(1, at(5, 0));
+        game.play(0, at(6, 0));
+        game.bot(1, new Random(3));
+
+        assertTrue(game.finished());
+        assertEquals(List.of(1), game.winners());
+    }
+
+    // ---- Battleships
+
+    @Test
+    void aRandomFleetIsValid() {
+        for (int seed = 0; seed < 50; seed++) {
+            assertTrue(Battleships.valid(Battleships.randomFleet(new Random(seed))));
+        }
+    }
+
+    @Test
+    void shipsMayNotTouch() {
+        JsonObject move = new JsonObject();
+        JsonArray ships = new JsonArray();
+        int[][] layout = {
+            {0, 0, 5},
+            {0, 2, 4},
+            {0, 3, 4},
+            {0, 6, 3},
+            {0, 8, 3},
+            {0, 10, 3},
+            {7, 0, 2},
+            {7, 2, 2},
+            {7, 4, 2},
+            {7, 6, 2}
+        };
+
+        for (int[] ship : layout) {
+            JsonObject entry = new JsonObject();
+
+            entry.addProperty("x", ship[0]);
+            entry.addProperty("y", ship[1]);
+            entry.addProperty("length", ship[2]);
+            entry.addProperty("vertical", false);
+            ships.add(entry);
+        }
+
+        move.add("ships", ships);
+
+        Battleships game = new Battleships();
+
+        game.start(2, new Random(1));
+
+        assertEquals(
+                "bad_fleet",
+                assertThrows(HallException.class, () -> game.play(0, move)).code());
+    }
+
+    @Test
+    void aHitShootsAgainAMissPasses() {
+        Battleships game = new Battleships();
+        JsonObject random = new JsonObject();
+
+        random.addProperty("random", true);
+        game.start(2, new Random(1));
+        game.play(0, random);
+        assertTrue(game.waitingFor(1));
+        game.play(1, random);
+        assertFalse(game.placing());
+
+        JsonObject view = game.view(0);
+        JsonObject theirSea = view.getAsJsonArray("seas").get(1).getAsJsonObject();
+
+        assertEquals(0, theirSea.getAsJsonArray("ships").size());
+        assertEquals(
+                10,
+                game.view(1)
+                        .getAsJsonArray("seas")
+                        .get(1)
+                        .getAsJsonObject()
+                        .getAsJsonArray("ships")
+                        .size());
+
+        // Shoot every cell of seat 1's sea in order: the turn only passes on a miss.
+        for (int y = 0; y < Battleships.SIZE && !game.finished(); y++) {
+            for (int x = 0; x < Battleships.SIZE && !game.finished(); x++) {
+                while (!game.finished() && game.waitingFor(1)) game.bot(1, new Random(x + y));
+
+                if (!game.finished()) game.play(0, at(x, y));
+            }
+        }
+
+        assertTrue(game.finished());
+        assertEquals(1, game.winners().size());
+    }
+
+    // ---- Chess
+
+    @Test
+    void foolsMate() {
+        Chess game = new Chess();
+
+        game.start(2, new Random(1));
+        game.play(0, chess("f2", "f3"));
+        game.play(1, chess("e7", "e5"));
+        game.play(0, chess("g2", "g4"));
+
+        assertThrows(HallException.class, () -> game.play(1, chess("d8", "d4")));
+
+        game.play(1, chess("d8", "h4"));
+
+        assertTrue(game.finished());
+        assertEquals(List.of(1), game.winners());
+        assertEquals("checkmate", game.view(0).get("ending").getAsString());
+    }
+
+    @Test
+    void castlingEnPassantAndPromotion() {
+        Chess game = new Chess();
+
+        game.start(2, new Random(1));
+        game.play(0, chess("e2", "e4"));
+        game.play(1, chess("a7", "a6"));
+        game.play(0, chess("e4", "e5"));
+        game.play(1, chess("d7", "d5"));
+        game.play(0, chess("e5", "d6"));
+
+        assertEquals(0, game.at(square("d5")));
+        assertEquals(Chess.PAWN, game.at(square("d6")));
+
+        game.play(1, chess("a6", "a5"));
+        game.play(0, chess("g1", "f3"));
+        game.play(1, chess("a5", "a4"));
+        game.play(0, chess("f1", "e2"));
+        game.play(1, chess("a4", "a3"));
+        game.play(0, chess("e1", "g1"));
+
+        assertEquals(Chess.KING, game.at(square("g1")));
+        assertEquals(Chess.ROOK, game.at(square("f1")));
+
+        game.play(1, chess("a3", "b2"));
+        game.play(0, chess("d6", "c7"));
+        game.play(1, chess("b2", "a1"));
+
+        assertEquals(-Chess.QUEEN, game.at(square("a1")));
+    }
+
+    @Test
+    void stalemateIsADraw() {
+        Chess game = new Chess();
+
+        game.start(2, new Random(1));
+        game.setUp(
+                "k......." + "........" + ".Q......" + "........" + "........" + "........" + "........" + "......K.",
+                0);
+        game.play(0, chess("b6", "c7"));
+
+        assertTrue(game.finished());
+        assertEquals(List.of(), game.winners());
+        assertEquals("stalemate", game.view(0).get("ending").getAsString());
+    }
+
+    @Test
+    void theChessRobotTakesAFreeQueen() {
+        Chess game = new Chess();
+
+        game.start(2, new Random(1));
+        game.play(0, chess("e2", "e4"));
+        game.play(1, chess("d7", "d5"));
+        game.play(0, chess("d1", "h5"));
+        game.play(1, chess("g8", "f6"));
+        game.play(0, chess("h5", "d5"));
+
+        game.bot(1, new Random(4));
+
+        assertTrue(game.at(square("d5")) < 0);
+    }
+
+    // ---- Poker
+
+    @Test
+    void pokerHandsInOrder() {
+        long high = Poker.value(List.of("h2", "d5", "c9", "s11", "h13"));
+        long pair = Poker.value(List.of("h2", "d2", "c9", "s11", "h13"));
+        long twoPairs = Poker.value(List.of("h2", "d2", "c9", "s9", "h13"));
+        long three = Poker.value(List.of("h2", "d2", "c2", "s9", "h13"));
+        long wheel = Poker.value(List.of("h1", "d2", "c3", "s4", "h5"));
+        long straight = Poker.value(List.of("h6", "d2", "c3", "s4", "h5"));
+        long flush = Poker.value(List.of("h2", "h5", "h9", "h11", "h13"));
+        long full = Poker.value(List.of("h2", "d2", "c2", "s9", "h9"));
+        long four = Poker.value(List.of("h2", "d2", "c2", "s2", "h9"));
+        long royal = Poker.value(List.of("s10", "s11", "s12", "s13", "s1"));
+        long five = Poker.value(List.of("h2", "d2", "c2", "s2", Poker.JOKER));
+
+        assertTrue(high < pair && pair < twoPairs && twoPairs < three && three < wheel && wheel < straight);
+        assertTrue(straight < flush && flush < full && full < four && four < royal && royal < five);
+        assertEquals(Poker.ROYAL_FLUSH, Poker.kind(List.of("s10", "s11", "s12", Poker.JOKER, "s1")));
+        assertTrue(Poker.value(List.of("h13", "d13", "c9", "s4", "h2"))
+                > Poker.value(List.of("h12", "d12", "c1", "s9", "h7")));
+    }
+
+    @Test
+    void pokerShowsTheHandsOnceEverybodyChanged() {
+        Poker game = new Poker();
+
+        game.start(3, new Random(7));
+
+        assertEquals(
+                "",
+                game.view(0)
+                        .getAsJsonArray("hands")
+                        .get(1)
+                        .getAsJsonObject()
+                        .getAsJsonArray("cards")
+                        .get(0)
+                        .getAsString());
+
+        JsonObject change = new JsonObject();
+        JsonArray cards = new JsonArray();
+
+        cards.add(0);
+        cards.add(4);
+        change.add("change", cards);
+        game.play(0, change);
+        game.bot(1, new Random(1));
+
+        assertFalse(game.finished());
+
+        game.bot(2, new Random(2));
+
+        assertTrue(game.finished());
+        assertFalse(game.winners().isEmpty());
+        assertFalse(game.view(0)
+                .getAsJsonArray("hands")
+                .get(1)
+                .getAsJsonObject()
+                .getAsJsonArray("cards")
+                .get(0)
+                .getAsString()
+                .isEmpty());
+    }
+
+    // ---- The tables
+
+    @Test
+    void robotsPlayWholeGamesOfEveryKind() {
+        for (HallGames.Kind kind : HallGames.KINDS) {
+            for (int round = 0; round < 3; round++) {
+                HallTable table = new HallTable(1, kind, kind.seats(), true, 60_000L, new Random(round * 31 + 7));
+
+                table.join(1, "P1", "", "M", NOW);
+
+                while (table.seats().size() < kind.seats()) table.addBot(1, NOW);
+
+                table.start(1, NOW);
+
+                long now = NOW;
+
+                // The person plays as a robot would, out of time each move (at most twice, then a robot steps in).
+                for (int step = 0; step < 4000 && table.state() == HallTable.State.PLAYING; step++) {
+                    now += 2_000L;
+
+                    if (table.game().waitingFor(0)) table.game().bot(0, new Random(step));
+
+                    table.advance(now);
+                }
+
+                assertEquals(HallTable.State.FINISHED, table.state(), kind.name());
+                assertTrue(table.takeRecord());
+            }
+        }
+    }
+
+    @Test
+    void aPlayerOutOfTimeLosesAfterThreeTimes() {
+        HallTable table = new HallTable(1, HallGames.kind("connect4"), 2, true, 10_000L, new Random(1));
+
+        table.join(1, "P1", "", "M", NOW);
+        table.addBot(1, NOW);
+        table.start(1, NOW);
+
+        long now = NOW;
+
+        for (int i = 0; i < 400 && table.state() == HallTable.State.PLAYING; i++) {
+            now += 1_000L;
+            table.advance(now);
+        }
+
+        assertEquals(HallTable.State.FINISHED, table.state());
+        assertEquals(1, table.seats().get(1).wins() + table.seats().get(0).wins());
+    }
+
+    @Test
+    void leavingAGameLosesIt() {
+        HallTable table = new HallTable(1, HallGames.kind("chess"), 2, true, 60_000L, new Random(1));
+
+        table.join(1, "P1", "", "M", NOW);
+        table.join(2, "P2", "", "F", NOW);
+        table.start(1, NOW);
+        table.leave(2, NOW);
+
+        assertEquals(1, table.results().get(0)[0]);
+        assertEquals(1, table.results().get(0)[1]);
+        assertEquals(HallTable.State.WAITING, table.state());
+        assertEquals(1, table.seats().size());
+    }
+}

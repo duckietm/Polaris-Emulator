@@ -29,6 +29,8 @@ public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
         "badgeLeaderboardHttpHandler",
         "blockingHttpAdmissionUno",
         "unoHttpHandler",
+        "blockingHttpAdmissionWerewolf",
+        "werewolfHttpHandler",
         "blockingHttpAdmissionStats",
         "emuStatsHttpHandler",
     };

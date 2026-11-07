@@ -38,8 +38,20 @@ public class UnoHttpHandler extends ChannelInboundHandlerAdapter {
 
     static final String BASE_PATH = "/api/uno";
     private static final int MAX_JSON_BYTES = 2 * 1024;
-    private static final Set<String> ACTIONS =
-            Set.of("create", "join", "leave", "bot", "bot/remove", "start", "play", "draw", "pass", "uno", "catch");
+    private static final Set<String> ACTIONS = Set.of(
+            "create",
+            "join",
+            "leave",
+            "sit",
+            "rules",
+            "bot",
+            "bot/remove",
+            "start",
+            "play",
+            "draw",
+            "pass",
+            "uno",
+            "catch");
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {

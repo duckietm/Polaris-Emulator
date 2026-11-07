@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.items.interactions.InteractionAreaHideControl;
+import polaris.hotel.items.interactions.InteractionArrow;
 import polaris.hotel.items.interactions.InteractionBackgroundToner;
 import polaris.hotel.items.interactions.InteractionBadgeDisplay;
 import polaris.hotel.items.interactions.InteractionBlackHole;
@@ -554,6 +555,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("cannon", InteractionCannon.class));
         this.interactionsList.add(new ItemInteraction("teleport", InteractionTeleport.class));
         this.interactionsList.add(new ItemInteraction("teleporttile", InteractionTeleportTile.class));
+        this.interactionsList.add(new ItemInteraction("arrow", InteractionArrow.class));
         this.interactionsList.add(new ItemInteraction("crackable", InteractionCrackable.class));
         this.interactionsList.add(new ItemInteraction("crackable_master", InteractionCrackableMaster.class));
         this.interactionsList.add(new ItemInteraction("nest", InteractionNest.class));

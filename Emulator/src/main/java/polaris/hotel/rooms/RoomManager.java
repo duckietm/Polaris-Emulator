@@ -34,6 +34,7 @@ import polaris.hotel.games.tag.IceTagGame;
 import polaris.hotel.games.tag.RollerskateGame;
 import polaris.hotel.games.wired.WiredGame;
 import polaris.hotel.guilds.Guild;
+import polaris.hotel.items.interactions.InteractionArrow;
 import polaris.hotel.items.interactions.InteractionWired;
 import polaris.hotel.items.interactions.wired.chest.ChestAutoLock;
 import polaris.hotel.messenger.MessengerBuddy;
@@ -801,6 +802,9 @@ public class RoomManager {
                 if (topItem != null) {
                     user.getUserInfo().setRoomEntryTeleportId(topItem.getId());
                     user.getRoomUnit().setRotation(RoomUserRotation.values()[topItem.getRotation()]);
+                }
+                if (topItem instanceof InteractionArrow arrow) {
+                    InteractionArrow.arrive(user.getRoomUnit(), arrow);
                 }
             }
         }

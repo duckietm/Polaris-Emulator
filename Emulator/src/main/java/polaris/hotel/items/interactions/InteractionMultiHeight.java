@@ -106,14 +106,30 @@ public class InteractionMultiHeight extends UserItem implements VariableHeightIt
                     unit.sitUpdate = true;
                     unit.statusUpdate(true);
                 } else {
-                    unit.setZ(unit.getCurrentLocation().getStackHeight());
-                    unit.setPreviousLocationZ(unit.getZ());
+                    double z = standingHeight(item, room, tile);
+                    unit.setZ(z);
+                    unit.setPreviousLocationZ(z);
                     unit.statusUpdate(true);
                 }
             }
         }
 
         // room.sendComposer(new RoomUserStatusComposer(updatedUnits, true).compose());
+    }
+
+    /**
+     * The height a user stands at on the furni after its state changed: on its top, as a step onto it puts it. The
+     * tile's stack height is not used for it: a furni nobody may stack on (allow_stack 0) gives the floor height
+     * there, and the user sank to the floor while the furni stayed up.
+     */
+    static double standingHeight(UserItem item, Room room, RoomTile tile) {
+        UserItem top = room.getTopItemAt(tile.x, tile.y);
+
+        if (top == null || top.equals(item)) {
+            return item.getZ() + Item.getCurrentHeight(item);
+        }
+
+        return tile.getStackHeight();
     }
 
     @Override

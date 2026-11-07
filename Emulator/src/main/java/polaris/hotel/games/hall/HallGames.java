@@ -16,7 +16,8 @@ public final class HallGames {
             new Kind("poker", 2, 4, 4),
             new Kind("snails", 2, 6, 6),
             new Kind("quiz", 2, 8, 6),
-            new Kind("tetris", 2, 4, 2));
+            new Kind("tetris", 2, 4, 2),
+            new Kind("diving", 2, 8, 4));
 
     private HallGames() {}
 
@@ -38,6 +39,7 @@ public final class HallGames {
             case "snails" -> new SnailRace();
             case "quiz" -> new Quiz(QuizBank.QUESTIONS);
             case "tetris" -> new TetrisDuel();
+            case "diving" -> new Diving();
             default -> throw new HallException("no_game");
         };
     }

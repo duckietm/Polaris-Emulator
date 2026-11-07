@@ -476,6 +476,76 @@ class HallGamesTest {
         assertEquals(2, duel.board(2).place);
     }
 
+    // ---- The diving board
+
+    @Test
+    void divingMarksEachDiveAndTheBestTotalWins() {
+        Diving diving = new Diving();
+        Random random = new Random(5);
+
+        diving.start(3, random);
+        diving.tick(NOW, random);
+        diving.tick(NOW + Diving.INTRO_MS, random);
+
+        assertTrue(diving.waitingFor(0));
+        assertFalse(diving.waitingFor(1));
+
+        JsonObject bad = new JsonObject();
+
+        bad.addProperty("keys", "aadd!!");
+        assertThrows(HallException.class, () -> diving.play(0, bad));
+
+        JsonObject dive = new JsonObject();
+
+        dive.addProperty("keys", "0adadadadad aaaassswwee0000");
+        diving.play(0, dive);
+        assertEquals("SHOW", diving.phaseName());
+
+        long at = NOW + Diving.INTRO_MS + 60_000L;
+
+        diving.tick(at, random);
+        assertEquals("VOTE", diving.phaseName());
+        assertFalse(diving.waitingFor(0));
+
+        JsonObject eight = new JsonObject();
+        JsonObject six = new JsonObject();
+
+        eight.addProperty("mark", 8);
+        six.addProperty("mark", 6);
+        diving.play(1, eight);
+        diving.play(2, six);
+        diving.tick(at, random);
+
+        assertEquals("SCORE", diving.phaseName());
+        assertEquals(7.0, diving.total(0), 0.001);
+
+        diving.tick(at + Diving.SCORE_MS, random);
+        assertTrue(diving.waitingFor(1));
+    }
+
+    @Test
+    void divingRobotsPlayAWholeContest() {
+        Diving diving = new Diving();
+        Random random = new Random(9);
+        long now = NOW;
+
+        diving.start(4, random);
+
+        for (int step = 0; step < 4000 && !diving.finished(); step++) {
+            diving.tick(now, random);
+
+            for (int seat = 0; seat < 4; seat++) {
+                if (diving.waitingFor(seat)) diving.bot(seat, random);
+            }
+
+            now += 500;
+        }
+
+        assertTrue(diving.finished());
+        assertFalse(diving.winners().isEmpty());
+        assertTrue(Diving.robotMark(Diving.robotKeys(random, 3), random) >= 0);
+    }
+
     // ---- The tables
 
     @Test

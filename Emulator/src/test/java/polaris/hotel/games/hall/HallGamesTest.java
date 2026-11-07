@@ -546,6 +546,56 @@ class HallGamesTest {
         assertTrue(Diving.robotMark(Diving.robotKeys(random, 3), random) >= 0);
     }
 
+    // ---- HabboKart
+
+    @Test
+    void kartRobotsGoRoundAndThePlayerWhoArrivesFirstWins() {
+        KartRace race = new KartRace();
+        Random random = new Random(3);
+
+        race.start(3, random);
+        race.tick(NOW, random);
+        race.bot(1, random);
+        race.bot(2, random);
+
+        JsonObject early = new JsonObject();
+
+        early.addProperty("x", 1.0);
+        early.addProperty("y", 1.0);
+        early.addProperty("progress", 1.0);
+        assertThrows(HallException.class, () -> race.play(0, early));
+
+        long now = NOW + KartRace.COUNTDOWN_MS;
+
+        race.tick(now, random);
+        assertTrue(race.waitingFor(0));
+        assertFalse(race.waitingFor(1));
+
+        // The player drives round, a few blocks at a time, faster than the robots.
+        double progress = -0.35;
+
+        while (!race.finished() && progress < KartRace.LAPS * KartRace.TRACK.length + 1) {
+            now += 400;
+            progress += 1.2;
+            race.tick(now, random);
+
+            if (race.finished()) break;
+
+            double[] at = KartRace.centreAt(progress, 0);
+            JsonObject move = new JsonObject();
+
+            move.addProperty("x", at[0]);
+            move.addProperty("y", at[1]);
+            move.addProperty("progress", progress);
+            race.play(0, move);
+        }
+
+        assertTrue(race.finished());
+        assertEquals(List.of(0), race.winners());
+        assertEquals(1, race.car(0).place);
+        assertTrue(race.car(1).progress > 5);
+    }
+
     // ---- The tables
 
     @Test

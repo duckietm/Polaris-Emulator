@@ -161,6 +161,8 @@ public final class WerewolfManager {
                 case "start" -> game.start(userId, now);
                 case "act" -> game.act(userId, intOf(body, "target", 0), intOf(body, "second", 0), now);
                 case "witch" -> game.witch(userId, boolOf(body, "save"), intOf(body, "poison", 0), now);
+                case "choose" -> game.choose(userId, boolOf(body, "yes"), now);
+                case "pass" -> game.pass(userId, now);
                 case "ready" -> game.ready(userId, now);
                 case "say" -> {
                     String text = stringOf(body, "text").replaceAll("\\s+", " ").trim();

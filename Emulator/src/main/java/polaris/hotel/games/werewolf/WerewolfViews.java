@@ -8,11 +8,12 @@ import java.util.Set;
 
 /**
  * A village as JSON: in the list of villages, and for one of its players, who sees only what their role lets them see
- * (their own role, their pack, their lover, what the seer found, the dead when roles are shown, everything at the end).
+ * (their own role, their pack, their sister, their lover, what the seer found, the charmed for the charmed, the dead
+ * when roles are shown, everything at the end). The little girl reads the pack's night without the names.
  */
 public final class WerewolfViews {
 
-    private static final int LOG_VIEW = 60;
+    private static final int LOG_VIEW = 70;
 
     private WerewolfViews() {}
 
@@ -29,14 +30,9 @@ public final class WerewolfViews {
         return summary;
     }
 
-    /** Whether this player's camp won. */
+    /** Whether this player won. */
     public static boolean won(WerewolfGame game, WerewolfGame.Seat seat) {
-        return switch (game.winner()) {
-            case "village" -> !seat.role.wolf();
-            case "wolves" -> seat.role.wolf();
-            case "lovers" -> seat.lover != 0;
-            default -> false;
-        };
+        return game.won(seat);
     }
 
     public static JsonObject game(WerewolfGame game, int userId, long now) {
@@ -54,9 +50,11 @@ public final class WerewolfViews {
         view.addProperty("isNight", game.isNight());
         view.addProperty("secondsLeft", playing ? Math.max(0L, (game.stepEndsAt() - now + 999L) / 1000L) : 0L);
         view.addProperty("winner", game.winner());
+        view.addProperty("powersLost", game.powersLost());
 
-        Map<Integer, Set<String>> wolfChoices = me != null && me.role.wolf() ? game.wolfChoices() : Map.of();
+        Map<Integer, Set<String>> wolfChoices = me != null && me.pack ? game.wolfChoices() : Map.of();
         Map<Integer, Integer> votes = game.votes();
+        boolean seesCharmed = me != null && (me.charmed || me.role == WerewolfRole.PIPER || finished);
         JsonArray seats = new JsonArray();
 
         for (WerewolfGame.Seat seat : game.seats()) {
@@ -78,6 +76,10 @@ public final class WerewolfViews {
                             && (me.lover == seat.userId
                                     || (seat == me && me.lover != 0)
                                     || finished && seat.lover != 0));
+            entry.addProperty("pack", me != null && (me.pack || finished) && seat.pack);
+            entry.addProperty("charmed", seesCharmed && seat.charmed);
+            entry.addProperty("revealed", seat.revealed);
+            entry.addProperty("raven", playing && seat.userId == game.ravenMarked() && seat.alive);
             entry.addProperty("chosen", me != null && (me.choice == seat.userId || me.second == seat.userId) && actor);
             entry.addProperty("votes", votes.getOrDefault(seat.userId, 0));
             entry.addProperty("ready", step == WerewolfGame.Step.DEBATE && seat.ready);
@@ -97,6 +99,10 @@ public final class WerewolfViews {
 
         if (me != null) {
             you.addProperty("role", me.role.code());
+            you.addProperty("camp", game.camp(me));
+            you.addProperty("pack", me.pack);
+            you.addProperty("charmed", me.charmed);
+            you.addProperty("canVote", me.canVote);
             you.addProperty("alive", game.state() == WerewolfGame.State.WAITING || me.alive);
             you.addProperty("seated", true);
             you.addProperty("won", finished && won(game, me));
@@ -104,11 +110,14 @@ public final class WerewolfViews {
             you.addProperty("done", actor && (step == WerewolfGame.Step.DEBATE ? me.ready : me.done));
             you.addProperty("lifePotion", me.role == WerewolfRole.WITCH && game.lifePotion());
             you.addProperty("deathPotion", me.role == WerewolfRole.WITCH && game.deathPotion());
+            you.addProperty("foxActive", me.role == WerewolfRole.FOX && game.foxActive());
+            you.addProperty("peeks", game.peeks(me));
 
             WerewolfGame.Seat prey = game.seat(game.wolfVictim());
+            boolean seesPrey = actor && (step == WerewolfGame.Step.WITCH || step == WerewolfGame.Step.ACCURSED);
 
-            you.addProperty("victim", actor && step == WerewolfGame.Step.WITCH && prey != null ? prey.name : "");
-            you.addProperty("victimId", actor && step == WerewolfGame.Step.WITCH && prey != null ? prey.userId : 0);
+            you.addProperty("victim", seesPrey && prey != null ? prey.name : "");
+            you.addProperty("victimId", seesPrey && prey != null ? prey.userId : 0);
 
             WerewolfGame.Channel channel = game.chatChannel(me);
 
@@ -122,6 +131,7 @@ public final class WerewolfViews {
 
         JsonArray log = new JsonArray();
         List<WerewolfGame.Event> events = game.log();
+        boolean anonymous = me != null && game.peeks(me);
         int from = 0;
         int count = 0;
 
@@ -138,11 +148,12 @@ public final class WerewolfViews {
             if (!game.visible(event, me)) continue;
 
             JsonObject entry = new JsonObject();
+            boolean hidden = anonymous && event.channel() == WerewolfGame.Channel.WOLVES;
 
             entry.addProperty("seq", event.seq());
             entry.addProperty("type", event.type());
             entry.addProperty("channel", event.channel().name().toLowerCase());
-            entry.addProperty("a", event.a());
+            entry.addProperty("a", hidden ? "" : event.a());
             entry.addProperty("b", event.b());
             entry.addProperty("c", event.c());
             log.add(entry);
@@ -157,9 +168,11 @@ public final class WerewolfViews {
         if (game.state() == WerewolfGame.State.WAITING) return "";
         if (finished || seat == me) return seat.role.code();
         if (!seat.alive && game.rules().revealRoles()) return seat.role.code();
+        if (seat.revealed) return seat.role.code();
         if (me == null) return "";
-        if (me.role.wolf() && seat.role.wolf()) return seat.role.code();
+        if (me.pack && seat.pack) return seat.role.code();
         if (me.lover == seat.userId) return seat.role.code();
+        if (me.role == WerewolfRole.SISTER && seat.role == WerewolfRole.SISTER) return seat.role.code();
         if (me.seen.containsKey(seat.userId)) return seat.role.code();
 
         return "";
@@ -167,9 +180,9 @@ public final class WerewolfViews {
 
     private static String action(WerewolfGame.Step step) {
         return switch (step) {
-            case CUPID, GUARD, SEER, WOLVES, WITCH, VOTE, HUNTER -> step.code();
             case DEBATE -> "ready";
-            default -> "";
+            case NONE, DAWN -> "";
+            default -> step.code();
         };
     }
 
@@ -179,10 +192,13 @@ public final class WerewolfViews {
         return switch (game.step()) {
             case CUPID -> true;
             case GUARD -> seat.userId != game.lastProtectedId();
-            case SEER -> seat != me && !me.done;
-            case WOLVES -> !seat.role.wolf();
+            case SEER, FOX -> seat != me && !me.done;
+            case WILD_CHILD, RAVEN, VOTE, HUNTER -> seat != me;
+            case WOLVES -> !seat.pack;
+            case BIG_BAD_WOLF -> !seat.pack && seat.userId != game.wolfVictim();
+            case WHITE_WOLF -> seat.pack && seat != me;
+            case PIPER -> seat != me && !seat.charmed;
             case WITCH -> seat != me && game.deathPotion();
-            case VOTE, HUNTER -> seat != me;
             default -> false;
         };
     }

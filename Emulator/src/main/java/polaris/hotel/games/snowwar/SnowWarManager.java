@@ -456,6 +456,11 @@ public class SnowWarManager {
         this.broadcastLobbyTeams();
     }
 
+    /** The players in a SnowStorm game or waiting for one, for the Game Center's list. */
+    public int getPlayersNow() {
+        return this.userGames.size() + this.getQueueSize();
+    }
+
     private int getQueueSize() {
         synchronized (this.queue) {
             return this.queue.size();

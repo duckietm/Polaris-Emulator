@@ -2,6 +2,7 @@ package polaris.hotel.games.battleball;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -60,6 +61,11 @@ public final class BattleBallManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a table now, for the Game Center's list. */
+    public int playersNow() {
+        return this.matchOfUser.size();
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -83,6 +89,8 @@ public final class BattleBallManager {
 
         if (this.matches.size() >= setting("battleball.games.max", 10)) throw new BattleBallException("too_many_games");
 
+        if (GameCenter.get().gamesLeft(userId, "battleball") == 0) throw new BattleBallException("no_games_left");
+
         User user = this.player(userId);
         BattleBallMatch match = new BattleBallMatch(
                 this.nextMatchId.getAndIncrement(),
@@ -105,6 +113,8 @@ public final class BattleBallManager {
 
         if (match == null) throw new BattleBallException("no_table");
         if (Integer.valueOf(matchId).equals(this.matchOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, "battleball") == 0) throw new BattleBallException("no_games_left");
 
         User user = this.player(userId);
 
@@ -150,7 +160,16 @@ public final class BattleBallManager {
                 case "bot" -> match.addBot(userId, intOf(body, "team", -1), now);
                 case "bots" -> match.fillWithBots(userId, now);
                 case "bot/remove" -> match.removeBot(userId);
-                case "start" -> match.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(match.players());
+                    String key = "battleball";
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0)
+                        throw new BattleBallException("no_games_left");
+
+                    match.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "walk" -> match.walk(userId, intOf(body, "x", -1), intOf(body, "y", -1), now);
                 case "power" -> match.usePower(userId, now);
                 default -> throw new BattleBallException("unknown_action");
@@ -158,6 +177,17 @@ public final class BattleBallManager {
 
             this.recordIfFinished(match);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<BattleBallMatch.Player> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (BattleBallMatch.Player seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -215,6 +245,15 @@ public final class BattleBallManager {
                 player.userId(), match.winners().contains(player.team()) ? 1 : 0, match.playerScore(player.userId())
             });
         }
+
+        GameCenter.get()
+                .record(
+                        "battleball",
+                        players.stream().map(player -> player[0]).toList(),
+                        players.stream()
+                                .filter(player -> player[1] == 1)
+                                .map(player -> player[0])
+                                .toList());
 
         if (players.isEmpty()) return;
 

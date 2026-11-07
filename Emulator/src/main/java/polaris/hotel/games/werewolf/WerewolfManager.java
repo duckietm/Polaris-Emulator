@@ -2,6 +2,7 @@ package polaris.hotel.games.werewolf;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -66,6 +67,11 @@ public final class WerewolfManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a table now, for the Game Center's list. */
+    public int playersNow() {
+        return this.gameOfUser.size();
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -89,6 +95,8 @@ public final class WerewolfManager {
 
         if (this.games.size() >= setting("werewolf.games.max", 10)) throw new WerewolfException("too_many_games");
 
+        if (GameCenter.get().gamesLeft(userId, "werewolf") == 0) throw new WerewolfException("no_games_left");
+
         User user = this.player(userId);
         WerewolfGame game = new WerewolfGame(
                 this.nextGameId.getAndIncrement(),
@@ -111,6 +119,8 @@ public final class WerewolfManager {
 
         if (game == null) throw new WerewolfException("no_table");
         if (Integer.valueOf(gameId).equals(this.gameOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, "werewolf") == 0) throw new WerewolfException("no_games_left");
 
         User user = this.player(userId);
 
@@ -158,7 +168,16 @@ public final class WerewolfManager {
                 case "bot" -> game.addBot(userId, now);
                 case "bots" -> game.fillWithBots(userId, now);
                 case "bot/remove" -> game.removeBot(userId, intOf(body, "userId", 0));
-                case "start" -> game.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(game.seats());
+                    String key = "werewolf";
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0)
+                        throw new WerewolfException("no_games_left");
+
+                    game.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "act" -> game.act(userId, intOf(body, "target", 0), intOf(body, "second", 0), now);
                 case "witch" -> game.witch(userId, boolOf(body, "save"), intOf(body, "poison", 0), now);
                 case "choose" -> game.choose(userId, boolOf(body, "yes"), now);
@@ -177,6 +196,17 @@ public final class WerewolfManager {
 
             if (playing) this.recordIfFinished(game);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<WerewolfGame.Seat> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (WerewolfGame.Seat seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -232,6 +262,15 @@ public final class WerewolfManager {
         for (WerewolfGame.Seat seat : game.seats()) {
             if (!seat.bot()) players.add(new int[] {seat.userId(), WerewolfViews.won(game, seat) ? 1 : 0});
         }
+
+        GameCenter.get()
+                .record(
+                        "werewolf",
+                        players.stream().map(player -> player[0]).toList(),
+                        players.stream()
+                                .filter(player -> player[1] == 1)
+                                .map(player -> player[0])
+                                .toList());
 
         if (players.isEmpty()) return;
 

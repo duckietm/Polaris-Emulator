@@ -2,6 +2,7 @@ package polaris.hotel.games.wobble;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -60,6 +61,19 @@ public final class WobbleManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a duel now, of the original look or of the Next Gen one, for the Game Center's list. */
+    public int playersNow(boolean nextGen) {
+        int count = 0;
+
+        for (Integer matchId : this.matchOfUser.values()) {
+            WobbleMatch match = this.matches.get(matchId);
+
+            if (match != null && match.rules().nextGen() == nextGen) count++;
+        }
+
+        return count;
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -83,6 +97,15 @@ public final class WobbleManager {
 
         if (this.matches.size() >= setting("wobble.games.max", 10)) throw new WobbleException("too_many_games");
 
+        if (GameCenter.get()
+                        .gamesLeft(
+                                userId,
+                                WobbleRules.from(rulesOf(body), WobbleRules.standard())
+                                                .nextGen()
+                                        ? "wobblenext"
+                                        : "wobble")
+                == 0) throw new WobbleException("no_games_left");
+
         User user = this.player(userId);
         WobbleMatch match = new WobbleMatch(
                 this.nextMatchId.getAndIncrement(),
@@ -100,6 +123,9 @@ public final class WobbleManager {
 
         if (match == null) throw new WobbleException("no_table");
         if (Integer.valueOf(matchId).equals(this.matchOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, match.rules().nextGen() ? "wobblenext" : "wobble") == 0)
+            throw new WobbleException("no_games_left");
 
         User user = this.player(userId);
 
@@ -139,10 +165,30 @@ public final class WobbleManager {
             match.advance(now);
 
             switch (action) {
-                case "rules" -> match.setRules(userId, WobbleRules.from(rulesOf(body), match.rules()));
+                case "rules" -> {
+                    // The look of a duel (original or Next Gen) stays the one it was opened with.
+                    WobbleRules next = WobbleRules.from(rulesOf(body), match.rules());
+
+                    match.setRules(
+                            userId,
+                            new WobbleRules(
+                                    next.roundsToWin(),
+                                    next.bots(),
+                                    next.botLevel(),
+                                    match.rules().nextGen()));
+                }
                 case "bot" -> match.addBot(userId, now);
                 case "bot/remove" -> match.removeBot(userId);
-                case "start" -> match.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(match.fighters());
+                    String key = (match.rules().nextGen() ? "wobblenext" : "wobble");
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0)
+                        throw new WobbleException("no_games_left");
+
+                    match.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "lean" -> match.lean(userId, intOf(body, "dir", 0), now);
                 case "push" -> match.push(userId, intOf(body, "dir", 1), now);
                 case "move" -> match.move(userId, intOf(body, "dir", 1), now);
@@ -152,6 +198,17 @@ public final class WobbleManager {
 
             this.recordIfFinished(match);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<WobbleMatch.Fighter> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (WobbleMatch.Fighter seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -213,6 +270,15 @@ public final class WobbleManager {
                 fighter.userId(), match.winnerSide() == side ? 1 : 0, fighter.wins(), other == null ? 0 : other.wins()
             });
         }
+
+        GameCenter.get()
+                .record(
+                        match.rules().nextGen() ? "wobblenext" : "wobble",
+                        players.stream().map(player -> player[0]).toList(),
+                        players.stream()
+                                .filter(player -> player[1] == 1)
+                                .map(player -> player[0])
+                                .toList());
 
         if (players.isEmpty()) return;
 

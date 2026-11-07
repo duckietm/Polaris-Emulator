@@ -4,12 +4,13 @@ import com.google.gson.JsonObject;
 
 /**
  * The rules of a duel, chosen by its host: the rounds to win (1, 2 or 3: a match in one, three or five falls), whether
- * a robot may take the other side of the beam, and how well the robot plays (1 easy, 2 normal, 3 hard).
+ * a robot may take the other side of the beam, how well the robot plays (1 easy, 2 normal, 3 hard), and the duel's
+ * look: the original rooftop, or the Next Gen pool ({@code nextGen}, chosen at the creation, its own list).
  */
-public record WobbleRules(int roundsToWin, boolean bots, int botLevel) {
+public record WobbleRules(int roundsToWin, boolean bots, int botLevel, boolean nextGen) {
 
     public static WobbleRules standard() {
-        return new WobbleRules(2, true, 2);
+        return new WobbleRules(2, true, 2, false);
     }
 
     /** The rules a host asked for, kept within bounds; what they did not send stays as it was. */
@@ -19,7 +20,8 @@ public record WobbleRules(int roundsToWin, boolean bots, int botLevel) {
         return new WobbleRules(
                 clamp(intOf(body, "roundsToWin", base.roundsToWin()), 1, 3),
                 boolOf(body, "bots", base.bots()),
-                clamp(intOf(body, "botLevel", base.botLevel()), 1, 3));
+                clamp(intOf(body, "botLevel", base.botLevel()), 1, 3),
+                boolOf(body, "nextGen", base.nextGen()));
     }
 
     public JsonObject toJson() {
@@ -28,6 +30,7 @@ public record WobbleRules(int roundsToWin, boolean bots, int botLevel) {
         json.addProperty("roundsToWin", this.roundsToWin);
         json.addProperty("bots", this.bots);
         json.addProperty("botLevel", this.botLevel);
+        json.addProperty("nextGen", this.nextGen);
         return json;
     }
 

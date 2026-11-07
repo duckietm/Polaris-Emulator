@@ -273,10 +273,26 @@ public final class WerewolfGame {
             }
         }
 
-        if (name == null) throw new WerewolfException("table_full");
+        // A big village: the names run out, the robots get a number.
+        for (int number = 2; name == null; number++) {
+            for (int candidate = 0; candidate < BOT_NAMES.length && name == null; candidate++) {
+                String numbered = BOT_NAMES[candidate] + " " + number;
+
+                if (this.byName(numbered) == null) {
+                    name = numbered;
+                    index = candidate;
+                }
+            }
+        }
 
         this.seats.add(new Seat(
-                this.nextBotId--, name, BOT_FIGURES[index], BOT_GENDERS[index], true, this.freeChair(-1), now));
+                this.nextBotId--,
+                name,
+                BOT_FIGURES[index % BOT_FIGURES.length],
+                BOT_GENDERS[index % BOT_GENDERS.length],
+                true,
+                this.freeChair(-1),
+                now));
         this.sortSeats();
         this.event("join", Channel.ALL, 0, name, "", "");
     }

@@ -2,6 +2,7 @@ package polaris.hotel.games.fastfood;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -60,6 +61,11 @@ public final class FastFoodManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a table now, for the Game Center's list. */
+    public int playersNow() {
+        return this.matchOfUser.size();
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -83,6 +89,8 @@ public final class FastFoodManager {
 
         if (this.matches.size() >= setting("fastfood.games.max", 10)) throw new FastFoodException("too_many_games");
 
+        if (GameCenter.get().gamesLeft(userId, "fastfood") == 0) throw new FastFoodException("no_games_left");
+
         User user = this.player(userId);
         FastFoodMatch match = new FastFoodMatch(
                 this.nextMatchId.getAndIncrement(),
@@ -100,6 +108,8 @@ public final class FastFoodManager {
 
         if (match == null) throw new FastFoodException("no_table");
         if (Integer.valueOf(matchId).equals(this.matchOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, "fastfood") == 0) throw new FastFoodException("no_games_left");
 
         User user = this.player(userId);
 
@@ -142,7 +152,16 @@ public final class FastFoodManager {
                 case "rules" -> match.setRules(userId, FastFoodRules.from(rulesOf(body), match.rules()));
                 case "bot" -> match.addBot(userId, now);
                 case "bot/remove" -> match.removeBot(userId);
-                case "start" -> match.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(match.players());
+                    String key = "fastfood";
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0)
+                        throw new FastFoodException("no_games_left");
+
+                    match.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "drop" -> match.drop(userId, now);
                 case "chute" -> match.chute(userId, longOf(body, "elapsed", -1), now);
                 case "power" -> match.usePower(userId, now);
@@ -151,6 +170,17 @@ public final class FastFoodManager {
 
             this.recordIfFinished(match);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<FastFoodMatch.Player> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (FastFoodMatch.Player seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -206,6 +236,15 @@ public final class FastFoodManager {
 
             players.add(new int[] {player.userId(), match.winners().contains(player.userId()) ? 1 : 0, player.stars()});
         }
+
+        GameCenter.get()
+                .record(
+                        "fastfood",
+                        players.stream().map(player -> player[0]).toList(),
+                        players.stream()
+                                .filter(player -> player[1] == 1)
+                                .map(player -> player[0])
+                                .toList());
 
         if (players.isEmpty()) return;
 

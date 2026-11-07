@@ -40,6 +40,7 @@ import polaris.networking.gameserver.decoders.PacketDispatchMarker;
 import polaris.networking.gameserver.encoders.GameServerMessageEncoder;
 import polaris.networking.gameserver.encoders.GameServerMessageLogger;
 import polaris.networking.gameserver.fastfood.FastFoodHttpHandler;
+import polaris.networking.gameserver.gamecenter.GameCenterHttpHandler;
 import polaris.networking.gameserver.hall.HallHttpHandler;
 import polaris.networking.gameserver.handlers.IdleTimeoutHandler;
 import polaris.networking.gameserver.handlers.PreUpgradeConnectionLimit;
@@ -200,6 +201,11 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline()
                 .addLast("blockingHttpAdmissionHall", BlockingHttpExecutionGroup.admissionHandler("hallHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "hallHttpHandler", new HallHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionGameCenter",
+                        BlockingHttpExecutionGroup.admissionHandler("gameCenterHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "gameCenterHttpHandler", new GameCenterHttpHandler());
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());

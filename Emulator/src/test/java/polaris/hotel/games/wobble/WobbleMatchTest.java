@@ -15,7 +15,7 @@ class WobbleMatchTest {
 
     /** Two players (ids 1 and 2) on the beam, the round just started (after the countdown). */
     private static WobbleMatch duel(int roundsToWin, long seed) {
-        WobbleMatch match = new WobbleMatch(1, new WobbleRules(roundsToWin, true, 2), new Random(seed));
+        WobbleMatch match = new WobbleMatch(1, new WobbleRules(roundsToWin, true, 2, false), new Random(seed));
 
         match.join(1, "P1", "", "M", NOW);
         match.join(2, "P2", "", "F", NOW);
@@ -203,7 +203,7 @@ class WobbleMatchTest {
     @Test
     void robotsPlayAMatchToTheEnd() {
         for (int level = 1; level <= 3; level++) {
-            WobbleMatch match = new WobbleMatch(1, new WobbleRules(2, true, level), new Random(level));
+            WobbleMatch match = new WobbleMatch(1, new WobbleRules(2, true, level, false), new Random(level));
 
             match.join(1, "P1", "", "M", NOW);
             match.addBot(1, NOW);

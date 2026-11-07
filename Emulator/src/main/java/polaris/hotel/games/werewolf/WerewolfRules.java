@@ -19,7 +19,8 @@ public record WerewolfRules(
         int maxPlayers, int wolves, Set<WerewolfRole> roles, boolean bots, boolean revealRoles, int speed) {
 
     public static final int MIN_PLAYERS = 5;
-    public static final int MAX_CHAIRS = 12;
+    public static final int MAX_CHAIRS = 49;
+    public static final int MAX_WOLVES = 12;
 
     public WerewolfRules {
         roles = roles.isEmpty() ? EnumSet.noneOf(WerewolfRole.class) : EnumSet.copyOf(roles);
@@ -43,9 +44,9 @@ public record WerewolfRules(
                 2);
     }
 
-    /** The werewolves a village of this many players calls for: one up to 5, two up to 8, three beyond. */
+    /** The werewolves a village of this many players calls for: one up to 5, two up to 8, three up to 12, then one in four. */
     public static int autoWolves(int players) {
-        return players <= 5 ? 1 : players <= 8 ? 2 : 3;
+        return players <= 5 ? 1 : players <= 8 ? 2 : players <= 12 ? 3 : Math.min(MAX_WOLVES, players / 4);
     }
 
     /** The werewolves of a game of this many players: the host's number, kept under half of the village. */
@@ -132,7 +133,7 @@ public record WerewolfRules(
 
         return new WerewolfRules(
                 clamp(intOf(body, "maxPlayers", base.maxPlayers()), MIN_PLAYERS, MAX_CHAIRS),
-                clamp(intOf(body, "wolves", base.wolves()), 0, 5),
+                clamp(intOf(body, "wolves", base.wolves()), 0, MAX_WOLVES),
                 roles,
                 boolOf(body, "bots", base.bots()),
                 boolOf(body, "revealRoles", base.revealRoles()),

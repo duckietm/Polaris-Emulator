@@ -2,6 +2,7 @@ package polaris.hotel.games.uno;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -60,6 +61,11 @@ public final class UnoManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a table now, for the Game Center's list. */
+    public int playersNow() {
+        return this.tableOfUser.size();
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -83,6 +89,8 @@ public final class UnoManager {
 
         if (this.tables.size() >= setting("uno.tables.max", 20)) throw new UnoException("too_many_tables");
 
+        if (GameCenter.get().gamesLeft(userId, "uno") == 0) throw new UnoException("no_games_left");
+
         User user = this.player(userId);
         UnoRules rules = UnoRules.from(
                 rulesOf(body), UnoRules.standard(4, setting("uno.turn.seconds", 25)), setting("uno.players.max", 6));
@@ -104,6 +112,8 @@ public final class UnoManager {
 
         if (table == null) throw new UnoException("no_table");
         if (Integer.valueOf(tableId).equals(this.tableOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, "uno") == 0) throw new UnoException("no_games_left");
 
         User user = this.player(userId);
 
@@ -151,7 +161,15 @@ public final class UnoManager {
                 case "rules" ->
                     table.setRules(userId, UnoRules.from(rulesOf(body), table.rules(), setting("uno.players.max", 6)));
                 case "bot/remove" -> table.removeBot(userId, intOf(body, "userId"));
-                case "start" -> table.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(table.seats());
+                    String key = "uno";
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0) throw new UnoException("no_games_left");
+
+                    table.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "play" -> table.play(userId, stringOf(body, "card"), firstChar(stringOf(body, "colour")), now);
                 case "draw" -> table.draw(userId, now);
                 case "pass" -> table.pass(userId, now);
@@ -162,6 +180,17 @@ public final class UnoManager {
 
             if (playing) this.recordIfFinished(table);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<UnoTable.Seat> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (UnoTable.Seat seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -219,6 +248,8 @@ public final class UnoManager {
         }
 
         int winner = table.winnerId();
+
+        GameCenter.get().record("uno", players, List.of(winner));
 
         Emulator.getThreading().run(() -> this.writeStats(players, winner));
     }

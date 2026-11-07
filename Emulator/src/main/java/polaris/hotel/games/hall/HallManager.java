@@ -2,6 +2,7 @@ package polaris.hotel.games.hall;
 
 import polaris.Emulator;
 import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -9,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -61,6 +63,19 @@ public final class HallManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
+    /** The players at a table now, by the Game Center's game ("hall" for the game hall's own games). */
+    public Map<String, Integer> playersNow() {
+        Map<String, Integer> counts = new HashMap<>();
+
+        for (Integer tableId : this.tableOfUser.values()) {
+            HallTable table = this.tables.get(tableId);
+
+            if (table != null) counts.merge(GameCenter.keyOfHall(table.kind().name()), 1, Integer::sum);
+        }
+
+        return counts;
+    }
+
     // ---- Actions
 
     /** Runs a player's action and answers what they see now. */
@@ -86,6 +101,9 @@ public final class HallManager {
 
         if (this.tables.size() >= setting("hall.tables.max", 40)) throw new HallException("too_many_games");
 
+        if (GameCenter.get().gamesLeft(userId, GameCenter.keyOfHall(kind.name())) == 0)
+            throw new HallException("no_games_left");
+
         User user = this.player(userId);
         HallTable table = new HallTable(
                 this.nextTableId.getAndIncrement(),
@@ -106,6 +124,9 @@ public final class HallManager {
 
         if (table == null) throw new HallException("no_table");
         if (Integer.valueOf(tableId).equals(this.tableOfUser.get(userId))) return;
+
+        if (GameCenter.get().gamesLeft(userId, GameCenter.keyOfHall(table.kind().name())) == 0)
+            throw new HallException("no_games_left");
 
         User user = this.player(userId);
 
@@ -148,7 +169,15 @@ public final class HallManager {
                 case "options" -> table.setOptions(userId, intOf(body, "size", 2), boolOf(body, "bots", true));
                 case "bot" -> table.addBot(userId, now);
                 case "bot/remove" -> table.removeBot(userId);
-                case "start" -> table.start(userId, now);
+                case "start" -> {
+                    List<Integer> humans = humansOf(table.seats());
+                    String key = GameCenter.keyOfHall(table.kind().name());
+
+                    if (GameCenter.get().firstWithoutGames(humans, key) != 0) throw new HallException("no_games_left");
+
+                    table.start(userId, now);
+                    GameCenter.get().charge(humans, key);
+                }
                 case "move" ->
                     table.move(userId, body != null && body.has("move") ? body.getAsJsonObject("move") : null, now);
                 default -> throw new HallException("unknown_action");
@@ -156,6 +185,17 @@ public final class HallManager {
 
             this.recordIfFinished(table);
         }
+    }
+
+    /** The players of a game, robots aside (the Game Center counts their games and scores). */
+    private static List<Integer> humansOf(List<HallTable.Seat> seats) {
+        List<Integer> humans = new ArrayList<>();
+
+        for (HallTable.Seat seat : seats) {
+            if (!seat.bot()) humans.add(seat.userId());
+        }
+
+        return humans;
     }
 
     // ---- The clock
@@ -205,6 +245,15 @@ public final class HallManager {
         if (!table.takeRecord()) return;
 
         List<int[]> players = new ArrayList<>(table.results());
+
+        GameCenter.get()
+                .record(
+                        GameCenter.keyOfHall(table.kind().name()),
+                        players.stream().map(player -> player[0]).toList(),
+                        players.stream()
+                                .filter(player -> player[1] == 1)
+                                .map(player -> player[0])
+                                .toList());
 
         if (players.isEmpty()) return;
 

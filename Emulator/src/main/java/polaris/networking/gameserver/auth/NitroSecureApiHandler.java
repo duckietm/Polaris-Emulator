@@ -44,6 +44,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
         "/api/werewolf",
         "/api/wobble",
         "/api/battleball",
+        "/api/fastfood",
     };
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     // Secure API requests per client bucket and minute: every client HTTP call goes through here, so the share is wide.

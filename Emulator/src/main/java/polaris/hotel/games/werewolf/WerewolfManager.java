@@ -1,9 +1,5 @@
 package polaris.hotel.games.werewolf;
 
-import polaris.Emulator;
-import polaris.core.Scheduler;
-import polaris.hotel.games.center.GameCenter;
-import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.sql.Connection;
@@ -18,6 +14,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
+import polaris.hotel.users.User;
 
 /**
  * The werewolf game: the villages (kept in memory), who sits where, the clock that plays the robots and ends the
@@ -128,12 +128,7 @@ public final class WerewolfManager {
 
         synchronized (game) {
             game.join(
-                    userId,
-                    user.getUserInfo().getUsername(),
-                    user.getUserInfo().getLook(),
-                    gender(user),
-                    chair,
-                    now);
+                    userId, user.getUserInfo().getUsername(), user.getUserInfo().getLook(), gender(user), chair, now);
         }
 
         this.gameOfUser.put(userId, gameId);

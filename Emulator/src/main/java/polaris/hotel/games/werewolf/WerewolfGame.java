@@ -152,18 +152,7 @@ public final class WerewolfGame {
     private static final int MAX_NIGHTS = 40;
 
     private static final String[] BOT_NAMES = {
-        "Bobby",
-        "Marcel",
-        "Lulu",
-        "Hector",
-        "Felix",
-        "Jojo",
-        "Poppy",
-        "Greta",
-        "Raymond",
-        "Ginny",
-        "Leon",
-        "Mimi"
+        "Bobby", "Marcel", "Lulu", "Hector", "Felix", "Jojo", "Poppy", "Greta", "Raymond", "Ginny", "Leon", "Mimi"
     };
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",

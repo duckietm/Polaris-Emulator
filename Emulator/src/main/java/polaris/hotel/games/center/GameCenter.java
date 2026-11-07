@@ -1,10 +1,5 @@
 package polaris.hotel.games.center;
 
-import polaris.Emulator;
-import polaris.core.Scheduler;
-import polaris.hotel.catalog.CatalogPaymentService;
-import polaris.hotel.permissions.Permission;
-import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.sql.Connection;
@@ -30,9 +25,9 @@ import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.core.Scheduler;
 import polaris.hotel.catalog.CatalogPaymentService;
+import polaris.hotel.games.GameTexts;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.users.User;
-import polaris.hotel.games.GameTexts;
 
 /**
  * The Game Center for the games other than SnowStorm (which keeps its own): the free games of the day (fewer
@@ -429,7 +424,8 @@ public final class GameCenter {
                 if (what != null) given.add(what);
             }
 
-            if (!given.isEmpty()) GameRewards.tell(
+            if (!given.isEmpty())
+                GameRewards.tell(
                         userId,
                         GameTexts.text("gamecenter.reward.game", "Well done! You win %rewards%.")
                                 .replace("%rewards%", String.join(", ", given)));

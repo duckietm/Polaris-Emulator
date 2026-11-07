@@ -1,7 +1,5 @@
 package polaris.hotel.games.lostmonkey;
 
-import polaris.Emulator;
-import polaris.hotel.games.center.GameCenter;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.sql.Connection;
@@ -14,6 +12,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.hotel.games.center.GameCenter;
 
 /**
  * Lost Monkey's islands (`/api/lostmonkey`): each player's island, kept in `lostmonkey_islands` and in memory while it

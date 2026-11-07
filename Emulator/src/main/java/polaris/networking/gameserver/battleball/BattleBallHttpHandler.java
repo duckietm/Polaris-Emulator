@@ -1,9 +1,5 @@
 package polaris.networking.gameserver.battleball;
 
-import polaris.hotel.games.battleball.BattleBallException;
-import polaris.hotel.games.battleball.BattleBallManager;
-import polaris.networking.gameserver.auth.AccessTokenService;
-import polaris.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
@@ -25,6 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.games.battleball.BattleBallException;
+import polaris.hotel.games.battleball.BattleBallManager;
+import polaris.networking.gameserver.auth.AccessTokenService;
+import polaris.networking.gameserver.auth.CorsOriginGate;
 
 /**
  * `/api/battleball`: the hotel's BattleBall for a logged-in player. `GET /` answers what they see (their game, the open

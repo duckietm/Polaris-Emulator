@@ -207,8 +207,8 @@ public final class WobbleMatch {
         int index = this.random.nextInt(BOT_FIGURES.length);
         String name = names[this.random.nextInt(names.length)];
 
-        this.sides[free] = new Fighter(
-                this.nextBotId--, name, BOT_FIGURES[index], BOT_GENDERS[index], true, ++this.joins, now);
+        this.sides[free] =
+                new Fighter(this.nextBotId--, name, BOT_FIGURES[index], BOT_GENDERS[index], true, ++this.joins, now);
         this.event("join", name, "");
     }
 

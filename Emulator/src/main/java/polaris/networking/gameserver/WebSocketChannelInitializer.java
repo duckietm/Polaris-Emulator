@@ -159,9 +159,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         BlockingHttpExecutionGroup.admissionHandler("badgeLeaderboardHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
         ch.pipeline()
-                .addLast(
-                        "blockingHttpAdmissionUno",
-                        BlockingHttpExecutionGroup.admissionHandler("unoHttpHandler"));
+                .addLast("blockingHttpAdmissionUno", BlockingHttpExecutionGroup.admissionHandler("unoHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "unoHttpHandler", new UnoHttpHandler());
         ch.pipeline()
                 .addLast(
@@ -184,9 +182,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         BlockingHttpExecutionGroup.admissionHandler("fastFoodHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "fastFoodHttpHandler", new FastFoodHttpHandler());
         ch.pipeline()
-                .addLast(
-                        "blockingHttpAdmissionHall",
-                        BlockingHttpExecutionGroup.admissionHandler("hallHttpHandler"));
+                .addLast("blockingHttpAdmissionHall", BlockingHttpExecutionGroup.admissionHandler("hallHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "hallHttpHandler", new HallHttpHandler());
         ch.pipeline()
                 .addLast(

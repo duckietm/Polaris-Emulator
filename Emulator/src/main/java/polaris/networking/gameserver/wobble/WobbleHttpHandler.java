@@ -1,9 +1,5 @@
 package polaris.networking.gameserver.wobble;
 
-import polaris.hotel.games.wobble.WobbleException;
-import polaris.hotel.games.wobble.WobbleManager;
-import polaris.networking.gameserver.auth.AccessTokenService;
-import polaris.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
@@ -25,6 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.games.wobble.WobbleException;
+import polaris.hotel.games.wobble.WobbleManager;
+import polaris.networking.gameserver.auth.AccessTokenService;
+import polaris.networking.gameserver.auth.CorsOriginGate;
 
 /**
  * `/api/wobble`: the hotel's Wobble Squabble for a logged-in player. `GET /` answers what they see (their duel, the open

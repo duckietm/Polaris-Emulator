@@ -1,12 +1,12 @@
 package polaris.messages.outgoing.gamecenter;
 
+import java.util.ArrayList;
+import java.util.List;
 import polaris.Emulator;
 import polaris.core.ConfigurationManager;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * The games of the Game Center. Only the games switched on are listed (`gamecenter.snowwar.enabled`,

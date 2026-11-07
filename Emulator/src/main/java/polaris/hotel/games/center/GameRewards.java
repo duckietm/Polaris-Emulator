@@ -1,10 +1,20 @@
 package polaris.hotel.games.center;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.GameEnvironment;
 import polaris.hotel.economy.EconomyLedger;
 import polaris.hotel.economy.EconomyOperation;
 import polaris.hotel.economy.EconomyOperationId;
+import polaris.hotel.games.GameTexts;
 import polaris.hotel.items.Item;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
@@ -15,16 +25,6 @@ import polaris.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.users.AddUserBadgeComposer;
 import polaris.messages.outgoing.users.UserClothesComposer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import polaris.hotel.games.GameTexts;
 
 /**
  * Gives a game's reward to a player, online or not: a piece of furniture (in a gift), a set of clothes, a badge, or
@@ -109,8 +109,8 @@ final class GameRewards {
             case -1 -> GameTexts.text("gamecenter.currency.credits", "credits");
             case 0 -> GameTexts.text("gamecenter.currency.duckets", "duckets");
             case 5 -> GameTexts.text("gamecenter.currency.diamonds", "diamonds");
-            default -> GameTexts.text("gamecenter.currency.points", "points (%type%)")
-                    .replace("%type%", String.valueOf(type));
+            default ->
+                GameTexts.text("gamecenter.currency.points", "points (%type%)").replace("%type%", String.valueOf(type));
         };
     }
 
@@ -214,7 +214,8 @@ final class GameRewards {
             if (content == null || wrapping == null) return null;
 
             String extra = "1\t" + content.getId() + "\t0\t0\t0\t"
-                    + GameTexts.text("gamecenter.reward.gift", "Won at the Game Center!").replace("\t", " ")
+                    + GameTexts.text("gamecenter.reward.gift", "Won at the Game Center!")
+                            .replace("\t", " ")
                     + "\t0\t0";
 
             environment().getItemManager().createGift(info.getUsername(), wrapping, extra, 0, 0);

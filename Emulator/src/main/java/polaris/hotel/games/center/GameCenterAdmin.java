@@ -1,6 +1,5 @@
 package polaris.hotel.games.center;
 
-import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -14,6 +13,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.users.User;
 
 /**
  * The Moderation's Games page (`acc_hk_games`): each game's free games a day, the free games a club member gets on

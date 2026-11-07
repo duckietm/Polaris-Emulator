@@ -30,7 +30,8 @@ public final class QuizBank {
 
     /** The questions in a language (English when it has none). */
     public static List<Quiz.Question> questions(String language) {
-        List<Quiz.Question> questions = QUESTIONS.get(language == null ? "" : language.trim().toLowerCase());
+        List<Quiz.Question> questions =
+                QUESTIONS.get(language == null ? "" : language.trim().toLowerCase());
 
         return questions == null || questions.isEmpty() ? QUESTIONS.get("en") : questions;
     }

@@ -73,18 +73,7 @@ public final class BattleBallMatch {
     private static final int[][] DIRECTIONS = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
 
     private static final String[] BOT_NAMES = {
-        "Bondi",
-        "Bounce",
-        "Zebby",
-        "Balthazar",
-        "Nugget",
-        "Ricochet",
-        "Zoom",
-        "Boing",
-        "Ruby",
-        "Comet",
-        "Hop",
-        "Pogo"
+        "Bondi", "Bounce", "Zebby", "Balthazar", "Nugget", "Ricochet", "Zoom", "Boing", "Ruby", "Comet", "Hop", "Pogo"
     };
     private static final String[] BOT_FIGURES = {
         "hr-828-45.hd-180-1.ch-3215-92.lg-3023-110.sh-305-62",

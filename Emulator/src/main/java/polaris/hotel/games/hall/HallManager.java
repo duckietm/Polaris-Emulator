@@ -1,9 +1,5 @@
 package polaris.hotel.games.hall;
 
-import polaris.Emulator;
-import polaris.core.Scheduler;
-import polaris.hotel.games.center.GameCenter;
-import polaris.hotel.users.User;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.sql.Connection;
@@ -19,6 +15,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.Emulator;
+import polaris.core.Scheduler;
+import polaris.hotel.games.center.GameCenter;
+import polaris.hotel.users.User;
 
 /**
  * The game hall (tic-tac-toe, four in a row, battleships, chess, poker): the tables (kept in memory), the clock
@@ -113,8 +113,7 @@ public final class HallManager {
                 setting("hall.turn.seconds", 60) * 1000L,
                 this.random);
 
-        table.join(
-                userId, user.getUserInfo().getUsername(), user.getUserInfo().getLook(), gender(user), now);
+        table.join(userId, user.getUserInfo().getUsername(), user.getUserInfo().getLook(), gender(user), now);
         this.tables.put(table.id(), table);
         this.tableOfUser.put(userId, table.id());
     }
@@ -134,11 +133,7 @@ public final class HallManager {
 
         synchronized (table) {
             table.join(
-                    userId,
-                    user.getUserInfo().getUsername(),
-                    user.getUserInfo().getLook(),
-                    gender(user),
-                    now);
+                    userId, user.getUserInfo().getUsername(), user.getUserInfo().getLook(), gender(user), now);
         }
 
         this.tableOfUser.put(userId, tableId);

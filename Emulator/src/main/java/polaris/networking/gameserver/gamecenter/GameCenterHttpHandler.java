@@ -1,17 +1,5 @@
 package polaris.networking.gameserver.gamecenter;
 
-import polaris.hotel.games.battleball.BattleBallManager;
-import polaris.hotel.games.center.GameCenter;
-import polaris.hotel.games.center.GameCenterAdmin;
-import polaris.hotel.games.fastfood.FastFoodManager;
-import polaris.hotel.games.hall.HallManager;
-import polaris.hotel.games.lostmonkey.LostMonkeyManager;
-import polaris.hotel.games.snowwar.SnowWarManager;
-import polaris.hotel.games.uno.UnoManager;
-import polaris.hotel.games.werewolf.WerewolfManager;
-import polaris.hotel.games.wobble.WobbleManager;
-import polaris.networking.gameserver.auth.AccessTokenService;
-import polaris.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
@@ -34,6 +22,18 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.games.battleball.BattleBallManager;
+import polaris.hotel.games.center.GameCenter;
+import polaris.hotel.games.center.GameCenterAdmin;
+import polaris.hotel.games.fastfood.FastFoodManager;
+import polaris.hotel.games.hall.HallManager;
+import polaris.hotel.games.lostmonkey.LostMonkeyManager;
+import polaris.hotel.games.snowwar.SnowWarManager;
+import polaris.hotel.games.uno.UnoManager;
+import polaris.hotel.games.werewolf.WerewolfManager;
+import polaris.hotel.games.wobble.WobbleManager;
+import polaris.networking.gameserver.auth.AccessTokenService;
+import polaris.networking.gameserver.auth.CorsOriginGate;
 
 /**
  * `/api/gamecenter`: the hotel's Game Center for a logged-in player. `GET /` answers each game's players now and the

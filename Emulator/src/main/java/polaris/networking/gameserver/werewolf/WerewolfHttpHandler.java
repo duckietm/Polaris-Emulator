@@ -1,9 +1,5 @@
 package polaris.networking.gameserver.werewolf;
 
-import polaris.hotel.games.werewolf.WerewolfException;
-import polaris.hotel.games.werewolf.WerewolfManager;
-import polaris.networking.gameserver.auth.AccessTokenService;
-import polaris.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
@@ -25,6 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.hotel.games.werewolf.WerewolfException;
+import polaris.hotel.games.werewolf.WerewolfManager;
+import polaris.networking.gameserver.auth.AccessTokenService;
+import polaris.networking.gameserver.auth.CorsOriginGate;
 
 /**
  * `/api/werewolf`: The werewolf game for a logged-in player. `GET /` answers what they see (their village, the open

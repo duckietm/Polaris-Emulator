@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.IntSupplier;
+import java.util.function.IntUnaryOperator;
 import java.util.function.Supplier;
 
 /**
@@ -16,10 +16,12 @@ final class SnowWarGameCharges {
 
     private final SnowWarGameAllowance allowance;
     private final Supplier<LocalDate> today;
-    private final IntSupplier freePerDay;
+    /** The free games a day for a player (their id in, the count out; -1 = unlimited). */
+    private final IntUnaryOperator freePerDay;
+
     private final Set<Integer> paidPending = ConcurrentHashMap.newKeySet();
 
-    SnowWarGameCharges(SnowWarGameAllowance allowance, Supplier<LocalDate> today, IntSupplier freePerDay) {
+    SnowWarGameCharges(SnowWarGameAllowance allowance, Supplier<LocalDate> today, IntUnaryOperator freePerDay) {
         this.allowance = allowance;
         this.today = today;
         this.freePerDay = freePerDay;
@@ -31,7 +33,7 @@ final class SnowWarGameCharges {
             return SnowWarGameAllowance.ConsumeResult.TOKEN;
         }
         SnowWarGameAllowance.ConsumeResult result =
-                this.allowance.tryConsumeGame(userId, this.today.get(), this.freePerDay.getAsInt());
+                this.allowance.tryConsumeGame(userId, this.today.get(), this.freePerDay.applyAsInt(userId));
         if (result.charged()) {
             this.paidPending.add(userId);
         }
@@ -62,7 +64,17 @@ final class SnowWarGameCharges {
         return this.paidPending.contains(userId);
     }
 
+    /**
+     * The free games a day: the hotel's count, or the HC count for a member of the Habbo Club (never fewer). Below 0
+     * means unlimited, for everyone when it is the hotel's count.
+     */
+    static int freeGamesPerDay(int everyone, int club, boolean member) {
+        if (everyone < 0) return -1;
+        if (!member) return everyone;
+        return club < 0 ? -1 : Math.max(everyone, club);
+    }
+
     int gamesLeft(int userId) {
-        return this.allowance.gamesLeft(userId, this.today.get(), this.freePerDay.getAsInt());
+        return this.allowance.gamesLeft(userId, this.today.get(), this.freePerDay.applyAsInt(userId));
     }
 }

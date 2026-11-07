@@ -63,7 +63,7 @@ class SnowWarGameChargesTest {
     void usesFreeGamesFirstThenBoughtGamesThenRefuses() {
         FakeAllowance allowance = new FakeAllowance();
         allowance.tokens.put(1, 1);
-        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, () -> 1);
+        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, userId -> 1);
 
         assertEquals(2, charges.gamesLeft(1));
         assertEquals(SnowWarGameAllowance.ConsumeResult.FREE, charges.charge(1));
@@ -77,7 +77,7 @@ class SnowWarGameChargesTest {
     @Test
     void neverChargesAPlayerTwiceForTheSameFormingMatch() {
         FakeAllowance allowance = new FakeAllowance();
-        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, () -> 5);
+        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, userId -> 5);
 
         assertTrue(charges.charge(1).charged());
         // The match fell short and the player was requeued: the next attempt is free.
@@ -89,7 +89,7 @@ class SnowWarGameChargesTest {
     @Test
     void refundsAPaidPlayerWhoLeavesBeforeTheMatchStarts() {
         FakeAllowance allowance = new FakeAllowance();
-        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, () -> 1);
+        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, userId -> 1);
 
         charges.charge(1);
         assertTrue(charges.refundIfPaid(1));
@@ -100,7 +100,7 @@ class SnowWarGameChargesTest {
     @Test
     void aStartedMatchIsNotRefundedOnLeave() {
         FakeAllowance allowance = new FakeAllowance();
-        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, () -> 1);
+        SnowWarGameCharges charges = new SnowWarGameCharges(allowance, () -> DAY, userId -> 1);
 
         charges.charge(1);
         charges.started(List.of(1));
@@ -111,16 +111,27 @@ class SnowWarGameChargesTest {
     @Test
     void unlimitedAndFailedChargesAreNotMarkedPaid() {
         FakeAllowance allowance = new FakeAllowance();
-        SnowWarGameCharges unlimited = new SnowWarGameCharges(allowance, () -> DAY, () -> -1);
+        SnowWarGameCharges unlimited = new SnowWarGameCharges(allowance, () -> DAY, userId -> -1);
         assertEquals(SnowWarGameAllowance.ConsumeResult.UNLIMITED, unlimited.charge(1));
         assertFalse(unlimited.hasPaid(1));
         assertEquals(-1, unlimited.gamesLeft(1));
 
         allowance.failing = true;
-        SnowWarGameCharges limited = new SnowWarGameCharges(allowance, () -> DAY, () -> 1);
+        SnowWarGameCharges limited = new SnowWarGameCharges(allowance, () -> DAY, userId -> 1);
         SnowWarGameAllowance.ConsumeResult result = limited.charge(2);
         assertEquals(SnowWarGameAllowance.ConsumeResult.ERROR, result);
         assertFalse(result.allowed());
         assertFalse(limited.hasPaid(2));
+    }
+
+    @Test
+    void habboClubMembersGetTheirOwnFreeGames() {
+        assertEquals(10, SnowWarGameCharges.freeGamesPerDay(10, 20, false));
+        assertEquals(20, SnowWarGameCharges.freeGamesPerDay(10, 20, true));
+        // Never fewer than everyone, and unlimited stays unlimited.
+        assertEquals(10, SnowWarGameCharges.freeGamesPerDay(10, 5, true));
+        assertEquals(-1, SnowWarGameCharges.freeGamesPerDay(10, -1, true));
+        assertEquals(-1, SnowWarGameCharges.freeGamesPerDay(-1, 20, false));
+        assertEquals(-1, SnowWarGameCharges.freeGamesPerDay(-1, 20, true));
     }
 }

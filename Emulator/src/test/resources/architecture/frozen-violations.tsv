@@ -441,7 +441,7 @@ U|polaris/hotel/games/snowwar/SnowWarGame.java|CALL|getGameEnvironment|1
 U|polaris/hotel/games/snowwar/SnowWarGame.java|CALL|getThreading|4
 U|polaris/hotel/games/snowwar/SnowWarGameTask.java|CALL|getGameEnvironment|1
 U|polaris/hotel/games/snowwar/SnowWarGameTask.java|CALL|getThreading|1
-U|polaris/hotel/games/snowwar/SnowWarManager.java|CALL|getConfig|6
+U|polaris/hotel/games/snowwar/SnowWarManager.java|CALL|getConfig|7
 U|polaris/hotel/games/snowwar/SnowWarManager.java|CALL|getDatabase|1
 U|polaris/hotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|7
 U|polaris/hotel/games/snowwar/SnowWarManager.java|CALL|getThreading|2
@@ -1752,7 +1752,7 @@ U|polaris/messages/outgoing/catalog/marketplace/MarketplaceOwnItemsComposer.java
 U|polaris/messages/outgoing/commands/AvailableCommandsComposer.java|CALL|getTexts|1
 U|polaris/messages/outgoing/friends/FriendChatMessageComposer.java|CALL|getGameEnvironment|1
 U|polaris/messages/outgoing/friends/FriendChatMessageComposer.java|CALL|getIntUnixTimestamp|1
-U|polaris/messages/outgoing/gamecenter/GameCenterGameListComposer.java|CALL|getConfig|2
+U|polaris/messages/outgoing/gamecenter/GameCenterGameListComposer.java|CALL|getConfig|1
 U|polaris/messages/outgoing/gamecenter/basejump/BaseJumpLoadGameComposer.java|CALL|getConfig|4
 U|polaris/messages/outgoing/gamecenter/basejump/BaseJumpLoadGameComposer.java|FIELD|version|1
 U|polaris/messages/outgoing/guardians/GuardianNewReportReceivedComposer.java|CALL|getConfig|1

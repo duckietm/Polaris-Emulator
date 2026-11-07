@@ -67,8 +67,8 @@ public class SnowWarManager {
     private final SnowWarArenaRepository arenas = new SnowWarArenaRepository(this::openConnection);
     private final SnowWarLeaderboardRepository leaderboard = new SnowWarLeaderboardRepository(this::openConnection);
     private final SnowWarTokenOfferRepository tokenOffers = new SnowWarTokenOfferRepository(this::openConnection);
-    private final SnowWarGameCharges charges = new SnowWarGameCharges(
-            this.tokenOffers, LocalDate::now, () -> Emulator.getConfig().getInt("gamecenter.games.free.daily", 10));
+    private final SnowWarGameCharges charges =
+            new SnowWarGameCharges(this.tokenOffers, LocalDate::now, this::freeGamesPerDay);
     private final SnowWarScoreWriter scoreWriter =
             new SnowWarScoreWriter(this.leaderboard::recordScores, (task, delayMs) -> schedule(task, delayMs) != null);
 
@@ -114,6 +114,16 @@ public class SnowWarManager {
 
     private Connection openConnection() throws SQLException {
         return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /** Free games a day for this player: `gamecenter.games.free.daily`, or `.hc` for a Habbo Club member. */
+    private int freeGamesPerDay(int userId) {
+        int everyone = Emulator.getConfig().getInt("gamecenter.games.free.daily", 10);
+        User user = this.onlineUser(userId);
+        boolean member = user != null && user.getUserStats().hasActiveClub();
+
+        return SnowWarGameCharges.freeGamesPerDay(
+                everyone, Emulator.getConfig().getInt("gamecenter.games.free.daily.hc", everyone), member);
     }
 
     public boolean isEnabled() {

@@ -443,6 +443,39 @@ class HallGamesTest {
         assertTrue(quiz.score(1) >= 500);
     }
 
+    // ---- Tetris
+
+    @Test
+    void tetrisSendsRubbishAndTheLastStandingWins() {
+        TetrisDuel duel = new TetrisDuel();
+
+        duel.start(3, new Random(2));
+        duel.tick(NOW, null);
+
+        JsonObject move = new JsonObject();
+
+        move.addProperty("cleared", 4);
+        assertThrows(HallException.class, () -> duel.play(0, move));
+
+        duel.tick(NOW + TetrisDuel.COUNTDOWN_MS, null);
+        duel.play(0, move);
+
+        assertEquals(4, duel.board(1).received + duel.board(2).received);
+        assertEquals(2, duel.board(1).received);
+
+        JsonObject out = new JsonObject();
+
+        out.addProperty("out", true);
+        duel.play(1, out);
+        assertFalse(duel.finished());
+        duel.play(2, out);
+
+        assertTrue(duel.finished());
+        assertEquals(List.of(0), duel.winners());
+        assertEquals(3, duel.board(1).place);
+        assertEquals(2, duel.board(2).place);
+    }
+
     // ---- The tables
 
     @Test

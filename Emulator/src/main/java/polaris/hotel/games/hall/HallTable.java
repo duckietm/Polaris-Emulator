@@ -173,7 +173,7 @@ public final class HallTable {
         if (this.state == State.PLAYING) {
             this.game.forfeit(this.seats.indexOf(seat));
             this.note = "left:" + seat.name;
-            this.afterMove(now);
+            this.afterMove(now, -1);
         }
 
         if (this.state == State.PLAYING) {
@@ -237,13 +237,13 @@ public final class HallTable {
 
         this.game.play(index, move);
         seat.timeouts = 0;
-        this.afterMove(now);
+        this.afterMove(now, index);
     }
 
     /** The time goes by: robots play when they have thought, a player out of time gets a move played for them. */
     public void advance(long now) {
         if (this.state == State.PLAYING) this.game.tick(now, this.random);
-        if (this.state == State.PLAYING && this.game.finished()) this.afterMove(now);
+        if (this.state == State.PLAYING && this.game.finished()) this.afterMove(now, -1);
 
         for (int guard = 0; guard < 8 && this.state == State.PLAYING; guard++) {
             boolean moved = false;
@@ -280,7 +280,7 @@ public final class HallTable {
                 }
 
                 if (moved) {
-                    this.afterMove(now);
+                    this.afterMove(now, index);
                     break;
                 }
             }
@@ -289,9 +289,18 @@ public final class HallTable {
         }
     }
 
-    private void afterMove(long now) {
-        this.waitingSince.clear();
-        this.botAt.clear();
+    /**
+     * After a move, the one who moved waits afresh (the others keep their time: in a game where everybody plays at
+     * once, a quick player must not hold the robots or a sleeping player back). {@code -1}: everybody afresh.
+     */
+    private void afterMove(long now, int mover) {
+        if (mover < 0) {
+            this.waitingSince.clear();
+            this.botAt.clear();
+        } else {
+            this.waitingSince.remove(mover);
+            this.botAt.remove(mover);
+        }
 
         if (!this.game.finished()) return;
 

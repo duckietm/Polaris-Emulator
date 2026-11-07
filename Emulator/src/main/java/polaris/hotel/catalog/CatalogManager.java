@@ -104,6 +104,7 @@ import polaris.hotel.users.UserGender;
 import polaris.hotel.users.UserInventory;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.users.UserStats;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.users.inventory.EffectsComponent;
 import polaris.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
@@ -359,10 +360,16 @@ public class CatalogManager {
         Emulator.getPluginManager().fireEvent(new EmulatorLoadCatalogManagerEvent());
 
         this.loadLimitedNumbers();
-        this.loadCatalogPages();
+        // The pages are filled before they are published: they used to go live empty and get their items seconds
+        // later, so a purchase or a gift during :update_catalogue found the page without its offer.
+        Map<Integer, CatalogPage> pages = this.buildCatalogPages();
         this.loadBuildersClubCatalogPages();
         this.loadCatalogFeaturedPages();
-        this.loadCatalogItems();
+        if (pages != null) {
+            this.loadCatalogItems(pages);
+            replacePageMap(this.catalogPages, pages);
+            LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
+        }
         this.loadBuildersClubCatalogItems();
         this.loadClubOffers();
         this.loadTargetOffers();
@@ -493,9 +500,13 @@ public class CatalogManager {
         return this.rareValuesPayloadCache;
     }
 
+    /**
+     * Reads the limited numbers and applies them under the lock every reader takes. The map was cleared first and
+     * filled after the query, without that lock: a limited purchase in between found no configuration, and a
+     * configuration an in-flight purchase held was dropped with the numbers it would give back. A configuration that
+     * exists keeps its object and takes the new numbers; a failed query changes nothing.
+     */
     private synchronized void loadLimitedNumbers() {
-        this.limitedNumbers.clear();
-
         Map<Integer, LinkedList<Integer>> limiteds = new HashMap<>();
         Int2IntMap totals = new Int2IntOpenHashMap();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -516,19 +527,26 @@ public class CatalogManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
 
-        for (Map.Entry<Integer, LinkedList<Integer>> set : limiteds.entrySet()) {
-            this.limitedNumbers.put(
-                    set.getKey(),
-                    new CatalogLimitedConfiguration(
-                            set.getKey(),
-                            set.getValue(),
-                            totals.get(set.getKey().intValue())));
+        synchronized (this.limitedNumbers) {
+            this.limitedNumbers.keySet().retainAll(limiteds.keySet());
+            for (Map.Entry<Integer, LinkedList<Integer>> set : limiteds.entrySet()) {
+                int total = totals.get(set.getKey().intValue());
+                CatalogLimitedConfiguration existing = this.limitedNumbers.get(set.getKey());
+                if (existing != null) {
+                    existing.replaceNumbers(set.getValue(), total);
+                } else {
+                    this.limitedNumbers.put(
+                            set.getKey(), new CatalogLimitedConfiguration(set.getKey(), set.getValue(), total));
+                }
+            }
         }
     }
 
-    private synchronized void loadCatalogPages() {
+    /** The catalog pages as the database holds them, linked to their parents; null when it could not be read. */
+    private synchronized Map<Integer, CatalogPage> buildCatalogPages() {
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -554,6 +572,7 @@ public class CatalogManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return null;
         }
 
         for (CatalogPage object : pages.values()) {
@@ -574,9 +593,7 @@ public class CatalogManager {
             }
         }
 
-        replacePageMap(this.catalogPages, pages);
-
-        LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
+        return pages;
     }
 
     private synchronized void loadBuildersClubCatalogPages() {
@@ -667,7 +684,7 @@ public class CatalogManager {
         this.replaceFeaturedPages(loadedFeaturedPages);
     }
 
-    private synchronized void loadCatalogItems() {
+    private synchronized void loadCatalogItems(Map<Integer, CatalogPage> pages) {
         this.offerDefs.clear();
         this.clubItems.clear();
         catalogItemAmount = 0;
@@ -689,7 +706,7 @@ public class CatalogManager {
                     continue;
                 }
 
-                CatalogPage page = this.catalogPages.get(set.getInt("page_id"));
+                CatalogPage page = pages.get(set.getInt("page_id"));
 
                 if (page == null) continue;
 
@@ -716,9 +733,9 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        for (CatalogPage page : this.catalogPages.values()) {
+        for (CatalogPage page : pages.values()) {
             for (Integer id : page.getIncluded()) {
-                CatalogPage p = this.catalogPages.get(id.intValue());
+                CatalogPage p = pages.get(id.intValue());
 
                 if (p != null) {
                     page.getCatalogItems().putAll(p.getCatalogItems());
@@ -2136,6 +2153,8 @@ public class CatalogManager {
             boolean free,
             UserCatalogItemPurchasedEvent purchasedEvent,
             LegacyPurchase purchase) {
+        this.recordLegacyLimitedSale(item, user, purchasedEvent, purchase);
+
         // Bots and pets reach the buyer's inventory only now that the purchase is paid: on a failure before this
         // the buyer never sees them, as with the atomic bot and pet path.
         for (Bot bot : purchase.createdBots) {
@@ -2178,12 +2197,6 @@ public class CatalogManager {
 
             Emulator.getPluginManager()
                     .fireEvent(new UserCatalogFurnitureBoughtEvent(user, item, purchasedEvent.itemsList));
-
-            if (purchase.limitedConfiguration != null) {
-                for (UserItem itm : purchasedEvent.itemsList) {
-                    purchase.limitedConfiguration.limitedSold(item.getId(), user, itm);
-                }
-            }
         }
 
         if (!purchasedEvent.badges.isEmpty()
@@ -2192,9 +2205,8 @@ public class CatalogManager {
         }
 
         for (String b : purchasedEvent.badges) {
-            UserBadge badge = new UserBadge(0, b, 0, user);
-            Emulator.getThreading().run(badge);
-            user.getInventory().getBadgesComponent().addBadge(badge);
+            UserBadge badge = BadgesComponent.createBadge(b, user);
+            if (badge == null) continue;
             user.getClient().sendResponse(new AddUserBadgeComposer(badge));
             Map<String, String> keys = new HashMap<>();
             keys.put("display", "BUBBLE");
@@ -2255,10 +2267,37 @@ public class CatalogManager {
      * Undoes a purchase that was not delivered: deletes what was created, takes bots and pets back out of the
      * inventory, returns a reserved limited number to the pool and refunds a payment already taken.
      */
+    /**
+     * One number, one sale, written before anything reaches the buyer, as the atomic path does: the sale used to be
+     * recorded after delivery for every item, with its SQL errors swallowed, so a failed write left the number free in
+     * the database (sold again after a reload) and the second half of a teleporter pair always failed. A failure
+     * now undoes the purchase. Once written, the number is the buyer's and is not given back.
+     */
+    private void recordLegacyLimitedSale(
+            CatalogItem item, User user, UserCatalogItemPurchasedEvent purchasedEvent, LegacyPurchase purchase) {
+        if (purchase.limitedConfiguration == null || purchasedEvent.itemsList == null) return;
+
+        UserItem limitedItem = null;
+        for (UserItem candidate : purchasedEvent.itemsList) {
+            if (limitedItem == null || candidate.getId() < limitedItem.getId()) limitedItem = candidate;
+        }
+        if (limitedItem == null) return;
+
+        try {
+            purchase.limitedConfiguration.limitedSoldOrThrow(item.getId(), user, limitedItem);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Limited sale of offer " + item.getId() + " could not be recorded", e);
+        }
+        purchase.limitedNumber = 0;
+    }
+
     private void undoLegacyPurchase(CatalogItem item, User user, LegacyPurchase purchase) {
         for (UserItem createdItem : purchase.createdItems) {
-            if (createdItem != null)
-                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+            if (createdItem == null) continue;
+            // The rows go and so do the items: a failure after delivery left items in the inventory whose rows
+            // had been deleted.
+            user.getInventory().getItemsComponent().removeUserItem(createdItem.getId());
+            Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
         }
         for (Bot bot : purchase.createdBots) {
             user.getInventory().getBotsComponent().removeBot(bot);
@@ -2562,9 +2601,10 @@ public class CatalogManager {
             int totalPoints)
             throws SQLException {
         int userId = user.getUserInfo().getId();
+        AtomicFurniturePurchase purchase;
         try {
             String operationId = EconomyOperationId.create("catalog:" + userId + ":" + item.getId());
-            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(user, operationId, connection -> {
+            purchase = CatalogPurchaseTransaction.execute(user, operationId, connection -> {
                 Set<UserItem> createdItems = new HashSet<>();
                 Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
                 boolean includesMusicDisc = false;
@@ -2707,14 +2747,17 @@ public class CatalogManager {
                 return new CatalogPurchaseTransaction.PreparedPurchase<>(
                         result, charges.credits(), charges.points(), charges.pointsType());
             });
-
-            this.publishAtomicFurniturePurchase(user, purchase);
-            if (limitedConfiguration != null) {
-                user.getUserStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
-            }
         } catch (SQLException | RuntimeException exception) {
             if (limitedConfiguration != null && limitedNumber > 0) limitedConfiguration.restoreNumber(limitedNumber);
             throw exception;
+        }
+
+        // Committed: the number is sold in the database. A failure while handing the purchase over (the buyer gone
+        // offline, say) used to reach the catch above and put the number back in the pool, where the next buyer
+        // drew it and failed on the sold row.
+        this.publishAtomicFurniturePurchase(user, purchase);
+        if (limitedConfiguration != null) {
+            user.getUserStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
         }
     }
 

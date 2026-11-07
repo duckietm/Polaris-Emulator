@@ -14,9 +14,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +36,16 @@ public class GuildManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildManager.class);
 
-    private final Map<GuildPartType, Map<Integer, GuildPart>> guildParts;
+    // The badge parts and the forum views are loaded into new collections and swapped in: a reload used to clear them
+    // while guild creation and the forum read them, and a failed query left them empty.
+    private volatile Map<GuildPartType, Map<Integer, GuildPart>> guildParts;
 
     private final Int2ObjectMap<Guild> guilds;
 
-    private final Set<ForumView> views = new HashSet<>();
+    /** Forum views of the last {@link #FORUM_VIEW_WINDOW_SECONDS}: written and read by every client's packets. */
+    private volatile Set<ForumView> views = ConcurrentHashMap.newKeySet();
+
+    private static final int FORUM_VIEW_WINDOW_SECONDS = 7 * 24 * 60 * 60;
 
     public GuildManager() {
         long millis = System.currentTimeMillis();
@@ -52,37 +59,45 @@ public class GuildManager {
     }
 
     public void loadGuildParts() {
-        this.guildParts.clear();
+        Map<GuildPartType, Map<Integer, GuildPart>> parts = new HashMap<>();
 
         for (GuildPartType t : GuildPartType.values()) {
-            this.guildParts.put(t, new HashMap<>());
+            parts.put(t, new HashMap<>());
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM guilds_elements")) {
             while (set.next()) {
-                this.guildParts
-                        .get(GuildPartType.valueOf(set.getString("type").toUpperCase()))
+                parts.get(GuildPartType.valueOf(set.getString("type").toUpperCase()))
                         .put(set.getInt("id"), new GuildPart(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+
+        this.guildParts = parts;
     }
 
     public void loadGuildViews() {
-        this.views.clear();
+        Set<ForumView> loaded = ConcurrentHashMap.newKeySet();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                Statement statement = connection.createStatement();
-                ResultSet set = statement.executeQuery("SELECT * FROM guild_forum_views")) {
-            while (set.next()) {
-                this.views.add(new ForumView(set));
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM guild_forum_views WHERE timestamp > ?")) {
+            statement.setInt(1, forumViewCutoff());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    loaded.add(new ForumView(set));
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+
+        this.views = loaded;
     }
 
     public Guild createGuild(
@@ -189,81 +204,75 @@ public class GuildManager {
     }
 
     public void deleteGuild(Guild guild) {
+        this.tryDeleteGuild(guild);
+    }
+
+    /**
+     * Deletes a guild, its members, forum and favourites in one transaction, and only then forgets it in memory. The
+     * nine statements ran one by one with errors only logged, and the members' stats, the guild cache and the room
+     * were updated anyway: a failure half way left a guild without members or forum that came back after a restart.
+     *
+     * @return false when the database refused and nothing changed
+     */
+    public boolean tryDeleteGuild(Guild guild) {
+        int guildId = guild.getId();
+        // Read before the rows go: the members are looked up in the database.
         Set<GuildMember> members = this.getGuildMembers(guild);
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                executeForGuild(connection, "UPDATE users_settings SET guild_id = 0 WHERE guild_id = ?", guildId);
+                executeForGuild(connection, "DELETE FROM guild_forum_views WHERE guild_id = ?", guildId);
+                executeForGuild(
+                        connection,
+                        "DELETE c FROM guilds_forums_comments c INNER JOIN guilds_forums_threads t ON c.thread_id = t.id WHERE t.guild_id = ?",
+                        guildId);
+                executeForGuild(connection, "DELETE FROM guilds_forums_threads WHERE guild_id = ?", guildId);
+                executeForGuild(connection, "DELETE FROM guilds_members WHERE guild_id = ?", guildId);
+                executeForGuild(connection, "UPDATE rooms SET guild_id = 0 WHERE guild_id = ?", guildId);
+                executeForGuild(connection, "UPDATE items SET guild_id = 0 WHERE guild_id = ?", guildId);
+                executeForGuild(connection, "DELETE FROM guilds WHERE id = ?", guildId);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Guild {} could not be deleted; it stays as it was", guildId, e);
+            return false;
+        }
 
         for (GuildMember member : members) {
             User user = Emulator.getGameEnvironment().getUserManager().getUser(member.getUserId());
 
             if (user != null) {
-                user.getUserStats().removeGuild(guild.getId());
+                user.getUserStats().removeGuild(guildId);
 
-                if (user.getUserStats().guild == guild.getId()) {
+                if (user.getUserStats().guild == guildId) {
                     user.getUserStats().guild = 0;
                 }
             }
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement deleteFavourite =
-                    connection.prepareStatement("UPDATE users_settings SET guild_id = ? WHERE guild_id = ?")) {
-                deleteFavourite.setInt(1, 0);
-                deleteFavourite.setInt(2, guild.getId());
-                deleteFavourite.execute();
-            }
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(guild.getRoomId());
 
-            try (PreparedStatement statement =
-                    connection.prepareStatement("DELETE FROM guild_forum_views WHERE guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "DELETE c FROM guilds_forums_comments c INNER JOIN guilds_forums_threads t ON c.thread_id = t.id WHERE t.guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement =
-                    connection.prepareStatement("DELETE FROM guilds_forums_threads WHERE guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement =
-                    connection.prepareStatement("DELETE FROM guilds_members WHERE guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement =
-                    connection.prepareStatement("UPDATE rooms SET guild_id = 0 WHERE guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement =
-                    connection.prepareStatement("UPDATE items SET guild_id = 0 WHERE guild_id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guilds WHERE id = ?")) {
-                statement.setInt(1, guild.getId());
-                statement.execute();
-            }
-
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(guild.getRoomId());
-
-            if (room != null) {
-                room.setGuild(0);
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+        if (room != null) {
+            room.setGuild(0);
         }
 
-        this.guilds.remove(guild.getId());
-        ForumThread.clearCacheForGuild(guild.getId());
-        GuildForumDataComposer.invalidateUnreadCache(guild.getId());
+        this.guilds.remove(guildId);
+        ForumThread.clearCacheForGuild(guildId);
+        GuildForumDataComposer.invalidateUnreadCache(guildId);
+        return true;
+    }
+
+    private static void executeForGuild(Connection connection, String sql, int guildId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, guildId);
+            statement.execute();
+        }
     }
 
     public void clearInactiveGuilds() {
@@ -831,15 +840,17 @@ public class GuildManager {
     }
 
     public boolean hasViewedForum(int userId, int guildId) {
+        int cutoff = forumViewCutoff();
         return this.views.stream()
-                .anyMatch(v -> v.getUserId() == userId
-                        && v.getGuildId() == guildId
-                        && v.getTimestamp() > (Emulator.getIntUnixTimestamp() - 7 * 24 * 60 * 60));
+                .anyMatch(v -> v.getUserId() == userId && v.getGuildId() == guildId && v.getTimestamp() > cutoff);
     }
 
     public void addView(int userId, int guildId) {
+        // Only the last week counts anywhere, so older views leave memory instead of growing forever.
         ForumView view = new ForumView(userId, guildId, Emulator.getIntUnixTimestamp());
+        int cutoff = view.getTimestamp() - FORUM_VIEW_WINDOW_SECONDS;
 
+        this.views.removeIf(v -> v.getTimestamp() <= cutoff);
         this.views.add(view);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -855,17 +866,25 @@ public class GuildManager {
         }
     }
 
+    /** The forums anyone can read, most viewed in the last week first (the set keeps that order). */
     public Set<Guild> getMostViewed() {
+        int cutoff = forumViewCutoff();
         return this.views.stream()
-                .filter(v -> v.getTimestamp() > (Emulator.getIntUnixTimestamp() - 7 * 24 * 60 * 60))
+                .filter(v -> v.getTimestamp() > cutoff)
                 .collect(Collectors.groupingBy(ForumView::getGuildId))
                 .entrySet()
                 .stream()
-                .sorted(Comparator.comparingInt(
-                        (Map.Entry<Integer, List<ForumView>> a) -> a.getValue().size()))
+                .sorted(Comparator.comparingInt((Map.Entry<Integer, List<ForumView>> a) ->
+                                a.getValue().size())
+                        .reversed())
                 .map(k -> this.getGuild(k.getKey()))
                 .filter(g -> g != null && g.canReadForum() == SettingsState.EVERYONE)
                 .limit(100)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /** Views at or before this second are older than the week that counts. */
+    private static int forumViewCutoff() {
+        return Emulator.getIntUnixTimestamp() - FORUM_VIEW_WINDOW_SECONDS;
     }
 }

@@ -19,7 +19,6 @@ import polaris.messages.outgoing.generic.alerts.HotelWillCloseInMinutesComposer;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.inventory.RemoveUserItemsComposer;
-import polaris.threading.runnables.QueryDeleteUserItem;
 import polaris.threading.runnables.ShutdownEmulator;
 
 public class RecycleEvent extends MessageHandler {
@@ -68,7 +67,7 @@ public class RecycleEvent extends MessageHandler {
                 return;
             }
 
-            UserItem reward = null;
+            UserItem reward;
             boolean consumed = false;
 
             try {
@@ -79,24 +78,18 @@ public class RecycleEvent extends MessageHandler {
                     return;
                 }
 
+                // The furni are deleted and the box inserted in one transaction: either both happened
+                // or neither did, so the taken furni go back to the inventory only on a null.
                 reward = Emulator.getGameEnvironment()
                         .getItemManager()
-                        .handleRecycle(this.client.getUser(), prize.getId() + "");
+                        .handleRecycle(this.client.getUser(), prize.getId() + "", items);
                 if (reward == null) {
                     this.fail();
                     return;
                 }
+                consumed = true;
 
                 itemsComponent.addItem(reward);
-                if (itemsComponent.getUserItem(reward.getId()) != reward) {
-                    this.fail();
-                    return;
-                }
-
-                for (UserItem item : items) {
-                    Emulator.getThreading().runPersistence(new QueryDeleteUserItem(item.getId()));
-                }
-                consumed = true;
 
                 List<Integer> removedItemIds = new ArrayList<>();
                 for (UserItem item : items) {
@@ -113,11 +106,6 @@ public class RecycleEvent extends MessageHandler {
             } finally {
                 if (!consumed) {
                     itemsComponent.restoreUserItemsAfterFailedTake(items);
-
-                    if (reward != null) {
-                        itemsComponent.removeUserItem(reward);
-                        Emulator.getThreading().runPersistence(new QueryDeleteUserItem(reward.getId()));
-                    }
                 }
             }
         } else {

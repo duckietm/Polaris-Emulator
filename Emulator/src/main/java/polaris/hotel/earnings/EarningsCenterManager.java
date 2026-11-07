@@ -20,6 +20,7 @@ import polaris.hotel.items.ItemManager;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserItem;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.users.subscriptions.SubscriptionClub;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
@@ -466,9 +467,11 @@ public class EarningsCenterManager {
                 return;
             }
 
-            UserBadge badge = new UserBadge(0, badgeCode, 0, user);
-            badge.run();
-            user.getInventory().getBadgesComponent().addBadge(badge);
+            UserBadge badge = BadgesComponent.createBadge(badgeCode, user);
+            if (badge == null) {
+                // The claim reports the failure instead of a badge that would be gone at the next login.
+                throw new SQLException("Could not write earnings badge " + badgeCode);
+            }
             if (user.getClient() != null) {
                 user.getClient().sendResponse(new AddUserBadgeComposer(badge));
             }

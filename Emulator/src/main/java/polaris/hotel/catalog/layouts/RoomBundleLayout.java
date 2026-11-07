@@ -151,10 +151,25 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     public void buyRoom(User user) {
-        this.buyRoom(user, user.getUserInfo().getId(), user.getUserInfo().getUsername());
+        this.tryBuyRoom(user);
     }
 
     public void buyRoom(User user, int userId, String userName) {
+        this.tryBuyRoom(user, userId, userName);
+    }
+
+    /** {@link #tryBuyRoom(Habbo, int, String)} for the buyer's own account. */
+    public boolean tryBuyRoom(User user) {
+        return this.tryBuyRoom(
+                user, user.getUserInfo().getId(), user.getUserInfo().getUsername());
+    }
+
+    /**
+     * Copies the bundle's room to the user and says whether the copy exists. The room, its furni, its custom model and
+     * its bots are written in one transaction, so a database error leaves nothing behind; before, each statement was
+     * committed on its own and every error was only logged, so the buyer paid for a room that was missing or empty.
+     */
+    public boolean tryBuyRoom(User user, int userId, String userName) {
         if (!this.loaded) {
             this.loadItems(Emulator.getGameEnvironment().getRoomManager().loadRoom(this.roomId));
         }
@@ -168,11 +183,11 @@ public class RoomBundleLayout extends SingleBundle {
 
             if (count >= max) {
                 user.getClient().sendResponse(new CanCreateRoomComposer(count, max));
-                return;
+                return false;
             }
         }
 
-        if (this.room == null) return;
+        if (this.room == null) return false;
 
         this.room.save();
 
@@ -188,98 +203,122 @@ public class RoomBundleLayout extends SingleBundle {
         int roomId = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                statement.setInt(1, userId);
-                statement.setString(2, userName);
-                statement.setInt(3, this.room.getId());
-                statement.execute();
-                try (ResultSet set = statement.getGeneratedKeys()) {
-                    if (set.next()) {
-                        roomId = set.getInt(1);
-                    }
+            connection.setAutoCommit(false);
+            try {
+                roomId = this.copyRoom(connection, userId, userName);
+                if (roomId == 0) {
+                    connection.rollback();
+                    return false;
                 }
-            }
-
-            if (roomId == 0) return;
-
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
-                            + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                statement.setInt(1, userId);
-                statement.setInt(2, roomId);
-                statement.setString(3, "0:0");
-                statement.setInt(4, 0);
-                statement.setInt(5, this.room.getId());
-                statement.execute();
-            }
-
-            if (this.room.hasCustomLayout()) {
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-                    statement.setInt(1, roomId);
-                    statement.setString(2, "custom_" + roomId);
-                    statement.setInt(3, this.room.getId());
-                    statement.execute();
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
-                }
-            }
-
-            if (Emulator.getConfig().getBoolean("bundle.bots.enabled")) {
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-                    synchronized (this.room.getCurrentBots()) {
-                        statement.setInt(1, userId);
-                        statement.setInt(2, roomId);
-                        for (Bot bot : this.room.getCurrentBots().values()) {
-                            statement.setString(3, bot.getName());
-                            statement.setString(4, bot.getMotto());
-                            statement.setString(5, bot.getFigure());
-                            statement.setString(6, bot.getGender().name());
-                            statement.setInt(7, bot.getRoomUnit().getX());
-                            statement.setInt(8, bot.getRoomUnit().getY());
-                            statement.setDouble(9, bot.getRoomUnit().getZ());
-                            StringBuilder text = new StringBuilder();
-                            for (String s : bot.getChatLines()) {
-                                text.append(s).append("\r");
-                            }
-                            statement.setString(10, text.toString());
-                            statement.setString(11, bot.isChatAuto() ? "1" : "0");
-                            statement.setString(12, bot.isChatRandom() ? "1" : "0");
-                            statement.setInt(13, bot.getChatDelay());
-                            statement.setInt(
-                                    14, bot.getRoomUnit().getDanceType().getType());
-                            statement.setString(15, bot.getType());
-                            statement.addBatch();
-                        }
-                    }
-                    statement.executeBatch();
-                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Room bundle {} could not be copied for user {}", this.getId(), userId, e);
+            return false;
         }
 
+        // The copy is committed. A room that does not load now keeps its rows and loads on the next visit; only the
+        // wall and floor settings below are skipped. Before, a null room here threw and the buyer was refunded for a
+        // room that existed.
         Room r = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
-        r.setWallHeight(this.room.getWallHeight());
-        r.setFloorSize(this.room.getFloorSize());
-        r.setWallPaint(this.room.getWallPaint());
-        r.setFloorPaint(this.room.getFloorPaint());
-        r.setScore(0);
-        r.setNeedsUpdate(true);
-        Map<String, String> keys = new HashMap<>();
-        keys.put("ROOMNAME", r.getName());
-        keys.put("ROOMID", r.getId() + "");
-        keys.put("OWNER", r.getOwnerName());
-        keys.put("image", "${image.library.url}/notifications/room_bundle_" + this.getId() + ".png");
+        if (r != null) {
+            r.setWallHeight(this.room.getWallHeight());
+            r.setFloorSize(this.room.getFloorSize());
+            r.setWallPaint(this.room.getWallPaint());
+            r.setFloorPaint(this.room.getFloorPaint());
+            r.setScore(0);
+            r.setNeedsUpdate(true);
+        }
 
-        if (user != null) {
+        if (user != null && r != null) {
+            Map<String, String> keys = new HashMap<>();
+            keys.put("ROOMNAME", r.getName());
+            keys.put("ROOMID", r.getId() + "");
+            keys.put("OWNER", r.getOwnerName());
+            keys.put("image", "${image.library.url}/notifications/room_bundle_" + this.getId() + ".png");
             user.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.PURCHASING_ROOM.key, keys));
         }
+        return true;
+    }
+
+    /** Writes the copy on {@code connection} and returns the new room id, or 0 when the room row was not created. */
+    private int copyRoom(Connection connection, int userId, String userName) throws SQLException {
+        int roomId = 0;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setString(2, userName);
+            statement.setInt(3, this.room.getId());
+            statement.execute();
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    roomId = set.getInt(1);
+                }
+            }
+        }
+
+        if (roomId == 0) return 0;
+
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
+                        + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, roomId);
+            statement.setString(3, "0:0");
+            statement.setInt(4, 0);
+            statement.setInt(5, this.room.getId());
+            statement.execute();
+        }
+
+        if (this.room.hasCustomLayout()) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, roomId);
+                statement.setString(2, "custom_" + roomId);
+                statement.setInt(3, this.room.getId());
+                statement.execute();
+            }
+        }
+
+        if (Emulator.getConfig().getBoolean("bundle.bots.enabled")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                synchronized (this.room.getCurrentBots()) {
+                    statement.setInt(1, userId);
+                    statement.setInt(2, roomId);
+                    for (Bot bot : this.room.getCurrentBots().values()) {
+                        statement.setString(3, bot.getName());
+                        statement.setString(4, bot.getMotto());
+                        statement.setString(5, bot.getFigure());
+                        statement.setString(6, bot.getGender().name());
+                        statement.setInt(7, bot.getRoomUnit().getX());
+                        statement.setInt(8, bot.getRoomUnit().getY());
+                        statement.setDouble(9, bot.getRoomUnit().getZ());
+                        StringBuilder text = new StringBuilder();
+                        for (String s : bot.getChatLines()) {
+                            text.append(s).append("\r");
+                        }
+                        statement.setString(10, text.toString());
+                        statement.setString(11, bot.isChatAuto() ? "1" : "0");
+                        statement.setString(12, bot.isChatRandom() ? "1" : "0");
+                        statement.setInt(13, bot.getChatDelay());
+                        statement.setInt(14, bot.getRoomUnit().getDanceType().getType());
+                        statement.setString(15, bot.getType());
+                        statement.addBatch();
+                    }
+                }
+                statement.executeBatch();
+            }
+        }
+        return roomId;
     }
 }

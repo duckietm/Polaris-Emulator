@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
@@ -27,8 +27,9 @@ import polaris.plugin.events.guilds.forums.GuildForumThreadCreated;
 public class ForumThread implements Runnable, ISerialize {
     private static final Logger LOGGER = LoggerFactory.getLogger(ForumThread.class);
 
-    private static final Map<Integer, Set<ForumThread>> guildThreadsCache = new HashMap<>();
-    private static final Map<Integer, ForumThread> forumThreadsCache = new HashMap<>();
+    // Read and written by every client opening a forum: concurrent maps, and a guild's set only once it is complete.
+    private static final Map<Integer, Set<ForumThread>> guildThreadsCache = new ConcurrentHashMap<>();
+    private static final Map<Integer, ForumThread> forumThreadsCache = new ConcurrentHashMap<>();
     private final int threadId;
     private final int guildId;
     private final int openerId;
@@ -160,18 +161,15 @@ public class ForumThread implements Runnable, ISerialize {
         return createdThread;
     }
 
+    /**
+     * The guild's threads, loaded once. The empty set used to be cached before the query ran, so a second reader
+     * after a restart saw no threads or only some, and a failed query left the forum empty until the next restart.
+     */
     public static Set<ForumThread> getByGuildId(int guildId) {
-        Set<ForumThread> threads = null;
+        Set<ForumThread> cached = guildThreadsCache.get(guildId);
+        if (cached != null) return cached;
 
-        if (guildThreadsCache.containsKey(guildId)) {
-            threads = guildThreadsCache.get(guildId);
-        }
-
-        if (threads != null) return threads;
-
-        threads = new HashSet<>();
-
-        guildThreadsCache.put(guildId, threads);
+        Set<ForumThread> threads = ConcurrentHashMap.newKeySet();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -188,17 +186,20 @@ public class ForumThread implements Runnable, ISerialize {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     ForumThread thread = new ForumThread(set);
-                    synchronized (threads) {
-                        threads.add(thread);
-                    }
-                    cacheThread(thread);
+                    threads.add(thread);
+                    forumThreadsCache.put(thread.threadId, thread);
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return threads;
         }
 
-        return threads;
+        // A thread created while the query ran was cached into a set of its own: keep it too.
+        return guildThreadsCache.merge(guildId, threads, (existing, loaded) -> {
+            loaded.addAll(existing);
+            return loaded;
+        });
     }
 
     public static ForumThread getById(int threadId) throws SQLException {
@@ -233,30 +234,19 @@ public class ForumThread implements Runnable, ISerialize {
     }
 
     private static void cacheThread(ForumThread thread) {
-        synchronized (forumThreadsCache) {
-            forumThreadsCache.put(thread.threadId, thread);
-        }
-
-        Set<ForumThread> guildThreads = guildThreadsCache.get(thread.guildId);
-
-        if (guildThreads == null) {
-            guildThreads = new HashSet<>();
-            synchronized (forumThreadsCache) {
-                guildThreadsCache.put(thread.guildId, guildThreads);
-            }
-        }
-        guildThreads.add(thread);
+        forumThreadsCache.put(thread.threadId, thread);
+        // Only a guild whose threads are cached gets the new one; an uncached guild loads it with the rest.
+        guildThreadsCache.computeIfPresent(thread.guildId, (guildId, threads) -> {
+            threads.add(thread);
+            return threads;
+        });
     }
 
     public static void clearCacheForGuild(int guildId) {
-        synchronized (guildThreadsCache) {
-            Set<ForumThread> threads = guildThreadsCache.remove(guildId);
-            if (threads != null) {
-                synchronized (forumThreadsCache) {
-                    for (ForumThread thread : threads) {
-                        forumThreadsCache.remove(thread.threadId);
-                    }
-                }
+        Set<ForumThread> threads = guildThreadsCache.remove(guildId);
+        if (threads != null) {
+            for (ForumThread thread : threads) {
+                forumThreadsCache.remove(thread.threadId);
             }
         }
     }
@@ -268,13 +258,8 @@ public class ForumThread implements Runnable, ISerialize {
             }
         }
 
-        synchronized (forumThreadsCache) {
-            forumThreadsCache.clear();
-        }
-
-        synchronized (guildThreadsCache) {
-            guildThreadsCache.clear();
-        }
+        forumThreadsCache.clear();
+        guildThreadsCache.clear();
     }
 
     public int getThreadId() {

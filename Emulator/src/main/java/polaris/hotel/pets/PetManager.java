@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,16 +136,17 @@ public class PetManager {
             this.put(46, new ActionBreed());
         }
     };
-    private final Map<Integer, Set<PetRace>> petRaces;
-    private final Map<Integer, PetData> petData;
-    private final Int2IntMap breedingPetType;
-    private final Map<Integer, Int2ObjectMap<ArrayList<PetBreedingReward>>> breedingReward;
+    // Built whole by reloadPetData and swapped in: a reload used to empty them while packets were reading.
+    private volatile Map<Integer, Set<PetRace>> petRaces;
+    private volatile Map<Integer, PetData> petData;
+    private volatile Int2IntMap breedingPetType;
+    private volatile Map<Integer, Int2ObjectMap<ArrayList<PetBreedingReward>>> breedingReward;
 
     public PetManager() {
         long millis = System.currentTimeMillis();
 
         this.petRaces = new HashMap<>();
-        this.petData = new HashMap<>();
+        this.petData = new ConcurrentHashMap<>();
         this.breedingPetType = new Int2IntOpenHashMap();
         this.breedingReward = new HashMap<>();
 
@@ -226,56 +228,63 @@ public class PetManager {
         return new NormalDistribution(avgLevel, (20 - (avgLevel / 2)) / 2);
     }
 
+    /**
+     * Loads the pet tables into new maps and publishes them together. They used to be cleared first and filled after
+     * the queries, so a pet bought during :update_pets found its type gone or its races missing; a database failure
+     * now keeps the tables already loaded.
+     */
     public void reloadPetData() {
-        this.petRaces.clear();
-        this.petData.clear();
-        this.breedingPetType.clear();
-        this.breedingReward.clear();
+        Map<Integer, Set<PetRace>> races = new HashMap<>();
+        Map<Integer, PetData> data = new ConcurrentHashMap<>();
+        Int2IntMap breedingTypes = new Int2IntOpenHashMap();
+        Map<Integer, Int2ObjectMap<ArrayList<PetBreedingReward>>> breedingRewards = new HashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            this.loadRaces(connection);
-            this.loadPetData(connection);
-            this.loadPetCommands(connection);
-            this.loadPetBreeding(connection);
+            loadRaces(connection, races);
+            this.loadPetData(connection, data);
+            this.loadPetCommands(connection, data);
+            loadPetBreeding(connection, breedingTypes, breedingRewards);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
             LOGGER.error("Pet Manager -> Failed to load!");
+            return;
         }
+
+        this.petRaces = races;
+        this.petData = data;
+        this.breedingPetType = breedingTypes;
+        this.breedingReward = breedingRewards;
     }
 
-    private void loadRaces(Connection connection) {
-        this.petRaces.clear();
-
+    private static void loadRaces(Connection connection, Map<Integer, Set<PetRace>> petRaces) {
         try (Statement statement = connection.createStatement();
                 ResultSet set =
                         statement.executeQuery("SELECT * FROM pet_breeds ORDER BY race, color_one, color_two ASC")) {
             while (set.next()) {
-                if (this.petRaces.get(set.getInt("race")) == null)
-                    this.petRaces.put(set.getInt("race"), new HashSet<>());
-
-                this.petRaces.get(set.getInt("race")).add(new PetRace(set));
+                petRaces.computeIfAbsent(set.getInt("race"), ignored -> new HashSet<>())
+                        .add(new PetRace(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
     }
 
-    private void loadPetData(Connection connection) {
+    private void loadPetData(Connection connection, Map<Integer, PetData> petData) {
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_actions ORDER BY pet_type ASC")) {
             while (set.next()) {
-                this.petData.put(set.getInt("pet_type"), new PetData(set));
+                petData.put(set.getInt("pet_type"), new PetData(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        this.loadPetItems(connection);
+        loadPetItems(connection, petData);
 
-        this.loadPetVocals(connection);
+        loadPetVocals(connection, petData);
     }
 
-    private void loadPetItems(Connection connection) {
+    private static void loadPetItems(Connection connection, Map<Integer, PetData> petData) {
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_items")) {
             while (set.next()) {
@@ -293,7 +302,7 @@ public class PetManager {
                                 || baseItem.getInteractionType().getType() == InteractionPetTrampoline.class)
                             PetData.generalToyItems.add(baseItem);
                     } else {
-                        PetData data = this.getPetData(set.getInt("pet_id"));
+                        PetData data = petData.get(set.getInt("pet_id"));
 
                         if (data != null) {
                             if (baseItem.getInteractionType().getType() == InteractionNest.class)
@@ -314,18 +323,17 @@ public class PetManager {
         }
     }
 
-    private void loadPetVocals(Connection connection) {
+    private static void loadPetVocals(Connection connection, Map<Integer, PetData> petData) {
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_vocals")) {
             while (set.next()) {
                 if (set.getInt("pet_id") >= 0) {
-                    if (this.petData.containsKey(set.getInt("pet_id"))) {
+                    if (petData.containsKey(set.getInt("pet_id"))) {
                         PetVocalsType petVocalsType =
                                 PetVocalsType.valueOf(set.getString("type").toUpperCase());
 
                         if (petVocalsType != null) {
-                            this.petData
-                                    .get(set.getInt("pet_id"))
+                            petData.get(set.getInt("pet_id"))
                                     .petVocals
                                     .get(petVocalsType)
                                     .add(new PetVocal(set.getString("message")));
@@ -351,7 +359,7 @@ public class PetManager {
         }
     }
 
-    private void loadPetCommands(Connection connection) {
+    private void loadPetCommands(Connection connection, Map<Integer, PetData> petData) {
         Map<Integer, PetCommand> commandsList = new HashMap<>();
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_commands_data")) {
@@ -366,7 +374,7 @@ public class PetManager {
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_commands ORDER BY pet_id ASC")) {
             while (set.next()) {
-                PetData data = this.petData.get(set.getInt("pet_id"));
+                PetData data = petData.get(set.getInt("pet_id"));
 
                 if (data != null) {
                     data.getPetCommands().add(commandsList.get(set.getInt("command_id")));
@@ -377,11 +385,14 @@ public class PetManager {
         }
     }
 
-    private void loadPetBreeding(Connection connection) {
+    private static void loadPetBreeding(
+            Connection connection,
+            Int2IntMap breedingPetType,
+            Map<Integer, Int2ObjectMap<ArrayList<PetBreedingReward>>> breedingReward) {
         try (Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_breeding")) {
             while (set.next()) {
-                this.breedingPetType.put(set.getInt("pet_id"), set.getInt("offspring_id"));
+                breedingPetType.put(set.getInt("pet_id"), set.getInt("offspring_id"));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -391,15 +402,10 @@ public class PetManager {
                 ResultSet set = statement.executeQuery("SELECT * FROM pet_breeding_races")) {
             while (set.next()) {
                 PetBreedingReward reward = new PetBreedingReward(set);
-                if (!this.breedingReward.containsKey(reward.petType)) {
-                    this.breedingReward.put(reward.petType, new Int2ObjectOpenHashMap<>());
-                }
-
-                if (!this.breedingReward.get(reward.petType).containsKey(reward.rarityLevel)) {
-                    this.breedingReward.get(reward.petType).put(reward.rarityLevel, new ArrayList<>());
-                }
-
-                this.breedingReward.get(reward.petType).get(reward.rarityLevel).add(reward);
+                breedingReward
+                        .computeIfAbsent(reward.petType, ignored -> new Int2ObjectOpenHashMap<>())
+                        .computeIfAbsent(reward.rarityLevel, ignored -> new ArrayList<>())
+                        .add(reward);
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -595,8 +601,9 @@ public class PetManager {
     }
 
     public Pet createPet(int type, String name, GameClient client) {
-        return this.createPet(
-                type, Emulator.getRandom().nextInt(this.petRaces.get(type).size() + 1), name, client);
+        Set<PetRace> races = this.petRaces.get(type);
+        int raceCount = races == null ? 0 : races.size();
+        return this.createPet(type, Emulator.getRandom().nextInt(raceCount + 1), name, client);
     }
 
     public Pet createPet(int type, int race, String name, GameClient client) {

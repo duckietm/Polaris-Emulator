@@ -31,6 +31,7 @@ import polaris.hotel.catalog.layouts.ClubBuyLayout;
 import polaris.hotel.catalog.layouts.VipBuyLayout;
 import polaris.hotel.items.FurnitureType;
 import polaris.hotel.items.Item;
+import polaris.hotel.items.ItemManager;
 import polaris.hotel.items.interactions.InteractionBadgeDisplay;
 import polaris.hotel.items.interactions.InteractionGuildFurni;
 import polaris.hotel.items.interactions.InteractionGuildGate;
@@ -102,6 +103,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         private int limitedNumber;
         private int limitedStack;
         private final Set<UserItem> createdItems = new HashSet<>();
+        /** The wrapped box, kept apart: it is the recipient's from the moment it is created. */
+        private UserItem gift;
+
+        private User recipient;
         private boolean delivered;
     }
 
@@ -279,6 +284,8 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return;
         }
         attempt.createdItems.add(gift);
+        attempt.gift = gift;
+        attempt.recipient = user;
 
         this.recordLimitedSale(item, gift, attempt);
 
@@ -380,16 +387,37 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             if (itm == gift) continue;
             if (limitedItem == null || itm.getId() < limitedItem.getId()) limitedItem = itm;
         }
-        if (limitedItem != null) {
-            attempt.limitedConfiguration.limitedSold(item.getId(), this.client.getUser(), limitedItem);
+        if (limitedItem == null) return;
+
+        // The sale used to be written with its SQL errors swallowed, leaving the number free in the database to be
+        // sold again after a reload. A failure now undoes the gift; once written the number is not given back.
+        try {
+            attempt.limitedConfiguration.limitedSoldOrThrow(item.getId(), this.client.getUser(), limitedItem);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Limited sale of gift offer " + item.getId() + " could not be recorded", e);
         }
+        attempt.limitedNumber = 0;
     }
 
     /** Deletes what a failed gift created, returns its limited number and refunds what it took. */
     private void undo(GiftAttempt attempt) {
+        ItemManager items = Emulator.getGameEnvironment().getItemManager();
+        if (attempt.gift != null) {
+            // createGift put the box in an online recipient's inventory at once.
+            if (attempt.recipient != null && attempt.recipient.getInventory() != null) {
+                attempt.recipient.getInventory().getItemsComponent().removeUserItem(attempt.gift.getId());
+            }
+            if (!items.tryDeleteItem(attempt.gift)) {
+                // The recipient keeps a box the database still holds, so the sender is not refunded: the refund used
+                // to be paid while the gift stayed, and both kept what the purchase was worth.
+                LOGGER.error(
+                        "Gift {} could not be taken back; it stays delivered and is not refunded",
+                        attempt.gift.getId());
+                return;
+            }
+        }
         for (UserItem createdItem : attempt.createdItems) {
-            if (createdItem != null)
-                Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+            if (createdItem != null && createdItem != attempt.gift) items.deleteItem(createdItem);
         }
         if (attempt.limitedConfiguration != null && attempt.limitedNumber > 0) {
             // Return the reserved number to the pool, as a failed purchase for oneself does,
@@ -723,8 +751,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     if (baseItem.getType() == FurnitureType.BADGE) {
                         if (!badgeFound) {
                             if (user != null) {
+                                // Written on this connection first, so the badge the recipient holds has its id.
                                 UserBadge badge = new UserBadge(0, baseItem.getName(), 0, user);
-                                Emulator.getThreading().run(badge);
+                                badge.insert(connection);
                                 user.getInventory().getBadgesComponent().addBadge(badge);
                             } else {
                                 try (PreparedStatement statement = connection.prepareStatement(

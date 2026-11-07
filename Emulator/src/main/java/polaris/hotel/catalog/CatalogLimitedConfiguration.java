@@ -35,6 +35,20 @@ public class CatalogLimitedConfiguration implements Runnable {
         }
     }
 
+    /**
+     * Takes the numbers a catalog reload read from the database, keeping this object: a purchase that holds it can
+     * still give a number back. The numbers are ordered as a new configuration would order them.
+     */
+    public void replaceNumbers(LinkedList<Integer> availableNumbers, int totalSet) {
+        LinkedList<Integer> ordered =
+                new CatalogLimitedConfiguration(this.itemId, availableNumbers, totalSet).limitedNumbers;
+        synchronized (this.limitedNumbers) {
+            this.limitedNumbers.clear();
+            this.limitedNumbers.addAll(ordered);
+            this.totalSet = totalSet;
+        }
+    }
+
     public int getNumber() {
         synchronized (this.limitedNumbers) {
             return this.limitedNumbers.pop();
@@ -66,11 +80,21 @@ public class CatalogLimitedConfiguration implements Runnable {
     }
 
     public void limitedSold(int catalogItemId, User user, UserItem item) {
+        try {
+            this.limitedSoldOrThrow(catalogItemId, user, item);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    /**
+     * Records the sale of {@code item}'s number to {@code user} and reports a failure, so a purchase can be undone
+     * instead of delivering a number the database still holds as free.
+     */
+    public void limitedSoldOrThrow(int catalogItemId, User user, UserItem item) throws SQLException {
         synchronized (this.limitedNumbers) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                 this.limitedSold(connection, catalogItemId, user, item);
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
         }
     }

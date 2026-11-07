@@ -1,6 +1,5 @@
 package polaris.hotel.commands;
 
-import java.util.ArrayList;
 import java.util.List;
 import polaris.Emulator;
 import polaris.hotel.bots.Bot;
@@ -57,9 +56,7 @@ public class EmptyBotsInventoryCommand extends Command {
             }
 
             if (user != null) {
-                List<Bot> bots = new ArrayList<>(
-                        user.getInventory().getBotsComponent().getBots().values());
-                user.getInventory().getBotsComponent().getBots().clear();
+                List<Bot> bots = user.getInventory().getBotsComponent().takeAllBots();
                 bots.forEach(
                         object -> Emulator.getGameEnvironment().getBotManager().deleteBot(object));
 

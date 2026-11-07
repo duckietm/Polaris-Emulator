@@ -36,6 +36,7 @@ import polaris.hotel.pets.PetManager;
 import polaris.hotel.rooms.BuildersClubRoomSupport;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserInventory;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.hotel.users.subscriptions.Subscription;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import polaris.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
@@ -205,10 +206,16 @@ final class CatalogPurchaseApplicationService {
                 return;
             }
 
+            // Every outcome but a room that exists gives the price back: buyRoom said nothing, so a room it could not
+            // create, or one past the room limit, kept the payment.
+            boolean bought;
             try {
-                page.buyRoom(this.client.getUser());
+                bought = page.tryBuyRoom(this.client.getUser());
             } catch (RuntimeException e) {
                 LOGGER.error("Room bundle purchase failed for user {}", this.buyerId(), e);
+                bought = false;
+            }
+            if (!bought) {
                 CatalogPaymentService.refund(this.client.getUser(), paidCredits, pointsType, paidPoints);
                 this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 return;
@@ -249,13 +256,8 @@ final class CatalogPurchaseApplicationService {
                             .getInventory()
                             .getBadgesComponent()
                             .hasBadge(i.getName())) {
-                        UserBadge badge = new UserBadge(0, i.getName(), 0, this.client.getUser());
-                        this.threading.run(badge);
-                        this.client
-                                .getUser()
-                                .getInventory()
-                                .getBadgesComponent()
-                                .addBadge(badge);
+                        UserBadge badge = BadgesComponent.createBadge(i.getName(), this.client.getUser());
+                        if (badge == null) return;
                         this.client.sendResponse(new AddUserBadgeComposer(badge));
                         Map<String, String> keys = new HashMap<>();
                         keys.put("display", "BUBBLE");

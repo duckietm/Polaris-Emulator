@@ -4,7 +4,6 @@ import polaris.Emulator;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.items.interactions.InteractionTeleport;
 import polaris.hotel.items.interactions.InteractionTeleportTile;
-import polaris.hotel.permissions.Permission;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.rooms.RoomUnitStatus;
@@ -30,16 +29,7 @@ class TeleportActionThree implements Runnable {
 
     /** The entry checks the room door applies, for a teleport: a ban, and a full room. */
     static boolean mayEnter(User user, Room room) {
-        boolean anyRoom =
-                user.hasPermission(Permission.ACC_ANYROOMOWNER) || user.hasPermission(Permission.ACC_ENTERANYROOM);
-
-        if (room.isBanned(user) && !anyRoom) {
-            return false;
-        }
-
-        return room.getUserCount() < room.getUsersMax()
-                || user.hasPermission(Permission.ACC_FULLROOMS)
-                || room.hasRights(user);
+        return TeleportEntryRules.mayEnter(user, room);
     }
 
     /** Closes the teleport and leaves the user where they are. */

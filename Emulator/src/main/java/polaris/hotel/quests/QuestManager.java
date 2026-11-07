@@ -83,9 +83,10 @@ public class QuestManager {
         }
     }
 
-    private final Map<Integer, Quest> quests = new LinkedHashMap<>();
-    private final Map<String, List<Quest>> campaigns = new LinkedHashMap<>();
-    private final List<Quest> dailyPool = new ArrayList<>();
+    // Built by reload into new collections and swapped in: a reload used to clear them while quest packets read them.
+    private volatile Map<Integer, Quest> quests = new LinkedHashMap<>();
+    private volatile Map<String, List<Quest>> campaigns = new LinkedHashMap<>();
+    private volatile List<Quest> dailyPool = new ArrayList<>();
     private final Map<Integer, UserQuestState> users = new ConcurrentHashMap<>();
     private final boolean persistent;
 
@@ -100,9 +101,9 @@ public class QuestManager {
     }
 
     public synchronized void reload() {
-        this.quests.clear();
-        this.campaigns.clear();
-        this.dailyPool.clear();
+        Map<Integer, Quest> loadedQuests = new LinkedHashMap<>();
+        Map<String, List<Quest>> loadedCampaigns = new LinkedHashMap<>();
+        List<Quest> loadedDaily = new ArrayList<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT * FROM quests WHERE enabled = 1 ORDER BY campaign_code, sort_order, id");
@@ -113,11 +114,16 @@ public class QuestManager {
                     LOGGER.warn("Quest {} has an unknown goal type, skipped", quest.getId());
                     continue;
                 }
-                this.register(quest);
+                registerInto(quest, loadedQuests, loadedCampaigns, loadedDaily);
             }
         } catch (SQLException exception) {
+            // The quests loaded before stay.
             LOGGER.error("Could not load the quests", exception);
+            return;
         }
+        this.quests = loadedQuests;
+        this.campaigns = loadedCampaigns;
+        this.dailyPool = loadedDaily;
         LOGGER.info(
                 "Quest Manager -> Loaded! ({} quests in {} campaigns, {} daily)",
                 this.quests.size(),
@@ -127,13 +133,18 @@ public class QuestManager {
 
     /** Registers a definition. */
     public synchronized void register(Quest quest) {
-        this.quests.put(quest.getId(), quest);
+        registerInto(quest, this.quests, this.campaigns, this.dailyPool);
+    }
+
+    private static void registerInto(
+            Quest quest, Map<Integer, Quest> quests, Map<String, List<Quest>> campaigns, List<Quest> dailyPool) {
+        quests.put(quest.getId(), quest);
         if (quest.isDaily()) {
-            this.dailyPool.add(quest);
-            this.dailyPool.sort(Comparator.comparingInt(Quest::getSortOrder).thenComparingInt(Quest::getId));
+            dailyPool.add(quest);
+            dailyPool.sort(Comparator.comparingInt(Quest::getSortOrder).thenComparingInt(Quest::getId));
             return;
         }
-        List<Quest> chain = this.campaigns.computeIfAbsent(quest.getCampaignCode(), code -> new ArrayList<>());
+        List<Quest> chain = campaigns.computeIfAbsent(quest.getCampaignCode(), code -> new ArrayList<>());
         chain.add(quest);
         chain.sort(Comparator.comparingInt(Quest::getSortOrder).thenComparingInt(Quest::getId));
     }

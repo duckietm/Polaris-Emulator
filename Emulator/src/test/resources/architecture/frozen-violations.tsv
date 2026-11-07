@@ -495,6 +495,9 @@ U|polaris/hotel/items/PostItColor.java|CALL|getRandom|1
 U|polaris/hotel/items/YoutubeManager.java|CALL|getConfig|1
 U|polaris/hotel/items/YoutubeManager.java|CALL|getDatabase|1
 U|polaris/hotel/items/YoutubeManager.java|CALL|getThreading|1
+U|polaris/hotel/items/interactions/InteractionArrow.java|CALL|getConfig|1
+U|polaris/hotel/items/interactions/InteractionArrow.java|CALL|getGameEnvironment|3
+U|polaris/hotel/items/interactions/InteractionArrow.java|CALL|getThreading|2
 U|polaris/hotel/items/interactions/InteractionAreaHideControl.java|CALL|getThreading|1
 U|polaris/hotel/items/interactions/InteractionBackgroundToner.java|CALL|getTexts|1
 U|polaris/hotel/items/interactions/InteractionBackgroundToner.java|CALL|getThreading|2

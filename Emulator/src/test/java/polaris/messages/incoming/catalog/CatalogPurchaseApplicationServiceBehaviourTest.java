@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -63,6 +64,7 @@ import polaris.hotel.rooms.BuildersClubRoomSupport;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomManager;
 import polaris.hotel.users.User;
+import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserInventory;
 import polaris.hotel.users.UserStats;
@@ -98,6 +100,7 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
     private final List<MockedConstruction<?>> constructions = new ArrayList<>();
     private final Set<String> permissions = new LinkedHashSet<>();
     private final Set<String> ownedBadges = new LinkedHashSet<>();
+    private int nextBadgeId = 900;
     private boolean recording;
 
     private CatalogPage page;
@@ -158,6 +161,17 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
         MockedStatic<RankLimits> limits = mockStatic(RankLimits.class);
         limits.when(() -> RankLimits.rooms(any())).thenAnswer(i -> this.roomLimit);
         this.statics.add(limits);
+        MockedStatic<BadgesComponent> badgeRows = mockStatic(BadgesComponent.class, CALLS_REAL_METHODS);
+        badgeRows
+                .when(() -> BadgesComponent.createBadge(anyString(), any(User.class)))
+                .thenAnswer(i -> {
+                    User owner = i.getArgument(1);
+                    UserBadge badge = new UserBadge(this.nextBadgeId++, i.getArgument(0), 0, owner);
+                    this.record("BadgesComponent.createBadge(" + badge.getCode() + ") -> id " + badge.getId());
+                    owner.getInventory().getBadgesComponent().addBadge(badge);
+                    return badge;
+                });
+        this.statics.add(badgeRows);
 
         this.composer(AlertPurchaseFailedComposer.class, "AlertPurchaseFailed");
         this.composer(AlertPurchaseUnavailableComposer.class, "AlertPurchaseUnavailable");
@@ -279,8 +293,17 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
 
         doThrow(new IllegalStateException("room creation failed"))
                 .when((RoomBundleLayout) this.page)
-                .buyRoom(any(User.class));
+                .tryBuyRoom(any(User.class));
         this.buy("room bundle / the room cannot be created", 7, 20, "", 1);
+
+        this.page = this.roomBundlePage(bundle);
+        doAnswer(i -> {
+                    this.record("page.tryBuyRoom(buyer) -> false");
+                    return false;
+                })
+                .when((RoomBundleLayout) this.page)
+                .tryBuyRoom(any(User.class));
+        this.buy("room bundle / the room is not created", 7, 20, "", 1);
     }
 
     // ---------------------------------------------------------------- club and builders club
@@ -432,7 +455,7 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
                                     e -> String.valueOf(e.getKey()), e -> String.valueOf(e.getValue()))))
                     .toString();
         }
-        if (value instanceof polaris.hotel.users.UserBadge badge) return "badge " + badge.getCode();
+        if (value instanceof UserBadge badge) return "badge " + badge.getCode();
         if (value instanceof Number || value instanceof String || value instanceof Boolean)
             return String.valueOf(value);
         if (org.mockito.Mockito.mockingDetails(value).isMock()) {
@@ -487,7 +510,12 @@ class CatalogPurchaseApplicationServiceBehaviourTest {
     private CatalogPage roomBundlePage(CatalogItem item) {
         RoomBundleLayout page = mock(RoomBundleLayout.class, withSettings().name("room bundle page"));
         this.fillPage(page, 0, item);
-        doAnswer(i -> this.record("page.buyRoom(buyer)")).when(page).buyRoom(any(User.class));
+        doAnswer(i -> {
+                    this.record("page.tryBuyRoom(buyer) -> true");
+                    return true;
+                })
+                .when(page)
+                .tryBuyRoom(any(User.class));
         return page;
     }
 

@@ -47,100 +47,108 @@ public class NavigatorManager {
         LOGGER.info("Navigator Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
 
+    /**
+     * Loads the public categories and the filters into new maps and publishes them in one short step. They used to be
+     * cleared first and filled while the navigator read them; a staff pick category that did not exist (or was
+     * hidden) threw and left the navigator half loaded; and a filter deleted from navigator_filter stayed active.
+     */
     public void loadNavigator() {
+        Map<Integer, NavigatorPublicCategory> categories = new HashMap<>();
+        Map<String, NavigatorFilterField> fields = new HashMap<>();
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            synchronized (this.publicCategories) {
-                this.publicCategories.clear();
-
-                try (Statement statement = connection.createStatement();
-                        ResultSet set = statement.executeQuery(
-                                "SELECT * FROM navigator_publiccats WHERE visible = '1' ORDER BY order_num DESC")) {
-                    while (set.next()) {
-                        this.publicCategories.put(set.getInt("id"), new NavigatorPublicCategory(set));
-                    }
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
-                }
-
-                try (Statement statement = connection.createStatement();
-                        ResultSet set = statement.executeQuery("SELECT * FROM navigator_publics WHERE visible = '1'")) {
-                    while (set.next()) {
-                        NavigatorPublicCategory category = this.publicCategories.get(set.getInt("public_cat_id"));
-
-                        if (category != null) {
-                            Room room = Emulator.getGameEnvironment()
-                                    .getRoomManager()
-                                    .loadRoom(set.getInt("room_id"));
-
-                            if (room != null) {
-                                category.addRoom(room);
-                            } else {
-                                LOGGER.error(
-                                        "Public room (ID: {} defined in navigator_publics does not exist!",
-                                        set.getInt("room_id"));
-                            }
-                        }
-                    }
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+            try (Statement statement = connection.createStatement();
+                    ResultSet set = statement.executeQuery(
+                            "SELECT * FROM navigator_publiccats WHERE visible = '1' ORDER BY order_num DESC")) {
+                while (set.next()) {
+                    categories.put(set.getInt("id"), new NavigatorPublicCategory(set));
                 }
             }
 
-            synchronized (this.filterSettings) {
-                try (Statement statement = connection.createStatement();
-                        ResultSet set = statement.executeQuery("SELECT * FROM navigator_filter")) {
-                    while (set.next()) {
-                        Method field = null;
-                        Class<?> clazz = Room.class;
+            try (Statement statement = connection.createStatement();
+                    ResultSet set = statement.executeQuery("SELECT * FROM navigator_publics WHERE visible = '1'")) {
+                while (set.next()) {
+                    NavigatorPublicCategory category = categories.get(set.getInt("public_cat_id"));
 
-                        if (set.getString("field").contains(".")) {
-                            for (String s : (set.getString("field")).split("\\.")) {
-                                try {
-                                    field = clazz.getDeclaredMethod(s);
-                                    clazz = field.getReturnType();
-                                } catch (Exception e) {
-                                    LOGGER.error("Caught exception", e);
-                                    break;
-                                }
-                            }
+                    if (category != null) {
+                        Room room =
+                                Emulator.getGameEnvironment().getRoomManager().loadRoom(set.getInt("room_id"));
+
+                        if (room != null) {
+                            category.addRoom(room);
                         } else {
-                            try {
-                                field = clazz.getDeclaredMethod(set.getString("field"));
-                            } catch (Exception e) {
-                                LOGGER.error("Caught exception", e);
-                                continue;
-                            }
-                        }
-
-                        if (field != null) {
-                            this.filterSettings.put(
-                                    set.getString("key"),
-                                    new NavigatorFilterField(
-                                            set.getString("key"),
-                                            field,
-                                            set.getString("database_query"),
-                                            NavigatorFilterComparator.valueOf(
-                                                    set.getString("compare").toUpperCase())));
+                            LOGGER.error(
+                                    "Public room (ID: {} defined in navigator_publics does not exist!",
+                                    set.getInt("room_id"));
                         }
                     }
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                }
+            }
+
+            try (Statement statement = connection.createStatement();
+                    ResultSet set = statement.executeQuery("SELECT * FROM navigator_filter")) {
+                while (set.next()) {
+                    NavigatorFilterField field = filterField(set);
+                    if (field != null) fields.put(set.getString("key"), field);
                 }
             }
 
             this.loadLiftedRooms(connection);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
 
-        List<Room> staffPromotedRooms =
-                Emulator.getGameEnvironment().getRoomManager().getRoomsStaffPromoted();
-
-        for (Room room : staffPromotedRooms) {
-            this.publicCategories
-                    .get(Emulator.getConfig().getInt("hotel.navigator.staffpicks.categoryid"))
-                    .addRoom(room);
+        int staffPickCategoryId = Emulator.getConfig().getInt("hotel.navigator.staffpicks.categoryid");
+        NavigatorPublicCategory staffPicks = categories.get(staffPickCategoryId);
+        if (staffPicks != null) {
+            for (Room room : Emulator.getGameEnvironment().getRoomManager().getRoomsStaffPromoted()) {
+                staffPicks.addRoom(room);
+            }
+        } else {
+            LOGGER.warn(
+                    "hotel.navigator.staffpicks.categoryid {} is not a visible public category", staffPickCategoryId);
         }
+
+        synchronized (this.publicCategories) {
+            this.publicCategories.clear();
+            this.publicCategories.putAll(categories);
+        }
+        this.filterSettings.putAll(fields);
+        this.filterSettings.keySet().retainAll(fields.keySet());
+    }
+
+    /** The room method a navigator_filter row points at, or null when the row names none. */
+    private static NavigatorFilterField filterField(ResultSet set) throws SQLException {
+        Method field = null;
+        Class<?> clazz = Room.class;
+
+        if (set.getString("field").contains(".")) {
+            for (String s : (set.getString("field")).split("\\.")) {
+                try {
+                    field = clazz.getDeclaredMethod(s);
+                    clazz = field.getReturnType();
+                } catch (Exception e) {
+                    LOGGER.error("Caught exception", e);
+                    break;
+                }
+            }
+        } else {
+            try {
+                field = clazz.getDeclaredMethod(set.getString("field"));
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+                return null;
+            }
+        }
+
+        if (field == null) return null;
+
+        return new NavigatorFilterField(
+                set.getString("key"),
+                field,
+                set.getString("database_query"),
+                NavigatorFilterComparator.valueOf(set.getString("compare").toUpperCase()));
     }
 
     /** The rooms of the navigator's lifted list (AIR NavigatorLifted), in display order. */

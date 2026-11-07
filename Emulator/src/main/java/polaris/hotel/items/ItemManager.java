@@ -3,6 +3,8 @@ package polaris.hotel.items;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,7 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -20,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.items.interactions.InteractionAreaHideControl;
+import polaris.hotel.items.interactions.InteractionArrow;
 import polaris.hotel.items.interactions.InteractionBackgroundToner;
 import polaris.hotel.items.interactions.InteractionBadgeDisplay;
 import polaris.hotel.items.interactions.InteractionBlackHole;
@@ -492,9 +495,10 @@ public class ItemManager {
     public static volatile boolean RECYCLER_ENABLED = true;
 
     private final Int2ObjectMap<Item> items;
-    private final Int2ObjectMap<CrackableReward> crackableRewards;
+    // Rebuilt whole by their loaders and swapped in: a reload used to empty them while rooms and jukeboxes read them.
+    private volatile Int2ObjectMap<CrackableReward> crackableRewards;
     private final ItemInteractionRegistry interactionsList;
-    private final Map<String, SoundTrack> soundTracks;
+    private volatile Map<String, SoundTrack> soundTracks;
     private final YoutubeManager youtubeManager;
     private final WiredHighscoreManager highscoreManager;
     private final TreeMap<Integer, NewUserGift> newuserGifts;
@@ -505,7 +509,7 @@ public class ItemManager {
         this.items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
         this.crackableRewards = new Int2ObjectOpenHashMap<>();
         this.interactionsList = new ItemInteractionRegistry();
-        this.soundTracks = new HashMap<>();
+        this.soundTracks = new ConcurrentHashMap<>();
         this.youtubeManager = new YoutubeManager();
         this.highscoreManager = new WiredHighscoreManager();
         this.newuserGifts = new TreeMap<>();
@@ -551,6 +555,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("cannon", InteractionCannon.class));
         this.interactionsList.add(new ItemInteraction("teleport", InteractionTeleport.class));
         this.interactionsList.add(new ItemInteraction("teleporttile", InteractionTeleportTile.class));
+        this.interactionsList.add(new ItemInteraction("arrow", InteractionArrow.class));
         this.interactionsList.add(new ItemInteraction("crackable", InteractionCrackable.class));
         this.interactionsList.add(new ItemInteraction("crackable_master", InteractionCrackableMaster.class));
         this.interactionsList.add(new ItemInteraction("nest", InteractionNest.class));
@@ -1274,28 +1279,39 @@ public class ItemManager {
         return this.getItemInteraction(InteractionDefault.class);
     }
 
+    /**
+     * Adds and updates the base items, and drops the ones whose row is gone. A base item deleted from the furni
+     * editor used to stay in memory until the next restart.
+     */
     public void loadItems() {
+        IntSet loaded = new IntOpenHashSet();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery(BASE_ITEMS_SQL)) {
             while (set.next()) {
+                int id = set.getInt("id");
+                loaded.add(id);
                 try {
-                    // Item proxyItem =
-                    int id = set.getInt("id");
                     if (!this.items.containsKey(id)) this.items.put(id, new Item(set));
                     else this.items.get(id).update(set);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load Item ({})", set.getInt("id"));
+                    LOGGER.error("Failed to load Item ({})", id);
                     LOGGER.error("Caught exception", e);
                 }
             }
         } catch (SQLException e) {
+            // A partial read says nothing about which rows are gone: keep every item.
             LOGGER.error("Caught SQL exception", e);
+            return;
+        }
+
+        synchronized (this.items) {
+            this.items.keySet().removeIf((int id) -> !loaded.contains(id));
         }
     }
 
     public void loadCrackable() {
-        this.crackableRewards.clear();
+        Int2ObjectMap<CrackableReward> rewards = new Int2ObjectOpenHashMap<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM items_crackable");
                 ResultSet set = statement.executeQuery()) {
@@ -1308,13 +1324,16 @@ public class ItemManager {
                     LOGGER.error("Caught exception", e);
                     continue;
                 }
-                this.crackableRewards.put(set.getInt("item_id"), reward);
+                rewards.put(set.getInt("item_id"), reward);
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+            return;
         }
+        this.crackableRewards = rewards;
     }
 
     public void loadPlants() {
@@ -1358,8 +1377,8 @@ public class ItemManager {
     }
 
     public int getCrackableCount(int itemId) {
-        if (this.crackableRewards.containsKey(itemId)) return this.crackableRewards.get(itemId).count;
-        else return 0;
+        CrackableReward reward = this.crackableRewards.get(itemId);
+        return reward == null ? 0 : reward.count;
     }
 
     public int calculateCrackState(int count, int max, Item baseItem) {
@@ -1380,17 +1399,18 @@ public class ItemManager {
     }
 
     public void loadSoundTracks() {
-        this.soundTracks.clear();
-
+        Map<String, SoundTrack> tracks = new ConcurrentHashMap<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM soundtracks");
                 ResultSet set = statement.executeQuery()) {
             while (set.next()) {
-                this.soundTracks.put(set.getString("code"), new SoundTrack(set));
+                tracks.put(set.getString("code"), new SoundTrack(set));
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return;
         }
+        this.soundTracks = tracks;
     }
 
     public SoundTrack getSoundTrack(String code) {
@@ -1398,8 +1418,8 @@ public class ItemManager {
     }
 
     public SoundTrack getSoundTrack(int id) {
-        for (Map.Entry<String, SoundTrack> entry : this.soundTracks.entrySet()) {
-            if (entry.getValue().getId() == id) return entry.getValue();
+        for (SoundTrack track : this.soundTracks.values()) {
+            if (track.getId() == id) return track;
         }
 
         return null;
@@ -1601,9 +1621,19 @@ public class ItemManager {
     }
 
     public void deleteItem(UserItem item) {
+        this.tryDeleteItem(item);
+    }
+
+    /**
+     * Deletes the item's rows and says whether that worked, for an undo that must not hand back what it paid for when
+     * the item is still there.
+     *
+     * @return false when the database refused; true when the rows are gone or there were none
+     */
+    public boolean tryDeleteItem(UserItem item) {
         if (item == null || item.isTemporary()) {
             // A temporary furni has no rows to delete.
-            return;
+            return true;
         }
 
         // A wired chest gives what it holds back to its owner before its row goes.
@@ -1627,6 +1657,54 @@ public class ItemManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Pays out a broken crackable: deletes its row (unless it resets in place) and creates the reward
+     * in one transaction, so a failure leaves the crackable as it was and no reward behind.
+     *
+     * @param reward the reward furni, or null when the crackable gives nothing
+     * @return the reward created, or null when there is none (no reward, or the owner's web-api limit)
+     * @throws SQLException when nothing was written
+     */
+    public UserItem crackInTransaction(UserItem crackable, boolean deleteCrackable, int ownerId, Item reward)
+            throws SQLException {
+        return inTransaction(connection -> {
+            if (deleteCrackable) {
+                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM items WHERE id = ?")) {
+                    statement.setInt(1, crackable.getId());
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Crackable " + crackable.getId() + " is already gone");
+                    }
+                }
+            }
+
+            return reward == null ? null : this.createItem(connection, ownerId, reward, 0, 0, "");
+        });
+    }
+
+    @FunctionalInterface
+    private interface TransactionWork<T> {
+        T run(Connection connection) throws SQLException;
+    }
+
+    /** Runs {@code work} on one connection and commits it, or rolls everything back when it throws. */
+    private static <T> T inTransaction(TransactionWork<T> work) throws SQLException {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                T result = work.run(connection);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
         }
     }
 
@@ -1639,49 +1717,132 @@ public class ItemManager {
             return null;
         }
 
+        return this.recycleInTransaction(user, rewardItemId, List.of());
+    }
+
+    /**
+     * Recycles {@code consumed} into a recycler box holding {@code itemId}, in one transaction: the
+     * consumed rows are deleted and the box with its prize row inserted together, or nothing is.
+     *
+     * <p>A crash or a database error therefore never leaves both the prize and the furni that paid
+     * for it, nor a box whose prize row is missing.
+     *
+     * @return the box, or null when nothing was written
+     */
+    public UserItem handleRecycle(User user, String itemId, Collection<UserItem> consumed) {
+        int rewardItemId = ItemDataGuard.parsePositiveInt(itemId);
+        if (user == null
+                || user.getUserInfo() == null
+                || rewardItemId <= 0
+                || consumed == null
+                || consumed.isEmpty()
+                || Emulator.getGameEnvironment().getCatalogManager().ecotronItem == null) {
+            return null;
+        }
+
+        // A chest gives back what it holds before its row goes, as QueryDeleteUserItem does.
+        for (UserItem item : consumed) {
+            ChestRelease.releaseToOwner(item);
+        }
+
+        return this.recycleInTransaction(user, rewardItemId, consumed);
+    }
+
+    private UserItem recycleInTransaction(User user, int rewardItemId, Collection<UserItem> consumed) {
+        int userId = user.getUserInfo().getId();
+        try {
+            return inTransaction(connection -> {
+                this.deleteOwnedItems(connection, userId, consumed);
+                return this.insertRecycleBox(connection, userId, rewardItemId);
+            });
+        } catch (SQLException e) {
+            LOGGER.error(
+                    "Recycling for user {} failed, nothing was written",
+                    user.getUserInfo().getId(),
+                    e);
+            return null;
+        }
+    }
+
+    /**
+     * Crafts {@code reward} out of {@code consumed} in one transaction: the ingredients' rows are
+     * deleted and the reward's row inserted together, or nothing is.
+     *
+     * @return the reward, or null when nothing was written
+     */
+    public UserItem craftInTransaction(int userId, Item reward, Collection<UserItem> consumed) {
+        if (userId <= 0 || reward == null || consumed == null || consumed.isEmpty()) {
+            return null;
+        }
+
+        // A chest gives back what it holds before its row goes, as QueryDeleteUserItem does.
+        for (UserItem item : consumed) {
+            ChestRelease.releaseToOwner(item);
+        }
+
+        try {
+            return inTransaction(connection -> {
+                this.deleteOwnedItems(connection, userId, consumed);
+                UserItem created = this.createItem(connection, userId, reward, 0, 0, "");
+                if (created == null) {
+                    throw new SQLException("Crafting reward " + reward.getId() + " was refused for user " + userId);
+                }
+                return created;
+            });
+        } catch (SQLException e) {
+            LOGGER.error("Crafting for user {} failed, nothing was written", userId, e);
+            return null;
+        }
+    }
+
+    private void deleteOwnedItems(Connection connection, int userId, Collection<UserItem> consumed)
+            throws SQLException {
+        if (consumed.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement statement =
+                connection.prepareStatement("DELETE FROM items WHERE id = ? AND user_id = ?")) {
+            for (UserItem item : consumed) {
+                statement.setInt(1, item.getId());
+                statement.setInt(2, userId);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Item " + item.getId() + " is not owned by user " + userId);
+                }
+            }
+        }
+    }
+
+    private UserItem insertRecycleBox(Connection connection, int userId, int rewardItemId) throws SQLException {
         String extradata = Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-"
                 + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
                 + Calendar.getInstance().get(Calendar.YEAR);
+        Item ecotron = Emulator.getGameEnvironment().getCatalogManager().ecotronItem;
 
-        UserItem item = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO items (user_id, item_id, extra_data) VALUES (?, ?, ?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, user.getUserInfo().getId());
-            statement.setInt(
-                    2,
-                    Emulator.getGameEnvironment()
-                            .getCatalogManager()
-                            .ecotronItem
-                            .getId());
+        int boxId;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO items (user_id, item_id, extra_data) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, ecotron.getId());
             statement.setString(3, extradata);
             statement.execute();
 
             try (ResultSet set = statement.getGeneratedKeys()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(
-                        "INSERT INTO items_presents (item_id, base_item_reward) VALUES (?, ?)")) {
-                    while (set.next() && item == null) {
-                        preparedStatement.setInt(1, set.getInt(1));
-                        preparedStatement.setInt(2, rewardItemId);
-                        preparedStatement.addBatch();
-                        item = new InteractionDefault(
-                                set.getInt(1),
-                                user.getUserInfo().getId(),
-                                Emulator.getGameEnvironment().getCatalogManager().ecotronItem,
-                                extradata,
-                                0,
-                                0);
-                    }
-
-                    preparedStatement.executeBatch();
+                if (!set.next()) {
+                    throw new SQLException("Recycler box was not created");
                 }
+                boxId = set.getInt(1);
             }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
         }
 
-        return item;
+        try (PreparedStatement statement =
+                connection.prepareStatement("INSERT INTO items_presents (item_id, base_item_reward) VALUES (?, ?)")) {
+            statement.setInt(1, boxId);
+            statement.setInt(2, rewardItemId);
+            statement.executeUpdate();
+        }
+
+        return new InteractionDefault(boxId, userId, ecotron, extradata, 0, 0);
     }
 
     /** The reward of opening {@code box}, or null when nothing came out; see {@link #openRecycleBox}. */

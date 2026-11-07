@@ -13,6 +13,7 @@ import polaris.hotel.polls.Poll;
 import polaris.hotel.polls.PollQuestion;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.users.UserBadge;
+import polaris.hotel.users.inventory.BadgesComponent;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.users.AddUserBadgeComposer;
 import polaris.messages.outgoing.wired.WiredRewardAlertComposer;
@@ -109,16 +110,12 @@ public class AnswerPollEvent extends MessageHandler {
                             .getInventory()
                             .getBadgesComponent()
                             .hasBadge(poll.badgeReward)) {
-                        UserBadge badge = new UserBadge(0, poll.badgeReward, 0, this.client.getUser());
-                        Emulator.getThreading().run(badge);
-                        this.client
-                                .getUser()
-                                .getInventory()
-                                .getBadgesComponent()
-                                .addBadge(badge);
-                        this.client.sendResponse(new AddUserBadgeComposer(badge));
-                        this.client.sendResponse(
-                                new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_RECEIVED_BADGE));
+                        UserBadge badge = BadgesComponent.createBadge(poll.badgeReward, this.client.getUser());
+                        if (badge != null) {
+                            this.client.sendResponse(new AddUserBadgeComposer(badge));
+                            this.client.sendResponse(
+                                    new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_RECEIVED_BADGE));
+                        }
                     } else {
                         this.client.sendResponse(
                                 new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED));

@@ -76,6 +76,7 @@ public class PostQuizAnswersEvent extends MessageHandler {
         }
 
         UserBadge badge = BadgesComponent.createBadge(badgeCode, user);
+        if (badge == null) return;
         user.getClient()
                 .sendResponse(new AddUserItemComposer(badge.getId(), AddUserItemComposer.AddUserItemCategory.BADGE));
         user.getClient().sendResponse(new InventoryRefreshComposer());

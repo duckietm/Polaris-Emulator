@@ -34,6 +34,7 @@ import polaris.hotel.games.tag.IceTagGame;
 import polaris.hotel.games.tag.RollerskateGame;
 import polaris.hotel.games.wired.WiredGame;
 import polaris.hotel.guilds.Guild;
+import polaris.hotel.items.interactions.InteractionArrow;
 import polaris.hotel.items.interactions.InteractionWired;
 import polaris.hotel.items.interactions.wired.chest.ChestAutoLock;
 import polaris.hotel.messenger.MessengerBuddy;
@@ -261,6 +262,15 @@ public class RoomManager {
         return active;
     }
 
+    /** @see RoomDirectory#registerUnlessLoaded(Room) */
+    Room registerActiveRoomUnlessLoaded(Room room) {
+        Room active = this.roomDirectory.registerUnlessLoaded(room);
+        if (active == room) {
+            this.roomSearchService.invalidate();
+        }
+        return active;
+    }
+
     public void loadRoomModels() {
         this.roomModelRepository.reload();
     }
@@ -292,7 +302,7 @@ public class RoomManager {
                 while (set.next()) {
                     Room room = new Room(set, this.roomDependencies());
                     room.preventUncaching = true;
-                    this.registerActiveRoom(room);
+                    this.registerActiveRoomUnlessLoaded(room);
                 }
             }
         } catch (SQLException e) {
@@ -793,6 +803,9 @@ public class RoomManager {
                     user.getUserInfo().setRoomEntryTeleportId(topItem.getId());
                     user.getRoomUnit().setRotation(RoomUserRotation.values()[topItem.getRotation()]);
                 }
+                if (topItem instanceof InteractionArrow arrow) {
+                    InteractionArrow.arrive(user.getRoomUnit(), arrow);
+                }
             }
         }
         PendingRoomEntrySupport.apply(user, room, doorLocation == null, System.currentTimeMillis());
@@ -808,14 +821,7 @@ public class RoomManager {
             return;
         }
 
-        if (room.getUserCount() >= room.getUsersMax()
-                && !user.hasPermission(Permission.ACC_FULLROOMS)
-                && !room.hasRights(user)) {
-            // AIR 13: a full room queues the visitor (RoomQueueStatus, our 2208)
-            // instead of bouncing it with CantConnect(REASON_FULL).
-            RoomVisitorQueueSupport.enqueue(room, user);
-            user.getUserInfo().setLoadingRoom(0);
-            user.getClient().sendResponse(new HotelViewComposer());
+        if (this.queuedBecauseFull(user, room)) {
             return;
         }
 
@@ -873,6 +879,12 @@ public class RoomManager {
     }
 
     public void enterRoom(final User user, final Room room) {
+        // Checked again here: the client asks for the heightmap a round trip after the room was opened,
+        // and every visitor who opened a room with one free place in the meantime would otherwise enter.
+        if (user.getUserInfo().getLoadingRoom() == room.getId() && this.queuedBecauseFull(user, room)) {
+            return;
+        }
+
         if (!this.placeAtDoor(user, room)) {
             return;
         }
@@ -906,6 +918,25 @@ public class RoomManager {
         if (!user.getUserStats().nux && (room.isOwner(user) || room.isPublicRoom())) {
             UserNuxEvent.handle(user);
         }
+    }
+
+    /**
+     * A full room queues the visitor (AIR 13 RoomQueueStatus, our 2208) instead of bouncing it with
+     * CantConnect(REASON_FULL); staff with the full-rooms permission and users with rights always enter.
+     *
+     * @return true when the visitor was queued and sent to the hotel view
+     */
+    boolean queuedBecauseFull(final User user, final Room room) {
+        if (room.getUserCount() < room.getUsersMax()
+                || user.hasPermission(Permission.ACC_FULLROOMS)
+                || room.hasRights(user)) {
+            return false;
+        }
+
+        RoomVisitorQueueSupport.enqueue(room, user);
+        user.getUserInfo().setLoadingRoom(0);
+        user.getClient().sendResponse(new HotelViewComposer());
+        return true;
     }
 
     /** Puts the entering user on the door tile of the room; false when the room has no usable door and the user went back to the hotel view. */

@@ -1052,29 +1052,41 @@ public class UserStats implements Runnable {
         this.mutedBubbleTracker = false;
     }
 
+    // The LTD log is written by the buyer's purchase and pruned by the cleaner thread: both go through this object's
+    // monitor. The cleaner used to rebuild the map and assign it, losing a purchase logged in between, so the daily
+    // limit could be passed.
     public void addLtdLog(int catalogItemId, int timestamp) {
-        if (!this.ltdPurchaseLog.containsKey(catalogItemId)) {
-            this.ltdPurchaseLog.put(catalogItemId, new ArrayList<>(1));
+        synchronized (this) {
+            this.ltdPurchaseLog
+                    .computeIfAbsent(catalogItemId, ignored -> new ArrayList<>(1))
+                    .add(timestamp);
         }
-
-        this.ltdPurchaseLog.get(catalogItemId).add(timestamp);
     }
 
     public int totalLtds() {
-        int total = 0;
-        for (Map.Entry<Integer, List<Integer>> entry : this.ltdPurchaseLog.entrySet()) {
-            total += entry.getValue().size();
-        }
+        synchronized (this) {
+            int total = 0;
+            for (Map.Entry<Integer, List<Integer>> entry : this.ltdPurchaseLog.entrySet()) {
+                total += entry.getValue().size();
+            }
 
-        return total;
+            return total;
+        }
     }
 
     public int totalLtds(int catalogItemId) {
-        if (this.ltdPurchaseLog.containsKey(catalogItemId)) {
-            return this.ltdPurchaseLog.get(catalogItemId).size();
+        synchronized (this) {
+            List<Integer> purchases = this.ltdPurchaseLog.get(catalogItemId);
+            return purchases == null ? 0 : purchases.size();
         }
+    }
 
-        return 0;
+    /** Drops the LTD purchases older than {@code windowSeconds}, in place. */
+    public void pruneLtdLog(int now, int windowSeconds) {
+        synchronized (this) {
+            this.ltdPurchaseLog.values().forEach(times -> times.removeIf(time -> now - time > windowSeconds));
+            this.ltdPurchaseLog.values().removeIf(List::isEmpty);
+        }
     }
 
     public boolean ignoreUser(GameClient gameClient, int userId) {

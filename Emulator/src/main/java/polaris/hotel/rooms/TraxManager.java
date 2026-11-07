@@ -99,10 +99,14 @@ public class TraxManager implements Disposable {
         return null;
     }
 
-    public void loadPlaylist() {
+    // The playlist is changed by the packets of anyone with rights and read by the room cycle: every
+    // method that touches songs, totalLength or playingIndex holds this object's monitor.
+
+    public synchronized void loadPlaylist() {
         if (this.jukeBox == null) return;
 
         this.songs.clear();
+        this.totalLength = 0;
 
         try (Connection connection = this.database.openConnection();
                 PreparedStatement statement =
@@ -154,7 +158,7 @@ public class TraxManager implements Disposable {
         }
     }
 
-    public void addTraxOnRoom(InteractionJukeBox jukeBox) {
+    public synchronized void addTraxOnRoom(InteractionJukeBox jukeBox) {
         if (this.jukeBox != null) return;
 
         try (Connection connection = this.database.openConnection();
@@ -173,7 +177,7 @@ public class TraxManager implements Disposable {
         this.songsLimit = this.getSongsLimit(this.jukeBox);
     }
 
-    public void removeTraxOnRoom(InteractionJukeBox jukeBox) {
+    public synchronized void removeTraxOnRoom(InteractionJukeBox jukeBox) {
         if (this.jukeBox.getId() != jukeBox.getId()) return;
 
         try (Connection connection = this.database.openConnection();
@@ -191,8 +195,13 @@ public class TraxManager implements Disposable {
         this.songs.clear();
     }
 
-    public void cycle() {
+    public synchronized void cycle() {
         if (this.isPlaying()) {
+            if (this.songs.isEmpty()) {
+                this.stop();
+                return;
+            }
+
             if (this.timePlaying() >= this.totalLength) {
                 this.play(0);
                 // restart
@@ -210,7 +219,7 @@ public class TraxManager implements Disposable {
         this.play(index, null);
     }
 
-    public void play(int index, User starter) {
+    public synchronized void play(int index, User starter) {
         if (this.currentlyPlaying == null) {
             this.jukeBox.setExtradata("1");
             this.room.updateItem(this.jukeBox);
@@ -244,7 +253,7 @@ public class TraxManager implements Disposable {
         }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         if (this.starter != null && this.cycleStartedTimestamp > 0) {
             AchievementManager.progressAchievement(
                     this.starter,
@@ -265,7 +274,7 @@ public class TraxManager implements Disposable {
         this.room.sendComposer(new JukeBoxNowPlayingMessageComposer(null, -1, 0).compose());
     }
 
-    public SoundTrack currentSong() {
+    public synchronized SoundTrack currentSong() {
         if (!this.songs.isEmpty() && this.playingIndex < this.songs.size()) {
             return Emulator.getGameEnvironment()
                     .getItemManager()
@@ -274,7 +283,7 @@ public class TraxManager implements Disposable {
         return null;
     }
 
-    public void addSong(InteractionMusicDisc musicDisc, User user) {
+    public synchronized void addSong(InteractionMusicDisc musicDisc, User user) {
         if (this.jukeBox == null) return;
 
         if (this.songsLimit < this.songs.size() + 1) {
@@ -288,9 +297,7 @@ public class TraxManager implements Disposable {
         SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(musicDisc.getSongId());
 
         if (track != null) {
-            this.totalLength += track.getLength();
-            this.songs.add(musicDisc);
-
+            // Saved first: a disc that failed to save stayed in the playing list until the room unloaded.
             try (Connection connection = this.database.openConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO trax_playlist (trax_item_id, item_id) VALUES (?, ?)")) {
@@ -301,6 +308,9 @@ public class TraxManager implements Disposable {
                 LOGGER.error("Caught SQL exception", e);
                 return;
             }
+
+            this.totalLength += track.getLength();
+            this.songs.add(musicDisc);
 
             this.room.sendComposer(new JukeBoxPlayListComposer(this.songs, this.totalLength).compose());
 
@@ -315,7 +325,7 @@ public class TraxManager implements Disposable {
         this.sendUpdatedSongList();
     }
 
-    public void removeSong(int itemId) {
+    public synchronized void removeSong(int itemId) {
         if (this.songs.isEmpty()) return;
 
         InteractionMusicDisc musicDisc = this.getSong(itemId);
@@ -394,7 +404,7 @@ public class TraxManager implements Disposable {
         }
     }
 
-    public List<SoundTrack> soundTrackList() {
+    public synchronized List<SoundTrack> soundTrackList() {
         List<SoundTrack> trax = new ArrayList<>(this.songs.size());
 
         for (InteractionMusicDisc musicDisc : this.songs) {
@@ -415,7 +425,7 @@ public class TraxManager implements Disposable {
                 .collect(Collectors.toList());
     }
 
-    public InteractionMusicDisc getSong(int itemId) {
+    public synchronized InteractionMusicDisc getSong(int itemId) {
         for (InteractionMusicDisc musicDisc : this.songs) {
             if (musicDisc != null && musicDisc.getId() == itemId) {
                 return musicDisc;
@@ -432,7 +442,7 @@ public class TraxManager implements Disposable {
         return NORMAL_JUKEBOX_LIMIT;
     }
 
-    public void updateCurrentPlayingSong(User user) {
+    public synchronized void updateCurrentPlayingSong(User user) {
         if (this.isPlaying()) {
             user.getClient()
                     .sendResponse(new JukeBoxNowPlayingMessageComposer(
@@ -456,19 +466,19 @@ public class TraxManager implements Disposable {
         });
     }
 
-    public int timePlaying() {
+    public synchronized int timePlaying() {
         return Emulator.getIntUnixTimestamp() - this.startedTimestamp;
     }
 
-    public int totalLength() {
+    public synchronized int totalLength() {
         return this.totalLength;
     }
 
-    public List<InteractionMusicDisc> getSongs() {
+    public synchronized List<InteractionMusicDisc> getSongs() {
         return this.songs;
     }
 
-    public boolean isPlaying() {
+    public synchronized boolean isPlaying() {
         return this.currentlyPlaying != null;
     }
 

@@ -9,6 +9,7 @@ import polaris.core.TextsManager;
 import polaris.hotel.items.RoomBackgroundSettings;
 import polaris.hotel.items.interactions.InteractionCustomValues;
 import polaris.hotel.items.interactions.InteractionRoomAds;
+import polaris.hotel.items.interactions.InteractionStepLink;
 import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.users.UserItem;
@@ -39,6 +40,8 @@ public class AdvertisingSaveEvent extends MessageHandler {
             this.client.getUser().alert(texts.getValue("hotel.error.roomads.nopermission"));
             return;
         }
+        if (item instanceof InteractionStepLink && !InteractionStepLink.mayEdit(this.client.getUser())) return;
+
         if (item instanceof InteractionCustomValues) {
             InteractionCustomValues customValues = (InteractionCustomValues) item;
             Map<String, String> oldValues = new HashMap<>(customValues.values);

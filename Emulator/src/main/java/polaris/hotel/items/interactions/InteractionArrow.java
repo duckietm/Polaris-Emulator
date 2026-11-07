@@ -87,9 +87,14 @@ public class InteractionArrow extends InteractionTeleport {
 
     /** Whether this step is the end of the unit's walk (its goal is the arrow), and no teleport runs for it yet. */
     boolean endsWalkHere(RoomUnit unit) {
+        return walkEndsOn(unit, this);
+    }
+
+    /** Whether the unit's walk ends on the item's tile (its goal), and no teleport runs for it yet. */
+    static boolean walkEndsOn(RoomUnit unit, UserItem item) {
         RoomTile goal = unit.getGoal();
 
-        return !unit.isTeleporting && goal != null && goal.x == this.getX() && goal.y == this.getY();
+        return !unit.isTeleporting && goal != null && goal.x == item.getX() && goal.y == item.getY();
     }
 
     private void travel(Room room, User user) {

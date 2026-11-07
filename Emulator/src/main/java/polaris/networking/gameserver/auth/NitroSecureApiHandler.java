@@ -36,7 +36,11 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final String PUBLIC_API_PREFIX = "/api/public/";
     // What the Octane client always sends encrypted. The endpoints other callers use in
     // the clear (CMS, health, maintenance, stats, the public wired API) are not listed.
-    private static final String[] CLIENT_API_ROOTS = {"/api/auth", "/api/badges"};
+    private static final String[] CLIENT_API_ROOTS = {
+        "/api/auth",
+        "/api/badges",
+        "/api/uno"
+    };
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     // Secure API requests per client bucket and minute: every client HTTP call goes through here, so the share is wide.
     static final String RATE_LIMIT_CONFIG = "nitro.secure.api.requests_per_minute";

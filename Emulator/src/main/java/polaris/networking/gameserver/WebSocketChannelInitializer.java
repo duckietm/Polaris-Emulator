@@ -45,6 +45,7 @@ import polaris.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpHandler;
 import polaris.networking.gameserver.ssl.SSLCertificateLoader;
 import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
+import polaris.networking.gameserver.uno.UnoHttpHandler;
 import polaris.networking.gameserver.wired.WiredVariableApiHandler;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
@@ -152,6 +153,9 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
         ch.pipeline()
                 .addLast(
+        ch.pipeline()
+                .addLast("blockingHttpAdmissionUno", BlockingHttpExecutionGroup.admissionHandler("unoHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "unoHttpHandler", new UnoHttpHandler());
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());

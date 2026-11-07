@@ -38,7 +38,8 @@ public class LostMonkeyHttpHandler extends ChannelInboundHandlerAdapter {
     static final String BASE_PATH = "/api/lostmonkey";
     private static final int MAX_JSON_BYTES = 1024;
     private static final Set<String> ACTIONS = Set.of(
-            "colour", "harvest", "feed", "wash", "tv", "sleep", "wake", "bananas", "build", "launch", "play", "score");
+            "create", "colour", "harvest", "feed", "wash", "tv", "sleep", "wake", "bananas", "build", "launch", "play",
+            "score");
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {

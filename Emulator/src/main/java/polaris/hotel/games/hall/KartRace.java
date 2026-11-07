@@ -3,52 +3,77 @@ package polaris.hotel.games.hall;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 /**
- * HabboKart: a kart race on a circuit of the hotel's own track pieces (sporttrack), each player in one of the hotel's
- * car effects. Each window drives its own car (arrows) and tells the race where it is now and then; the race keeps
- * the order of arrival. Robots follow the middle of the road at their own pace.
+ * HabboKart: a kart race of three laps round {@link KartTrack}, up to eight karts. Each window drives its own kart and
+ * says now and then where it is and how far it went (in laps); the race keeps the order, the item boxes, the banana
+ * peels left on the road and the shells thrown. Robots drive along the road themselves.
  *
- * <p>The circuit is a loop of 2 x 2 blocks (the size of a track piece), {@link #TRACK}, the finish line on the first
- * one (in the middle of the top straight, the grid behind it); a lap is {@code TRACK.length} blocks, the race
- * {@link #LAPS} laps. The progress of a car is counted in blocks from the line, the middle of a block to the next.
+ * <p>Items: a box gives one (a turbo, a banana peel, a shell; the last ones get more shells and turbos). A peel lies
+ * where it was dropped and spins the first kart over it; a shell flies to the kart just ahead and spins it. A box comes
+ * back {@link #BOX_BACK_MS} after it was taken.
  */
 public final class KartRace implements HallGame {
 
-    /** The loop of blocks (x, y), driven in this order; the finish line on the first. */
-    static final int[][] TRACK = {
-        {4, 0}, {5, 0}, {6, 0}, {7, 0}, {7, 1}, {7, 2}, {7, 3}, {7, 4}, {7, 5}, {6, 5}, {5, 5}, {4, 5}, {4, 4}, {4, 3},
-        {3, 3}, {2, 3}, {1, 3}, {0, 3}, {0, 2}, {0, 1}, {0, 0}, {1, 0}, {2, 0}, {3, 0}
-    };
-
     static final int LAPS = 3;
     static final long COUNTDOWN_MS = 4000L;
-    static final long MAX_MS = 240_000L;
-    /** Robots' speed, in blocks a second. */
-    private static final double ROBOT_SPEED = 2.05;
+    static final long MAX_MS = 300_000L;
+    static final long BOX_BACK_MS = 2500L;
+    static final long SPIN_MS = 1400L;
+    static final long SHELL_MS = 1100L;
+    static final long BOOST_MS = 1300L;
+    static final int KARTS = 5;
+    /** The fastest a kart goes (turbo included), pixels a second: what a report may claim. */
+    static final double MAX_SPEED = 620;
+
+    static final double PICK_RADIUS = 70;
+    static final double PEEL_RADIUS = 30;
+    static final String[] ITEMS = {"boost", "banana", "shell"};
+    /** The rows of boxes: where along a lap, and their places across the road. */
+    static final double[] BOX_ROWS = {0.18, 0.47, 0.76};
+
+    static final double[] BOX_SIDES = {-72, -24, 24, 72};
+
+    private static final KartTrack TRACK = KartTrack.MAIN;
 
     static final class Car {
         double x;
         double y;
         double angle;
+        /** How far it went, in laps (negative on the grid, behind the line). */
         double progress;
+
+        long reportedAt;
         boolean robot;
         double pace;
+        double side;
+        int kart;
+        String item = "";
+        long itemAt;
+        long spinUntil;
+        long boostUntil;
         int place;
         long finishedAt = -1;
         boolean out;
     }
 
+    record Peel(int id, double x, double y) {}
+
+    record Shell(int id, int from, int to, double x, double y, long thrownAt) {}
+
     private final List<Car> cars = new ArrayList<>();
-    private final Set<Integer> robots = new HashSet<>();
+    private final List<Peel> peels = new ArrayList<>();
+    private final List<Shell> shells = new ArrayList<>();
+    private final long[] boxTaken = new long[BOX_ROWS.length * BOX_SIDES.length];
     private Random random;
     private long startAt = -1;
     private long clock = -1;
     private int arrived;
+    private int nextId = 1;
     private boolean finished;
     private List<Integer> winners = List.of();
 
@@ -56,7 +81,8 @@ public final class KartRace implements HallGame {
     public void start(int seats, Random random) {
         this.random = random;
         this.cars.clear();
-        this.robots.clear();
+        this.peels.clear();
+        this.shells.clear();
 
         for (int seat = 0; seat < seats; seat++) {
             Car car = new Car();
@@ -66,10 +92,13 @@ public final class KartRace implements HallGame {
             car.y = grid[1];
             car.angle = grid[2];
             car.progress = grid[3];
-            car.pace = ROBOT_SPEED * (0.9 + random.nextDouble() * 0.2);
+            car.kart = seat % KARTS;
+            car.pace = 330 + random.nextDouble() * 50;
+            car.side = (seat % 2 == 0 ? -1 : 1) * (20 + random.nextInt(50));
             this.cars.add(car);
         }
 
+        Arrays.fill(this.boxTaken, -1);
         this.startAt = -1;
         this.clock = -1;
         this.arrived = 0;
@@ -77,29 +106,22 @@ public final class KartRace implements HallGame {
         this.winners = List.of();
     }
 
-    /** A seat's place on the grid, behind the line: (x, y, angle, progress), two by two. */
+    /** A seat's place on the grid, two by two behind the line: (x, y, heading, progress in laps). */
     static double[] grid(int seat) {
-        double progress = -0.35 - (seat / 2) * 0.5;
-        double[] centre = centreAt(progress, seat % 2 == 0 ? -0.45 : 0.45);
+        double back = 60 + (seat / 2) * 70;
+        double[] at = TRACK.pointAt(-back, seat % 2 == 0 ? -45 : 45);
 
-        return new double[] {centre[0], centre[1], centre[2], progress};
+        return new double[] {at[0], at[1], at[2], -back / TRACK.length()};
     }
 
-    /** The middle of the road at a progress (blocks since the start), with the direction of the road there. */
-    static double[] centreAt(double progress, double lane) {
-        int n = TRACK.length;
-        double wrapped = ((progress % n) + n) % n;
-        int index = (int) Math.floor(wrapped);
-        double frac = wrapped - index;
-        int[] from = TRACK[index];
-        int[] to = TRACK[(index + 1) % n];
-        double fx = from[0] * 2 + 1;
-        double fy = from[1] * 2 + 1;
-        double dx = (to[0] - from[0]) * 2;
-        double dy = (to[1] - from[1]) * 2;
-        double angle = Math.atan2(dy, dx);
+    double[] box(int index) {
+        double row = BOX_ROWS[index / BOX_SIDES.length];
 
-        return new double[] {fx + dx * frac - Math.sin(angle) * lane, fy + dy * frac + Math.cos(angle) * lane, angle};
+        return TRACK.pointAt(row * TRACK.length(), BOX_SIDES[index % BOX_SIDES.length]);
+    }
+
+    private boolean boxThere(int index) {
+        return this.boxTaken[index] < 0 || this.clock - this.boxTaken[index] >= BOX_BACK_MS;
     }
 
     @Override
@@ -118,18 +140,68 @@ public final class KartRace implements HallGame {
 
             if (!car.robot || car.out || car.finishedAt >= 0) continue;
 
-            car.progress += car.pace * seconds * (0.85 + random.nextDouble() * 0.3);
-
-            double[] centre = centreAt(car.progress, (seat % 3 - 1) * 0.45);
-
-            car.x = centre[0];
-            car.y = centre[1];
-            car.angle = centre[2];
-
-            if (car.progress >= LAPS * TRACK.length) this.arrive(seat);
+            this.drive(seat, car, seconds, random);
         }
 
+        this.flyShells(now);
+
         if (now - this.startAt >= MAX_MS) this.end();
+    }
+
+    /** A robot: along the road at its pace, a box picked when passed, its item used a little later. */
+    private void drive(int seat, Car car, double seconds, Random random) {
+        if (this.clock < car.spinUntil) return;
+
+        double speed = car.pace * (this.clock < car.boostUntil ? 1.45 : 1) * (0.92 + random.nextDouble() * 0.16);
+        double before = car.progress * TRACK.length();
+        double after = before + speed * seconds;
+        double[] at = TRACK.pointAt(after, car.side);
+
+        car.side = Math.max(-80, Math.min(80, car.side + (random.nextDouble() - 0.5) * 30 * seconds));
+        car.x = at[0];
+        car.y = at[1];
+        car.angle = at[2];
+        car.progress = after / TRACK.length();
+
+        for (int index = 0; index < this.boxTaken.length && car.item.isEmpty(); index++) {
+            double[] box = this.box(index);
+
+            if (this.boxThere(index) && Math.hypot(box[0] - car.x, box[1] - car.y) < PICK_RADIUS)
+                this.pick(seat, index);
+        }
+
+        if (!car.item.isEmpty() && this.clock - car.itemAt > 1200 + random.nextInt(3000)) this.use(seat);
+
+        Iterator<Peel> peels = this.peels.iterator();
+
+        while (peels.hasNext()) {
+            Peel peel = peels.next();
+
+            if (Math.hypot(peel.x() - car.x, peel.y() - car.y) < PEEL_RADIUS) {
+                peels.remove();
+                car.spinUntil = this.clock + SPIN_MS;
+            }
+        }
+
+        if (car.progress >= LAPS) this.arrive(seat);
+    }
+
+    private void flyShells(long now) {
+        Iterator<Shell> flying = this.shells.iterator();
+
+        while (flying.hasNext()) {
+            Shell shell = flying.next();
+
+            if (now - shell.thrownAt() < SHELL_MS) continue;
+
+            flying.remove();
+
+            if (shell.to() >= 0) {
+                Car target = this.cars.get(shell.to());
+
+                if (target.finishedAt < 0 && !target.out) target.spinUntil = now + SPIN_MS;
+            }
+        }
     }
 
     private boolean running() {
@@ -150,14 +222,12 @@ public final class KartRace implements HallGame {
             if (!other.out && other.finishedAt < 0 && !other.robot) everybody = false;
         }
 
-        // Once every player has arrived (robots aside), or everybody, the race is over.
         if (everybody || this.arrived >= this.cars.size()) this.end();
     }
 
     private void end() {
         if (this.finished) return;
 
-        // Those still on the road are ranked by how far they went.
         List<Integer> order = new ArrayList<>();
 
         for (int seat = 0; seat < this.cars.size(); seat++) {
@@ -175,6 +245,72 @@ public final class KartRace implements HallGame {
         this.finished = true;
     }
 
+    /** The seat a box gives an item to: an item drawn, better for those behind. */
+    private void pick(int seat, int index) {
+        Car car = this.cars.get(seat);
+
+        this.boxTaken[index] = this.clock;
+        car.itemAt = this.clock;
+
+        int rank = this.rank(seat);
+        int roll = this.random.nextInt(100);
+        boolean behind = rank > this.cars.size() / 2;
+
+        car.item = behind
+                ? (roll < 40 ? "shell" : roll < 80 ? "boost" : "banana")
+                : (roll < 45 ? "banana" : roll < 75 ? "boost" : "shell");
+    }
+
+    private int rank(int seat) {
+        int rank = 1;
+        Car car = this.cars.get(seat);
+
+        for (Car other : this.cars) {
+            if (other != car && other.progress > car.progress) rank++;
+        }
+
+        return rank;
+    }
+
+    private void use(int seat) {
+        Car car = this.cars.get(seat);
+
+        switch (car.item) {
+            case "boost" -> car.boostUntil = this.clock + BOOST_MS;
+            case "banana" -> {
+                double[] behind = TRACK.pointAt(car.progress * TRACK.length() - 40, 0);
+                double x = car.x - Math.cos(car.angle) * 40;
+                double y = car.y - Math.sin(car.angle) * 40;
+
+                this.peels.add(new Peel(
+                        this.nextId++, Double.isFinite(x) ? x : behind[0], Double.isFinite(y) ? y : behind[1]));
+
+                if (this.peels.size() > 24) this.peels.remove(0);
+            }
+            case "shell" -> {
+                int target = -1;
+                double gap = Double.MAX_VALUE;
+
+                for (int other = 0; other < this.cars.size(); other++) {
+                    Car candidate = this.cars.get(other);
+                    double ahead = candidate.progress - car.progress;
+
+                    if (other != seat && !candidate.out && candidate.finishedAt < 0 && ahead > 0 && ahead < gap) {
+                        gap = ahead;
+                        target = other;
+                    }
+                }
+
+                this.shells.add(new Shell(this.nextId++, seat, target, car.x, car.y, this.clock));
+            }
+            default -> {
+                return;
+            }
+        }
+
+        car.item = "";
+    }
+
     @Override
     public void play(int seat, JsonObject move) {
         if (!this.running()) throw new HallException("not_started");
@@ -182,23 +318,47 @@ public final class KartRace implements HallGame {
         Car car = this.cars.get(seat);
 
         if (car.finishedAt >= 0 || car.out) throw new HallException("finished");
-        if (move == null || !move.has("x") || !move.has("y") || !move.has("progress"))
-            throw new HallException("bad_move");
+        if (move == null) throw new HallException("bad_move");
 
-        double x = move.get("x").getAsDouble();
-        double y = move.get("y").getAsDouble();
-        double progress = move.get("progress").getAsDouble();
+        if (move.has("kart")) car.kart = Math.floorMod(TurnGame.intOf(move, "kart"), KARTS);
 
-        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(progress))
-            throw new HallException("bad_move");
+        if (move.has("x") && move.has("y") && move.has("progress")) {
+            double x = move.get("x").getAsDouble();
+            double y = move.get("y").getAsDouble();
+            double progress = move.get("progress").getAsDouble();
 
-        car.x = Math.max(-2, Math.min(18, x));
-        car.y = Math.max(-2, Math.min(14, y));
-        car.angle = move.has("angle") ? move.get("angle").getAsDouble() : car.angle;
-        // A car goes round, it does not jump: three blocks at most between two news.
-        car.progress = Math.min(progress, car.progress + 3);
+            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(progress))
+                throw new HallException("bad_move");
 
-        if (car.progress >= LAPS * TRACK.length) this.arrive(seat);
+            long since = Math.max(50, this.clock - Math.max(car.reportedAt, this.startAt));
+            double most = (since / 1000.0 * MAX_SPEED + 60) / TRACK.length();
+
+            car.x = Math.max(-500, Math.min(4200, x));
+            car.y = Math.max(-500, Math.min(3300, y));
+            car.angle = move.has("angle") ? move.get("angle").getAsDouble() : car.angle;
+            car.progress = Math.min(progress, car.progress + most);
+            car.reportedAt = this.clock;
+        }
+
+        if (move.has("pick") && car.item.isEmpty()) {
+            int index = TurnGame.intOf(move, "pick");
+
+            if (index >= 0 && index < this.boxTaken.length && this.boxThere(index)) {
+                double[] box = this.box(index);
+
+                if (Math.hypot(box[0] - car.x, box[1] - car.y) < PICK_RADIUS * 1.6) this.pick(seat, index);
+            }
+        }
+
+        if (move.has("hit")) {
+            int id = TurnGame.intOf(move, "hit");
+
+            if (this.peels.removeIf(peel -> peel.id() == id)) car.spinUntil = this.clock + SPIN_MS;
+        }
+
+        if (move.has("use") && move.get("use").getAsBoolean()) this.use(seat);
+
+        if (car.progress >= LAPS) this.arrive(seat);
     }
 
     /** A player drives while the race is on; a robot (or a player asleep at the wheel) is driven by the race. */
@@ -216,7 +376,7 @@ public final class KartRace implements HallGame {
         Car car = this.cars.get(seat);
 
         car.robot = true;
-        this.robots.add(seat);
+        car.kart = random.nextInt(KARTS);
     }
 
     @Override
@@ -247,25 +407,51 @@ public final class KartRace implements HallGame {
     @Override
     public JsonObject view(int seat) {
         JsonObject view = new JsonObject();
+        long now = Math.max(this.clock, 0);
 
         view.addProperty("turn", -1);
         view.addProperty("laps", LAPS);
-        view.addProperty("startsIn", this.startAt < 0 ? COUNTDOWN_MS : Math.max(0L, this.startAt - this.clock));
+        view.addProperty("width", KartTrack.WIDTH);
+        view.addProperty("startsIn", this.startAt < 0 ? COUNTDOWN_MS : Math.max(0L, this.startAt - now));
+        view.addProperty("elapsed", this.startAt < 0 ? 0L : Math.max(0L, now - this.startAt));
         view.addProperty(
                 "timeLeft",
-                this.startAt < 0 ? MAX_MS : Math.max(0L, this.startAt + MAX_MS - Math.max(this.clock, this.startAt)));
+                this.startAt < 0 ? MAX_MS : Math.max(0L, this.startAt + MAX_MS - Math.max(now, this.startAt)));
 
-        JsonArray track = new JsonArray();
+        JsonArray boxes = new JsonArray();
 
-        for (int[] block : TRACK) {
-            JsonArray entry = new JsonArray();
+        for (int index = 0; index < this.boxTaken.length; index++) boxes.add(this.boxThere(index));
 
-            entry.add(block[0]);
-            entry.add(block[1]);
-            track.add(entry);
+        view.add("boxes", boxes);
+
+        JsonArray peels = new JsonArray();
+
+        for (Peel peel : this.peels) {
+            JsonObject entry = new JsonObject();
+
+            entry.addProperty("id", peel.id());
+            entry.addProperty("x", Math.round(peel.x()));
+            entry.addProperty("y", Math.round(peel.y()));
+            peels.add(entry);
         }
 
-        view.add("track", track);
+        view.add("peels", peels);
+
+        JsonArray shells = new JsonArray();
+
+        for (Shell shell : this.shells) {
+            JsonObject entry = new JsonObject();
+
+            entry.addProperty("id", shell.id());
+            entry.addProperty("to", shell.to());
+            entry.addProperty("x", Math.round(shell.x()));
+            entry.addProperty("y", Math.round(shell.y()));
+            entry.addProperty("flown", Math.min(SHELL_MS, now - shell.thrownAt()));
+            entry.addProperty("flight", SHELL_MS);
+            shells.add(entry);
+        }
+
+        view.add("shells", shells);
 
         JsonArray list = new JsonArray();
 
@@ -274,17 +460,23 @@ public final class KartRace implements HallGame {
             JsonObject entry = new JsonObject();
             double[] start = grid(index);
 
-            entry.addProperty("x", Math.round(car.x * 1000) / 1000.0);
-            entry.addProperty("y", Math.round(car.y * 1000) / 1000.0);
+            entry.addProperty("x", Math.round(car.x * 10) / 10.0);
+            entry.addProperty("y", Math.round(car.y * 10) / 10.0);
             entry.addProperty("angle", Math.round(car.angle * 1000) / 1000.0);
-            entry.addProperty("progress", Math.round(car.progress * 1000) / 1000.0);
-            entry.addProperty("lap", Math.max(1, Math.min(LAPS, 1 + (int) Math.floor(car.progress / TRACK.length))));
+            entry.addProperty("progress", Math.round(car.progress * 10000) / 10000.0);
+            entry.addProperty("lap", Math.max(1, Math.min(LAPS, 1 + (int) Math.floor(car.progress))));
             entry.addProperty("place", car.place);
             entry.addProperty("time", car.finishedAt < 0 || this.startAt < 0 ? -1 : car.finishedAt - this.startAt);
             entry.addProperty("robot", car.robot);
             entry.addProperty("out", car.out);
+            entry.addProperty("kart", car.kart);
+            entry.addProperty("item", car.item);
+            entry.addProperty("spin", Math.max(0L, car.spinUntil - now));
+            entry.addProperty("boost", Math.max(0L, car.boostUntil - now));
             entry.addProperty("startX", start[0]);
             entry.addProperty("startY", start[1]);
+            entry.addProperty("startAngle", start[2]);
+            entry.addProperty("startProgress", start[3]);
             list.add(entry);
         }
 
@@ -294,5 +486,9 @@ public final class KartRace implements HallGame {
 
     Car car(int seat) {
         return this.cars.get(seat);
+    }
+
+    static double lapLength() {
+        return TRACK.length();
     }
 }

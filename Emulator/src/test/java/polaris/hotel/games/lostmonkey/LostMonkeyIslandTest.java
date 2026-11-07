@@ -42,6 +42,19 @@ class LostMonkeyIslandTest {
     }
 
     @Test
+    void theMonkeyIsNamedOnTheFirstVisit() {
+        LostMonkeyIsland island = LostMonkeyIsland.fresh(NOW, 0);
+
+        assertFalse(island.created);
+        assertThrows(LostMonkeyException.class, () -> island.create(2, "!"));
+        island.create(11, "  Bobo   le singe ");
+        assertTrue(island.created);
+        assertEquals("Bobo le singe", island.name);
+        assertEquals(2, island.colour);
+        assertEquals("Bobo le singe", LostMonkeyIsland.fromJson(island.toJson(), NOW).name);
+    }
+
+    @Test
     void theRocketIsBuiltPartByPartThenFlies() {
         LostMonkeyIsland island = LostMonkeyIsland.fresh(NOW, 0);
 

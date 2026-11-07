@@ -1,6 +1,7 @@
 package polaris.hotel.games.center;
 
 import polaris.Emulator;
+import polaris.core.Scheduler;
 import polaris.hotel.catalog.CatalogPaymentService;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.users.User;
@@ -21,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +33,13 @@ import org.slf4j.LoggerFactory;
  * without the Habbo Club), the games bought on top, game by game, and the scores of the week and of all time.
  *
  * <p>A game is charged to each player when it starts (robots aside); a player with no game left cannot start or join
- * one. Free games a day: {@code gamecenter.<game>.free.daily} (.hc for a club member), or by default the same as
- * SnowStorm, {@code gamecenter.games.free.daily} and {@code gamecenter.games.free.daily.hc}; -1 is unlimited. The packs
- * of games are SnowStorm's ({@code snowwar_token_offers}), bought for one game at a time.
+ * one. Each game's settings come from the Moderation (`gamecenter_settings`: free games a day, -1 unlimited, and the
+ * free games a club member gets on top; `gamecenter_offers`: the packs, their price and currency, -1 being credits).
  *
  * <p>Scores: a win is worth {@link #WIN_POINTS}, a game played {@link #PLAY_POINTS}; added up by ISO week in
- * {@code game_scores}.
+ * {@code gamecenter_scores}. Rewards (`gamecenter_rewards`) are given at the end of a game (to every player, or to the
+ * winners) and on Monday for last week's leaderboard ({@link #payWeeks}); SnowStorm's too (`snowwar`), from its own
+ * scores.
  */
 public final class GameCenter {
 
@@ -60,8 +65,16 @@ public final class GameCenter {
     public static final int WIN_POINTS = 10;
     public static final int PLAY_POINTS = 2;
 
-    /** A pack of games, as sold for SnowStorm. */
-    public record Offer(int id, int games, int credits, int points, int pointsType) {}
+    /** A pack of games of a game: how many games, the price, the currency (-1: credits, else the points' type). */
+    public record Offer(int id, int games, int price, int currency) {}
+
+    /** A game's settings: free games a day (-1 unlimited), the free games a club member gets on top (-1 unlimited). */
+    record Settings(int freeDaily, int hcExtra) {}
+
+    private static final long CACHE_MS = 30_000L;
+    private final Map<String, Settings> settings = new ConcurrentHashMap<>();
+    private final AtomicLong settingsAt = new AtomicLong();
+    private final AtomicBoolean clockStarted = new AtomicBoolean();
 
     /** A line of a leaderboard: a player, or a group (gender "g", figure = its badge). */
     public record Entry(int id, int rank, String name, String figure, String gender, int score) {}
@@ -69,7 +82,21 @@ public final class GameCenter {
     private GameCenter() {}
 
     public static GameCenter get() {
+        INSTANCE.startClock();
         return INSTANCE;
+    }
+
+    /** Every hour: last week's leaderboards pay their rewards (once a week a game). */
+    private void startClock() {
+        if (!this.clockStarted.compareAndSet(false, true)) return;
+
+        new Scheduler(3600) {
+            @Override
+            protected void tick() {
+                GameCenter.this.payWeeks();
+            }
+        }.restart();
+        later(this::payWeeks);
     }
 
     /** The game hall's own games count as one game, "hall"; the games with their own world as themselves. */
@@ -86,15 +113,19 @@ public final class GameCenter {
 
     // ---- The emulator's services, each reached in one place
 
-    private static int setting(String key, int fallback) {
+    static int setting(String key, int fallback) {
         return Emulator.getConfig().getInt(key, fallback);
     }
 
-    private static User onlineUser(int userId) {
+    static void updateSetting(String key, String value) {
+        Emulator.getConfig().update(key, value);
+    }
+
+    static User onlineUser(int userId) {
         return Emulator.getGameEnvironment().getUserManager().getUser(userId);
     }
 
-    private static Connection connection() throws SQLException {
+    static Connection connection() throws SQLException {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
@@ -104,18 +135,44 @@ public final class GameCenter {
 
     // ---- Games left
 
+    /** The settings of every game, read again every 30 s (and at once after the Moderation saves them). */
+    Settings settings(String game) {
+        long now = System.currentTimeMillis();
+
+        if (now - this.settingsAt.get() > CACHE_MS) {
+            this.settingsAt.set(now);
+
+            try (Connection connection = connection();
+                    PreparedStatement statement =
+                            connection.prepareStatement("SELECT game, free_daily, hc_extra FROM gamecenter_settings");
+                    ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    this.settings.put(
+                            result.getString("game"),
+                            new Settings(result.getInt("free_daily"), result.getInt("hc_extra")));
+                }
+            } catch (SQLException e) {
+                LOGGER.error("[gamecenter] could not read the settings", e);
+            }
+        }
+
+        return this.settings.getOrDefault(game, new Settings(10, 10));
+    }
+
+    void forgetSettings() {
+        this.settingsAt.set(0);
+    }
+
     /** Free games a day for this player in this game; -1 unlimited. */
     public int freePerDay(int userId, String game) {
-        int everyone = setting("gamecenter." + game + ".free.daily", setting("gamecenter.games.free.daily", 10));
-        int club =
-                setting("gamecenter." + game + ".free.daily.hc", setting("gamecenter.games.free.daily.hc", everyone));
+        Settings settings = this.settings(game);
         User user = onlineUser(userId);
         boolean member = user != null && user.getUserStats().hasActiveClub();
 
-        if (everyone < 0) return -1;
-        if (!member) return everyone;
+        if (settings.freeDaily() < 0) return -1;
+        if (!member) return settings.freeDaily();
 
-        return club < 0 ? -1 : Math.max(everyone, club);
+        return settings.hcExtra() < 0 ? -1 : settings.freeDaily() + Math.max(0, settings.hcExtra());
     }
 
     /** [free used today, extra bought] of a player in a game. */
@@ -208,29 +265,30 @@ public final class GameCenter {
 
     // ---- Buying games
 
-    public List<Offer> offers() {
-        String sql = "SELECT id, games, price_credits, price_points, points_type FROM snowwar_token_offers "
-                + "WHERE enabled = '1' ORDER BY order_num, id";
+    /** The packs of games of a game. */
+    public List<Offer> offers(String game) {
+        String sql = "SELECT id, games, price, currency FROM gamecenter_offers WHERE game = ? AND games > 0 "
+                + "ORDER BY order_num, id";
+        List<Offer> offers = new ArrayList<>();
 
         try (Connection connection = connection();
-                PreparedStatement statement = connection.prepareStatement(sql);
-                ResultSet result = statement.executeQuery()) {
-            List<Offer> offers = new ArrayList<>();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, game);
 
-            while (result.next()) {
-                offers.add(new Offer(
-                        result.getInt("id"),
-                        result.getInt("games"),
-                        result.getInt("price_credits"),
-                        result.getInt("price_points"),
-                        result.getInt("points_type")));
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    offers.add(new Offer(
+                            result.getInt("id"),
+                            result.getInt("games"),
+                            result.getInt("price"),
+                            result.getInt("currency")));
+                }
             }
-
-            return offers;
         } catch (SQLException e) {
             LOGGER.error("[gamecenter] could not read the offers", e);
-            return List.of();
         }
+
+        return offers;
     }
 
     /** Buys a pack of games for one game; answers the error code, or null. */
@@ -241,17 +299,19 @@ public final class GameCenter {
 
         if (user == null) return "offline";
 
-        Offer offer = this.offers().stream()
+        Offer offer = this.offers(game).stream()
                 .filter(o -> o.id() == offerId)
                 .findFirst()
                 .orElse(null);
 
         if (offer == null || offer.games() <= 0) return "no_offer";
 
-        int credits = user.hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : offer.credits();
-        int points = user.hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : offer.points();
+        boolean credits = offer.currency() < 0;
+        int creditPrice = credits && !user.hasPermission(Permission.ACC_INFINITE_CREDITS) ? offer.price() : 0;
+        int pointPrice = !credits && !user.hasPermission(Permission.ACC_INFINITE_POINTS) ? offer.price() : 0;
+        int pointsType = credits ? 0 : offer.currency();
 
-        if (!CatalogPaymentService.tryTake(user, credits, offer.pointsType(), points)) return "not_enough";
+        if (!CatalogPaymentService.tryTake(user, creditPrice, pointsType, pointPrice)) return "not_enough";
 
         String sql = "INSERT INTO game_plays (user_id, game, free_day, free_used, extra) VALUES (?, ?, NULL, 0, ?) "
                 + "ON DUPLICATE KEY UPDATE extra = extra + VALUES(extra)";
@@ -265,7 +325,7 @@ public final class GameCenter {
             return null;
         } catch (SQLException e) {
             LOGGER.error("[gamecenter] could not add the games bought", e);
-            CatalogPaymentService.refund(user, credits, offer.pointsType(), points);
+            CatalogPaymentService.refund(user, creditPrice, pointsType, pointPrice);
             return "server_error";
         }
     }
@@ -307,7 +367,145 @@ public final class GameCenter {
             } catch (SQLException e) {
                 LOGGER.error("[gamecenter] could not write the scores", e);
             }
+
+            this.rewardMatch(game, humans, winners);
         });
+    }
+
+    // ---- Rewards
+
+    List<GameRewards.Reward> rewards(String game) {
+        List<GameRewards.Reward> rewards = new ArrayList<>();
+        String sql = "SELECT kind, rank_from, rank_to, reward_type, reward_value, amount FROM gamecenter_rewards "
+                + "WHERE game = ? ORDER BY kind, rank_from, id";
+
+        try (Connection connection = connection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, game);
+
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    rewards.add(new GameRewards.Reward(
+                            game,
+                            result.getString("kind"),
+                            result.getInt("rank_from"),
+                            result.getInt("rank_to"),
+                            result.getString("reward_type"),
+                            result.getString("reward_value"),
+                            result.getInt("amount")));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("[gamecenter] could not read the rewards", e);
+        }
+
+        return rewards;
+    }
+
+    /** The end of a game: the rewards for playing, and for winning. Called off the game's thread. */
+    public void rewardMatch(String game, Collection<Integer> players, Collection<Integer> winners) {
+        List<GameRewards.Reward> rewards = this.rewards(game);
+
+        if (rewards.isEmpty()) return;
+
+        for (int userId : players) {
+            if (userId <= 0) continue;
+
+            List<String> given = new ArrayList<>();
+
+            for (GameRewards.Reward reward : rewards) {
+                boolean due = reward.kind().equals("play") || (reward.kind().equals("win") && winners.contains(userId));
+
+                if (!due) continue;
+
+                String what = GameRewards.give(userId, reward, "gamecenter." + game + "." + reward.kind());
+
+                if (what != null) given.add(what);
+            }
+
+            if (!given.isEmpty()) GameRewards.tell(userId, "Bravo ! Tu gagnes " + String.join(", ", given) + ".");
+        }
+    }
+
+    /** Last week's leaderboard of each game pays its rewards, once. */
+    void payWeeks() {
+        LocalDate week = weekStart(1);
+        List<String> games = new ArrayList<>(GAMES);
+
+        games.add("snowwar");
+
+        for (String game : games) {
+            List<GameRewards.Reward> rewards = this.rewards(game).stream()
+                    .filter(reward -> reward.kind().equals("week"))
+                    .toList();
+
+            if (rewards.isEmpty() || !this.claimWeek(game, week)) continue;
+
+            int deepest =
+                    rewards.stream().mapToInt(GameRewards.Reward::rankTo).max().orElse(0);
+            List<Integer> ranking = this.ranking(game, week, deepest);
+
+            for (int index = 0; index < ranking.size(); index++) {
+                int rank = index + 1;
+                int userId = ranking.get(index);
+                List<String> given = new ArrayList<>();
+
+                for (GameRewards.Reward reward : rewards) {
+                    if (rank < reward.rankFrom() || rank > reward.rankTo()) continue;
+
+                    String what = GameRewards.give(userId, reward, "gamecenter." + game + ".week");
+
+                    if (what != null) given.add(what);
+                }
+
+                if (!given.isEmpty())
+                    GameRewards.tell(
+                            userId,
+                            "Classement de la semaine : tu finis " + rank + (rank == 1 ? "er" : "e") + " et tu gagnes "
+                                    + String.join(", ", given) + ".");
+            }
+        }
+    }
+
+    /** Marks a week as paid; false when it already was. */
+    private boolean claimWeek(String game, LocalDate week) {
+        try (Connection connection = connection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT IGNORE INTO gamecenter_reward_weeks (game, week_start) VALUES (?, ?)")) {
+            statement.setString(1, game);
+            statement.setDate(2, Date.valueOf(week));
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.error("[gamecenter] could not mark a week as paid", e);
+            return false;
+        }
+    }
+
+    /** The best players of a week, best first. */
+    private List<Integer> ranking(String game, LocalDate week, int limit) {
+        String sql = game.equals("snowwar")
+                ? "SELECT user_id FROM snowwar_scores WHERE week_start = ? AND score > 0 ORDER BY score DESC, user_id LIMIT ?"
+                : "SELECT user_id FROM gamecenter_scores WHERE game = ? AND week_start = ? AND score > 0 "
+                        + "ORDER BY score DESC, wins DESC, user_id LIMIT ?";
+        List<Integer> ranking = new ArrayList<>();
+
+        try (Connection connection = connection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+
+            if (!game.equals("snowwar")) statement.setString(index++, game);
+
+            statement.setDate(index++, Date.valueOf(week));
+            statement.setInt(index, Math.max(1, Math.min(1000, limit)));
+
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) ranking.add(result.getInt(1));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("[gamecenter] could not read a week's ranking", e);
+        }
+
+        return ranking;
     }
 
     /**
@@ -322,8 +520,8 @@ public final class GameCenter {
         boolean groups = "groups".equals(scope);
         boolean friends = "friends".equals(scope);
         String scores = weekly
-                ? "SELECT user_id, score FROM game_scores WHERE game = ? AND week_start = ?"
-                : "SELECT user_id, SUM(score) score FROM game_scores WHERE game = ? GROUP BY user_id";
+                ? "SELECT user_id, score FROM gamecenter_scores WHERE game = ? AND week_start = ?"
+                : "SELECT user_id, SUM(score) score FROM gamecenter_scores WHERE game = ? GROUP BY user_id";
         String sql = groups
                 ? "WITH scores AS (" + scores + "), grouped AS ("
                         + "SELECT users_settings.guild_id id, SUM(scores.score) score FROM scores "
@@ -392,7 +590,7 @@ public final class GameCenter {
     private int maxOffset(String game) {
         try (Connection connection = connection();
                 PreparedStatement statement =
-                        connection.prepareStatement("SELECT MIN(week_start) FROM game_scores WHERE game = ?")) {
+                        connection.prepareStatement("SELECT MIN(week_start) FROM gamecenter_scores WHERE game = ?")) {
             statement.setString(1, game);
 
             try (ResultSet result = statement.executeQuery()) {
@@ -430,30 +628,31 @@ public final class GameCenter {
 
         for (String game : GAMES) {
             JsonObject entry = new JsonObject();
+            Settings settings = this.settings(game);
+            JsonArray offers = new JsonArray();
+
+            for (Offer offer : this.offers(game)) {
+                JsonObject item = new JsonObject();
+
+                item.addProperty("id", offer.id());
+                item.addProperty("games", offer.games());
+                item.addProperty("price", offer.price());
+                item.addProperty("currency", offer.currency());
+                offers.add(item);
+            }
 
             entry.addProperty("id", game);
             entry.addProperty("playing", playersNow.getOrDefault(game, 0));
             entry.addProperty("gamesLeft", this.gamesLeft(userId, game));
             entry.addProperty("freePerDay", this.freePerDay(userId, game));
+            entry.addProperty("freeDaily", settings.freeDaily());
+            entry.addProperty("hcExtra", settings.hcExtra());
+            entry.add("offers", offers);
             games.add(entry);
-        }
-
-        JsonArray offers = new JsonArray();
-
-        for (Offer offer : this.offers()) {
-            JsonObject entry = new JsonObject();
-
-            entry.addProperty("id", offer.id());
-            entry.addProperty("games", offer.games());
-            entry.addProperty("credits", offer.credits());
-            entry.addProperty("points", offer.points());
-            entry.addProperty("pointsType", offer.pointsType());
-            offers.add(entry);
         }
 
         view.addProperty("club", user != null && user.getUserStats().hasActiveClub());
         view.add("games", games);
-        view.add("offers", offers);
         return view;
     }
 }

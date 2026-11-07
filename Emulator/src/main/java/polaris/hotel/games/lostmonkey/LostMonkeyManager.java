@@ -120,7 +120,10 @@ public final class LostMonkeyManager {
         JsonObject extra = new JsonObject();
 
         synchronized (island) {
+            if (!island.created && !action.equals("create")) throw new LostMonkeyException("not_created");
+
             switch (action) {
+                case "create" -> island.create(intOf(body, "colour"), stringOf(body, "name"));
                 case "colour" -> island.setColour(intOf(body, "colour"));
                 case "harvest" -> island.harvest(intOf(body, "tree"));
                 case "feed" -> island.feed();
@@ -172,6 +175,14 @@ public final class LostMonkeyManager {
         GameCenter.get().record(GAME, List.of(userId), score >= WIN_SCORE ? List.of(userId) : List.of());
 
         return island.reward(score, LocalDate.now().toEpochDay());
+    }
+
+    private static String stringOf(JsonObject body, String key) {
+        try {
+            return body != null && body.has(key) ? body.get(key).getAsString() : "";
+        } catch (RuntimeException e) {
+            return "";
+        }
     }
 
     private static int intOf(JsonObject body, String key) {

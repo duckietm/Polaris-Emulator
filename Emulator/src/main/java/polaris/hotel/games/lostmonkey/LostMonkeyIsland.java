@@ -2,6 +2,7 @@ package polaris.hotel.games.lostmonkey;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.regex.Pattern;
 
 /**
  * A player's island in Lost Monkey (Habbo's iPhone game): the monkey's needs (hunger, energy, hygiene, fun, from 0 to
@@ -44,6 +45,10 @@ public final class LostMonkeyIsland {
     int rocket;
     int launches;
     int colour;
+    /** The monkey's name, chosen with its colour on the first visit. */
+    String name = "";
+
+    boolean created;
     boolean asleep;
     long tvAt;
     final long[] treeAt = new long[TREES];
@@ -200,6 +205,19 @@ public final class LostMonkeyIsland {
         this.colour = Math.floorMod(colour, 9);
     }
 
+    static final Pattern NAME = Pattern.compile("[\\p{L}\\p{N}][\\p{L}\\p{N} '_-]{1,15}");
+
+    /** The first visit: the monkey gets its colour and its name. */
+    void create(int colour, String name) {
+        String clean = name == null ? "" : name.trim().replaceAll("\\s+", " ");
+
+        if (!NAME.matcher(clean).matches()) throw new LostMonkeyException("bad_name");
+
+        this.setColour(colour);
+        this.name = clean;
+        this.created = true;
+    }
+
     /** The monkey's mood, from 0 (happy) to 4 (miserable): the lowest of its needs. */
     int mood() {
         double lowest = Math.min(Math.min(this.hunger, this.energy), Math.min(this.hygiene, this.fun));
@@ -226,6 +244,8 @@ public final class LostMonkeyIsland {
         json.addProperty("rocket", this.rocket);
         json.addProperty("launches", this.launches);
         json.addProperty("colour", this.colour);
+        json.addProperty("name", this.name);
+        json.addProperty("created", this.created);
         json.addProperty("asleep", this.asleep);
         json.addProperty("tvAt", this.tvAt);
         json.add("trees", trees);
@@ -250,6 +270,8 @@ public final class LostMonkeyIsland {
                     Math.max(0, Math.min(ROCKET_READY, json.get("rocket").getAsInt()));
             island.launches = json.get("launches").getAsInt();
             island.colour = Math.floorMod(json.get("colour").getAsInt(), 9);
+            island.name = json.has("name") ? json.get("name").getAsString() : "";
+            island.created = json.has("created") && json.get("created").getAsBoolean();
             island.asleep = json.get("asleep").getAsBoolean();
             island.tvAt = json.get("tvAt").getAsLong();
             island.updated = json.get("updated").getAsLong();

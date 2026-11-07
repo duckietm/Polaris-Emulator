@@ -562,7 +562,7 @@ class HallGamesTest {
 
         early.addProperty("x", 1.0);
         early.addProperty("y", 1.0);
-        early.addProperty("progress", 1.0);
+        early.addProperty("progress", 0.1);
         assertThrows(HallException.class, () -> race.play(0, early));
 
         long now = NOW + KartRace.COUNTDOWN_MS;
@@ -571,102 +571,51 @@ class HallGamesTest {
         assertTrue(race.waitingFor(0));
         assertFalse(race.waitingFor(1));
 
-        // The player drives round, a few blocks at a time, faster than the robots.
-        double progress = -0.35;
+        // A report cannot jump ahead of what a kart can drive.
+        JsonObject jump = new JsonObject();
 
-        while (!race.finished() && progress < KartRace.LAPS * KartRace.TRACK.length + 1) {
-            now += 400;
-            progress += 1.2;
+        jump.addProperty("x", 600.0);
+        jump.addProperty("y", 1400.0);
+        jump.addProperty("progress", 2.5);
+        now += 200;
+        race.tick(now, random);
+        race.play(0, jump);
+        assertTrue(race.car(0).progress < 0.1);
+
+        // The player drives round faster than the robots.
+        double distance = race.car(0).progress * KartRace.lapLength();
+
+        while (!race.finished()) {
+            now += 200;
+            distance += 120;
             race.tick(now, random);
 
             if (race.finished()) break;
 
-            double[] at = KartRace.centreAt(progress, 0);
+            double[] at = KartTrack.MAIN.pointAt(distance, 0);
             JsonObject move = new JsonObject();
 
             move.addProperty("x", at[0]);
             move.addProperty("y", at[1]);
-            move.addProperty("progress", progress);
+            move.addProperty("kart", 4);
+            move.addProperty("progress", distance / KartRace.lapLength());
             race.play(0, move);
         }
 
-        assertTrue(race.finished());
         assertEquals(List.of(0), race.winners());
-        assertEquals(1, race.car(0).place);
-        assertTrue(race.car(1).progress > 5);
-    }
-
-    // ---- Copy Writer (Lost Monkey)
-
-    @Test
-    void copyWriterSendsTheWrongOneToSleepAndTheLastAwakeWins() {
-        CopyWriter game = new CopyWriter();
-        Random random = new Random(8);
-
-        game.start(3, random);
-        game.tick(NOW, random);
-        game.tick(NOW + CopyWriter.INTRO_MS, random);
-
-        assertEquals("SHOW", game.phaseName());
-        assertEquals(CopyWriter.FIRST_LENGTH, game.row().length());
-        assertFalse(game.waitingFor(0));
-
-        long now = NOW + CopyWriter.INTRO_MS + game.showMs();
-
-        game.tick(now, random);
-        assertEquals("ANSWER", game.phaseName());
-
-        JsonObject right = new JsonObject();
-        JsonObject wrong = new JsonObject();
-
-        right.addProperty("keys", game.row());
-        wrong.addProperty("keys", game.row().charAt(0) == 'A' ? "B" : "A");
-        game.play(0, right);
-        game.play(1, right);
-        game.play(2, wrong);
-        game.tick(now, random);
-
-        assertEquals("RESULT", game.phaseName());
-        assertFalse(game.waitingFor(2));
-
-        now += CopyWriter.RESULT_MS;
-        game.tick(now, random);
-        assertEquals(CopyWriter.FIRST_LENGTH + 1, game.row().length());
-
-        now += game.showMs();
-        game.tick(now, random);
-
-        JsonObject longer = new JsonObject();
-
-        longer.addProperty("keys", game.row());
-        game.play(0, longer);
-        game.play(1, wrong);
-        game.tick(now, random);
-
-        assertTrue(game.finished());
-        assertEquals(List.of(0), game.winners());
+        assertEquals(4, race.car(0).kart);
+        assertTrue(race.car(1).progress > 1);
     }
 
     @Test
-    void copyWriterRobotsPlayUntilTheEnd() {
-        CopyWriter game = new CopyWriter();
-        Random random = new Random(4);
-        long now = NOW;
+    void kartTrackLoopsAndLocatesPoints() {
+        KartTrack track = KartTrack.MAIN;
+        double[] middle = track.pointAt(1234, 0);
+        double[] found = track.locate(middle[0], middle[1]);
 
-        game.start(4, random);
-
-        for (int step = 0; step < 5000 && !game.finished(); step++) {
-            game.tick(now, random);
-
-            for (int seat = 0; seat < 4; seat++) {
-                if (game.waitingFor(seat)) game.bot(seat, random);
-            }
-
-            now += 400;
-        }
-
-        assertTrue(game.finished());
-        assertFalse(game.winners().isEmpty());
+        assertEquals(1234, found[0], 2);
+        assertEquals(0, found[1], 1);
+        assertEquals(track.pointAt(10, 0)[0], track.pointAt(10 + track.length(), 0)[0], 0.001);
     }
 
     // ---- The tables

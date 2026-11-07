@@ -2,6 +2,7 @@ package polaris.networking.gameserver.gamecenter;
 
 import polaris.hotel.games.battleball.BattleBallManager;
 import polaris.hotel.games.center.GameCenter;
+import polaris.hotel.games.center.GameCenterAdmin;
 import polaris.hotel.games.fastfood.FastFoodManager;
 import polaris.hotel.games.hall.HallManager;
 import polaris.hotel.games.lostmonkey.LostMonkeyManager;
@@ -46,6 +47,7 @@ public class GameCenterHttpHandler extends ChannelInboundHandlerAdapter {
 
     static final String BASE_PATH = "/api/gamecenter";
     private static final int MAX_JSON_BYTES = 1024;
+    private static final int MAX_ADMIN_BYTES = 32 * 1024;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -88,7 +90,9 @@ public class GameCenterHttpHandler extends ChannelInboundHandlerAdapter {
 
         while (action.endsWith("/")) action = action.substring(0, action.length() - 1);
 
-        if (action.isEmpty() && req.method() == HttpMethod.GET) {
+        if (action.startsWith("admin")) {
+            this.admin(ctx, req, action, userId);
+        } else if (action.isEmpty() && req.method() == HttpMethod.GET) {
             sendJson(ctx, req, HttpResponseStatus.OK, overview(userId));
         } else if (action.equals("leaderboard") && req.method() == HttpMethod.GET) {
             String game = param(req, "game");
@@ -120,6 +124,32 @@ public class GameCenterHttpHandler extends ChannelInboundHandlerAdapter {
             }
 
             sendJson(ctx, req, HttpResponseStatus.OK, overview(userId));
+        } else {
+            sendJson(ctx, req, HttpResponseStatus.NOT_FOUND, error("Not found.", "not_found"));
+        }
+    }
+
+    /** The Moderation's Games page: `GET /admin`, `GET /admin/lookup?type=&q=`, `POST /admin/save`. */
+    private void admin(ChannelHandlerContext ctx, FullHttpRequest req, String action, int userId) {
+        if (!GameCenterAdmin.allowed(userId)) {
+            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, error("Forbidden.", "forbidden"));
+            return;
+        }
+
+        if (action.equals("admin") && req.method() == HttpMethod.GET) {
+            sendJson(ctx, req, HttpResponseStatus.OK, GameCenterAdmin.view());
+        } else if (action.equals("admin/lookup") && req.method() == HttpMethod.GET) {
+            sendJson(ctx, req, HttpResponseStatus.OK, GameCenterAdmin.lookup(param(req, "type"), param(req, "q")));
+        } else if (action.equals("admin/save") && req.method() == HttpMethod.POST) {
+            JsonObject body = req.content().readableBytes() > MAX_ADMIN_BYTES ? new JsonObject() : readJson(req);
+            String code = GameCenterAdmin.save(body);
+
+            if (code != null) {
+                sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, error("Refused.", code));
+                return;
+            }
+
+            sendJson(ctx, req, HttpResponseStatus.OK, GameCenterAdmin.view());
         } else {
             sendJson(ctx, req, HttpResponseStatus.NOT_FOUND, error("Not found.", "not_found"));
         }

@@ -1,5 +1,22 @@
 package polaris.hotel.games.snowwar;
 
+import polaris.Emulator;
+import polaris.hotel.games.center.GameCenter;
+import polaris.hotel.games.snowwar.mapping.SnowWarMap;
+import polaris.hotel.games.snowwar.mapping.SnowWarMapsManager;
+import polaris.hotel.rooms.Room;
+import polaris.hotel.users.User;
+import polaris.messages.outgoing.gamecenter.Game2GameCancelledComposer;
+import polaris.messages.outgoing.gamecenter.Game2InArenaQueueComposer;
+import polaris.messages.outgoing.gamecenter.Game2UserBlockedComposer;
+import polaris.messages.outgoing.gamecenter.GameCenterAccountInfoComposer;
+import polaris.messages.outgoing.snowwar.SnowStormEditorDataComposer;
+import polaris.messages.outgoing.snowwar.SnowStormGamesInformationComposer;
+import polaris.messages.outgoing.snowwar.SnowStormGamesLeftComposer;
+import polaris.messages.outgoing.snowwar.SnowStormGenericErrorComposer;
+import polaris.messages.outgoing.snowwar.SnowStormLobbyTeamsComposer;
+import polaris.messages.outgoing.snowwar.SnowStormQuePositionComposer;
+import polaris.messages.outgoing.snowwar.SnowStormStartLobbyCounterComposer;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -239,6 +256,29 @@ public class SnowWarManager {
                     player.getUserId(), player.getAttributes().getScore().get()));
         }
         this.scoreWriter.submit(SnowWarLeaderboardRepository.weekStart(0), rows);
+        this.rewardMatch(players);
+    }
+
+    /** The Game Center's rewards of the end of a game: every player, and the team with the most points. */
+    private void rewardMatch(List<SnowWarGamePlayer> players) {
+        Map<Integer, Integer> teamScores = new HashMap<>();
+        List<Integer> userIds = new ArrayList<>();
+
+        for (SnowWarGamePlayer player : players) {
+            teamScores.merge(
+                    player.getTeamId(), player.getAttributes().getScore().get(), Integer::sum);
+            userIds.add(player.getUserId());
+        }
+
+        int best =
+                teamScores.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        List<Integer> winners = new ArrayList<>();
+
+        for (SnowWarGamePlayer player : players) {
+            if (best > 0 && teamScores.get(player.getTeamId()) == best) winners.add(player.getUserId());
+        }
+
+        schedule(() -> GameCenter.get().rewardMatch("snowwar", userIds, winners), 0L);
     }
 
     /** All-time scores in the database, or {@code null} when they could not be read. */

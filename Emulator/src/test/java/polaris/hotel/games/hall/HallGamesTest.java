@@ -596,6 +596,79 @@ class HallGamesTest {
         assertTrue(race.car(1).progress > 5);
     }
 
+    // ---- Copy Writer (Lost Monkey)
+
+    @Test
+    void copyWriterSendsTheWrongOneToSleepAndTheLastAwakeWins() {
+        CopyWriter game = new CopyWriter();
+        Random random = new Random(8);
+
+        game.start(3, random);
+        game.tick(NOW, random);
+        game.tick(NOW + CopyWriter.INTRO_MS, random);
+
+        assertEquals("SHOW", game.phaseName());
+        assertEquals(CopyWriter.FIRST_LENGTH, game.row().length());
+        assertFalse(game.waitingFor(0));
+
+        long now = NOW + CopyWriter.INTRO_MS + game.showMs();
+
+        game.tick(now, random);
+        assertEquals("ANSWER", game.phaseName());
+
+        JsonObject right = new JsonObject();
+        JsonObject wrong = new JsonObject();
+
+        right.addProperty("keys", game.row());
+        wrong.addProperty("keys", game.row().charAt(0) == 'A' ? "B" : "A");
+        game.play(0, right);
+        game.play(1, right);
+        game.play(2, wrong);
+        game.tick(now, random);
+
+        assertEquals("RESULT", game.phaseName());
+        assertFalse(game.waitingFor(2));
+
+        now += CopyWriter.RESULT_MS;
+        game.tick(now, random);
+        assertEquals(CopyWriter.FIRST_LENGTH + 1, game.row().length());
+
+        now += game.showMs();
+        game.tick(now, random);
+
+        JsonObject longer = new JsonObject();
+
+        longer.addProperty("keys", game.row());
+        game.play(0, longer);
+        game.play(1, wrong);
+        game.tick(now, random);
+
+        assertTrue(game.finished());
+        assertEquals(List.of(0), game.winners());
+    }
+
+    @Test
+    void copyWriterRobotsPlayUntilTheEnd() {
+        CopyWriter game = new CopyWriter();
+        Random random = new Random(4);
+        long now = NOW;
+
+        game.start(4, random);
+
+        for (int step = 0; step < 5000 && !game.finished(); step++) {
+            game.tick(now, random);
+
+            for (int seat = 0; seat < 4; seat++) {
+                if (game.waitingFor(seat)) game.bot(seat, random);
+            }
+
+            now += 400;
+        }
+
+        assertTrue(game.finished());
+        assertFalse(game.winners().isEmpty());
+    }
+
     // ---- The tables
 
     @Test

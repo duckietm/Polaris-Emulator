@@ -18,7 +18,8 @@ public final class HallGames {
             new Kind("quiz", 2, 8, 6),
             new Kind("tetris", 2, 4, 2),
             new Kind("diving", 2, 8, 4),
-            new Kind("kart", 2, 8, 4));
+            new Kind("kart", 2, 8, 4),
+            new Kind("copywriter", 2, 8, 4));
 
     private HallGames() {}
 
@@ -42,6 +43,7 @@ public final class HallGames {
             case "tetris" -> new TetrisDuel();
             case "diving" -> new Diving();
             case "kart" -> new KartRace();
+            case "copywriter" -> new CopyWriter();
             default -> throw new HallException("no_game");
         };
     }

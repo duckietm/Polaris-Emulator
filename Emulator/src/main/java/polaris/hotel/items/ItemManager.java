@@ -91,6 +91,7 @@ import polaris.hotel.items.interactions.InteractionRoomOMatic;
 import polaris.hotel.items.interactions.InteractionSnowboardSlope;
 import polaris.hotel.items.interactions.InteractionStackHelper;
 import polaris.hotel.items.interactions.InteractionStackWalkHelper;
+import polaris.hotel.items.interactions.InteractionStepLink;
 import polaris.hotel.items.interactions.InteractionStickyPole;
 import polaris.hotel.items.interactions.InteractionSwitch;
 import polaris.hotel.items.interactions.InteractionSwitchRemoteControl;
@@ -556,6 +557,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("teleport", InteractionTeleport.class));
         this.interactionsList.add(new ItemInteraction("teleporttile", InteractionTeleportTile.class));
         this.interactionsList.add(new ItemInteraction("arrow", InteractionArrow.class));
+        this.interactionsList.add(new ItemInteraction("step_link", InteractionStepLink.class));
         this.interactionsList.add(new ItemInteraction("crackable", InteractionCrackable.class));
         this.interactionsList.add(new ItemInteraction("crackable_master", InteractionCrackableMaster.class));
         this.interactionsList.add(new ItemInteraction("nest", InteractionNest.class));

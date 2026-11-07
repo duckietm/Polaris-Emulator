@@ -311,6 +311,7 @@ class UnoTableTest {
         table.join(2, "P2", "", "M", 2, NOW);
 
         assertEquals(2, table.seats().get(0).userId());
+        assertEquals(1, table.hostId());
         assertEquals(
                 "chair_taken",
                 assertThrows(UnoException.class, () -> table.sit(1, 2)).code());

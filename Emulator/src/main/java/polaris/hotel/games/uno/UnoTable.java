@@ -39,6 +39,8 @@ public final class UnoTable {
         boolean exposureChecked;
         long lastSeen;
         int missedTurns;
+        /** The order in which the players came: the first one still here is the host. */
+        long joined;
 
         Seat(int userId, String name, String figure, String gender, boolean bot, int chair, long now) {
             this.userId = userId;
@@ -104,6 +106,7 @@ public final class UnoTable {
     private long version;
     private long eventSeq;
     private int nextBotId = -1;
+    private long joins;
 
     public UnoTable(int id, UnoRules rules, Random random) {
         this.id = id;
@@ -119,7 +122,10 @@ public final class UnoTable {
         if (this.seat(userId) != null) return;
         if (this.seats.size() >= this.rules.maxPlayers()) throw new UnoException("table_full");
 
-        this.seats.add(new Seat(userId, name, figure, gender, false, this.freeChair(chair), now));
+        Seat seat = new Seat(userId, name, figure, gender, false, this.freeChair(chair), now);
+
+        seat.joined = ++this.joins;
+        this.seats.add(seat);
         this.sortSeats();
         this.event("join", name, "");
     }
@@ -697,12 +703,15 @@ public final class UnoTable {
     }
 
     /** The host is the first player (not robot) who sat down, in chair order. */
+    /** The host: the player who came first among those still here (changing chairs does not change the host). */
     public int hostId() {
+        Seat host = null;
+
         for (Seat seat : this.seats) {
-            if (!seat.bot) return seat.userId;
+            if (!seat.bot && (host == null || seat.joined < host.joined)) host = seat;
         }
 
-        return 0;
+        return host == null ? 0 : host.userId;
     }
 
     public boolean hasPlayers() {

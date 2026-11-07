@@ -356,6 +356,38 @@ class HallGamesTest {
                 .isEmpty());
     }
 
+    // ---- The snail race
+
+    @Test
+    void snailsRaceToTheLineAndCheeringHelps() {
+        SnailRace race = new SnailRace();
+
+        race.start(3, new Random(9));
+        race.tick(NOW, new Random(1));
+
+        assertFalse(race.waitingFor(0));
+        assertThrows(HallException.class, () -> race.play(0, null));
+
+        long now = NOW + SnailRace.COUNTDOWN_MS;
+
+        race.tick(now, null);
+        assertTrue(race.waitingFor(0));
+        race.play(0, null);
+        assertFalse(race.waitingFor(0));
+
+        for (int i = 0; i < 900 && !race.finished(); i++) {
+            now += 100;
+            race.tick(now, null);
+
+            if (race.waitingFor(0)) race.play(0, null);
+        }
+
+        assertTrue(race.finished());
+        assertEquals(1, race.winners().size());
+        assertTrue(race.snail(0).place >= 1 && race.snail(0).place <= 3);
+        assertTrue(race.snail(0).x >= SnailRace.LENGTH);
+    }
+
     // ---- The tables
 
     @Test

@@ -242,6 +242,7 @@ public final class HallTable {
 
     /** The time goes by: robots play when they have thought, a player out of time gets a move played for them. */
     public void advance(long now) {
+        if (this.state == State.PLAYING) this.game.tick(now, this.random);
         if (this.state == State.PLAYING && this.game.finished()) this.afterMove(now);
 
         for (int guard = 0; guard < 8 && this.state == State.PLAYING; guard++) {

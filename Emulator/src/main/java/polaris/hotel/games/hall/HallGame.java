@@ -23,6 +23,9 @@ public interface HallGame {
     /** A move for this seat, as a robot (or a player out of time) would play it. */
     void bot(int seat, Random random);
 
+    /** The time goes by, for the games that run on their own (a race): robots included. */
+    default void tick(long now, Random random) {}
+
     /** This seat gives up (left, or out of time too often). */
     void forfeit(int seat);
 

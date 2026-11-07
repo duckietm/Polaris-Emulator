@@ -13,7 +13,8 @@ public final class HallGames {
             new Kind("connect4", 2, 2, 2),
             new Kind("battleships", 2, 2, 2),
             new Kind("chess", 2, 2, 2),
-            new Kind("poker", 2, 4, 4));
+            new Kind("poker", 2, 4, 4),
+            new Kind("snails", 2, 6, 6));
 
     private HallGames() {}
 
@@ -32,6 +33,7 @@ public final class HallGames {
             case "battleships" -> new Battleships();
             case "chess" -> new Chess();
             case "poker" -> new Poker();
+            case "snails" -> new SnailRace();
             default -> throw new HallException("no_game");
         };
     }

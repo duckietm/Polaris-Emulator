@@ -388,6 +388,61 @@ class HallGamesTest {
         assertTrue(race.snail(0).x >= SnailRace.LENGTH);
     }
 
+    // ---- The quiz
+
+    @Test
+    void theQuizBankIsComplete() {
+        assertTrue(QuizBank.QUESTIONS.size() >= 50);
+
+        for (Quiz.Question question : QuizBank.QUESTIONS) {
+            assertEquals(4, question.answers().size(), question.text());
+            assertTrue(question.right() >= 0 && question.right() < 4, question.text());
+        }
+    }
+
+    @Test
+    void aRightQuickAnswerScoresMore() {
+        Quiz quiz = new Quiz(QuizBank.QUESTIONS);
+
+        quiz.start(2, new Random(3));
+        quiz.tick(NOW, null);
+        quiz.tick(NOW + Quiz.INTRO_MS, null);
+
+        assertTrue(quiz.waitingFor(0));
+
+        int right = -1;
+
+        // Seat 1 is a robot that knows: it plays right three times in five; find the right answer from its view.
+        quiz.tick(NOW + Quiz.INTRO_MS + 500, null);
+
+        JsonObject move = new JsonObject();
+
+        for (int answer = 0; answer < 4; answer++) {
+            Quiz probe = new Quiz(QuizBank.QUESTIONS);
+
+            probe.start(2, new Random(3));
+            probe.tick(NOW, null);
+            probe.tick(NOW + Quiz.INTRO_MS, null);
+            move.addProperty("answer", answer);
+            probe.play(0, move);
+            probe.play(1, move);
+            probe.tick(NOW + Quiz.INTRO_MS + 100, null);
+
+            if (probe.score(0) > 0) right = answer;
+        }
+
+        assertTrue(right >= 0);
+
+        move.addProperty("answer", right);
+        quiz.play(0, move);
+        quiz.tick(NOW + Quiz.INTRO_MS + 10_000, null);
+        quiz.play(1, move);
+        quiz.tick(NOW + Quiz.INTRO_MS + 10_100, null);
+
+        assertTrue(quiz.score(0) > quiz.score(1));
+        assertTrue(quiz.score(1) >= 500);
+    }
+
     // ---- The tables
 
     @Test

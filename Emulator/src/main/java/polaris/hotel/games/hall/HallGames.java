@@ -14,7 +14,8 @@ public final class HallGames {
             new Kind("battleships", 2, 2, 2),
             new Kind("chess", 2, 2, 2),
             new Kind("poker", 2, 4, 4),
-            new Kind("snails", 2, 6, 6));
+            new Kind("snails", 2, 6, 6),
+            new Kind("quiz", 2, 8, 6));
 
     private HallGames() {}
 
@@ -34,6 +35,7 @@ public final class HallGames {
             case "chess" -> new Chess();
             case "poker" -> new Poker();
             case "snails" -> new SnailRace();
+            case "quiz" -> new Quiz(QuizBank.QUESTIONS);
             default -> throw new HallException("no_game");
         };
     }

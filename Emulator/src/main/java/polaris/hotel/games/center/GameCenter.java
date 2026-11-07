@@ -35,7 +35,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.games.GameTexts;
 
 /**
- * Habbi's Game Center for the games other than SnowStorm (which keeps its own): the free games of the day (fewer
+ * The Game Center for the games other than SnowStorm (which keeps its own): the free games of the day (fewer
  * without the Habbo Club), the games bought on top, game by game, and the scores of the week and of all time.
  *
  * <p>A game is charged to each player when it starts (robots aside); a player with no game left cannot start or join
@@ -352,7 +352,7 @@ public final class GameCenter {
 
         LocalDate week = weekStart(0);
         String sql =
-                "INSERT INTO game_scores (user_id, game, week_start, score, matches, wins) VALUES (?, ?, ?, ?, 1, ?) "
+                "INSERT INTO gamecenter_scores (user_id, game, week_start, score, matches, wins) VALUES (?, ?, ?, ?, 1, ?) "
                         + "ON DUPLICATE KEY UPDATE score = score + VALUES(score), matches = matches + 1, wins = wins + VALUES(wins)";
 
         later(() -> {

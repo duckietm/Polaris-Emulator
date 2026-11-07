@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/werewolf`: Habbi's werewolf game for a logged-in player. `GET /` answers what they see (their village, the open
+ * `/api/werewolf`: The werewolf game for a logged-in player. `GET /` answers what they see (their village, the open
  * villages); `POST /create {rules}`, `/join {gameId, chair}`, `/leave`, `/sit {chair}`, `/rules {rules}`, `/bot`,
  * `/bots`, `/bot/remove {userId}`, `/start`, `/act {target, second}`, `/witch {save, poison}`, `/choose {yes}`,
  * `/pass`, `/ready`, `/say {text}` act and answer the same view. A refused action answers 400 with its code (`werewolf.error.<code>` in the client).

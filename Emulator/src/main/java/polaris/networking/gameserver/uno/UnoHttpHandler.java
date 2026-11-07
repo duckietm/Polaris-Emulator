@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/uno`: Habbi's UNO for a logged-in player. `GET /` answers what they see (their table, the open tables);
+ * `/api/uno`: the hotel's UNO for a logged-in player. `GET /` answers what they see (their table, the open tables);
  * `POST /create {maxPlayers}`, `/join {tableId}`, `/leave`, `/bot`, `/bot/remove {userId}`, `/start`,
  * `/play {card, colour}`, `/draw`, `/pass`, `/uno`, `/catch {userId}` act and answer the same view. A refused action
  * answers 400 with its code (`uno.error.<code>` in the client).

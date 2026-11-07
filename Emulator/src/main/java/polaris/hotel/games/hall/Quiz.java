@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * The Habbi quiz: {@link #ROUNDS} questions drawn from the bank, four answers each, everybody answering at the same
+ * The hotel quiz: {@link #ROUNDS} questions drawn from the bank, four answers each, everybody answering at the same
  * time within {@link #ANSWER_MS}. A right answer is worth 500 points and up to 500 more for answering fast; then the
  * answer is shown for a moment and the next question comes. The most points win (a tie shares the win).
  */

@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/hall`: Habbi's game hall for a logged-in player. `GET /?game=<name>` answers what they see (their table, the
+ * `/api/hall`: The game hall for a logged-in player. `GET /?game=<name>` answers what they see (their table, the
  * open tables of that game); `POST /create {game, size, bots}`, `/join {tableId}`, `/leave`, `/options {size, bots}`,
  * `/bot`, `/bot/remove`, `/start`, `/move {move}` act and answer the same view. A refused action answers 400 with its
  * code (`hall.error.<code>` in the client).

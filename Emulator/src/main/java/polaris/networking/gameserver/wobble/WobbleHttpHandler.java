@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/wobble`: Habbi's Wobble Squabble for a logged-in player. `GET /` answers what they see (their duel, the open
+ * `/api/wobble`: the hotel's Wobble Squabble for a logged-in player. `GET /` answers what they see (their duel, the open
  * duels); `POST /create {rules}`, `/join {matchId}`, `/leave`, `/rules {rules}`, `/bot`, `/bot/remove`, `/start`,
  * `/lean {dir}`, `/push {dir}`, `/move {dir}`, `/stabilise` act and answer the same view. A refused action answers 400
  * with its code (`wobble.error.<code>` in the client).

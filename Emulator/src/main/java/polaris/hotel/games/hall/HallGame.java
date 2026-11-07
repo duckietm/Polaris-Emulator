@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * A game of the game hall (the Cunning Fox Gamehall of Habbo's 2004 hotel, and Habbi's additions): the rules only,
+ * A game of the game hall (the Cunning Fox Gamehall of Habbo's 2004 hotel, and the games added to it): the rules only,
  * seat by seat (0 to n - 1). The table ({@link HallTable}) keeps the players, the clock and the robots. Not
  * thread-safe: the manager locks the table.
  */

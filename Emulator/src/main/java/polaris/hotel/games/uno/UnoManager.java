@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Habbi's UNO: the tables (kept in memory), who sits where, the clock that plays the robots and the turns that run
+ * UNO: the tables (kept in memory), who sits where, the clock that plays the robots and the turns that run
  * out, the winners written to `uno_stats`, and what each player sees (`/api/uno`).
  */
 public final class UnoManager {

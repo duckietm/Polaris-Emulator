@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Habbi's UNO cards, as two-letter codes: a colour (R red, Y yellow, G green, B blue, W wild) and a value (0 to 9,
+ * The UNO cards, as two-letter codes: a colour (R red, Y yellow, G green, B blue, W wild) and a value (0 to 9,
  * S skip, R reverse, D draw two; for a wild, C colour change or F draw four). The 108 cards of a deck.
  */
 public final class UnoCards {

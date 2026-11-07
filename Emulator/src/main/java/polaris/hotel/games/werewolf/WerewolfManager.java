@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Habbi's werewolf game: the villages (kept in memory), who sits where, the clock that plays the robots and ends the
+ * The werewolf game: the villages (kept in memory), who sits where, the clock that plays the robots and ends the
  * steps, the winners written to `werewolf_stats`, and what each player sees (`/api/werewolf`).
  */
 public final class WerewolfManager {

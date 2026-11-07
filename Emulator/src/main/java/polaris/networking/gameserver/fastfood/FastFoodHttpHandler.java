@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/fastfood`: Habbi's Fast Food for a logged-in player. `GET /` answers what they see (their game, the open
+ * `/api/fastfood`: the hotel's Fast Food for a logged-in player. `GET /` answers what they see (their game, the open
  * games); `POST /create {rules}`, `/join {gameId}`, `/leave`, `/rules {rules}`, `/bot`, `/bot/remove`, `/start`,
  * `/drop`, `/chute {elapsed}`, `/power` act and answer the same view. A refused action answers 400 with its code
  * (`fastfood.error.<code>` in the client).

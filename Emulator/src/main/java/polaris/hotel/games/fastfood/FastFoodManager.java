@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Habbi's Fast Food: the games (kept in memory), the clock that runs them when nobody asks, the scores written to
+ * Fast Food: the games (kept in memory), the clock that runs them when nobody asks, the scores written to
  * `fastfood_stats`, and what each player sees (`/api/fastfood`).
  */
 public final class FastFoodManager {

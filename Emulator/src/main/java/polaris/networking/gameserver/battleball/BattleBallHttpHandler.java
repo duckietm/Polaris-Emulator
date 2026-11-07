@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/battleball`: Habbi's BattleBall for a logged-in player. `GET /` answers what they see (their game, the open
+ * `/api/battleball`: the hotel's BattleBall for a logged-in player. `GET /` answers what they see (their game, the open
  * games); `POST /create {rules, team}`, `/join {gameId, team}`, `/leave`, `/team {team}`, `/rules {rules}`,
  * `/bot {team}`, `/bots`, `/bot/remove`, `/start`, `/walk {x, y}`, `/power` act and answer the same view. A refused
  * action answers 400 with its code (`battleball.error.<code>` in the client).

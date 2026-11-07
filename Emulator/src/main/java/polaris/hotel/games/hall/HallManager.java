@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Habbi's game hall (tic-tac-toe, four in a row, battleships, chess, poker): the tables (kept in memory), the clock
+ * The game hall (tic-tac-toe, four in a row, battleships, chess, poker): the tables (kept in memory), the clock
  * that runs the robots and the players' time, the results written to `hall_stats`, and what each player sees
  * (`/api/hall`).
  */

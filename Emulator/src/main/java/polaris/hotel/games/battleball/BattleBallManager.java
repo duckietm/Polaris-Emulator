@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Habbi's BattleBall: the games (kept in memory), the clock that runs them when nobody asks, the scores written to
+ * BattleBall: the games (kept in memory), the clock that runs them when nobody asks, the scores written to
  * `battleball_stats`, and what each player sees (`/api/battleball`).
  */
 public final class BattleBallManager {

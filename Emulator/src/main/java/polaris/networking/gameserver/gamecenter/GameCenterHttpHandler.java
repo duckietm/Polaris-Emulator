@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * `/api/gamecenter`: Habbi's Game Center for a logged-in player. `GET /` answers each game's players now and the
+ * `/api/gamecenter`: the hotel's Game Center for a logged-in player. `GET /` answers each game's players now and the
  * player's games left (SnowStorm: its players only, it keeps its own counter), and the packs of games;
  * `GET /leaderboard?game=&weekly=1&scope=everyone|friends|groups&week=0` a leaderboard; `POST /buy {game, offerId}`
  * buys a pack of games for one game and answers the list again.

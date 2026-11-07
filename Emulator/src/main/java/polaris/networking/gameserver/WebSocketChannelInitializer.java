@@ -47,6 +47,7 @@ import polaris.networking.gameserver.handlers.PreUpgradeConnectionLimit;
 import polaris.networking.gameserver.handlers.SustainedUnwritableHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpHandler;
+import polaris.networking.gameserver.lostmonkey.LostMonkeyHttpHandler;
 import polaris.networking.gameserver.ssl.SSLCertificateLoader;
 import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
 import polaris.networking.gameserver.uno.UnoHttpHandler;
@@ -206,6 +207,11 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionGameCenter",
                         BlockingHttpExecutionGroup.admissionHandler("gameCenterHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "gameCenterHttpHandler", new GameCenterHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionLostMonkey",
+                        BlockingHttpExecutionGroup.admissionHandler("lostMonkeyHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "lostMonkeyHttpHandler", new LostMonkeyHttpHandler());
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());

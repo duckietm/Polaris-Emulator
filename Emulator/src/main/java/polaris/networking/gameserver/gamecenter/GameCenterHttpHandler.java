@@ -4,6 +4,7 @@ import polaris.hotel.games.battleball.BattleBallManager;
 import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.games.fastfood.FastFoodManager;
 import polaris.hotel.games.hall.HallManager;
+import polaris.hotel.games.lostmonkey.LostMonkeyManager;
 import polaris.hotel.games.snowwar.SnowWarManager;
 import polaris.hotel.games.uno.UnoManager;
 import polaris.hotel.games.werewolf.WerewolfManager;
@@ -133,6 +134,7 @@ public class GameCenterHttpHandler extends ChannelInboundHandlerAdapter {
         playing.put("wobblenext", WobbleManager.get().playersNow(true));
         playing.put("battleball", BattleBallManager.get().playersNow());
         playing.put("fastfood", FastFoodManager.get().playersNow());
+        playing.merge("copywriter", LostMonkeyManager.get().playersNow(), Integer::sum);
 
         JsonObject view = GameCenter.get().overview(userId, playing);
 

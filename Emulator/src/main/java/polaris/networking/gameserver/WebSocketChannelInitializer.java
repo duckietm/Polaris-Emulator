@@ -48,6 +48,23 @@ import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
 import polaris.networking.gameserver.uno.UnoHttpHandler;
 import polaris.networking.gameserver.werewolf.WerewolfHttpHandler;
 import polaris.networking.gameserver.wired.WiredVariableApiHandler;
+import polaris.networking.gameserver.wobble.WobbleHttpHandler;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannelInitializer.class);
@@ -162,6 +179,11 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionWerewolf",
                         BlockingHttpExecutionGroup.admissionHandler("werewolfHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "werewolfHttpHandler", new WerewolfHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionWobble",
+                        BlockingHttpExecutionGroup.admissionHandler("wobbleHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "wobbleHttpHandler", new WobbleHttpHandler());
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());

@@ -457,6 +457,10 @@ U|polaris/hotel/games/werewolf/WerewolfManager.java|CALL|getConfig|2
 U|polaris/hotel/games/werewolf/WerewolfManager.java|CALL|getDatabase|1
 U|polaris/hotel/games/werewolf/WerewolfManager.java|CALL|getGameEnvironment|2
 U|polaris/hotel/games/werewolf/WerewolfManager.java|CALL|getThreading|1
+U|polaris/hotel/games/wobble/WobbleManager.java|CALL|getConfig|2
+U|polaris/hotel/games/wobble/WobbleManager.java|CALL|getDatabase|1
+U|polaris/hotel/games/wobble/WobbleManager.java|CALL|getGameEnvironment|1
+U|polaris/hotel/games/wobble/WobbleManager.java|CALL|getThreading|1
 U|polaris/hotel/guides/GuardianTicket.java|CALL|getConfig|4
 U|polaris/hotel/guides/GuardianTicket.java|CALL|getGameEnvironment|6
 U|polaris/hotel/guides/GuardianTicket.java|CALL|getThreading|3

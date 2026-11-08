@@ -1281,7 +1281,7 @@ public class UserStats implements Runnable {
      * Official SessionDataManager.replenishRespect(): spends one replenish and puts the daily
      * respects back to the configured maximum. False when there is nothing left to spend.
      */
-    public boolean replenishRespect(int maxRespectPerDay) {
+    public synchronized boolean replenishRespect(int maxRespectPerDay) {
         if (this.respectReplenishesLeft <= 0) {
             return false;
         }

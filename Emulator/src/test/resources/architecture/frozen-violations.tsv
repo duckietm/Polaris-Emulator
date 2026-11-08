@@ -289,6 +289,7 @@ U|polaris/hotel/commands/RewardTrackPointsCommand.java|CALL|getGameEnvironment|2
 U|polaris/hotel/commands/RewardTrackPointsCommand.java|CALL|getTexts|5
 U|polaris/hotel/commands/RoomAlertCommand.java|CALL|getTexts|2
 U|polaris/hotel/commands/RoomBadgeCommand.java|CALL|getTexts|3
+U|polaris/hotel/commands/RoomBundleCommand.java|CALL|getConfig|1
 U|polaris/hotel/commands/RoomBundleCommand.java|CALL|getDatabase|1
 U|polaris/hotel/commands/RoomBundleCommand.java|CALL|getGameEnvironment|2
 U|polaris/hotel/commands/RoomBundleCommand.java|CALL|getTexts|4

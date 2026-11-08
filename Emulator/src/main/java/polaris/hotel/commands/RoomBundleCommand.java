@@ -32,12 +32,8 @@ public class RoomBundleCommand extends Command {
         int points;
         int pointsType;
 
-        if (params.length < 5) {
-            gameClient
-                    .getUser()
-                    .whisper(
-                            Emulator.getTexts().getValue("commands.error.cmd_bundle.missing_params"),
-                            RoomChatMessageBubbles.ALERT);
+        if (params.length < 5 || gameClient.getUser().getUserInfo().getCurrentRoom() == null) {
+            whisperUsage(gameClient);
             return true;
         }
 
@@ -58,10 +54,22 @@ public class RoomBundleCommand extends Command {
             return true;
         }
 
-        parentId = Integer.parseInt(params[1]);
-        credits = Integer.parseInt(params[2]);
-        points = Integer.parseInt(params[3]);
-        pointsType = Integer.parseInt(params[4]);
+        try {
+            parentId = Integer.parseInt(params[1]);
+            credits = Integer.parseInt(params[2]);
+            points = Integer.parseInt(params[3]);
+            pointsType = Integer.parseInt(params[4]);
+        } catch (NumberFormatException e) {
+            parentId = -1;
+            credits = -1;
+            points = -1;
+            pointsType = -1;
+        }
+
+        if (!isValidPrice(credits, points, pointsType, Emulator.getConfig().getValue("seasonal.types", ""))) {
+            whisperUsage(gameClient);
+            return true;
+        }
 
         CatalogPage page = Emulator.getGameEnvironment()
                 .getCatalogManager()
@@ -128,5 +136,27 @@ public class RoomBundleCommand extends Command {
         }
 
         return true;
+    }
+
+    private static void whisperUsage(GameClient gameClient) {
+        gameClient
+                .getUser()
+                .whisper(
+                        Emulator.getTexts().getValue("commands.error.cmd_bundle.missing_params"),
+                        RoomChatMessageBubbles.ALERT);
+    }
+
+    /**
+     * A bundle costs zero or more credits and points, and points are charged only in a currency the hotel lists in
+     * seasonal.types: a negative price paid the buyer, and an unlisted type sold the room for a currency nobody has.
+     */
+    static boolean isValidPrice(int credits, int points, int pointsType, String seasonalTypes) {
+        if (credits < 0 || points < 0) return false;
+        if (points == 0) return true;
+        if (seasonalTypes == null) return false;
+        for (String type : seasonalTypes.split(";")) {
+            if (type.trim().equals(String.valueOf(pointsType))) return true;
+        }
+        return false;
     }
 }

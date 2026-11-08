@@ -2093,7 +2093,6 @@ M|polaris.hotel.catalog.CatalogManager#catalogItemAmount
 M|polaris.hotel.catalog.TargetOffer#ACTIVE_TARGET_OFFER_ID
 M|polaris.hotel.catalog.marketplace.MarketPlace#MARKETPLACE_CURRENCY
 M|polaris.hotel.catalog.marketplace.MarketPlace#MARKETPLACE_ENABLED
-M|polaris.hotel.gameclients.SessionResumeManager#instance
 M|polaris.hotel.games.freeze.FreezeGame#DESTROY_BLOCK_POINTS
 M|polaris.hotel.games.freeze.FreezeGame#FREEZE_LOOSE_BOOST
 M|polaris.hotel.games.freeze.FreezeGame#FREEZE_LOOSE_POINTS

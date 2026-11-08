@@ -14,18 +14,18 @@ public class SessionResumeManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionResumeManager.class);
 
-    private static SessionResumeManager instance;
-
     /** The shortest window a restored ticket gets: a page reload behind a proxy can take this long. */
     static final int RESTORED_TICKET_MIN_SECONDS = 120;
 
     private final ConcurrentHashMap<Integer, GhostSession> ghostSessions = new ConcurrentHashMap<>();
 
+    /** Initialised once by the class loader: the lazy check-then-set could hand two threads two managers. */
+    private static final class Holder {
+        private static final SessionResumeManager INSTANCE = new SessionResumeManager();
+    }
+
     public static SessionResumeManager getInstance() {
-        if (instance == null) {
-            instance = new SessionResumeManager();
-        }
-        return instance;
+        return Holder.INSTANCE;
     }
 
     public int getGracePeriodSeconds() {

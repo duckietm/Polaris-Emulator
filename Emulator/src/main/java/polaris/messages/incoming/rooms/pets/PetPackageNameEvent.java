@@ -12,6 +12,7 @@ import polaris.messages.incoming.MessageHandler;
 import polaris.messages.incoming.catalog.CheckPetNameEvent;
 import polaris.messages.incoming.rooms.items.RoomItemInputGuard;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
+import polaris.messages.outgoing.generic.alerts.PetErrorComposer;
 import polaris.messages.outgoing.rooms.UpdateStackHeightComposer;
 import polaris.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import polaris.messages.outgoing.rooms.pets.PetPackageNameValidationComposer;
@@ -39,6 +40,11 @@ public class PetPackageNameEvent extends MessageHandler {
                         if (tile == null) {
                             this.client.sendResponse(
                                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                            return;
+                        }
+
+                        if (PetPlaceEvent.isFullFor(room, this.client.getUser())) {
+                            this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_MAX_PETS));
                             return;
                         }
 

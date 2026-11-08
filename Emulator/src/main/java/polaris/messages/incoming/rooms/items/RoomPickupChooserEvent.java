@@ -33,6 +33,20 @@ public class RoomPickupChooserEvent extends MessageHandler {
             if (item != null) {
                 if (item instanceof InteractionPostIt) continue;
                 if (item instanceof InteractionCrackable crackable && crackable.cracked) continue;
+                // A permanent variable box loses its stored values when picked up: the single pick-up asks first,
+                // the chooser has no way to, so it leaves the box where it is.
+                if (RoomPickupItemEvent.storesVariableData(item)) continue;
+
+                // A Place Furni copy goes only by the hand of the room owner or of the box's owner, and never
+                // changes owner: it is removed, as the single pick-up does.
+                if (item.isTemporary()) {
+                    int userId = this.client.getUser().getUserInfo().getId();
+                    if (userId == room.getOwnerId()
+                            || (item.getTemporaryOwnerId() > 0 && userId == item.getTemporaryOwnerId())) {
+                        room.ejectUserItem(item);
+                    }
+                    continue;
+                }
 
                 if (item.getUserId() == this.client.getUser().getUserInfo().getId()) {
                     room.pickUpItem(item, this.client.getUser());

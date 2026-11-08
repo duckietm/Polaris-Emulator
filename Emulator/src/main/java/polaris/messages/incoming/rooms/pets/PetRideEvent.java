@@ -32,8 +32,8 @@ public class PetRideEvent extends MessageHandler {
             return;
         }
 
-        // someone is already on it
-        if (rideablePet.getRider() != null) return;
+        // someone is already on it, or there is no saddle to sit on
+        if (rideablePet.getRider() != null || !rideablePet.hasSaddle()) return;
 
         // check if able to ride
         if (!rideablePet.anyoneCanRide() && user.getUserInfo().getId() != rideablePet.getUserId()) return;

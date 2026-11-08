@@ -16,7 +16,7 @@ class ItemsComponentTakeMissingContractTest {
         String source = Files.readString(SOURCE);
         int method = source.indexOf("public UserItem getAndRemoveUserItem(final Item item)");
         int nullReturn = source.indexOf("if (found == null) {", method);
-        int remove = source.indexOf("this.removeUserItem(found);", method);
+        int remove = source.indexOf("this.tryRemoveUserItem(found)", method);
 
         assertTrue(method > 0);
         assertTrue(nullReturn > method && nullReturn < remove, "the null return comes before the removal");

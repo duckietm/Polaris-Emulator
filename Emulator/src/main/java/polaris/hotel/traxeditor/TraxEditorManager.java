@@ -222,7 +222,7 @@ public class TraxEditorManager {
         if (discs.isEmpty()) return;
 
         for (UserItem disc : discs) {
-            user.getInventory().getItemsComponent().removeUserItem(disc);
+            if (!user.getInventory().getItemsComponent().tryRemoveUserItem(disc)) continue;
             user.getClient().sendResponse(new RemoveUserItemComposer(disc.getId()));
             Emulator.getThreading().runPersistence(new QueryDeleteUserItem(disc.getId()));
         }

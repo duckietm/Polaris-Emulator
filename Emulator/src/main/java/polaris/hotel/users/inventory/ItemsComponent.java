@@ -131,8 +131,7 @@ public class ItemsComponent {
         if (found == null) {
             return null;
         }
-        this.removeUserItem(found);
-        return found;
+        return this.tryRemoveUserItem(found) ? found : null;
     }
 
     /** The same, skipping rented furni: an ingredient is the owner's to spend, a rented furni is not. */
@@ -149,8 +148,7 @@ public class ItemsComponent {
         if (found == null) {
             return null;
         }
-        this.removeUserItem(found);
-        return found;
+        return this.tryRemoveUserItem(found) ? found : null;
     }
 
     public void removeUserItem(int itemId) {
@@ -158,13 +156,23 @@ public class ItemsComponent {
     }
 
     public void removeUserItem(UserItem item) {
+        this.tryRemoveUserItem(item);
+    }
+
+    /**
+     * Removes an item unless a plugin cancels it, and says whether the item actually left the inventory. A caller
+     * that deletes or hands over the item must check this: a cancelled removal keeps the item in the inventory.
+     */
+    public boolean tryRemoveUserItem(UserItem item) {
+        if (item == null) return false;
+
         InventoryItemRemovedEvent event = new InventoryItemRemovedEvent(this.inventory, item);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
-            return;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.item == null) {
+            return false;
         }
 
         synchronized (this.items) {
-            this.items.remove(event.item.getId());
+            return this.items.remove(event.item.getId()) != null;
         }
     }
 

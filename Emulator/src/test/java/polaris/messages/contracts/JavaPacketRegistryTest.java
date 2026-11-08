@@ -26,6 +26,17 @@ class JavaPacketRegistryTest {
         assertTrue(registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 1327)
                 .source()
                 .endsWith("RoomRemoveRightsListComposer.java"));
+        // Both headers of a composer that picks one with a ternary: selector/action and variable/add-on.
+        for (int header : new int[] {1434, 2509}) {
+            assertTrue(registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, header)
+                    .source()
+                    .endsWith("WiredEffectDataComposer.java"));
+        }
+        for (int header : new int[] {2168, 2955}) {
+            assertTrue(registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, header)
+                    .source()
+                    .endsWith("WiredExtraDataComposer.java"));
+        }
     }
 
     @Test

@@ -67,6 +67,9 @@ public class BotSaveSettingsEvent extends MessageHandler {
         Bot bot = room.getBot(Math.abs(botId));
         if (bot == null) return;
         int settingId = this.packet.readInt();
+        // AIR's BotSkillSave is always [botId, skill, data]: one string, read once here and given to the action
+        // that uses it (chat, name or motto). It is empty for the actions that carry no data.
+        String data = this.packet.readString();
         if (!offers(bot, settingId)) return;
 
         if (!bot.tryAcquireOwnerActionSlot()) return;
@@ -76,11 +79,11 @@ public class BotSaveSettingsEvent extends MessageHandler {
         Outcome outcome =
                 switch (settingId) {
                     case 1 -> this.copyLook(bot);
-                    case 2 -> this.saveChat(bot);
+                    case 2 -> this.saveChat(bot, data);
                     case 3 -> toggleWalk(bot);
                     case 4 -> nextDance(room, bot);
-                    case 5 -> this.rename(room, bot);
-                    case 9 -> this.saveMotto(room, bot, config);
+                    case 5 -> this.rename(room, bot, data);
+                    case 9 -> this.saveMotto(room, bot, config, data);
                     case Bot.ACTION_ROTATE -> rotate(room, bot);
                     default -> Outcome.DONE;
                 };
@@ -128,8 +131,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
     /**
      * Reads the chat lines, then auto chat, delay and random chat, all separated by ";#;", and gives them to the bot.
      */
-    private Outcome saveChat(Bot bot) {
-        String messageString = this.packet.readString();
+    private Outcome saveChat(Bot bot, String messageString) {
 
         if (messageString.length() > 5112) return Outcome.DONE;
 
@@ -219,8 +221,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
     }
 
     /** Renames the bot; a name too long, with a tag or one the word filter changes is refused. */
-    private Outcome rename(Room room, Bot bot) {
-        String name = this.packet.readString();
+    private Outcome rename(Room room, Bot bot, String name) {
         // A blank name is refused too: it used to leave the bot without a name above its head.
         boolean invalidName = name.isBlank()
                 || name.length() > BotManager.MAXIMUM_NAME_LENGTH
@@ -250,8 +251,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
         return Outcome.DONE;
     }
 
-    private Outcome saveMotto(Room room, Bot bot, ConfigurationManager config) {
-        String motto = this.packet.readString();
+    private Outcome saveMotto(Room room, Bot bot, ConfigurationManager config, String motto) {
 
         if (motto.length() > config.getInt("motto.max_length", 38)) return Outcome.DONE;
 

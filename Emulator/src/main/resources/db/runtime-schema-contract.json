@@ -182,6 +182,7 @@
     "treasure_hunt_progress": ["completed", "completed_at", "hunt_id", "steps_completed", "user_id"],
     "treasure_hunts": ["code", "enabled", "id", "required_level", "required_level_paying", "reward_badge", "reward_item_id", "reward_points", "reward_points_type"],
     "ui_news": ["body", "created_at", "enabled", "id", "image", "link_text", "link_url", "sort_order", "title"],
+    "user_cautions": ["created_at", "id", "length_hours", "reason", "staff_id", "type", "user_id"],
     "user_custom_badge": ["badge_description", "badge_id", "badge_name", "date_created", "date_edit", "id", "user_id"],
     "user_nick_icons": ["active", "icon_key", "id", "user_id"],
     "user_permission_overrides": ["created_at", "created_by", "created_by_name", "expires_at", "id", "permission_key", "reason", "user_id", "value"],

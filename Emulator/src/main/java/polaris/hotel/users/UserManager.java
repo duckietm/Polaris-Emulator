@@ -99,9 +99,13 @@ public class UserManager {
         this.onlineUsersByName.put(user.getUserInfo().getUsername().toLowerCase(), user);
     }
 
+    /**
+     * Forgets this user object only: a session that expires after the same user logged in again must not take the new
+     * one off the online list.
+     */
     public void removeUser(User user) {
-        this.onlineUsers.remove(user.getUserInfo().getId());
-        this.onlineUsersByName.remove(user.getUserInfo().getUsername().toLowerCase());
+        this.onlineUsers.remove(user.getUserInfo().getId(), user);
+        this.onlineUsersByName.remove(user.getUserInfo().getUsername().toLowerCase(), user);
     }
 
     public User getUser(int id) {

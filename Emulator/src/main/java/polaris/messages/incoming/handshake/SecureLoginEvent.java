@@ -183,6 +183,11 @@ public class SecureLoginEvent extends MessageHandler {
             if (!this.attachResumedSession(user)) return;
         } else {
             user = this.loadUser(sso, recoveryToken);
+            if (user != null) {
+                // A session parked for this user would expire later and log out the fresh one: end it now.
+                SessionResumeManager.getInstance()
+                        .disposeGhostSession(user.getUserInfo().getId());
+            }
         }
 
         if (user == null) {
@@ -283,6 +288,8 @@ public class SecureLoginEvent extends MessageHandler {
         if (user == null && !recoveryToken.isEmpty()) {
             OptionalInt recoveredUser = SessionRecoveryRuntime.consume(recoveryToken);
             if (recoveredUser.isPresent()) {
+                // A parked session saves what it holds before the user is read again.
+                SessionResumeManager.getInstance().disposeGhostSession(recoveredUser.getAsInt());
                 user = userManager.loadUserById(recoveredUser.getAsInt());
                 LOGGER.info("Recovered authenticated session for user id={}", recoveredUser.getAsInt());
             }

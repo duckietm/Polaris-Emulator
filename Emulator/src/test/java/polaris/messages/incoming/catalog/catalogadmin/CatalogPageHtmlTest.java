@@ -8,13 +8,19 @@ class CatalogPageHtmlTest {
 
     @Test
     void keepsHotelLinks() {
-        assertEquals("<a href=\"event:catalog/open/rares\">Rares</a>", CatalogPageHtml.sanitize("<a href=\"event:catalog/open/rares\">Rares</a>"));
-        assertEquals("<a href=\"event:habbopages/help\">Help</a>", CatalogPageHtml.sanitize("<a href=\"event:habbopages/help\">Help</a>"));
+        assertEquals(
+                "<a href=\"event:catalog/open/rares\">Rares</a>",
+                CatalogPageHtml.sanitize("<a href=\"event:catalog/open/rares\">Rares</a>"));
+        assertEquals(
+                "<a href=\"event:habbopages/help\">Help</a>",
+                CatalogPageHtml.sanitize("<a href=\"event:habbopages/help\">Help</a>"));
     }
 
     @Test
     void keepsWebLinksAndFormatting() {
-        assertEquals("<b>Hi</b> <a href=\"https://hotel.example.com\">site</a>", CatalogPageHtml.sanitize("<b>Hi</b> <a href=\"https://hotel.example.com\">site</a>"));
+        assertEquals(
+                "<b>Hi</b> <a href=\"https://hotel.example.com\">site</a>",
+                CatalogPageHtml.sanitize("<b>Hi</b> <a href=\"https://hotel.example.com\">site</a>"));
         assertEquals("<a href=\"#top\">up</a>", CatalogPageHtml.sanitize("<a href=\"#top\">up</a>"));
     }
 

@@ -735,6 +735,7 @@ public class UserStats implements Runnable {
                 .fireEvent(new UserSubscriptionCreatedEvent(this.userInfo.getId(), subscriptionType, duration))
                 .isCancelled()) {
             int startTimestamp = Emulator.getIntUnixTimestamp();
+            duration = Math.min(duration, Subscription.maxDuration(startTimestamp));
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO `users_subscriptions` (`user_id`, `subscription_type`, `timestamp_start`, `duration`, `active`) VALUES (?, ?, ?, ?, ?)",

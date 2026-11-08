@@ -1,11 +1,21 @@
 package polaris.messages.incoming.inventory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import polaris.hotel.items.Item;
+import polaris.hotel.users.User;
+import polaris.hotel.users.UserItem;
 
 class RequestInventoryItemsDeleteContractTest {
 
@@ -38,11 +48,42 @@ class RequestInventoryItemsDeleteContractTest {
     }
 
     @Test
-    void deleteLoopUsesValidatedAmountDirectly() throws Exception {
-        String source = source();
+    void deletesTheChosenInstanceFirst() {
+        Item base = mock(Item.class);
+        UserItem limited = item(base, true, false);
+        UserItem plain = item(base, false, false);
+        User user = user(limited, plain);
 
-        assertTrue(
-                source.contains("for (int i = 0; i < amount; i++)"),
-                "Delete loop should use the already validated positive amount");
+        assertEquals(List.of(plain), RequestInventoryItemsDelete.selectItemsToDelete(user, plain, 1));
+        assertEquals(List.of(limited), RequestInventoryItemsDelete.selectItemsToDelete(user, limited, 1));
+    }
+
+    @Test
+    void neverAddsAUniqueCopyToAStackDelete() {
+        Item base = mock(Item.class);
+        UserItem chosen = item(base, false, false);
+        UserItem rented = item(base, false, true);
+        UserItem limited = item(base, true, false);
+        UserItem plain = item(base, false, false);
+        User user = user(chosen, rented, limited, plain);
+
+        assertEquals(List.of(chosen, plain), RequestInventoryItemsDelete.selectItemsToDelete(user, chosen, 2));
+        assertNull(RequestInventoryItemsDelete.selectItemsToDelete(user, chosen, 3));
+        assertNull(RequestInventoryItemsDelete.selectItemsToDelete(user, limited, 2));
+    }
+
+    private static UserItem item(Item base, boolean limited, boolean rented) {
+        UserItem item = mock(UserItem.class);
+        when(item.getBaseItem()).thenReturn(base);
+        when(item.isLimited()).thenReturn(limited);
+        when(item.hasRentPeriod()).thenReturn(rented);
+        return item;
+    }
+
+    private static User user(UserItem... items) {
+        User user = mock(User.class, RETURNS_DEEP_STUBS);
+        when(user.getInventory().getItemsComponent().getItemsAsValueCollection())
+                .thenReturn(new LinkedHashSet<>(List.of(items)));
+        return user;
     }
 }

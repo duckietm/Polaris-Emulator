@@ -86,6 +86,27 @@ public class ModToolSanctions {
         return this.sanctionLevelsHashmap.get(sanctionLevel);
     }
 
+    /** The level {@link #run} applies after {@code lastLevel}, or null when no level is configured. */
+    public ModToolSanctionLevelItem levelAfter(int lastLevel) {
+        return nextLevel(this.sanctionLevelsHashmap, lastLevel);
+    }
+
+    /**
+     * How many hours the sanction {@link #run} applies at {@code level} lasts: a ban its configured length, a mute
+     * the hours of {@code muteHours} or the one hour {@link #run} falls back to, an alert none.
+     */
+    public static int appliedHours(ModToolSanctionLevelItem level, int muteHours) {
+        if (level == null || level.sanctionType == null) {
+            return 0;
+        }
+
+        return switch (level.sanctionType) {
+            case "BAN" -> Math.max(0, level.sanctionHourLength);
+            case "MUTE" -> muteHours > 0 ? muteHours : 1;
+            default -> 0;
+        };
+    }
+
     /**
      * The sanctions of one user, oldest first, keyed by the user id. Every call builds its own map: a map shared
      * between calls was cleared by one caller while another was still reading it.

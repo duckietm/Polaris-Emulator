@@ -54,17 +54,9 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
                     if (modToolSanctionItems != null && !modToolSanctionItems.isEmpty()) {
                         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
 
+                        // Both probation branches ran the same level; a missing item counts as no earlier sanction.
                         lastLevel = item == null ? 0 : item.sanctionLevel;
-
-                        if (item != null
-                                && item.probationTimestamp > 0
-                                && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
-                            modToolSanctions.run(
-                                    userId, this.client.getUser(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
-                        } else {
-                            modToolSanctions.run(
-                                    userId, this.client.getUser(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
-                        }
+                        modToolSanctions.run(userId, this.client.getUser(), lastLevel, cfhTopic, message, 0, false, 0);
                     } else {
                         lastLevel = 0;
                         modToolSanctions.run(userId, this.client.getUser(), 0, cfhTopic, message, 0, false, 0);

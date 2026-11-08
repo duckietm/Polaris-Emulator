@@ -42,20 +42,29 @@ class CatalogPurchaseAtomicityContractTest {
     }
 
     @Test
-    void giftsDebitBeforeCreationAndCompensateOnFailure() throws Exception {
+    void giftsChargeCreateAndSellInOneTransaction() throws Exception {
         String gift = withoutWhitespace(source("polaris/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java"));
 
-        int debit = gift.indexOf(
-                "CatalogPaymentService.tryTake(this.client.getUser(),chargeCredits,item.getPointsType(),chargePoints)");
-        int create = gift.indexOf("getItemManager().createGiftContent(userId", debit);
-        assertTrue(debit > -1 && create > debit, "gift payment must be reserved before the gift contents are created");
+        int debit = gift.indexOf("CatalogPaymentService.takeWithin(connection,this.client.getUser(),chargeCredits,"
+                + "item.getPointsType(),chargePoints)");
+        int create = gift.indexOf("getItemManager().createGiftContent(connection,userId", debit);
         assertTrue(
-                gift.contains("if(!attempt.delivered)this.undo(attempt);"),
-                "failed gift delivery must enter compensating cleanup");
+                debit > -1 && create > debit,
+                "gift payment and contents must be written on the gift's connection, payment first");
         assertTrue(
-                gift.contains("CatalogPaymentService.refund(this.client.getUser(),attempt.paidCredits,"
-                        + "attempt.paidPointsType,attempt.paidPoints)"),
-                "failed gift delivery must restore the exact reserved payment");
+                gift.contains("getItemManager().createItem(connection,userId,giftItem,0,0,giftData)"),
+                "the gift box must be written in the same transaction");
+        assertTrue(
+                gift.contains("this.recordLimitedSale(connection,item,attempt);connection.commit();"),
+                "the limited sale must be the last write before the gift is committed");
+        assertTrue(
+                gift.contains("if(!committed){try{connection.rollback();"),
+                "a gift that is not committed must be rolled back");
+        assertTrue(
+                gift.contains("privatevoidundo(GiftAttemptattempt){if(attempt.committed)return;")
+                        && !gift.contains("attempt.paidCredits")
+                        && !gift.contains("tryDeleteItem("),
+                "a rolled back gift has nothing to refund or delete");
     }
 
     @Test

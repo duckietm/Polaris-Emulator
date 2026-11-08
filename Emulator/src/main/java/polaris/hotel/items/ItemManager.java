@@ -1470,6 +1470,18 @@ public class ItemManager {
         return this.insertItem(GIFT_CONTENT_OWNER, recipientId, item, limitedStack, limitedSells, extraData);
     }
 
+    /** As {@link #createGiftContent(int, Item, int, int, String)}, on the caller's connection and in its transaction. */
+    public UserItem createGiftContent(
+            Connection connection, int recipientId, Item item, int limitedStack, int limitedSells, String extraData)
+            throws SQLException {
+        if (item == null) {
+            return null;
+        }
+
+        return this.insertItem(
+                connection, GIFT_CONTENT_OWNER, recipientId, item, limitedStack, limitedSells, extraData);
+    }
+
     private UserItem insertItem(
             int ownerId, int limitOwnerId, Item item, int limitedStack, int limitedSells, String extraData) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {

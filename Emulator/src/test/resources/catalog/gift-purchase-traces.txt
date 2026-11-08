@@ -1,8 +1,12 @@
 == aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #0
-payment.tryTake(5, 0, 0) -> true
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
 scripterDetected([scripter.warning.catalog.badge_display])
-itemManager.createGiftContent(2, item:badge_display, 0, 0, sender	<today>	UMAD)
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display	sender	hd-180, 0, 0)
+itemManager.createGiftContent(connection, 2, item:badge_display, 0, 0, sender	<today>	UMAD)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -14,9 +18,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == aBadgeDisplayWithABadgeTheRecipientLacksIsReportedAndRewritten #1
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:badge_display, 0, 0, sender	<today>	ADM)
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:display, owned	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:badge_display, 0, 0, sender	<today>	ADM)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display, owned	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -175,53 +183,64 @@ stats purchasing=false lastGift=0
 senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
 stats purchasing=false lastGift=0
 
-== aFailedGiftDeletesWhatWasCreatedAndRefunds #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
+== aFailedGiftIsRolledBack #0
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-itemManager.deleteItem(userItem1000:chair)
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #0
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> false
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> false
 senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
 limitedConfiguration.restoreNumber(20, 7)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #1
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:no box	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-itemManager.deleteItem(userItem1000:chair)
 limitedConfiguration.restoreNumber(20, 7)
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aFailedLimitedGiftReturnsItsReservedNumber #2
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 limitedConfiguration.restoreNumber(20, 7)
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aFreeWrapCostsOnlyTheItemAndAnOfflineFriendIsFoundInTheDatabase #0
 connection.prepareStatement(SELECT id FROM users WHERE username = ?)
 statement.setString(1, friend)
 statement.executeQuery()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(3, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 3, item:chair, 0, 0, )
+itemManager.createItem(connection, 3, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 achievement(3, achievement:GiftReceiver)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
@@ -242,9 +261,13 @@ senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 stats purchasing=false lastGift=1000000
 
 == aGiftToOneselfGivesNoAchievements #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(1, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:me	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 1, item:chair, 0, 0, )
+itemManager.createItem(connection, 1, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:me	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
@@ -254,10 +277,14 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == aHopperIsRegistered #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:hopper, 0, 0, )
-itemManager.insertHopper(userItem1000:hopper)
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hop	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:hopper, 0, 0, )
+itemManager.insertHopper(connection, userItem1000:hopper)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hop	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -276,35 +303,43 @@ stats purchasing=false lastGift=0
 
 == aLimitedHopperKeepsItsStackAndNumber #0
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:hopper, 50, 7, )
-itemManager.insertHopper(userItem1000:hopper)
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:hopper)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:hopper, 50, 7, )
+itemManager.insertHopper(connection, userItem1000:hopper)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:hopper)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
+senderStats.addLtdLog(20, 1000000)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
 recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
 achievement(2, achievement:GiftReceiver)
-senderStats.addLtdLog(20, 1000000)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
 == aLimitedItemIsNumberedAndLogged #0
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:chair)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
+senderStats.addLtdLog(20, 1000000)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
 recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
 achievement(2, achievement:GiftReceiver)
-senderStats.addLtdLog(20, 1000000)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
@@ -312,75 +347,79 @@ stats purchasing=false lastGift=1000000
 == aLimitedItemWithoutAConfigurationGetsOne #0
 catalogManager.createOrUpdateLimitedConfig(catalogItem)
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:chair)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
+senderStats.addLtdLog(20, 1000000)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
 recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
 achievement(2, achievement:GiftReceiver)
-senderStats.addLtdLog(20, 1000000)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
-== aLimitedSaleThatCannotBeRecordedUndoesTheGift #0
+== aLimitedSaleThatCannotBeRecordedRollsBackTheGift #0
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:sale refused	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:chair)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:sale refused	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
-itemManager.tryDeleteItem(userItem9000:present_gen)
-itemManager.deleteItem(userItem1000:chair)
 limitedConfiguration.restoreNumber(20, 7)
-payment.refund(5, 0, 0)
-stats purchasing=false lastGift=0
-
-== aLimitedSaleThatCannotBeRecordedUndoesTheGift #1
-limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:sale refused, box kept	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:chair)
-connection.close()
-senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
-itemManager.tryDeleteItem(userItem9000:present_gen)
 stats purchasing=false lastGift=0
 
 == aLimitedTeleporterRecordsOneSaleForItsNumber #0
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:teleport, 50, 7, )
-itemManager.createGiftContent(2, item:teleport, 50, 7, )
-itemManager.insertTeleportPair(1000, 1001)
-itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:teleport)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:teleport, 50, 7, )
+itemManager.createGiftContent(connection, 2, item:teleport, 50, 7, )
+itemManager.insertTeleportPair(connection, 1000, 1001)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:teleport)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
+senderStats.addLtdLog(20, 1000000)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
 recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
 achievement(2, achievement:GiftReceiver)
-senderStats.addLtdLog(20, 1000000)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
 == aPaymentThatCannotBeReservedCreatesNothing #0
-payment.tryTake(5, 0, 0) -> false
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> false
 senderClient.sendResponse(AlertPurchaseUnavailableComposer{code=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
 stats purchasing=false lastGift=0
 
 == aSenderWithInfiniteCurrencyIsChargedNothing #0
-payment.tryTake(0, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:free	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(0, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:free	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -402,11 +441,15 @@ connection.close()
 stats purchasing=false lastGift=0
 
 == aTeleporterIsGivenAsALinkedPair #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
-itemManager.insertTeleportPair(1000, 1001)
-itemManager.createGift(friend, item:present_gen, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
+itemManager.insertTeleportPair(connection, 1000, 1001)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -417,29 +460,36 @@ senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
-== aTeleporterThatCannotBeCreatedRefunds #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
+== aTeleporterThatCannotBeCreatedIsRolledBack #0
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
-== aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
-itemManager.createGiftContent(2, item:teleport, 0, 0, )
+== aTeleporterWhoseSecondHalfFailsRollsBackTheFirstHalf #0
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
+itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-itemManager.deleteItem(userItem1000:teleport)
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == aTrophyCarriesTheSenderAndTheDate #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:trophy, 0, 0, sender	<today>	engraved)
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:trophy	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:trophy, 0, 0, sender	<today>	engraved)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:trophy	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -450,34 +500,44 @@ senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
 
-== anExceptionWhileCreatingRefundsAndAnswersWithAnError #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
+== anExceptionWhileCreatingRollsBackAndAnswersWithAnError #0
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
-== anItemThatCannotBeCreatedRefunds #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
+== anItemThatCannotBeCreatedIsRolledBack #0
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
-== anItemThatCannotBeCreatedRefunds #1
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:hopper, 0, 0, )
+== anItemThatCannotBeCreatedIsRolledBack #1
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:hopper, 0, 0, )
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
+connection.rollback()
+connection.setAutoCommit(true)
 connection.close()
-payment.refund(5, 0, 0)
 stats purchasing=false lastGift=0
 
 == anOfferIdFromSearchResultsFindsTheItemOnThePage #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:search	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:search	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -489,9 +549,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == anOnlineFriendReceivesTheGiftWithTheSendersName #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hello	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hello	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_wrap, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_wrap)
@@ -514,17 +578,21 @@ stats purchasing=false lastGift=0
 
 == limitedItemsRespectTheDailyLimits #2
 limitedConfiguration.pollNumber()
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 50, 7, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:under	sender	hd-180, 0, 0)
-limitedConfiguration.limitedSoldOrThrow(20, sender, userItem1000:chair)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:under	sender	hd-180)
+limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
+senderStats.addLtdLog(20, 1000000)
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
 recipientClient.sendResponse(InventoryRefreshComposer{})
 recipientClient.sendResponse(BubbleAlertComposer{errorKey=received.badge, keys={display=BUBBLE, image=${image.library.url}notifications/gift.gif, message=[generic.gift.received]}})
 achievement(2, achievement:GiftReceiver)
-senderStats.addLtdLog(20, 1000000)
 senderClient.sendResponse(PurchaseOKComposer{catalogItem=catalogItem})
 connection.close()
 stats purchasing=false lastGift=1000000
@@ -535,9 +603,13 @@ connection.close()
 stats purchasing=false lastGift=0
 
 == onlyAPermittedSenderMayHideTheirName #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:hidden?	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hidden?	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -549,9 +621,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == onlyAPermittedSenderMayHideTheirName #1
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	0	filtered:hidden	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	0	filtered:hidden	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -563,9 +639,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == pointsAreChargedInTheirOwnCurrency #0
-payment.tryTake(5, 5, 4) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 5, 4) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -577,9 +657,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == pointsAreChargedInTheirOwnCurrency #1
-payment.tryTake(5, 5, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 5, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -591,9 +675,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == theMessageIsCutToTheConfiguredLengthAndLosesItsTabs #0
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:abcd	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:abcd	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -605,9 +693,13 @@ connection.close()
 stats purchasing=false lastGift=1000000
 
 == thePaidWrapAddsTheConfiguredFee #0
-payment.tryTake(8, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_wrap, 1	1000	1	2	1	filtered:hi	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(8, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_wrap, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_wrap)
@@ -639,9 +731,13 @@ connection.close()
 stats purchasing=false lastGift=0
 
 == theRequestIsRefusedBeforeAnythingIsCharged #4
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_gen, 1	1000	1	2	1	filtered:club only, member	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:club only, member	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_gen, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_gen)
@@ -708,9 +804,13 @@ senderClient.sendResponse(composed AlertPurchaseFailedComposer{error=0})
 stats purchasing=false lastGift=0
 
 == theWrappingIsChecked #3
-payment.tryTake(5, 0, 0) -> true
-itemManager.createGiftContent(2, item:chair, 0, 0, )
-itemManager.createGift(friend, item:present_other, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180, 0, 0)
+connection.setAutoCommit(false)
+payment.takeWithin(5, 0, 0) -> true
+itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
+itemManager.createItem(connection, 2, item:present_other, 0, 0, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180)
+connection.commit()
+connection.setAutoCommit(true)
+payment.publishTaken
 achievement(sender, achievement:GiftGiver)
 recipientClient.sendResponse(AddUserItemComposer{itemsList=null, item=userItem9000:present_other, ids=null, category=AddUserItemCategory{number=1}, entries=null})
 recipientItems.addItem(userItem9000:present_other)

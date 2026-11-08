@@ -2,8 +2,8 @@ package polaris.hotel.commands;
 
 import polaris.Emulator;
 import polaris.hotel.gameclients.GameClient;
-import polaris.hotel.permissions.Permission;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
+import polaris.messages.incoming.users.ChangeChatBubbleEvent;
 import polaris.messages.outgoing.users.MeMenuSettingsComposer;
 
 public class ChatTypeCommand extends Command {
@@ -29,10 +29,6 @@ public class ChatTypeCommand extends Command {
                 return true;
             }
 
-            if (RoomChatMessageBubbles.values().length < chatColor) {
-                chatColor = 0;
-            }
-
             if (chatColor < 0) {
                 gameClient
                         .getUser()
@@ -42,19 +38,14 @@ public class ChatTypeCommand extends Command {
                 return true;
             }
 
-            if (!gameClient.getUser().hasPermission(Permission.ACC_ANYCHATCOLOR)) {
-                for (String s : Emulator.getConfig()
-                        .getValue("commands.cmd_chatcolor.banned_numbers")
-                        .split(";")) {
-                    if (Integer.parseInt(s) == chatColor) {
-                        gameClient
-                                .getUser()
-                                .whisper(
-                                        Emulator.getTexts().getValue("commands.error.cmd_chatcolor.banned"),
-                                        RoomChatMessageBubbles.ALERT);
-                        return true;
-                    }
-                }
+            // The same rules as choosing a bubble in the client: banned numbers, bought styles, club styles.
+            if (!ChangeChatBubbleEvent.canUse(gameClient.getUser(), chatColor)) {
+                gameClient
+                        .getUser()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_chatcolor.banned"),
+                                RoomChatMessageBubbles.ALERT);
+                return true;
             }
 
             gameClient.getUser().getUserStats().chatColor = RoomChatMessageBubbles.getBubble(chatColor);
@@ -66,7 +57,7 @@ public class ChatTypeCommand extends Command {
                                     .getValue("commands.succes.cmd_chatcolor.set")
                                     .replace(
                                             "%chat%",
-                                            RoomChatMessageBubbles.values()[chatColor]
+                                            RoomChatMessageBubbles.getBubble(chatColor)
                                                     .name()
                                                     .replace("_", " ")
                                                     .toLowerCase()),

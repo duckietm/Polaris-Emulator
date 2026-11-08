@@ -8,11 +8,13 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import polaris.hotel.economy.EconomyOperation;
@@ -148,6 +150,33 @@ class QuestEngineTest {
         verify(user).givePoints(eq(Quest.REWARD_DUCKETS), eq(40), anyString());
         assertNull(manager.stateFor(user).accepted());
         assertEquals(2, manager.campaignEntries(user).get(0).getId(), "the campaign moved to its second quest");
+    }
+
+    @Test
+    void concurrentProgressPaysAQuestOnce() throws Exception {
+        QuestManager manager = questManager();
+        User user = user(7, false);
+        manager.accept(user, 3);
+
+        CountDownLatch start = new CountDownLatch(1);
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < 16; i++) {
+            threads.add(Thread.ofPlatform().start(() -> {
+                try {
+                    start.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                manager.progress(user, QuestGoalType.VISIT_ROOMS, 1);
+            }));
+        }
+        start.countDown();
+        for (Thread thread : threads) {
+            thread.join(10_000);
+        }
+
+        verify(user, times(1)).givePoints(eq(Quest.REWARD_DUCKETS), eq(10), anyString());
+        assertEquals(1, manager.stateFor(user).get(3).getProgress());
     }
 
     @Test

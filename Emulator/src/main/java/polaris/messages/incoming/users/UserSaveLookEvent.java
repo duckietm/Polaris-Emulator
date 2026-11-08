@@ -16,6 +16,12 @@ import polaris.plugin.events.users.UserSavedLookEvent;
 public class UserSaveLookEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserSaveLookEvent.class);
 
+    // Each save wrote the user row and broadcast the room data, as often as the client sent it.
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         String genderCode = this.packet.readString();
@@ -56,6 +62,7 @@ public class UserSaveLookEvent extends MessageHandler {
         if (lookEvent.isCancelled()) return;
 
         String previousLook = this.client.getUser().getUserInfo().getLook();
+        UserGender previousGender = this.client.getUser().getUserInfo().getGender();
         this.client
                 .getUser()
                 .getUserInfo()
@@ -65,8 +72,10 @@ public class UserSaveLookEvent extends MessageHandler {
                                         this.client.getUser(), lookEvent.newLook, lookEvent.gender.name())
                                 : lookEvent.newLook);
         this.client.getUser().getUserInfo().setGender(lookEvent.gender);
-        if (!java.util.Objects.equals(
-                previousLook, this.client.getUser().getUserInfo().getLook())) {
+        boolean changed = !java.util.Objects.equals(
+                        previousLook, this.client.getUser().getUserInfo().getLook())
+                || previousGender != lookEvent.gender;
+        if (changed) {
             polaris.hotel.quests.QuestProgressEvents.progress(
                     this.client.getUser(), polaris.hotel.quests.QuestGoalType.CHANGE_FIGURE, 1);
         }
@@ -87,8 +96,11 @@ public class UserSaveLookEvent extends MessageHandler {
                         this.client.getUser().isOnline(),
                         this.client.getUser().getUserInfo().getCurrentRoom() != null);
 
-        AchievementManager.progressAchievement(
-                this.client.getUser(),
-                Emulator.getGameEnvironment().getAchievementManager().getAchievement("AvatarLooks"));
+        // Saving the same look again is not a new look.
+        if (changed) {
+            AchievementManager.progressAchievement(
+                    this.client.getUser(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("AvatarLooks"));
+        }
     }
 }

@@ -820,9 +820,21 @@ public class UserStats implements Runnable {
         return (totalGifts * 2678400) - pastTimeAsClub;
     }
 
-    public int getRemainingClubGifts() {
+    public synchronized int getRemainingClubGifts() {
         int totalGifts = (int) Math.ceil(getPastTimeAsClub() / 2678400.0);
         return totalGifts - this.hcGiftsClaimed;
+    }
+
+    /** Spends one club gift claim if one is left; the check and the increment happen under one lock. */
+    public synchronized boolean tryClaimClubGift() {
+        if (this.getRemainingClubGifts() < 1) return false;
+        this.hcGiftsClaimed++;
+        return true;
+    }
+
+    /** Hands back a claim taken by {@link #tryClaimClubGift()} when no gift could be created. */
+    public synchronized void refundClubGift() {
+        if (this.hcGiftsClaimed > 0) this.hcGiftsClaimed--;
     }
 
     public int getBuildersClubBonusFurni() {

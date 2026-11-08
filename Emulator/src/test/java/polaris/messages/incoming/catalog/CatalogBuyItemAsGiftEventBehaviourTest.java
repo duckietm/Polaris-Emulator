@@ -78,6 +78,7 @@ import polaris.hotel.modtool.ScripterManager;
 import polaris.hotel.modtool.WordFilter;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.permissions.Rank;
+import polaris.hotel.users.LedgerWalletMutation;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserInventory;
@@ -129,7 +130,6 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     private int creations = 0;
     private boolean tryTakeResult = true;
     private boolean giftCreated = true;
-    private boolean giftDeleteFails;
     private boolean recipientOnline = true;
     private boolean recipientInDatabase = true;
     private int recipientBadgeCount = 0;
@@ -157,6 +157,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
     private MockedStatic<Emulator> emulator;
     private MockedStatic<CatalogPaymentService> payment;
+    private MockedStatic<LedgerWalletMutation> wallet;
     private MockedStatic<AchievementManager> achievements;
     private MockedStatic<ScripterManager> scripters;
 
@@ -247,16 +248,16 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         itemManager = traced(ItemManager.class, "itemManager");
         when(itemManager.getItem(anyInt())).thenAnswer(call -> items.get(call.<Integer>getArgument(0)));
-        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(itemManager.createGiftContent(
+                        any(Connection.class), anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenAnswer(call -> {
-                    Item base = call.getArgument(1);
+                    Item base = call.getArgument(2);
                     if (creations++ == failingCreation) return null;
                     if (failingCreations.contains(base.getName())) return null;
                     return userItem(nextItemId++, base);
                 });
-        when(itemManager.createGift(anyString(), any(Item.class), anyString(), anyInt(), anyInt()))
-                .thenAnswer(call -> giftCreated ? userItem(9000, call.getArgument(1)) : null);
-        when(itemManager.tryDeleteItem(any())).thenAnswer(call -> !giftDeleteFails);
+        when(itemManager.createItem(any(Connection.class), anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+                .thenAnswer(call -> giftCreated ? userItem(9000, call.getArgument(2)) : null);
 
         catalogManager = traced(CatalogManager.class, "catalogManager");
         setField(catalogManager, "catalogPages", pages);
@@ -294,6 +295,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         connection = traced(Connection.class, "connection");
         when(connection.prepareStatement(anyString())).thenAnswer(call -> statement(call.getArgument(0)));
+        when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString(), anyInt())).thenAnswer(call -> statement(call.getArgument(0)));
         HikariDataSource dataSource = mock(HikariDataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
@@ -309,6 +311,12 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         emulator.when(Emulator::getRandom).thenReturn(new Random(0));
         emulator.when(Emulator::getIntUnixTimestamp).thenReturn(NOW);
 
+        // The wallet lock the gift's transaction runs under: the work runs as it would, the lock is not the subject.
+        wallet = mockStatic(LedgerWalletMutation.class);
+        wallet.when(() -> LedgerWalletMutation.coordinated(any(User.class), any()))
+                .thenAnswer(call -> call.<LedgerWalletMutation.CoordinatedWork<?, ?>>getArgument(1)
+                        .execute());
+
         payment = mockStatic(CatalogPaymentService.class);
         payment.when(() -> CatalogPaymentService.tryTake(any(), anyInt(), anyInt(), anyInt()))
                 .thenAnswer(call -> {
@@ -316,6 +324,17 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
                             + call.getArgument(3) + ") -> " + tryTakeResult);
                     return tryTakeResult;
                 });
+        payment.when(() -> CatalogPaymentService.takeWithin(any(), any(), anyInt(), anyInt(), anyInt()))
+                .thenAnswer(call -> {
+                    trace.add("payment.takeWithin(" + call.getArgument(2) + ", " + call.getArgument(3) + ", "
+                            + call.getArgument(4) + ") -> " + tryTakeResult);
+                    if (!tryTakeResult) throw new IllegalArgumentException("balance");
+                    return mock(CatalogPaymentService.TakenPayment.class);
+                });
+        payment.when(() -> CatalogPaymentService.publishTaken(any(), any())).thenAnswer(call -> {
+            trace.add("payment.publishTaken");
+            return null;
+        });
         payment.when(() -> CatalogPaymentService.refund(any(), anyInt(), anyInt(), anyInt()))
                 .thenAnswer(call -> {
                     trace.add("payment.refund(" + call.getArgument(1) + ", " + call.getArgument(2) + ", "
@@ -352,6 +371,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
         scripters.close();
         achievements.close();
         payment.close();
+        wallet.close();
         emulator.close();
     }
 
@@ -512,7 +532,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void aFailedLimitedGiftReturnsItsReservedNumber() {
+    void aFailedLimitedGiftReturnsItsReservedNumber() throws Exception {
         makeLimited();
 
         tryTakeResult = false;
@@ -525,26 +545,21 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
 
         reset();
         giftCreated = true;
-        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+        when(itemManager.createGiftContent(
+                        any(Connection.class), anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalStateException("database gone"));
         assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
     }
 
     @Test
-    void aLimitedSaleThatCannotBeRecordedUndoesTheGift() throws Exception {
+    void aLimitedSaleThatCannotBeRecordedRollsBackTheGift() throws Exception {
         makeLimited();
         doThrow(new SQLException("stubbed limited sale"))
                 .when(limitedConfiguration)
-                .limitedSoldOrThrow(anyInt(), any(), any());
+                .limitedSold(any(Connection.class), anyInt(), any(), any());
 
-        // The failure used to be logged, leaving the number free in the database to be sold again.
+        // The payment, the contents and the box go with the sale: nothing is delivered, refunded or deleted.
         assertGift(gift(FREE_WRAP_SPRITE, true, "sale refused"));
-
-        reset();
-        giftDeleteFails = true;
-        // The box stays with the recipient, so the sender is not refunded as well.
-        assertGift(gift(FREE_WRAP_SPRITE, true, "sale refused, box kept"));
-        giftDeleteFails = false;
     }
 
     @Test
@@ -563,14 +578,14 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void aFailedGiftDeletesWhatWasCreatedAndRefunds() {
+    void aFailedGiftIsRolledBack() {
         giftCreated = false;
 
         assertGift(gift(PAID_WRAP_SPRITE, true, "no box"));
     }
 
     @Test
-    void aTeleporterThatCannotBeCreatedRefunds() {
+    void aTeleporterThatCannotBeCreatedIsRolledBack() {
         chair = baseItem(301, "teleport", FurnitureType.FLOOR, InteractionTeleport.class);
         failingCreations.add("teleport");
 
@@ -578,7 +593,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void aTeleporterWhoseSecondHalfFailsRefundsAndDeletesTheFirstHalf() {
+    void aTeleporterWhoseSecondHalfFailsRollsBackTheFirstHalf() {
         chair = baseItem(301, "teleport", FurnitureType.FLOOR, InteractionTeleport.class);
         failingCreation = 1;
 
@@ -603,7 +618,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void anItemThatCannotBeCreatedRefunds() {
+    void anItemThatCannotBeCreatedIsRolledBack() {
         failingCreations.add("chair");
 
         assertGift(gift(FREE_WRAP_SPRITE, true, "chair"));
@@ -617,8 +632,9 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
     }
 
     @Test
-    void anExceptionWhileCreatingRefundsAndAnswersWithAnError() {
-        when(itemManager.createGiftContent(anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
+    void anExceptionWhileCreatingRollsBackAndAnswersWithAnError() throws Exception {
+        when(itemManager.createGiftContent(
+                        any(Connection.class), anyInt(), any(Item.class), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalStateException("database gone"));
 
         assertGift(gift(FREE_WRAP_SPRITE, true, "boom"));
@@ -954,7 +970,7 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
                 continue;
             }
 
-            if (call.equals("itemManager.createGift")) {
+            if (call.equals("itemManager.createItem") && line.contains("\t")) {
                 String[] parts = line.split("\t", -1);
                 String head = parts[0];
                 int count = Integer.parseInt(head.substring(head.lastIndexOf(' ') + 1));
@@ -1142,6 +1158,10 @@ class CatalogBuyItemAsGiftEventBehaviourTest {
             "sendResponse",
             "createGiftContent",
             "createGift",
+            "createItem",
+            "setAutoCommit",
+            "commit",
+            "rollback",
             "deleteItem",
             "tryDeleteItem",
             "insertTeleportPair",

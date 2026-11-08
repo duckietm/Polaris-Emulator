@@ -198,12 +198,14 @@ public final class Diving implements HallGame {
 
             double total = Math.round(this.totals[seat] * 10) / 10.0;
 
-            if (total > best) {
+            int order = Double.compare(total, best);
+
+            if (order > 0) {
                 best = total;
                 top.clear();
             }
 
-            if (total == best) top.add(seat);
+            if (order >= 0) top.add(seat);
         }
 
         this.winners = best > 0 ? top : List.of();

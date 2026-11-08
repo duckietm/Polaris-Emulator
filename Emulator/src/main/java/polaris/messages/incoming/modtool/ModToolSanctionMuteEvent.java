@@ -41,6 +41,9 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
 
                 ModToolSanctions modToolSanctions =
                         Emulator.getGameEnvironment().getModToolSanctions();
+                // Without sanctions the user is muted for one hour below.
+                String cautionType = "MUTE";
+                int cautionHours = 1;
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
                     Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap =
@@ -64,6 +67,12 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                                         Emulator.getIntUnixTimestamp(),
                                         ModToolManager.hoursToSeconds(modToolSanctionLevelItem.sanctionHourLength));
 
+                        ModToolSanctionLevelItem applied = modToolSanctions.levelAfter(item.sanctionLevel);
+                        cautionType = applied == null ? "MUTE" : applied.sanctionType;
+                        cautionHours = ModToolSanctions.appliedHours(
+                                applied,
+                                modToolSanctionLevelItem == null ? 0 : modToolSanctionLevelItem.sanctionHourLength);
+
                         modToolSanctions.run(
                                 userId,
                                 this.client.getUser(),
@@ -74,6 +83,10 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                                 true,
                                 muteDurationTimestamp);
                     } else {
+                        ModToolSanctionLevelItem applied = modToolSanctions.levelAfter(0);
+                        cautionType = applied == null ? "MUTE" : applied.sanctionType;
+                        cautionHours = ModToolSanctions.appliedHours(applied, 0);
+
                         modToolSanctions.run(userId, this.client.getUser(), 0, cfhTopic, message, 0, false, 0);
                     }
                 } else {
@@ -87,6 +100,8 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                 }
 
                 ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+                ModToolManager.recordCaution(
+                        userId, this.client.getUser().getUserInfo().getId(), cautionType, message, cautionHours);
                 this.client.sendResponse(new ModeratorActionResultComposer(userId, true));
             } else {
                 this.client.sendResponse(new ModeratorActionResultComposer(userId, false));

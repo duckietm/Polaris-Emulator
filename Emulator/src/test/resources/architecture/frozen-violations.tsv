@@ -1452,6 +1452,7 @@ U|polaris/messages/incoming/modtool/ModToolRequestRoomVisitsEvent.java|CALL|getG
 U|polaris/messages/incoming/modtool/ModToolRequestUserChatlogEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/modtool/ModToolRequestUserChatlogEvent.java|CALL|getTexts|1
 U|polaris/messages/incoming/modtool/ModToolRequestUserInfoEvent.java|CALL|getTexts|1
+U|polaris/messages/incoming/modtool/ModToolRequestUserRecordsEvent.java|CALL|getTexts|1
 U|polaris/messages/incoming/modtool/ModToolRoomAlertEvent.java|CALL|getTexts|1
 U|polaris/messages/incoming/modtool/ModToolSanctionAlertEvent.java|CALL|getConfig|2
 U|polaris/messages/incoming/modtool/ModToolSanctionAlertEvent.java|CALL|getGameEnvironment|3

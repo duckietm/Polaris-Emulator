@@ -21,6 +21,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.database.SqlQueries;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.gameclients.SessionResumeManager;
 import polaris.hotel.permissions.Permission;
@@ -1090,5 +1091,33 @@ public class ModToolManager {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception bumping {} for user {}", column, userId, e);
         }
+    }
+
+    /**
+     * Leaves the detail of one caution in {@code user_cautions}: who gave it, what it was, why and for how long.
+     * Every caller that bumps {@code cfh_warnings} records one, so the mod tool can list the cautions behind the
+     * counter. Runs on the caller's thread, as the counter does; a failure is logged and the caution stands.
+     */
+    public static void recordCaution(int userId, int staffId, String type, String reason, int lengthHours) {
+        try {
+            SqlQueries.update(
+                    "INSERT INTO user_cautions (user_id, staff_id, type, reason, length_hours, created_at) "
+                            + "VALUES (?, ?, ?, ?, ?, UNIX_TIMESTAMP())",
+                    userId,
+                    staffId,
+                    truncate(type, 16),
+                    truncate(reason, 255),
+                    Math.max(0, lengthHours));
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception recording a caution for user {}", userId, e);
+        }
+    }
+
+    private static String truncate(String value, int length) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.length() > length ? value.substring(0, length) : value;
     }
 }

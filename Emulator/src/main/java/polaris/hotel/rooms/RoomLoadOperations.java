@@ -156,6 +156,16 @@ final class RoomLoadOperations implements RoomLoader.Operations {
 
     @Override
     public boolean finish(long generation) {
+        // A reload or a floor plan save disposed the room while it was loading. The load used to carry on: it
+        // started the jukebox, restored the variables and failed only at publishing, and the items, bots, pets and
+        // wired it had registered stayed until the next load. The lifecycle keeps this load active until it fails,
+        // so no new load starts while its state is discarded.
+        if (this.room.getLifecycleGeneration() != generation) {
+            new RoomDisposer(this.room).discardAbandonedLoad();
+            this.room.failLoadTransition(generation);
+            return false;
+        }
+
         TraxManager traxManager = new TraxManager(this.room, this.database);
         this.room.replaceTraxManager(traxManager);
 

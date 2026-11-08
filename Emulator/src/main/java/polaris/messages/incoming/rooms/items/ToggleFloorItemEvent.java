@@ -15,6 +15,8 @@ import polaris.hotel.rooms.RoomPlayTestSupport;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.incoming.rooms.pets.PetPlaceEvent;
+import polaris.messages.outgoing.generic.alerts.PetErrorComposer;
 import polaris.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import polaris.messages.outgoing.rooms.pets.PetPackageComposer;
 import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
@@ -123,6 +125,11 @@ public class ToggleFloorItemEvent extends MessageHandler {
             // Do not move to onClick(). Wired could trigger it.
             if (item instanceof InteractionMonsterPlantSeed) {
                 if (item.getUserId() != this.client.getUser().getUserInfo().getId()) {
+                    return;
+                }
+
+                if (PetPlaceEvent.isFullFor(room, this.client.getUser())) {
+                    this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_MAX_PETS));
                     return;
                 }
 

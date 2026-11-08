@@ -287,9 +287,8 @@ public class RoomRightsManager {
             return;
         }
 
-        this.room.sendComposer(new RoomRemoveRightsListComposer(this.room, userId).compose());
-
         if (this.rights.remove(userId)) {
+            this.room.sendComposer(new RoomRemoveRightsListComposer(this.room, userId).compose());
             try {
                 SqlQueries.update(
                         "DELETE FROM room_rights WHERE room_id = ? AND user_id = ?", this.room.getId(), userId);

@@ -12598,6 +12598,33 @@
       ]
     },
     {
+      "name": "MOD_TOOL_USER_RECORDS",
+      "direction": "client_to_server",
+      "header": 9481,
+      "java": {
+        "symbol": "ModToolRequestUserRecordsEvent",
+        "className": "ModToolRequestUserRecordsEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/modtool/ModToolRequestUserRecordsEvent.java"
+      },
+      "typescript": {
+        "symbol": "MOD_TOOL_USER_RECORDS",
+        "className": "GetModeratorUserRecordsMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/moderation/GetModeratorUserRecordsMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "userId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "kind"
+        }
+      ]
+    },
+    {
       "name": "WIRED_ADDON_SHARE_SYNCHRONIZE",
       "direction": "client_to_server",
       "header": 9495,
@@ -31165,6 +31192,22 @@
         "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxStatusRemovedParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "MODERATION_USER_RECORDS",
+      "direction": "server_to_client",
+      "header": 9482,
+      "java": {
+        "symbol": "ModToolUserRecordsComposer",
+        "className": "ModToolUserRecordsComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/modtool/ModToolUserRecordsComposer.java"
+      },
+      "typescript": {
+        "symbol": "MODERATION_USER_RECORDS",
+        "className": "ModeratorUserRecordsParser",
+        "path": "packages/communication/src/messages/parser/moderation/ModeratorUserRecordsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor ModeratorUserRecordData inside parse"
     },
     {
       "name": "TREASURE_HUNT_FIRST_WINNER",

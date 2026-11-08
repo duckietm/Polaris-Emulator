@@ -133,6 +133,7 @@ public class Incoming {
     public static final int RecolorFurniEvent = 2852;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
+    public static final int ModToolRequestUserRecordsEvent = 9481; // CUSTOM (records behind the user info counts)
     /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
     @Deprecated
     public static final int ModToolWarnEvent = UnsupportedIncoming.ModToolWarnEvent;

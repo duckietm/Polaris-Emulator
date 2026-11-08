@@ -253,6 +253,7 @@ public class Outgoing {
     public static final int RoomOwnerComposer = 339; // PRODUCTION-201611291003-338511768
     public static final int WiredConditionDataComposer = 1108; // PRODUCTION-201611291003-338511768
     public static final int ModToolUserInfoComposer = 2866; // PRODUCTION-201611291003-338511768
+    public static final int ModToolUserRecordsComposer = 9482; // CUSTOM (records behind the user info counts)
     public static final int UserWardrobeComposer = 3315; // PRODUCTION-201611291003-338511768
     public static final int RoomPetExperienceComposer = 2156; // PRODUCTION-201611291003-338511768
     public static final int FriendChatMessageComposer = 1587; // PRODUCTION-201611291003-338511768

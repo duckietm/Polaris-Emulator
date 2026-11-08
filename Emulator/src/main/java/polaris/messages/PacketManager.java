@@ -303,6 +303,7 @@ import polaris.messages.incoming.modtool.ModToolRequestRoomUserChatlogEvent;
 import polaris.messages.incoming.modtool.ModToolRequestRoomVisitsEvent;
 import polaris.messages.incoming.modtool.ModToolRequestUserChatlogEvent;
 import polaris.messages.incoming.modtool.ModToolRequestUserInfoEvent;
+import polaris.messages.incoming.modtool.ModToolRequestUserRecordsEvent;
 import polaris.messages.incoming.modtool.ModToolRoomAlertEvent;
 import polaris.messages.incoming.modtool.ModToolSanctionAlertEvent;
 import polaris.messages.incoming.modtool.ModToolSanctionBanEvent;
@@ -1339,6 +1340,7 @@ public class PacketManager {
         this.registerHandler(Incoming.ModToolRoomAlertEvent, ModToolRoomAlertEvent.class);
         this.registerHandler(Incoming.ModToolChangeRoomSettingsEvent, ModToolChangeRoomSettingsEvent.class);
         this.registerHandler(Incoming.ModToolRequestRoomVisitsEvent, ModToolRequestRoomVisitsEvent.class);
+        this.registerHandler(Incoming.ModToolRequestUserRecordsEvent, ModToolRequestUserRecordsEvent.class);
         this.registerHandler(Incoming.ModToolRequestIssueChatlogEvent, ModToolRequestIssueChatlogEvent.class);
         this.registerHandler(
                 UnsupportedIncoming.ModToolRequestRoomUserChatlogEvent, ModToolRequestRoomUserChatlogEvent.class);

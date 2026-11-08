@@ -6,6 +6,7 @@ import polaris.hotel.guilds.GuildMember;
 import polaris.hotel.guilds.GuildRank;
 import polaris.hotel.guilds.forums.ForumThread;
 import polaris.hotel.guilds.forums.ForumThreadComment;
+import polaris.hotel.guilds.forums.ForumThreadState;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.users.User;
@@ -57,6 +58,14 @@ public class GuildForumPostThreadEvent extends MessageHandler {
                 .getGuildManager()
                 .getGuildMember(guildId, this.client.getUser().getUserInfo().getId());
 
+        // Posting needs the same forum the reader sees: a forum switched off, or one only members may read,
+        // used to take posts from anyone who knew the guild id.
+        int userId = this.client.getUser().getUserInfo().getId();
+        if (!guild.hasForum() || !guild.canUserReadForum(userId, member, isStaff)) {
+            this.client.sendResponse(new ConnectionErrorComposer(403));
+            return;
+        }
+
         ForumThread thread = ForumThread.getById(threadId);
 
         if (threadId == 0) {
@@ -96,6 +105,13 @@ public class GuildForumPostThreadEvent extends MessageHandler {
         }
 
         if (thread.getGuildId() != guildId) {
+            this.client.sendResponse(new ConnectionErrorComposer(403));
+            return;
+        }
+
+        boolean isGuildAdministrator = guild.getOwnerId() == userId
+                || (member != null && member.getRank().equals(GuildRank.ADMIN));
+        if (!ForumThreadState.visibleTo(thread.getState(), isStaff, isGuildAdministrator)) {
             this.client.sendResponse(new ConnectionErrorComposer(403));
             return;
         }

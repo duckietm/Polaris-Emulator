@@ -49,4 +49,13 @@ class AccountChangeAndMiscGuardsTest {
         assertTrue(claim > 0 && claim < create, "the claim is taken before any gift is created");
         assertTrue(gift.lastIndexOf("if (itemsGiven.isEmpty()) {", refund) > create, "and handed back when none was");
     }
+
+    @Test
+    void anHcGiftNeedsARunningClub() throws Exception {
+        String gift = source("messages/incoming/catalog/CatalogSelectClubGiftEvent.java");
+
+        int active = gift.indexOf("hasActiveClub()");
+        assertTrue(active > 0, "an expired membership opens no gift");
+        assertTrue(active < gift.indexOf("tryClaimClubGift()"), "checked before the claim is taken");
+    }
 }

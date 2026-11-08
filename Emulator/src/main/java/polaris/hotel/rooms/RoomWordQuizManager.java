@@ -41,6 +41,7 @@ public class RoomWordQuizManager {
      * Starts a word quiz.
      */
     public void startWordQuiz(String question, int duration) {
+        if (duration <= 0) return;
         if (!this.hasActiveWordQuiz()) {
             this.room.wordQuiz = question;
             this.room.noVotes = 0;

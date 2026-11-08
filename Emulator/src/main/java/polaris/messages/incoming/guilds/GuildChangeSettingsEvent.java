@@ -75,12 +75,15 @@ public class GuildChangeSettingsEvent extends MessageHandler {
                                 this.client.getUser().getUserInfo().getUsername());
                     } else {
                         forumToggleCooldown.put(guildId, now);
-                        guild.setForum(forumEnabled);
 
-                        if (!forumEnabled) {
-                            // Delete all threads and comments for this guild
+                        if (forumEnabled) {
+                            guild.setForum(true);
+                        } else if (this.deleteForumData(guildId)) {
+                            // The forum is switched off and its cache dropped only once its threads, comments and
+                            // views are gone together: a failed delete used to leave a disabled forum with half
+                            // its data and an empty cache.
+                            guild.setForum(false);
                             ForumThread.clearCacheForGuild(guildId);
-                            deleteForumData(guildId);
                         }
 
                         // Invalidate caches
@@ -108,30 +111,46 @@ public class GuildChangeSettingsEvent extends MessageHandler {
         }
     }
 
-    private void deleteForumData(int guildId) {
+    private boolean deleteForumData(int guildId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            // Delete comments for all threads in this guild
+            return deleteForumData(connection, guildId);
+        } catch (SQLException e) {
+            LOGGER.error("Failed to delete forum data for guild " + guildId, e);
+            return false;
+        }
+    }
+
+    /** Deletes the comments, threads and views of a guild's forum in one transaction; false when rolled back. */
+    static boolean deleteForumData(Connection connection, int guildId) throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
             try (PreparedStatement statement = connection.prepareStatement(
                     "DELETE FROM `guilds_forums_comments` WHERE `thread_id` IN (SELECT `id` FROM `guilds_forums_threads` WHERE `guild_id` = ?)")) {
                 statement.setInt(1, guildId);
                 statement.executeUpdate();
             }
 
-            // Delete all threads for this guild
             try (PreparedStatement statement =
                     connection.prepareStatement("DELETE FROM `guilds_forums_threads` WHERE `guild_id` = ?")) {
                 statement.setInt(1, guildId);
                 statement.executeUpdate();
             }
 
-            // Delete forum view records for this guild
             try (PreparedStatement statement =
                     connection.prepareStatement("DELETE FROM `guild_forum_views` WHERE `guild_id` = ?")) {
                 statement.setInt(1, guildId);
                 statement.executeUpdate();
             }
+
+            connection.commit();
+            return true;
         } catch (SQLException e) {
+            connection.rollback();
             LOGGER.error("Failed to delete forum data for guild " + guildId, e);
+            return false;
+        } finally {
+            connection.setAutoCommit(autoCommit);
         }
     }
 }

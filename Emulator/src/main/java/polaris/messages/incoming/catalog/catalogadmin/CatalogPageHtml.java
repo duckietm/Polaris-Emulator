@@ -20,8 +20,7 @@ public final class CatalogPageHtml {
             .addProtocols("a", "href", "http", "https", "mailto", "#", "event")
             .addProtocols("img", "src", "http", "https", "data");
 
-    private CatalogPageHtml() {
-    }
+    private CatalogPageHtml() {}
 
     /** The text with only the allowed HTML; empty for none. */
     public static String sanitize(String value) {

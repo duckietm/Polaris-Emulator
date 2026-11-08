@@ -2,6 +2,7 @@ package polaris.hotel.wheel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -44,6 +45,7 @@ class WheelManagerTest {
         final User user = mock(User.class);
         final UserInfo userInfo = mock(UserInfo.class);
         final ConfigurationManager config = mock(ConfigurationManager.class);
+        final Connection connection = mock(Connection.class);
 
         Fixture(Map<String, Integer> settings, Integer storedExtraSpins) throws SQLException {
             when(config.getInt(anyString(), anyInt())).thenAnswer(call -> {
@@ -54,7 +56,6 @@ class WheelManagerTest {
 
             Database database = mock(Database.class);
             HikariDataSource dataSource = mock(HikariDataSource.class);
-            Connection connection = mock(Connection.class);
             ResultSet noRows = mock(ResultSet.class);
             PreparedStatement readStatement = mock(PreparedStatement.class);
             ResultSet stateRow = mock(ResultSet.class);
@@ -221,6 +222,28 @@ class WheelManagerTest {
             assertTrue(manager.buySpin(fixture.user));
 
             verify(fixture.user).tryTakeCredits(50);
+        }
+    }
+
+    @Test
+    void aSpinWhoseStateCannotBeWrittenPaysNothingAndKeepsTheSpin() throws SQLException {
+        try (Fixture fixture = new Fixture(Map.of(), 0)) {
+            PreparedStatement prizeStatement = mock(PreparedStatement.class);
+            ResultSet prizeRow = mock(ResultSet.class);
+            when(prizeRow.next()).thenReturn(true, false);
+            when(prizeRow.getString("type")).thenReturn("credits");
+            when(prizeRow.getInt("amount")).thenReturn(100);
+            when(prizeRow.getInt("weight")).thenReturn(1);
+            when(prizeStatement.executeQuery()).thenReturn(prizeRow);
+            when(fixture.connection.prepareStatement(contains("FROM wheel_prizes")))
+                    .thenReturn(prizeStatement);
+            when(fixture.writeStatement.executeUpdate()).thenThrow(new SQLException("write failed"));
+            WheelManager manager = new WheelManager();
+
+            assertNull(manager.spin(fixture.user));
+
+            assertEquals(1, manager.getUserState(USER_ID).freeSpins, "the spin is given back");
+            verify(fixture.user, never()).giveCredits(anyInt());
         }
     }
 

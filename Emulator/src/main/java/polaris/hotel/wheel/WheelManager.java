@@ -188,7 +188,8 @@ public class WheelManager {
         return state;
     }
 
-    private void persistUserState(int userId, WheelUserState state) {
+    /** Writes a user's spins; false when the database refused, so a caller can undo what it was about to spend. */
+    boolean persistUserState(int userId, WheelUserState state) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO wheel_user_state (user_id, free_spins, extra_spins, last_reset) VALUES (?, ?, ?, ?) "
@@ -198,8 +199,10 @@ public class WheelManager {
             statement.setInt(3, state.extraSpins);
             statement.setInt(4, state.lastReset);
             statement.executeUpdate();
+            return true;
         } catch (SQLException e) {
             LOGGER.error("Failed to persist wheel state for user {}", userId, e);
+            return false;
         }
     }
 
@@ -231,6 +234,14 @@ public class WheelManager {
 
         WheelPrize prize = this.pickWeighted();
         if (prize == null) {
+            if (usedFree) state.freeSpins++;
+            else state.extraSpins++;
+            return null;
+        }
+
+        // The spent spin is stored before the prize is handed out: a write that failed used to pay the prize and
+        // give the spin back on the next load.
+        if (!this.persistUserState(userId, state)) {
             if (usedFree) state.freeSpins++;
             else state.extraSpins++;
             return null;

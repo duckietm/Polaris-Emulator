@@ -28,6 +28,13 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
+        // Club gifts are a member's monthly reward, as in AIR, where the gift page offers them only while the club
+        // runs: the time of an expired membership no longer opens one.
+        if (!this.client.getUser().getUserStats().hasActiveClub()) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
         if (this.client.getUser().getUserStats().getRemainingClubGifts() < 1) {
             LOGGER.error("User has no remaining club gifts");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));

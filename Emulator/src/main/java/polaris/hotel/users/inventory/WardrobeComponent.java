@@ -8,8 +8,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class WardrobeComponent {
     private final IntSet collectibleSets = new IntOpenHashSet();
 
     public WardrobeComponent(User user) {
-        this.looks = new HashMap<>();
+        this.looks = new ConcurrentHashMap<>();
         this.clothing = new IntOpenHashSet();
         this.clothingSets = new IntOpenHashSet();
 
@@ -64,6 +64,25 @@ public class WardrobeComponent {
 
     public WardrobeItem createLook(User user, int slotId, String look) {
         return new WardrobeItem(user.getUserInfo().getGender(), look, slotId, user);
+    }
+
+    /**
+     * Stores a look in a slot: the existing item is updated, a new one is created for insert. Done as one map
+     * operation, so two saves of the same slot cannot both create an item for it.
+     */
+    public WardrobeItem saveLook(User user, int slotId, String look, UserGender gender) {
+        return this.looks.compute(slotId, (id, existing) -> {
+            if (existing != null) {
+                existing.setGender(gender);
+                existing.setLook(look);
+                existing.setNeedsUpdate(true);
+                return existing;
+            }
+            WardrobeItem created = this.createLook(user, id, look);
+            created.setGender(gender);
+            created.setNeedsInsert(true);
+            return created;
+        });
     }
 
     public Map<Integer, WardrobeItem> getLooks() {

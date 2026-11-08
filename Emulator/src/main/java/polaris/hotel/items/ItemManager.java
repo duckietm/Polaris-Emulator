@@ -1785,6 +1785,14 @@ public class ItemManager {
      * @return the reward, or null when nothing was written
      */
     public UserItem craftInTransaction(int userId, Item reward, Collection<UserItem> consumed) {
+        return this.craftInTransaction(userId, reward, consumed, 0);
+    }
+
+    /**
+     * The same, also taking one unit of a limited recipe in the transaction: the count lived only in memory until a
+     * reload or a shutdown wrote it, so a crash sold the units crafted since the last save again.
+     */
+    public UserItem craftInTransaction(int userId, Item reward, Collection<UserItem> consumed, int limitedRecipeId) {
         if (userId <= 0 || reward == null || consumed == null || consumed.isEmpty()) {
             return null;
         }
@@ -1796,6 +1804,9 @@ public class ItemManager {
 
         try {
             return inTransaction(connection -> {
+                if (limitedRecipeId > 0) {
+                    takeRecipeUnit(connection, limitedRecipeId);
+                }
                 this.deleteOwnedItems(connection, userId, consumed);
                 UserItem created = this.createItem(connection, userId, reward, 0, 0, "");
                 if (created == null) {
@@ -1806,6 +1817,14 @@ public class ItemManager {
         } catch (SQLException e) {
             LOGGER.error("Crafting for user {} failed, nothing was written", userId, e);
             return null;
+        }
+    }
+
+    private static void takeRecipeUnit(Connection connection, int recipeId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE crafting_recipes SET remaining = remaining - 1 WHERE id = ? AND remaining > 0")) {
+            statement.setInt(1, recipeId);
+            statement.executeUpdate();
         }
     }
 

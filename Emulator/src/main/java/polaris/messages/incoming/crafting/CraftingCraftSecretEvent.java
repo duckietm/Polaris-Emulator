@@ -67,7 +67,11 @@ public class CraftingCraftSecretEvent extends MessageHandler {
                 // The furni on the altar are deleted and the reward created in one transaction.
                 UserItem rewardItem = Emulator.getGameEnvironment()
                         .getItemManager()
-                        .craftInTransaction(this.client.getUser().getUserInfo().getId(), recipe.getReward(), userItems);
+                        .craftInTransaction(
+                                this.client.getUser().getUserInfo().getId(),
+                                recipe.getReward(),
+                                userItems,
+                                recipe.isLimited() ? recipe.getId() : 0);
 
                 if (rewardItem != null) {
                     this.complete(recipe, rewardItem, userItems);

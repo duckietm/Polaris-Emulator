@@ -4,13 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import polaris.Emulator;
 
 public class HorsePet extends RideablePet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HorsePet.class);
-
     private int hairColor;
     private int hairStyle;
 
@@ -31,25 +26,27 @@ public class HorsePet extends RideablePet {
         this.setAnyoneCanRide(false);
     }
 
+    /**
+     * Writes the horse columns and then the base pet row on the same connection. A failure in
+     * either throws before {@link Pet#save(Connection)} clears {@code needsUpdate}, so the next
+     * save retries both instead of losing the horse fields.
+     */
     @Override
-    public void run() {
-        if (this.needsUpdate) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "UPDATE users_pets SET hair_style = ?, hair_color = ?, saddle = ?, ride = ?, saddle_item_id = ? WHERE id = ?")) {
+    public void save(Connection connection) throws SQLException {
+        if (!this.needsUpdate) return;
+        if (super.getId() > 0) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE users_pets SET hair_style = ?, hair_color = ?, saddle = ?, ride = ?, saddle_item_id = ? WHERE id = ?")) {
                 statement.setInt(1, this.hairStyle);
                 statement.setInt(2, this.hairColor);
                 statement.setString(3, this.hasSaddle() ? "1" : "0");
                 statement.setString(4, this.anyoneCanRide() ? "1" : "0");
                 statement.setInt(5, this.getSaddleItemId());
                 statement.setInt(6, super.getId());
-                statement.execute();
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                statement.executeUpdate();
             }
-
-            super.run();
         }
+        super.save(connection);
     }
 
     public int getHairColor() {

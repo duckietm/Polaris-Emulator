@@ -13,26 +13,30 @@ public class ChangeChatBubbleEvent extends MessageHandler {
     public void handle() throws Exception {
         int chatBubble = this.packet.readInt();
 
-        if (!this.client.getUser().hasPermission(Permission.ACC_ANYCHATCOLOR)) {
-            if (isBanned(Emulator.getConfig().getValue("commands.cmd_chatcolor.banned_numbers"), chatBubble)) {
-                return;
-            }
-
-            // A style the catalog sells is only for the players who bought it (AIR 13
-            // RoomChatInputView offers it only when hasPurchasableChatStyle is true).
-            User user = this.client.getUser();
-            if (ChatStyleRepository.isPurchasable(chatBubble)) {
-                if (!ChatStyleRepository.owns(user.getUserInfo().getId(), chatBubble)) {
-                    return;
-                }
-            } else if (!ChatStyleSelection.isSelectable(
-                    chatBubble, user.getUserStats().hasActiveClub(), user.hasPermission(Permission.ACC_AMBASSADOR))) {
-                // AIR never offers a system style, an HC style without club or an id it has no style for.
-                return;
-            }
+        if (!canUse(this.client.getUser(), chatBubble)) {
+            return;
         }
 
         this.client.getUser().getUserStats().chatColor = RoomChatMessageBubbles.getBubble(chatBubble);
+    }
+
+    /** Whether the user may wear the bubble: the packet and the chat color command both ask this. */
+    public static boolean canUse(User user, int chatBubble) {
+        if (user.hasPermission(Permission.ACC_ANYCHATCOLOR)) {
+            return true;
+        }
+        if (isBanned(Emulator.getConfig().getValue("commands.cmd_chatcolor.banned_numbers"), chatBubble)) {
+            return false;
+        }
+
+        // A style the catalog sells is only for the players who bought it (AIR 13
+        // RoomChatInputView offers it only when hasPurchasableChatStyle is true).
+        if (ChatStyleRepository.isPurchasable(chatBubble)) {
+            return ChatStyleRepository.owns(user.getUserInfo().getId(), chatBubble);
+        }
+        // AIR never offers a system style, an HC style without club or an id it has no style for.
+        return ChatStyleSelection.isSelectable(
+                chatBubble, user.getUserStats().hasActiveClub(), user.hasPermission(Permission.ACC_AMBASSADOR));
     }
 
     /**

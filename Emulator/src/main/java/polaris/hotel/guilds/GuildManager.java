@@ -291,10 +291,19 @@ public class GuildManager {
     }
 
     public void joinGuild(Guild guild, GameClient client, int userId, boolean acceptRequest) {
+        this.tryJoinGuild(guild, client, userId, acceptRequest);
+    }
+
+    /**
+     * Joins the guild, or accepts the request of {@code userId} when it is not 0, and says whether the row was written.
+     * Accepting used to update the counters and the member's guild list even when a limit refused the join or the
+     * request was already gone.
+     */
+    public boolean tryJoinGuild(Guild guild, GameClient client, int userId, boolean acceptRequest) {
         boolean error = false;
         if (userId == 0 && this.isBlocked(guild, client.getUser().getUserInfo().getId())) {
             client.sendResponse(new GuildJoinErrorComposer(GuildJoinErrorComposer.GROUP_CLOSED));
-            return;
+            return false;
         }
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement =
@@ -389,7 +398,9 @@ public class GuildManager {
                         statement.setInt(3, userId);
                         statement.setInt(4, guild.getId());
                         statement.setInt(5, GuildRank.REQUESTED.type);
-                        statement.execute();
+                        if (statement.executeUpdate() != 1) {
+                            error = true;
+                        }
                     }
                 }
 
@@ -403,7 +414,9 @@ public class GuildManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
         }
+        return !error;
     }
 
     /** Makes an accepted member an admin; the owner and a user who only asked to join are left as they are. */

@@ -9,6 +9,7 @@ import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.rooms.RoomUnitStatus;
 import polaris.hotel.rooms.RoomUnitType;
+import polaris.hotel.users.User;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.generic.alerts.PetErrorComposer;
 import polaris.messages.outgoing.inventory.RemovePetComposer;
@@ -42,8 +43,7 @@ public class PetPlaceEvent extends MessageHandler {
         if (pet == null) {
             return;
         }
-        if (room.getCurrentPets().size() >= Room.MAXIMUM_PETS
-                && !this.client.getUser().hasPermission(Permission.ACC_UNLIMITED_PETS)) {
+        if (isFullFor(room, this.client.getUser())) {
             this.client.sendResponse(new PetErrorComposer(PetErrorComposer.ROOM_ERROR_MAX_PETS));
             return;
         }
@@ -110,5 +110,13 @@ public class PetPlaceEvent extends MessageHandler {
         room.sendComposer(new RoomPetComposer(pet).compose());
         this.client.getUser().getInventory().getPetsComponent().removePet(pet);
         this.client.sendResponse(new RemovePetComposer(pet));
+    }
+
+    /**
+     * Whether the room has no place for another pet of this user. Every way a pet enters a room asks it: a monsterplant
+     * seed and a pet box used to place one past the limit.
+     */
+    public static boolean isFullFor(Room room, User user) {
+        return room.getCurrentPets().size() >= Room.MAXIMUM_PETS && !user.hasPermission(Permission.ACC_UNLIMITED_PETS);
     }
 }

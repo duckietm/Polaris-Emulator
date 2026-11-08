@@ -31,6 +31,11 @@ public class RoomUnitRidePet implements Runnable {
                 || this.user.getRoomUnit().getGoal() != this.goalTile) return;
 
         if (user.getRoomUnit().getCurrentLocation().distance(pet.getRoomUnit().getCurrentLocation()) <= 1) {
+            if (user.getUserInfo().getRiding() != null || !pet.claimRider(user)) {
+                user.getRoomUnit().stopWalking();
+                return;
+            }
+
             user.getRoomUnit().stopWalking();
             user.getUserInfo().getCurrentRoom().giveEffect(user, 77, -1);
             user.getUserInfo().setRiding(pet);
@@ -42,7 +47,6 @@ public class RoomUnitRidePet implements Runnable {
             user.getRoomUnit().statusUpdate(true);
 
             // Set up the pet for riding
-            pet.setRider(user);
             pet.setTask(PetTasks.RIDE);
             pet.getRoomUnit().stopWalking();
             pet.getRoomUnit().setGoalLocation(user.getRoomUnit().getCurrentLocation());

@@ -622,6 +622,17 @@ public class WiredTradingManager {
         Negotiation negotiation = getNegotiation(user);
         if (negotiation == null) return false;
 
+        // The session's lock is the one its close() takes to hand the table back: held for the whole settlement,
+        // a timeout or a departure on another thread cannot give an item back between its deposit into a chest
+        // and its release from the table, which left it both in the chest and in the inventory. Session before
+        // vault, the order close() itself uses.
+        synchronized (negotiation.session()) {
+            if (getNegotiation(user) != negotiation) return false;
+            return settleHeld(user, negotiation, nowMillis);
+        }
+    }
+
+    private boolean settleHeld(User user, Negotiation negotiation, long nowMillis) {
         WiredTradingSession.Confirmation confirmation = negotiation.session().confirm(nowMillis);
         if (negotiation.depositOnly()) {
             if (!confirmation.settled() && confirmation.failureId() != WiredTradingSession.FAILURE_REQUIREMENTS) {

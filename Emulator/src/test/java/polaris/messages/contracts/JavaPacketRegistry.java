@@ -118,11 +118,13 @@ final class JavaPacketRegistry {
                 for (MethodCallExpr call : unit.findAll(MethodCallExpr.class)) {
                     if (!call.getNameAsString().equals("init")
                             || call.getArguments().isEmpty()) continue;
-                    Optional<String> symbol = referencedSymbol(call.getArgument(0), "Outgoing");
-                    if (symbol.isEmpty()) continue;
-                    int header = outgoing.require(symbol.get(), Direction.SERVER_TO_CLIENT);
-                    if (header <= 0) continue;
-                    discovered.add(new RegisteredPacket(Direction.SERVER_TO_CLIENT, header, symbol.get(), source));
+                    // A composer may pick its header with a ternary (WiredEffectDataComposer writes the selector
+                    // or the action packet, WiredExtraDataComposer the variable or the add-on one): it writes both.
+                    for (String symbol : referencedSymbols(call.getArgument(0), "Outgoing")) {
+                        int header = outgoing.require(symbol, Direction.SERVER_TO_CLIENT);
+                        if (header <= 0) continue;
+                        discovered.add(new RegisteredPacket(Direction.SERVER_TO_CLIENT, header, symbol, source));
+                    }
                 }
             }
         }
@@ -282,6 +284,19 @@ final class JavaPacketRegistry {
         FieldAccessExpr access = expression.asFieldAccessExpr();
         if (!access.getScope().toString().equals(owner)) return Optional.empty();
         return Optional.of(access.getNameAsString());
+    }
+
+    /** The headers an expression can name: one field access, or each branch of a (nested) ternary. */
+    static List<String> referencedSymbols(Expression expression, String owner) {
+        if (expression.isEnclosedExpr())
+            return referencedSymbols(expression.asEnclosedExpr().getInner(), owner);
+        if (expression.isConditionalExpr()) {
+            List<String> symbols = new ArrayList<>(
+                    referencedSymbols(expression.asConditionalExpr().getThenExpr(), owner));
+            symbols.addAll(referencedSymbols(expression.asConditionalExpr().getElseExpr(), owner));
+            return symbols;
+        }
+        return referencedSymbol(expression, owner).stream().toList();
     }
 
     private static Optional<String> classLiteralName(Expression expression) {

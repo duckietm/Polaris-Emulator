@@ -1,9 +1,7 @@
 package polaris.messages.incoming.inventory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import polaris.Emulator;
 import polaris.hotel.items.Item;
 import polaris.hotel.rooms.BuildersClubItemIds;
@@ -27,31 +25,41 @@ public class RequestInventoryItemsDelete extends MessageHandler {
 
         if (amount <= 0 || amount > MAX_DELETE_AMOUNT) return;
 
-        UserItem userItem =
-                this.client.getUser().getInventory().getItemsComponent().getUserItem(itemId);
-        if (userItem == null) return;
-        Item item = userItem.getBaseItem();
-        if (item == null) return;
-        if (!hasFurnitureInInventory(this.client.getUser(), item, amount)) return;
         final User user = this.client.getUser();
         if (user == null) return;
-        Map<Integer, UserItem> toRemove = new HashMap<>();
-        for (int i = 0; i < amount; i++) {
-            UserItem userInventoryItem = user.getInventory().getItemsComponent().getAndRemoveUserItem(item);
-            if (userInventoryItem != null) toRemove.put(userInventoryItem.getId(), userInventoryItem);
-        }
+        UserItem userItem = user.getInventory().getItemsComponent().getUserItem(itemId);
+        if (userItem == null || userItem.getBaseItem() == null) return;
+
+        List<UserItem> selected = selectItemsToDelete(user, userItem, amount);
+        if (selected == null) return;
+        if (!user.getInventory().getItemsComponent().takeUserItemsAtomically(selected)) return;
+
         List<Integer> removedItemIds = new ArrayList<>();
-        toRemove.values().forEach(object -> removedItemIds.add(object.getGiftAdjustedId()));
+        selected.forEach(object -> removedItemIds.add(object.getGiftAdjustedId()));
         user.getClient().sendResponse(new RemoveUserItemsComposer(removedItemIds));
         user.getClient().sendResponse(new InventoryRefreshComposer());
-        Emulator.getThreading().runPersistence(new QueryDeleteUserItems(toRemove.values()));
+        Emulator.getThreading().runPersistence(new QueryDeleteUserItems(selected));
     }
 
-    private boolean hasFurnitureInInventory(User user, Item item, Integer amount) {
-        int count = 0;
-        for (UserItem userItem : user.getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (userItem.getBaseItem().getId() == item.getId()) count++;
+    /**
+     * The chosen item first, then other copies of the same base that stack with it in the client. A limited or rented
+     * item is unique, so it is deleted only on its own: any other instance of the base could be the wrong one.
+     */
+    static List<UserItem> selectItemsToDelete(User user, UserItem chosen, int amount) {
+        List<UserItem> selected = new ArrayList<>();
+        selected.add(chosen);
+        if (isUnique(chosen)) return amount == 1 ? selected : null;
+
+        Item item = chosen.getBaseItem();
+        for (UserItem other : user.getInventory().getItemsComponent().getItemsAsValueCollection()) {
+            if (selected.size() >= amount) break;
+            if (other == chosen || other.getBaseItem() != item || isUnique(other)) continue;
+            selected.add(other);
         }
-        return count >= amount;
+        return selected.size() == amount ? selected : null;
+    }
+
+    private static boolean isUnique(UserItem item) {
+        return item.isLimited() || item.hasRentPeriod();
     }
 }

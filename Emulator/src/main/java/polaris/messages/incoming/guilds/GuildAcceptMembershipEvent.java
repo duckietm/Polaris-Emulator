@@ -71,11 +71,14 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
             return;
         }
 
+        // A join a limit refused, or a request that is already gone, changes no count and no guild list.
+        if (!Emulator.getGameEnvironment().getGuildManager().tryJoinGuild(guild, this.client, userId, true)) {
+            return;
+        }
+
         if (user != null) {
             user.getUserStats().addGuild(guild.getId());
         }
-
-        Emulator.getGameEnvironment().getGuildManager().joinGuild(guild, this.client, userId, true);
         guild.decreaseRequestCount();
         guild.increaseMemberCount();
         this.client.sendResponse(new GuildRefreshMembersListComposer(guild));

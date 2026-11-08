@@ -1,5 +1,6 @@
 package polaris.hotel.catalog;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,45 @@ public final class CatalogPaymentService {
         return true;
     }
 
+    /**
+     * Takes the payment on the caller's connection, inside the caller's transaction, so it is rolled back with
+     * everything else the purchase wrote. The wallet in memory is not touched: once the caller has committed, it
+     * passes the result to {@link #publishTaken}. The caller holds the wallet lock
+     * ({@code LedgerWalletMutation.coordinated}) from here until then. An {@link IllegalArgumentException} means the
+     * balance does not cover the payment.
+     */
+    public static TakenPayment takeWithin(Connection connection, User user, int credits, int pointsType, int points)
+            throws SQLException {
+        if (user == null || credits < 0 || points < 0) {
+            throw new IllegalArgumentException("catalog payment cannot be negative");
+        }
+
+        WalletCommit commit = mutate(
+                connection, user, -credits, pointsType, -points, "catalog_payment_reserve", "catalog.payment.reserve");
+        return new TakenPayment(credits, pointsType, points, commit);
+    }
+
+    /** Applies a payment taken with {@link #takeWithin} to the wallet in memory and tells the client. */
+    public static void publishTaken(User user, TakenPayment taken) {
+        applyCommittedBalances(user, taken.pointsType, taken.commit);
+        publish(user, taken.credits, taken.pointsType, -taken.points);
+    }
+
+    /** A payment written in a transaction that is not committed yet; only {@link #publishTaken} reads it. */
+    public static final class TakenPayment {
+        private final int credits;
+        private final int pointsType;
+        private final int points;
+        private final WalletCommit commit;
+
+        private TakenPayment(int credits, int pointsType, int points, WalletCommit commit) {
+            this.credits = credits;
+            this.pointsType = pointsType;
+            this.points = points;
+            this.commit = commit;
+        }
+    }
+
     public static void refund(User user, int credits, int pointsType, int points) {
         if (user == null || credits < 0 || points < 0) {
             throw new IllegalArgumentException("catalog refund cannot be negative");
@@ -81,6 +121,19 @@ public final class CatalogPaymentService {
 
     private static WalletCommit mutate(
             User user, int creditDelta, int pointsType, int pointsDelta, String operation, String reason)
+            throws SQLException {
+        return mutate(null, user, creditDelta, pointsType, pointsDelta, operation, reason);
+    }
+
+    /** On {@code connection} when one is given, in its transaction; otherwise in a transaction of its own. */
+    private static WalletCommit mutate(
+            Connection connection,
+            User user,
+            int creditDelta,
+            int pointsType,
+            int pointsDelta,
+            String operation,
+            String reason)
             throws SQLException {
         int userId = user.getUserInfo().getId();
         String operationId = EconomyOperationId.create("catalog-payment:" + userId);
@@ -113,7 +166,9 @@ public final class CatalogPaymentService {
             return new WalletCommit(null, null);
         }
 
-        List<EconomyMutationResult> results = EconomyLedger.executeBatch(operations);
+        List<EconomyMutationResult> results = connection == null
+                ? EconomyLedger.executeBatch(operations)
+                : EconomyLedger.applyBatch(connection, operations);
         int resultIndex = 0;
         EconomyMutationResult creditMutation = creditDelta == 0 ? null : results.get(resultIndex++);
         EconomyMutationResult pointsMutation = pointsDelta == 0 ? null : results.get(resultIndex);

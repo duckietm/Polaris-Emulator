@@ -463,17 +463,22 @@ public class ModToolManager {
     }
 
     public ModToolBan createOfflineUserBan(int userId, int staffId, int duration, String reason, ModToolBanType type) {
+        // bans.timestamp is NOT NULL without a default: leaving it out failed the insert under strict SQL mode
+        // and stored 0 ("unknown") otherwise.
+        int now = Emulator.getIntUnixTimestamp();
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO bans (user_id, ip, machine_id, user_staff_id, ban_expire, ban_reason, type) VALUES (?, (SELECT ip_current FROM users WHERE id = ?), (SELECT machine_id FROM users WHERE id = ?), ?, ?, ?, ?)",
+                        "INSERT INTO bans (user_id, ip, machine_id, user_staff_id, timestamp, ban_expire, ban_reason, type) VALUES (?, (SELECT ip_current FROM users WHERE id = ?), (SELECT machine_id FROM users WHERE id = ?), ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, userId);
             statement.setInt(2, userId);
             statement.setInt(3, userId);
             statement.setInt(4, staffId);
-            statement.setInt(5, banExpiry(Emulator.getIntUnixTimestamp(), duration));
-            statement.setString(6, reason);
-            statement.setString(7, type.getType());
+            statement.setInt(5, now);
+            statement.setInt(6, banExpiry(now, duration));
+            statement.setString(7, reason);
+            statement.setString(8, type.getType());
 
             statement.executeUpdate();
             // As for an online ban: the tokens already issued end with it.

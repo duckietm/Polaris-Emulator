@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.games.center.GameCenter;
 import polaris.hotel.games.snowwar.mapping.SnowWarMap;
 import polaris.hotel.games.snowwar.mapping.SnowWarMapsManager;
 import polaris.hotel.rooms.Room;
@@ -67,8 +68,8 @@ public class SnowWarManager {
     private final SnowWarArenaRepository arenas = new SnowWarArenaRepository(this::openConnection);
     private final SnowWarLeaderboardRepository leaderboard = new SnowWarLeaderboardRepository(this::openConnection);
     private final SnowWarTokenOfferRepository tokenOffers = new SnowWarTokenOfferRepository(this::openConnection);
-    private final SnowWarGameCharges charges = new SnowWarGameCharges(
-            this.tokenOffers, LocalDate::now, () -> Emulator.getConfig().getInt("gamecenter.games.free.daily", 10));
+    private final SnowWarGameCharges charges =
+            new SnowWarGameCharges(this.tokenOffers, LocalDate::now, this::freeGamesPerDay);
     private final SnowWarScoreWriter scoreWriter =
             new SnowWarScoreWriter(this.leaderboard::recordScores, (task, delayMs) -> schedule(task, delayMs) != null);
 
@@ -114,6 +115,16 @@ public class SnowWarManager {
 
     private Connection openConnection() throws SQLException {
         return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /** Free games a day for this player: `gamecenter.games.free.daily`, or `.hc` for a Habbo Club member. */
+    private int freeGamesPerDay(int userId) {
+        int everyone = Emulator.getConfig().getInt("gamecenter.games.free.daily", 10);
+        User user = this.onlineUser(userId);
+        boolean member = user != null && user.getUserStats().hasActiveClub();
+
+        return SnowWarGameCharges.freeGamesPerDay(
+                everyone, Emulator.getConfig().getInt("gamecenter.games.free.daily.hc", everyone), member);
     }
 
     public boolean isEnabled() {
@@ -229,6 +240,29 @@ public class SnowWarManager {
                     player.getUserId(), player.getAttributes().getScore().get()));
         }
         this.scoreWriter.submit(SnowWarLeaderboardRepository.weekStart(0), rows);
+        this.rewardMatch(players);
+    }
+
+    /** The Game Center's rewards of the end of a game: every player, and the team with the most points. */
+    private void rewardMatch(List<SnowWarGamePlayer> players) {
+        Map<Integer, Integer> teamScores = new HashMap<>();
+        List<Integer> userIds = new ArrayList<>();
+
+        for (SnowWarGamePlayer player : players) {
+            teamScores.merge(
+                    player.getTeamId(), player.getAttributes().getScore().get(), Integer::sum);
+            userIds.add(player.getUserId());
+        }
+
+        int best =
+                teamScores.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        List<Integer> winners = new ArrayList<>();
+
+        for (SnowWarGamePlayer player : players) {
+            if (best > 0 && teamScores.get(player.getTeamId()) == best) winners.add(player.getUserId());
+        }
+
+        schedule(() -> GameCenter.get().rewardMatch("snowwar", userIds, winners), 0L);
     }
 
     /** All-time scores in the database, or {@code null} when they could not be read. */
@@ -444,6 +478,11 @@ public class SnowWarManager {
         }
 
         this.broadcastLobbyTeams();
+    }
+
+    /** The players in a SnowStorm game or waiting for one, for the Game Center's list. */
+    public int getPlayersNow() {
+        return this.userGames.size() + this.getQueueSize();
     }
 
     private int getQueueSize() {

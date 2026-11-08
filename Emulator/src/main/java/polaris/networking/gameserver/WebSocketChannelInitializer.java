@@ -24,6 +24,7 @@ import polaris.networking.gameserver.auth.NitroSecureApiHandler;
 import polaris.networking.gameserver.auth.NitroSecureAssetHandler;
 import polaris.networking.gameserver.badges.BadgeHttpHandler;
 import polaris.networking.gameserver.badges.BadgeLeaderboardHttpHandler;
+import polaris.networking.gameserver.battleball.BattleBallHttpHandler;
 import polaris.networking.gameserver.cms.CmsApiHandler;
 import polaris.networking.gameserver.codec.WebSocketCodec;
 import polaris.networking.gameserver.crypto.WsHandshakeHandler;
@@ -38,14 +39,21 @@ import polaris.networking.gameserver.decoders.PacketDispatchLatencyHandler;
 import polaris.networking.gameserver.decoders.PacketDispatchMarker;
 import polaris.networking.gameserver.encoders.GameServerMessageEncoder;
 import polaris.networking.gameserver.encoders.GameServerMessageLogger;
+import polaris.networking.gameserver.fastfood.FastFoodHttpHandler;
+import polaris.networking.gameserver.gamecenter.GameCenterHttpHandler;
+import polaris.networking.gameserver.hall.HallHttpHandler;
 import polaris.networking.gameserver.handlers.IdleTimeoutHandler;
 import polaris.networking.gameserver.handlers.PreUpgradeConnectionLimit;
 import polaris.networking.gameserver.handlers.SustainedUnwritableHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpHandler;
+import polaris.networking.gameserver.lostmonkey.LostMonkeyHttpHandler;
 import polaris.networking.gameserver.ssl.SSLCertificateLoader;
 import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
+import polaris.networking.gameserver.uno.UnoHttpHandler;
+import polaris.networking.gameserver.werewolf.WerewolfHttpHandler;
 import polaris.networking.gameserver.wired.WiredVariableApiHandler;
+import polaris.networking.gameserver.wobble.WobbleHttpHandler;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannelInitializer.class);
@@ -150,6 +158,42 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionBadgeLeaderboard",
                         BlockingHttpExecutionGroup.admissionHandler("badgeLeaderboardHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
+        ch.pipeline()
+                .addLast("blockingHttpAdmissionUno", BlockingHttpExecutionGroup.admissionHandler("unoHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "unoHttpHandler", new UnoHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionWerewolf",
+                        BlockingHttpExecutionGroup.admissionHandler("werewolfHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "werewolfHttpHandler", new WerewolfHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionWobble",
+                        BlockingHttpExecutionGroup.admissionHandler("wobbleHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "wobbleHttpHandler", new WobbleHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionBattleBall",
+                        BlockingHttpExecutionGroup.admissionHandler("battleBallHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "battleBallHttpHandler", new BattleBallHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionFastFood",
+                        BlockingHttpExecutionGroup.admissionHandler("fastFoodHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "fastFoodHttpHandler", new FastFoodHttpHandler());
+        ch.pipeline()
+                .addLast("blockingHttpAdmissionHall", BlockingHttpExecutionGroup.admissionHandler("hallHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "hallHttpHandler", new HallHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionGameCenter",
+                        BlockingHttpExecutionGroup.admissionHandler("gameCenterHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "gameCenterHttpHandler", new GameCenterHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionLostMonkey",
+                        BlockingHttpExecutionGroup.admissionHandler("lostMonkeyHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "lostMonkeyHttpHandler", new LostMonkeyHttpHandler());
         ch.pipeline()
                 .addLast(
                         "blockingHttpAdmissionStats",

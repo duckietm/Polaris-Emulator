@@ -37,7 +37,7 @@
         <slf4j.version>2.0.20</slf4j.version>
         <error-prone-annotations.version>2.51.0</error-prone-annotations.version>
         <logback.version>1.6.5</logback.version>
-        <jansi.version>2.4.3</jansi.version>
+        <jansi.version>4.4.8</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.3</junit.version>
@@ -673,9 +673,10 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- Jansi -->
+        <!-- Jansi: the maintained artifact under JLine (org.fusesource.jansi stopped at 2.4).
+             Logback's ConsoleAppender probes org.jline.jansi.AnsiConsole first. -->
         <dependency>
-            <groupId>org.fusesource.jansi</groupId>
+            <groupId>org.jline</groupId>
             <artifactId>jansi</artifactId>
             <version>${jansi.version}</version>
         </dependency>

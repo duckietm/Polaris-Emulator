@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.fusesource.jansi.AnsiConsole;
+import org.jline.jansi.AnsiConsole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.core.ConfigurationManager;

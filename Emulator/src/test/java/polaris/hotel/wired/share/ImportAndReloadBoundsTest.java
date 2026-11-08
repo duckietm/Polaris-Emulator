@@ -29,7 +29,7 @@ class ImportAndReloadBoundsTest {
     @Test
     void aSubscriptionDurationStaysInsideAnInt() throws Exception {
         assertTrue(source("hotel/users/subscriptions/Subscription.java")
-                .contains("Math.min(Integer.MAX_VALUE, (long) this.duration + amount)"));
+                .contains("Math.min(maxDuration(this.timestampStart), (long) this.duration + amount)"));
     }
 
     @Test

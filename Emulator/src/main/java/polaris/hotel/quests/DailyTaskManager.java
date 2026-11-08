@@ -183,24 +183,39 @@ public class DailyTaskManager {
         }
         Emulator.getThreading().run(() -> {
             this.pendingSaves.remove(key);
-            int repeats = state.getRepeats();
-            int status = state.getStatus();
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO users_daily_tasks (user_id, task_id, task_day, repeats, status, updated_at)"
-                                    + " VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE repeats = VALUES(repeats),"
-                                    + " status = VALUES(status), updated_at = VALUES(updated_at)")) {
-                statement.setInt(1, userId);
-                statement.setInt(2, state.getTaskId());
-                statement.setString(3, state.getDay());
-                statement.setInt(4, repeats);
-                statement.setInt(5, status);
-                statement.setInt(6, Emulator.getIntUnixTimestamp());
-                statement.execute();
-            } catch (SQLException exception) {
-                LOGGER.error("Could not save daily task {} of user {}", state.getTaskId(), userId, exception);
-            }
+            this.write(userId, state);
         });
+    }
+
+    /** Stores a task's state now; false when the database refused it. */
+    protected boolean write(int userId, UserDailyTaskState state) {
+        if (!this.persistent) {
+            return true;
+        }
+        int repeats = state.getRepeats();
+        int status = state.getStatus();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO users_daily_tasks (user_id, task_id, task_day, repeats, status, updated_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE repeats = VALUES(repeats),"
+                                + " status = VALUES(status), updated_at = VALUES(updated_at)")) {
+            statement.setInt(1, userId);
+            statement.setInt(2, state.getTaskId());
+            statement.setString(3, state.getDay());
+            statement.setInt(4, repeats);
+            statement.setInt(5, status);
+            statement.setInt(6, Emulator.getIntUnixTimestamp());
+            statement.execute();
+            return true;
+        } catch (SQLException exception) {
+            LOGGER.error("Could not save daily task {} of user {}", state.getTaskId(), userId, exception);
+            return false;
+        }
+    }
+
+    /** Ledger id of a daily task reward: fixed per user, day and task, so the reward is paid at most once. */
+    static String claimOperationId(int userId, String day, int taskId) {
+        return "daily_task:" + userId + ":" + day + ":" + taskId;
     }
 
     // ------------------------------------------------------------------ wire
@@ -303,9 +318,24 @@ public class DailyTaskManager {
         if (progress == null || !progress.isClaimable()) {
             return false;
         }
-        progress.setStatus(UserDailyTaskState.STATUS_CLAIMED);
-        this.save(state.getUserId(), progress);
-        QuestRewards.grantTyped(user, task.getRewardType(), task.getRewardExtra(), task.getRewardAmount());
+        // Claimed under the day's lock and stored before anything is paid: two claims cannot both pass, and a claim
+        // the database did not take is undone instead of paying a reward the next login would offer again.
+        synchronized (state) {
+            if (!progress.isClaimable()) {
+                return false;
+            }
+            progress.setStatus(UserDailyTaskState.STATUS_CLAIMED);
+            if (!this.write(state.getUserId(), progress)) {
+                progress.setStatus(UserDailyTaskState.STATUS_COMPLETED);
+                return false;
+            }
+        }
+        QuestRewards.grantTyped(
+                user,
+                task.getRewardType(),
+                task.getRewardExtra(),
+                task.getRewardAmount(),
+                claimOperationId(state.getUserId(), progress.getDay(), task.getId()));
         user.getClient()
                 .sendResponse(new DailyTaskUpdatedComposer(
                         task.getId(), progress.getRepeats(), progress.getStatus(), secondsLeftToday()));

@@ -292,12 +292,38 @@ class QuestEngineTest {
 
         assertTrue(manager.claim(user, 1));
         assertFalse(manager.claim(user, 1), "a claimed task cannot be claimed twice");
-        verify(user).givePoints(eq(Quest.REWARD_DUCKETS), eq(15), anyString());
+        verify(user)
+                .givePoints(
+                        eq(Quest.REWARD_DUCKETS),
+                        eq(15),
+                        anyString(),
+                        eq("daily_task:7:" + DailyTaskManager.today() + ":1"),
+                        eq(7));
         assertEquals(0, manager.claimableCount(user));
         assertEquals(
                 UserDailyTaskState.STATUS_CLAIMED,
                 manager.activeTasks(user).get(0).status());
         assertTrue(manager.activeTasks(user).get(1).bonus());
+    }
+
+    @Test
+    void aClaimTheDatabaseRefusesIsUndoneAndPaysNothing() {
+        DailyTaskManager manager = new DailyTaskManager(false) {
+            @Override
+            protected boolean write(int userId, UserDailyTaskState state) {
+                return state.getStatus() != UserDailyTaskState.STATUS_CLAIMED;
+            }
+        };
+        manager.register(
+                new DailyTask(1, "talk", QuestGoalType.TALK_IN_ROOM, "", 1, false, "duckets", "", 15, "", "1", 1));
+        User user = user(7, false);
+        manager.progress(user, QuestGoalType.TALK_IN_ROOM, 1);
+
+        assertFalse(manager.claim(user, 1));
+
+        assertEquals(1, manager.claimableCount(user), "the task can still be claimed");
+        verify(user, times(0)).givePoints(anyInt(), anyInt(), anyString(), anyString(), anyInt());
+        verify(user, times(0)).givePoints(anyInt(), anyInt(), anyString());
     }
 
     @Test

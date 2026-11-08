@@ -17,6 +17,11 @@ public class RemoveFriendEvent extends MessageHandler {
     }
 
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         int count = this.packet.readInt();
         if (count <= 0 || count > MAX_BATCH_SIZE) return;
@@ -24,6 +29,8 @@ public class RemoveFriendEvent extends MessageHandler {
         for (int i = 0; i < count; i++) {
             int userId = this.packet.readInt();
             if (userId <= 0) continue;
+            // Only a current friend is removed: any id used to run the delete and reach that user's client.
+            if (this.client.getUser().getMessenger().getFriend(userId) == null) continue;
 
             this.removedFriends.add(userId);
 
@@ -40,6 +47,8 @@ public class RemoveFriendEvent extends MessageHandler {
             }
         }
 
-        this.client.sendResponse(new RemoveFriendComposer(this.removedFriends));
+        if (!this.removedFriends.isEmpty()) {
+            this.client.sendResponse(new RemoveFriendComposer(this.removedFriends));
+        }
     }
 }

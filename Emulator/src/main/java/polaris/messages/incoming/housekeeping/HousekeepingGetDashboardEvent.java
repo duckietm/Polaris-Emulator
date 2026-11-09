@@ -19,6 +19,39 @@ public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
             return;
         }
 
+        Stats stats = stats();
+
+        this.client.sendResponse(new HousekeepingDashboardComposer(
+                stats.onlineUsers(),
+                stats.totalUsers(),
+                stats.activeRooms(),
+                stats.totalRooms(),
+                stats.peakOnlineToday(),
+                stats.peakOnlineAllTime(),
+                stats.pendingTickets(),
+                stats.sanctionsLast24h(),
+                stats.uptimeSeconds(),
+                stats.version()));
+    }
+
+    /** The dashboard headline numbers, also read by the RCON housekeeping command (hotel.dashboard). */
+    public record Stats(
+            int onlineUsers,
+            int totalUsers,
+            int activeRooms,
+            int totalRooms,
+            int peakOnlineToday,
+            int peakOnlineAllTime,
+            int pendingTickets,
+            int sanctionsLast24h,
+            int uptimeSeconds,
+            String version) {}
+
+    /**
+     * Reads the dashboard numbers. A table that cannot be read leaves its numbers at 0. The hotel
+     * keeps no peak, so both peaks are the current online count.
+     */
+    public static Stats stats() {
         int onlineUsers =
                 Emulator.getGameEnvironment().getUserManager().getOnlineUsers().size();
         int activeRooms = 0;
@@ -49,7 +82,7 @@ public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
             }
 
             try (PreparedStatement statement =
-                            connection.prepareStatement("SELECT COUNT(*) FROM support_tickets WHERE state = 0");
+                            connection.prepareStatement("SELECT COUNT(*) FROM support_tickets WHERE state IN (1, 2)");
                     ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) pendingTickets = rs.getInt(1);
             }
@@ -67,9 +100,8 @@ public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
         }
 
         int uptime = (int) ((System.currentTimeMillis() - HOUSEKEEPING_BOOT_MILLIS) / 1000);
-        String version = "Polaris";
 
-        this.client.sendResponse(new HousekeepingDashboardComposer(
+        return new Stats(
                 onlineUsers,
                 totalUsers,
                 activeRooms,
@@ -79,7 +111,7 @@ public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
                 pendingTickets,
                 sanctionsLast24h,
                 Math.max(uptime, 0),
-                version));
+                "Polaris");
     }
 
     // Approximate uptime — captured at class-load time rather than emu startup

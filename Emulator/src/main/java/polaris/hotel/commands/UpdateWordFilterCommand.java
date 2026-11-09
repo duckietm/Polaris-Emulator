@@ -13,7 +13,7 @@ public class UpdateWordFilterCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        Emulator.getGameEnvironment().getWordFilter().reload();
+        reload();
 
         gameClient
                 .getUser()
@@ -22,5 +22,10 @@ public class UpdateWordFilterCommand extends Command {
                         RoomChatMessageBubbles.ALERT);
 
         return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() {
+        Emulator.getGameEnvironment().getWordFilter().reload();
     }
 }

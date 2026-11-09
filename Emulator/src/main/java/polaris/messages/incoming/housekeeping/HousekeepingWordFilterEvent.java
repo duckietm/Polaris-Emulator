@@ -4,7 +4,6 @@ import polaris.database.SqlQueries;
 import polaris.hotel.commands.UpdateWordFilterCommand;
 import polaris.hotel.modtool.HousekeepingAuditLog;
 import polaris.hotel.modtool.WordFilter;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Adds a word to the word filter (or changes its replacement) and removes one, then reloads the
@@ -18,16 +17,16 @@ public class HousekeepingWordFilterEvent extends HousekeepingHandler {
         return HousekeepingAreas.HOTEL;
     }
 
-    static final String ADD = "add";
-    static final String REMOVE = "remove";
+    public static final String ADD = "add";
+    public static final String REMOVE = "remove";
 
-    static final String ACTION_PREFIX = "hotel.wordfilter.";
+    public static final String ACTION_PREFIX = "hotel.wordfilter.";
     static final String PERMISSION = "cmd_filterword";
 
     /** The wordfilter columns: `key` varchar(256), `replacement` varchar(16). */
-    static final int MAX_WORD_LENGTH = 256;
+    public static final int MAX_WORD_LENGTH = 256;
 
-    static final int MAX_REPLACEMENT_LENGTH = 16;
+    public static final int MAX_REPLACEMENT_LENGTH = 16;
 
     static final String ADD_SQL = "INSERT INTO wordfilter (`key`, `replacement`) VALUES (?, ?) "
             + "ON DUPLICATE KEY UPDATE `replacement` = VALUES(`replacement`)";
@@ -45,26 +44,50 @@ public class HousekeepingWordFilterEvent extends HousekeepingHandler {
         }
 
         String action = HousekeepingInputGuard.normalize(this.packet.readString());
-        String word = HousekeepingInputGuard.normalize(this.packet.readString());
-        String replacement = HousekeepingInputGuard.normalize(this.packet.readString());
+        String word = this.packet.readString();
+        String replacement = this.packet.readString();
         String actionKey = ACTION_PREFIX + action;
 
         if (!this.client.getUser().hasPermission(PERMISSION)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, HousekeepingAccess.DENIED_MESSAGE));
+            this.reply(actionKey, HousekeepingResult.fail(HousekeepingAccess.DENIED_MESSAGE));
             return;
         }
 
+        UpdateWordFilterCommand command = new UpdateWordFilterCommand();
+        this.reply(
+                actionKey,
+                edit(
+                        this.operator(),
+                        action,
+                        word,
+                        replacement,
+                        () -> command.handle(
+                                this.client,
+                                new String[] {command.keys.length > 0 ? command.keys[0] : "update_wordfilter"})));
+    }
+
+    /**
+     * Adds a word (or changes its replacement; an empty replacement is the default one) or removes
+     * one, then runs {@code reload} so the filter applies the change at once.
+     */
+    public static HousekeepingResult edit(
+            HousekeepingOperator operator,
+            String rawAction,
+            String rawWord,
+            String rawReplacement,
+            HousekeepingOperator.Reload reload)
+            throws Exception {
+        String action = HousekeepingInputGuard.normalize(rawAction);
+        String word = HousekeepingInputGuard.normalize(rawWord);
+        String replacement = HousekeepingInputGuard.normalize(rawReplacement);
+        String actionKey = ACTION_PREFIX + action;
+
         if (word.isEmpty() || !HousekeepingInputGuard.isWithinLimit(word, MAX_WORD_LENGTH)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         if (!HousekeepingInputGuard.isWithinLimit(replacement, MAX_REPLACEMENT_LENGTH)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.input_too_long"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.input_too_long");
         }
 
         if (replacement.isEmpty()) replacement = WordFilter.DEFAULT_REPLACEMENT;
@@ -78,37 +101,30 @@ public class HousekeepingWordFilterEvent extends HousekeepingHandler {
                 default -> -1;
             };
         } catch (SqlQueries.DataAccessException e) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.wordfilter_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.wordfilter_failed");
         }
 
         if (changed < 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         // Re-adding a word unchanged can report 0 rows; only a removal that matched nothing is an error.
         if (changed == 0 && REMOVE.equals(action)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.word_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.word_not_found");
         }
 
-        UpdateWordFilterCommand reload = new UpdateWordFilterCommand();
-        reload.handle(this.client, new String[] {reload.keys.length > 0 ? reload.keys[0] : "update_wordfilter"});
+        reload.run();
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 actionKey,
                 HousekeepingAuditLog.TARGET_HOTEL,
                 0,
                 "",
                 "word=" + HousekeepingInputGuard.auditValue(word)
                         + (ADD.equals(action) ? " replacement=" + HousekeepingInputGuard.auditValue(replacement) : ""),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, 0, ""));
+                operator.ip());
+        return HousekeepingResult.ok(0);
     }
 }

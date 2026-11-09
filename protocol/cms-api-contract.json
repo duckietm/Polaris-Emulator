@@ -86,6 +86,10 @@
     "giveuserclothing",
     "modifysubscription",
     "changeusername",
-    "updateitems"
+    "updateitems",
+    "housekeeping",
+    "banuser",
+    "unbanuser",
+    "reloadcontent"
   ]
 }

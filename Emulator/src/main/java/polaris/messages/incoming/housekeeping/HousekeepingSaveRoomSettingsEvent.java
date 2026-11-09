@@ -2,17 +2,18 @@ package polaris.messages.incoming.housekeeping;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.modtool.HousekeepingAuditLog;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomManager;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import polaris.messages.outgoing.rooms.RoomSettingsUpdatedComposer;
 
 /**
  * Saves the basic settings of any room from housekeeping: name, description,
  * maximum users, category, trade mode and tags. The room is written through
- * immediately, and anyone inside is told its settings changed.
+ * immediately, and anyone inside is told its settings changed. The work is
+ * {@link #save}, shared with the RCON housekeeping command.
  */
 public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
     @Override
@@ -20,7 +21,7 @@ public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
         return HousekeepingAreas.ROOMS;
     }
 
-    private static final String ACTION_KEY = "room.settings";
+    public static final String ACTION_KEY = "room.settings";
 
     @Override
     public int getRatelimit() {
@@ -34,15 +35,15 @@ public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
         }
 
         int roomId = this.packet.readInt();
-        String name = HousekeepingInputGuard.normalize(this.packet.readString());
-        String description = HousekeepingInputGuard.normalize(this.packet.readString());
+        String name = this.packet.readString();
+        String description = this.packet.readString();
         int usersMax = this.packet.readInt();
         int categoryId = this.packet.readInt();
         int tradeMode = this.packet.readInt();
         int tagCount = this.packet.readInt();
 
         if (!HousekeepingRoomSettingsInput.isValidTagCount(tagCount)) {
-            this.fail("housekeeping.error.invalid_input");
+            this.reply(ACTION_KEY, HousekeepingResult.fail("housekeeping.error.invalid_input"));
             return;
         }
 
@@ -52,62 +53,103 @@ public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
             tags.add(this.packet.readString());
         }
 
-        String joinedTags = HousekeepingRoomSettingsInput.joinTags(tags);
+        this.reply(
+                ACTION_KEY,
+                save(
+                        this.operator(),
+                        roomId,
+                        name,
+                        description,
+                        usersMax,
+                        categoryId,
+                        tradeMode,
+                        tags,
+                        room -> HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)));
+    }
+
+    /**
+     * Saves a room's settings. The panel sends every field; a null field (RCON may leave one out)
+     * keeps the room's current value. The limits are {@link HousekeepingRoomSettingsInput}'s.
+     *
+     * @param mayManage the operator's rank guard on the room's owner
+     */
+    public static HousekeepingResult save(
+            HousekeepingOperator operator,
+            int roomId,
+            String rawName,
+            String rawDescription,
+            Integer usersMaxValue,
+            Integer categoryIdValue,
+            Integer tradeModeValue,
+            List<String> tagValues,
+            Predicate<Room> mayManage) {
+        String name = rawName == null ? null : HousekeepingInputGuard.normalize(rawName);
+        String description = rawDescription == null ? null : HousekeepingInputGuard.normalize(rawDescription);
+        String joinedTags = null;
+
+        if (tagValues != null) {
+            if (!HousekeepingRoomSettingsInput.isValidTagCount(tagValues.size())) {
+                return HousekeepingResult.fail("housekeeping.error.invalid_input");
+            }
+
+            joinedTags = HousekeepingRoomSettingsInput.joinTags(tagValues);
+
+            if (joinedTags == null) {
+                return HousekeepingResult.fail("housekeeping.error.invalid_input");
+            }
+        }
 
         if (roomId <= 0
-                || joinedTags == null
-                || !HousekeepingRoomSettingsInput.isValidName(name)
-                || !HousekeepingRoomSettingsInput.isValidDescription(description)
-                || !HousekeepingRoomSettingsInput.isValidUsersMax(usersMax)
-                || !HousekeepingRoomSettingsInput.isValidTradeMode(tradeMode)) {
-            this.fail("housekeeping.error.invalid_input");
-            return;
+                || (name != null && !HousekeepingRoomSettingsInput.isValidName(name))
+                || (description != null && !HousekeepingRoomSettingsInput.isValidDescription(description))
+                || (usersMaxValue != null && !HousekeepingRoomSettingsInput.isValidUsersMax(usersMaxValue))
+                || (tradeModeValue != null && !HousekeepingRoomSettingsInput.isValidTradeMode(tradeModeValue))) {
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         RoomManager roomManager = Emulator.getGameEnvironment().getRoomManager();
 
-        if (roomManager.getCategory(categoryId) == null) {
-            this.fail("housekeeping.error.invalid_category");
-            return;
+        if (categoryIdValue != null && roomManager.getCategory(categoryIdValue) == null) {
+            return HousekeepingResult.fail("housekeeping.error.invalid_category");
         }
 
         Room room = roomManager.loadRoom(roomId, false);
 
         if (room == null) {
-            this.fail("housekeeping.error.room_not_found");
-            return;
+            return HousekeepingResult.fail("housekeeping.error.room_not_found");
         }
 
-        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)) {
-            this.fail("housekeeping.error.rank_too_high");
-            return;
+        if (!mayManage.test(room)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
+
+        if (name == null) name = room.getName();
+        if (description == null) description = room.getDescription();
+        int usersMax = usersMaxValue != null ? usersMaxValue : room.getUsersMax();
+        int categoryId = categoryIdValue != null ? categoryIdValue : room.getCategory();
+        int tradeMode = tradeModeValue != null ? tradeModeValue : room.getTradeMode();
 
         room.setName(name);
         room.setDescription(description);
         room.setUsersMax(usersMax);
         room.setCategory(categoryId);
         room.setTradeMode(tradeMode);
-        room.setTags(joinedTags);
+        if (joinedTags != null) room.setTags(joinedTags);
         room.setNeedsUpdate(true);
         room.save();
 
         room.sendComposer(new RoomSettingsUpdatedComposer(room).compose());
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 HousekeepingAuditLog.TARGET_ROOM,
                 roomId,
                 name,
                 "roomId=" + roomId + " name=" + HousekeepingInputGuard.auditValue(name) + " usersMax=" + usersMax
                         + " category=" + categoryId + " tradeMode=" + tradeMode,
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
-    }
-
-    private void fail(String message) {
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, message));
+                operator.ip());
+        return HousekeepingResult.ok(roomId);
     }
 }

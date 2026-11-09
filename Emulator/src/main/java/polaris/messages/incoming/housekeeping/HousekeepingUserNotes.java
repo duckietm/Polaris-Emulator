@@ -16,6 +16,8 @@ final class HousekeepingUserNotes {
     /** Only the author removes a note. */
     static final String DELETE_SQL =
             "DELETE FROM housekeeping_user_notes WHERE id = ? AND user_id = ? AND author_id = ?";
+    /** For the system operator (RCON), which has no notes of its own to keep to. */
+    static final String DELETE_ANY_SQL = "DELETE FROM housekeeping_user_notes WHERE id = ? AND user_id = ?";
 
     private HousekeepingUserNotes() {}
 
@@ -45,5 +47,9 @@ final class HousekeepingUserNotes {
 
     static int delete(int noteId, int userId, int authorId) {
         return SqlQueries.update(DELETE_SQL, noteId, userId, authorId);
+    }
+
+    static int deleteAny(int noteId, int userId) {
+        return SqlQueries.update(DELETE_ANY_SQL, noteId, userId);
     }
 }

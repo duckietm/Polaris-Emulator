@@ -14,12 +14,17 @@ public class UpdateHotelViewCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        Emulator.getGameEnvironment().getHotelViewManager().getNewsList().reload();
-        Emulator.getGameEnvironment().getHotelViewManager().getHallOfFame().reload();
-        Emulator.getGameEnvironment().getHotelViewManager().reloadAndBroadcastLandingView();
+        reload();
 
         gameClient.getUser().whisper(Emulator.getTexts().getValue("commands.succes.cmd_update_hotel_view"));
 
         return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() {
+        Emulator.getGameEnvironment().getHotelViewManager().getNewsList().reload();
+        Emulator.getGameEnvironment().getHotelViewManager().getHallOfFame().reload();
+        Emulator.getGameEnvironment().getHotelViewManager().reloadAndBroadcastLandingView();
     }
 }

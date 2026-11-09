@@ -15,6 +15,18 @@ public class UpdateItemsCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
+        reload();
+
+        gameClient
+                .getUser()
+                .whisper(
+                        Emulator.getTexts().getValue("commands.succes.cmd_update_items"), RoomChatMessageBubbles.ALERT);
+
+        return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() {
         Emulator.getGameEnvironment().getItemManager().loadItems();
         Emulator.getGameEnvironment().getItemManager().loadCrackable();
         Emulator.getGameEnvironment().getItemManager().loadSoundTracks();
@@ -26,12 +38,5 @@ public class UpdateItemsCommand extends Command {
                 }
             }
         }
-
-        gameClient
-                .getUser()
-                .whisper(
-                        Emulator.getTexts().getValue("commands.succes.cmd_update_items"), RoomChatMessageBubbles.ALERT);
-
-        return true;
     }
 }

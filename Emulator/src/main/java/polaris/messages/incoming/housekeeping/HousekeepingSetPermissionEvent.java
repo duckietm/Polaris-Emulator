@@ -1,13 +1,13 @@
 package polaris.messages.incoming.housekeeping;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import polaris.database.SqlQueries;
 import polaris.hotel.commands.UpdatePermissionsCommand;
 import polaris.hotel.modtool.HousekeepingAuditLog;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.permissions.PermissionSetting;
 import polaris.hotel.users.User;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Sets one cell of the permission matrix (a permission for a rank) and reloads the permissions
@@ -21,7 +21,7 @@ public class HousekeepingSetPermissionEvent extends HousekeepingHandler {
         return HousekeepingAreas.PERMISSIONS;
     }
 
-    static final String ACTION_KEY = "hotel.permission.set";
+    public static final String ACTION_KEY = "hotel.permission.set";
     static final String PERMISSION = "cmd_update_permissions";
 
     @Override
@@ -35,68 +35,94 @@ public class HousekeepingSetPermissionEvent extends HousekeepingHandler {
             return;
         }
 
-        String permissionKey = HousekeepingInputGuard.normalize(this.packet.readString());
+        String requestedKey = this.packet.readString();
         int rankId = this.packet.readInt();
-        int value = this.packet.readInt();
+        int requestedValue = this.packet.readInt();
 
         if (!this.client.getUser().hasPermission(PERMISSION)) {
-            this.fail(HousekeepingAccess.DENIED_MESSAGE);
+            this.reply(ACTION_KEY, HousekeepingResult.fail(HousekeepingAccess.DENIED_MESSAGE));
             return;
         }
 
         if (!HousekeepingTargetRankGuard.canTargetRank(this.client.getUser(), rankId)) {
-            this.fail("housekeeping.error.rank_too_high");
+            this.reply(ACTION_KEY, HousekeepingResult.fail("housekeeping.error.rank_too_high"));
             return;
         }
+
+        UpdatePermissionsCommand command = new UpdatePermissionsCommand();
+        this.reply(
+                ACTION_KEY,
+                set(
+                        this.operator(),
+                        requestedKey,
+                        rankId,
+                        requestedValue,
+                        (permissionKey, value) -> !HousekeepingTargetRankGuard.isTopRank(this.client.getUser())
+                                && !holds(operatorSetting(this.client.getUser(), permissionKey), value),
+                        () -> command.handle(
+                                this.client,
+                                new String[] {command.keys.length > 0 ? command.keys[0] : "update_permissions"})));
+    }
+
+    /**
+     * Sets one cell of the permission matrix (0 to the permission's max_value) and runs
+     * {@code reload} so everyone online gets the new table. A change that would leave nobody able to
+     * reach the panel or edit permissions is refused.
+     *
+     * @param refuseGrant whether the operator may not grant this value of this permission: below the
+     *     top rank an operator grants only what their own rank holds
+     */
+    public static HousekeepingResult set(
+            HousekeepingOperator operator,
+            String rawPermissionKey,
+            int rankId,
+            int value,
+            BiPredicate<String, Integer> refuseGrant,
+            HousekeepingOperator.Reload reload)
+            throws Exception {
+        String permissionKey = HousekeepingInputGuard.normalize(rawPermissionKey);
 
         try {
             Optional<Integer> maxValue = HousekeepingPermissionMatrix.maxValue(permissionKey);
 
             if (permissionKey.isEmpty() || maxValue.isEmpty() || !HousekeepingPermissionMatrix.rankExists(rankId)) {
-                this.fail("housekeeping.error.invalid_input");
-                return;
+                return HousekeepingResult.fail("housekeeping.error.invalid_input");
             }
 
             if (value < 0 || value > maxValue.get()) {
-                this.fail("housekeeping.error.invalid_input");
-                return;
+                return HousekeepingResult.fail("housekeeping.error.invalid_input");
             }
 
             // Below the top rank an operator grants only what their own rank holds: lowering a rank's
             // setting was checked, widening it past the operator's own was not, so an operator could
             // give a lower rank (and an alt moved onto it) what they did not have themselves.
-            if (!HousekeepingTargetRankGuard.isTopRank(this.client.getUser())
-                    && !holds(operatorSetting(this.client.getUser(), permissionKey), value)) {
-                this.fail(HousekeepingAccess.DENIED_MESSAGE);
-                return;
+            if (refuseGrant.test(permissionKey, value)) {
+                return HousekeepingResult.fail(HousekeepingAccess.DENIED_MESSAGE);
             }
 
             if (HousekeepingLockoutGuard.permissionChangeLocksOut(permissionKey, rankId, value)) {
-                this.fail("housekeeping.error.lockout");
-                return;
+                return HousekeepingResult.fail("housekeeping.error.lockout");
             }
 
             // The row exists (checked above); an unchanged value may report 0 rows and is still fine.
             HousekeepingPermissionMatrix.set(permissionKey, rankId, value);
         } catch (SqlQueries.DataAccessException e) {
-            this.fail("housekeeping.error.permission_failed");
-            return;
+            return HousekeepingResult.fail("housekeeping.error.permission_failed");
         }
 
-        UpdatePermissionsCommand reload = new UpdatePermissionsCommand();
-        reload.handle(this.client, new String[] {reload.keys.length > 0 ? reload.keys[0] : "update_permissions"});
+        reload.run();
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 HousekeepingAuditLog.TARGET_HOTEL,
                 rankId,
                 "",
                 "permission=" + HousekeepingInputGuard.auditValue(permissionKey) + " rank=" + rankId + " value="
                         + value,
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, 0, ""));
+                operator.ip());
+        return HousekeepingResult.ok(0);
     }
 
     /** The operator's own setting for this permission, as a matrix value. */
@@ -115,9 +141,5 @@ public class HousekeepingSetPermissionEvent extends HousekeepingHandler {
         return value == PermissionSetting.DISALLOWED.ordinal()
                 || own == PermissionSetting.ALLOWED.ordinal()
                 || own == value;
-    }
-
-    private void fail(String message) {
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, message));
     }
 }

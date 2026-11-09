@@ -83,6 +83,10 @@
     "modifysubscription",
     "changeusername",
     "updateitems",
+    "housekeeping",
+    "banuser",
+    "unbanuser",
+    "reloadcontent",
     "stressstart",
     "stressstatus",
     "stressstop"

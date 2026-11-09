@@ -3,7 +3,6 @@ package polaris.messages.incoming.housekeeping;
 import polaris.hotel.MaintenanceCountdown;
 import polaris.hotel.MaintenanceMode;
 import polaris.hotel.modtool.HousekeepingAuditLog;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import polaris.messages.outgoing.housekeeping.HousekeepingMaintenanceStatusComposer;
 
 /**
@@ -17,12 +16,12 @@ public class HousekeepingMaintenanceEvent extends HousekeepingHandler {
         return HousekeepingAreas.HOTEL;
     }
 
-    static final String STATUS = "status";
-    static final String START = "start";
-    static final String CANCEL = "cancel";
-    static final String DISABLE = "disable";
+    public static final String STATUS = "status";
+    public static final String START = "start";
+    public static final String CANCEL = "cancel";
+    public static final String DISABLE = "disable";
 
-    static final String ACTION_PREFIX = "hotel.maintenance.";
+    public static final String ACTION_PREFIX = "hotel.maintenance.";
     static final String PERMISSION = "cmd_maintenance";
 
     @Override
@@ -37,29 +36,15 @@ public class HousekeepingMaintenanceEvent extends HousekeepingHandler {
         }
 
         String action = HousekeepingInputGuard.normalize(this.packet.readString());
-        String message = HousekeepingInputGuard.normalize(this.packet.readString());
+        String message = this.packet.readString();
         int minutes = this.packet.readInt();
-        String actionKey = ACTION_PREFIX + action;
 
         if (!STATUS.equals(action)) {
-            String error = this.apply(action, message, minutes);
+            HousekeepingResult result = this.client.getUser().hasPermission(PERMISSION)
+                    ? apply(this.operator(), action, message, minutes)
+                    : HousekeepingResult.fail(HousekeepingAccess.DENIED_MESSAGE);
 
-            if (error != null) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, error));
-            } else {
-                HousekeepingAuditLog.log(
-                        this.client.getUser().getUserInfo().getId(),
-                        this.client.getUser().getUserInfo().getUsername(),
-                        actionKey,
-                        HousekeepingAuditLog.TARGET_HOTEL,
-                        0,
-                        "",
-                        START.equals(action)
-                                ? "minutes=" + minutes + " message=" + HousekeepingInputGuard.auditValue(message)
-                                : "",
-                        this.client.getUser().getUserInfo().getIpLogin());
-                this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, 0, ""));
-            }
+            this.reply(ACTION_PREFIX + action, result);
         }
 
         this.client.sendResponse(new HousekeepingMaintenanceStatusComposer(
@@ -69,12 +54,37 @@ public class HousekeepingMaintenanceEvent extends HousekeepingHandler {
                 MaintenanceCountdown.getEndsAt()));
     }
 
-    /** Applies a change and returns the error key, or null when it went through. */
-    private String apply(String action, String message, int minutes) {
-        if (!this.client.getUser().hasPermission(PERMISSION)) {
-            return HousekeepingAccess.DENIED_MESSAGE;
+    /**
+     * Applies a change ({@link #START}, {@link #CANCEL} or {@link #DISABLE}) and audits it. A start
+     * closes the hotel after {@code minutes} (0 to {@link MaintenanceCountdown#MAX_MINUTES}; 0 closes
+     * at once) with the message, or the default one when it is empty.
+     */
+    public static HousekeepingResult apply(
+            HousekeepingOperator operator, String rawAction, String rawMessage, int minutes) {
+        String action = HousekeepingInputGuard.normalize(rawAction);
+        String message = HousekeepingInputGuard.normalize(rawMessage);
+        String error = change(action, message, minutes);
+
+        if (error != null) {
+            return HousekeepingResult.fail(error);
         }
 
+        HousekeepingAuditLog.log(
+                operator.id(),
+                operator.name(),
+                ACTION_PREFIX + action,
+                HousekeepingAuditLog.TARGET_HOTEL,
+                0,
+                "",
+                START.equals(action)
+                        ? "minutes=" + minutes + " message=" + HousekeepingInputGuard.auditValue(message)
+                        : "",
+                operator.ip());
+        return HousekeepingResult.ok(0);
+    }
+
+    /** Applies a change and returns the error key, or null when it went through. */
+    private static String change(String action, String message, int minutes) {
         return switch (action) {
             case START -> {
                 if (minutes < 0 || minutes > MaintenanceCountdown.MAX_MINUTES) {

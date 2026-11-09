@@ -14,8 +14,7 @@ public class UpdateTextsCommand extends Command {
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         try {
-            Emulator.getTexts().reload();
-            Emulator.getGameEnvironment().getCommandHandler().reloadCommands();
+            reload();
             gameClient
                     .getUser()
                     .whisper(
@@ -30,5 +29,11 @@ public class UpdateTextsCommand extends Command {
         }
 
         return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() throws Exception {
+        Emulator.getTexts().reload();
+        Emulator.getGameEnvironment().getCommandHandler().reloadCommands();
     }
 }

@@ -1,9 +1,9 @@
 package polaris.messages.incoming.housekeeping;
 
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomState;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Toggle the room state between OPEN (open) and LOCKED (closed). The
@@ -30,26 +30,41 @@ public class HousekeepingRoomStateEvent extends HousekeepingHandler {
 
         int roomId = this.packet.readInt();
         boolean open = this.packet.readBoolean();
-        String actionKey = open ? "room.open" : "room.close";
+
+        this.reply(
+                actionKey(open),
+                setState(
+                        this.operator(),
+                        roomId,
+                        open,
+                        room -> HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)));
+    }
+
+    public static String actionKey(boolean open) {
+        return open ? "room.open" : "room.close";
+    }
+
+    /**
+     * Opens or locks a room, loaded or not, and stores it.
+     *
+     * @param mayManage the operator's rank guard on the room's owner
+     */
+    public static HousekeepingResult setState(
+            HousekeepingOperator operator, int roomId, boolean open, Predicate<Room> mayManage) {
+        String actionKey = actionKey(open);
 
         if (roomId <= 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
         if (room == null) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.room_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.room_not_found");
         }
 
-        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayManage.test(room)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
@@ -58,14 +73,14 @@ public class HousekeepingRoomStateEvent extends HousekeepingHandler {
         room.save();
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 actionKey,
                 polaris.hotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
                 roomId,
                 room.getName(),
                 "roomId=" + roomId + " open=" + open,
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(roomId);
     }
 }

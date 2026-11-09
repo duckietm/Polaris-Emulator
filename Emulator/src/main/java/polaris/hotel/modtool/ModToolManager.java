@@ -568,6 +568,31 @@ public class ModToolManager {
             int targetUserId, User moderator, String reason, int duration, ModToolBanType type, int cfhTopic) {
         if (moderator == null) return null;
 
+        return this.ban(targetUserId, moderator, moderator.getUserInfo().getId(), reason, duration, type, cfhTopic);
+    }
+
+    /** The staff id the bans of the system operator (the RCON banuser command) carry. */
+    public static final int SYSTEM_STAFF_ID = 0;
+
+    /**
+     * Bans like {@link #ban(int, User, String, int, ModToolBanType, int)} on behalf of the system
+     * operator (the RCON banuser command): there is no moderator, so no rank check, the ban rows carry
+     * {@link #SYSTEM_STAFF_ID} and the plugin event a null moderator. Accounts sharing the address or
+     * machine are banned with it as for a moderator, up to {@link #MAX_SHARED_ACCOUNT_BANS}. Returns
+     * an empty list for an unknown user.
+     */
+    public List<ModToolBan> banAsSystem(int targetUserId, String reason, int duration, ModToolBanType type) {
+        return this.ban(targetUserId, null, SYSTEM_STAFF_ID, reason, duration, type, 0);
+    }
+
+    private List<ModToolBan> ban(
+            int targetUserId,
+            User moderator,
+            int moderatorId,
+            String reason,
+            int duration,
+            ModToolBanType type,
+            int cfhTopic) {
         List<ModToolBan> bans = new ArrayList<>();
         User target = Emulator.getGameEnvironment().getUserManager().getUser(targetUserId);
         UserInfo offlineInfo = target != null ? target.getUserInfo() : UserManager.getOfflineUserInfo(targetUserId);
@@ -576,7 +601,7 @@ public class ModToolManager {
             return bans;
         }
 
-        if (!canModerateTarget(moderator, targetUserId)) {
+        if (moderator != null && !canModerateTarget(moderator, targetUserId)) {
             return bans;
         }
 
@@ -596,7 +621,7 @@ public class ModToolManager {
                 targetUserId,
                 offlineInfo != null ? offlineInfo.getIpLogin() : "offline",
                 offlineInfo != null ? offlineInfo.getMachineID() : "offline",
-                moderator.getUserInfo().getId(),
+                moderatorId,
                 banExpiry(Emulator.getIntUnixTimestamp(), duration),
                 reason,
                 type,
@@ -637,12 +662,17 @@ public class ModToolManager {
                 sharing.addAll(Emulator.getGameServer().getGameClientManager().getUsersWithMachineId(ban.machineId));
             }
 
-            for (User h : sharedAccountsToBan(sharing, targetUserId, moderator)) {
+            // The system operator has no rank to stay below.
+            List<User> toBan = moderator != null
+                    ? sharedAccountsToBan(sharing, targetUserId, moderator)
+                    : sharedAccountsToBanAsSystem(sharing, targetUserId);
+
+            for (User h : toBan) {
                 ModToolBan shared = new ModToolBan(
                         h.getUserInfo().getId(),
                         h.getUserInfo().getIpLogin(),
                         h.getClient() != null ? h.getClient().getMachineId() : "offline",
-                        moderator.getUserInfo().getId(),
+                        moderatorId,
                         ban.expireDate,
                         reason,
                         type,
@@ -677,6 +707,20 @@ public class ModToolManager {
 
             int id = h.getUserInfo().getId();
             if (id == targetUserId || id == moderatorId || !canModerateTarget(moderator, id)) continue;
+
+            accounts.add(h);
+        }
+
+        return accounts;
+    }
+
+    /** As above for the system operator, which has no rank to stay below: every account but the target. */
+    static List<User> sharedAccountsToBanAsSystem(Collection<User> sharing, int targetUserId) {
+        List<User> accounts = new ArrayList<>();
+
+        for (User h : sharing) {
+            if (accounts.size() >= MAX_SHARED_ACCOUNT_BANS) break;
+            if (h == null || h.getUserInfo().getId() == targetUserId) continue;
 
             accounts.add(h);
         }
@@ -858,8 +902,16 @@ public class ModToolManager {
             + " AND (staff.id IS NULL OR staff.id = ? OR staff.`rank` <= ?)";
 
     public void pickTicket(ModToolIssue issue, User user) {
-        issue.modId = user.getUserInfo().getId();
-        issue.modName = user.getUserInfo().getUsername();
+        this.pickTicket(issue, user.getUserInfo().getId(), user.getUserInfo().getUsername());
+    }
+
+    /**
+     * Picks a ticket for a moderator given by id and name, such as the system operator of the RCON
+     * housekeeping command, which has no User.
+     */
+    public void pickTicket(ModToolIssue issue, int moderatorId, String moderatorName) {
+        issue.modId = moderatorId;
+        issue.modName = moderatorName;
         issue.state = ModToolTicketState.PICKED;
 
         this.updateTicketToMods(issue);

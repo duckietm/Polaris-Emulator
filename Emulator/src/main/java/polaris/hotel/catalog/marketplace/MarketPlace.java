@@ -38,7 +38,7 @@ import polaris.plugin.events.users.UserPointsEvent;
 public class MarketPlace {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlace.class);
     private static final String PURCHASE_OFFER_SQL = """
-            SELECT item_id, user_id, price, state, timestamp
+            SELECT item_id, user_id, price, state, timestamp, nft
             FROM marketplace_items
             WHERE id = ? LIMIT 1
             """;
@@ -139,6 +139,8 @@ public class MarketPlace {
 
         if (state == MarketPlaceState.SOLD.getState()) {
             getCredits(client);
+            // A sold collectible was paid out at the sale; clearing the tab only forgets it.
+            NftMarketplace.forgetSoldOffers(user);
             return true;
         }
 
@@ -272,9 +274,19 @@ public class MarketPlace {
      */
     public static List<MarketPlaceOffer> getOffers(
             int minPrice, int maxPrice, String search, int sort, boolean combineUniques) {
+        return getOffers(minPrice, maxPrice, search, sort, combineUniques, MarketplaceOffersQuery.SOURCE_FURNI);
+    }
+
+    /**
+     * @param offerSource AIR's "Type" menu: 0 every offer, 1 collectibles only, 2 furni only. Collectibles are only
+     *     listed while the Collectibles marketplace is on.
+     */
+    public static List<MarketPlaceOffer> getOffers(
+            int minPrice, int maxPrice, String search, int sort, boolean combineUniques, int offerSource) {
         List<MarketPlaceOffer> offers = new ArrayList<>(10);
-        MarketplaceOffersQuery.Request request =
-                new MarketplaceOffersQuery.Request(minPrice, maxPrice, search, sort, combineUniques);
+        NftMarketplaceSettings nft = NftMarketplaceSettings.current();
+        MarketplaceOffersQuery.Request request = new MarketplaceOffersQuery.Request(
+                minPrice, maxPrice, search, sort, combineUniques, offerSource, nft.active(), nft.offerSeconds());
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(MarketplaceOffersQuery.sql(request))) {
@@ -311,7 +323,7 @@ public class MarketPlace {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp)) ORDER BY DATE(from_unixtime(marketplace_items.timestamp)) ASC",
+                        "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND marketplace_items.nft = 0 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp)) ORDER BY DATE(from_unixtime(marketplace_items.timestamp)) ASC",
                         ResultSet.TYPE_SCROLL_INSENSITIVE,
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, itemId);
@@ -354,7 +366,7 @@ public class MarketPlace {
         int lowest = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COUNT(*) as number, MIN(price) as lowest FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND timestamp >= ? AND items_base.sprite_id = ?",
+                        "SELECT COUNT(*) as number, MIN(price) as lowest FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND nft = 0 AND timestamp >= ? AND items_base.sprite_id = ?",
                         ResultSet.TYPE_SCROLL_INSENSITIVE,
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, Emulator.getIntUnixTimestamp() - 172800);
@@ -392,7 +404,7 @@ public class MarketPlace {
         int avg = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 2 AND DATE(from_unixtime(timestamp)) >= NOW() - INTERVAL ? DAY AND items_base.sprite_id = ?",
+                        "SELECT AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 2 AND nft = 0 AND DATE(from_unixtime(timestamp)) >= NOW() - INTERVAL ? DAY AND items_base.sprite_id = ?",
                         ResultSet.TYPE_SCROLL_INSENSITIVE,
                         ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, days);
@@ -441,7 +453,9 @@ public class MarketPlace {
                                                     - MarketplaceOffersQuery.LISTING_WINDOW_SECONDS;
                                     boolean ownOffer = set.getInt("user_id")
                                             == client.getUser().getUserInfo().getId();
-                                    if (set.getInt("state") != 1 || expired || ownOffer) {
+                                    // A collectible is bought through the Collectibles marketplace, for emeralds.
+                                    boolean collectible = set.getInt("nft") == 1;
+                                    if (set.getInt("state") != 1 || expired || ownOffer || collectible) {
                                         sendErrorMessage(client, set.getInt("item_id"), offerId);
                                     } else if ((MARKETPLACE_CURRENCY == 0
                                                     && price
@@ -549,7 +563,7 @@ public class MarketPlace {
                         "SELECT marketplace_items.*, COUNT( * ) AS count\n" + "FROM marketplace_items\n"
                                 + "INNER JOIN items ON marketplace_items.item_id = items.id\n"
                                 + "INNER JOIN items_base ON items.item_id = items_base.id\n"
-                                + "WHERE items_base.sprite_id = ( \n"
+                                + "WHERE marketplace_items.nft = 0 AND items_base.sprite_id = ( \n"
                                 + "SELECT items_base.sprite_id\n"
                                 + "FROM items_base\n"
                                 + "WHERE items_base.id = ? LIMIT 1)\n"
@@ -580,13 +594,32 @@ public class MarketPlace {
     public static boolean sellItem(GameClient client, UserItem item, int price) {
         if (item == null || client == null) return false;
 
+        if (!item.getBaseItem().allowMarketplace()) {
+            return false;
+        }
+
+        return postOffer(client, item, price, false);
+    }
+
+    /**
+     * Puts the item on sale. A collectible offer ({@code nft}) is priced in emeralds; the caller has checked the
+     * Collectibles marketplace rules.
+     */
+    static boolean postOffer(GameClient client, UserItem item, int price, boolean nft) {
+        if (item == null || client == null) return false;
+
         // A rented item expires back to the hotel: listing it sells a loan.
-        if (!item.getBaseItem().allowMarketplace() || item.hasRentPeriod() || !isValidListingPrice(price)) {
+        if (item.hasRentPeriod() || !isValidListingPrice(price)) {
             return false;
         }
 
         MarketPlaceItemOfferedEvent event = new MarketPlaceItemOfferedEvent(client.getUser(), item, price);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+            return false;
+        }
+
+        // A plugin may change a collectible's price, but not past the Collectibles marketplace limits.
+        if (nft && !NftMarketplaceSettings.current().isValidPrice(event.price)) {
             return false;
         }
 
@@ -599,7 +632,7 @@ public class MarketPlace {
 
         event.item.setFromGift(false);
 
-        MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getUser());
+        MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getUser(), nft);
         if (!offer.isPersisted()) {
             event.item.setFromGift(fromGift);
             LOGGER.warn(
@@ -631,6 +664,9 @@ public class MarketPlace {
     public static int claimSoldCredits(GameClient client) {
         Set<MarketPlaceOffer> offers = new HashSet<>();
         offers.addAll(client.getUser().getInventory().getMarketplaceItems());
+
+        // Collectible sales are paid out in emeralds when they happen, never here.
+        offers.removeIf(MarketPlaceOffer::isNft);
 
         long claimable = 0;
         for (MarketPlaceOffer offer : offers) {

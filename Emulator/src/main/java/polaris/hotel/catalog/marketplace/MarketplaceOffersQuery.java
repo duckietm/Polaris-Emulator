@@ -23,11 +23,40 @@ final class MarketplaceOffersQuery {
 
     private MarketplaceOffersQuery() {}
 
+    /** AIR's "Type" menu of the search (offer source): every offer, collectibles only, furni only. */
+    static final int SOURCE_ALL = 0;
+
+    static final int SOURCE_COLLECTIBLES = 1;
+    static final int SOURCE_FURNI = 2;
+
     /**
      * One search. A price bound is applied when it is positive (the upper one only above the
-     * lower one) and compared with the commission-inclusive price the buyer pays.
+     * lower one) and compared with the price the buyer pays: commission included for furni, the
+     * asking price for a collectible. Collectible offers are only listed while
+     * {@code includeCollectibles} is on (the Collectibles marketplace is enabled).
      */
-    record Request(int minPrice, int maxPrice, String search, int sort, boolean combineUniques) {
+    record Request(
+            int minPrice,
+            int maxPrice,
+            String search,
+            int sort,
+            boolean combineUniques,
+            int offerSource,
+            boolean includeCollectibles,
+            int collectibleWindowSeconds) {
+
+        /** A furni-only search, as before the Collectibles marketplace. */
+        Request(int minPrice, int maxPrice, String search, int sort, boolean combineUniques) {
+            this(minPrice, maxPrice, search, sort, combineUniques, SOURCE_FURNI, false, LISTING_WINDOW_SECONDS);
+        }
+
+        boolean listsFurni() {
+            return this.offerSource != SOURCE_COLLECTIBLES;
+        }
+
+        boolean listsCollectibles() {
+            return this.includeCollectibles && this.offerSource != SOURCE_FURNI;
+        }
 
         boolean hasMinPrice() {
             return this.minPrice > 0;
@@ -46,37 +75,49 @@ final class MarketplaceOffersQuery {
         StringBuilder sql = new StringBuilder(1600);
 
         sql.append("SELECT m.id, m.item_id, m.user_id, m.price, m.timestamp, m.sold_timestamp, m.state,")
-                .append(" g.base_item_id, mi.limited_data AS ltd_data,")
+                .append(" m.nft, g.base_item_id, mi.limited_data AS ltd_data,")
                 .append(" g.avg, g.minPrice, g.maxPrice, g.number,")
                 .append(" COALESCE(s.sold_today, 0) AS sold_count_today\n");
 
         // Every active listing of a furni, in the listing window and the price band. The average is
         // whole credits, the unit the offer reads it in.
         sql.append("FROM (\n")
-                .append("    SELECT li.item_id AS base_item_id, FLOOR(AVG(l.price)) AS avg, MIN(l.price) AS minPrice,")
+                .append("    SELECT li.item_id AS base_item_id, l.nft AS nft, FLOOR(AVG(l.price)) AS avg,")
+                .append(" MIN(l.price) AS minPrice,")
                 .append(" MAX(l.price) AS maxPrice, COUNT(*) AS number,\n")
                 .append("        CAST(SUBSTRING_INDEX(GROUP_CONCAT(l.id ORDER BY l.price ASC, l.id ASC SEPARATOR ','),")
                 .append(" ',', 1) AS UNSIGNED) AS cheapest_id\n")
                 .append("    FROM marketplace_items l\n")
                 .append("    INNER JOIN items li ON li.id = l.item_id\n")
-                .append("    WHERE l.state = 1 AND l.timestamp > ? AND l.price BETWEEN ? AND ?\n");
+                .append("    WHERE l.state = 1")
+                .append(" AND ((l.nft = 0 AND l.timestamp > ?) OR (l.nft = 1 AND l.timestamp > ?))")
+                .append(" AND l.price BETWEEN ? AND ?\n");
+        if (!request.listsFurni() && !request.listsCollectibles()) {
+            sql.append("        AND 0 = 1\n");
+        } else if (!request.listsFurni()) {
+            sql.append("        AND l.nft = 1\n");
+        } else if (!request.listsCollectibles()) {
+            sql.append("        AND l.nft = 0\n");
+        }
         if (request.hasMinPrice()) {
-            sql.append("        AND CEIL(l.price + (l.price / 100)) >= ?\n");
+            sql.append("        AND ").append(BUYER_PRICE).append(" >= ?\n");
         }
         if (request.hasMaxPrice()) {
-            sql.append("        AND CEIL(l.price + (l.price / 100)) <= ?\n");
+            sql.append("        AND ").append(BUYER_PRICE).append(" <= ?\n");
         }
+        // A collectible offer and an older credit offer of the same nft_* furni stay separate rows.
         sql.append(
                         request.combineUniques()
-                                ? "    GROUP BY li.item_id\n"
-                                : "    GROUP BY li.item_id, li.limited_data\n")
+                                ? "    GROUP BY li.item_id, l.nft\n"
+                                : "    GROUP BY li.item_id, l.nft, li.limited_data\n")
                 .append(") g\n")
                 .append("INNER JOIN items_base bi ON bi.id = g.base_item_id\n");
 
         // The furni the catalog sells. item_ids is text: its numeric value is the furni it
         // links, which is how a listing has always been matched to the catalog. Grouping keeps
-        // a furni sold on several catalog rows from multiplying its listings.
-        sql.append("INNER JOIN (\n").append("    SELECT (ci.item_ids + 0) AS base_item_id");
+        // a furni sold on several catalog rows from multiplying its listings. A collectible is
+        // listed without a catalog row: the catalog does not sell them.
+        sql.append("LEFT JOIN (\n").append("    SELECT (ci.item_ids + 0) AS base_item_id");
         if (request.hasSearch()) {
             sql.append(", MAX(ci.catalog_name LIKE ?) AS name_match");
         }
@@ -99,8 +140,9 @@ final class MarketplaceOffersQuery {
                 .append("    GROUP BY si.item_id\n")
                 .append(") s ON s.base_item_id = g.base_item_id\n");
 
+        sql.append("WHERE (cat.base_item_id IS NOT NULL OR g.nft = 1)\n");
         if (request.hasSearch()) {
-            sql.append("WHERE (bi.public_name LIKE ? OR cat.name_match = 1)\n");
+            sql.append("    AND (bi.public_name LIKE ? OR cat.name_match = 1)\n");
         }
 
         return sql.append("ORDER BY ")
@@ -112,7 +154,7 @@ final class MarketplaceOffersQuery {
     }
 
     /**
-     * Binds the values in statement order: the listing window, the listing price bounds, the
+     * Binds the values in statement order: the listing windows of furni and of collectibles, the listing price bounds, the
      * requested band, then the escaped search once for the catalog names and once for the furni
      * name. Returns the next free parameter index.
      */
@@ -120,6 +162,7 @@ final class MarketplaceOffersQuery {
             throws SQLException {
         int index = 1;
         statement.setInt(index++, nowUnix - LISTING_WINDOW_SECONDS);
+        statement.setInt(index++, nowUnix - request.collectibleWindowSeconds());
         statement.setInt(index++, minListingPrice);
         statement.setInt(index++, maxListingPrice);
         if (request.hasMinPrice()) {
@@ -135,6 +178,10 @@ final class MarketplaceOffersQuery {
         }
         return index;
     }
+
+    /** The price the buyer pays: commission on top for furni, the asking price for a collectible. */
+    private static final String BUYER_PRICE =
+            "(CASE WHEN l.nft = 1 THEN l.price ELSE CEIL(l.price + (l.price / 100)) END)";
 
     private static String orderBy(int sort) {
         return switch (sort) {

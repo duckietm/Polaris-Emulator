@@ -78,10 +78,13 @@ import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioUndoEv
 import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioValidateEvent;
 import polaris.messages.incoming.catalog.marketplace.BuyItemEvent;
 import polaris.messages.incoming.catalog.marketplace.BuyMarketplaceTokensEvent;
+import polaris.messages.incoming.catalog.marketplace.BuyNftMarketplaceOfferEvent;
 import polaris.messages.incoming.catalog.marketplace.CancelAllOwnItemsEvent;
 import polaris.messages.incoming.catalog.marketplace.ClearOwnHistoryEvent;
+import polaris.messages.incoming.catalog.marketplace.MakeNftMarketplaceOfferEvent;
 import polaris.messages.incoming.catalog.marketplace.RequestCreditsEvent;
 import polaris.messages.incoming.catalog.marketplace.RequestItemInfoEvent;
+import polaris.messages.incoming.catalog.marketplace.RequestNftMarketplaceItemStatsEvent;
 import polaris.messages.incoming.catalog.marketplace.RequestOffersEvent;
 import polaris.messages.incoming.catalog.marketplace.RequestOwnItemsEvent;
 import polaris.messages.incoming.catalog.marketplace.RequestSellItemEvent;
@@ -931,6 +934,9 @@ public class PacketManager {
         this.registerHandler(Incoming.SellMultipleItemsEvent, SellMultipleItemsEvent.class);
         this.registerHandler(Incoming.CancelAllOwnItemsEvent, CancelAllOwnItemsEvent.class);
         this.registerHandler(Incoming.ClearOwnHistoryEvent, ClearOwnHistoryEvent.class);
+        this.registerHandler(Incoming.MakeNftMarketplaceOfferEvent, MakeNftMarketplaceOfferEvent.class);
+        this.registerHandler(Incoming.BuyNftMarketplaceOfferEvent, BuyNftMarketplaceOfferEvent.class);
+        this.registerHandler(Incoming.RequestNftMarketplaceItemStatsEvent, RequestNftMarketplaceItemStatsEvent.class);
         this.registerHandler(Incoming.RequestCreditsEvent, RequestCreditsEvent.class);
         this.registerHandler(Incoming.RequestPetBreedsEvent, RequestPetBreedsEvent.class);
         this.registerHandler(Incoming.CheckPetNameEvent, CheckPetNameEvent.class);

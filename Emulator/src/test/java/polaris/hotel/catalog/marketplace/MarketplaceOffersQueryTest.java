@@ -53,13 +53,59 @@ class MarketplaceOffersQueryTest {
         assertTrue(sql.contains("COALESCE(s.sold_today, 0) AS sold_count_today"), sql);
     }
 
+    // The offer kind joined the grouping with the Collectibles marketplace: a collectible offer and an older credit
+    // offer of the same nft_* furni are two rows, priced in two currencies.
     @Test
     void keepsOneRowPerSerialUnlessSerialsAreCombined() {
-        assertTrue(MarketplaceOffersQuery.sql(plain(1, false)).contains("GROUP BY li.item_id, li.limited_data\n"));
+        assertTrue(
+                MarketplaceOffersQuery.sql(plain(1, false)).contains("GROUP BY li.item_id, l.nft, li.limited_data\n"));
 
         String combined = MarketplaceOffersQuery.sql(plain(1, true));
-        assertTrue(combined.contains("GROUP BY li.item_id\n"), combined);
+        assertTrue(combined.contains("GROUP BY li.item_id, l.nft\n"), combined);
         assertFalse(combined.contains("li.limited_data"), combined);
+    }
+
+    @Test
+    void listsOnlyFurniWhileTheCollectiblesMarketplaceIsOff() {
+        String sql = MarketplaceOffersQuery.sql(plain(1, false));
+
+        assertTrue(sql.contains("AND l.nft = 0\n"), sql);
+    }
+
+    @Test
+    void filtersTheOfferSourceOfAIRsTypeMenu() {
+        assertTrue(collectibles(MarketplaceOffersQuery.SOURCE_ALL)
+                .contains("WHERE (cat.base_item_id IS NOT NULL OR g.nft = 1)"));
+        assertFalse(collectibles(MarketplaceOffersQuery.SOURCE_ALL).contains("AND l.nft ="));
+        assertTrue(collectibles(MarketplaceOffersQuery.SOURCE_COLLECTIBLES).contains("AND l.nft = 1\n"));
+        assertTrue(collectibles(MarketplaceOffersQuery.SOURCE_FURNI).contains("AND l.nft = 0\n"));
+
+        String noneLeft = MarketplaceOffersQuery.sql(new MarketplaceOffersQuery.Request(
+                -1, -1, "", 1, false, MarketplaceOffersQuery.SOURCE_COLLECTIBLES, false, 600));
+        assertTrue(noneLeft.contains("AND 0 = 1\n"), noneLeft);
+    }
+
+    private static String collectibles(int source) {
+        return MarketplaceOffersQuery.sql(new MarketplaceOffersQuery.Request(-1, -1, "", 1, false, source, true, 600));
+    }
+
+    @Test
+    void bindsTheCollectiblesListingWindowAfterTheFurniOne() throws Exception {
+        PreparedStatement statement = mock(PreparedStatement.class);
+
+        MarketplaceOffersQuery.bind(
+                statement,
+                new MarketplaceOffersQuery.Request(-1, -1, "", 1, false, MarketplaceOffersQuery.SOURCE_ALL, true, 600),
+                NOW,
+                MIN_LISTING_PRICE,
+                MAX_LISTING_PRICE);
+
+        InOrder order = inOrder(statement);
+        order.verify(statement).setInt(1, NOW - MarketplaceOffersQuery.LISTING_WINDOW_SECONDS);
+        order.verify(statement).setInt(2, NOW - 600);
+        order.verify(statement).setInt(3, MIN_LISTING_PRICE);
+        order.verify(statement).setInt(4, MAX_LISTING_PRICE);
+        verifyNoMoreInteractions(statement);
     }
 
     @Test
@@ -82,8 +128,10 @@ class MarketplaceOffersQueryTest {
 
     @Test
     void appliesThePriceBandOnlyWhenItIsRequested() {
-        String lower = "AND CEIL(l.price + (l.price / 100)) >= ?";
-        String upper = "AND CEIL(l.price + (l.price / 100)) <= ?";
+        // The buyer's price: commission on top for furni, the asking price for a collectible.
+        String price = "(CASE WHEN l.nft = 1 THEN l.price ELSE CEIL(l.price + (l.price / 100)) END)";
+        String lower = "AND " + price + " >= ?";
+        String upper = "AND " + price + " <= ?";
 
         String none = MarketplaceOffersQuery.sql(request(0, 0, "", 1, false));
         assertFalse(none.contains("CEIL("), none);
@@ -110,7 +158,7 @@ class MarketplaceOffersQueryTest {
         String sql = MarketplaceOffersQuery.sql(request(-1, -1, "sofa", 1, false));
 
         assertTrue(sql.contains("MAX(ci.catalog_name LIKE ?) AS name_match"), sql);
-        assertTrue(sql.contains("WHERE (bi.public_name LIKE ? OR cat.name_match = 1)"), sql);
+        assertTrue(sql.contains("    AND (bi.public_name LIKE ? OR cat.name_match = 1)"), sql);
         assertFalse(sql.contains("sofa"), "the search text must never reach the statement text");
     }
 
@@ -124,11 +172,11 @@ class MarketplaceOffersQueryTest {
 
     @Test
     void bindsOneValuePerPlaceholder() throws Exception {
-        assertBindCount(plain(1, false), 3);
-        assertBindCount(request(40, 60, "", 1, false), 5);
-        assertBindCount(request(40, 30, "", 1, false), 4);
-        assertBindCount(request(40, 60, "sofa", 1, false), 7);
-        assertBindCount(request(-1, -1, "sofa", 1, true), 5);
+        assertBindCount(plain(1, false), 4);
+        assertBindCount(request(40, 60, "", 1, false), 6);
+        assertBindCount(request(40, 30, "", 1, false), 5);
+        assertBindCount(request(40, 60, "sofa", 1, false), 8);
+        assertBindCount(request(-1, -1, "sofa", 1, true), 6);
     }
 
     private static void assertBindCount(MarketplaceOffersQuery.Request request, int expected) throws Exception {
@@ -153,12 +201,13 @@ class MarketplaceOffersQueryTest {
 
         InOrder order = inOrder(statement);
         order.verify(statement).setInt(1, NOW - MarketplaceOffersQuery.LISTING_WINDOW_SECONDS);
-        order.verify(statement).setInt(2, MIN_LISTING_PRICE);
-        order.verify(statement).setInt(3, MAX_LISTING_PRICE);
-        order.verify(statement).setInt(4, 40);
-        order.verify(statement).setInt(5, 60);
-        order.verify(statement).setString(6, pattern);
+        order.verify(statement).setInt(2, NOW - MarketplaceOffersQuery.LISTING_WINDOW_SECONDS);
+        order.verify(statement).setInt(3, MIN_LISTING_PRICE);
+        order.verify(statement).setInt(4, MAX_LISTING_PRICE);
+        order.verify(statement).setInt(5, 40);
+        order.verify(statement).setInt(6, 60);
         order.verify(statement).setString(7, pattern);
+        order.verify(statement).setString(8, pattern);
         verifyNoMoreInteractions(statement);
     }
 }

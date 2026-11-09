@@ -7,6 +7,11 @@ final class MarketplaceInputGuard {
     static final int DEFAULT_SORT = 1;
     static final int MIN_SORT = 1;
     static final int MAX_SORT = 6;
+    /** AIR's "Type" menu of the search: every offer, collectibles, furni. Anything else is every offer. */
+    static final int OFFER_SOURCE_ALL = 0;
+
+    static final int OFFER_SOURCE_COLLECTIBLES = 1;
+    static final int OFFER_SOURCE_FURNI = 2;
 
     private MarketplaceInputGuard() {}
 
@@ -25,6 +30,12 @@ final class MarketplaceInputGuard {
 
     static int normalizeSort(int sort) {
         return sort >= MIN_SORT && sort <= MAX_SORT ? sort : DEFAULT_SORT;
+    }
+
+    static int normalizeOfferSource(int offerSource) {
+        return offerSource == OFFER_SOURCE_COLLECTIBLES || offerSource == OFFER_SOURCE_FURNI
+                ? offerSource
+                : OFFER_SOURCE_ALL;
     }
 
     static int normalizeMinPrice(int minPrice) {

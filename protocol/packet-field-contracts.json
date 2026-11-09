@@ -5375,6 +5375,38 @@
       "fields": []
     },
     {
+      "name": "NFT_MARKETPLACE_MAKE_OFFER",
+      "direction": "client_to_server",
+      "header": 2346,
+      "java": {
+        "symbol": "MakeNftMarketplaceOfferEvent",
+        "className": "MakeNftMarketplaceOfferEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/catalog/marketplace/MakeNftMarketplaceOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_MAKE_OFFER",
+        "className": "MakeNftMarketplaceOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/marketplace/MakeNftMarketplaceOfferComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "furniType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "price"
+        }
+      ]
+    },
+    {
       "name": "GET_MINTING_ENABLED",
       "direction": "client_to_server",
       "header": 2371,
@@ -5489,6 +5521,11 @@
           "kind": "scalar",
           "type": "boolean",
           "name": "combineUniques"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "offerSource"
         }
       ]
     },
@@ -6148,6 +6185,28 @@
           "kind": "scalar",
           "type": "int",
           "name": "userId"
+        }
+      ]
+    },
+    {
+      "name": "NFT_MARKETPLACE_ITEM_STATS",
+      "direction": "client_to_server",
+      "header": 2706,
+      "java": {
+        "symbol": "RequestNftMarketplaceItemStatsEvent",
+        "className": "RequestNftMarketplaceItemStatsEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/catalog/marketplace/RequestNftMarketplaceItemStatsEvent.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_ITEM_STATS",
+        "className": "GetNftMarketplaceItemStatsComposer",
+        "path": "packages/communication/src/messages/outgoing/marketplace/GetNftMarketplaceItemStatsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "productCode"
         }
       ]
     },
@@ -12450,6 +12509,33 @@
       "fields": []
     },
     {
+      "name": "NFT_MARKETPLACE_BUY_OFFER",
+      "direction": "client_to_server",
+      "header": 9425,
+      "java": {
+        "symbol": "BuyNftMarketplaceOfferEvent",
+        "className": "BuyNftMarketplaceOfferEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/catalog/marketplace/BuyNftMarketplaceOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_BUY_OFFER",
+        "className": "BuyNftMarketplaceOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/marketplace/BuyNftMarketplaceOfferComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "productCode"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "price"
+        }
+      ]
+    },
+    {
       "name": "GET_REWARD_TRACKS",
       "direction": "client_to_server",
       "header": 9450,
@@ -16795,6 +16881,43 @@
       ]
     },
     {
+      "name": "NFT_MARKETPLACE_BUY_RESULT",
+      "direction": "server_to_client",
+      "header": 1583,
+      "java": {
+        "symbol": "NftMarketplaceBuyResultComposer",
+        "className": "NftMarketplaceBuyResultComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/marketplace/NftMarketplaceBuyResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_BUY_RESULT",
+        "className": "NftMarketplaceBuyResultParser",
+        "path": "packages/communication/src/messages/parser/marketplace/NftMarketplaceBuyResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "GUIDE_SESSION_ATTACHED",
       "direction": "server_to_client",
       "header": 1591,
@@ -17429,63 +17552,6 @@
         "path": "packages/communication/src/messages/parser/user/ChangeEmailResultParser.ts"
       },
       "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "name": "MARKETPLACE_CONFIG",
-      "direction": "server_to_client",
-      "header": 1823,
-      "java": {
-        "symbol": "MarketplaceConfigComposer",
-        "className": "MarketplaceConfigComposer",
-        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/marketplace/MarketplaceConfigComposer.java"
-      },
-      "typescript": {
-        "symbol": "MARKETPLACE_CONFIG",
-        "className": "MarketplaceConfigurationMessageParser",
-        "path": "packages/communication/src/messages/parser/marketplace/MarketplaceConfigurationMessageParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
         {
           "kind": "scalar",
           "type": "int",
@@ -20703,6 +20769,28 @@
         "symbol": "GAME_CENTER_USER_BLOCKED",
         "className": "Game2UserBlockedMessageParser",
         "path": "packages/communication/src/messages/parser/game/directory/Game2UserBlockedMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "NFT_MARKETPLACE_MAKE_OFFER_RESULT",
+      "direction": "server_to_client",
+      "header": 3524,
+      "java": {
+        "symbol": "NftMarketplaceMakeOfferResultComposer",
+        "className": "NftMarketplaceMakeOfferResultComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/marketplace/NftMarketplaceMakeOfferResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_MAKE_OFFER_RESULT",
+        "className": "NftMarketplaceMakeOfferResultParser",
+        "path": "packages/communication/src/messages/parser/marketplace/NftMarketplaceMakeOfferResultParser.ts"
       },
       "fields": [
         {
@@ -25543,7 +25631,7 @@
         "className": "GroupSavePreferencesComposer",
         "path": "packages/communication/src/messages/outgoing/group/GroupSavePreferencesComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
+      "reason": "Java analyzer: Overloaded local helper method cannot be resolved: deleteForumData"
     },
     {
       "name": "PET_MOVE",
@@ -28090,6 +28178,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parseOwners"
     },
     {
+      "name": "MARKETPLACE_CONFIG",
+      "direction": "server_to_client",
+      "header": 1823,
+      "java": {
+        "symbol": "MarketplaceConfigComposer",
+        "className": "MarketplaceConfigComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/marketplace/MarketplaceConfigComposer.java"
+      },
+      "typescript": {
+        "symbol": "MARKETPLACE_CONFIG",
+        "className": "MarketplaceConfigurationMessageParser",
+        "path": "packages/communication/src/messages/parser/marketplace/MarketplaceConfigurationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [boolean, int, int, int, int, int, int, int, int, int, int, boolean, int, int, int, int, int, int] versus TypeScript [boolean, int, int, int, int, int, int, int, optional\u003cbytesAvailable:[int, int, int, boolean, int, int, int, int, int, int]\u003e]"
+    },
+    {
       "name": "CHAT_REVIEW_SESSION_VOTING_STATUS",
       "direction": "server_to_client",
       "header": 1829,
@@ -28726,6 +28830,22 @@
         "symbol": "ROOM_AD_PURCHASE",
         "className": "RoomAdPurchaseInfoEventParser",
         "path": "packages/communication/src/messages/parser/catalog/RoomAdPurchaseInfoEventParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "NFT_MARKETPLACE_ITEM_STATS",
+      "direction": "server_to_client",
+      "header": 2492,
+      "java": {
+        "symbol": "NftMarketplaceItemStatsComposer",
+        "className": "NftMarketplaceItemStatsComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/marketplace/NftMarketplaceItemStatsComposer.java"
+      },
+      "typescript": {
+        "symbol": "NFT_MARKETPLACE_ITEM_STATS",
+        "className": "NftMarketplaceItemStatsParser",
+        "path": "packages/communication/src/messages/parser/marketplace/NftMarketplaceItemStatsParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
     },

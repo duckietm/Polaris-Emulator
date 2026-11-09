@@ -1,7 +1,6 @@
 package polaris.messages.outgoing.catalog.marketplace;
 
 import java.util.List;
-import polaris.hotel.catalog.marketplace.MarketPlace;
 import polaris.hotel.catalog.marketplace.MarketPlaceOffer;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
@@ -23,19 +22,26 @@ public class MarketplaceOffersComposer extends MessageComposer {
             this.response.appendInt(offer.getOfferId());
             this.response.appendInt(1);
             this.response.appendInt(offer.getType());
-            this.response.appendInt(offer.getItemId());
-            if (offer.getType() == 3) {
-                this.response.appendInt(offer.getLimitedNumber());
-                this.response.appendInt(offer.getLimitedStack());
-            } else if (offer.getType() == 2) {
-                this.response.appendString("");
+            if (offer.getType() == 5) {
+                // A collectible: AIR reads the product code, the furni and its kind (1 floor, 2 wall).
+                this.response.appendString(offer.getProductCode());
+                this.response.appendInt(offer.getItemId());
+                this.response.appendInt(offer.getNftFurniType());
             } else {
-                this.response.appendInt(0);
-                this.response.appendString("");
+                this.response.appendInt(offer.getItemId());
+                if (offer.getType() == 3) {
+                    this.response.appendInt(offer.getLimitedNumber());
+                    this.response.appendInt(offer.getLimitedStack());
+                } else if (offer.getType() == 2) {
+                    this.response.appendString("");
+                } else {
+                    this.response.appendInt(0);
+                    this.response.appendString("");
+                }
             }
-            this.response.appendInt(MarketPlace.calculateCommision(offer.getPrice()));
+            this.response.appendInt(offer.getBuyerPrice());
             this.response.appendInt(0);
-            this.response.appendInt(MarketPlace.calculateCommision(offer.avarage));
+            this.response.appendInt(offer.getBuyerAverage());
             this.response.appendInt(offer.count);
         }
         this.response.appendInt(this.offers.size());

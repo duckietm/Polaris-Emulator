@@ -17,6 +17,20 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
             "SELECT next_id FROM catalog_id_sequences WHERE entity_type = 'OFFER' AND catalog_type = ? FOR UPDATE";
     static final String INCREMENT_REVISION_SQL =
             "UPDATE catalog_manager_state " + "SET revision = revision + 1 WHERE singleton_id = 1 AND revision = ?";
+    /**
+     * The id after the highest one in the table. Rows added another way (the All-in-1 Manager, an SQL import, a
+     * restored backup) take ids the sequence never handed out; a create at such an id would overwrite that row,
+     * as the live writer upserts.
+     */
+    static String tableNextIdSql(CatalogEntityType entityType, CatalogPageType catalogType) {
+        String table =
+                switch (entityType) {
+                    case PAGE -> catalogType == CatalogPageType.BUILDER ? "catalog_pages_bc" : "catalog_pages";
+                    case OFFER -> catalogType == CatalogPageType.BUILDER ? "catalog_items_bc" : "catalog_items";
+                };
+        return "SELECT COALESCE(MAX(id), 0) + 1 FROM " + table;
+    }
+
     static final String UPDATE_NEXT_ID_SQL =
             "UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = ? AND catalog_type = ?";
     static final String LOAD_VERSION_SQL =
@@ -124,6 +138,10 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
                 }
                 nextId = resultSet.getLong(1);
             }
+        }
+        try (PreparedStatement statement = connection.prepareStatement(tableNextIdSql(entityType, catalogType));
+                ResultSet resultSet = statement.executeQuery()) {
+            if (resultSet.next()) nextId = Math.max(nextId, resultSet.getLong(1));
         }
         try (PreparedStatement statement = connection.prepareStatement(UPDATE_NEXT_ID_SQL)) {
             statement.setLong(1, nextId + 1);

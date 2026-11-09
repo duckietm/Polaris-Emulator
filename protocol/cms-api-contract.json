@@ -66,7 +66,6 @@
     "updatewordfilter",
     "updatewheel",
     "updatesoundboard",
-    "reloadcontent",
     "updatecatalog",
     "executecommand",
     "progressachievement",
@@ -81,14 +80,16 @@
     "talkuser",
     "changeroomowner",
     "muteuser",
-    "banuser",
-    "unbanuser",
     "giverespect",
     "ignoreuser",
     "setmotto",
     "giveuserclothing",
     "modifysubscription",
     "changeusername",
-    "updateitems"
+    "updateitems",
+    "housekeeping",
+    "banuser",
+    "unbanuser",
+    "reloadcontent"
   ]
 }

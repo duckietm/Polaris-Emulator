@@ -385,6 +385,15 @@ These reload server-side data after the CMS changes it in the database. Their
 | `updatewordfilter` | Reload the word filter. |
 | `updatewheel` | Reload the "wheel of fortune" / lucky wheel config. |
 | `updatesoundboard` | Reload soundboard data. |
+| `reloadcontent` | Reload one kind of content (`target`), as the matching `:update_*` command does. See [rcon-housekeeping.md](rcon-housekeeping.md). |
+
+### Housekeeping (group `housekeeping`) and bans
+
+`housekeeping` runs the in-game housekeeping panel's actions (`data.action`),
+`banuser` / `unbanuser` (group `moderation`) ban and unban as the system operator.
+They are root-level: no rank checks apply, so scope them only to fully trusted
+keys. Their fields, replies and error keys are in
+[rcon-housekeeping.md](rcon-housekeeping.md).
 
 ---
 

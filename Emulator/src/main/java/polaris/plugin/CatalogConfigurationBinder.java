@@ -4,6 +4,7 @@ import java.util.Arrays;
 import polaris.core.ConfigurationManager;
 import polaris.core.config.ConfigurationBinder;
 import polaris.hotel.achievements.AchievementManager;
+import polaris.hotel.catalog.BundleDiscountRules;
 import polaris.hotel.catalog.CatalogManager;
 import polaris.hotel.catalog.TargetOffer;
 import polaris.hotel.catalog.marketplace.MarketPlace;
@@ -82,14 +83,10 @@ final class CatalogConfigurationBinder extends ConfigurationBinder {
                 "discount.bonus.min.discounts",
                 () -> DiscountComposer.MINIMUM_DISCOUNTS_FOR_BONUS =
                         this.configuration.getInt("discount.bonus.min.discounts", 1));
-        this.apply("discount.additional.thresholds", () -> {
-            int[] thresholds = Arrays.stream(this.configuration
-                            .getValue("discount.additional.thresholds", "40;99")
-                            .split(";"))
-                    .mapToInt(Integer::parseInt)
-                    .toArray();
-            DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS = thresholds;
-        });
+        this.apply(
+                "discount.additional.thresholds",
+                () -> DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS = BundleDiscountRules.parseThresholds(
+                        this.configuration.getValue("discount.additional.thresholds", "40;99")));
         this.apply(
                 "hotel.view.ltdcountdown.enabled",
                 () -> HotelViewRequestLTDAvailabilityEvent.ENABLED =

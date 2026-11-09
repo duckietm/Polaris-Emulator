@@ -1123,7 +1123,8 @@ public class CatalogManager {
     /** The front page slots still running, in the order of their slot id, as the client shows them (the first is the tall one). */
     public List<CatalogFeaturedPage> getCatalogFeaturedPagesSnapshot() {
         synchronized (this.catalogFeaturedPages) {
-            return CatalogFeaturedPage.shown(this.catalogFeaturedPages.values(), Emulator.getIntUnixTimestamp());
+            return CatalogFeaturedPage.shown(this.catalogFeaturedPages.values(), (int)
+                    java.time.Instant.now().getEpochSecond());
         }
     }
 
@@ -1789,7 +1790,8 @@ public class CatalogManager {
 
     /**
      * The number of times the offer is bought: asking for exactly the pack size buys the pack once. Returns -1, after
-     * telling the buyer, for more than 100 items at once or several of an offer without a bulk discount.
+     * telling the buyer, for more items at once than discount.max.allowed.items (the client's own limit) or several of
+     * an offer without a bulk discount.
      */
     private int checkedAmount(CatalogPage page, CatalogItem item, User user, int amount) {
         if (amount > 1) {
@@ -1797,7 +1799,7 @@ public class CatalogManager {
                 amount = 1;
             } else {
                 long requestedItems = (long) amount * item.getAmount();
-                if (requestedItems > 100) {
+                if (requestedItems > DiscountComposer.rules().maxItems()) {
                     user.alert(
                             "Whoops! You tried to buy this " + requestedItems + " times. This must've been a mistake.");
                     user.getClient()
@@ -2970,26 +2972,7 @@ public class CatalogManager {
     private int calculateDiscountedPrice(int originalPrice, int amount, CatalogItem item) {
         if (!CatalogItem.haveOffer(item)) return CatalogPurchaseMath.checkedPrice(originalPrice, amount);
 
-        int basicDiscount = amount / DiscountComposer.DISCOUNT_BATCH_SIZE;
-
-        int bonusDiscount = 0;
-        if (basicDiscount >= DiscountComposer.MINIMUM_DISCOUNTS_FOR_BONUS) {
-            if (amount % DiscountComposer.DISCOUNT_BATCH_SIZE == DiscountComposer.DISCOUNT_BATCH_SIZE - 1) {
-                bonusDiscount = 1;
-            }
-
-            bonusDiscount += basicDiscount - DiscountComposer.MINIMUM_DISCOUNTS_FOR_BONUS;
-        }
-
-        int additionalDiscounts = 0;
-        for (int threshold : DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS) {
-            if (amount >= threshold) additionalDiscounts++;
-        }
-
-        int totalDiscountedItems =
-                (basicDiscount * DiscountComposer.DISCOUNT_AMOUNT_PER_BATCH) + bonusDiscount + additionalDiscounts;
-
-        int payableItems = Math.max(0, amount - totalDiscountedItems);
-        return CatalogPurchaseMath.checkedPrice(originalPrice, payableItems);
+        return CatalogPurchaseMath.checkedPrice(
+                originalPrice, DiscountComposer.rules().payableItems(amount));
     }
 }

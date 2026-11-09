@@ -2,12 +2,14 @@ package polaris;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.core.CleanerThread;
 import polaris.core.ConfigurationManager;
+import polaris.core.ContentReloader;
 import polaris.core.CryptoConfig;
 import polaris.core.DatabaseLogger;
 import polaris.core.Logging;
@@ -28,12 +30,18 @@ import polaris.hotel.catalog.specialitems.SpecialItemClaimService;
 import polaris.hotel.collectibles.CollectiblesRuntime;
 import polaris.hotel.collectibles.CollectiblesService;
 import polaris.hotel.collectibles.CollectiblesSettings;
+import polaris.hotel.gameclients.SessionResumeManager;
 import polaris.hotel.habbicons.HabbiconService;
 import polaris.hotel.items.FurnitureDirectionsRuntime;
 import polaris.hotel.items.FurnitureTextProvider;
+import polaris.hotel.modtool.ConsoleModeration;
+import polaris.hotel.users.UserInfo;
 import polaris.imaging.camera.CameraRenderRuntime;
 import polaris.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import polaris.messages.outgoing.catalog.CatalogUpdatedComposer;
+import polaris.messages.outgoing.catalog.DiscountComposer;
+import polaris.messages.outgoing.handshake.DisconnectReasonComposer;
+import polaris.messages.outgoing.users.BanInfoComposer;
 import polaris.networking.gameserver.GameServer;
 import polaris.networking.rconserver.RCONServer;
 import polaris.plugin.PluginManager;
@@ -237,6 +245,84 @@ final class PolarisBootstrap {
                 runtime.database().getDataSource(), runtime.gameEnvironment().getItemManager()));
         MarketplaceTokenService.install(
                 new MarketplaceTokenService(runtime.database().getDataSource(), configuration));
+        // The :update_* commands' work, for RCON reloadcontent (All-in-1-Manager). The managers are looked up when
+        // a reload runs: the badge imager, for one, is only installed further down.
+        ContentReloader.install(new ContentReloader(Map.ofEntries(
+                Map.entry(
+                        "achievements",
+                        () -> runtime.gameEnvironment().getAchievementManager().reload()),
+                Map.entry(
+                        "dailytasks",
+                        () -> runtime.gameEnvironment().getDailyTaskManager().reload()),
+                Map.entry(
+                        "quests",
+                        () -> runtime.gameEnvironment().getQuestManager().reload()),
+                Map.entry(
+                        "rewardtracks",
+                        () -> runtime.gameEnvironment().getRewardTrackManager().reloadAndBroadcast()),
+                Map.entry(
+                        "polls",
+                        () -> runtime.gameEnvironment().getPollManager().loadPolls()),
+                Map.entry("navigator", () -> {
+                    runtime.gameEnvironment().getNavigatorManager().loadNavigator();
+                    runtime.gameEnvironment().getRoomManager().loadRoomModels();
+                }),
+                Map.entry(
+                        "petdata",
+                        () -> runtime.gameEnvironment().getPetManager().reloadPetData()),
+                Map.entry("guildparts", () -> {
+                    runtime.gameEnvironment().getGuildManager().loadGuildParts();
+                    if (runtime.badgeImager() != null) runtime.badgeImager().reload();
+                }),
+                Map.entry(
+                        "chatbubbles",
+                        () -> runtime.gameEnvironment()
+                                .getRoomChatBubbleManager()
+                                .reload()),
+                Map.entry(
+                        "calendar",
+                        () -> runtime.gameEnvironment().getCalendarManager().reload()),
+                Map.entry("hotelview", () -> {
+                    runtime.gameEnvironment()
+                            .getHotelViewManager()
+                            .getNewsList()
+                            .reload();
+                    runtime.gameEnvironment()
+                            .getHotelViewManager()
+                            .getHallOfFame()
+                            .reload();
+                    runtime.gameEnvironment().getHotelViewManager().reloadAndBroadcastLandingView();
+                }),
+                Map.entry(
+                        "bots", () -> runtime.gameEnvironment().getBotManager().reload()),
+                Map.entry("config", configuration::reload),
+                // The bulk discount settings, then the new rules to every client so prices shown match.
+                Map.entry("discounts", () -> {
+                    configuration.reload();
+                    runtime.gameServer().getGameClientManager().sendBroadcastResponse(new DiscountComposer());
+                }))));
+        // Bans from the hotel's console, for RCON banuser / unbanuser (All-in-1-Manager).
+        ConsoleModeration.install(new ConsoleModeration(
+                id -> runtime.gameEnvironment().getUserManager().getUserInfo(id),
+                id -> runtime.gameEnvironment().getUserManager().getUser(id),
+                (id, seconds, reason, type) -> runtime.gameEnvironment()
+                        .getModToolManager()
+                        .createOfflineUserBan(id, 0, seconds, reason, type),
+                (user, ban) -> {
+                    if (user.getClient() == null) return;
+                    user.getClient()
+                            .sendResponse(new BanInfoComposer(
+                                    ban.userId, ban.reason, Math.max(0, ban.expireDate - ban.timestamp), ""));
+                    runtime.gameServer()
+                            .getGameClientManager()
+                            .disconnectWithReason(user.getClient(), DisconnectReasonComposer.JUST_BANNED);
+                },
+                id -> SessionResumeManager.getInstance().disposeGhostSession(id),
+                id -> {
+                    UserInfo info = runtime.gameEnvironment().getUserManager().getUserInfo(id);
+                    return info != null
+                            && runtime.gameEnvironment().getModToolManager().unban(info.getUsername());
+                }));
         NftMarketplaceRuntime.install(new NftMarketplaceRuntime(
                 runtime.database().getDataSource(),
                 () -> NftMarketplaceSettings.from(configuration),

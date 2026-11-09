@@ -46,6 +46,8 @@ public final class CmsCommandScopes {
             Map.entry("giverespect", "users"),
             // moderation
             Map.entry("muteuser", "moderation"),
+            Map.entry("banuser", "moderation"),
+            Map.entry("unbanuser", "moderation"),
             Map.entry("disconnect", "moderation"),
             Map.entry("modticket", "moderation"),
             Map.entry("executecommand", "moderation"),
@@ -68,7 +70,8 @@ public final class CmsCommandScopes {
             Map.entry("updateitems", "cache"),
             Map.entry("updatewordfilter", "cache"),
             Map.entry("updatewheel", "cache"),
-            Map.entry("updatesoundboard", "cache"));
+            Map.entry("updatesoundboard", "cache"),
+            Map.entry("reloadcontent", "cache"));
 
     private CmsCommandScopes() {}
 

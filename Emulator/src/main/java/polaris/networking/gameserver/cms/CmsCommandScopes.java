@@ -46,11 +46,13 @@ public final class CmsCommandScopes {
             Map.entry("giverespect", "users"),
             // moderation
             Map.entry("muteuser", "moderation"),
-            Map.entry("banuser", "moderation"),
-            Map.entry("unbanuser", "moderation"),
             Map.entry("disconnect", "moderation"),
             Map.entry("modticket", "moderation"),
             Map.entry("executecommand", "moderation"),
+            Map.entry("banuser", "moderation"),
+            Map.entry("unbanuser", "moderation"),
+            // housekeeping (the in-game panel's actions: see docs/rcon-housekeeping.md)
+            Map.entry("housekeeping", "housekeeping"),
             // alerts
             Map.entry("alertuser", "alerts"),
             Map.entry("hotelalert", "alerts"),

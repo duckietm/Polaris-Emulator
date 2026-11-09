@@ -1,6 +1,7 @@
 package polaris.messages.incoming.housekeeping;
 
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Every housekeeping handler extends this and starts its {@code handle()} with
@@ -17,5 +18,16 @@ public abstract class HousekeepingHandler extends MessageHandler {
 
     protected final boolean allowed() {
         return HousekeepingAccess.check(this.client, this.requiredPermission());
+    }
+
+    /** The staff member behind this packet, as the operator a shared action core audits with. */
+    protected final HousekeepingOperator operator() {
+        return HousekeepingOperator.staff(this.client.getUser());
+    }
+
+    /** Answers the panel with the outcome of a shared action core. */
+    protected final void reply(String actionKey, HousekeepingResult result) {
+        this.client.sendResponse(
+                new HousekeepingActionResultComposer(actionKey, result.success(), result.id(), result.message()));
     }
 }

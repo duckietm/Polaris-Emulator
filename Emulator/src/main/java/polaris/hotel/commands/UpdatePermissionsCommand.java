@@ -23,13 +23,32 @@ public class UpdatePermissionsCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
+        Reloaded reloaded = reload(
+                gameClient.getUser().getUserInfo().getId(),
+                gameClient.getUser().getUserInfo().getUsername());
+
+        gameClient
+                .getUser()
+                .whisper(
+                        Emulator.getTexts().getValue("commands.succes.cmd_update_permissions") + " ("
+                                + reloaded.refreshed() + " online refreshed, " + reloaded.changes()
+                                + " permission changes)",
+                        RoomChatMessageBubbles.ALERT);
+
+        return true;
+    }
+
+    /** How many online users were re-bound and how many permission cells changed. */
+    public record Reloaded(int refreshed, int changes) {}
+
+    /**
+     * The reload itself, without the whisper: also run by the RCON reloadcontent command. The
+     * changes are written to the permission audit under the given actor.
+     */
+    public static Reloaded reload(int actorId, String actorName) {
         List<PermissionChange> changes =
                 Emulator.getGameEnvironment().getPermissionsManager().reloadWithChanges();
-        PermissionAuditLog.permissionChanges(
-                gameClient.getUser().getUserInfo().getId(),
-                gameClient.getUser().getUserInfo().getUsername(),
-                changes,
-                "update_permissions");
+        PermissionAuditLog.permissionChanges(actorId, actorName, changes, "update_permissions");
 
         // PermissionsManager.reload() rebuilt the rank table — each online
         // Habbo's UserInfo still references the OLD Rank object, so
@@ -61,13 +80,6 @@ public class UpdatePermissionsCommand extends Command {
             refreshed++;
         }
 
-        gameClient
-                .getUser()
-                .whisper(
-                        Emulator.getTexts().getValue("commands.succes.cmd_update_permissions") + " (" + refreshed
-                                + " online refreshed, " + changes.size() + " permission changes)",
-                        RoomChatMessageBubbles.ALERT);
-
-        return true;
+        return new Reloaded(refreshed, changes.size());
     }
 }

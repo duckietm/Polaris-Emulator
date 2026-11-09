@@ -4,13 +4,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.permissions.PermissionsManager;
 import polaris.hotel.permissions.Rank;
 import polaris.hotel.permissions.TemporaryRanks;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserManager;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Sets a user's rank. An optional trailing duration in seconds makes it temporary, the way
@@ -23,7 +24,7 @@ public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
         return HousekeepingAreas.PERMISSIONS;
     }
 
-    private static final String ACTION_KEY = "user.set_rank";
+    public static final String ACTION_KEY = "user.set_rank";
 
     /** A temporary rank lasts at most a year; longer is a lasting rank. */
     static final int MAX_TEMPORARY_SECONDS = 365 * 24 * 3600;
@@ -47,26 +48,45 @@ public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
             durationSeconds = this.packet.readInt();
         }
 
+        this.reply(
+                ACTION_KEY,
+                setRank(
+                        this.operator(),
+                        userId,
+                        rankId,
+                        durationSeconds,
+                        rank -> HousekeepingTargetRankGuard.canAssignRank(this.client.getUser(), rank.getId()),
+                        targetRankId ->
+                                HousekeepingTargetRankGuard.canTargetRank(this.client.getUser(), targetRankId)));
+    }
+
+    /**
+     * Gives a user a rank, for good or for {@code durationSeconds} (1 to a year) when that is above 0.
+     *
+     * @param mayAssign     the operator's rank guard on the rank given
+     * @param mayTargetRank the operator's rank guard on the user's current rank
+     */
+    public static HousekeepingResult setRank(
+            HousekeepingOperator operator,
+            int userId,
+            int rankId,
+            int durationSeconds,
+            Predicate<Rank> mayAssign,
+            IntPredicate mayTargetRank) {
         if (userId <= 0 || rankId <= 0 || durationSeconds < 0 || durationSeconds > MAX_TEMPORARY_SECONDS) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         PermissionsManager permissions = Emulator.getGameEnvironment().getPermissionsManager();
 
         if (!permissions.rankExists(rankId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.rank_not_found");
         }
 
         Rank rank = permissions.getRank(rankId);
 
-        if (!HousekeepingTargetRankGuard.canAssignRank(this.client.getUser(), rank.getId())) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayAssign.test(rank)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         UserManager userManager = Emulator.getGameEnvironment().getUserManager();
@@ -87,41 +107,31 @@ public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
                     }
                 }
             } catch (SQLException e) {
-                this.client.sendResponse(
-                        new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.db_failed");
             }
         }
 
         if (targetRankId <= 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.user_not_found");
         }
 
-        if (!HousekeepingTargetRankGuard.canTargetRank(this.client.getUser(), targetRankId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayTargetRank.test(targetRankId)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         // The same path as :give_rank and RCON: saves the rank and, for an online user, swaps the rank
         // badge and effect and resends permissions, perks and the mod tool, and tells plugins.
         try {
             if (HousekeepingLockoutGuard.rankChangeLocksOut(userId, targetRankId, rank.getId())) {
-                this.client.sendResponse(
-                        new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.lockout"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.lockout");
             }
         } catch (polaris.database.SqlQueries.DataAccessException e) {
             // A check that cannot be made refuses the change.
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
-        int operatorId = this.client.getUser().getUserInfo().getId();
-        String operatorName = this.client.getUser().getUserInfo().getUsername();
+        int operatorId = operator.id();
+        String operatorName = operator.name();
         boolean temporary = durationSeconds > 0;
         int expiresAt = temporary ? (int) (System.currentTimeMillis() / 1000L) + durationSeconds : 0;
 
@@ -146,19 +156,17 @@ public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
         } catch (Exception e) {
             if (temporary) TemporaryRanks.clear(userId);
 
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 userId,
                 "fromRankId=" + targetRankId + " rankId=" + rankId + (temporary ? " until=" + expiresAt : ""),
-                this.client.getUser().getUserInfo().getIpLogin());
+                operator.ip());
 
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
+        return HousekeepingResult.ok(userId);
     }
 }

@@ -3,6 +3,7 @@ package polaris.hotel.commands;
 import java.util.concurrent.atomic.AtomicLong;
 import polaris.Emulator;
 import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.gameclients.GameClientManager;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
 import polaris.messages.outgoing.catalog.CatalogModeComposer;
 import polaris.messages.outgoing.catalog.CatalogUpdatedComposer;
@@ -26,10 +27,7 @@ public class UpdateCatalogCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) {
-        long now = System.currentTimeMillis();
-        long previous = LAST_RUN.get();
-
-        if (now - previous < COOLDOWN_MS || !LAST_RUN.compareAndSet(previous, now)) {
+        if (!reload()) {
             gameClient
                     .getUser()
                     .whisper(
@@ -38,19 +36,45 @@ public class UpdateCatalogCommand extends Command {
             return true;
         }
 
-        Emulator.getGameEnvironment().getCatalogManager().initialize();
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new CatalogModeComposer(0));
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new DiscountComposer());
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new MarketplaceConfigComposer());
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new GiftConfigurationComposer());
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new RecyclerLogicComposer());
-        Emulator.getGameEnvironment().getCraftingManager().reload();
         gameClient
                 .getUser()
                 .whisper(
                         Emulator.getTexts().getValue("commands.succes.cmd_update_catalog"),
                         RoomChatMessageBubbles.ALERT);
         return true;
+    }
+
+    /**
+     * The reload itself, without the whisper: also run by the RCON reloadcontent command. False, and
+     * nothing reloaded, when the catalog was reloaded less than five seconds ago.
+     */
+    public static boolean reload() {
+        long now = System.currentTimeMillis();
+        long previous = LAST_RUN.get();
+
+        if (now - previous < COOLDOWN_MS || !LAST_RUN.compareAndSet(previous, now)) {
+            return false;
+        }
+
+        Emulator.getGameEnvironment().getCatalogManager().initialize();
+        GameClientManager clients = Emulator.getGameServer().getGameClientManager();
+        clients.sendBroadcastResponse(new CatalogUpdatedComposer());
+        clients.sendBroadcastResponse(new CatalogModeComposer(0));
+        clients.sendBroadcastResponse(new DiscountComposer());
+        clients.sendBroadcastResponse(new MarketplaceConfigComposer());
+        clients.sendBroadcastResponse(new GiftConfigurationComposer());
+        clients.sendBroadcastResponse(new RecyclerLogicComposer());
+        Emulator.getGameEnvironment().getCraftingManager().reload();
+        return true;
+    }
+
+    /**
+     * Loads the discount.* settings again and sends every online client the new bulk discount rules, so the prices
+     * they show match what a purchase charges. No catalogue reload, so no cooldown. Run by RCON reloadcontent
+     * "discounts".
+     */
+    public static void reloadDiscounts() {
+        UpdateConfigCommand.reload();
+        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new DiscountComposer());
     }
 }

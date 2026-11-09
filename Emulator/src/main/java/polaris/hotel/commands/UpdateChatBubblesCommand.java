@@ -16,13 +16,18 @@ public class UpdateChatBubblesCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) {
-        RoomChatMessageBubbles.removeDynamicBubbles();
-        Emulator.getGameEnvironment().getRoomChatBubbleManager().reload();
+        reload();
         gameClient
                 .getUser()
                 .whisper(
                         Emulator.getTexts().getValue("commands.success.cmd_update_chat_bubbles"),
                         RoomChatMessageBubbles.ALERT);
         return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() {
+        RoomChatMessageBubbles.removeDynamicBubbles();
+        Emulator.getGameEnvironment().getRoomChatBubbleManager().reload();
     }
 }

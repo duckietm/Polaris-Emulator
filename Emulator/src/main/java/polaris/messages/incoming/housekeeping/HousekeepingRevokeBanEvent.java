@@ -1,8 +1,8 @@
 package polaris.messages.incoming.housekeeping;
 
+import java.util.function.IntPredicate;
 import polaris.hotel.modtool.HousekeepingAuditLog;
 import polaris.hotel.modtool.ModToolBanList;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Ends one ban by its id, where the unban action ends every ban of a user.
@@ -14,7 +14,7 @@ public class HousekeepingRevokeBanEvent extends HousekeepingHandler {
         return HousekeepingAreas.BANS;
     }
 
-    static final String ACTION_KEY = "ban.revoke";
+    public static final String ACTION_KEY = "ban.revoke";
 
     @Override
     public int getRatelimit() {
@@ -28,43 +28,50 @@ public class HousekeepingRevokeBanEvent extends HousekeepingHandler {
         }
 
         int banId = this.packet.readInt();
+
+        this.reply(
+                ACTION_KEY,
+                revoke(
+                        this.operator(),
+                        banId,
+                        owner -> HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), owner)));
+    }
+
+    /**
+     * Ends one active ban by its id. On success the result's id is the ban id.
+     *
+     * @param mayTargetOwner the operator's rank guard on the banned user
+     */
+    public static HousekeepingResult revoke(HousekeepingOperator operator, int banId, IntPredicate mayTargetOwner) {
         int now = (int) (System.currentTimeMillis() / 1000L);
 
         if (banId <= 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         int userId = ModToolBanList.activeBanOwner(banId, now);
 
         if (userId <= 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.no_active_ban"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.no_active_ban");
         }
 
-        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), userId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayTargetOwner.test(userId)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         if (!ModToolBanList.revoke(banId, now)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.no_active_ban"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.no_active_ban");
         }
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 HousekeepingAuditLog.TARGET_USER,
                 userId,
                 "",
                 "ban=" + banId,
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, banId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(banId);
     }
 }

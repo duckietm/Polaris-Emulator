@@ -3,10 +3,10 @@ package polaris.messages.incoming.housekeeping;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.users.UserInfo;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Transfer ownership of a room to a different user. Updates both
@@ -21,7 +21,7 @@ public class HousekeepingTransferRoomOwnershipEvent extends HousekeepingHandler 
         return HousekeepingAreas.ROOMS;
     }
 
-    private static final String ACTION_KEY = "room.transfer";
+    public static final String ACTION_KEY = "room.transfer";
 
     @Override
     public int getRatelimit() {
@@ -37,33 +37,41 @@ public class HousekeepingTransferRoomOwnershipEvent extends HousekeepingHandler 
         int roomId = this.packet.readInt();
         int newOwnerId = this.packet.readInt();
 
+        this.reply(
+                ACTION_KEY,
+                transfer(
+                        this.operator(),
+                        roomId,
+                        newOwnerId,
+                        room -> HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)
+                                && HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), newOwnerId)));
+    }
+
+    /**
+     * Gives a room to another user.
+     *
+     * @param mayManage the operator's rank guard on the room's owner and on the new owner
+     */
+    public static HousekeepingResult transfer(
+            HousekeepingOperator operator, int roomId, int newOwnerId, Predicate<Room> mayManage) {
         if (roomId <= 0 || newOwnerId <= 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
         if (room == null) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.room_not_found");
         }
 
-        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)
-                || !HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), newOwnerId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayManage.test(room)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         UserInfo newOwner = Emulator.getGameEnvironment().getUserManager().getUserInfo(newOwnerId);
 
         if (newOwner == null) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(
-                    ACTION_KEY, false, 0, "housekeeping.error.new_owner_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.new_owner_not_found");
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -75,28 +83,24 @@ public class HousekeepingTransferRoomOwnershipEvent extends HousekeepingHandler 
             int rows = statement.executeUpdate();
 
             if (rows == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(
-                        ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.room_not_found");
             }
         } catch (SQLException e) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         room.setOwnerId(newOwnerId);
         room.setOwnerName(newOwner.getUsername());
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 polaris.hotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
                 roomId,
                 room.getName(),
                 "roomId=" + roomId + " newOwner=" + newOwner.getUsername(),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(roomId);
     }
 }

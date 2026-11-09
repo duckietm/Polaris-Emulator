@@ -14,8 +14,13 @@ public class UpdateGuildPartsCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
+        reload();
+        return true;
+    }
+
+    /** The reload itself, without the whisper: also run by the RCON reloadcontent command. */
+    public static void reload() {
         Emulator.getGameEnvironment().getGuildManager().loadGuildParts();
         Emulator.getBadgeImager().reload();
-        return true;
     }
 }

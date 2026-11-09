@@ -1123,8 +1123,8 @@ public class CatalogManager {
     /** The front page slots still running, in the order of their slot id, as the client shows them (the first is the tall one). */
     public List<CatalogFeaturedPage> getCatalogFeaturedPagesSnapshot() {
         synchronized (this.catalogFeaturedPages) {
-            return CatalogFeaturedPage.shown(this.catalogFeaturedPages.values(), (int)
-                    java.time.Instant.now().getEpochSecond());
+            return CatalogFeaturedPage.shown(
+                    this.catalogFeaturedPages.values(), (int) (System.currentTimeMillis() / 1000L));
         }
     }
 

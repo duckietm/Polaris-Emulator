@@ -34,7 +34,8 @@ public class HousekeepingReloadEvent extends HousekeepingHandler {
     static final String CONFIG = "config";
     static final String WORD_FILTER = "wordfilter";
 
-    static final List<String> TARGETS = List.of(CATALOG, TEXTS, PERMISSIONS, ITEMS, NAVIGATOR, CONFIG, WORD_FILTER);
+    public static final List<String> TARGETS =
+            List.of(CATALOG, TEXTS, PERMISSIONS, ITEMS, NAVIGATOR, CONFIG, WORD_FILTER);
 
     @Override
     public int getRatelimit() {

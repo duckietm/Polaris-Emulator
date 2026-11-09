@@ -1,67 +1,105 @@
 package polaris.messages.rcon;
 
 import com.google.gson.Gson;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import polaris.hotel.modtool.ConsoleModeration;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Supplier;
+import polaris.WiredPlatform;
+import polaris.hotel.GameEnvironment;
+import polaris.hotel.modtool.HousekeepingAuditLog;
+import polaris.hotel.modtool.ModToolBan;
 import polaris.hotel.modtool.ModToolBanType;
+import polaris.messages.incoming.housekeeping.HousekeepingOperator;
 
 /**
- * {@code banuser}: bans a player from the hotel's console. Data: {@code user_id}, {@code duration} in seconds (at most
- * {@link ConsoleModeration#MAX_BAN_SECONDS}), {@code reason} and an optional {@code type}: {@code account} (default),
- * {@code ip}, {@code machine} or {@code super} (address and machine). An online player sees the ban and is disconnected.
+ * RCON {@code banuser}: bans a user for {@code duration} seconds through
+ * {@code ModToolManager.banAsSystem}, the moderator-less path of the mod tool's ban: an online user
+ * sees the ban and is disconnected, an IP or machine ban also bans the accounts sharing that
+ * address or machine, and a machine/IP ban without a known machine id/IP falls back to IP/account
+ * the way the mod tool's does. Audited as {@code user.ban} by the All-in-1 Manager.
  */
-public class BanUser extends RCONMessage<BanUser.BanUserJSON> {
+public class BanUser extends RCONMessage<BanUser.JSON> {
+    /** The bans.ban_reason column is varchar(200): a longer reason fails the insert after the answer went out. */
+    static final int MAX_REASON_LENGTH = 200;
+
+    static final List<String> TYPES = List.of("account", "ip", "machine", "super");
+
+    private final Supplier<GameEnvironment> environment;
 
     public BanUser() {
-        super(BanUserJSON.class);
+        this(WiredPlatform::gameEnvironment);
+    }
+
+    BanUser(Supplier<GameEnvironment> environment) {
+        super(JSON.class);
+        this.environment = environment;
     }
 
     @Override
-    public void handle(Gson gson, BanUserJSON json) {
-        ConsoleModeration moderation = ConsoleModeration.installed();
-        if (moderation == null) {
-            this.status = STATUS_ERROR;
-            this.message = "The hotel is still starting.";
-            return;
-        }
+    public void handle(Gson gson, JSON json) {
+        ModToolBanType type = banType(json.type);
 
-        ModToolBanType type = type(json.type);
         if (type == null) {
             this.status = STATUS_ERROR;
-            this.message = "type must be account, ip, machine or super";
+            this.message = "type must be one of: " + String.join(", ", TYPES);
             return;
         }
 
-        switch (moderation.ban(json.user_id, json.duration, json.reason.trim(), type)) {
-            case BANNED -> this.message = "banned";
-            case USER_NOT_FOUND -> this.status = USER_NOT_FOUND;
-            case FAILED -> {
-                this.status = SYSTEM_ERROR;
-                this.message = "the ban could not be stored";
-            }
+        String reason = json.reason == null ? "" : json.reason.trim();
+        GameEnvironment environment = this.environment.get();
+
+        if (environment.getUserManager().getUserInfo(json.user_id) == null) {
+            this.status = USER_NOT_FOUND;
+            this.message = "user not found";
+            return;
         }
+
+        List<ModToolBan> bans = environment.getModToolManager().banAsSystem(json.user_id, reason, json.duration, type);
+
+        if (bans == null || bans.isEmpty()) {
+            this.status = SYSTEM_ERROR;
+            this.message = "ban failed";
+            return;
+        }
+
+        HousekeepingAuditLog.log(
+                HousekeepingOperator.SYSTEM_ID,
+                HousekeepingOperator.SYSTEM_NAME,
+                "user.ban",
+                json.user_id,
+                "seconds=" + json.duration + " type=" + bans.get(0).type.getType() + " accounts=" + bans.size()
+                        + " reason=" + auditValue(reason),
+                HousekeepingOperator.SYSTEM_IP);
     }
 
-    /** The ban type named by {@code text}; account when empty, null when it names none. */
-    static ModToolBanType type(String text) {
-        if (text == null || text.isBlank()) return ModToolBanType.ACCOUNT;
-        ModToolBanType type = ModToolBanType.fromString(text.trim());
-        return type == ModToolBanType.UNKNOWN ? null : type;
+    /** "account" (also when left out), "ip", "machine" or "super"; null for anything else. */
+    static ModToolBanType banType(String value) {
+        String type = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+
+        return switch (type) {
+            case "", "account" -> ModToolBanType.ACCOUNT;
+            case "ip" -> ModToolBanType.IP;
+            case "machine" -> ModToolBanType.MACHINE;
+            case "super" -> ModToolBanType.SUPER;
+            default -> null;
+        };
     }
 
-    static class BanUserJSON {
+    /** Free text on one line, for the audit detail. */
+    static String auditValue(String value) {
+        return value.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ');
+    }
+
+    static class JSON {
         @Positive(message = "invalid user")
         public int user_id;
 
-        @Positive(message = "invalid duration")
-        @Max(value = ConsoleModeration.MAX_BAN_SECONDS, message = "duration is too long")
+        @Positive(message = "duration must be a positive number of seconds")
         public int duration;
 
-        @NotBlank(message = "a reason is required")
-        @Size(max = 200, message = "the reason is longer than 200 characters")
+        @Size(max = MAX_REASON_LENGTH, message = "reason must be at most 200 characters")
         public String reason;
 
         public String type;

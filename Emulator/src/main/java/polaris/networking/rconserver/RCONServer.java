@@ -35,6 +35,7 @@ import polaris.messages.rcon.GivePoints;
 import polaris.messages.rcon.GiveRespect;
 import polaris.messages.rcon.GiveUserClothing;
 import polaris.messages.rcon.HotelAlert;
+import polaris.messages.rcon.Housekeeping;
 import polaris.messages.rcon.IgnoreUser;
 import polaris.messages.rcon.ImageAlertUser;
 import polaris.messages.rcon.ImageHotelAlert;
@@ -110,7 +111,6 @@ public class RCONServer extends Server {
         this.addRCONMessage("setrank", SetRank.class);
         this.addRCONMessage("updatewordfilter", UpdateWordfilter.class);
         this.addRCONMessage("updatewheel", UpdateWheel.class);
-        this.addRCONMessage("reloadcontent", ReloadContent.class);
         this.addRCONMessage("updatesoundboard", UpdateSoundboard.class);
         this.addRCONMessage("updatecatalog", UpdateCatalog.class);
         this.addRCONMessage("executecommand", ExecuteCommand.class);
@@ -126,8 +126,6 @@ public class RCONServer extends Server {
         this.addRCONMessage("talkuser", TalkUser.class);
         this.addRCONMessage("changeroomowner", ChangeRoomOwner.class);
         this.addRCONMessage("muteuser", MuteUser.class);
-        this.addRCONMessage("banuser", BanUser.class);
-        this.addRCONMessage("unbanuser", UnbanUser.class);
         this.addRCONMessage("giverespect", GiveRespect.class);
         this.addRCONMessage("ignoreuser", IgnoreUser.class);
         this.addRCONMessage("setmotto", SetMotto.class);
@@ -135,6 +133,10 @@ public class RCONServer extends Server {
         this.addRCONMessage("modifysubscription", ModifyUserSubscription.class);
         this.addRCONMessage("changeusername", ChangeUsername.class);
         this.addRCONMessage("updateitems", UpdateItems.class);
+        this.addRCONMessage("housekeeping", Housekeeping.class);
+        this.addRCONMessage("banuser", BanUser.class);
+        this.addRCONMessage("unbanuser", UnbanUser.class);
+        this.addRCONMessage("reloadcontent", ReloadContent.class);
         if (stressEnabled) {
             this.addRCONMessage("stressstart", StressStart.class);
             this.addRCONMessage("stressstatus", StressStatus.class);

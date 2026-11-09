@@ -4,9 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.BooleanSupplier;
 import polaris.Emulator;
 import polaris.hotel.users.User;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Extend a user's HC by `days`. Adds to the existing club_expire_timestamp
@@ -19,7 +19,7 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
         return HousekeepingAreas.ECONOMY;
     }
 
-    private static final String ACTION_KEY = "user.set_hc";
+    public static final String ACTION_KEY = "user.set_hc";
     private static final int SECONDS_IN_DAY = 24 * 3600;
 
     @Override
@@ -36,16 +36,28 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
         int userId = this.packet.readInt();
         int days = this.packet.readInt();
 
+        this.reply(
+                ACTION_KEY,
+                setHc(
+                        this.operator(),
+                        userId,
+                        days,
+                        () -> HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), userId)));
+    }
+
+    /**
+     * Adds {@code days} of HC to a user, online or not; 0 days ends the subscription now.
+     *
+     * @param mayTarget the operator's rank guard on the target
+     */
+    public static HousekeepingResult setHc(
+            HousekeepingOperator operator, int userId, int days, BooleanSupplier mayTarget) {
         if (userId <= 0 || days < 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
-        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), userId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayTarget.getAsBoolean()) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         int now = Emulator.getIntUnixTimestamp();
@@ -81,24 +93,20 @@ public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
             int rows = statement.executeUpdate();
 
             if (rows == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(
-                        ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.user_not_found");
             }
         } catch (SQLException e) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 userId,
                 "days=" + days + " expire=" + newExpire,
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(userId);
     }
 
     private static int storedClubExpire(Connection connection, int userId) throws SQLException {

@@ -10,7 +10,6 @@ import polaris.hotel.rooms.Room;
 import polaris.hotel.users.User;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.generic.alerts.StaffAlertWithLinkComposer;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Mirrors :ha - staff alert with sender attribution. By default it goes to
@@ -27,7 +26,7 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
         return HousekeepingAreas.HOTEL;
     }
 
-    private static final String ACTION_KEY = "hotel.alert";
+    public static final String ACTION_KEY = "hotel.alert";
 
     static final String SCOPE_HOTEL = "hotel";
     static final String SCOPE_USER = "user";
@@ -47,27 +46,32 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
             return;
         }
 
-        String message = HousekeepingInputGuard.normalize(this.packet.readString());
+        String message = this.packet.readString();
         String recipient = SCOPE_HOTEL;
 
         if (this.packet.bytesAvailable() > 0) {
             recipient = this.packet.readString();
         }
 
+        this.reply(ACTION_KEY, send(this.operator(), message, recipient));
+    }
+
+    /**
+     * Sends a staff alert signed with the operator's name to the recipient {@link #parseRecipient}
+     * reads. On success the result's id is the number of users reached.
+     */
+    public static HousekeepingResult send(HousekeepingOperator operator, String rawMessage, String recipient) {
+        String message = HousekeepingInputGuard.normalize(rawMessage);
         String[] parsedRecipient = parseRecipient(recipient);
         String scope = parsedRecipient[0];
         String target = parsedRecipient[1];
 
         if (message.isEmpty()) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.alert_empty"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.alert_empty");
         }
 
         if (!HousekeepingInputGuard.isWithinLimit(message, HousekeepingInputGuard.MAX_ALERT_LENGTH)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.input_too_long"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.input_too_long");
         }
 
         GameEnvironment environment = Emulator.getGameEnvironment();
@@ -89,9 +93,7 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
                         target.isEmpty() ? null : environment.getUserManager().getUser(target);
 
                 if (user == null) {
-                    this.client.sendResponse(new HousekeepingActionResultComposer(
-                            ACTION_KEY, false, 0, "housekeeping.error.user_offline"));
-                    return;
+                    return HousekeepingResult.fail("housekeeping.error.user_offline");
                 }
 
                 recipients.add(user);
@@ -103,9 +105,7 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
                 Room room = environment.getRoomManager().getRoom(parseRoomId(target));
 
                 if (room == null) {
-                    this.client.sendResponse(new HousekeepingActionResultComposer(
-                            ACTION_KEY, false, 0, "housekeeping.error.room_not_active"));
-                    return;
+                    return HousekeepingResult.fail("housekeeping.error.room_not_active");
                 }
 
                 recipients.addAll(room.getUsers());
@@ -122,13 +122,11 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
                 }
             }
             default -> {
-                this.client.sendResponse(
-                        new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.invalid_input");
             }
         }
 
-        String body = message + "\r\n-" + this.client.getUser().getUserInfo().getUsername();
+        String body = message + "\r\n-" + operator.name();
         ServerMessage broadcast = new StaffAlertWithLinkComposer(body, "").compose();
 
         int reached = 0;
@@ -141,15 +139,15 @@ public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
         }
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 SCOPE_HOTEL.equals(scope) ? ACTION_KEY : ACTION_KEY + "." + scope,
                 targetType,
                 targetId,
                 targetLabel,
                 "reached=" + reached + " message=" + HousekeepingInputGuard.auditValue(message),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, reached, ""));
+                operator.ip());
+        return HousekeepingResult.ok(reached);
     }
 
     /**

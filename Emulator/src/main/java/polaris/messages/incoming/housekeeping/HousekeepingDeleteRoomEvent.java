@@ -2,12 +2,12 @@ package polaris.messages.incoming.housekeeping;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.GameEnvironment;
 import polaris.hotel.modtool.HousekeepingAuditLog;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomDeleter;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Permanently deletes a room the same way its owner does from the navigator
@@ -22,7 +22,7 @@ public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
         return HousekeepingAreas.ROOMS;
     }
 
-    private static final String ACTION_KEY = "room.delete";
+    public static final String ACTION_KEY = "room.delete";
 
     @Override
     public int getRatelimit() {
@@ -37,22 +37,33 @@ public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
 
         int roomId = this.packet.readInt();
 
+        this.reply(
+                ACTION_KEY,
+                delete(
+                        this.operator(),
+                        roomId,
+                        room -> HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)));
+    }
+
+    /**
+     * Deletes a room for good, the way its owner does.
+     *
+     * @param mayManage the operator's rank guard on the room's owner
+     */
+    public static HousekeepingResult delete(HousekeepingOperator operator, int roomId, Predicate<Room> mayManage) {
         if (roomId <= 0) {
-            this.fail("housekeeping.error.invalid_input");
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         GameEnvironment environment = Emulator.getGameEnvironment();
         Room room = environment.getRoomManager().loadRoom(roomId, true);
 
         if (room == null) {
-            this.fail("housekeeping.error.room_not_found");
-            return;
+            return HousekeepingResult.fail("housekeeping.error.room_not_found");
         }
 
-        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)) {
-            this.fail("housekeeping.error.rank_too_high");
-            return;
+        if (!mayManage.test(room)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         String roomName = room.getName();
@@ -61,23 +72,18 @@ public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
             // Pets are saved in place: this is a rare staff action, not a hot path.
             RoomDeleter.delete(room, environment, connection, Runnable::run);
         } catch (SQLException e) {
-            this.fail("housekeeping.error.db_failed");
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 HousekeepingAuditLog.TARGET_ROOM,
                 roomId,
                 roomName,
                 "roomId=" + roomId + " owner=" + room.getOwnerName(),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
-    }
-
-    private void fail(String message) {
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, message));
+                operator.ip());
+        return HousekeepingResult.ok(roomId);
     }
 }

@@ -1,7 +1,7 @@
 package polaris.messages.incoming.housekeeping;
 
+import java.util.function.BooleanSupplier;
 import polaris.hotel.modtool.HousekeepingAuditLog;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Switches the emergency lockdown of the panel. Only the highest rank may, and it is also the
@@ -13,7 +13,7 @@ public class HousekeepingLockdownEvent extends HousekeepingHandler {
         return HousekeepingAreas.HOTEL;
     }
 
-    static final String ACTION_KEY = "hotel.lockdown";
+    public static final String ACTION_KEY = "hotel.lockdown";
 
     @Override
     public int getRatelimit() {
@@ -28,27 +28,39 @@ public class HousekeepingLockdownEvent extends HousekeepingHandler {
 
         boolean enabled = this.packet.readBoolean();
 
-        if (!HousekeepingTargetRankGuard.isTopRank(this.client.getUser())) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        this.reply(
+                ACTION_KEY,
+                set(this.operator(), enabled, () -> HousekeepingTargetRankGuard.isTopRank(this.client.getUser())));
+    }
+
+    /**
+     * Switches the lockdown on or off and stores it. On success the result's id is 1 for on, 0 for off.
+     *
+     * @param isTopRank whether the operator holds the highest rank
+     */
+    public static HousekeepingResult set(HousekeepingOperator operator, boolean enabled, BooleanSupplier isTopRank) {
+        if (!isTopRank.getAsBoolean()) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         if (!HousekeepingLockdown.set(enabled)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY + (enabled ? ".on" : ".off"),
                 HousekeepingAuditLog.TARGET_HOTEL,
                 0,
                 "",
                 "",
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, enabled ? 1 : 0, ""));
+                operator.ip());
+        return HousekeepingResult.ok(enabled ? 1 : 0);
+    }
+
+    /** Whether the lockdown is on. */
+    public static boolean isEnabled() {
+        return HousekeepingLockdown.isLocked();
     }
 }

@@ -1,8 +1,8 @@
 package polaris.messages.incoming.housekeeping;
 
+import java.util.function.Predicate;
 import polaris.Emulator;
 import polaris.hotel.rooms.Room;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Toggle room-wide mute. Habbo's Room.setMuted is boolean, not duration-
@@ -18,7 +18,7 @@ public class HousekeepingMuteRoomEvent extends HousekeepingHandler {
         return HousekeepingAreas.ROOMS;
     }
 
-    private static final String ACTION_KEY = "room.mute";
+    public static final String ACTION_KEY = "room.mute";
 
     @Override
     public int getRatelimit() {
@@ -34,37 +34,47 @@ public class HousekeepingMuteRoomEvent extends HousekeepingHandler {
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
 
+        this.reply(
+                ACTION_KEY,
+                mute(
+                        this.operator(),
+                        roomId,
+                        minutes,
+                        room -> HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)));
+    }
+
+    /**
+     * Mutes a room (minutes &gt; 0) or unmutes it (0).
+     *
+     * @param mayManage the operator's rank guard on the room's owner
+     */
+    public static HousekeepingResult mute(
+            HousekeepingOperator operator, int roomId, int minutes, Predicate<Room> mayManage) {
         if (roomId <= 0 || minutes < 0) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
         if (room == null) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.room_not_found");
         }
 
-        if (!HousekeepingRoomGuard.canManageRoom(this.client.getUser(), room)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayManage.test(room)) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         room.setMuted(minutes > 0);
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 polaris.hotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
                 roomId,
                 room.getName(),
                 "roomId=" + roomId + " minutes=" + minutes + " muted=" + (minutes > 0),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(roomId);
     }
 }

@@ -3,9 +3,9 @@ package polaris.messages.incoming.housekeeping;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.function.BooleanSupplier;
 import polaris.Emulator;
 import polaris.hotel.users.User;
-import polaris.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Apply an arbitrary-duration trade lock. Writes
@@ -21,7 +21,7 @@ public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
         return HousekeepingAreas.USERS;
     }
 
-    private static final String ACTION_KEY = "user.trade_lock";
+    public static final String ACTION_KEY = "user.trade_lock";
 
     @Override
     public int getRatelimit() {
@@ -36,20 +36,35 @@ public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
 
         int userId = this.packet.readInt();
         int hours = this.packet.readInt();
-        String reason = HousekeepingInputGuard.normalize(this.packet.readString());
+        String reason = this.packet.readString();
+
+        this.reply(
+                ACTION_KEY,
+                tradeLock(
+                        this.operator(),
+                        userId,
+                        hours,
+                        reason,
+                        () -> HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), userId)));
+    }
+
+    /**
+     * Trade-locks a user for {@code hours}, online or not, and alerts an online user with the reason.
+     *
+     * @param mayTarget the operator's rank guard on the target
+     */
+    public static HousekeepingResult tradeLock(
+            HousekeepingOperator operator, int userId, int hours, String rawReason, BooleanSupplier mayTarget) {
+        String reason = HousekeepingInputGuard.normalize(rawReason);
 
         if (userId <= 0
                 || hours <= 0
                 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.invalid_input");
         }
 
-        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getUser(), userId)) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
-            return;
+        if (!mayTarget.getAsBoolean()) {
+            return HousekeepingResult.fail("housekeeping.error.rank_too_high");
         }
 
         int duration = HousekeepingSanctionDuration.secondsFromHours(hours);
@@ -68,9 +83,7 @@ public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
             block.setInt(1, userId);
 
             if (block.executeUpdate() == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(
-                        ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
-                return;
+                return HousekeepingResult.fail("housekeeping.error.user_not_found");
             }
 
             sanction.setInt(1, userId);
@@ -79,9 +92,7 @@ public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
             sanction.setInt(4, userId);
             sanction.executeUpdate();
         } catch (SQLException e) {
-            this.client.sendResponse(
-                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
-            return;
+            return HousekeepingResult.fail("housekeeping.error.db_failed");
         }
 
         User online = Emulator.getGameEnvironment().getUserManager().getUser(userId);
@@ -95,13 +106,13 @@ public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
         }
 
         polaris.hotel.modtool.HousekeepingAuditLog.log(
-                this.client.getUser().getUserInfo().getId(),
-                this.client.getUser().getUserInfo().getUsername(),
+                operator.id(),
+                operator.name(),
                 ACTION_KEY,
                 userId,
                 "hours=" + hours + " lockedUntil=" + lockedUntil + " reason="
                         + HousekeepingInputGuard.auditValue(reason),
-                this.client.getUser().getUserInfo().getIpLogin());
-        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
+                operator.ip());
+        return HousekeepingResult.ok(userId);
     }
 }

@@ -84,6 +84,29 @@ final class RoomDisposer {
         }
     }
 
+    /**
+     * Drops what a load registered before the room was disposed under it. Nobody is in a room that never finished
+     * loading, so no user is moved and nothing is sent; the items, bots and pets were only read, so nothing is saved.
+     */
+    void discardAbandonedLoad() {
+        try {
+            this.room.getItemManager().clear();
+            this.room.getUnitManager().clearBots();
+            this.room.getUnitManager().clearPets();
+        } catch (Exception exception) {
+            LOGGER.error("Caught exception discarding an abandoned room load", exception);
+        }
+
+        try {
+            WiredManager.unregisterRoomTickables(this.room);
+            this.room.disposeWiredRuntimeState();
+            this.room.getRoomSpecialTypes().dispose();
+            this.clearWiredCaches();
+        } catch (Exception exception) {
+            LOGGER.error("Caught exception discarding the wired state of an abandoned room load", exception);
+        }
+    }
+
     private void clearWiredCaches() {
         this.room.getArrayVariableManager().clearCache();
         if (WiredManager.getStackIndex() != null) {

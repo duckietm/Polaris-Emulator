@@ -32,6 +32,7 @@ public class WheelAdminSavePrizesEvent extends MessageHandler {
         // id is absent from this list was removed in the editor and gets
         // soft-disabled below.
         Set<Integer> keptIds = new HashSet<>();
+        int failedSaves = 0;
 
         for (int i = 0; i < count; i++) {
             int id = this.packet.readInt();
@@ -43,9 +44,14 @@ public class WheelAdminSavePrizesEvent extends MessageHandler {
             String label = this.packet.readString();
             int savedId = wheel.savePrize(id, type, value, amount, pointsType, weight, label, i);
             if (savedId > 0) keptIds.add(savedId);
+            else failedSaves++;
         }
 
-        wheel.disablePrizesNotIn(keptIds);
+        // A prize that could not be saved is missing from keptIds: disabling "everything else" would then switch it
+        // off too, and every prize when the database is down. The removals wait for a save that went through.
+        if (failedSaves == 0) {
+            wheel.disablePrizesNotIn(keptIds);
+        }
         wheel.reload();
 
         this.client.sendResponse(new WheelAdminPrizesComposer(wheel.getPrizes()));

@@ -173,6 +173,12 @@ public class EffectsComponent {
         UserEffect effect = this.effects.get(effectId);
 
         if (effect != null) {
+            // An expired timed effect is not worn: isRemaining also moves on to the next one of a stack.
+            if (!effect.isRemaining()) {
+                this.user.getClient().sendResponse(new EffectsListRemoveComposer(effect));
+                return;
+            }
+
             if (!effect.isActivated()) {
                 this.activateEffect(effect.effect);
             }
@@ -242,7 +248,9 @@ public class EffectsComponent {
             if (this.duration <= 0) // permanant
             return Integer.MAX_VALUE;
 
-            return Emulator.getIntUnixTimestamp() - this.activationTimestamp + this.duration;
+            if (this.activationTimestamp < 0) return this.duration;
+
+            return Math.max(0, this.activationTimestamp + this.duration - Emulator.getIntUnixTimestamp());
         }
 
         public void insert() {

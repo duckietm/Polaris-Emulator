@@ -22,6 +22,8 @@ import polaris.database.migration.MigrationOptions;
 import polaris.database.migration.MigrationRunner;
 import polaris.hotel.GameEnvironment;
 import polaris.hotel.catalog.marketplace.MarketplaceTokenService;
+import polaris.hotel.catalog.marketplace.NftMarketplaceRuntime;
+import polaris.hotel.catalog.marketplace.NftMarketplaceSettings;
 import polaris.hotel.catalog.specialitems.SpecialItemClaimService;
 import polaris.hotel.collectibles.CollectiblesRuntime;
 import polaris.hotel.collectibles.CollectiblesService;
@@ -235,6 +237,14 @@ final class PolarisBootstrap {
                 runtime.database().getDataSource(), runtime.gameEnvironment().getItemManager()));
         MarketplaceTokenService.install(
                 new MarketplaceTokenService(runtime.database().getDataSource(), configuration));
+        NftMarketplaceRuntime.install(new NftMarketplaceRuntime(
+                runtime.database().getDataSource(),
+                () -> NftMarketplaceSettings.from(configuration),
+                runtime.gameEnvironment().getItemManager(),
+                id -> runtime.gameEnvironment().getUserManager().getUser(id),
+                runtime.pluginManager(),
+                task -> runtime.threading().run(task),
+                () -> (int) (System.currentTimeMillis() / 1000L)));
         CollectiblesRuntime.install(new CollectiblesRuntime(
                 new CollectiblesService(runtime.database().getDataSource()),
                 () -> CollectiblesSettings.from(configuration),

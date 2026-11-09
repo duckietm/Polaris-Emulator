@@ -253,6 +253,7 @@ public class Outgoing {
     public static final int RoomOwnerComposer = 339; // PRODUCTION-201611291003-338511768
     public static final int WiredConditionDataComposer = 1108; // PRODUCTION-201611291003-338511768
     public static final int ModToolUserInfoComposer = 2866; // PRODUCTION-201611291003-338511768
+    public static final int ModToolUserRecordsComposer = 9482; // CUSTOM (records behind the user info counts)
     public static final int UserWardrobeComposer = 3315; // PRODUCTION-201611291003-338511768
     public static final int RoomPetExperienceComposer = 2156; // PRODUCTION-201611291003-338511768
     public static final int FriendChatMessageComposer = 1587; // PRODUCTION-201611291003-338511768
@@ -853,6 +854,10 @@ public class Outgoing {
     // my-reports list (official ids, free in both repos)
     public static final int MarketplaceCancelAllOffersComposer = 1949;
     public static final int MarketplaceClearOwnHistoryComposer = 175;
+    // AIR's Collectibles marketplace (nft_* furni for emeralds): the official ids, free here.
+    public static final int NftMarketplaceBuyResultComposer = 1583;
+    public static final int NftMarketplaceItemStatsComposer = 2492;
+    public static final int NftMarketplaceMakeOfferResultComposer = 3524;
     public static final int LtdRaffleEnteredComposer = 933;
     public static final int LtdRaffleResultComposer = 2316;
     public static final int PurchasableChatStylesComposer = 946;

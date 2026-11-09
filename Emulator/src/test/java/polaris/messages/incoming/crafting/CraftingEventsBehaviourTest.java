@@ -113,14 +113,15 @@ class CraftingEventsBehaviourTest {
             case 2 -> this.chair;
             default -> null;
         });
-        when(this.itemManager.craftInTransaction(anyInt(), any(), any())).thenAnswer(i -> {
-            Item reward = i.getArgument(1);
-            String consumed = ((Collection<?>) i.getArgument(2))
-                    .stream().map(this::label).sorted().collect(Collectors.joining(", "));
-            this.record("items.craftInTransaction(" + this.label(reward) + ", consumes " + consumed + ") -> "
-                    + this.rewardCreated);
-            return this.rewardCreated ? this.userItem(900, reward) : null;
-        });
+        when(this.itemManager.craftInTransaction(anyInt(), any(), any(), anyInt()))
+                .thenAnswer(i -> {
+                    Item reward = i.getArgument(1);
+                    String consumed = ((Collection<?>) i.getArgument(2))
+                            .stream().map(this::label).sorted().collect(Collectors.joining(", "));
+                    this.record("items.craftInTransaction(" + this.label(reward) + ", consumes " + consumed + ") -> "
+                            + this.rewardCreated);
+                    return this.rewardCreated ? this.userItem(900, reward) : null;
+                });
 
         this.craftingManager = mock(CraftingManager.class);
         when(this.craftingManager.getAltar(any())).thenAnswer(i -> this.isAltar ? this.altar : null);

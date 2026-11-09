@@ -516,16 +516,30 @@ public class QuestManager {
             return;
         }
         UserQuestState state = this.stateFor(user);
-        UserQuestProgress entry = state.accepted();
-        if (entry == null) {
-            return;
+        UserQuestProgress entry;
+        Quest quest;
+        boolean completed;
+        // Progress and the completion claim happen under the user's state lock: two goals counted at once used to
+        // both see the goal reached and both pay the reward. Once claimed the entry is no longer the accepted one,
+        // so a concurrent call finds nothing to progress.
+        synchronized (state) {
+            entry = state.accepted();
+            if (entry == null) {
+                return;
+            }
+            quest = this.quests.get(entry.getQuestId());
+            if (quest == null || quest.getGoalType() != goalType) {
+                return;
+            }
+            entry.setProgress(entry.getProgress() + amount);
+            completed = entry.getProgress() >= quest.getGoalCount();
+            if (completed) {
+                entry.setProgress(quest.getGoalCount());
+                entry.setCompletedAt(Emulator.getIntUnixTimestamp());
+                entry.setAccepted(false, entry.getCompletedAt());
+            }
         }
-        Quest quest = this.quests.get(entry.getQuestId());
-        if (quest == null || quest.getGoalType() != goalType) {
-            return;
-        }
-        entry.setProgress(entry.getProgress() + amount);
-        if (entry.getProgress() >= quest.getGoalCount()) {
+        if (completed) {
             this.complete(user, quest, state, entry);
             return;
         }
@@ -533,10 +547,8 @@ public class QuestManager {
         user.getClient().sendResponse(new QuestComposer(this.toWire(quest, state)));
     }
 
+    /** Pays a quest whose completion {@link #progress} has already claimed. */
     private void complete(User user, Quest quest, UserQuestState state, UserQuestProgress entry) {
-        entry.setProgress(quest.getGoalCount());
-        entry.setCompletedAt(Emulator.getIntUnixTimestamp());
-        entry.setAccepted(false, entry.getCompletedAt());
         this.save(state.getUserId(), entry);
         QuestRewards.grantActivityPoints(user, quest.getRewardType(), quest.getRewardAmount());
         QuestRewards.grantBadge(user, quest.getRewardBadge());

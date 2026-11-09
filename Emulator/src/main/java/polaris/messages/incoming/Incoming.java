@@ -133,6 +133,7 @@ public class Incoming {
     public static final int RecolorFurniEvent = 2852;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
+    public static final int ModToolRequestUserRecordsEvent = 9481; // CUSTOM (records behind the user info counts)
     /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
     @Deprecated
     public static final int ModToolWarnEvent = UnsupportedIncoming.ModToolWarnEvent;
@@ -768,6 +769,11 @@ public class Incoming {
     public static final int CancelAllOwnItemsEvent = 1228;
     public static final int ClearOwnHistoryEvent = 2058;
     public static final int SellMultipleItemsEvent = 1551;
+    // AIR's Collectibles marketplace. Make offer and stats use the official ids; the buy's official id (121) is
+    // the emerald furni redeem here, so it takes one of the custom range.
+    public static final int MakeNftMarketplaceOfferEvent = 2346;
+    public static final int RequestNftMarketplaceItemStatsEvent = 2706;
+    public static final int BuyNftMarketplaceOfferEvent = 9425;
     // AIR 13 club extend confirmation (ClubDiscountPromoExtension)
     public static final int RequestClubExtendConfirmEvent = 352;
     // AIR 13 my-reports window: ask for the list, appeal one report

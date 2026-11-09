@@ -41,8 +41,19 @@ public class RideablePet extends Pet {
         return this.rider;
     }
 
-    public void setRider(User rider) {
+    public synchronized void setRider(User rider) {
         this.rider = rider;
+    }
+
+    /**
+     * Seats the rider when the horse is saddled and nobody is on it yet. Two players who walked up at the same time
+     * both passed the free check made when they set off, and both sat on the same horse.
+     */
+    public synchronized boolean claimRider(User rider) {
+        if (!this.hasSaddle() || this.getRider() != null) return false;
+
+        this.setRider(rider);
+        return true;
     }
 
     public int getSaddleItemId() {

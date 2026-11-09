@@ -24,6 +24,7 @@ class ModToolPermissionContractTest {
             "ModToolRequestRoomVisitsEvent.java",
             "ModToolRequestUserChatlogEvent.java",
             "ModToolRequestUserInfoEvent.java",
+            "ModToolRequestUserRecordsEvent.java",
             "ModToolRoomAlertEvent.java",
             "ModToolSanctionAlertEvent.java",
             "ModToolSanctionBanEvent.java",

@@ -28,7 +28,7 @@ public class MarketplaceOwnItemsComposer extends MessageComposer {
         for (MarketPlaceOffer offer : this.user.getInventory().getMarketplaceItems()) {
             try {
                 if (offer.getState() == MarketPlaceState.OPEN) {
-                    if ((offer.getTimestamp() + 172800) - Emulator.getIntUnixTimestamp() <= 0) {
+                    if (offer.secondsLeft(Emulator.getIntUnixTimestamp()) <= 0) {
                         offer.setState(MarketPlaceState.CLOSED);
                         Emulator.getThreading().run(offer);
                     }
@@ -37,22 +37,28 @@ public class MarketplaceOwnItemsComposer extends MessageComposer {
                 this.response.appendInt(offer.getOfferId());
                 this.response.appendInt(offer.getState().getState());
                 this.response.appendInt(offer.getType());
-                this.response.appendInt(offer.getItemId());
-
-                if (offer.getType() == 3) {
-                    this.response.appendInt(offer.getLimitedNumber());
-                    this.response.appendInt(offer.getLimitedStack());
-                } else if (offer.getType() == 2) {
-                    this.response.appendString("");
+                if (offer.getType() == 5) {
+                    // A collectible: AIR reads the product code, the furni and its kind (1 floor, 2 wall).
+                    this.response.appendString(offer.getProductCode());
+                    this.response.appendInt(offer.getItemId());
+                    this.response.appendInt(offer.getNftFurniType());
                 } else {
-                    this.response.appendInt(0);
-                    this.response.appendString("");
+                    this.response.appendInt(offer.getItemId());
+                    if (offer.getType() == 3) {
+                        this.response.appendInt(offer.getLimitedNumber());
+                        this.response.appendInt(offer.getLimitedStack());
+                    } else if (offer.getType() == 2) {
+                        this.response.appendString("");
+                    } else {
+                        this.response.appendInt(0);
+                        this.response.appendString("");
+                    }
                 }
 
                 this.response.appendInt(offer.getPrice());
 
                 if (offer.getState() == MarketPlaceState.OPEN)
-                    this.response.appendInt((((offer.getTimestamp() + 172800) - Emulator.getIntUnixTimestamp()) / 60));
+                    this.response.appendInt(offer.secondsLeft(Emulator.getIntUnixTimestamp()) / 60);
                 else this.response.appendInt(0);
 
                 this.response.appendInt(0);

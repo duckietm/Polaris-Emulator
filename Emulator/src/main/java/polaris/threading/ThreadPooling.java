@@ -1,6 +1,7 @@
 package polaris.threading;
 
 import io.netty.util.concurrent.DefaultThreadFactory;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -77,7 +78,14 @@ public class ThreadPooling {
             return;
         }
 
-        this.persistenceExecutor.execute(task);
+        try {
+            this.persistenceExecutor.execute(task);
+        } catch (RejectedExecutionException exception) {
+            // The persistence queue stayed full past its timeout, or is closing: the write goes to the general pool
+            // instead of being lost with the caller unaware. The caller is still not held and runs no JDBC itself.
+            LOGGER.warn("Persistence task rejected ({}); running it on the general pool", exception.getMessage());
+            this.run(task);
+        }
     }
 
     public PersistenceOperationMonitor.Snapshot getPersistenceOperationSnapshot() {

@@ -41,6 +41,6 @@ class RedeemAndNameGuardsTest {
     @Test
     void onlyAcceptedMembersModerateThreads() throws Exception {
         assertTrue(source("messages/incoming/guilds/forums/GuildForumThreadUpdateEvent.java")
-                .contains("if (member == null || member.getRank().type > GuildRank.MEMBER.type) {"));
+                .contains("if (!isAcceptedMember(member) && !isStaff) {"));
     }
 }

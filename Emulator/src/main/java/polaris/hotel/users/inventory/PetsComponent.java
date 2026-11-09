@@ -53,6 +53,19 @@ public class PetsComponent {
         }
     }
 
+    /**
+     * Adds the pet unless the inventory already holds {@code maximum} pets. The check and the add are one step: checked
+     * apart, two pickups at the same moment both saw room for one more and the inventory went past the maximum.
+     */
+    public boolean addPetWithin(Pet pet, int maximum) {
+        synchronized (this.pets) {
+            if (this.pets.size() >= maximum) return false;
+
+            this.pets.put(pet.getId(), pet);
+            return true;
+        }
+    }
+
     public void addPets(Set<Pet> pets) {
         synchronized (this.pets) {
             for (Pet p : pets) {

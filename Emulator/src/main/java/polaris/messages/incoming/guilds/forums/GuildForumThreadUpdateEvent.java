@@ -53,15 +53,15 @@ public class GuildForumThreadUpdateEvent extends MessageHandler {
                 .getGuildManager()
                 .getGuildMember(guildId, this.client.getUser().getUserInfo().getId());
         // A request still waiting (or a blocked member) is no member: with moderation open to members, such a user
-        // used to pin and lock threads.
-        if (member == null || member.getRank().type > GuildRank.MEMBER.type) {
+        // used to pin and lock threads. Staff moderate without being members, so they are not stopped here.
+        if (!isAcceptedMember(member) && !isStaff) {
             this.client.sendResponse(new ConnectionErrorComposer(401));
             return;
         }
 
         boolean isAdmin =
                 (guild.getOwnerId() == this.client.getUser().getUserInfo().getId()
-                        || member.getRank().type < GuildRank.MEMBER.type);
+                        || (isAcceptedMember(member) && member.getRank().type < GuildRank.MEMBER.type));
 
         if ((guild.canModForum() == SettingsState.OWNER
                         && guild.getOwnerId()
@@ -100,5 +100,9 @@ public class GuildForumThreadUpdateEvent extends MessageHandler {
         if (pinChanged) {
             this.client.sendResponse(new GuildForumThreadsComposer(guild, 0));
         }
+    }
+
+    static boolean isAcceptedMember(GuildMember member) {
+        return member != null && member.getRank().type <= GuildRank.MEMBER.type;
     }
 }

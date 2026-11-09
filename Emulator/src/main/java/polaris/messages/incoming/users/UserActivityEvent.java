@@ -1,10 +1,25 @@
 package polaris.messages.incoming.users;
 
+import java.util.Map;
 import polaris.Emulator;
+import polaris.hotel.achievements.Achievement;
 import polaris.hotel.achievements.AchievementManager;
+import polaris.hotel.users.User;
 import polaris.messages.incoming.MessageHandler;
 
 public class UserActivityEvent extends MessageHandler {
+    /** The "seen" achievements the client reports, by the action it sends. */
+    static final Map<String, String> SEEN_ACHIEVEMENTS = Map.of(
+            "forum.can.read.seen", "SelfModForumCanReadSeen",
+            "forum.can.post.seen", "SelfModForumCanPostSeen",
+            "forum.can.start.thread.seen", "SelfModForumCanPostThrdSeen",
+            "forum.can.moderate.seen", "SelfModForumCanModerateSeen",
+            "room.settings.doormode.seen", "SelfModDoorModeSeen",
+            "room.settings.walkthrough.seen", "SelfModWalkthroughSeen",
+            "room.settings.chat.scrollspeed.seen", "SelfModChatScrollSpeedSeen",
+            "room.settings.chat.hearrange.seen", "SelfModChatHearRangeSeen",
+            "room.settings.chat.floodfilter.seen", "SelfModChatFloodFilterSeen");
+
     @Override
     public int getRatelimit() {
         return 250;
@@ -16,74 +31,26 @@ public class UserActivityEvent extends MessageHandler {
         String value = this.packet.readString();
         String action = this.packet.readString();
 
-        if (type.equals("Quiz")) {
-            if (value.equalsIgnoreCase("7")) {
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment().getAchievementManager().getAchievement("SafetyQuizGraduate"));
-            }
+        if (type.equals("Quiz") && value.equalsIgnoreCase("7")) {
+            claimOnce(this.client.getUser(), "SafetyQuizGraduate");
         }
 
-        switch (action) {
-            case "forum.can.read.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModForumCanReadSeen"));
-                break;
-            case "forum.can.post.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModForumCanPostSeen"));
-                break;
-            case "forum.can.start.thread.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModForumCanPostThrdSeen"));
-                break;
-            case "forum.can.moderate.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModForumCanModerateSeen"));
-                break;
-            case "room.settings.doormode.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModDoorModeSeen"));
-                break;
-            case "room.settings.walkthrough.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModWalkthroughSeen"));
-                break;
-            case "room.settings.chat.scrollspeed.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModChatScrollSpeedSeen"));
-                break;
-            case "room.settings.chat.hearrange.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModChatHearRangeSeen"));
-                break;
-            case "room.settings.chat.floodfilter.seen":
-                AchievementManager.progressAchievement(
-                        this.client.getUser(),
-                        Emulator.getGameEnvironment()
-                                .getAchievementManager()
-                                .getAchievement("SelfModChatFloodFilterSeen"));
-                break;
+        String seen = SEEN_ACHIEVEMENTS.get(action);
+        if (seen != null) {
+            claimOnce(this.client.getUser(), seen);
         }
+    }
+
+    /**
+     * The server cannot check these claims, so each one counts once: a hotel that gives one of these achievements
+     * more levels cannot have them climbed by repeating the packet.
+     */
+    static void claimOnce(User user, String name) {
+        Achievement achievement =
+                Emulator.getGameEnvironment().getAchievementManager().getAchievement(name);
+        if (achievement == null || user == null) return;
+        if (user.getUserStats().getAchievementProgress(achievement) > 0) return;
+
+        AchievementManager.progressAchievement(user, achievement);
     }
 }

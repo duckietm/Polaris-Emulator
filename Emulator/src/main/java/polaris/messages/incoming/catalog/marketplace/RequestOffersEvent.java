@@ -90,8 +90,14 @@ public class RequestOffersEvent extends MessageHandler {
         // and otherwise keeps the historic behaviour: one row per unique serial.
         boolean combineUniques = this.packet.bytesAvailable() > 0 && this.packet.readBoolean();
 
+        // AIR's Collectibles marketplace adds the "Type" menu: 0 every offer, 1 collectibles, 2 furni. A client
+        // without it asks for furni, which is all the marketplace listed before.
+        int offerSource = this.packet.bytesAvailable() >= 4
+                ? MarketplaceInputGuard.normalizeOfferSource(this.packet.readInt())
+                : MarketplaceInputGuard.OFFER_SOURCE_FURNI;
+
         boolean tryCache = min == -1 && max == -1 && query.isEmpty();
-        int cacheKey = cacheKey(type, combineUniques);
+        int cacheKey = cacheKey(type, combineUniques, offerSource);
 
         if (tryCache) {
             ServerMessage message = OFFERS.fresh(cacheKey, System.currentTimeMillis());
@@ -102,7 +108,7 @@ public class RequestOffersEvent extends MessageHandler {
         }
 
         long version = OFFERS.version();
-        List<MarketPlaceOffer> offers = MarketPlace.getOffers(min, max, query, type, combineUniques);
+        List<MarketPlaceOffer> offers = MarketPlace.getOffers(min, max, query, type, combineUniques, offerSource);
 
         ServerMessage message = new MarketplaceOffersComposer(offers).compose();
         if (tryCache) {
@@ -112,8 +118,8 @@ public class RequestOffersEvent extends MessageHandler {
         this.client.sendResponse(message);
     }
 
-    /** The two groupings are different result sets, so they cannot share a cache slot. */
-    private static int cacheKey(int sort, boolean combineUniques) {
-        return (sort << 1) | (combineUniques ? 1 : 0);
+    /** The groupings and offer sources are different result sets, so they cannot share a cache slot. */
+    static int cacheKey(int sort, boolean combineUniques, int offerSource) {
+        return (((sort << 1) | (combineUniques ? 1 : 0)) << 2) | offerSource;
     }
 }

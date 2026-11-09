@@ -5,6 +5,7 @@ import java.util.Map;
 import polaris.Emulator;
 import polaris.hotel.modtool.ModToolManager;
 import polaris.hotel.modtool.ModToolSanctionItem;
+import polaris.hotel.modtool.ModToolSanctionLevelItem;
 import polaris.hotel.modtool.ModToolSanctions;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.users.User;
@@ -40,6 +41,7 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
 
                 ModToolSanctions modToolSanctions =
                         Emulator.getGameEnvironment().getModToolSanctions();
+                int lastLevel = -1;
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
                     Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap =
@@ -52,23 +54,26 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
                     if (modToolSanctionItems != null && !modToolSanctionItems.isEmpty()) {
                         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
 
-                        if (item != null
-                                && item.probationTimestamp > 0
-                                && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
-                            modToolSanctions.run(
-                                    userId, this.client.getUser(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
-                        } else {
-                            modToolSanctions.run(
-                                    userId, this.client.getUser(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
-                        }
+                        // Both probation branches ran the same level; a missing item counts as no earlier sanction.
+                        lastLevel = item == null ? 0 : item.sanctionLevel;
+                        modToolSanctions.run(userId, this.client.getUser(), lastLevel, cfhTopic, message, 0, false, 0);
                     } else {
+                        lastLevel = 0;
                         modToolSanctions.run(userId, this.client.getUser(), 0, cfhTopic, message, 0, false, 0);
                     }
                 } else {
                     user.alert(message);
                 }
 
+                // The caution is the sanction level run applied, or the plain alert when sanctions are off.
+                ModToolSanctionLevelItem applied = lastLevel < 0 ? null : modToolSanctions.levelAfter(lastLevel);
                 ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+                ModToolManager.recordCaution(
+                        userId,
+                        this.client.getUser().getUserInfo().getId(),
+                        applied == null ? "ALERT" : applied.sanctionType,
+                        message,
+                        ModToolSanctions.appliedHours(applied, 0));
                 this.client.sendResponse(new ModeratorActionResultComposer(userId, true));
             } else {
                 this.client.sendResponse(new ModeratorActionResultComposer(userId, false));

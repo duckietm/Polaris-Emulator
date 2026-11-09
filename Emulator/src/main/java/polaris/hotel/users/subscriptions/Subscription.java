@@ -82,7 +82,7 @@ public class Subscription {
      */
     public void addDuration(int amount) {
         // Long purchases one after another used to wrap the int and turn the subscription negative.
-        this.duration = (int) Math.max(0L, Math.min(Integer.MAX_VALUE, (long) this.duration + amount));
+        this.duration = (int) Math.max(0L, Math.min(maxDuration(this.timestampStart), (long) this.duration + amount));
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(
@@ -119,7 +119,19 @@ public class Subscription {
      * @return Remaining duration of subscription in seconds
      */
     public int getRemaining() {
-        return (this.timestampStart + this.duration) - Emulator.getIntUnixTimestamp();
+        return (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, end() - Emulator.getIntUnixTimestamp()));
+    }
+
+    /**
+     * The longest duration that still ends inside an int timestamp: the end is stored and sent as one, and a sum past
+     * it wrapped negative, so a very long subscription expired on the next scheduler run.
+     */
+    public static int maxDuration(int timestampStart) {
+        return Integer.MAX_VALUE - Math.max(0, timestampStart);
+    }
+
+    private long end() {
+        return (long) this.timestampStart + this.duration;
     }
 
     /**
@@ -133,7 +145,7 @@ public class Subscription {
      * @return Unix timestamp end of subscription
      */
     public int getTimestampEnd() {
-        return (this.timestampStart + this.duration);
+        return (int) Math.min(Integer.MAX_VALUE, end());
     }
 
     /**

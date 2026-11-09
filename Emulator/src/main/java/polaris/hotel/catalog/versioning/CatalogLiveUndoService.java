@@ -102,6 +102,11 @@ public final class CatalogLiveUndoService {
                 if (journal.hasLaterChangesToSameEntities(connection, group)) {
                     throw new CatalogUndoConflictException("One or more entities were edited after this operation");
                 }
+                var drifted = CatalogUndoDrift.firstDrifted(active, group.entries());
+                if (drifted.isPresent()) {
+                    throw new CatalogUndoConflictException(
+                            drifted.get() + " was edited after this operation outside Catalog Studio; undo it by hand");
+                }
                 inverse = inverse(group.entries());
                 for (CatalogChangeEntry change : inverse) {
                     live.apply(connection, change);

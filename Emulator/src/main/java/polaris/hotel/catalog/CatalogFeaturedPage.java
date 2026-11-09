@@ -1,5 +1,9 @@
 package polaris.hotel.catalog;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import polaris.Emulator;
 import polaris.messages.ISerialize;
 import polaris.messages.ServerMessage;
@@ -51,6 +55,31 @@ public class CatalogFeaturedPage implements ISerialize {
                 break;
         }
         message.appendInt(secondsLeft(this.expireTimestamp, Emulator.getIntUnixTimestamp()));
+    }
+
+    public int getSlotId() {
+        return this.slotId;
+    }
+
+    /**
+     * The slots sorted by slot id. They are kept in a hash map, whose order is not the slot order (slots 1 to 4 came
+     * out as 3, 1, 4, 2), and the client shows them in the order they are sent.
+     */
+    static List<CatalogFeaturedPage> inSlotOrder(Collection<CatalogFeaturedPage> slots) {
+        return shown(slots, 0);
+    }
+
+    /**
+     * The slots the client gets at `now`: sorted by slot id, without those whose end date has passed. The client
+     * reads 0 seconds left as "never ends", so an ended slot that was still sent stayed on the front page for good.
+     * A `now` of 0 keeps every slot.
+     */
+    static List<CatalogFeaturedPage> shown(Collection<CatalogFeaturedPage> slots, int now) {
+        List<CatalogFeaturedPage> sorted = new ArrayList<>(slots);
+        // The map is public: a plugin may have put an empty slot in it.
+        sorted.removeIf(slot -> slot == null || (now > 0 && slot.expireTimestamp > 0 && slot.expireTimestamp <= now));
+        sorted.sort(Comparator.comparingInt(CatalogFeaturedPage::getSlotId));
+        return sorted;
     }
 
     /** The client reads the seconds until the slot expires; 0 means it does not expire. */

@@ -31,7 +31,6 @@ import polaris.hotel.catalog.layouts.ClubBuyLayout;
 import polaris.hotel.catalog.layouts.VipBuyLayout;
 import polaris.hotel.items.FurnitureType;
 import polaris.hotel.items.Item;
-import polaris.hotel.items.ItemManager;
 import polaris.hotel.items.interactions.InteractionBadgeDisplay;
 import polaris.hotel.items.interactions.InteractionGuildFurni;
 import polaris.hotel.items.interactions.InteractionGuildGate;
@@ -40,6 +39,7 @@ import polaris.hotel.items.interactions.InteractionTeleport;
 import polaris.hotel.items.interactions.InteractionTrophy;
 import polaris.hotel.modtool.ScripterManager;
 import polaris.hotel.permissions.Permission;
+import polaris.hotel.users.LedgerWalletMutation;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserItem;
@@ -91,23 +91,17 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             boolean showName) {}
 
     /**
-     * What a gift has taken so far, so a gift that fails half way can be undone: the payment, the limited number it
-     * reserved and the items it created.
+     * What a gift has reserved so far, so a gift that is not committed can give it back: the limited number, and the
+     * items written in its transaction, which the box lists.
      */
     private static final class GiftAttempt {
-        private int paidCredits;
-        private int paidPoints;
-        private int paidPointsType;
         private CatalogLimitedConfiguration limitedConfiguration;
         private int limitedItemId;
         private int limitedNumber;
         private int limitedStack;
         private final Set<UserItem> createdItems = new HashSet<>();
-        /** The wrapped box, kept apart: it is the recipient's from the moment it is created. */
-        private UserItem gift;
 
-        private User recipient;
-        private boolean delivered;
+        private boolean committed;
     }
 
     @Override
@@ -147,7 +141,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
         } finally {
             try {
-                if (!attempt.delivered) this.undo(attempt);
+                this.undo(attempt);
             } finally {
                 synchronized (this.client.getUser().getUserStats()) {
                     this.client.getUser().getUserStats().isPurchasingFurniture = false;
@@ -256,38 +250,22 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
         if (this.rejectsUnsupportedGift(item)) return;
 
-        if (!this.charge(item, price, attempt)) return;
+        GiftDelivery delivery = LedgerWalletMutation.coordinated(
+                this.client.getUser(),
+                () -> this.persistGift(connection, request, item, price, giftItem, user, userId, badgeFound, attempt));
+        if (delivery == null) return;
 
-        if (!this.createGiftContents(
-                item,
-                user,
-                userId,
-                connection,
-                request.extraData(),
-                badgeFound,
-                attempt.limitedStack,
-                attempt.limitedNumber,
-                attempt.createdItems)) {
-            return;
+        // Committed: the payment, the contents, the box and the limited sale are in the database together, so
+        // from here nothing is undone. The gift used to be charged, filled, wrapped and sold in separate steps: a
+        // crash between them left the sender charged with no gift, or rows nobody owned.
+        attempt.committed = true;
+        CatalogPaymentService.publishTaken(this.client.getUser(), delivery.payment());
+
+        int now = Emulator.getIntUnixTimestamp();
+        this.client.getUser().getUserStats().lastGiftTimestamp = now;
+        if (item.isLimited()) {
+            this.client.getUser().getUserStats().addLtdLog(item.getId(), now);
         }
-
-        String giftData = this.buildGiftData(
-                attempt.createdItems, request.color(), request.ribbonId(), request.showName(), request.message());
-        if (giftData == null) return;
-
-        UserItem gift =
-                Emulator.getGameEnvironment().getItemManager().createGift(request.username(), giftItem, giftData, 0, 0);
-
-        if (gift == null) {
-            LOGGER.debug("createGift returned null");
-            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-            return;
-        }
-        attempt.createdItems.add(gift);
-        attempt.gift = gift;
-        attempt.recipient = user;
-
-        this.recordLimitedSale(item, gift, attempt);
 
         if (this.client.getUser().getUserInfo().getId() != userId) {
             AchievementManager.progressAchievement(
@@ -295,7 +273,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     Emulator.getGameEnvironment().getAchievementManager().getAchievement("GiftGiver"));
         }
 
-        this.deliverToRecipient(user, gift, request.showName());
+        this.deliverToRecipient(user, delivery.gift(), request.showName());
 
         if (this.client.getUser().getUserInfo().getId() != userId) {
             AchievementManager.progressAchievement(
@@ -303,17 +281,75 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     Emulator.getGameEnvironment().getAchievementManager().getAchievement("GiftReceiver"));
         }
 
-        // Gift fully delivered; commit cooldown and clear refund tracking so the cleanup can't double-refund.
-        int now = Emulator.getIntUnixTimestamp();
-        this.client.getUser().getUserStats().lastGiftTimestamp = now;
-        if (item.isLimited()) {
-            this.client.getUser().getUserStats().addLtdLog(item.getId(), now);
-        }
-        attempt.delivered = true;
-        attempt.paidCredits = 0;
-        attempt.paidPoints = 0;
-
         this.client.sendResponse(new PurchaseOKComposer(item));
+    }
+
+    /** The box written in the gift's transaction, and the payment to apply to the wallet once it is committed. */
+    private record GiftDelivery(UserItem gift, CatalogPaymentService.TakenPayment payment) {}
+
+    /**
+     * Writes the payment, the contents, the box and the limited sale in one transaction on {@code connection}; null
+     * once the sender has been answered, with nothing written. Runs under the sender's wallet lock.
+     */
+    private GiftDelivery persistGift(
+            Connection connection,
+            GiftRequest request,
+            CatalogItem item,
+            GiftPrice price,
+            Item giftItem,
+            User user,
+            int userId,
+            boolean badgeFound,
+            GiftAttempt attempt)
+            throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        boolean committed = false;
+        connection.setAutoCommit(false);
+        try {
+            CatalogPaymentService.TakenPayment payment = this.charge(connection, item, price);
+            if (payment == null) return null;
+
+            if (!this.createGiftContents(
+                    item,
+                    user,
+                    userId,
+                    connection,
+                    request.extraData(),
+                    badgeFound,
+                    attempt.limitedStack,
+                    attempt.limitedNumber,
+                    attempt.createdItems)) {
+                return null;
+            }
+
+            String giftData = this.buildGiftData(
+                    attempt.createdItems, request.color(), request.ribbonId(), request.showName(), request.message());
+            if (giftData == null) return null;
+
+            UserItem gift = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(connection, userId, giftItem, 0, 0, giftData);
+            if (gift == null) {
+                LOGGER.debug("gift box creation failed");
+                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return null;
+            }
+
+            this.recordLimitedSale(connection, item, attempt);
+
+            connection.commit();
+            committed = true;
+            return new GiftDelivery(gift, payment);
+        } finally {
+            if (!committed) {
+                try {
+                    connection.rollback();
+                } catch (SQLException e) {
+                    LOGGER.error("Gift could not be rolled back", e);
+                }
+            }
+            connection.setAutoCommit(autoCommit);
+        }
     }
 
     /**
@@ -354,79 +390,57 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         return true;
     }
 
-    /** Takes the price from the sender, nothing of a currency they have without limit; false once refused. */
-    private boolean charge(CatalogItem item, GiftPrice price, GiftAttempt attempt) {
+    /**
+     * Takes the price from the sender in the gift's transaction, nothing of a currency they have without limit; null
+     * once the sender has been told they cannot pay.
+     */
+    private CatalogPaymentService.TakenPayment charge(Connection connection, CatalogItem item, GiftPrice price)
+            throws SQLException {
         int chargeCredits = this.client.getUser().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : price.credits();
         boolean hasInfinitePoints = item.getPointsType() == 0
                 ? this.client.getUser().hasPermission(Permission.ACC_INFINITE_PIXELS)
                 : this.client.getUser().hasPermission(Permission.ACC_INFINITE_POINTS);
         int chargePoints = hasInfinitePoints ? 0 : price.points();
-        if (!CatalogPaymentService.tryTake(this.client.getUser(), chargeCredits, item.getPointsType(), chargePoints)) {
+        try {
+            return CatalogPaymentService.takeWithin(
+                    connection, this.client.getUser(), chargeCredits, item.getPointsType(), chargePoints);
+        } catch (IllegalArgumentException e) {
             this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
-            return false;
+            return null;
         }
-        attempt.paidCredits = chargeCredits;
-        attempt.paidPoints = chargePoints;
-        attempt.paidPointsType = item.getPointsType();
-        return true;
     }
 
     /**
      * One number, one sale, as a purchase for oneself records it: both halves of a teleporter carry the same number,
      * and the box carries none. The first item created is the one sold.
      */
-    private void recordLimitedSale(CatalogItem item, UserItem gift, GiftAttempt attempt) {
+    private void recordLimitedSale(Connection connection, CatalogItem item, GiftAttempt attempt) throws SQLException {
         if (attempt.limitedConfiguration == null) return;
 
         UserItem limitedItem = null;
         for (UserItem itm : attempt.createdItems) {
             if (itm == null) {
-                // Trip the catch path so the deduction is refunded.
+                // Trip the rollback so nothing is charged or created.
                 throw new IllegalStateException("null item before limitedSold()");
             }
-            if (itm == gift) continue;
             if (limitedItem == null || itm.getId() < limitedItem.getId()) limitedItem = itm;
         }
         if (limitedItem == null) return;
 
-        // The sale used to be written with its SQL errors swallowed, leaving the number free in the database to be
-        // sold again after a reload. A failure now undoes the gift; once written the number is not given back.
-        try {
-            attempt.limitedConfiguration.limitedSoldOrThrow(item.getId(), this.client.getUser(), limitedItem);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Limited sale of gift offer " + item.getId() + " could not be recorded", e);
-        }
-        attempt.limitedNumber = 0;
+        // Written in the gift's transaction: a failure rolls the whole gift back, and once committed the number is
+        // sold and not given back.
+        attempt.limitedConfiguration.limitedSold(connection, item.getId(), this.client.getUser(), limitedItem);
     }
 
-    /** Deletes what a failed gift created, returns its limited number and refunds what it took. */
+    /**
+     * Returns the limited number a gift reserved when it was not committed. Everything else it wrote was rolled back
+     * with its transaction, so there is nothing to delete or refund.
+     */
     private void undo(GiftAttempt attempt) {
-        ItemManager items = Emulator.getGameEnvironment().getItemManager();
-        if (attempt.gift != null) {
-            // createGift put the box in an online recipient's inventory at once.
-            if (attempt.recipient != null && attempt.recipient.getInventory() != null) {
-                attempt.recipient.getInventory().getItemsComponent().removeUserItem(attempt.gift.getId());
-            }
-            if (!items.tryDeleteItem(attempt.gift)) {
-                // The recipient keeps a box the database still holds, so the sender is not refunded: the refund used
-                // to be paid while the gift stayed, and both kept what the purchase was worth.
-                LOGGER.error(
-                        "Gift {} could not be taken back; it stays delivered and is not refunded",
-                        attempt.gift.getId());
-                return;
-            }
-        }
-        for (UserItem createdItem : attempt.createdItems) {
-            if (createdItem != null && createdItem != attempt.gift) items.deleteItem(createdItem);
-        }
+        if (attempt.committed) return;
+
         if (attempt.limitedConfiguration != null && attempt.limitedNumber > 0) {
-            // Return the reserved number to the pool, as a failed purchase for oneself does,
-            // so a failed gift neither shrinks the stock nor keeps the number marked as sold.
             attempt.limitedConfiguration.restoreNumber(attempt.limitedItemId, attempt.limitedNumber);
-        }
-        if (attempt.paidCredits > 0 || attempt.paidPoints > 0) {
-            CatalogPaymentService.refund(
-                    this.client.getUser(), attempt.paidCredits, attempt.paidPointsType, attempt.paidPoints);
         }
     }
 
@@ -780,7 +794,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         extraData = this.engraveExtraData(baseItem, user, extraData);
 
                         if (!this.createGiftedFurniture(
-                                baseItem, userId, limitedStack, limitedNumber, extraData, itemsList)) {
+                                connection, baseItem, userId, limitedStack, limitedNumber, extraData, itemsList)) {
                             return false;
                         }
                     }
@@ -838,7 +852,14 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
      * false once the sender has been answered.
      */
     private boolean createGiftedFurniture(
-            Item baseItem, int userId, int limitedStack, int limitedNumber, String extraData, Set<UserItem> itemsList) {
+            Connection connection,
+            Item baseItem,
+            int userId,
+            int limitedStack,
+            int limitedNumber,
+            String extraData,
+            Set<UserItem> itemsList)
+            throws SQLException {
         // Every teleporter kind (tile and room linker included) comes as a pair,
         // exactly as a purchase for oneself does.
         if (InteractionTeleport.class.isAssignableFrom(
@@ -846,13 +867,13 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
             UserItem teleportOne = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(connection, userId, baseItem, limitedStack, limitedNumber, extraData);
             UserItem teleportTwo = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(connection, userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (teleportOne == null || teleportTwo == null) {
-                // The half that was created is deleted with the rest when the gift fails.
+                // The half that was created is rolled back with the rest of the gift.
                 if (teleportOne != null) itemsList.add(teleportOne);
                 if (teleportTwo != null) itemsList.add(teleportTwo);
                 LOGGER.debug(
@@ -864,14 +885,16 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 return false;
             }
 
-            Emulator.getGameEnvironment().getItemManager().insertTeleportPair(teleportOne.getId(), teleportTwo.getId());
+            Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .insertTeleportPair(connection, teleportOne.getId(), teleportTwo.getId());
             itemsList.add(teleportOne);
             itemsList.add(teleportTwo);
 
         } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
             UserItem userItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(connection, userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (userItem == null) {
                 LOGGER.debug("hopper creation failed. baseItemId={}", baseItem.getId());
@@ -879,14 +902,14 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 return false;
             }
 
-            Emulator.getGameEnvironment().getItemManager().insertHopper(userItem);
+            Emulator.getGameEnvironment().getItemManager().insertHopper(connection, userItem);
             itemsList.add(userItem);
 
         } else if (baseItem.getInteractionType().getType() == InteractionGuildFurni.class
                 || baseItem.getInteractionType().getType() == InteractionGuildGate.class) {
             UserItem createdItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(connection, userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (createdItem == null) {
                 LOGGER.debug("guild item creation failed. baseItemId={}", baseItem.getId());
@@ -921,7 +944,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         } else {
             UserItem userItem = Emulator.getGameEnvironment()
                     .getItemManager()
-                    .createGiftContent(userId, baseItem, limitedStack, limitedNumber, extraData);
+                    .createGiftContent(connection, userId, baseItem, limitedStack, limitedNumber, extraData);
 
             if (userItem == null) {
                 LOGGER.debug(

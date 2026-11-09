@@ -291,17 +291,28 @@ public class GuildManager {
     }
 
     public void joinGuild(Guild guild, GameClient client, int userId, boolean acceptRequest) {
+        this.tryJoinGuild(guild, client, userId, acceptRequest);
+    }
+
+    /**
+     * Joins the guild, or accepts the request of {@code userId} when it is not 0, and says whether the row was written.
+     * Accepting used to update the counters and the member's guild list even when a limit refused the join or the
+     * request was already gone.
+     */
+    public boolean tryJoinGuild(Guild guild, GameClient client, int userId, boolean acceptRequest) {
         boolean error = false;
         if (userId == 0 && this.isBlocked(guild, client.getUser().getUserInfo().getId())) {
             client.sendResponse(new GuildJoinErrorComposer(GuildJoinErrorComposer.GROUP_CLOSED));
-            return;
+            return false;
         }
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement =
-                    connection.prepareStatement("SELECT COUNT(id) as total FROM guilds_members WHERE user_id = ?")) {
+            // Only real memberships count towards the 100 groups: pending requests and blocks are not groups joined.
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT COUNT(id) as total FROM guilds_members WHERE user_id = ? AND level_id < ?")) {
                 if (userId == 0)
                     statement.setInt(1, client.getUser().getUserInfo().getId());
                 else statement.setInt(1, userId);
+                statement.setInt(2, GuildRank.REQUESTED.type);
 
                 try (ResultSet set = statement.executeQuery()) {
                     if (set.next()) {
@@ -349,19 +360,18 @@ public class GuildManager {
                                 }
                             }
                         }
+                    }
 
-                        if (!error) {
-                            try (PreparedStatement statement = connection.prepareStatement(
-                                    "SELECT COUNT(id) as total FROM guilds_members WHERE guild_id = ? AND user_id = ? LIMIT 1")) {
-                                statement.setInt(1, guild.getId());
-                                statement.setInt(
-                                        2, client.getUser().getUserInfo().getId());
-                                try (ResultSet set = statement.executeQuery()) {
-                                    if (set.next()) {
-                                        if (set.getInt(1) >= 1) {
-                                            error = true;
-                                        }
-                                    }
+                    // Any row of this user in this guild - member, request or block - means there is nothing to
+                    // insert: an open guild used to add a second row next to an existing one.
+                    if (!error) {
+                        try (PreparedStatement statement = connection.prepareStatement(
+                                "SELECT COUNT(id) as total FROM guilds_members WHERE guild_id = ? AND user_id = ? LIMIT 1")) {
+                            statement.setInt(1, guild.getId());
+                            statement.setInt(2, client.getUser().getUserInfo().getId());
+                            try (ResultSet set = statement.executeQuery()) {
+                                if (set.next() && set.getInt(1) >= 1) {
+                                    error = true;
                                 }
                             }
                         }
@@ -389,7 +399,9 @@ public class GuildManager {
                         statement.setInt(3, userId);
                         statement.setInt(4, guild.getId());
                         statement.setInt(5, GuildRank.REQUESTED.type);
-                        statement.execute();
+                        if (statement.executeUpdate() != 1) {
+                            error = true;
+                        }
                     }
                 }
 
@@ -403,7 +415,9 @@ public class GuildManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
         }
+        return !error;
     }
 
     /** Makes an accepted member an admin; the owner and a user who only asked to join are left as they are. */

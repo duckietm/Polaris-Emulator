@@ -172,7 +172,9 @@ public class SubscriptionClub extends Subscription {
 
         User user = Emulator.getGameEnvironment().getUserManager().getUser(this.getUserId());
         UserInfo userInfo = Emulator.getGameEnvironment().getUserManager().getUserInfo(this.getUserId());
-        UserStats stats = userInfo.getUserStats();
+        UserStats stats = userInfo == null ? null : userInfo.getUserStats();
+
+        if (!shouldDowngrade(stats)) return;
 
         stats.maxFriends = Messenger.MAXIMUM_FRIENDS;
         stats.maxRooms = RoomManager.MAXIMUM_ROOMS_USER;
@@ -198,6 +200,15 @@ public class SubscriptionClub extends Subscription {
                             new UserClubComposer(user, SubscriptionClub.CLUB, UserClubComposer.RESPONSE_TYPE_NORMAL));
             user.getClient().sendResponse(new UserPermissionsComposer(user));
         }
+    }
+
+    /**
+     * An old row can expire after a newer membership was bought: the purchase inserted a new row instead of extending
+     * the one not yet retired, and the downgrade then took the club perks from a member. Only a user with no other
+     * active club membership loses them.
+     */
+    static boolean shouldDowngrade(UserStats stats) {
+        return stats != null && !stats.hasActiveClub();
     }
 
     /**

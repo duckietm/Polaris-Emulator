@@ -21,6 +21,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.database.SqlQueries;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.gameclients.SessionResumeManager;
 import polaris.hotel.permissions.Permission;
@@ -463,17 +464,22 @@ public class ModToolManager {
     }
 
     public ModToolBan createOfflineUserBan(int userId, int staffId, int duration, String reason, ModToolBanType type) {
+        // bans.timestamp is NOT NULL without a default: leaving it out failed the insert under strict SQL mode
+        // and stored 0 ("unknown") otherwise.
+        int now = Emulator.getIntUnixTimestamp();
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO bans (user_id, ip, machine_id, user_staff_id, ban_expire, ban_reason, type) VALUES (?, (SELECT ip_current FROM users WHERE id = ?), (SELECT machine_id FROM users WHERE id = ?), ?, ?, ?, ?)",
+                        "INSERT INTO bans (user_id, ip, machine_id, user_staff_id, timestamp, ban_expire, ban_reason, type) VALUES (?, (SELECT ip_current FROM users WHERE id = ?), (SELECT machine_id FROM users WHERE id = ?), ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, userId);
             statement.setInt(2, userId);
             statement.setInt(3, userId);
             statement.setInt(4, staffId);
-            statement.setInt(5, banExpiry(Emulator.getIntUnixTimestamp(), duration));
-            statement.setString(6, reason);
-            statement.setString(7, type.getType());
+            statement.setInt(5, now);
+            statement.setInt(6, banExpiry(now, duration));
+            statement.setString(7, reason);
+            statement.setString(8, type.getType());
 
             statement.executeUpdate();
             // As for an online ban: the tokens already issued end with it.
@@ -1085,5 +1091,33 @@ public class ModToolManager {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception bumping {} for user {}", column, userId, e);
         }
+    }
+
+    /**
+     * Leaves the detail of one caution in {@code user_cautions}: who gave it, what it was, why and for how long.
+     * Every caller that bumps {@code cfh_warnings} records one, so the mod tool can list the cautions behind the
+     * counter. Runs on the caller's thread, as the counter does; a failure is logged and the caution stands.
+     */
+    public static void recordCaution(int userId, int staffId, String type, String reason, int lengthHours) {
+        try {
+            SqlQueries.update(
+                    "INSERT INTO user_cautions (user_id, staff_id, type, reason, length_hours, created_at) "
+                            + "VALUES (?, ?, ?, ?, ?, UNIX_TIMESTAMP())",
+                    userId,
+                    staffId,
+                    truncate(type, 16),
+                    truncate(reason, 255),
+                    Math.max(0, lengthHours));
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception recording a caution for user {}", userId, e);
+        }
+    }
+
+    private static String truncate(String value, int length) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.length() > length ? value.substring(0, length) : value;
     }
 }

@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 record JavaPacketInventoryEntry(
         String direction,
@@ -173,7 +174,7 @@ final class PacketContractCatalogGenerator {
         if (javaSignature.size() >= typescriptSignature.size()) return false;
         if (!javaSignature.equals(typescriptSignature.subList(0, javaSignature.size()))) return false;
         return typescriptSignature.subList(javaSignature.size(), typescriptSignature.size()).stream()
-                .allMatch(field -> field.startsWith("optional<") || field.startsWith("{\"type\":\"optional\""));
+                .allMatch(field -> field.startsWith("optional<"));
     }
 
     private JsonObject exemption(
@@ -223,7 +224,7 @@ final class PacketContractCatalogGenerator {
         return result;
     }
 
-    private String signature(WireSchema schema) {
+    String signature(WireSchema schema) {
         if (schema instanceof ScalarSchema scalar) return scalar.type();
         if (schema instanceof ListSchema list)
             return "list<" + list.countType() + ":"
@@ -232,7 +233,11 @@ final class PacketContractCatalogGenerator {
             return "optional<" + optional.controller() + ":"
                     + optional.fields().stream().map(this::signature).toList() + ">";
         VariantSchema variant = (VariantSchema) schema;
-        return "variant<" + variant.discriminator() + ":" + variant.branches() + ">";
+        Map<String, List<String>> branches = new TreeMap<>();
+        variant.branches()
+                .forEach((key, branch) ->
+                        branches.put(key, branch.stream().map(this::signature).toList()));
+        return "variant<" + variant.discriminator() + ":" + branches + ">";
     }
 
     private JsonObject schemaJson(WireSchema schema) {
@@ -301,10 +306,30 @@ final class PacketContractCatalogGenerator {
         return result;
     }
 
-    private String signature(JsonObject schema) {
+    /** The TypeScript field in the same text as {@link #signature(WireSchema)}, so both sides compare as equals. */
+    String signature(JsonObject schema) {
         String type = schema.get("type").getAsString();
-        if (!type.equals("list") && !type.equals("optional") && !type.equals("variant")) return type;
-        return schema.toString().replaceAll("\\\"name\\\":\\\"[^\\\"]*\\\",?", "");
+        if (type.equals("list"))
+            return "list<" + schema.get("countType").getAsString() + ":" + signatures(schema.getAsJsonArray("item"))
+                    + ">";
+        if (type.equals("optional"))
+            return "optional<" + schema.get("controller").getAsString() + ":"
+                    + signatures(schema.getAsJsonArray("fields")) + ">";
+        if (type.equals("variant")) {
+            Map<String, List<String>> branches = new TreeMap<>();
+            schema.getAsJsonObject("branches")
+                    .entrySet()
+                    .forEach(branch -> branches.put(
+                            branch.getKey(), signatures(branch.getValue().getAsJsonArray())));
+            return "variant<" + schema.get("discriminator").getAsString() + ":" + branches + ">";
+        }
+        return type;
+    }
+
+    private List<String> signatures(JsonArray fields) {
+        List<String> result = new ArrayList<>();
+        fields.forEach(field -> result.add(signature(field.getAsJsonObject())));
+        return result;
     }
 
     private static String key(String direction, int header) {

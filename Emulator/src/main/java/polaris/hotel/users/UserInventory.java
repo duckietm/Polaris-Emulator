@@ -209,7 +209,8 @@ public class UserInventory {
     public int getSoldPriceTotal() {
         int i = 0;
         for (MarketPlaceOffer offer : this.items) {
-            if (offer.getState().equals(MarketPlaceState.SOLD)) {
+            // A sold collectible was paid out in emeralds at the sale: it is not waiting to be collected.
+            if (offer.getState().equals(MarketPlaceState.SOLD) && !offer.isNft()) {
                 i += offer.getPrice();
             }
         }

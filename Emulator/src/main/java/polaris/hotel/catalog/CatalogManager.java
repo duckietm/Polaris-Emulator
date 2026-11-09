@@ -1120,9 +1120,10 @@ public class CatalogManager {
         return this.catalogFeaturedPages;
     }
 
+    /** The front page slots still running, in the order of their slot id, as the client shows them (the first is the tall one). */
     public List<CatalogFeaturedPage> getCatalogFeaturedPagesSnapshot() {
         synchronized (this.catalogFeaturedPages) {
-            return new ArrayList<>(this.catalogFeaturedPages.values());
+            return CatalogFeaturedPage.shown(this.catalogFeaturedPages.values(), Emulator.getIntUnixTimestamp());
         }
     }
 

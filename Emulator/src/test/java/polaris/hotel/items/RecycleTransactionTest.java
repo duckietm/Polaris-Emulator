@@ -132,6 +132,23 @@ class RecycleTransactionTest {
     }
 
     @Test
+    void aLimitedRecipeUnitIsTakenOnTheCraftConnection() throws Exception {
+        PreparedStatement recipeUpdate = mock(PreparedStatement.class);
+        when(this.connection.prepareStatement(contains("crafting_recipes"))).thenReturn(recipeUpdate);
+
+        when(this.delete.executeUpdate()).thenReturn(0);
+
+        // The remaining count was written only on reload or shutdown, so a crash sold the crafted units again.
+        // Here the ingredient is gone: the unit taken on the same connection goes back with the rollback.
+        assertNull(new ItemManager().craftInTransaction(42, mock(Item.class), List.of(furni(1)), 7));
+
+        verify(recipeUpdate).setInt(1, 7);
+        verify(recipeUpdate).executeUpdate();
+        verify(this.connection).rollback();
+        verify(this.connection, never()).commit();
+    }
+
+    @Test
     void nothingToRecycleIsRefused() {
         assertNull(new ItemManager().handleRecycle(this.user, "77", List.of()));
     }

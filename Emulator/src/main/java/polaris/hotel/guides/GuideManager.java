@@ -1,5 +1,6 @@
 package polaris.hotel.guides;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,12 +27,14 @@ public class GuideManager {
     private final Map<Integer, Integer> tourRequestTiming;
 
     public GuideManager() {
-        this.activeTours = new HashSet<>();
-        this.activeTickets = new HashSet<>();
-        this.closedTickets = new HashSet<>();
-        this.activeHelpers = new HashMap<>();
-        this.activeGuardians = new HashMap<>();
-        this.tourRequestTiming = new HashMap<>();
+        // Each collection is its own monitor: the loops below lock it, and a synchronized wrapper makes the
+        // single puts and removes that ran outside those locks (logout, going on duty) take the same one.
+        this.activeTours = Collections.synchronizedSet(new HashSet<>());
+        this.activeTickets = Collections.synchronizedSet(new HashSet<>());
+        this.closedTickets = Collections.synchronizedSet(new HashSet<>());
+        this.activeHelpers = Collections.synchronizedMap(new HashMap<>());
+        this.activeGuardians = Collections.synchronizedMap(new HashMap<>());
+        this.tourRequestTiming = Collections.synchronizedMap(new HashMap<>());
     }
 
     public void userLogsOut(User user) {

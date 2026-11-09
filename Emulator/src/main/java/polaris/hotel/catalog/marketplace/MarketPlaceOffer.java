@@ -28,6 +28,8 @@ public class MarketPlaceOffer implements Runnable {
     private int soldTimestamp = 0;
     private MarketPlaceState state = MarketPlaceState.OPEN;
     private boolean needsUpdate = false;
+    /** Posted through the Collectibles marketplace (AIR offer type 5): priced in emeralds, see {@link NftMarketplaceSettings}. */
+    private boolean nft = false;
 
     public MarketPlaceOffer(ResultSet set, boolean privateOffer) throws SQLException {
         this.offerId = set.getInt("id");
@@ -37,6 +39,7 @@ public class MarketPlaceOffer implements Runnable {
         this.baseItem = Emulator.getGameEnvironment().getItemManager().getItem(set.getInt("base_item_id"));
         this.state = MarketPlaceState.getType(set.getInt("state"));
         this.itemId = set.getInt("item_id");
+        this.nft = readNft(set);
 
         if (!set.getString("ltd_data").split(":")[1].equals("0")) {
             this.limitedStack = Integer.parseInt(set.getString("ltd_data").split(":")[0]);
@@ -51,6 +54,12 @@ public class MarketPlaceOffer implements Runnable {
     }
 
     public MarketPlaceOffer(UserItem item, int price, User user) {
+        this(item, price, user, false);
+    }
+
+    /** Posts a new offer; {@code nft} marks a Collectibles marketplace offer. */
+    public MarketPlaceOffer(UserItem item, int price, User user, boolean nft) {
+        this.nft = nft;
         this.price = price;
         this.baseItem = item.getBaseItem();
         this.itemId = item.getId();
@@ -61,13 +70,14 @@ public class MarketPlaceOffer implements Runnable {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO marketplace_items (item_id, user_id, price, timestamp, state) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO marketplace_items (item_id, user_id, price, timestamp, state, nft) VALUES (?, ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, item.getId());
             statement.setInt(2, user.getUserInfo().getId());
             statement.setInt(3, this.price);
             statement.setInt(4, this.timestamp);
             statement.setString(5, this.state.getState() + "");
+            statement.setInt(6, this.nft ? 1 : 0);
             statement.execute();
 
             try (ResultSet id = statement.getGeneratedKeys()) {
@@ -158,7 +168,56 @@ public class MarketPlaceOffer implements Runnable {
         this.needsUpdate = value;
     }
 
+    public boolean isNft() {
+        return this.nft;
+    }
+
+    /** AIR's product code of a collectible offer: the furni's class name. */
+    public String getProductCode() {
+        return this.baseItem.getName();
+    }
+
+    /** The furni kind of a collectible offer: 1 floor, 2 wall. */
+    public int getNftFurniType() {
+        return this.baseItem.getType().equals(FurnitureType.WALL) ? 2 : 1;
+    }
+
+    /** How long the offer stays on sale: 48 hours, or the collectibles offer time. */
+    public int getListingWindowSeconds() {
+        return this.nft
+                ? NftMarketplaceSettings.current().offerSeconds()
+                : MarketplaceOffersQuery.LISTING_WINDOW_SECONDS;
+    }
+
+    /** Seconds left before an open offer expires; 0 or less once it has. */
+    public int secondsLeft(int now) {
+        return (this.timestamp + this.getListingWindowSeconds()) - now;
+    }
+
+    /** What the buyer pays: the asking price plus the commission, or the asking price itself for a collectible. */
+    public int getBuyerPrice() {
+        return this.nft ? this.price : MarketPlace.calculateCommision(this.price);
+    }
+
+    /** The search's average in the buyer's unit, like {@link #getBuyerPrice()}. */
+    public int getBuyerAverage() {
+        return this.nft ? this.avarage : MarketPlace.calculateCommision(this.avarage);
+    }
+
+    private static boolean readNft(ResultSet set) {
+        try {
+            return set.getInt("nft") == 1;
+        } catch (SQLException e) {
+            // A plugin's own query without the column: an offer from before the collectibles marketplace.
+            return false;
+        }
+    }
+
     public int getType() {
+        if (this.nft) {
+            return 5;
+        }
+
         if (this.limitedStack > 0) {
             return 3;
         }

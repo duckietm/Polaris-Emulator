@@ -8,11 +8,13 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import polaris.hotel.economy.EconomyOperation;
@@ -151,6 +153,33 @@ class QuestEngineTest {
     }
 
     @Test
+    void concurrentProgressPaysAQuestOnce() throws Exception {
+        QuestManager manager = questManager();
+        User user = user(7, false);
+        manager.accept(user, 3);
+
+        CountDownLatch start = new CountDownLatch(1);
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < 16; i++) {
+            threads.add(Thread.ofPlatform().start(() -> {
+                try {
+                    start.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                manager.progress(user, QuestGoalType.VISIT_ROOMS, 1);
+            }));
+        }
+        start.countDown();
+        for (Thread thread : threads) {
+            thread.join(10_000);
+        }
+
+        verify(user, times(1)).givePoints(eq(Quest.REWARD_DUCKETS), eq(10), anyString());
+        assertEquals(1, manager.stateFor(user).get(3).getProgress());
+    }
+
+    @Test
     void aFinishedCampaignIsSentAsACompletedEntry() {
         QuestManager manager = questManager();
         User user = user(7, false);
@@ -263,12 +292,38 @@ class QuestEngineTest {
 
         assertTrue(manager.claim(user, 1));
         assertFalse(manager.claim(user, 1), "a claimed task cannot be claimed twice");
-        verify(user).givePoints(eq(Quest.REWARD_DUCKETS), eq(15), anyString());
+        verify(user)
+                .givePoints(
+                        eq(Quest.REWARD_DUCKETS),
+                        eq(15),
+                        anyString(),
+                        eq("daily_task:7:" + DailyTaskManager.today() + ":1"),
+                        eq(7));
         assertEquals(0, manager.claimableCount(user));
         assertEquals(
                 UserDailyTaskState.STATUS_CLAIMED,
                 manager.activeTasks(user).get(0).status());
         assertTrue(manager.activeTasks(user).get(1).bonus());
+    }
+
+    @Test
+    void aClaimTheDatabaseRefusesIsUndoneAndPaysNothing() {
+        DailyTaskManager manager = new DailyTaskManager(false) {
+            @Override
+            protected boolean write(int userId, UserDailyTaskState state) {
+                return state.getStatus() != UserDailyTaskState.STATUS_CLAIMED;
+            }
+        };
+        manager.register(
+                new DailyTask(1, "talk", QuestGoalType.TALK_IN_ROOM, "", 1, false, "duckets", "", 15, "", "1", 1));
+        User user = user(7, false);
+        manager.progress(user, QuestGoalType.TALK_IN_ROOM, 1);
+
+        assertFalse(manager.claim(user, 1));
+
+        assertEquals(1, manager.claimableCount(user), "the task can still be claimed");
+        verify(user, times(0)).givePoints(anyInt(), anyInt(), anyString(), anyString(), anyInt());
+        verify(user, times(0)).givePoints(anyInt(), anyInt(), anyString());
     }
 
     @Test

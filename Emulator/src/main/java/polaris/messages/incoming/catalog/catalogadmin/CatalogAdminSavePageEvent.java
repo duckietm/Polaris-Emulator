@@ -1,8 +1,6 @@
 package polaris.messages.incoming.catalog.catalogadmin;
 
 import com.google.gson.Gson;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
 import polaris.hotel.catalog.CatalogPageLayouts;
 import polaris.hotel.catalog.CatalogPageType;
 import polaris.hotel.catalog.versioning.CatalogChangeOperation;
@@ -23,14 +21,6 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
     private static final int MAX_TEXT_LENGTH = 8192;
     private static final int MAX_INCLUDES_LENGTH = 128;
     private static final int ROOT_PARENT_ID = -1;
-
-    private static final Safelist PAGE_HTML_SAFELIST = new Safelist()
-            .addTags("b", "i", "u", "br", "span", "div", "p", "a", "strong", "em", "img")
-            .addAttributes("a", "href", "target", "class", "style")
-            .addAttributes("img", "src", "alt", "class", "style")
-            .addAttributes(":all", "class", "style")
-            .addProtocols("a", "href", "http", "https", "mailto", "#")
-            .addProtocols("img", "src", "http", "https", "data");
 
     @Override
     public void handle() throws Exception {
@@ -172,8 +162,7 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
     }
 
     private String sanitizeHtml(String value) {
-        if (value == null || value.isEmpty()) return "";
-        return Jsoup.clean(value, PAGE_HTML_SAFELIST);
+        return CatalogPageHtml.sanitize(value);
     }
 
     private String normalizeIncludes(String value) {

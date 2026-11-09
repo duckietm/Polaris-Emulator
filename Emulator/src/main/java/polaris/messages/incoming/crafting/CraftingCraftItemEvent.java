@@ -61,7 +61,10 @@ public class CraftingCraftItemEvent extends MessageHandler {
             UserItem rewardItem = Emulator.getGameEnvironment()
                     .getItemManager()
                     .craftInTransaction(
-                            this.client.getUser().getUserInfo().getId(), recipe.getReward(), toRemove.values());
+                            this.client.getUser().getUserInfo().getId(),
+                            recipe.getReward(),
+                            toRemove.values(),
+                            recipe.isLimited() ? recipe.getId() : 0);
 
             if (rewardItem != null) {
                 this.complete(recipe, rewardItem, toRemove);

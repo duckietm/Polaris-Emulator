@@ -28,6 +28,13 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
+        // Club gifts are a member's monthly reward, as in AIR, where the gift page offers them only while the club
+        // runs: the time of an expired membership no longer opens one.
+        if (!this.client.getUser().getUserStats().hasActiveClub()) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
         if (this.client.getUser().getUserStats().getRemainingClubGifts() < 1) {
             LOGGER.error("User has no remaining club gifts");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
@@ -67,23 +74,34 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
+        // The claim is taken before anything is created, under the stats' lock, so two packets cannot both pass the
+        // remaining-gifts check; it is handed back when nothing could be given.
+        if (!this.client.getUser().getUserStats().tryClaimClubGift()) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
         Set<Item> itemsGiven = new HashSet<>();
-        for (Item item : catalogItem.getBaseItems()) {
-            if (Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .createGift(this.client.getUser().getUserInfo().getId(), item, "", 0, 0)
-                    != null) {
-                itemsGiven.add(item);
+        try {
+            for (Item item : catalogItem.getBaseItems()) {
+                if (Emulator.getGameEnvironment()
+                                .getItemManager()
+                                .createGift(this.client.getUser().getUserInfo().getId(), item, "", 0, 0)
+                        != null) {
+                    itemsGiven.add(item);
+                }
+            }
+        } finally {
+            if (itemsGiven.isEmpty()) {
+                this.client.getUser().getUserStats().refundClubGift();
             }
         }
 
-        // A claim is spent only when something was given: a gift that could not be created used to cost one anyway.
         if (itemsGiven.isEmpty()) {
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
 
-        this.client.getUser().getUserStats().hcGiftsClaimed++;
         Emulator.getThreading().run(this.client.getUser().getUserStats());
 
         this.client.sendResponse(new ClubGiftReceivedComposer(itemName, itemsGiven));

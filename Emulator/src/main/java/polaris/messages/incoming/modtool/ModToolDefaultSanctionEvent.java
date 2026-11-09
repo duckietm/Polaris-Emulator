@@ -76,7 +76,10 @@ public class ModToolDefaultSanctionEvent extends MessageHandler {
             }
 
             target.mute(ModToolManager.daysToSeconds(sanction.muteLength), false);
+            int muteHours = (int) Math.min(Integer.MAX_VALUE, sanction.muteLength * 24L);
             ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+            ModToolManager.recordCaution(
+                    userId, this.client.getUser().getUserInfo().getId(), "MUTE", reason, muteHours);
         } else {
             if (target == null) {
                 this.client.sendResponse(new ModeratorActionResultComposer(userId, false));
@@ -85,6 +88,8 @@ public class ModToolDefaultSanctionEvent extends MessageHandler {
 
             target.alert(reason);
             ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+            ModToolManager.recordCaution(
+                    userId, this.client.getUser().getUserInfo().getId(), "ALERT", reason, 0);
         }
 
         this.client.sendResponse(new ModeratorActionResultComposer(userId, true));

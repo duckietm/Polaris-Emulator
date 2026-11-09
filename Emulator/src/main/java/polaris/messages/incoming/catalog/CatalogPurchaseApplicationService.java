@@ -270,6 +270,12 @@ final class CatalogPurchaseApplicationService {
 
     /** Logs why a purchase has no page the buyer may use and tells them it failed. */
     private void refuseMissingPage(CatalogManager catalogManager, int pageId, int itemId) {
+        // A purchase from a search result (page -1 or -12345678) is checked against the offer's own page: report that
+        // one, not the placeholder.
+        if (pageId == -1 || pageId == -12345678) {
+            CatalogItem searched = catalogManager.getCatalogItem(itemId);
+            if (searched != null) pageId = searched.getPageId();
+        }
         CatalogPage requested = catalogManager.getCatalogPage(pageId);
         LOGGER.warn(
                 "Purchase refused for user {}: catalog page {} (offer {}) {}",

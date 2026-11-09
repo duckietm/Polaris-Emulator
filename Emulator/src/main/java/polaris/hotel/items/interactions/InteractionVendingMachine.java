@@ -17,6 +17,7 @@ import polaris.hotel.rooms.RoomTileState;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.rooms.RoomUnitStatus;
 import polaris.hotel.rooms.RoomUserRotation;
+import polaris.hotel.users.User;
 import polaris.hotel.users.UserGender;
 import polaris.hotel.users.UserItem;
 import polaris.messages.ServerMessage;
@@ -75,7 +76,10 @@ public class InteractionVendingMachine extends UserItem {
     }
 
     private void useVendingMachine(GameClient client, Room room, RoomUnit unit) {
-        this.setExtradata("1");
+        // One dispense per cycle: a click while the machine is still serving is ignored, so
+        // repeated clicks cannot queue a hand item each.
+        if (!this.claimUse()) return;
+
         room.updateItem(this);
 
         // Using a vending machine changes its state for everybody, not only for users with rights.
@@ -88,20 +92,36 @@ public class InteractionVendingMachine extends UserItem {
         Emulator.getThreading()
                 .run(
                         () -> {
-                            giveVendingMachineItem(room, unit);
+                            User user = client.getUser();
+                            if (isStillServed(user, unit, room)) {
+                                giveVendingMachineItem(room, unit);
 
-                            if (this.getBaseItem().getEffectM() > 0
-                                    && client.getUser().getUserInfo().getGender() == UserGender.M)
-                                room.giveEffect(
-                                        client.getUser(), this.getBaseItem().getEffectM(), -1);
-                            if (this.getBaseItem().getEffectF() > 0
-                                    && client.getUser().getUserInfo().getGender() == UserGender.F)
-                                room.giveEffect(
-                                        client.getUser(), this.getBaseItem().getEffectF(), -1);
+                                UserGender gender = user.getUserInfo().getGender();
+                                if (this.getBaseItem().getEffectM() > 0 && gender == UserGender.M)
+                                    room.giveEffect(user, this.getBaseItem().getEffectM(), -1);
+                                if (this.getBaseItem().getEffectF() > 0 && gender == UserGender.F)
+                                    room.giveEffect(user, this.getBaseItem().getEffectF(), -1);
+                            }
 
                             Emulator.getThreading().run(this, 500);
                         },
                         1500);
+    }
+
+    /** Marks the machine busy; false when a previous use has not been reset yet. */
+    synchronized boolean claimUse() {
+        if ("1".equals(this.getExtradata())) return false;
+        this.setExtradata("1");
+        return true;
+    }
+
+    /** The user who clicked is still online, still the same unit, and still in this room. */
+    static boolean isStillServed(User user, RoomUnit unit, Room room) {
+        return user != null
+                && user.getUserInfo() != null
+                && user.getRoomUnit() == unit
+                && unit != null
+                && unit.getRoom() == room;
     }
 
     public void giveVendingMachineItem(Room room, RoomUnit unit) {
@@ -162,7 +182,7 @@ public class InteractionVendingMachine extends UserItem {
     @Override
     public void run() {
         super.run();
-        if (this.getExtradata().equals("1")) {
+        if ("1".equals(this.getExtradata())) {
             this.setExtradata("0");
             Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
             if (room != null) {

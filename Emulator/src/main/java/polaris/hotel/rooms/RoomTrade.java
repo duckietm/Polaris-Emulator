@@ -38,6 +38,8 @@ public class RoomTrade {
     private final List<RoomTradeUser> users;
     private final Room room;
     private boolean completed = false;
+    // Set once the exchange is stored: from then on the items belong to the other trader.
+    private boolean itemsCommitted = false;
 
     public RoomTrade(User userOne, User userTwo, Room room) {
         this.users = new ArrayList<>();
@@ -165,8 +167,26 @@ public class RoomTrade {
         }
         if (accepted) {
             this.completed = true;
+            this.finishTrade();
+        }
+    }
 
-            if (this.tradeItems()) {
+    /**
+     * Runs the exchange and always ends the trade. An unexpected exception used to leave it marked completed with the
+     * window open and the offered items out of both inventories: before the commit the items go back to their owners,
+     * after it they have changed owner and only the window is closed.
+     */
+    void finishTrade() {
+        try {
+            boolean traded;
+            try {
+                traded = this.tradeItems();
+            } catch (RuntimeException e) {
+                LOGGER.error("Trade in room {} failed", this.room.getId(), e);
+                traded = this.itemsCommitted;
+            }
+
+            if (traded) {
                 this.closeWindow();
                 this.sendMessageToUsers(new TradeCompleteComposer());
             } else {
@@ -176,7 +196,9 @@ public class RoomTrade {
                 }
                 this.closeWindow();
             }
-
+        } catch (RuntimeException e) {
+            LOGGER.error("Closing the trade in room {} failed", this.room.getId(), e);
+        } finally {
             this.room.stopTrade(this);
         }
     }
@@ -250,6 +272,7 @@ public class RoomTrade {
                         committedCreditsForUserOne,
                         committedCreditsForUserTwo,
                         Emulator.getConfig().getBoolean("hotel.log.trades"));
+                this.itemsCommitted = true;
                 applyCommittedCreditBalance(userOne.getUser(), commit.userOneCreditBalance());
                 applyCommittedCreditBalance(userTwo.getUser(), commit.userTwoCreditBalance());
                 return commit;

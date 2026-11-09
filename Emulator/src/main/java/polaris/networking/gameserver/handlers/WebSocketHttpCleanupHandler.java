@@ -13,7 +13,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
  * on a shared worker delay game traffic.
  */
 public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
-    private static final String[] HTTP_ONLY_HANDLERS = {
+    static final String[] HTTP_ONLY_HANDLERS = {
         "httpReadTimeout",
         "httpConnectionLimit",
         "blockingHttpAdmissionAssets",
@@ -23,6 +23,8 @@ public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
         "authHttpHandler",
         "blockingHttpAdmissionCms",
         "cmsApiHandler",
+        "blockingHttpAdmissionWired",
+        "wiredApiHandler",
         "blockingHttpAdmissionBadge",
         "badgeHttpHandler",
         "blockingHttpAdmissionBadgeLeaderboard",

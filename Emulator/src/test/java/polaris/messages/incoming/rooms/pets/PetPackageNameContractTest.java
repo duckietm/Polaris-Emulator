@@ -52,4 +52,15 @@ class PetPackageNameContractTest {
                 source.contains("StringUtils.isAlphanumeric(name)"),
                 "package pet names should use alphanumeric validation");
     }
+
+    @Test
+    void cursedDragonCratesHoldTheirOwnColour() {
+        org.junit.jupiter.api.Assertions.assertEquals(37, PetPackageNameEvent.CURSED_DRAGON_PET_TYPE);
+        org.junit.jupiter.api.Assertions.assertEquals(
+                0, PetPackageNameEvent.cursedDragonBreed("drago_cursed_1_package"));
+        org.junit.jupiter.api.Assertions.assertEquals(
+                1, PetPackageNameEvent.cursedDragonBreed("DRAGO_CURSED_2_PACKAGE"));
+        org.junit.jupiter.api.Assertions.assertEquals(-1, PetPackageNameEvent.cursedDragonBreed("cowbox"));
+        org.junit.jupiter.api.Assertions.assertEquals(-1, PetPackageNameEvent.cursedDragonBreed(null));
+    }
 }

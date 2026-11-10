@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Pattern;
@@ -38,6 +40,79 @@ public final class SpecialItemClaimService {
     /** What a claim did: the furni given, or nothing, and whether the user now counts as having claimed. */
     public record ClaimResult(UserItem item, boolean claimed) {}
 
+    /** The choice a claim carries when the client sent none. */
+    public static final int NO_CHOICE = -1;
+
+    /**
+     * The result the client is told ({@code ClaimProductResultComposer}). The official client reads 0 and 1 as
+     * claimed, 2 and 3 as not available, anything else as "try again".
+     */
+    public enum Outcome {
+        CLAIMED(0),
+        ALREADY_CLAIMED(1),
+        UNAVAILABLE(2),
+        INVALID_CHOICE(3),
+        FAILED(4);
+
+        private final int code;
+
+        Outcome(int code) {
+            this.code = code;
+        }
+
+        public int code() {
+            return this.code;
+        }
+
+        /** Whether the user now counts as having claimed, for the has-claimed answer. */
+        public boolean countsAsClaimed() {
+            return this != FAILED && this != INVALID_CHOICE;
+        }
+    }
+
+    /** A pet a choice gives: its type, its breed (the palette) and the name it gets. */
+    public record PetReward(int type, int breed, String name) {
+        /** The name a pet gets when the choice names none. */
+        public static final String DEFAULT_NAME = "Pet";
+
+        public PetReward {
+            name = name == null || name.isBlank() ? DEFAULT_NAME : name.trim();
+        }
+    }
+
+    /**
+     * What a choice holds: a furni ({@code items_base} id, 0 for none), a pet (null for none) and a badge code (empty
+     * for none).
+     */
+    public record Choice(int itemId, PetReward pet, String badge) {
+        public Choice {
+            badge = badge == null ? "" : badge.trim();
+        }
+
+        public Choice(int itemId, PetReward pet) {
+            this(itemId, pet, "");
+        }
+
+        /** Whether the choice gives anything at all. */
+        public boolean givesSomething() {
+            return this.itemId > 0 || this.pet != null || !this.badge.isEmpty();
+        }
+    }
+
+    /**
+     * What a claim with a choice did: the furni given, or nothing, the result for the client, and what is still to be
+     * given to the user who is online: the pet (null for none) and the badge (empty for none).
+     */
+    public record ChoiceResult(UserItem item, Outcome outcome, PetReward pet, String badge) {
+        public ChoiceResult {
+            badge = badge == null ? "" : badge;
+        }
+
+        public ChoiceResult(UserItem item, Outcome outcome) {
+            this(item, outcome, null, "");
+        }
+    }
+
     /** Creates the furni for a user, as {@code ItemManager.createItem}; null when it could not be created. */
     @FunctionalInterface
     public interface FurniFactory {
@@ -47,6 +122,7 @@ public final class SpecialItemClaimService {
     private final DataSource dataSource;
     private final IntFunction<Item> baseItems;
     private final FurniFactory furniFactory;
+    private final Set<String> reportedUnavailable = ConcurrentHashMap.newKeySet();
 
     public SpecialItemClaimService(DataSource dataSource, IntFunction<Item> baseItems, FurniFactory furniFactory) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
@@ -76,20 +152,36 @@ public final class SpecialItemClaimService {
         return claimId != null && CLAIM_ID.matcher(claimId).matches();
     }
 
-    /** The enabled offer behind a claim id, if the hotel configured one. */
+    /**
+     * The offer behind a claim id, if the hotel offers it. A claim is offered by its row in
+     * {@code special_items_free_claims} (enabled, with a furni or with choices), or, with no such row, by its choices
+     * alone: filling in the two dragons is enough. The row is only needed to give a furni without a choice, or to
+     * switch a claim off ({@code enabled = 0}). The offer's furni is 0 when only the choices say what is given.
+     */
     public Optional<Offer> findOffer(String claimId) throws SQLException {
         if (!isValidClaimId(claimId)) return Optional.empty();
 
+        boolean hasRow = false;
+        boolean enabled = false;
+        int itemId = 0;
+
         try (Connection connection = this.dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT item_id FROM special_items_free_claims WHERE claim_id = ? AND enabled = 1")) {
+                        "SELECT item_id, enabled FROM special_items_free_claims WHERE claim_id = ?")) {
             statement.setString(1, claimId);
             try (ResultSet set = statement.executeQuery()) {
-                if (!set.next()) return Optional.empty();
-                int itemId = set.getInt("item_id");
-                return itemId > 0 ? Optional.of(new Offer(claimId, itemId)) : Optional.empty();
+                if (set.next()) {
+                    hasRow = true;
+                    enabled = set.getBoolean("enabled");
+                    itemId = set.getInt("item_id");
+                }
             }
         }
+
+        if (hasRow && !enabled) return Optional.empty();
+        if (itemId > 0) return Optional.of(new Offer(claimId, itemId));
+
+        return this.hasChoices(claimId) ? Optional.of(new Offer(claimId, 0)) : Optional.empty();
     }
 
     public boolean hasClaimed(int userId, String claimId) throws SQLException {
@@ -111,7 +203,18 @@ public final class SpecialItemClaimService {
      * enables a claim that would fail.
      */
     public boolean claimedOrUnavailable(int userId, String claimId) throws SQLException {
-        return this.findOffer(claimId).isEmpty() || this.hasClaimed(userId, claimId);
+        if (this.findOffer(claimId).isEmpty()) {
+            // Said once per claim id: the window shows "claimed" to everyone, which looks like a bug without it.
+            if (this.reportedUnavailable.add(claimId)) {
+                LOGGER.warn(
+                        "Free claim '{}' was asked for but is not offered (no enabled row in special_items_free_claims"
+                                + " and no choices, or the row is disabled), so it shows as already claimed to everyone",
+                        claimId);
+            }
+            return true;
+        }
+
+        return this.hasClaimed(userId, claimId);
     }
 
     /**
@@ -139,6 +242,88 @@ public final class SpecialItemClaimService {
         }
 
         return new ClaimResult(item, true);
+    }
+
+    /**
+     * What a choice of a claim gives ({@code special_items_free_claim_choices}): a furni, a pet, a badge, or several. Empty when
+     * the claim has no such choice, or the choice gives nothing.
+     */
+    public Optional<Choice> findChoice(String claimId, int choice) throws SQLException {
+        try (Connection connection = this.dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT item_id, pet_type, pet_breed, pet_name, badge_code FROM special_items_free_claim_choices"
+                                + " WHERE claim_id = ? AND choice = ?")) {
+            statement.setString(1, claimId);
+            statement.setInt(2, choice);
+            try (ResultSet set = statement.executeQuery()) {
+                if (!set.next()) return Optional.empty();
+
+                int itemId = Math.max(0, set.getInt("item_id"));
+                int petType = set.getInt("pet_type");
+                PetReward pet = petType < 0
+                        ? null
+                        : new PetReward(petType, Math.max(0, set.getInt("pet_breed")), set.getString("pet_name"));
+
+                Choice found = new Choice(itemId, pet, set.getString("badge_code"));
+
+                return found.givesSomething() ? Optional.of(found) : Optional.empty();
+            }
+        }
+    }
+
+    /** Whether the claim lets the user choose: it has at least one row of choices. */
+    public boolean hasChoices(String claimId) throws SQLException {
+        try (Connection connection = this.dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM special_items_free_claim_choices WHERE claim_id = ? LIMIT 1")) {
+            statement.setString(1, claimId);
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next();
+            }
+        }
+    }
+
+    /**
+     * A claim that may carry a choice (the dragon adoption sends 0 or 1; the special items display sends none,
+     * {@link #NO_CHOICE}). Gives what the choice holds once per user and claim id: a choice the claim does not have, or
+     * no choice for a claim that needs one, gives nothing and leaves the claim open. The furni is created here; a pet
+     * is only named in the result, for the caller to create for the user who is online.
+     */
+    public ChoiceResult claim(int userId, String claimId, int choice, int timestamp) throws SQLException {
+        Optional<Offer> offer = this.findOffer(claimId);
+        if (offer.isEmpty()) return new ChoiceResult(null, Outcome.UNAVAILABLE);
+
+        Choice chosen;
+        if (choice == NO_CHOICE) {
+            if (this.hasChoices(claimId)) return new ChoiceResult(null, Outcome.INVALID_CHOICE);
+            chosen = new Choice(offer.get().itemId(), null);
+        } else {
+            Optional<Choice> found = this.findChoice(claimId, choice);
+            if (found.isEmpty()) return new ChoiceResult(null, Outcome.INVALID_CHOICE);
+            chosen = found.get();
+        }
+
+        int itemId = chosen.itemId();
+        if (itemId > 0 && this.baseItems.apply(itemId) == null) {
+            LOGGER.warn(
+                    "Special items claim {} (choice {}) points at missing items_base id {}", claimId, choice, itemId);
+            return new ChoiceResult(null, Outcome.UNAVAILABLE);
+        }
+
+        if (!this.recordClaim(userId, new Offer(claimId, itemId), timestamp)) {
+            return new ChoiceResult(null, Outcome.ALREADY_CLAIMED);
+        }
+
+        UserItem item = null;
+        if (itemId > 0) {
+            item = this.furniFactory.create(userId, itemId);
+            if (item == null) {
+                this.forgetClaim(userId, claimId);
+                return new ChoiceResult(null, Outcome.FAILED);
+            }
+        }
+
+        return new ChoiceResult(item, Outcome.CLAIMED, chosen.pet(), chosen.badge());
     }
 
     /**

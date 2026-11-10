@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import polaris.messages.incoming.Incoming;
 import polaris.messages.outgoing.Outgoing;
+import polaris.messages.outgoing.catalog.specialitems.ClaimProductResultComposer;
 import polaris.messages.outgoing.catalog.specialitems.HasClaimedProductComposer;
 
 class SpecialItemsFreeClaimContractTest {
@@ -17,6 +18,39 @@ class SpecialItemsFreeClaimContractTest {
         assertEquals(266, Outgoing.HasClaimedProductComposer);
         assertEquals(395, Incoming.RequestHasClaimedProductEvent);
         assertEquals(3935, Incoming.ClaimFreeProductEvent);
+        assertEquals(43, Outgoing.ClaimProductResultComposer);
+    }
+
+    @Test
+    void claimResultIsClaimIdThenResult() {
+        ByteBuf packet = new ClaimProductResultComposer(
+                        "cursed_dragon_adoption", SpecialItemClaimService.Outcome.INVALID_CHOICE.code())
+                .compose()
+                .get();
+        try {
+            packet.skipBytes(4);
+            assertEquals(43, packet.readShort());
+            assertEquals(
+                    "cursed_dragon_adoption",
+                    packet.readCharSequence(packet.readUnsignedShort(), StandardCharsets.UTF_8)
+                            .toString());
+            assertEquals(3, packet.readInt());
+            assertFalse(packet.isReadable());
+        } finally {
+            packet.release();
+        }
+    }
+
+    @Test
+    void theClientReadsZeroAndOneAsClaimedAndTwoAndThreeAsUnavailable() {
+        assertEquals(0, SpecialItemClaimService.Outcome.CLAIMED.code());
+        assertEquals(1, SpecialItemClaimService.Outcome.ALREADY_CLAIMED.code());
+        assertEquals(2, SpecialItemClaimService.Outcome.UNAVAILABLE.code());
+        assertEquals(3, SpecialItemClaimService.Outcome.INVALID_CHOICE.code());
+        assertEquals(4, SpecialItemClaimService.Outcome.FAILED.code());
+        assertTrue(SpecialItemClaimService.Outcome.UNAVAILABLE.countsAsClaimed());
+        assertFalse(SpecialItemClaimService.Outcome.INVALID_CHOICE.countsAsClaimed());
+        assertFalse(SpecialItemClaimService.Outcome.FAILED.countsAsClaimed());
     }
 
     @Test

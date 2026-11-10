@@ -19,6 +19,20 @@ import polaris.messages.outgoing.rooms.pets.PetPackageNameValidationComposer;
 import polaris.threading.runnables.QueryDeleteUserItem;
 
 public class PetPackageNameEvent extends MessageHandler {
+    /** The cursed dragon, the pet in the official {@code drago_cursed_<n>_package} crates. */
+    static final int CURSED_DRAGON_PET_TYPE = 37;
+
+    /**
+     * The colour of the dragon in a cursed dragon crate: {@code drago_cursed_1_package} holds the blue one (breed 0),
+     * {@code drago_cursed_2_package} the purple one (breed 1), as the official furni names them. -1 for any other furni.
+     */
+    static int cursedDragonBreed(String itemName) {
+        if ("drago_cursed_1_package".equalsIgnoreCase(itemName)) return 0;
+        if ("drago_cursed_2_package".equalsIgnoreCase(itemName)) return 1;
+
+        return -1;
+    }
+
     @Override
     public void handle() throws Exception {
         int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
@@ -88,6 +102,12 @@ public class PetPackageNameEvent extends MessageHandler {
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("cowbox_gold")) {
                             pet = petManager.createPet(35, 28, name, this.client);
+                        }
+
+                        int cursedDragonBreed =
+                                cursedDragonBreed(item.getBaseItem().getName());
+                        if (cursedDragonBreed >= 0) {
+                            pet = petManager.createPet(CURSED_DRAGON_PET_TYPE, cursedDragonBreed, name, this.client);
                         }
 
                         if (pet != null) {

@@ -169,6 +169,7 @@
     "soundboard_sounds": ["classname", "cooldown_seconds", "enabled", "id", "min_rank", "name", "sort_order", "url"],
     "soundtracks": ["author", "code", "id", "length", "name", "track"],
     "special_enables": ["effect_id", "min_rank"],
+    "special_items_free_claim_choices": ["badge_code", "choice", "claim_id", "item_id", "pet_breed", "pet_name", "pet_type"],
     "special_items_free_claims": ["claim_id", "enabled", "item_id"],
     "support_cfh_categories": ["id", "name_external", "name_internal"],
     "support_cfh_topics": ["action", "auto_reply", "category_id", "default_sanction", "id", "ignore_target", "name_external", "name_internal"],

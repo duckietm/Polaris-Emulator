@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.hotel.items.Item;
 import polaris.hotel.items.ItemManager;
+import polaris.hotel.items.interactions.InteractionGift;
 import polaris.hotel.users.UserItem;
 
 /**
@@ -50,7 +51,9 @@ final class CommandGifts {
 
             if (item == null) return false;
 
-            String extraData = "1\t" + item.getId() + "\t0\t0\t0\t" + message + "\t0\t0";
+            // A gift given by a staff command is from the hotel: trusted.
+            String extraData = "1\t" + item.getId() + "\t0\t0\t0\t" + message + "\t0\t0"
+                    + InteractionGift.trustedSenderField(true);
 
             if (items.createGift(username, wrapper, extraData, 0, 0) != null) return true;
         } catch (RuntimeException e) {

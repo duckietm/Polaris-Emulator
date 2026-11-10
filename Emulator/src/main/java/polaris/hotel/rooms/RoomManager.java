@@ -167,6 +167,7 @@ public class RoomManager {
     private final RoomModerationService roomModerationService;
     private final RoomLifecycleService roomLifecycleService;
     private final RoomEntryService roomEntryService;
+    private final RoomOwnerBlocks roomOwnerBlocks = RoomOwnerBlocks.live();
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
@@ -220,7 +221,8 @@ public class RoomManager {
                 (user, room) -> !Emulator.getPluginManager()
                         .fireEvent(new UserEnterRoomEvent(user, room))
                         .isCancelled(),
-                this::openRoom);
+                this::openRoom,
+                this.roomOwnerBlocks::refusesEntry);
 
         this.gameTypes = new ArrayList<>();
 
@@ -813,6 +815,12 @@ public class RoomManager {
         user.getRoomUnit().setRoomUnitType(RoomUnitType.USER);
         if (room.isBanned(user)) {
             user.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BANNED));
+            return;
+        }
+
+        // Also for the entries that skip the door checks (a teleporter, a forward): the owner's block holds.
+        if (this.roomOwnerBlocks.refusesEntry(user, room)) {
+            user.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BLOCKED));
             return;
         }
 

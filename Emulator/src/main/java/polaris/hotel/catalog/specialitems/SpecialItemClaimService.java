@@ -204,9 +204,10 @@ public final class SpecialItemClaimService {
      */
     public boolean claimedOrUnavailable(int userId, String claimId) throws SQLException {
         if (this.findOffer(claimId).isEmpty()) {
-            // Said once per claim id: the window shows "claimed" to everyone, which looks like a bug without it.
+            // Said once per claim id: the window shows "claimed" to everyone, which looks like a bug without it. Not a
+            // warning: the client's home screen asks about the dragon adoption in every hotel, offered or not.
             if (this.reportedUnavailable.add(claimId)) {
-                LOGGER.warn(
+                LOGGER.info(
                         "Free claim '{}' was asked for but is not offered (no enabled row in special_items_free_claims"
                                 + " and no choices, or the row is disabled), so it shows as already claimed to everyone",
                         claimId);

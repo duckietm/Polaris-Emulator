@@ -76,6 +76,8 @@ public class Outgoing {
     public static final int GiftConfigurationComposer = 2234;
     // AIR 15 special items display: has-claimed response (official id)
     public static final int HasClaimedProductComposer = 266;
+    // Official claim result (claimId, result), read by the cursed dragon adoption window
+    public static final int ClaimProductResultComposer = 43;
     public static final int UserClubComposer = 954;
     public static final int InventoryBadgesComposer = 717;
     public static final int BadgeInfoComposer = 3228;

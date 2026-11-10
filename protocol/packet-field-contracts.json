@@ -9288,28 +9288,6 @@
       ]
     },
     {
-      "name": "CLAIM_FREE_PRODUCT",
-      "direction": "client_to_server",
-      "header": 3935,
-      "java": {
-        "symbol": "ClaimFreeProductEvent",
-        "className": "ClaimFreeProductEvent",
-        "path": "Emulator/src/main/java/polaris/messages/incoming/catalog/specialitems/ClaimFreeProductEvent.java"
-      },
-      "typescript": {
-        "symbol": "CLAIM_FREE_PRODUCT",
-        "className": "ClaimFreeProductComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/ClaimFreeProductComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "claimId"
-        }
-      ]
-    },
-    {
       "name": "ROOM_TEXT_SEARCH",
       "direction": "client_to_server",
       "header": 3943,
@@ -11340,7 +11318,7 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": "permissionKey"
+          "name": "requestedKey"
         },
         {
           "kind": "scalar",
@@ -11350,7 +11328,7 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "value"
+          "name": "requestedValue"
         }
       ]
     },
@@ -14001,6 +13979,33 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_PRODUCT_RESULT",
+      "direction": "server_to_client",
+      "header": 43,
+      "java": {
+        "symbol": "ClaimProductResultComposer",
+        "className": "ClaimProductResultComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/catalog/specialitems/ClaimProductResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_PRODUCT_RESULT",
+        "className": "ClaimProductResultParser",
+        "path": "packages/communication/src/messages/parser/catalog/ClaimProductResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
           "name": ""
         },
         {
@@ -25824,6 +25829,22 @@
         "path": "packages/communication/src/messages/outgoing/roomevents/UpdateSelectorMessageComposer.ts"
       },
       "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in /home/user/Nitro-Cool-UI-Renderer/Gameserver/Emulator/src/main/java/polaris/messages/incoming/wired/WiredSelectorSaveDataEvent.java; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+    },
+    {
+      "name": "CLAIM_FREE_PRODUCT",
+      "direction": "client_to_server",
+      "header": 3935,
+      "java": {
+        "symbol": "ClaimFreeProductEvent",
+        "className": "ClaimFreeProductEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/catalog/specialitems/ClaimFreeProductEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_FREE_PRODUCT",
+        "className": "ClaimFreeProductComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/ClaimFreeProductComposer.ts"
+      },
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "RELEASE_VERSION",

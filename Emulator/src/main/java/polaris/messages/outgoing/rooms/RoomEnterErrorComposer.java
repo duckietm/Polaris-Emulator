@@ -9,6 +9,8 @@ public class RoomEnterErrorComposer extends MessageComposer {
     public static final int ROOM_ERROR_CANT_ENTER = 2;
     public static final int ROOM_ERROR_QUE = 3;
     public static final int ROOM_ERROR_BANNED = 4;
+    /** The room's owner blocked this user (the client's navigator.blocked.* alert). */
+    public static final int ROOM_ERROR_BLOCKED = 5;
 
     public static final String ROOM_NEEDS_VIP = "c";
     public static final String EVENT_USERS_ONLY = "e1";

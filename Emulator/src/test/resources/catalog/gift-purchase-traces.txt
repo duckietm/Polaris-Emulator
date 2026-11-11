@@ -3,7 +3,7 @@ connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 scripterDetected([scripter.warning.catalog.badge_display])
 itemManager.createGiftContent(connection, 2, item:badge_display, 0, 0, sender	<today>	UMAD)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -21,7 +21,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:badge_display, 0, 0, sender	<today>	ADM)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display, owned	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:display, owned	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -187,7 +187,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180	0)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.rollback()
 connection.setAutoCommit(true)
@@ -210,7 +210,7 @@ limitedConfiguration.pollNumber()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:no box	sender	hd-180	0)
 senderClient.sendResponse(AlertPurchaseFailedComposer{error=0})
 connection.rollback()
 connection.setAutoCommit(true)
@@ -237,7 +237,7 @@ statement.executeQuery()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 3, item:chair, 0, 0, )
-itemManager.createItem(connection, 3, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180)
+itemManager.createItem(connection, 3, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -264,7 +264,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 1, item:chair, 0, 0, )
-itemManager.createItem(connection, 1, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:me	sender	hd-180)
+itemManager.createItem(connection, 1, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:me	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -281,7 +281,7 @@ connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:hopper, 0, 0, )
 itemManager.insertHopper(connection, userItem1000:hopper)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hop	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hop	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -307,7 +307,7 @@ connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:hopper, 50, 7, )
 itemManager.insertHopper(connection, userItem1000:hopper)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd hopper	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:hopper)
 connection.commit()
 connection.setAutoCommit(true)
@@ -328,7 +328,7 @@ limitedConfiguration.pollNumber()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
 connection.commit()
 connection.setAutoCommit(true)
@@ -350,7 +350,7 @@ limitedConfiguration.pollNumber()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:ltd, new	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
 connection.commit()
 connection.setAutoCommit(true)
@@ -371,7 +371,7 @@ limitedConfiguration.pollNumber()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:sale refused	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:sale refused	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
 connection.rollback()
 connection.setAutoCommit(true)
@@ -387,7 +387,7 @@ payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:teleport, 50, 7, )
 itemManager.createGiftContent(connection, 2, item:teleport, 50, 7, )
 itemManager.insertTeleportPair(connection, 1000, 1001)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:ltd tele	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:teleport)
 connection.commit()
 connection.setAutoCommit(true)
@@ -416,7 +416,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(0, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:free	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:free	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -446,7 +446,7 @@ payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
 itemManager.createGiftContent(connection, 2, item:teleport, 0, 0, )
 itemManager.insertTeleportPair(connection, 1000, 1001)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 2	1000	1001	1	2	1	filtered:tele	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -486,7 +486,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:trophy, 0, 0, sender	<today>	engraved)
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:trophy	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:trophy	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -534,7 +534,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:search	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:search	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -552,7 +552,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hello	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hello	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -581,7 +581,7 @@ limitedConfiguration.pollNumber()
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 50, 7, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:under	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:under	sender	hd-180	0)
 limitedConfiguration.limitedSold(connection, 20, sender, userItem1000:chair)
 connection.commit()
 connection.setAutoCommit(true)
@@ -606,7 +606,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hidden?	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:hidden?	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -624,7 +624,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	0	filtered:hidden	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	0	filtered:hidden	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -642,7 +642,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 5, 4) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -660,7 +660,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 5, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:points, infinite	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -678,7 +678,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:abcd	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:abcd	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -696,7 +696,7 @@ stats purchasing=false lastGift=1000000
 connection.setAutoCommit(false)
 payment.takeWithin(8, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_wrap, 0, 0, 1	1000	1	2	1	filtered:hi	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -734,7 +734,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:club only, member	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_gen, 0, 0, 1	1000	1	2	1	filtered:club only, member	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken
@@ -807,7 +807,7 @@ stats purchasing=false lastGift=0
 connection.setAutoCommit(false)
 payment.takeWithin(5, 0, 0) -> true
 itemManager.createGiftContent(connection, 2, item:chair, 0, 0, )
-itemManager.createItem(connection, 2, item:present_other, 0, 0, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180)
+itemManager.createItem(connection, 2, item:present_other, 0, 0, 1	1000	1	2	1	filtered:fallback wrap	sender	hd-180	0)
 connection.commit()
 connection.setAutoCommit(true)
 payment.publishTaken

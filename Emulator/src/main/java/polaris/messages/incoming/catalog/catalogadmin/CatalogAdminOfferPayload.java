@@ -158,14 +158,15 @@ final class CatalogAdminOfferPayload {
     int[] baseItemIds() {
         if (this.itemIds.isEmpty()) return new int[0];
 
-        String[] entries = this.itemIds.split(";");
-        int[] ids = new int[entries.length];
-        for (int index = 0; index < entries.length; index++) {
-            String entry = entries[index];
-            int separator = entry.indexOf(':');
-            ids[index] = Integer.parseInt(separator >= 0 ? entry.substring(0, separator) : entry);
-        }
-        return ids;
+        // "@<offer id>" names a catalogue offer (BundleOfferReferences), not a furni: it is not a base item.
+        return java.util.Arrays.stream(this.itemIds.split(";"))
+                .filter(entry ->
+                        !entry.isEmpty() && entry.charAt(0) != polaris.hotel.catalog.BundleOfferReferences.MARKER)
+                .mapToInt(entry -> {
+                    int separator = entry.indexOf(':');
+                    return Integer.parseInt(separator >= 0 ? entry.substring(0, separator) : entry);
+                })
+                .toArray();
     }
 
     private static String normalizeItemIds(String value) {
@@ -190,7 +191,8 @@ final class CatalogAdminOfferPayload {
                 return null;
             }
 
-            String[] itemAndQuantity = part.split(":", -1);
+            boolean namesOffer = part.charAt(0) == polaris.hotel.catalog.BundleOfferReferences.MARKER;
+            String[] itemAndQuantity = (namesOffer ? part.substring(1) : part).split(":", -1);
             if (itemAndQuantity.length > 2) {
                 return null;
             }

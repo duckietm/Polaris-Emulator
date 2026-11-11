@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.core.ConfigurationManager;
 import polaris.hotel.MaintenanceMode;
+import polaris.hotel.users.firstlogin.FirstLoginSetupService;
 import polaris.messages.outgoing.handshake.DisconnectReasonComposer;
 
 final class SessionEndpoints {
@@ -747,6 +748,16 @@ final class SessionEndpoints {
                 startingCredits,
                 startingDuckets,
                 startingDiamonds);
+
+        // This account chose its look and room here, so the client's first-login setup is not offered to it.
+        if (newUserId > 0) {
+            try (PreparedStatement mark = conn.prepareStatement(FirstLoginSetupService.MARK_REGISTERED_SQL)) {
+                mark.setInt(1, newUserId);
+                mark.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("[auth/register] first-login setup mark failed userId=" + newUserId, e);
+            }
+        }
 
         if (newUserId > 0 && templateId > 0) {
             RegistrationSupport.cloneTemplateForUser(conn, templateId, newUserId, username);

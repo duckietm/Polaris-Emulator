@@ -12,6 +12,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -63,6 +64,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -114,6 +116,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -164,6 +167,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -228,6 +232,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -278,6 +283,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -329,6 +335,7 @@ threading.run(ann)
 habbos.addUser(ann)
 info.setLook(hd-180-1)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -380,6 +387,7 @@ info.setMachineID(machine-9)
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -451,6 +459,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -506,6 +515,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -551,6 +561,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -604,6 +615,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -663,6 +675,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -716,6 +729,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -773,6 +787,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 900)
@@ -823,6 +838,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -873,6 +889,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(12, 12)
@@ -923,6 +940,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(12, 0)
@@ -973,6 +991,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1023,6 +1042,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(12, 12)
@@ -1072,6 +1092,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1123,6 +1144,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1174,6 +1196,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1226,6 +1249,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1316,7 +1340,9 @@ habbos.consumeSsoTicket(7)
 clients.claimAuthenticatedSession(7, client) -> previous session
 clients.disconnectWithReason(previous session, 2)
 CollectibleWardrobe.load(ann)
-client <- batch of 21
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
+db.prepare(SELECT template_id, title, description, thumbnail FROM room_templates WHERE enabled = '1' ORDER BY sort_order ASC, template_id ASC LIMIT 50)
+client <- batch of 22
     SecureLoginOK(true, 0, next-token-7)
     UserHomeRoom(0, 0)
     UserEffectsList(ann, [])
@@ -1324,6 +1350,7 @@ client <- batch of 21
     UserHabbicons(Snapshot)
     AvatarEffectSelected(4)
     NewUserIdentity(ann)
+    ServerMessage
     UserPermissions(ann)
     AvailableCommands([])
     AvailabilityStatus(true, false, true)
@@ -1356,7 +1383,9 @@ maintenance.canLogin(3) -> true
 habbos.consumeSsoTicket(7)
 clients.claimAuthenticatedSession(7, client) -> null
 CollectibleWardrobe.load(ann)
-client <- batch of 21
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
+db.prepare(SELECT template_id, title, description, thumbnail FROM room_templates WHERE enabled = '1' ORDER BY sort_order ASC, template_id ASC LIMIT 50)
+client <- batch of 22
     SecureLoginOK(true, 0, next-token-7)
     UserHomeRoom(0, 0)
     UserEffectsList(ann, [])
@@ -1364,6 +1393,7 @@ client <- batch of 21
     UserHabbicons(Snapshot)
     AvatarEffectSelected(4)
     NewUserIdentity(ann)
+    ServerMessage
     UserPermissions(ann)
     AvailableCommands([])
     AvailabilityStatus(true, false, true)
@@ -1411,7 +1441,9 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
-client <- batch of 21
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
+db.prepare(SELECT template_id, title, description, thumbnail FROM room_templates WHERE enabled = '1' ORDER BY sort_order ASC, template_id ASC LIMIT 50)
+client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
     UserEffectsList(ann, [])
@@ -1419,6 +1451,7 @@ client <- batch of 21
     UserHabbicons(Snapshot)
     AvatarEffectSelected(4)
     NewUserIdentity(ann)
+    ServerMessage
     UserPermissions(ann)
     AvailableCommands([])
     AvailabilityStatus(true, false, true)
@@ -1461,7 +1494,9 @@ maintenance.canLogin(3) -> true
 habbos.consumeSsoTicket(7)
 clients.claimAuthenticatedSession(7, client) -> null
 CollectibleWardrobe.load(ann)
-client <- batch of 21
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
+db.prepare(SELECT template_id, title, description, thumbnail FROM room_templates WHERE enabled = '1' ORDER BY sort_order ASC, template_id ASC LIMIT 50)
+client <- batch of 22
     SecureLoginOK(true, 55, next-token-7)
     UserHomeRoom(0, 0)
     UserEffectsList(ann, [])
@@ -1469,6 +1504,7 @@ client <- batch of 21
     UserHabbicons(Snapshot)
     AvatarEffectSelected(4)
     NewUserIdentity(ann)
+    ServerMessage
     UserPermissions(ann)
     AvailableCommands([])
     AvailabilityStatus(true, false, true)
@@ -1501,6 +1537,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1551,6 +1588,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1603,6 +1641,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1653,6 +1692,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1704,6 +1744,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1754,6 +1795,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1804,6 +1846,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1855,6 +1898,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1906,6 +1950,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -1958,6 +2003,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2009,6 +2055,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2059,6 +2106,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2109,6 +2157,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 20
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2158,6 +2207,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2210,6 +2260,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2261,6 +2312,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2312,6 +2364,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 20
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2361,6 +2414,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2413,6 +2467,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 22
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)
@@ -2479,6 +2534,7 @@ ann.connect() -> true
 threading.run(ann)
 habbos.addUser(ann)
 CollectibleWardrobe.load(ann)
+db.prepare(SELECT 1 FROM users_first_login_setup WHERE user_id = ? AND completed = 0 LIMIT 1)
 client <- batch of 21
     SecureLoginOK(false, 0, next-token-7)
     UserHomeRoom(0, 0)

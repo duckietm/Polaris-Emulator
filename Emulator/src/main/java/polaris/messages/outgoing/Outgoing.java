@@ -78,6 +78,7 @@ public class Outgoing {
     public static final int HasClaimedProductComposer = 266;
     // Official claim result (claimId, result), read by the cursed dragon adoption window
     public static final int ClaimProductResultComposer = 43;
+    public static final int FirstLoginSetupComposer = 9496; // CUSTOM (first-login setup of a CMS account)
     public static final int UserClubComposer = 954;
     public static final int InventoryBadgesComposer = 717;
     public static final int BadgeInfoComposer = 3228;

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import polaris.hotel.catalog.BundleOfferReferences;
 import polaris.hotel.catalog.CatalogPageType;
 
 public final class CatalogValidator {
@@ -391,12 +392,28 @@ public final class CatalogValidator {
             return;
         }
         for (String token : offer.itemIds().split(";", -1)) {
-            String[] parts = token.trim().split(":", -1);
+            // "@<offer id>" names a catalogue offer (a bundle that follows it); the number is an offer, not a furni.
+            boolean namesOffer = token.trim().startsWith(String.valueOf(BundleOfferReferences.MARKER));
+            if (namesOffer && token.trim().length() == 1) {
+                add(
+                        issues,
+                        "OFFER_ITEM_INVALID",
+                        CatalogEntityType.OFFER,
+                        offer.offerId(),
+                        "itemIds",
+                        "Invalid item token: " + token);
+                continue;
+            }
+            String[] parts = (namesOffer ? token.trim().substring(1) : token.trim()).split(":", -1);
             try {
                 if (parts.length > 2) throw new NumberFormatException();
                 int itemId = Integer.parseInt(parts[0]);
                 int quantity = parts.length == 2 ? Integer.parseInt(parts[1]) : 1;
                 if (itemId <= 0 || quantity <= 0) throw new NumberFormatException();
+                if (namesOffer) {
+                    if (itemId == offer.offerId()) throw new NumberFormatException();
+                    continue;
+                }
                 if (!itemDefinitionIds.contains(itemId)) {
                     add(
                             issues,

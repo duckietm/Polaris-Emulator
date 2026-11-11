@@ -37,6 +37,7 @@ final class RoomEntryService {
     private final IntFunction<Room> activeRooms;
     private final BiPredicate<User, Room> entryAllowed;
     private final RoomOpener roomOpener;
+    private final BiPredicate<User, Room> ownerBlocks;
 
     RoomEntryService(
             IntFunction<Room> roomLookup,
@@ -45,12 +46,25 @@ final class RoomEntryService {
             IntFunction<Room> activeRooms,
             BiPredicate<User, Room> entryAllowed,
             RoomOpener roomOpener) {
+        this(roomLookup, accessDataLoader, contentLoader, activeRooms, entryAllowed, roomOpener, (user, room) -> false);
+    }
+
+    /** @param ownerBlocks whether the room's owner blocked the user, who is then refused at the door */
+    RoomEntryService(
+            IntFunction<Room> roomLookup,
+            Consumer<Room> accessDataLoader,
+            Consumer<Room> contentLoader,
+            IntFunction<Room> activeRooms,
+            BiPredicate<User, Room> entryAllowed,
+            RoomOpener roomOpener,
+            BiPredicate<User, Room> ownerBlocks) {
         this.roomLookup = roomLookup;
         this.accessDataLoader = accessDataLoader;
         this.contentLoader = contentLoader;
         this.activeRooms = activeRooms;
         this.entryAllowed = entryAllowed;
         this.roomOpener = roomOpener;
+        this.ownerBlocks = ownerBlocks;
     }
 
     void enter(
@@ -86,6 +100,12 @@ final class RoomEntryService {
                 && !user.hasPermission(Permission.ACC_ANYROOMOWNER)
                 && !user.hasPermission(Permission.ACC_ENTERANYROOM)) {
             user.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BANNED));
+            return;
+        }
+
+        // The official "blocked by the room owner": a player the owner blocked does not get in.
+        if (this.ownerBlocks.test(user, room)) {
+            user.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BLOCKED));
             return;
         }
 

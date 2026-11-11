@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.Map;
 import polaris.Emulator;
 import polaris.hotel.items.Item;
+import polaris.hotel.items.interactions.InteractionGift;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserItem;
@@ -71,7 +72,9 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
         }
 
         String extraData = "1\t" + item.getId();
-        extraData += "\t0\t0\t0\t" + sanitizeGiftMessage(json.message) + "\t0\t0";
+        // A gift sent over RCON is from the hotel: trusted.
+        extraData +=
+                "\t0\t0\t0\t" + sanitizeGiftMessage(json.message) + "\t0\t0" + InteractionGift.trustedSenderField(true);
 
         if (Emulator.getGameEnvironment().getItemManager().createGift(userInfo.getUsername(), giftItem, extraData, 0, 0)
                 == null) {

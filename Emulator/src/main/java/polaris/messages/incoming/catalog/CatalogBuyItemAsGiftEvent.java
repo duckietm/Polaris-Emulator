@@ -32,6 +32,7 @@ import polaris.hotel.catalog.layouts.VipBuyLayout;
 import polaris.hotel.items.FurnitureType;
 import polaris.hotel.items.Item;
 import polaris.hotel.items.interactions.InteractionBadgeDisplay;
+import polaris.hotel.items.interactions.InteractionGift;
 import polaris.hotel.items.interactions.InteractionGuildFurni;
 import polaris.hotel.items.interactions.InteractionGuildGate;
 import polaris.hotel.items.interactions.InteractionHopper;
@@ -991,7 +992,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 .append("\t")
                 .append(this.client.getUser().getUserInfo().getUsername())
                 .append("\t")
-                .append(this.client.getUser().getUserInfo().getLook());
+                .append(this.client.getUser().getUserInfo().getLook())
+                // Staff gifts are trusted: the card then shows the staff banner instead of the scam warning.
+                .append(InteractionGift.trustedSenderField(
+                        this.client.getUser().hasPermission(Permission.ACC_SUPPORTTOOL)));
 
         return giftData.toString();
     }

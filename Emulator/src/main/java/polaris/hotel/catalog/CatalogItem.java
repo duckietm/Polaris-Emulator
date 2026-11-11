@@ -24,6 +24,10 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
     int limitedStack;
     private int pageId;
     private String itemId;
+
+    /** The furni of a bundle that names offers, as last read from the catalogue; null until it is read. */
+    private String resolvedItemId;
+
     private String name;
     private int credits;
     private int points;
@@ -62,7 +66,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
 
         if (item.isLimited()) return false;
 
-        if (item.bundle.size() > 1) return false;
+        if (item.getBundle().size() > 1) return false;
 
         if (item.getName().toLowerCase().startsWith("cf_")
                 || item.getName().toLowerCase().startsWith("cfc_")) return false;
@@ -264,9 +268,10 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
 
     public Set<Item> getBaseItems() {
         Set<Item> items = new LinkedHashSet<>();
+        String content = this.contentItemIds();
 
-        if (!this.itemId.isEmpty()) {
-            String[] itemIds = this.itemId.split(";");
+        if (!content.isEmpty()) {
+            String[] itemIds = content.split(";");
 
             for (String itemId : itemIds) {
                 if (itemId.isEmpty()) continue;
@@ -298,20 +303,65 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
     }
 
     public int getItemAmount(int id) {
+        this.contentItemIds();
         if (this.bundle.containsKey(id)) return this.bundle.get(id);
         else return this.amount;
     }
 
     public Map<Integer, Integer> getBundle() {
+        this.contentItemIds();
         return this.bundle;
     }
 
+    /**
+     * The item list the offer hands out. A bundle that names catalogue offers ({@code @<offer id>}, see
+     * {@link BundleOfferReferences}) is written out as their furni here, read from the catalogue as it is now, so the
+     * bundle follows the offers it names. Any other offer gives its {@code item_ids} unchanged.
+     */
+    private synchronized String contentItemIds() {
+        String raw = this.itemId == null ? "" : this.itemId;
+        if (!BundleOfferReferences.hasReferences(raw)) return raw;
+
+        polaris.hotel.GameEnvironment environment = polaris.WiredPlatform.gameEnvironment();
+        CatalogManager catalog = environment == null ? null : environment.getCatalogManager();
+        if (catalog == null) return this.resolvedItemId == null ? "" : this.resolvedItemId;
+
+        BundleOfferReferences.Expansion expansion = BundleOfferReferences.expand(raw, this.amount, offerId -> {
+            CatalogItem offer = offerId == this.id ? null : catalog.getCatalogItem(offerId);
+            return offer == null ? null : new BundleOfferReferences.Content(offer.itemId, offer.amount);
+        });
+
+        if (!expansion.itemIds().equals(this.resolvedItemId)) {
+            if (!expansion.missing().isEmpty()) {
+                LOGGER.warn(
+                        "Catalogue bundle {} names offer(s) {} that cannot be used (unknown, or a loop); they are left out",
+                        this.id,
+                        expansion.missing());
+            }
+            this.resolvedItemId = expansion.itemIds();
+            this.bundle = new HashMap<>();
+            this.readBundle(this.resolvedItemId);
+        }
+
+        return this.resolvedItemId;
+    }
+
     public void loadBundle() {
+        // A bundle that names offers is read when it is first used: the offers it names may not be loaded yet.
+        if (BundleOfferReferences.hasReferences(this.itemId)) {
+            this.resolvedItemId = null;
+            return;
+        }
+
+        this.readBundle(this.itemId);
+    }
+
+    private void readBundle(String content) {
         int intItemId;
 
-        if (this.itemId.contains(";")) {
+        if (content.contains(";")) {
             try {
-                String[] itemIds = this.itemId.split(";");
+                String[] itemIds = content.split(";");
 
                 for (String itemId : itemIds) {
                     if (itemId.contains(":")) {
@@ -327,12 +377,12 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
                     }
                 }
             } catch (Exception e) {
-                LOGGER.debug("Failed to load {}", this.itemId);
+                LOGGER.debug("Failed to load {}", content);
                 LOGGER.error("Caught exception", e);
             }
         } else {
             try {
-                Item item = Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(this.itemId));
+                Item item = Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(content));
 
                 if (item != null) {
                     this.allowGift = item.allowGift();

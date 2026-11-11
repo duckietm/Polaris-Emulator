@@ -89,20 +89,46 @@ public class PrefixesComponent {
                 boolean shouldBeActive = prefix.getId() == prefixId;
                 if (prefix.isActive() != shouldBeActive) {
                     prefix.setActive(shouldBeActive);
-                    Emulator.getThreading().run(prefix);
                 }
+                prefix.needsUpdate(false);
             }
+            this.persistActive(prefixId);
         }
     }
 
     public void deactivateAll() {
+        this.setActive(0);
+    }
+
+    /**
+     * Removes a prefix from memory and from the database.
+     *
+     * @return whether it was the active one, so the room has to be told
+     */
+    public boolean deletePrefix(UserPrefix prefix) {
+        boolean wasActive;
         synchronized (this.prefixes) {
-            for (UserPrefix prefix : this.prefixes) {
-                if (prefix.isActive()) {
-                    prefix.setActive(false);
-                    Emulator.getThreading().run(prefix);
-                }
+            if (!this.prefixes.remove(prefix)) {
+                return false;
             }
+            wasActive = prefix.isActive();
+        }
+        prefix.needsDelete(true);
+        Emulator.getThreading().run(prefix);
+        return wasActive;
+    }
+
+    // One statement for the whole user: one queued write per prefix could land out of order after quick toggles
+    // and leave two rows active.
+    private void persistActive(int prefixId) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE user_prefixes SET active = (id = ?) WHERE user_id = ?")) {
+            statement.setInt(1, prefixId);
+            statement.setInt(2, this.user.getUserInfo().getId());
+            statement.execute();
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
     }
 

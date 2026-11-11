@@ -231,6 +231,12 @@ public class UserPrefix implements Runnable {
         this.needsUpdate = needsUpdate;
     }
 
+    /** Records the id the database gave this prefix after it was stored outside {@link #run()}. */
+    public void markStored(int id) {
+        this.id = id;
+        this.needsInsert = false;
+    }
+
     public void needsInsert(boolean needsInsert) {
         this.needsInsert = needsInsert;
     }

@@ -1,5 +1,4 @@
 {
-    "club_gift_claims": ["catalog_item_id", "catalog_name", "claimed_at", "id", "user_id"],
   "schemaVersion": 1,
   "source": "Flyway migrated schema",
   "tables": {
@@ -31,6 +30,7 @@
     "chat_bubbles": ["catalog_item_id", "name", "overridable", "permission", "triggers_talking_furniture", "type"],
     "chatlogs_private": ["id", "message", "timestamp", "user_from_id", "user_to_id"],
     "chatlogs_room": ["id", "message", "room_id", "timestamp", "user_from_id", "user_to_id"],
+    "club_gift_claims": ["catalog_item_id", "catalog_name", "claimed_at", "id", "user_id"],
     "collectible_avatar_outfits": ["contract_key", "figure", "gender", "product_code"],
     "collectible_claim_assets": ["asset_id", "claim_key", "claimed_at", "user_id"],
     "collectible_collections": ["bonus_end", "bonus_product_code", "bonus_start", "collection_id", "completion_xp", "enabled", "name", "reward_product_code", "sort_order"],

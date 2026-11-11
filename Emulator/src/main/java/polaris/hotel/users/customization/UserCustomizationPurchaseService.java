@@ -48,6 +48,10 @@ public final class UserCustomizationPurchaseService {
         "sparkle"
     };
     private static final int MAX_ICON_LENGTH = 16;
+    /** Widths of user_prefixes.text and user_prefixes.color. */
+    private static final int TEXT_COLUMN_LENGTH = 50;
+
+    private static final int COLOR_COLUMN_LENGTH = 255;
 
     private final UserCustomizationRepository repository;
     private final Collection<WordFilterWord> filteredWords;
@@ -70,46 +74,21 @@ public final class UserCustomizationPurchaseService {
         int fontPointsType = setting(settings, "font_points_type", pointsType);
         int maxPrefixes = setting(settings, "max_prefixes", 60);
 
-        if (maxPrefixes > 0
-                && user.getInventory().getPrefixesComponent().getPrefixes().size() >= maxPrefixes) {
-            return PurchaseResult.failure("You already own the maximum number of prefixes (" + maxPrefixes + ").");
+        String limitFailure = prefixLimitFailure(user, maxPrefixes);
+        if (limitFailure != null) {
+            return PurchaseResult.failure(limitFailure);
         }
 
         String text = request.text().trim();
-        if (text.isEmpty() || text.length() > maxLength) {
-            return PurchaseResult.failure("Prefix text is invalid or too long (max " + maxLength + " characters).");
-        }
-        if (containsControlChars(text)) {
-            return PurchaseResult.failure("Prefix text contains invalid characters.");
-        }
-        if (this.containsFilteredWord(text)) {
-            return PurchaseResult.failure("This prefix contains a blocked word.");
-        }
-
-        String[] colorParts = request.color().split(",");
-        if (colorParts.length > text.length()) {
-            return PurchaseResult.failure("Invalid color format.");
-        }
-        for (String part : colorParts) {
-            if (!part.matches("^#[0-9A-Fa-f]{6}$")) {
-                return PurchaseResult.failure("Invalid color format.");
-            }
+        String icon = normalizeNullable(request.icon());
+        String effect = normalizeNullable(request.effect()).toLowerCase();
+        String font = normalizeNullable(request.font()).toLowerCase();
+        String styleFailure = this.styleFailure(text, request.color(), icon, effect, font, maxLength, true);
+        if (styleFailure != null) {
+            return PurchaseResult.failure(styleFailure);
         }
         if (user.getUserInfo().getRank().getId() < minRank) {
             return PurchaseResult.failure("Your rank is too low to purchase prefixes.");
-        }
-
-        String icon = normalizeNullable(request.icon());
-        if (!isValidIcon(icon)) {
-            return PurchaseResult.failure("Invalid prefix icon.");
-        }
-        String effect = normalizeNullable(request.effect()).toLowerCase();
-        if (!isAllowedEffect(effect)) {
-            return PurchaseResult.failure("Invalid prefix effect.");
-        }
-        String font = normalizeNullable(request.font()).toLowerCase();
-        if (!isAllowedFont(font)) {
-            return PurchaseResult.failure("Invalid font format.");
         }
 
         int totalPriceCredits = priceCredits + (!font.isEmpty() ? fontPriceCredits : 0);
@@ -129,28 +108,6 @@ public final class UserCustomizationPurchaseService {
             return PurchaseResult.failure("Not enough points.");
         }
 
-        String operationId = EconomyOperationId.create(
-                "prefix-purchase:" + user.getUserInfo().getId());
-        List<EconomyOperation> operations = new ArrayList<>(3);
-        addDebit(operations, operationId + ":credits", operationId, user, EconomyLedger.CREDITS, totalPriceCredits);
-        addDebit(operations, operationId + ":points", operationId, user, pointsType, totalPricePointsSameType);
-        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType) {
-            addDebit(operations, operationId + ":font-points", operationId, user, fontPointsType, fontPricePoints);
-        }
-        try {
-            if (!operations.isEmpty()) {
-                LedgerWalletMutation.executeBatch(user, operations);
-            }
-        } catch (IllegalArgumentException exception) {
-            return PurchaseResult.failure("Not enough currency.");
-        } catch (SQLException exception) {
-            LOGGER.error(
-                    "Unable to debit prefix purchase for user {}",
-                    user.getUserInfo().getId(),
-                    exception);
-            return PurchaseResult.failure("Unable to complete the purchase.");
-        }
-
         int storedPoints = totalPricePointsSameType;
         int storedPointsType =
                 storedPoints > 0 ? pointsType : (!font.isEmpty() && fontPricePoints > 0 ? fontPointsType : pointsType);
@@ -166,6 +123,37 @@ public final class UserCustomizationPurchaseService {
                 storedPoints,
                 storedPointsType,
                 true);
+        // The row is stored before the currency is taken: a failed insert costs the player nothing, and a failed
+        // debit removes the row again.
+        String storeFailure = this.store(prefix);
+        if (storeFailure != null) {
+            return PurchaseResult.failure(storeFailure);
+        }
+
+        String operationId = EconomyOperationId.create(
+                "prefix-purchase:" + user.getUserInfo().getId());
+        List<EconomyOperation> operations = new ArrayList<>(3);
+        addDebit(operations, operationId + ":credits", operationId, user, EconomyLedger.CREDITS, totalPriceCredits);
+        addDebit(operations, operationId + ":points", operationId, user, pointsType, totalPricePointsSameType);
+        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType) {
+            addDebit(operations, operationId + ":font-points", operationId, user, fontPointsType, fontPricePoints);
+        }
+        try {
+            if (!operations.isEmpty()) {
+                LedgerWalletMutation.executeBatch(user, operations);
+            }
+        } catch (IllegalArgumentException exception) {
+            this.discard(prefix);
+            return PurchaseResult.failure("Not enough currency.");
+        } catch (SQLException exception) {
+            LOGGER.error(
+                    "Unable to debit prefix purchase for user {}",
+                    user.getUserInfo().getId(),
+                    exception);
+            this.discard(prefix);
+            return PurchaseResult.failure("Unable to complete the purchase.");
+        }
+
         boolean currencyChanged = totalPricePointsSameType > 0
                 || (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType);
         return PurchaseResult.prefix(prefix, totalPriceCredits > 0, currencyChanged);
@@ -175,12 +163,37 @@ public final class UserCustomizationPurchaseService {
         if (user.getInventory().getPrefixesComponent().getPrefixByCatalogId(catalogPrefixId) != null) {
             return PurchaseResult.refresh();
         }
+        // The catalog follows the same rank and count limits as a custom prefix.
+        Map<String, Integer> settings = this.repository.loadPrefixSettings();
+        String limitFailure = prefixLimitFailure(user, setting(settings, "max_prefixes", 60));
+        if (limitFailure != null) {
+            return PurchaseResult.failure(limitFailure);
+        }
+        if (user.getUserInfo().getRank().getId() < setting(settings, "min_rank_to_buy", 1)) {
+            return PurchaseResult.failure("Your rank is too low to purchase prefixes.");
+        }
         var offer = this.repository.findCatalogPrefix(catalogPrefixId).orElse(null);
         if (offer == null) {
             return PurchaseResult.unavailable();
         }
         if (offer.points() > 0 && user.getUserInfo().getCurrencyAmount(offer.pointsType()) < offer.points()) {
             return PurchaseResult.failure("Not enough points.");
+        }
+        UserPrefix prefix = new UserPrefix(
+                user.getUserInfo().getId(),
+                offer.text(),
+                offer.color(),
+                offer.icon(),
+                offer.effect(),
+                offer.font(),
+                offer.id(),
+                offer.displayName(),
+                offer.points(),
+                offer.pointsType(),
+                false);
+        String storeFailure = this.store(prefix);
+        if (storeFailure != null) {
+            return PurchaseResult.failure(storeFailure);
         }
         if (offer.points() > 0) {
             try {
@@ -196,22 +209,100 @@ public final class UserCustomizationPurchaseService {
                                 "inventory.catalog_prefix.purchase",
                                 "catalogPrefixId=" + catalogPrefixId));
             } catch (IllegalArgumentException exception) {
+                this.discard(prefix);
                 return PurchaseResult.failure("Not enough points.");
+            } catch (SQLException exception) {
+                LOGGER.error(
+                        "Unable to debit catalog prefix {} for user {}",
+                        catalogPrefixId,
+                        user.getUserInfo().getId(),
+                        exception);
+                this.discard(prefix);
+                return PurchaseResult.failure("Unable to complete the purchase.");
             }
         }
-        UserPrefix prefix = new UserPrefix(
-                user.getUserInfo().getId(),
-                offer.text(),
-                offer.color(),
-                offer.icon(),
-                offer.effect(),
-                offer.font(),
-                offer.id(),
-                offer.displayName(),
-                offer.points(),
-                offer.pointsType(),
-                false);
         return PurchaseResult.prefix(prefix, false, offer.points() > 0);
+    }
+
+    /**
+     * The checks a prefix handed out by staff goes through: the same text, colour, icon and effect rules as a
+     * purchase, and the owner's prefix limit. Returns the reason it is refused, or {@code null}.
+     */
+    public String grantedPrefixFailure(User target, String text, String color, String icon, String effect) {
+        Map<String, Integer> settings = this.repository.loadPrefixSettings();
+        String limitFailure = prefixLimitFailure(target, setting(settings, "max_prefixes", 60));
+        if (limitFailure != null) {
+            return limitFailure;
+        }
+        return this.styleFailure(
+                text == null ? "" : text.trim(),
+                color == null ? "" : color,
+                normalizeNullable(icon),
+                normalizeNullable(effect).toLowerCase(),
+                "",
+                setting(settings, "max_length", 15),
+                false);
+    }
+
+    private String styleFailure(
+            String text, String color, String icon, String effect, String font, int maxLength, boolean applyBlacklist) {
+        // The setting may not ask for more than the column holds: a longer text failed the insert silently.
+        int textLimit = Math.min(maxLength, TEXT_COLUMN_LENGTH);
+        if (text.isEmpty() || text.length() > textLimit) {
+            return "Prefix text is invalid or too long (max " + textLimit + " characters).";
+        }
+        if (containsControlChars(text)) {
+            return "Prefix text contains invalid characters.";
+        }
+        if (this.containsFilteredWord(text, applyBlacklist)) {
+            return "This prefix contains a blocked word.";
+        }
+
+        String[] colorParts = color.split(",");
+        if (colorParts.length > text.length() || color.length() > COLOR_COLUMN_LENGTH) {
+            return "Invalid color format.";
+        }
+        for (String part : colorParts) {
+            if (!part.matches("^#[0-9A-Fa-f]{6}$")) {
+                return "Invalid color format.";
+            }
+        }
+        if (!isValidIcon(icon)) {
+            return "Invalid prefix icon.";
+        }
+        if (!isAllowedEffect(effect)) {
+            return "Invalid prefix effect.";
+        }
+        if (!isAllowedFont(font)) {
+            return "Invalid font format.";
+        }
+        return null;
+    }
+
+    private static String prefixLimitFailure(User user, int maxPrefixes) {
+        if (maxPrefixes > 0
+                && user.getInventory().getPrefixesComponent().getPrefixes().size() >= maxPrefixes) {
+            return "You already own the maximum number of prefixes (" + maxPrefixes + ").";
+        }
+        return null;
+    }
+
+    private String store(UserPrefix prefix) {
+        try {
+            this.repository.insertPrefix(prefix);
+            return null;
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to store a prefix for user {}", prefix.getUserId(), exception);
+            return "Unable to complete the purchase.";
+        }
+    }
+
+    private void discard(UserPrefix prefix) {
+        try {
+            this.repository.deletePrefix(prefix.getId(), prefix.getUserId());
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to remove unpaid prefix {} of user {}", prefix.getId(), prefix.getUserId(), exception);
+        }
     }
 
     public PurchaseResult purchaseNickIcon(User user, String iconKey) throws SQLException {
@@ -286,7 +377,7 @@ public final class UserCustomizationPurchaseService {
         return contains(ALLOWED_EFFECTS, effect);
     }
 
-    private boolean containsFilteredWord(String text) {
+    private boolean containsFilteredWord(String text, boolean applyBlacklist) {
         // Compared without accents and invisible characters too: a blocked word with an accent or a zero-width
         // character in it passed the plain comparison and showed next to the name for the whole room.
         String folded = foldForFilter(text);
@@ -294,6 +385,15 @@ public final class UserCustomizationPurchaseService {
             if (word.key != null
                     && !word.key.isEmpty()
                     && (Strings.CI.contains(text, word.key) || folded.contains(foldForFilter(word.key)))) {
+                return true;
+            }
+        }
+        if (!applyBlacklist) {
+            return false;
+        }
+        // The prefix blacklist (admin, staff, mod, owner, ...) keeps players from posing as the hotel team.
+        for (String word : this.repository.loadPrefixBlacklist()) {
+            if (folded.contains(foldForFilter(word))) {
                 return true;
             }
         }

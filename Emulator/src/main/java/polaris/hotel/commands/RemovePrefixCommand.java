@@ -6,7 +6,7 @@ import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserPrefix;
-import polaris.messages.outgoing.inventory.prefixes.UserPrefixesComposer;
+import polaris.hotel.users.inventory.PrefixUpdates;
 
 public class RemovePrefixCommand extends Command {
     public RemovePrefixCommand() {
@@ -52,16 +52,12 @@ public class RemovePrefixCommand extends Command {
         if (prefixIdStr.equalsIgnoreCase("all")) {
             List<UserPrefix> prefixes =
                     target.getInventory().getPrefixesComponent().getPrefixes();
+            boolean activeRemoved = false;
             for (UserPrefix prefix : prefixes) {
-                prefix.needsDelete(true);
-                Emulator.getThreading().run(prefix);
-            }
-            // Clear in-memory
-            for (UserPrefix prefix : prefixes) {
-                target.getInventory().getPrefixesComponent().removePrefix(prefix);
+                activeRemoved |= target.getInventory().getPrefixesComponent().deletePrefix(prefix);
             }
 
-            target.getClient().sendResponse(new UserPrefixesComposer(target));
+            PrefixUpdates.removed(target, activeRemoved);
 
             gameClient
                     .getUser()
@@ -94,11 +90,8 @@ public class RemovePrefixCommand extends Command {
                 return true;
             }
 
-            target.getInventory().getPrefixesComponent().removePrefix(prefix);
-            prefix.needsDelete(true);
-            Emulator.getThreading().run(prefix);
-
-            target.getClient().sendResponse(new UserPrefixesComposer(target));
+            boolean activeRemoved = target.getInventory().getPrefixesComponent().deletePrefix(prefix);
+            PrefixUpdates.removed(target, activeRemoved);
 
             gameClient
                     .getUser()

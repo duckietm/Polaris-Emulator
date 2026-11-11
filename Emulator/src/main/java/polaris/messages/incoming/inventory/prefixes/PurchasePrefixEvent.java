@@ -6,14 +6,12 @@ import polaris.hotel.users.customization.UserCustomizationPurchaseService;
 import polaris.hotel.users.customization.UserCustomizationPurchaseService.CustomPrefixRequest;
 import polaris.hotel.users.customization.UserCustomizationPurchaseService.PurchaseResult;
 import polaris.hotel.users.customization.UserCustomizationRepository;
+import polaris.hotel.users.inventory.PrefixUpdates;
+import polaris.hotel.users.inventory.PrefixesComponent;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import polaris.messages.outgoing.generic.alerts.BubbleAlertKeys;
-import polaris.messages.outgoing.inventory.nickicons.UserNickIconsComposer;
-import polaris.messages.outgoing.inventory.prefixes.ActivePrefixUpdatedComposer;
 import polaris.messages.outgoing.inventory.prefixes.CustomPrefixPurchaseFailedComposer;
-import polaris.messages.outgoing.inventory.prefixes.PrefixReceivedComposer;
-import polaris.messages.outgoing.rooms.users.RoomUserDataComposer;
 import polaris.messages.outgoing.users.UserCreditsComposer;
 import polaris.messages.outgoing.users.UserCurrencyComposer;
 
@@ -40,7 +38,16 @@ public class PurchasePrefixEvent extends MessageHandler {
         UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(
                 new UserCustomizationRepository(Emulator.getDatabase().getDataSource()),
                 Emulator.getGameEnvironment().getWordFilter().getWords());
-        PurchaseResult result = service.purchaseCustomPrefix(user, request);
+        PrefixesComponent prefixes = user.getInventory().getPrefixesComponent();
+        PurchaseResult result;
+        // One purchase at a time per user: the limit check and the insert would otherwise race.
+        synchronized (prefixes) {
+            result = service.purchaseCustomPrefix(user, request);
+            if (result.status() == UserCustomizationPurchaseService.Status.SUCCESS) {
+                prefixes.addPrefix(result.prefix());
+                prefixes.setActive(result.prefix().getId());
+            }
+        }
         if (result.status() != UserCustomizationPurchaseService.Status.SUCCESS) {
             this.fail(result.message());
             return;
@@ -52,15 +59,7 @@ public class PurchasePrefixEvent extends MessageHandler {
         if (result.currencyChanged()) {
             this.client.sendResponse(new UserCurrencyComposer(user));
         }
-        result.prefix().run();
-        user.getInventory().getPrefixesComponent().addPrefix(result.prefix());
-        user.getInventory().getPrefixesComponent().setActive(result.prefix().getId());
-        this.client.sendResponse(new PrefixReceivedComposer(result.prefix()));
-        this.client.sendResponse(new ActivePrefixUpdatedComposer(result.prefix()));
-        this.client.sendResponse(new UserNickIconsComposer(user));
-        if (user.getUserInfo().getCurrentRoom() != null) {
-            user.getUserInfo().getCurrentRoom().sendComposer(new RoomUserDataComposer(user).compose());
-        }
+        PrefixUpdates.received(user, result.prefix());
     }
 
     private void fail(String message) {

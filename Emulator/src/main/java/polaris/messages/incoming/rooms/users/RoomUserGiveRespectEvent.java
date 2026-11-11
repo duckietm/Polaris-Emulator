@@ -1,8 +1,10 @@
 package polaris.messages.incoming.rooms.users;
 
 import polaris.Emulator;
+import polaris.hotel.rooms.TalentShowRespect;
 import polaris.hotel.users.User;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.generic.alerts.CustomNotificationComposer;
 import polaris.plugin.events.users.UserRespectedEvent;
 
 public class RoomUserGiveRespectEvent extends MessageHandler {
@@ -25,6 +27,14 @@ public class RoomUserGiveRespectEvent extends MessageHandler {
 
             User target = this.client.getUser().getUserInfo().getCurrentRoom().getUser(userId);
             if (target == null) return;
+
+            // A talent show room gives respect only to a user on the stage, before an audience.
+            TalentShowRespect.Verdict verdict =
+                    TalentShowRespect.check(this.client.getUser().getUserInfo().getCurrentRoom(), target);
+            if (verdict != TalentShowRespect.Verdict.ALLOWED) {
+                this.client.sendResponse(new CustomNotificationComposer(verdict.notification()));
+                return;
+            }
 
             if (Emulator.getPluginManager().isRegistered(UserRespectedEvent.class, false)) {
                 if (Emulator.getPluginManager()

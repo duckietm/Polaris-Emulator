@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.GameEnvironment;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
 import polaris.hotel.users.User;
@@ -53,11 +54,8 @@ public class GivePrefixCommand extends Command {
             }
         }
 
-        UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(
-                new UserCustomizationRepository(Emulator.getDatabase().getDataSource()),
-                Emulator.getGameEnvironment().getWordFilter().getWords());
-
-        User target = Emulator.getGameEnvironment().getUserManager().getUser(targetName);
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        User target = environment.getUserManager().getUser(targetName);
 
         if (target == null) {
             gameClient
@@ -77,6 +75,11 @@ public class GivePrefixCommand extends Command {
             return true;
         }
 
+        PrefixesComponent prefixes = target.getInventory().getPrefixesComponent();
+        UserCustomizationRepository repository = prefixes.repository();
+        UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(
+                repository, environment.getWordFilter().getWords());
+
         // The same text, filter, icon, effect and count rules as a purchase; only the prefix blacklist is left to
         // staff judgement, so a "Staff" prefix can still be handed out.
         String failure = service.grantedPrefixFailure(target, text, color, icon, effect);
@@ -87,10 +90,9 @@ public class GivePrefixCommand extends Command {
 
         UserPrefix prefix = new UserPrefix(
                 target.getUserInfo().getId(), text, color, icon, effect.trim().toLowerCase());
-        PrefixesComponent prefixes = target.getInventory().getPrefixesComponent();
         synchronized (prefixes) {
             try {
-                new UserCustomizationRepository(Emulator.getDatabase().getDataSource()).insertPrefix(prefix);
+                repository.insertPrefix(prefix);
             } catch (SQLException exception) {
                 LOGGER.error("Unable to store the prefix given to {}", targetName, exception);
                 gameClient.getUser().whisper("Unable to store the prefix.", RoomChatMessageBubbles.ALERT);

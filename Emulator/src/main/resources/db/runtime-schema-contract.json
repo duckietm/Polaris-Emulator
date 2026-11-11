@@ -210,6 +210,7 @@
     "users_earnings_claims": ["category", "claimed_at", "id", "period_key", "user_id"],
     "users_effects": ["activation_timestamp", "duration", "effect", "total", "user_id"],
     "users_favorite_rooms": ["room_id", "user_id"],
+    "users_first_login_setup": ["completed", "user_id"],
     "users_habbicons": ["habbicon_id", "last_used", "state", "unseen", "user_id"],
     "users_ignored": ["target_id", "user_id"],
     "users_marketplace_tokens": ["tokens", "user_id"],

@@ -587,6 +587,7 @@ import polaris.messages.incoming.users.UserActivityEvent;
 import polaris.messages.incoming.users.UserNuxEvent;
 import polaris.messages.incoming.users.UserSaveLookEvent;
 import polaris.messages.incoming.users.UserWearBadgeEvent;
+import polaris.messages.incoming.users.firstlogin.FirstLoginSetupChooseEvent;
 import polaris.messages.incoming.wired.GetWiredContractContentsEvent;
 import polaris.messages.incoming.wired.UpdateWiredContractEvent;
 import polaris.messages.incoming.wired.WiredAddonSaveDataEvent;
@@ -883,6 +884,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestGiftConfigurationEvent, RequestGiftConfigurationEvent.class);
         this.registerHandler(Incoming.RequestHasClaimedProductEvent, RequestHasClaimedProductEvent.class);
         this.registerHandler(Incoming.ClaimFreeProductEvent, ClaimFreeProductEvent.class);
+        this.registerHandler(Incoming.FirstLoginSetupChooseEvent, FirstLoginSetupChooseEvent.class);
         this.registerHandler(Incoming.GetCollectibleWalletsEvent, GetCollectibleWalletsEvent.class);
         this.registerHandler(Incoming.SelectCollectibleWalletEvent, SelectCollectibleWalletEvent.class);
         this.registerHandler(Incoming.GetCollectibleCollectionsEvent, GetCollectibleCollectionsEvent.class);

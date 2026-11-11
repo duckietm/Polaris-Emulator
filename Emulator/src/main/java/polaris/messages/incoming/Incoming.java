@@ -274,6 +274,7 @@ public class Incoming {
     // AIR 15 special items display free claim: has-claimed request and claim (official ids)
     public static final int RequestHasClaimedProductEvent = 395;
     public static final int ClaimFreeProductEvent = 3935;
+    public static final int FirstLoginSetupChooseEvent = 9497; // CUSTOM (first-login setup of a CMS account)
     public static final int RequestRoomDataEvent = 2230;
     public static final int RequestRoomHeightmapEvent = 2300;
     public static final int RequestGuildFurniWidgetEvent = 2651;

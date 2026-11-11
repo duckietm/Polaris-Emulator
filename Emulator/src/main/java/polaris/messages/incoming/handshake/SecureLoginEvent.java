@@ -26,6 +26,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.users.UserManager;
 import polaris.hotel.users.UserStats;
 import polaris.hotel.users.clothingvalidation.ClothingValidationManager;
+import polaris.hotel.users.firstlogin.FirstLoginSetup;
 import polaris.hotel.users.subscriptions.Subscription;
 import polaris.hotel.users.subscriptions.SubscriptionClub;
 import polaris.messages.NoAuthMessage;
@@ -393,6 +394,9 @@ public class SecureLoginEvent extends MessageHandler {
         messages.add(
                 new AvatarEffectSelectedComposer(user.getInventory().getEffectsComponent().activatedEffect).compose());
         messages.add(new NewUserIdentityComposer(user).compose());
+
+        // A CMS account's first login: the look and starter room its register page never asked for.
+        FirstLoginSetup.atLogin(user, messages);
 
         // The gift offer of the first days: the client shows it only once it is told the
         // new user experience has not been finished.

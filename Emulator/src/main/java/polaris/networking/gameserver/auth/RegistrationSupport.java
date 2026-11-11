@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.hotel.items.WebApiBoxSql;
 
-final class RegistrationSupport {
+public final class RegistrationSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationSupport.class);
 
@@ -108,7 +108,12 @@ final class RegistrationSupport {
         }
     }
 
-    static void cloneTemplateForUser(Connection conn, int templateId, int userId, String userName) {
+    /**
+     * Copies a room template into a room of the user's own and makes it their home room.
+     *
+     * @return the new room's id, or 0 when no room was made (unknown or disabled template, or a database error)
+     */
+    public static int cloneTemplateForUser(Connection conn, int templateId, int userId, String userName) {
         LOGGER.info("[auth/register] cloning template id={} for user id={} name='{}'", templateId, userId, userName);
 
         try (PreparedStatement check =
@@ -118,12 +123,12 @@ final class RegistrationSupport {
                 if (!rs.next()) {
                     LOGGER.warn(
                             "[auth/register] unknown/disabled room template id={} for user id={}", templateId, userId);
-                    return;
+                    return 0;
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("[auth/register] template lookup failed for templateId=" + templateId, e);
-            return;
+            return 0;
         }
 
         int newRoomId = 0;
@@ -146,7 +151,7 @@ final class RegistrationSupport {
             }
         } catch (SQLException e) {
             LOGGER.error("[auth/register] clone rooms failed templateId=" + templateId + " userId=" + userId, e);
-            return;
+            return 0;
         }
 
         LOGGER.info("[auth/register] rooms insert: rowsAffected={} newRoomId={}", roomsInserted, newRoomId);
@@ -156,7 +161,7 @@ final class RegistrationSupport {
                     "[auth/register] clone aborted - no roomId returned (templateId={}, userId={})",
                     templateId,
                     userId);
-            return;
+            return 0;
         }
 
         materializeCustomLayout(conn, templateId, newRoomId);
@@ -185,5 +190,6 @@ final class RegistrationSupport {
         } catch (SQLException e) {
             LOGGER.error("[auth/register] setting home_room failed userId=" + userId + " roomId=" + newRoomId, e);
         }
+        return newRoomId;
     }
 }

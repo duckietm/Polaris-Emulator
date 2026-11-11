@@ -1,4 +1,5 @@
 {
+    "club_gift_claims": ["catalog_item_id", "catalog_name", "claimed_at", "id", "user_id"],
   "schemaVersion": 1,
   "source": "Flyway migrated schema",
   "tables": {

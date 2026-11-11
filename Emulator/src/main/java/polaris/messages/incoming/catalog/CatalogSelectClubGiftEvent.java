@@ -5,12 +5,16 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.WiredPlatform;
 import polaris.hotel.catalog.CatalogItem;
 import polaris.hotel.catalog.CatalogPage;
 import polaris.hotel.catalog.CatalogPageLayouts;
 import polaris.hotel.items.Item;
+import polaris.hotel.users.UserStats;
+import polaris.hotel.users.subscriptions.ClubGiftClaimLog;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.catalog.AlertPurchaseFailedComposer;
+import polaris.messages.outgoing.catalog.ClubGiftsComposer;
 import polaris.messages.outgoing.users.ClubGiftReceivedComposer;
 
 public class CatalogSelectClubGiftEvent extends MessageHandler {
@@ -104,6 +108,21 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
 
         Emulator.getThreading().run(this.client.getUser().getUserStats());
 
+        // The history of chosen gifts, written off this thread: a failure there is logged and the gift stays.
+        int userId = this.client.getUser().getUserInfo().getId();
+        int catalogItemId = catalogItem.getId();
+        String catalogName = catalogItem.getName();
+        int claimedAt = WiredPlatform.unixTimestamp();
+        WiredPlatform.threading()
+                .run(() -> ClubGiftClaimLog.record(
+                        WiredPlatform.database().getDataSource(), userId, catalogItemId, catalogName, claimedAt));
+
         this.client.sendResponse(new ClubGiftReceivedComposer(itemName, itemsGiven));
+
+        // The gift page shows how many gifts are left: it is told again, now that one is taken.
+        UserStats stats = this.client.getUser().getUserStats();
+        this.client.sendResponse(new ClubGiftsComposer(
+                (int) Math.floor(stats.getTimeTillNextClubGift() / 86400.0), stats.getRemainingClubGifts(), (int)
+                        Math.floor(stats.getPastTimeAsClub() / 86400.0)));
     }
 }

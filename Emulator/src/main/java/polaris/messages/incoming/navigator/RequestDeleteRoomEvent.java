@@ -9,6 +9,7 @@ import polaris.hotel.modtool.ScripterManager;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomDeleter;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.users.UserHomeRoomComposer;
 import polaris.plugin.events.navigator.NavigatorRoomDeletedEvent;
 
 public class RequestDeleteRoomEvent extends MessageHandler {
@@ -27,14 +28,17 @@ public class RequestDeleteRoomEvent extends MessageHandler {
 
         if (room != null) {
             if (room.isOwner(this.client.getUser())) {
-                if (room.getId() == this.client.getUser().getUserInfo().getHomeRoom()) {
-                    return;
-                }
-
                 if (Emulator.getPluginManager()
                         .fireEvent(new NavigatorRoomDeletedEvent(this.client.getUser(), room))
                         .isCancelled()) {
                     return;
+                }
+
+                // Deleting the home room (a starter room is one) leaves the user without a home room, so the
+                // next login does not send them to a room that is gone.
+                if (room.getId() == this.client.getUser().getUserInfo().getHomeRoom()) {
+                    this.client.getUser().getUserInfo().setHomeRoom(0);
+                    this.client.sendResponse(new UserHomeRoomComposer(0, 0));
                 }
 
                 try (Connection connection =

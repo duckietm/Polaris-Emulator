@@ -17,9 +17,8 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
     private final long pongTimeoutNanos;
 
     volatile ScheduledFuture<?> pingScheduleFuture;
-    volatile boolean sentPing;
-    volatile long lastPingTime; // in nanoseconds
     volatile long lastPongTime; // in nanoseconds
+    private final PingRoundTrip roundTrip = new PingRoundTrip();
 
     private volatile int state; // 0 - none, 1 - initialized, 2 - destroyed
 
@@ -105,11 +104,9 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
 
                 final GameClient client =
                         ctx.channel().attr(GameServerAttributes.CLIENT).get();
-                if (client != null) {
-                    if (sentPing) {
-                        sentPing = false;
-                        client.getLatencyTracker().update(lastPongTime - lastPingTime);
-                    }
+                final long latencyNanos = roundTrip.answered(lastPongTime);
+                if (client != null && latencyNanos != PingRoundTrip.NOT_WAITING) {
+                    client.getLatencyTracker().update(latencyNanos);
                 }
             }
         }
@@ -138,8 +135,7 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
             final GameClient client =
                     ctx.channel().attr(GameServerAttributes.CLIENT).get();
             if (client != null) {
-                lastPingTime = System.nanoTime();
-                sentPing = true;
+                roundTrip.sent(System.nanoTime());
                 client.sendResponse(new PingComposer());
             }
 

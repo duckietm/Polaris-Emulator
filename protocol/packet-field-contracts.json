@@ -12733,6 +12733,43 @@
       ]
     },
     {
+      "name": "BOT_MOVE",
+      "direction": "client_to_server",
+      "header": 9498,
+      "java": {
+        "symbol": "MoveBotEvent",
+        "className": "MoveBotEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/rooms/bots/MoveBotEvent.java"
+      },
+      "typescript": {
+        "symbol": "BOT_MOVE",
+        "className": "BotMoveComposer",
+        "path": "packages/communication/src/messages/outgoing/room/engine/BotMoveComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "bot"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "x"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "y"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "direction"
+        }
+      ]
+    },
+    {
       "name": "DELETE_ITEM",
       "direction": "client_to_server",
       "header": 10018,

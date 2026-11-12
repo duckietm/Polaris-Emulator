@@ -404,6 +404,7 @@ import polaris.messages.incoming.rooms.bots.BotPickupEvent;
 import polaris.messages.incoming.rooms.bots.BotPlaceEvent;
 import polaris.messages.incoming.rooms.bots.BotSaveSettingsEvent;
 import polaris.messages.incoming.rooms.bots.BotSettingsEvent;
+import polaris.messages.incoming.rooms.bots.MoveBotEvent;
 import polaris.messages.incoming.rooms.competition.CompetitionRoomsSearchEvent;
 import polaris.messages.incoming.rooms.competition.ForwardToACompetitionRoomEvent;
 import polaris.messages.incoming.rooms.competition.ForwardToASubmittableRoomEvent;
@@ -1261,6 +1262,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RoomUserRemoveRightsEvent, RoomUserRemoveRightsEvent.class);
         this.registerHandler(Incoming.BotPlaceEvent, BotPlaceEvent.class);
         this.registerHandler(Incoming.BotPickupEvent, BotPickupEvent.class);
+        this.registerHandler(Incoming.MoveBotEvent, MoveBotEvent.class);
         this.registerHandler(Incoming.BotSaveSettingsEvent, BotSaveSettingsEvent.class);
         this.registerHandler(Incoming.BotSettingsEvent, BotSettingsEvent.class);
         this.registerHandler(Incoming.TriggerDiceEvent, TriggerDiceEvent.class);

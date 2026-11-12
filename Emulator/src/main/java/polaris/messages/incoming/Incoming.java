@@ -275,6 +275,7 @@ public class Incoming {
     public static final int RequestHasClaimedProductEvent = 395;
     public static final int ClaimFreeProductEvent = 3935;
     public static final int FirstLoginSetupChooseEvent = 9497; // CUSTOM (first-login setup of a CMS account)
+    public static final int MoveBotEvent = 9498; // CUSTOM (move or turn a rentable bot like furni)
     public static final int RequestRoomDataEvent = 2230;
     public static final int RequestRoomHeightmapEvent = 2300;
     public static final int RequestGuildFurniWidgetEvent = 2651;

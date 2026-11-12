@@ -265,6 +265,7 @@ U|polaris/hotel/commands/MuteCommand.java|CALL|getTexts|7
 U|polaris/hotel/commands/MutePetsCommand.java|CALL|getTexts|2
 U|polaris/hotel/commands/PetInfoCommand.java|CALL|getTexts|19
 U|polaris/hotel/commands/PickallCommand.java|CALL|getTexts|1
+U|polaris/hotel/commands/PingCommand.java|CALL|getTexts|1
 U|polaris/hotel/commands/PixelCommand.java|CALL|getGameServer|1
 U|polaris/hotel/commands/PixelCommand.java|CALL|getTexts|8
 U|polaris/hotel/commands/PluginsCommand.java|CALL|getConfig|1

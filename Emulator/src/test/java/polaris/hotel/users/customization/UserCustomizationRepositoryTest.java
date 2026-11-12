@@ -54,6 +54,24 @@ class UserCustomizationRepositoryTest {
     }
 
     @Test
+    void prefixBlacklistSkipsBlankWords() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true, true, true, false);
+        when(resultSet.getString("word")).thenReturn(" admin ", "  ", "staff");
+
+        var words = new UserCustomizationRepository(dataSource).loadPrefixBlacklist();
+
+        assertEquals(java.util.List.of("admin", "staff"), words);
+    }
+
+    @Test
     void malformedPrefixSettingKeepsCallerDefaultsAvailable() throws Exception {
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);

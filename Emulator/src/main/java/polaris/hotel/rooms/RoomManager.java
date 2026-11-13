@@ -1043,7 +1043,7 @@ public class RoomManager {
                 }
             }
 
-            int effect = user.getInventory().getEffectsComponent().activatedEffect;
+            int effect = user.getInventory().getEffectsComponent().entryEffect();
             room.giveEffect(user.getRoomUnit(), effect, -1);
         }
 

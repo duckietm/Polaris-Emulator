@@ -27,6 +27,7 @@ import org.mockito.MockedStatic;
 import polaris.Emulator;
 import polaris.core.ConfigurationManager;
 import polaris.hotel.GameEnvironment;
+import polaris.hotel.bots.Bot;
 import polaris.hotel.bots.BotManager;
 import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.items.FurnitureType;
@@ -53,6 +54,7 @@ import polaris.messages.incoming.rooms.RoomBackgroundEvent;
 import polaris.messages.incoming.rooms.RoomPlacePaintEvent;
 import polaris.messages.incoming.rooms.bots.BotPickupEvent;
 import polaris.messages.incoming.rooms.bots.BotPlaceEvent;
+import polaris.messages.incoming.rooms.bots.MoveBotEvent;
 import polaris.messages.incoming.rooms.items.MoodLightSaveSettingsEvent;
 import polaris.messages.incoming.rooms.items.MoodLightTurnOnEvent;
 import polaris.messages.incoming.rooms.items.MoveWallItemEvent;
@@ -339,6 +341,22 @@ class RoomPlayTestEnforcementTest {
 
         actor.handle(
                 new MovePetEvent(),
+                new Packet().integer(3).integer(1).integer(1).integer(2));
+
+        verify(room, mode.refused ? never() : times(1)).getLayout();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Mode.class)
+    void botsAreMovedOnlyOutsidePlaytest(Mode mode) throws Exception {
+        Room room = room();
+        Bot bot = mock(Bot.class);
+        when(bot.getRoomUnit()).thenReturn(mock(RoomUnit.class));
+        when(room.getBot(3)).thenReturn(bot);
+        Actor actor = new Actor(mode, room);
+
+        actor.handle(
+                new MoveBotEvent(),
                 new Packet().integer(3).integer(1).integer(1).integer(2));
 
         verify(room, mode.refused ? never() : times(1)).getLayout();

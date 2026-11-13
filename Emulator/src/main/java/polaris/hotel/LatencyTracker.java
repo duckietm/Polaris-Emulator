@@ -1,13 +1,8 @@
 package polaris.hotel;
 
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import polaris.hotel.gameclients.GameClient;
 
 public class LatencyTracker {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GameClient.class);
 
     private boolean initialPing;
 

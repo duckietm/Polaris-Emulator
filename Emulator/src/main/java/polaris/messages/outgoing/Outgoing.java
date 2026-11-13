@@ -78,6 +78,7 @@ public class Outgoing {
     public static final int HasClaimedProductComposer = 266;
     // Official claim result (claimId, result), read by the cursed dragon adoption window
     public static final int ClaimProductResultComposer = 43;
+    public static final int FirstLoginSetupComposer = 9496; // CUSTOM (first-login setup of a CMS account)
     public static final int UserClubComposer = 954;
     public static final int InventoryBadgesComposer = 717;
     public static final int BadgeInfoComposer = 3228;
@@ -764,6 +765,8 @@ public class Outgoing {
     public static final int CatalogStudioSessionComposer = 10067;
     public static final int WiredSetupExportComposer = 10096; // CUSTOM wired setup share code
     public static final int WiredSetupImportResultComposer = 10097; // CUSTOM wired setup import report
+    public static final int WiredMenuErrorComposer = 289; // AIR (wired menu: an action was refused)
+    public static final int CitizenshipVipOfferPromoEnabledComposer = 2764; // AIR (free club from citizenship)
     public static final int CatalogStudioHistoryComposer = 10071;
     public static final int CatalogStudioUndoComposer = 10072;
     public static final int CatalogStudioValidationComposer = 10073;

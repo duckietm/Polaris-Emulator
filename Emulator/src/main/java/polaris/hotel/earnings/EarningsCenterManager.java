@@ -257,7 +257,8 @@ public class EarningsCenterManager {
         if (nativeEnabled(category) && this.nativeIntegration.handles(category)) {
             try {
                 rewards.addAll(this.nativeIntegration.rewards(user, category));
-            } catch (SQLException ignored) {
+            } catch (SQLException e) {
+                LOGGER.warn("Earnings rewards for {} could not be loaded", category.getKey(), e);
             }
         } else {
             addReward(rewards, EarningsReward.TYPE_CREDITS, this.config.getInt(key + "credits", 0), 0);

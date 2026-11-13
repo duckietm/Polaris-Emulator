@@ -8,6 +8,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.wired.WiredVariableChangeOrigin;
 import polaris.hotel.wired.core.WiredInternalVariableSupport;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.wired.WiredMenuErrorComposer;
 
 public class WiredUserVariableUpdateEvent extends MessageHandler {
     private static final int TARGET_ROOM = RoomWiredVariableWrites.TARGET_ROOM;
@@ -73,6 +74,8 @@ public class WiredUserVariableUpdateEvent extends MessageHandler {
                     || targetType == RoomWiredVariableWrites.TARGET_ROOM
                     || RoomWiredVariableWrites.mayManageUser(room, this.client.getUser(), targetId, definitionItemId)) {
                 RoomWiredVariableWrites.update(room, targetType, targetId, definitionItemId, value);
+            } else {
+                this.client.sendResponse(new WiredMenuErrorComposer(WiredMenuErrorComposer.NOT_VARIABLE_OWNER));
             }
             if (targetType == WiredEffectGiveVariable.TARGET_FURNI) {
                 room.getFurniVariableManager().sendSnapshot(this.client.getUser());

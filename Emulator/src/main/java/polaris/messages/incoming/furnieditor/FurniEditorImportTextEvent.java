@@ -11,9 +11,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.permissions.Permission;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.furnieditor.FurniEditorImportTextResultComposer;
@@ -65,9 +67,20 @@ public class FurniEditorImportTextEvent extends MessageHandler {
             return;
         }
 
-        JsonObject root = fetchCached(url);
+        // The remote fetch can take up to 30 s; it runs on the HTTP client's threads so the packet
+        // thread, shared with other players, is not held while it waits.
+        GameClient client = this.client;
+        fetchCached(url)
+                .thenAccept(root -> reply(client, root, classname, cn, itemId))
+                .exceptionally(e -> {
+                    LOGGER.error("FurniEditorImportTextEvent: import for item {} failed", itemId, e);
+                    return null;
+                });
+    }
+
+    private static void reply(GameClient client, JsonObject root, String classname, String cn, int itemId) {
         if (root == null) {
-            this.client.sendResponse(new FurniEditorResultComposer(false, "Could not fetch Habbo furnidata"));
+            client.sendResponse(new FurniEditorResultComposer(false, "Could not fetch Habbo furnidata"));
             return;
         }
 
@@ -98,18 +111,18 @@ public class FurniEditorImportTextEvent extends MessageHandler {
         }
 
         boolean found = (foundName != null);
-        this.client.sendResponse(new FurniEditorImportTextResultComposer(
+        client.sendResponse(new FurniEditorImportTextResultComposer(
                 found, found ? foundName : "", found ? foundDesc : "", classname));
         LOGGER.info(
                 "FurniEditorImportTextEvent: admin {} import for classname '{}' (item {}) -> found={}",
-                this.client.getUser().getUserInfo().getId(),
+                client.getUser().getUserInfo().getId(),
                 classname,
                 itemId,
                 found);
     }
 
     /** Fetch the remote furnidata JSON with a TTL cache (serves stale on failure). */
-    private static synchronized JsonObject fetchCached(String url) {
+    static CompletableFuture<JsonObject> fetchCached(String url) {
         long ttlMs;
         try {
             ttlMs = Long.parseLong(Emulator.getConfig().getValue("furni.editor.import.cache.ms", "600000"));
@@ -119,7 +132,7 @@ public class FurniEditorImportTextEvent extends MessageHandler {
 
         long now = System.currentTimeMillis();
         if (CACHE != null && url.equals(CACHE_URL) && (now - CACHE_TIME) < ttlMs) {
-            return CACHE;
+            return CompletableFuture.completedFuture(CACHE);
         }
 
         try {
@@ -132,19 +145,28 @@ public class FurniEditorImportTextEvent extends MessageHandler {
                     .header("User-Agent", "Polaris-FurniEditor")
                     .GET()
                     .build();
-            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) {
-                LOGGER.warn("FurniEditorImportTextEvent: fetch {} returned HTTP {}", url, resp.statusCode());
-                return CACHE; // serve stale if available
-            }
-            JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-            CACHE = root;
-            CACHE_URL = url;
-            CACHE_TIME = now;
-            return root;
+            return httpClient
+                    .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(resp -> storeResponse(url, now, resp))
+                    .exceptionally(e -> {
+                        LOGGER.warn("FurniEditorImportTextEvent: failed to fetch {}", url, e);
+                        return CACHE; // serve stale if available
+                    });
         } catch (Exception e) {
             LOGGER.warn("FurniEditorImportTextEvent: failed to fetch {}", url, e);
+            return CompletableFuture.completedFuture(CACHE); // serve stale if available
+        }
+    }
+
+    private static JsonObject storeResponse(String url, long fetchedAt, HttpResponse<String> resp) {
+        if (resp.statusCode() != 200) {
+            LOGGER.warn("FurniEditorImportTextEvent: fetch {} returned HTTP {}", url, resp.statusCode());
             return CACHE; // serve stale if available
         }
+        JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
+        CACHE = root;
+        CACHE_URL = url;
+        CACHE_TIME = fetchedAt;
+        return root;
     }
 }

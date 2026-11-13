@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.WiredPlatform;
 import polaris.hotel.GameEnvironment;
 import polaris.hotel.achievements.AchievementManager;
 import polaris.hotel.bots.Bot;
@@ -761,9 +762,14 @@ public class User implements Runnable {
         this.client.sendResponse(new FloodCounterComposer(3));
     }
 
+    /** The client's noobness level: a new identity for the first days of the account (see NewIdentityPolicy). */
     public int noobStatus() {
+        var configuration = WiredPlatform.configuration();
+        int days = configuration == null
+                ? NewIdentityPolicy.DEFAULT_DAYS
+                : configuration.getInt(NewIdentityPolicy.DAYS_KEY, NewIdentityPolicy.DEFAULT_DAYS);
 
-        return 1;
+        return NewIdentityPolicy.status(this.userInfo.getAccountCreated(), WiredPlatform.unixTimestamp(), days);
     }
 
     public void clearCaches() {

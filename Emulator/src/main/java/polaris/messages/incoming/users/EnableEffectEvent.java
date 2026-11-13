@@ -18,6 +18,7 @@ public class EnableEffectEvent extends MessageHandler {
             }
         } else {
             this.client.getUser().getInventory().getEffectsComponent().activatedEffect = 0;
+            this.client.getUser().getInventory().getEffectsComponent().setCommandEffect(0);
 
             if (this.client.getUser().getUserInfo().getCurrentRoom() != null) {
                 this.client

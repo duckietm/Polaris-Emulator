@@ -26,6 +26,7 @@ public class HotelViewLandingSaveEvent extends MessageHandler {
             "expiringcatalogpagesmall",
             "communitygoal",
             "dailyquest",
+            "roomhoppernetwork",
             "nextlimitedrarecountdown",
             "achievementcompetition_hall_of_fame",
             "achievementcompetition_prizes",

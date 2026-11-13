@@ -14,6 +14,7 @@ import polaris.hotel.wired.arrays.WiredArrayVariableType;
 import polaris.hotel.wired.core.WiredEvent;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.wired.WiredMenuErrorComposer;
 
 public class WiredUserVariableManageEvent extends MessageHandler {
     private static final int ACTION_ASSIGN = 0;
@@ -54,6 +55,8 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                 // Reaches holders who are not in the room, so the policy is stricter than wired rights.
                 if (WiredVariableClearPolicy.canClear(room, this.client.getUser(), definitionItemId)) {
                     RoomWiredVariableWrites.clearAll(room, targetType, definitionItemId);
+                } else {
+                    this.client.sendResponse(new WiredMenuErrorComposer(WiredMenuErrorComposer.NOT_VARIABLE_OWNER));
                 }
                 room.getRoomVariableManager().sendSnapshot(this.client.getUser());
                 return;
@@ -70,6 +73,8 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                         || RoomWiredVariableWrites.mayManageUser(
                                 room, this.client.getUser(), targetId, definitionItemId)) {
                     RoomWiredVariableWrites.remove(room, targetType, targetId, definitionItemId);
+                } else {
+                    this.client.sendResponse(new WiredMenuErrorComposer(WiredMenuErrorComposer.NOT_VARIABLE_OWNER));
                 }
             } else {
                 RoomWiredVariableWrites.assign(room, targetType, targetId, definitionItemId, value);

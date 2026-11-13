@@ -12711,6 +12711,65 @@
       ]
     },
     {
+      "name": "FIRST_LOGIN_SETUP_CHOOSE",
+      "direction": "client_to_server",
+      "header": 9497,
+      "java": {
+        "symbol": "FirstLoginSetupChooseEvent",
+        "className": "FirstLoginSetupChooseEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/users/firstlogin/FirstLoginSetupChooseEvent.java"
+      },
+      "typescript": {
+        "symbol": "FIRST_LOGIN_SETUP_CHOOSE",
+        "className": "FirstLoginSetupChooseComposer",
+        "path": "packages/communication/src/messages/outgoing/user/FirstLoginSetupChooseComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "templateId"
+        }
+      ]
+    },
+    {
+      "name": "BOT_MOVE",
+      "direction": "client_to_server",
+      "header": 9498,
+      "java": {
+        "symbol": "MoveBotEvent",
+        "className": "MoveBotEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/rooms/bots/MoveBotEvent.java"
+      },
+      "typescript": {
+        "symbol": "BOT_MOVE",
+        "className": "BotMoveComposer",
+        "path": "packages/communication/src/messages/outgoing/room/engine/BotMoveComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "bot"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "x"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "y"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "direction"
+        }
+      ]
+    },
+    {
       "name": "DELETE_ITEM",
       "direction": "client_to_server",
       "header": 10018,
@@ -14544,6 +14603,28 @@
         {
           "kind": "scalar",
           "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_MENU_ERROR",
+      "direction": "server_to_client",
+      "header": 289,
+      "java": {
+        "symbol": "WiredMenuErrorComposer",
+        "className": "WiredMenuErrorComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/wired/WiredMenuErrorComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_MENU_ERROR",
+        "className": "WiredMenuErrorParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredMenuErrorParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
           "name": ""
         }
       ]
@@ -19397,6 +19478,22 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "CITIZENSHIP_VIP_OFFER_PROMO_ENABLED",
+      "direction": "server_to_client",
+      "header": 2764,
+      "java": {
+        "symbol": "CitizenshipVipOfferPromoEnabledComposer",
+        "className": "CitizenshipVipOfferPromoEnabledComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/users/CitizenshipVipOfferPromoEnabledComposer.java"
+      },
+      "typescript": {
+        "symbol": "CITIZENSHIP_VIP_OFFER_PROMO_ENABLED",
+        "className": "CitizenshipVipOfferPromoEnabledParser",
+        "path": "packages/communication/src/messages/parser/talent/CitizenshipVipOfferPromoEnabledParser.ts"
+      },
+      "fields": []
     },
     {
       "name": "HOTEL_CLOSES_AND_OPENS_AT",
@@ -31365,6 +31462,22 @@
         "path": "packages/communication/src/messages/parser/notifications/TreasureHuntFirstWinnerMessageParser.ts"
       },
       "reason": "TypeScript analyzer: Packet fields delegated to external constructor TreasureHuntWinnerInfo inside parse"
+    },
+    {
+      "name": "FIRST_LOGIN_SETUP",
+      "direction": "server_to_client",
+      "header": 9496,
+      "java": {
+        "symbol": "FirstLoginSetupComposer",
+        "className": "FirstLoginSetupComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/users/firstlogin/FirstLoginSetupComposer.java"
+      },
+      "typescript": {
+        "symbol": "FIRST_LOGIN_SETUP",
+        "className": "FirstLoginSetupParser",
+        "path": "packages/communication/src/messages/parser/user/FirstLoginSetupParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
     },
     {
       "name": "FURNI_EDITOR_SEARCH_RESULT",

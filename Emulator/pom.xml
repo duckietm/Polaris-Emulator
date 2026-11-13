@@ -33,6 +33,7 @@
         <hibernate-validator.version>9.1.6.Final</hibernate-validator.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <commons-math3.version>3.6.1</commons-math3.version>
+        <fastutil.version>8.5.19</fastutil.version>
         <jsoup.version>1.24.1</jsoup.version>
         <slf4j.version>2.0.20</slf4j.version>
         <error-prone-annotations.version>2.52.0</error-prone-annotations.version>
@@ -576,7 +577,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
-            <version>8.5.19</version>
+            <version>${fastutil.version}</version>
             <scope>compile</scope>
         </dependency>
 

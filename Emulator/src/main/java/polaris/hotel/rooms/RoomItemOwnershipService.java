@@ -66,7 +66,8 @@ final class RoomItemOwnershipService {
                 this.index.items().put(item.getId(), item);
                 this.index.registerIncarnation(item);
                 this.index.trackItem(item);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.error("Item ID ({}) could not be indexed in its room", item.getId(), e);
             }
         }
 

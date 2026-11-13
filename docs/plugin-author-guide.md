@@ -33,6 +33,25 @@ exactly an old class name or an old method name are translated too, so
 `Class.forName("com.eu.habbo...")` and `getMethod("getHabbo")` keep working.
 Names built at runtime (string concatenation) cannot be translated.
 
+## Permissions
+
+`hasPermission(User, String)` is not a check the plugin runs: it is the emulator asking the plugin. Whenever a
+user's rank (and their own permission overrides) deny a key, every installed plugin is asked whether it grants that
+key anyway, and the client's permission map is built the same way. Return `true` only for keys the plugin owns and
+decides, and `false` for everything else:
+
+```java
+@Override
+public boolean hasPermission(User user, String key) {
+    return key.equals("cmd_example") && isExampleModerator(user);
+}
+```
+
+Do not answer with `user.hasPermission(key)`: that asks the emulator, which asks the plugins again. Polaris answers
+such a nested question from the rank alone, so it ends instead of overflowing the stack, but it can never grant
+anything. To check a permission the plugin needs for its own command, call `user.hasPermission` from the command,
+not from this method.
+
 ## Events
 
 Register listeners through the plugin manager and annotate callbacks with

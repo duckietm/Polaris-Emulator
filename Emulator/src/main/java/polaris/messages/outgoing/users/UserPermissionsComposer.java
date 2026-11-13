@@ -6,13 +6,13 @@ import polaris.Emulator;
 import polaris.WiredPlatform;
 import polaris.hotel.permissions.Permission;
 import polaris.hotel.permissions.PermissionSetting;
+import polaris.hotel.permissions.PermissionsManager;
 import polaris.hotel.permissions.Rank;
 import polaris.hotel.permissions.UserPermissionOverrides;
 import polaris.hotel.users.User;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
-import polaris.plugin.PolarisPlugin;
 
 /**
  * Sends the full per-user permission state to the connected client.
@@ -137,10 +137,7 @@ public class UserPermissionsComposer extends MessageComposer {
     }
 
     private boolean anyPluginGrants(String key) {
-        for (PolarisPlugin plugin : Emulator.getPluginManager().getPlugins()) {
-            if (plugin.hasPermission(this.user, key)) return true;
-        }
-        return false;
+        return PermissionsManager.anyPluginGrants(Emulator.getPluginManager().getPlugins(), this.user, key);
     }
 
     public int getClubLevel() {

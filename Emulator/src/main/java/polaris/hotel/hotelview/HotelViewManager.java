@@ -487,7 +487,12 @@ public class HotelViewManager {
             try {
                 int currencyType = option.get("currencyType").getAsInt();
                 if (currencyType >= 0) user.givePoints(currencyType, currencyAmount);
-            } catch (RuntimeException ignored) {
+            } catch (RuntimeException e) {
+                LOGGER.warn(
+                        "Hotel view reward of {} currency could not be given to user {}",
+                        currencyAmount,
+                        user.getUserInfo().getId(),
+                        e);
             }
         }
     }

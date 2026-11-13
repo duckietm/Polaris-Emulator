@@ -166,9 +166,10 @@ public class RoomUserWalkEvent extends MessageHandler {
                     if (roomUnit.getMoveBlockingTask() != null) {
                         try {
                             roomUnit.getMoveBlockingTask().get(2, java.util.concurrent.TimeUnit.SECONDS);
-                        } catch (java.util.concurrent.TimeoutException
-                                | java.util.concurrent.ExecutionException
-                                | InterruptedException e) {
+                        } catch (java.util.concurrent.TimeoutException | java.util.concurrent.ExecutionException e) {
+                            LOGGER.debug("Move blocking task did not finish cleanly", e);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         }
                     }
 

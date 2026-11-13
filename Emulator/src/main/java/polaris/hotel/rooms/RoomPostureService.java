@@ -1,5 +1,7 @@
 package polaris.hotel.rooms;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import polaris.hotel.items.Item;
 import polaris.hotel.users.DanceType;
 import polaris.hotel.users.User;
@@ -9,6 +11,7 @@ import polaris.hotel.wired.core.WiredManager;
 import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
 
 final class RoomPostureService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomPostureService.class);
     static final String FLOOR_SIT_STATUS = "0.55 1";
 
     /** What {@link #settleOnChair} did: nothing, stood the unit up, or sat it down. */
@@ -38,7 +41,8 @@ final class RoomPostureService {
                 this.room.scheduledTasks.add(() -> {
                     try {
                         item.onWalkOn(unit, this.room, null);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        LOGGER.error("Walk-on of item ID ({}) failed after a height change", item.getId(), e);
                     }
                 });
             }

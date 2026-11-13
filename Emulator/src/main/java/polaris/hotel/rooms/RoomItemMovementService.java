@@ -3,6 +3,8 @@ package polaris.hotel.rooms;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.math3.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.items.Item;
 import polaris.hotel.items.interactions.InteractionStackHelper;
@@ -24,6 +26,8 @@ import polaris.plugin.events.furniture.FurnitureMovedEvent;
 import polaris.plugin.events.furniture.FurnitureRotatedEvent;
 
 final class RoomItemMovementService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomItemMovementService.class);
 
     private final Room room;
     private final RoomItemManager facade;
@@ -750,7 +754,8 @@ final class RoomItemMovementService {
                 for (User h : this.room.getUsersAt(t.x, t.y)) {
                     try {
                         item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        LOGGER.error("Walk-on of item ID ({}) failed after placing it under a user", item.getId(), e);
                     }
                 }
             }

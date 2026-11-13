@@ -694,7 +694,8 @@ public class Pet implements ISerialize, Runnable {
                     == 0) {
                 try {
                     item.onWalkOn(this.getRoomUnit(), this.getRoom(), null);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    LOGGER.error("Walk-on of item ID ({}) failed for pet ID ({})", item.getId(), this.getId(), e);
                 }
                 return true;
             }

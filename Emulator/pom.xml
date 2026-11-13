@@ -31,7 +31,7 @@
         <caffeine.version>3.3.1</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <hibernate-validator.version>9.1.6.Final</hibernate-validator.version>
-        <commons-lang3.version>3.21.0</commons-lang3.version>
+        <commons-lang3.version>3.22.0</commons-lang3.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <fastutil.version>8.5.19</fastutil.version>
         <jsoup.version>1.24.1</jsoup.version>

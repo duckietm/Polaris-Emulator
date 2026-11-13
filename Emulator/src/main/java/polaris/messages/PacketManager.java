@@ -352,6 +352,7 @@ import polaris.messages.incoming.navigator.SearchRoomsMyFavouriteEvent;
 import polaris.messages.incoming.navigator.SearchRoomsVisitedEvent;
 import polaris.messages.incoming.navigator.SearchRoomsWithRightsEvent;
 import polaris.messages.incoming.notifications.ActivateNotificationsEvent;
+import polaris.messages.incoming.plugins.PluginChannelActionEvent;
 import polaris.messages.incoming.polls.AnswerPollEvent;
 import polaris.messages.incoming.polls.CancelPollEvent;
 import polaris.messages.incoming.polls.GetPollDataEvent;
@@ -1057,6 +1058,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestUserWardrobeEvent, RequestUserWardrobeEvent.class);
         this.registerHandler(Incoming.SaveWardrobeEvent, SaveWardrobeEvent.class);
         this.registerHandler(Incoming.SaveMottoEvent, SaveMottoEvent.class);
+        this.registerHandler(Incoming.PluginChannelActionEvent, PluginChannelActionEvent.class);
         this.registerHandler(Incoming.UserSaveLookEvent, UserSaveLookEvent.class);
         this.registerHandler(Incoming.UserWearBadgeEvent, UserWearBadgeEvent.class);
         this.registerHandler(Incoming.RequestWearingBadgesEvent, RequestWearingBadgesEvent.class);

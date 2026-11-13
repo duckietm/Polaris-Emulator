@@ -27,6 +27,9 @@ import polaris.plugin.PolarisPlugin;
 public class PermissionsManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsManager.class);
 
+    /** True on a thread that is already asking the plugins for a permission; see {@link #anyPluginGrants}. */
+    private static final ThreadLocal<Boolean> ASKING_PLUGINS = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     // A reload builds new maps and swaps them in, so checks on other threads never see one half-filled.
     private volatile Int2ObjectMap<Rank> ranks;
     private volatile Int2IntMap enables;
@@ -315,16 +318,35 @@ public class PermissionsManager {
         }
 
         if (!this.hasPermission(user.getUserInfo().getRank(), permission, withRoomRights)) {
-            for (PolarisPlugin plugin : Emulator.getPluginManager().getPlugins()) {
+            return anyPluginGrants(Emulator.getPluginManager().getPlugins(), user, permission);
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a plugin grants {@code permission} that the rank does not. A plugin answering from inside its own
+     * {@link PolarisPlugin#hasPermission} through {@code user.hasPermission} comes straight back here; that nested
+     * question is answered without the plugins, so it gets the rank's answer instead of recursing until the stack
+     * overflows.
+     */
+    public static boolean anyPluginGrants(Iterable<PolarisPlugin> plugins, User user, String permission) {
+        if (ASKING_PLUGINS.get()) {
+            return false;
+        }
+
+        ASKING_PLUGINS.set(true);
+        try {
+            for (PolarisPlugin plugin : plugins) {
                 if (plugin.hasPermission(user, permission)) {
                     return true;
                 }
             }
 
             return false;
+        } finally {
+            ASKING_PLUGINS.remove();
         }
-
-        return true;
     }
 
     public boolean hasPermission(Rank rank, String permission, boolean withRoomRights) {

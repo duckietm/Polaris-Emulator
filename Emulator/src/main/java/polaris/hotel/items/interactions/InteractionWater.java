@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.math3.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import polaris.hotel.bots.Bot;
 import polaris.hotel.items.Item;
 import polaris.hotel.pets.Pet;
@@ -25,6 +27,7 @@ import polaris.hotel.users.UserItem;
  */
 public class InteractionWater extends InteractionDefault {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(InteractionWater.class);
     private static final String SHALLOW_WATER_NAME = "bw_water_1";
     private static final String DEEP_WATER_NAME = "bw_water_2";
     private static final String STACKABLE_WATER_NAME = "stackable_water";
@@ -88,7 +91,7 @@ public class InteractionWater extends InteractionDefault {
             try {
                 this.onWalkOff(user.getRoomUnit(), room, empty);
             } catch (Exception e) {
-
+                LOGGER.error("Walk-off of item ID ({}) failed on pick-up", this.getId(), e);
             }
         }
 
@@ -96,6 +99,7 @@ public class InteractionWater extends InteractionDefault {
             try {
                 this.onWalkOff(bot.getRoomUnit(), room, empty);
             } catch (Exception e) {
+                LOGGER.error("Walk-off of item ID ({}) failed on pick-up", this.getId(), e);
             }
         }
     }

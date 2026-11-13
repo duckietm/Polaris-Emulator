@@ -81,6 +81,7 @@ public class RoomUnitTeleport implements Runnable {
             try {
                 topItem.onWalkOn(roomUnit, room, new Object[] {lastLocation, newLocation, this});
             } catch (Exception e) {
+                LOGGER.error("Walk-on of item ID ({}) failed after a teleport", topItem.getId(), e);
             }
         }
     }

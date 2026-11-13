@@ -60,8 +60,8 @@ public class InteractionDefault extends UserItem {
 
                 try {
                     this.onWalkOff(unit, room, new Object[] {oldLocation, newLocation}); // the unit walked off!
-                } catch (Exception ignored) {
-
+                } catch (Exception e) {
+                    LOGGER.error("Walk-off of item ID ({}) failed after a move", this.getId(), e);
                 }
             }
         }

@@ -915,4 +915,6 @@ public class Outgoing {
     // AIR avatar collectibles (avatar editor NFT tab, docs/collectibles.md): official ids, free here.
     public static final int UserNftWardrobeComposer = 2236;
     public static final int SelectedNftWardrobeOutfitComposer = 350;
+    // CUSTOM generic plugin channel, 10200-10209 (docs/plugin-author-guide.md).
+    public static final int PluginChannelMessageComposer = 10200;
 }

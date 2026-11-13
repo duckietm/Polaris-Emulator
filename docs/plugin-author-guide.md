@@ -52,6 +52,31 @@ such a nested question from the rank alone, so it ends instead of overflowing th
 anything. To check a permission the plugin needs for its own command, call `user.hasPermission` from the command,
 not from this method.
 
+## Talking to your own client panel
+
+A plugin and a panel in the client exchange JSON on a channel of their own, without packets of their own:
+
+```java
+PluginChannel.send(user, "casino.table", "{\"open\":true,\"bet\":10}");
+
+@EventHandler
+public static void onPanel(UserPluginChannelEvent event) {
+    if (!event.channel.equals("casino.table")) return;
+    // event.payload is what the panel sent; validate it like any player input.
+}
+```
+
+On the client, a panel listens with `onChannel("casino.table", data => ...)` and answers with
+`sendChannel("casino.table", { action: "spin" })`, both on `window.OctanePlugins`.
+
+- Name channels after the plugin, lower case: letters, digits, `.`, `-`, `_`, at most 64 characters.
+- A payload is at most 16384 characters either way. `PluginChannel.send` returns false and sends nothing
+  for a bad channel, an oversized payload or an offline user.
+- The emulator drops a client message with a bad channel or payload, and limits how often a client sends
+  them. Everything else reaches the plugins as `UserPluginChannelEvent`; the content is yours to check.
+- On the wire these are `PLUGIN_CHANNEL_MESSAGE` (10200) and `PLUGIN_CHANNEL_ACTION` (10201), in the
+  `plugin_channel` range of the packet contract.
+
 ## Events
 
 Register listeners through the plugin manager and annotate callbacks with

@@ -1516,6 +1516,7 @@ U|polaris/messages/incoming/navigator/SearchRoomsMyFavouriteEvent.java|CALL|getG
 U|polaris/messages/incoming/navigator/SearchRoomsVisitedEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/navigator/SearchRoomsWithRightsEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/notifications/ActivateNotificationsEvent.java|CALL|getConfig|1
+U|polaris/messages/incoming/plugins/PluginChannelActionEvent.java|CALL|getPluginManager|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getDatabase|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getThreading|1

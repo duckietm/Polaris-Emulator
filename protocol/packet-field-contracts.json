@@ -97,6 +97,15 @@
         "stability": "stable"
       },
       {
+        "name": "plugin_channel_client",
+        "direction": "client_to_server",
+        "start": 10200,
+        "end": 10209,
+        "origin": "custom",
+        "feature": "plugin_channel",
+        "stability": "stable"
+      },
+      {
         "name": "mentions_server",
         "direction": "server_to_client",
         "start": 4800,
@@ -193,6 +202,15 @@
         "end": 10099,
         "origin": "custom",
         "feature": "catalog_tools",
+        "stability": "stable"
+      },
+      {
+        "name": "plugin_channel_server",
+        "direction": "server_to_client",
+        "start": 10200,
+        "end": 10209,
+        "origin": "custom",
+        "feature": "plugin_channel",
         "stability": "stable"
       }
     ],
@@ -13963,6 +13981,33 @@
       ]
     },
     {
+      "name": "PLUGIN_CHANNEL_ACTION",
+      "direction": "client_to_server",
+      "header": 10201,
+      "java": {
+        "symbol": "PluginChannelActionEvent",
+        "className": "PluginChannelActionEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/plugins/PluginChannelActionEvent.java"
+      },
+      "typescript": {
+        "symbol": "PLUGIN_CHANNEL_ACTION",
+        "className": "PluginChannelActionComposer",
+        "path": "packages/communication/src/messages/outgoing/plugins/PluginChannelActionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "channel"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "payload"
+        }
+      ]
+    },
+    {
       "name": "CLIENT_LATENCY",
       "direction": "server_to_client",
       "header": 10,
@@ -23591,6 +23636,33 @@
           "type": "string",
           "name": ""
         },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "PLUGIN_CHANNEL_MESSAGE",
+      "direction": "server_to_client",
+      "header": 10200,
+      "java": {
+        "symbol": "PluginChannelMessageComposer",
+        "className": "PluginChannelMessageComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/plugins/PluginChannelMessageComposer.java"
+      },
+      "typescript": {
+        "symbol": "PLUGIN_CHANNEL_MESSAGE",
+        "className": "PluginChannelMessageParser",
+        "path": "packages/communication/src/messages/parser/plugins/PluginChannelMessageParser.ts"
+      },
+      "fields": [
         {
           "kind": "scalar",
           "type": "string",

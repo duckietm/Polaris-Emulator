@@ -21,6 +21,12 @@ public class EffectsComponent {
     public final User user;
     public int activatedEffect = 0;
 
+    /**
+     * The effect put on by the enable command. It is not owned, so nothing else remembers it; it is
+     * kept for the session so the avatar still wears it in the next room. 0 when there is none.
+     */
+    private volatile int commandEffect = 0;
+
     public EffectsComponent(User user) {
         this.user = user;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -169,6 +175,23 @@ public class EffectsComponent {
         }
     }
 
+    public int getCommandEffect() {
+        return this.commandEffect;
+    }
+
+    public void setCommandEffect(int effectId) {
+        this.commandEffect = Math.max(0, effectId);
+    }
+
+    /** The effect an avatar walks into a room with: the commanded one first, else the worn owned one. */
+    public int entryEffect() {
+        return entryEffect(this.commandEffect, this.activatedEffect);
+    }
+
+    static int entryEffect(int commandEffect, int activatedEffect) {
+        return commandEffect > 0 ? commandEffect : activatedEffect;
+    }
+
     public void enableEffect(int effectId) {
         UserEffect effect = this.effects.get(effectId);
 
@@ -184,6 +207,7 @@ public class EffectsComponent {
             }
 
             this.activatedEffect = effectId;
+            this.commandEffect = 0;
 
             if (this.user.getUserInfo().getCurrentRoom() != null) {
                 this.user.getUserInfo().getCurrentRoom().giveEffect(this.user, effectId, effect.remainingTime());

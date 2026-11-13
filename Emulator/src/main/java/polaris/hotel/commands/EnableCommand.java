@@ -58,6 +58,10 @@ public class EnableCommand extends Command {
                             }
 
                             target.getUserInfo().getCurrentRoom().giveEffect(target, effectId, -1);
+                            if (target.getInventory() != null
+                                    && target.getInventory().getEffectsComponent() != null) {
+                                target.getInventory().getEffectsComponent().setCommandEffect(effectId);
+                            }
                         }
                     }
                 } catch (Exception e) {

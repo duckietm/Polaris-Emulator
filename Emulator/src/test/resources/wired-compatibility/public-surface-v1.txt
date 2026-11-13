@@ -10556,6 +10556,12 @@ TYPE public polaris.messages.outgoing.wired.WiredLinkOperationResultComposer ext
 CONSTRUCTOR public polaris.messages.outgoing.wired.WiredLinkOperationResultComposer(polaris.hotel.wired.link.WiredLinkService$Result) throws -
 METHOD protected polaris.messages.outgoing.wired.WiredLinkOperationResultComposer#composeInternal(-):polaris.messages.ServerMessage throws -
 
+TYPE public polaris.messages.outgoing.wired.WiredMenuErrorComposer extends polaris.messages.outgoing.MessageComposer
+FIELD public static final polaris.messages.outgoing.wired.WiredMenuErrorComposer#NOT_VARIABLE_OWNER:int
+CONSTRUCTOR public polaris.messages.outgoing.wired.WiredMenuErrorComposer(int) throws -
+METHOD protected polaris.messages.outgoing.wired.WiredMenuErrorComposer#composeInternal(-):polaris.messages.ServerMessage throws -
+METHOD public polaris.messages.outgoing.wired.WiredMenuErrorComposer#getErrorCode(-):int throws -
+
 TYPE public polaris.messages.outgoing.wired.WiredMonitorDataComposer extends polaris.messages.outgoing.MessageComposer
 CONSTRUCTOR public polaris.messages.outgoing.wired.WiredMonitorDataComposer(polaris.hotel.wired.core.WiredRoomDiagnostics$Snapshot) throws -
 METHOD protected polaris.messages.outgoing.wired.WiredMonitorDataComposer#composeInternal(-):polaris.messages.ServerMessage throws -

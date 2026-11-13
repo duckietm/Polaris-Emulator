@@ -32,6 +32,7 @@ import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.rooms.users.RoomUserDataComposer;
 import polaris.messages.outgoing.users.AddUserBadgeComposer;
+import polaris.messages.outgoing.users.CitizenshipVipOfferPromoEnabledComposer;
 import polaris.messages.outgoing.users.UserAchievementScoreComposer;
 import polaris.messages.outgoing.users.UserBadgesComposer;
 import polaris.messages.outgoing.users.UserCitizinShipComposer;
@@ -605,6 +606,9 @@ public class AchievementManager {
                     // Official TalentTrackLevel (1203): the toolbar / hotel-view promo tracks the pair
                     // (level, maxLevel), so refresh it whenever the level moves.
                     user.getClient().sendResponse(UserCitizinShipComposer.forUser(user, type));
+                    if (type == TalentTrackType.CITIZENSHIP && result.clubSeconds() > 0) {
+                        user.getClient().sendResponse(new CitizenshipVipOfferPromoEnabledComposer());
+                    }
                 }
                 return null;
             });

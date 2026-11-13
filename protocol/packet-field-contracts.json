@@ -14608,6 +14608,28 @@
       ]
     },
     {
+      "name": "WIRED_MENU_ERROR",
+      "direction": "server_to_client",
+      "header": 289,
+      "java": {
+        "symbol": "WiredMenuErrorComposer",
+        "className": "WiredMenuErrorComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/wired/WiredMenuErrorComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_MENU_ERROR",
+        "className": "WiredMenuErrorParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredMenuErrorParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "short",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "BOT_FORCE_OPEN_CONTEXT_MENU",
       "direction": "server_to_client",
       "header": 296,
@@ -19456,6 +19478,22 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "CITIZENSHIP_VIP_OFFER_PROMO_ENABLED",
+      "direction": "server_to_client",
+      "header": 2764,
+      "java": {
+        "symbol": "CitizenshipVipOfferPromoEnabledComposer",
+        "className": "CitizenshipVipOfferPromoEnabledComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/users/CitizenshipVipOfferPromoEnabledComposer.java"
+      },
+      "typescript": {
+        "symbol": "CITIZENSHIP_VIP_OFFER_PROMO_ENABLED",
+        "className": "CitizenshipVipOfferPromoEnabledParser",
+        "path": "packages/communication/src/messages/parser/talent/CitizenshipVipOfferPromoEnabledParser.ts"
+      },
+      "fields": []
     },
     {
       "name": "HOTEL_CLOSES_AND_OPENS_AT",

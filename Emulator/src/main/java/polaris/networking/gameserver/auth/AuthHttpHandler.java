@@ -78,6 +78,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String LOGIN_PATH = "/api/auth/login";
     static final String REGISTER_PATH = "/api/auth/register";
     static final String FORGOT_PATH = "/api/auth/forgot-password";
+    static final String RESET_PATH = "/api/auth/reset-password";
     static final String LOGOUT_PATH = "/api/auth/logout";
     static final String CHECK_EMAIL_PATH = "/api/auth/check-email";
     static final String CHECK_USERNAME_PATH = "/api/auth/check-username";
@@ -137,6 +138,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return path.equals(LOGIN_PATH)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
+                || path.equals(RESET_PATH)
                 || path.equals(LOGOUT_PATH)
                 || path.equals(CHECK_EMAIL_PATH)
                 || path.equals(CHECK_USERNAME_PATH)
@@ -305,6 +307,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             case LOGIN_PATH -> SessionEndpoints.handleLogin(ctx, req, body, ip);
             case REGISTER_PATH -> SessionEndpoints.handleRegister(ctx, req, body, ip);
             case FORGOT_PATH -> SessionEndpoints.handleForgot(ctx, req, body, ip);
+            case RESET_PATH -> SessionEndpoints.handleResetPassword(ctx, req, body, ip);
         }
     }
 

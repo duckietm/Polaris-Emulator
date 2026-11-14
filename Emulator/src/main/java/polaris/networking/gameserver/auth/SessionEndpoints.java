@@ -811,7 +811,7 @@ final class SessionEndpoints {
                 "message",
                 "Email sent! If an account matches that address you'll find a reset link in your inbox shortly (check spam if it doesn't show up within a minute).");
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection conn = resetConnection();
                 PreparedStatement stmt =
                         conn.prepareStatement("SELECT id, username FROM users WHERE mail = ? LIMIT 1")) {
             stmt.setString(1, email);
@@ -848,9 +848,15 @@ final class SessionEndpoints {
                         ins.executeUpdate();
                     }
 
-                    String resetUrlBase =
-                            Emulator.getConfig().getValue("password.reset.url", "http://localhost/reset-password");
-                    String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
+                    String fullUrl = resetLink(
+                            Emulator.getConfig().getValue("password.reset.url", ""),
+                            CorsOriginGate.linkableOrigin(req),
+                            token);
+                    if (fullUrl.startsWith(RESET_URL_FALLBACK)) {
+                        LOGGER.warn("[auth/forgot] no password.reset.url is set and the request's origin cannot be"
+                                + " used: the reset link points at localhost. Set password.reset.url, for example"
+                                + " https://your-hotel/?reset_token=%token%");
+                    }
                     String subject = "Reset your Habbo password";
                     String message = "Hi " + username + ",\n\n"
                             + "Someone (hopefully you) requested a password reset for your Habbo account.\n"
@@ -868,6 +874,165 @@ final class SessionEndpoints {
         }
 
         sendJson(ctx, req, HttpResponseStatus.OK, ok);
+    }
+
+    /** What a reset link starts with when nothing says where the client lives. */
+    static final String RESET_URL_FALLBACK = "http://localhost/";
+
+    /** The address a hotel had before it could be left unset; it is treated as unset. */
+    private static final String RESET_URL_OLD_DEFAULT = "http://localhost/reset-password";
+
+    /**
+     * The link mailed for a password reset.
+     *
+     * <ul>
+     *   <li>{@code password.reset.url} with {@code %token%} in it: the token goes there, for example
+     *       {@code https://hotel/?reset_token=%token%} (the client's own reset window).
+     *   <li>{@code password.reset.url} without it: the token is appended as {@code token=}, as a CMS page
+     *       expects and as it always was.
+     *   <li>Not set: the client the request came from, when its origin can be trusted, with
+     *       {@code ?reset_token=}; otherwise localhost.
+     * </ul>
+     */
+    static String resetLink(String configured, String trustedOrigin, String token) {
+        String base = configured == null ? "" : configured.trim();
+        if (base.equals(RESET_URL_OLD_DEFAULT)) base = "";
+
+        if (!base.isEmpty()) {
+            if (base.contains("%token%")) return base.replace("%token%", token);
+            return base + (base.contains("?") ? "&" : "?") + "token=" + token;
+        }
+
+        String origin = trustedOrigin == null || trustedOrigin.isBlank() ? RESET_URL_FALLBACK : trustedOrigin + "/";
+        return origin + "?reset_token=" + token;
+    }
+
+    /** What a reset token looks like: the URL-safe alphabet {@link #mintResetToken} writes. */
+    private static final java.util.regex.Pattern RESET_TOKEN_RE =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{16,128}$");
+
+    static boolean isResetTokenShape(String token) {
+        return token != null && RESET_TOKEN_RE.matcher(token).matches();
+    }
+
+    /**
+     * Finishes a password reset: the token from the mail and the new password. The mail was the only place the
+     * token was shown, so holding it stands in for the old password. It works once and for an hour; a new
+     * password signs every other session out, as changing the password does.
+     */
+    static void handleResetPassword(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        // Guessing tokens from one address is cut short the way probing for accounts is.
+        if (!AuthRateLimiter.tryProbe(ip)) {
+            long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many requests. Try again in " + secs + "s."));
+            return;
+        }
+
+        String token = readString(body, "token").trim();
+        String newPassword = readString(body, "newPassword");
+        String confirmPassword = readString(body, "confirmPassword");
+        String invalidLink = "This reset link is invalid or has expired. Request a new one.";
+
+        if (!isResetTokenShape(token)) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(invalidLink));
+            return;
+        }
+        if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("All fields are required."));
+            return;
+        }
+        if (newPassword.length() > 256) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Password too long."));
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("New passwords do not match."));
+            return;
+        }
+        if (newPassword.length() < 8) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Password must be at least 8 characters."));
+            return;
+        }
+
+        try (Connection conn = resetConnection()) {
+            int userId = 0;
+            Timestamp expiresAt = null;
+            try (PreparedStatement lookup =
+                    conn.prepareStatement("SELECT user_id, expires_at FROM password_resets WHERE token = ? LIMIT 1")) {
+                lookup.setString(1, token);
+                try (ResultSet rs = lookup.executeQuery()) {
+                    if (rs.next()) {
+                        userId = rs.getInt("user_id");
+                        expiresAt = rs.getTimestamp("expires_at");
+                    }
+                }
+            }
+
+            if (userId <= 0 || resetTokenExpired(expiresAt, Instant.now().getEpochSecond())) {
+                AuthRateLimiter.recordFailure(ip);
+                sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(invalidLink));
+                return;
+            }
+
+            String hashed = PasswordHasher.hash(newPassword, 12);
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                // The token goes first and decides: of two requests with the same token only one deletes a row.
+                int used;
+                try (PreparedStatement use =
+                        conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
+                    use.setInt(1, userId);
+                    use.setString(2, token);
+                    used = use.executeUpdate();
+                }
+                if (used != 1) {
+                    conn.rollback();
+                    sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(invalidLink));
+                    return;
+                }
+                try (PreparedStatement upd = conn.prepareStatement("UPDATE users SET password = ?, auth_ticket = '', "
+                        + "access_token_version = access_token_version + 1 "
+                        + "WHERE id = ? LIMIT 1")) {
+                    upd.setString(1, hashed);
+                    upd.setInt(2, userId);
+                    upd.executeUpdate();
+                }
+                RememberJwtService.revokeAllForUser(conn, userId);
+                conn.commit();
+            } catch (SQLException transactionError) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+                throw transactionError;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+
+            LOGGER.info("[auth/reset-password] password reset for user id={} ip='{}'", userId, ip);
+
+            JsonObject ok = new JsonObject();
+            ok.addProperty("message", "Your password has been changed. You can now log in with it.");
+            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        } catch (Exception e) {
+            LOGGER.error("[auth/reset-password] failed", e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    /** The connection both halves of a reset work on: asking for the mail and using its token. */
+    private static Connection resetConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    /** A token is good until its expiry; one without an expiry is not good at all. */
+    static boolean resetTokenExpired(Timestamp expiresAt, long now) {
+        return expiresAt == null || expiresAt.toInstant().getEpochSecond() <= now;
     }
 
     private static String bearerToken(FullHttpRequest req) {

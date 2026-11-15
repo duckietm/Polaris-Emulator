@@ -4,9 +4,9 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import polaris.Emulator;
 import polaris.hotel.bots.Bot;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomTile;
@@ -25,6 +25,17 @@ public final class BotDialogues {
 
     /** How long a page waits for a choice. */
     public static final int SESSION_SECONDS = 60;
+
+    /**
+     * How near the bot a player must stand, in tiles; 0 for anywhere in the room. Bound to
+     * {@code hotel.bot.dialogue.distance} by the room configuration binder.
+     */
+    private static final AtomicInteger MAX_DISTANCE = new AtomicInteger(6);
+
+    /** Sets how near the bot a player must stand, in tiles; 0 for anywhere in the room. */
+    public static void setMaxDistance(int tiles) {
+        MAX_DISTANCE.set(Math.max(0, tiles));
+    }
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final List<BotDialogue> DIALOGUES = new CopyOnWriteArrayList<>();
@@ -168,7 +179,7 @@ public final class BotDialogues {
             return null;
         }
 
-        int distance = Emulator.getConfig().getInt("hotel.bot.dialogue.distance", 6);
+        int distance = MAX_DISTANCE.get();
         RoomTile botTile = bot.getRoomUnit().getCurrentLocation();
         RoomTile userTile = user.getRoomUnit().getCurrentLocation();
 

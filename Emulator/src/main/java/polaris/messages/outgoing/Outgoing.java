@@ -917,4 +917,6 @@ public class Outgoing {
     public static final int SelectedNftWardrobeOutfitComposer = 350;
     // CUSTOM generic plugin channel, 10200-10209 (docs/plugin-author-guide.md).
     public static final int PluginChannelMessageComposer = 10200;
+    // CUSTOM bot dialogues in the bot menu, 10210-10219 (docs/plugin-author-guide.md).
+    public static final int BotDialogueComposer = 10210;
 }

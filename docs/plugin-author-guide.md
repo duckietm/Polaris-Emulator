@@ -77,6 +77,41 @@ On the client, a panel listens with `onChannel("casino.table", data => ...)` and
 - On the wire these are `PLUGIN_CHANNEL_MESSAGE` (10200) and `PLUGIN_CHANNEL_ACTION` (10201), in the
   `plugin_channel` range of the packet contract.
 
+## Giving a bot something to say
+
+A bot can talk with players through its menu: when a player opens the menu of a bot a dialogue handles, the menu
+shows what the bot says and a few options; picking one asks the dialogue for the next page.
+
+```java
+BotDialogues.register(new BotDialogue() {
+    public boolean handles(Bot bot) {
+        return bot.getName().equals("Clerk");
+    }
+
+    public BotDialoguePage open(User user, Bot bot) {
+        return BotDialoguePage.of("Hello! What do you need?",
+                BotDialoguePage.option("menu", "What do you sell?"),
+                BotDialoguePage.option("bye", "Goodbye"));
+    }
+
+    public BotDialoguePage choose(User user, Bot bot, String key) {
+        return key.equals("menu") ? BotDialoguePage.of("Bread, water and coffee.") : null;
+    }
+});
+```
+
+- The option keys stay on the server: the client only sends which option of the page it was shown, with that
+  page's code, so a dialogue may act on the key directly.
+- A choice counts once, for the page that player was shown, within `BotDialogues.SESSION_SECONDS` (60), while the
+  player is in the bot's room and within `hotel.bot.dialogue.distance` tiles of it (default 6, 0 for anywhere in
+  the room). Anything else is ignored.
+- A page is cut to size: a 200-character text, 40-character labels, at most 6 options, no control characters.
+- `null` from `open` shows nothing; `null` from `choose` closes the dialogue. A dialogue that throws closes it too,
+  and the error is logged.
+- Both methods run on the network thread: keep them short. Call `BotDialogues.unregister` when the plugin stops.
+- On the wire these are `BOT_DIALOGUE` (10210, server to client) and `BOT_DIALOGUE_OPEN` (10211) /
+  `BOT_DIALOGUE_CHOOSE` (10212), in the `bot_dialogue` range of the packet contract.
+
 ## Events
 
 Register listeners through the plugin manager and annotate callbacks with

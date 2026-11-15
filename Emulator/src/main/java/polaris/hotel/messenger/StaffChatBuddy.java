@@ -3,19 +3,16 @@ package polaris.hotel.messenger;
 import polaris.Emulator;
 import polaris.hotel.commands.CommandHandler;
 import polaris.hotel.users.User;
-import polaris.hotel.users.UserGender;
-import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.friends.FriendChatMessageComposer;
 
-public class StaffChatBuddy extends MessengerBuddy {
+public class StaffChatBuddy extends ChannelBuddy {
     public static final int BUDDY_ID = -1;
     public static final String PERMISSION_KEY = "acc_staff_chat";
     public static final String DISPLAY_NAME = "Staff Chat";
     public static final String DEFAULT_LOOK = "ADM";
 
     public StaffChatBuddy(int userOne) {
-        super(BUDDY_ID, DISPLAY_NAME, DEFAULT_LOOK, (short) 0, userOne);
-        this.setOnline(true);
+        super(BUDDY_ID, DISPLAY_NAME, DEFAULT_LOOK, userOne);
     }
 
     @Override
@@ -41,23 +38,5 @@ public class StaffChatBuddy extends MessengerBuddy {
                                 .compose(),
                         PERMISSION_KEY,
                         from.getClient());
-    }
-
-    @Override
-    public void serialize(ServerMessage message) {
-        message.appendInt(this.getId());
-        message.appendString(this.getUsername());
-        message.appendInt(this.getGender().equals(UserGender.M) ? 0 : 1);
-        message.appendBoolean(true); // online
-        message.appendBoolean(false); // not in room
-        message.appendString(this.getLook());
-        message.appendInt(0); // category
-        message.appendString(""); // motto
-        message.appendString(""); // last seen
-        message.appendString(""); // realname
-        message.appendBoolean(true); // offline messaging supported
-        message.appendBoolean(false);
-        message.appendBoolean(false);
-        message.appendShort(0); // relation
     }
 }

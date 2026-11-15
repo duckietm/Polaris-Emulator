@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.hotel.bots.Bot;
@@ -12,13 +13,16 @@ import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.users.User;
 import polaris.messages.outgoing.rooms.BotDialogueComposer;
+import polaris.messages.outgoing.rooms.BotDialogueWindowComposer;
 
 /**
  * The bot dialogues of the hotel, shown in a bot's menu. Plugins and emulator features register a {@link BotDialogue};
  * the client asks for one when a player opens a bot's menu ({@code BOT_DIALOGUE_OPEN}) and answers with the option
  * picked ({@code BOT_DIALOGUE_CHOOSE}). The player must be in the bot's room and within
  * {@code hotel.bot.dialogue.distance} tiles of it (default 6, 0 for anywhere in the room); a choice is matched against
- * the page that player was shown, as {@link BotDialogueSessions} describes.
+ * the page that player was shown, as {@link BotDialogueSessions} describes. A dialogue with a
+ * {@link BotDialogueWindow} opens that window instead ({@code BOT_DIALOGUE_WINDOW}), and an item taken from it comes
+ * back as {@code BOT_DIALOGUE_WINDOW_CHOOSE}, under the same guards.
  */
 public final class BotDialogues {
     private static final Logger LOGGER = LoggerFactory.getLogger(BotDialogues.class);
@@ -89,11 +93,47 @@ public final class BotDialogues {
             return;
         }
 
+        BotDialogueWindow window = call(dialogue.get(), () -> dialogue.get().openWindow(user, bot), bot);
+
+        if (window != null) {
+            showWindow(user, bot, dialogue.get(), window);
+            return;
+        }
+
         show(
                 user,
                 bot,
                 dialogue.get(),
                 call(dialogue.get(), () -> dialogue.get().open(user, bot), bot));
+    }
+
+    /** {@code user} took {@code amount} of item {@code index} of the window with code {@code nonce}. */
+    public static void chooseInWindow(User user, int clientBotId, int nonce, int index, int amount) {
+        Bot bot = nearBot(user, clientBotId);
+
+        if (bot == null) {
+            return;
+        }
+
+        int userId = user.getUserInfo().getId();
+        int roomId = user.getUserInfo().getCurrentRoom().getId();
+        Optional<BotDialogueSessions.Choice> choice =
+                SESSIONS.takeFromWindow(userId, bot.getId(), roomId, nonce, index, amount);
+
+        if (choice.isEmpty()) {
+            return;
+        }
+
+        BotDialogue dialogue = choice.get().dialogue();
+        showWindow(
+                user,
+                bot,
+                dialogue,
+                call(
+                        dialogue,
+                        () -> dialogue.chooseInWindow(
+                                user, bot, choice.get().key(), choice.get().amount()),
+                        bot));
     }
 
     /** {@code user} picked option {@code index} of the page with code {@code nonce}. */
@@ -145,9 +185,28 @@ public final class BotDialogues {
         user.getClient().sendResponse(new BotDialogueComposer(-bot.getId(), nonce, page));
     }
 
+    private static void showWindow(User user, Bot bot, BotDialogue dialogue, BotDialogueWindow window) {
+        if (user.getClient() == null) {
+            return;
+        }
+
+        if (window == null) {
+            SESSIONS.forget(user.getUserInfo().getId());
+            user.getClient().sendResponse(BotDialogueWindowComposer.closed(-bot.getId()));
+            return;
+        }
+
+        int nonce = SESSIONS.start(
+                user.getUserInfo().getId(),
+                bot.getId(),
+                user.getUserInfo().getCurrentRoom().getId(),
+                dialogue,
+                window);
+        user.getClient().sendResponse(new BotDialogueWindowComposer(-bot.getId(), nonce, window));
+    }
+
     /** A dialogue's answer; a dialogue that throws closes the menu instead of breaking the packet handler. */
-    private static BotDialoguePage call(
-            BotDialogue dialogue, java.util.function.Supplier<BotDialoguePage> answer, Bot bot) {
+    private static <T> T call(BotDialogue dialogue, Supplier<T> answer, Bot bot) {
         try {
             return answer.get();
         } catch (RuntimeException e) {

@@ -22,4 +22,20 @@ public interface BotDialogue {
 
     /** {@code user} chose the option with {@code key} from the page they were shown; the next page, or null to close. */
     BotDialoguePage choose(User user, Bot bot, String key);
+
+    /**
+     * The window to show {@code user} instead of a page in the menu, or null (the default) to use {@link #open}. A
+     * window suits a bot with many things to offer: a shop's products with their icons and prices.
+     */
+    default BotDialogueWindow openWindow(User user, Bot bot) {
+        return null;
+    }
+
+    /**
+     * {@code user} took {@code amount} of the item with {@code key} from the window they were shown; {@code amount} is
+     * already within that item's limit. Returns the window to show next, or null to close it.
+     */
+    default BotDialogueWindow chooseInWindow(User user, Bot bot, String key, int amount) {
+        return null;
+    }
 }

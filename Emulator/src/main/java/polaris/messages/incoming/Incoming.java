@@ -834,4 +834,5 @@ public class Incoming {
     // CUSTOM bot dialogues in the bot menu, 10210-10219 (docs/plugin-author-guide.md).
     public static final int BotDialogueOpenEvent = 10211;
     public static final int BotDialogueChooseEvent = 10212;
+    public static final int BotDialogueWindowChooseEvent = 10214;
 }

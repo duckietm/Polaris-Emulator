@@ -112,6 +112,34 @@ BotDialogues.register(new BotDialogue() {
 - On the wire these are `BOT_DIALOGUE` (10210, server to client) and `BOT_DIALOGUE_OPEN` (10211) /
   `BOT_DIALOGUE_CHOOSE` (10212), in the `bot_dialogue` range of the packet contract.
 
+### A window instead of the menu
+
+A bot with many things to offer, such as a shop counter, can open a window of its own: a title, what the bot says,
+a few tabs, a grid of items with a furni icon, a price and a line of detail, footer lines and an action button.
+Override `openWindow`; the menu page is then not shown.
+
+```java
+public BotDialogueWindow openWindow(User user, Bot bot) {
+    return new BotDialogueWindow("Clerk", "What do you need?", List.of("Food", "Drinks"),
+            List.of(BotDialogueWindow.upTo(BotDialogueWindow.inTab(
+                            BotDialogueWindow.item("bread", "Bread", "Breadbasket", 4, "+25 hunger"), 0), 10),
+                    BotDialogueWindow.inTab(
+                            BotDialogueWindow.item("coffee", "Coffee", "coffeecup1", 5, "+30 energy"), 1)),
+            List.of("Cash: 120"), "Buy");
+}
+
+public BotDialogueWindow chooseInWindow(User user, Bot bot, String key, int amount) {
+    // Sell `amount` of `key`, then show the window again with the new balance, or return null to close it.
+}
+```
+
+- The icon is a furni class name from the furnidata; the client draws that furni's icon. Anything that is not a
+  class name is dropped.
+- `amount` is already between 1 and the item's `maxAmount` (`upTo`, at most 99; 1 hides the amount).
+- The same guards as the menu apply: one choice per window shown, the same expiry, room and distance.
+- A window is cut to size: a 40-character title, at most 4 tabs, 24 items and 3 footer lines.
+- On the wire these are `BOT_DIALOGUE_WINDOW` (10213, server to client) and `BOT_DIALOGUE_WINDOW_CHOOSE` (10214).
+
 ## Events
 
 Register listeners through the plugin manager and annotate callbacks with

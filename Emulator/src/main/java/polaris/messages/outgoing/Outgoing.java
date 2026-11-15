@@ -919,4 +919,5 @@ public class Outgoing {
     public static final int PluginChannelMessageComposer = 10200;
     // CUSTOM bot dialogues in the bot menu, 10210-10219 (docs/plugin-author-guide.md).
     public static final int BotDialogueComposer = 10210;
+    public static final int BotDialogueWindowComposer = 10213;
 }

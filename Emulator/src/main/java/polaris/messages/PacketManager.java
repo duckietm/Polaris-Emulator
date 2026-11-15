@@ -403,6 +403,7 @@ import polaris.messages.incoming.rooms.SetHomeRoomEvent;
 import polaris.messages.incoming.rooms.UpdateRoomCategoryAndTradeSettingsEvent;
 import polaris.messages.incoming.rooms.bots.BotDialogueChooseEvent;
 import polaris.messages.incoming.rooms.bots.BotDialogueOpenEvent;
+import polaris.messages.incoming.rooms.bots.BotDialogueWindowChooseEvent;
 import polaris.messages.incoming.rooms.bots.BotPickupEvent;
 import polaris.messages.incoming.rooms.bots.BotPlaceEvent;
 import polaris.messages.incoming.rooms.bots.BotSaveSettingsEvent;
@@ -1271,6 +1272,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BotSettingsEvent, BotSettingsEvent.class);
         this.registerHandler(Incoming.BotDialogueOpenEvent, BotDialogueOpenEvent.class);
         this.registerHandler(Incoming.BotDialogueChooseEvent, BotDialogueChooseEvent.class);
+        this.registerHandler(Incoming.BotDialogueWindowChooseEvent, BotDialogueWindowChooseEvent.class);
         this.registerHandler(Incoming.TriggerDiceEvent, TriggerDiceEvent.class);
         this.registerHandler(Incoming.PressKeybindEvent, polaris.messages.incoming.rooms.items.PressKeybindEvent.class);
         this.registerHandler(Incoming.CloseDiceEvent, CloseDiceEvent.class);

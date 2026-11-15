@@ -14080,6 +14080,43 @@
       ]
     },
     {
+      "name": "BOT_DIALOGUE_WINDOW_CHOOSE",
+      "direction": "client_to_server",
+      "header": 10214,
+      "java": {
+        "symbol": "BotDialogueWindowChooseEvent",
+        "className": "BotDialogueWindowChooseEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/rooms/bots/BotDialogueWindowChooseEvent.java"
+      },
+      "typescript": {
+        "symbol": "BOT_DIALOGUE_WINDOW_CHOOSE",
+        "className": "BotDialogueWindowChooseComposer",
+        "path": "packages/communication/src/messages/outgoing/room/bots/BotDialogueWindowChooseComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "botId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "nonce"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "index"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        }
+      ]
+    },
+    {
       "name": "CLIENT_LATENCY",
       "direction": "server_to_client",
       "header": 10,
@@ -31860,6 +31897,22 @@
         "symbol": "BOT_DIALOGUE",
         "className": "BotDialogueParser",
         "path": "packages/communication/src/messages/parser/room/bots/BotDialogueParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "BOT_DIALOGUE_WINDOW",
+      "direction": "server_to_client",
+      "header": 10213,
+      "java": {
+        "symbol": "BotDialogueWindowComposer",
+        "className": "BotDialogueWindowComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/rooms/BotDialogueWindowComposer.java"
+      },
+      "typescript": {
+        "symbol": "BOT_DIALOGUE_WINDOW",
+        "className": "BotDialogueWindowParser",
+        "path": "packages/communication/src/messages/parser/room/bots/BotDialogueWindowParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     }

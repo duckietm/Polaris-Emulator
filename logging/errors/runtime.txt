@@ -660,3 +660,1268 @@ Caused by: java.lang.ClassNotFoundException: com.eu.habbo.habbohotel.users.Disco
 	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:580)
 	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
 	... 13 common frames omitted
+03:27:23.318 [HabExec-1-4] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+03:27:23.672 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+03:27:23.679 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+03:27:24.570 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+03:27:24.575 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+03:27:24.576 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+03:27:24.578 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+03:27:24.580 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+03:27:24.581 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+03:27:24.935 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+03:27:24.936 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+03:27:25.089 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+03:27:25.090 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+03:27:25.090 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+03:27:25.091 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+03:27:25.092 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+03:27:25.153 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+03:27:25.205 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+03:27:25.205 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+03:27:25.206 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+03:27:25.206 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+03:27:25.210 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+03:27:25.211 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+03:27:25.214 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+03:27:25.215 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+03:27:25.215 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+03:27:25.215 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+03:27:25.462 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+03:27:25.462 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+03:27:25.462 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+03:27:25.463 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+03:27:25.515 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+03:27:25.547 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+03:27:25.550 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+03:27:25.551 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+03:27:25.551 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+03:27:25.552 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+03:27:25.552 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+03:27:25.553 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+03:27:25.554 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+03:27:25.659 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+03:27:25.660 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+03:27:25.745 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+03:27:25.746 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+03:27:25.746 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+03:27:25.860 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+03:27:25.869 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+03:27:25.869 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+03:27:25.905 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+03:27:25.922 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+03:27:27.623 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+03:27:27.723 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+03:27:27.961 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:27:27.961 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:27:27.962 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:27:27.962 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:27:27.963 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:27:27.963 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:27:27.964 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:27:27.965 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:27:27.965 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.966 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.966 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.967 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.967 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.968 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.968 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.970 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.970 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.972 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.972 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.972 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.974 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.974 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.974 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.992 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.992 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.992 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.995 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.995 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.997 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.997 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:27.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:27.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:28.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:28.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:27:28.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:27:28.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:27:28.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:27:28.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:27:28.002 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:27:28.002 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:27:28.003 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:27:28.003 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:27:28.003 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:27:31.911 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: cmd_give_medico.keys
+03:28:15.976 [main] ERROR com.eu.habbo.Emulator - Caught exception
+java.lang.RuntimeException: Interaction Types must be unique. An class with type: com.eu.habbo.habbohotel.items.ItemInteraction was already added OR the key: rp_manager_work_medico is already in use.
+	at com.eu.habbo.habbohotel.items.ItemInteractionRegistry.addChecked(ItemInteractionRegistry.java:37)
+	at com.eu.habbo.habbohotel.items.ItemManager.addItemInteraction(ItemManager.java:1235)
+	at com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre.Interactions(InteractionManagerVidayHambre.java:16)
+	at com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre.load(InteractionManagerVidayHambre.java:11)
+	at com.srth.plugin.RoleplayWebsocketsRoomsInfo.loadItemsManager(RoleplayWebsocketsRoomsInfo.java:391)
+	at com.eu.habbo.Emulator.main(Emulator.java:240)
+03:28:16.282 [main] ERROR com.eu.habbo.RuntimeLifecycle - Runtime shutdown action failed: dispose plugins
+java.lang.NullPointerException: Cannot read field "name" because "p.configuration" is null
+	at com.eu.habbo.plugin.PluginManager.disposePluginsInternal(PluginManager.java:342)
+	at com.eu.habbo.plugin.PluginManager.dispose(PluginManager.java:318)
+	at com.eu.habbo.RuntimeLifecycle.lambda$stopPluginPhase$1(RuntimeLifecycle.java:112)
+	at com.eu.habbo.RuntimeLifecycle.run(RuntimeLifecycle.java:151)
+	at com.eu.habbo.RuntimeLifecycle.stopPluginPhase(RuntimeLifecycle.java:112)
+	at com.eu.habbo.RuntimeLifecycle.shutdown(RuntimeLifecycle.java:41)
+	at com.eu.habbo.PolarisRuntime.shutdown(PolarisRuntime.java:46)
+	at com.eu.habbo.Emulator.shutdownAfterStartupFailure(Emulator.java:618)
+	at com.eu.habbo.Emulator.main(Emulator.java:285)
+03:30:40.494 [HabExec-1-1] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+03:30:40.615 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+03:30:40.616 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+03:30:40.858 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+03:30:40.859 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+03:30:40.859 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+03:30:40.860 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+03:30:40.861 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+03:30:40.861 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+03:30:40.957 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+03:30:40.958 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+03:30:40.992 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+03:30:40.993 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+03:30:40.993 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+03:30:40.993 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+03:30:40.993 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+03:30:41.005 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+03:30:41.018 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+03:30:41.018 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+03:30:41.019 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+03:30:41.019 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+03:30:41.020 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+03:30:41.020 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+03:30:41.021 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+03:30:41.021 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+03:30:41.021 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+03:30:41.021 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+03:30:41.100 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+03:30:41.101 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+03:30:41.101 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+03:30:41.101 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+03:30:41.119 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+03:30:41.126 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+03:30:41.127 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+03:30:41.127 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+03:30:41.127 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+03:30:41.127 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+03:30:41.127 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+03:30:41.128 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+03:30:41.128 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+03:30:41.154 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+03:30:41.154 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+03:30:41.174 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+03:30:41.175 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+03:30:41.175 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+03:30:41.206 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+03:30:41.211 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+03:30:41.211 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+03:30:41.230 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+03:30:41.236 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+03:30:41.748 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+03:30:41.794 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+03:30:41.886 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:30:41.886 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:30:41.887 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:30:41.887 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:30:41.887 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:30:41.887 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:30:41.888 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:30:41.888 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:30:41.888 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.888 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.889 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.890 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.891 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.892 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.893 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.898 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.898 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.898 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.898 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.898 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.899 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.900 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.901 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.902 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.903 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:30:41.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:30:41.909 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:31:18.231 [main] ERROR com.eu.habbo.Emulator - Caught exception
+java.lang.RuntimeException: Interaction Types must be unique. An class with type: com.eu.habbo.habbohotel.items.ItemInteraction was already added OR the key: rp_manager_work_medico is already in use.
+	at com.eu.habbo.habbohotel.items.ItemInteractionRegistry.addChecked(ItemInteractionRegistry.java:37)
+	at com.eu.habbo.habbohotel.items.ItemManager.addItemInteraction(ItemManager.java:1235)
+	at com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre.Interactions(InteractionManagerVidayHambre.java:16)
+	at com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre.load(InteractionManagerVidayHambre.java:11)
+	at com.srth.plugin.RoleplayWebsocketsRoomsInfo.loadItemsManager(RoleplayWebsocketsRoomsInfo.java:391)
+	at com.eu.habbo.Emulator.main(Emulator.java:240)
+03:31:18.539 [main] ERROR com.eu.habbo.RuntimeLifecycle - Runtime shutdown action failed: dispose plugins
+java.lang.NullPointerException: Cannot read field "name" because "p.configuration" is null
+	at com.eu.habbo.plugin.PluginManager.disposePluginsInternal(PluginManager.java:342)
+	at com.eu.habbo.plugin.PluginManager.dispose(PluginManager.java:318)
+	at com.eu.habbo.RuntimeLifecycle.lambda$stopPluginPhase$1(RuntimeLifecycle.java:112)
+	at com.eu.habbo.RuntimeLifecycle.run(RuntimeLifecycle.java:151)
+	at com.eu.habbo.RuntimeLifecycle.stopPluginPhase(RuntimeLifecycle.java:112)
+	at com.eu.habbo.RuntimeLifecycle.shutdown(RuntimeLifecycle.java:41)
+	at com.eu.habbo.PolarisRuntime.shutdown(PolarisRuntime.java:46)
+	at com.eu.habbo.Emulator.shutdownAfterStartupFailure(Emulator.java:618)
+	at com.eu.habbo.Emulator.main(Emulator.java:285)
+03:32:27.052 [HabExec-1-1] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+03:32:27.230 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+03:32:27.232 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+03:32:27.472 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+03:32:27.473 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+03:32:27.474 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+03:32:27.474 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+03:32:27.475 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+03:32:27.475 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+03:32:27.569 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+03:32:27.569 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+03:32:27.609 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+03:32:27.609 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+03:32:27.609 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+03:32:27.610 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+03:32:27.610 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+03:32:27.626 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+03:32:27.639 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+03:32:27.639 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+03:32:27.640 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+03:32:27.640 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+03:32:27.641 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+03:32:27.641 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+03:32:27.642 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+03:32:27.642 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+03:32:27.642 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+03:32:27.642 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+03:32:27.712 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+03:32:27.712 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+03:32:27.712 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+03:32:27.712 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+03:32:27.726 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+03:32:27.732 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+03:32:27.732 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+03:32:27.733 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+03:32:27.757 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+03:32:27.757 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+03:32:27.777 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+03:32:27.777 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+03:32:27.777 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+03:32:27.806 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+03:32:27.808 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+03:32:27.809 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+03:32:27.817 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+03:32:27.821 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+03:32:28.598 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+03:32:28.684 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+03:32:28.904 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:32:28.905 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:32:28.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:32:28.906 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:32:28.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:32:28.907 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:32:28.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:32:28.908 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:32:28.910 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.910 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.910 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.911 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.911 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.911 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.912 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.912 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.912 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.913 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.913 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.913 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.914 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.914 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.914 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.915 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.915 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.915 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.916 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.916 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.916 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.917 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.917 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.917 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.917 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.918 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.918 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.918 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.919 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.919 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.919 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.919 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.920 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.920 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.920 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.921 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.921 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.921 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.921 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.922 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.922 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.922 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.922 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.923 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.923 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.923 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.924 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.924 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.924 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.925 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.925 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.925 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.926 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.926 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.927 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.927 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.927 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.928 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.928 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.928 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.928 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.929 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.930 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.930 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.930 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.930 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.931 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.931 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.931 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.932 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.932 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.932 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.933 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.933 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.933 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.934 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.934 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.934 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.935 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.935 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.935 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.936 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.936 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.936 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.937 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.937 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.937 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.938 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.938 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.939 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.940 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.941 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.941 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.942 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.942 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.943 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.943 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.944 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.944 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:32:28.945 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:32:28.946 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:32:28.946 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:32:28.947 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:32:28.947 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:32:28.948 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:32:28.948 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:32:28.948 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:32:28.948 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:45:09.680 [HabExec-1-1] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+03:45:09.809 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+03:45:09.812 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+03:45:10.054 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+03:45:10.056 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+03:45:10.056 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+03:45:10.057 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+03:45:10.057 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+03:45:10.057 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+03:45:10.150 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+03:45:10.151 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+03:45:10.209 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+03:45:10.209 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+03:45:10.209 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+03:45:10.210 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+03:45:10.210 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+03:45:10.229 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+03:45:10.242 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+03:45:10.242 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+03:45:10.242 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+03:45:10.242 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+03:45:10.244 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+03:45:10.244 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+03:45:10.245 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+03:45:10.245 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+03:45:10.245 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+03:45:10.245 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+03:45:10.312 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+03:45:10.312 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+03:45:10.313 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+03:45:10.313 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+03:45:10.340 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+03:45:10.349 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+03:45:10.350 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+03:45:10.350 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+03:45:10.350 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+03:45:10.350 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+03:45:10.351 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+03:45:10.351 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+03:45:10.351 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+03:45:10.375 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+03:45:10.375 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+03:45:10.397 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+03:45:10.397 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+03:45:10.397 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+03:45:10.425 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+03:45:10.428 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+03:45:10.428 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+03:45:10.438 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+03:45:10.441 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+03:45:10.869 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+03:45:10.911 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+03:45:11.014 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:45:11.014 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:45:11.015 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:45:11.015 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:45:11.015 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:45:11.015 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:45:11.016 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:45:11.016 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:45:11.016 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.017 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.017 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.017 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.017 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.018 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.019 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.020 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.020 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.020 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.020 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.020 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.021 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.022 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.023 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.024 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.025 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.026 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.027 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.028 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.029 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.030 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.031 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.031 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.031 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:45:11.031 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:45:11.031 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:45:11.032 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:45:12.709 [main] ERROR com.eu.habbo.Emulator - Caught exception
+com.eu.habbo.networking.ServerBindException: Failed to start WebSocket Server on 0.0.0.0:2096
+	at com.eu.habbo.networking.gameserver.GameServer.initializeWebSocketServer(GameServer.java:124)
+	at com.eu.habbo.networking.gameserver.GameServer.initializePipeline(GameServer.java:99)
+	at com.eu.habbo.PolarisBootstrap.initializeNetwork(PolarisBootstrap.java:259)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+Caused by: java.net.BindException: Address already in use: bind
+	at java.base/sun.nio.ch.Net.bind0(Native Method)
+	at java.base/sun.nio.ch.Net.bind(Net.java:522)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.netBind(ServerSocketChannelImpl.java:335)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:297)
+	at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:148)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:431)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1395)
+	at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:500)
+	at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:1036)
+	at io.netty.channel.Channel.bind(Channel.java:302)
+	at io.netty.bootstrap.AbstractBootstrap$1.run(AbstractBootstrap.java:381)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:148)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:141)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:535)
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:228)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1214)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+03:46:11.778 [HabExec-1-1] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+03:46:11.899 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+03:46:11.901 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+03:46:12.168 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+03:46:12.170 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+03:46:12.170 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+03:46:12.170 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+03:46:12.171 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+03:46:12.171 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+03:46:12.269 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+03:46:12.269 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+03:46:12.310 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+03:46:12.310 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+03:46:12.310 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+03:46:12.311 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+03:46:12.311 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+03:46:12.324 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+03:46:12.336 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+03:46:12.336 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+03:46:12.336 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+03:46:12.336 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+03:46:12.338 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+03:46:12.338 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+03:46:12.339 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+03:46:12.340 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+03:46:12.340 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+03:46:12.340 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+03:46:12.411 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+03:46:12.411 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+03:46:12.412 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+03:46:12.412 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+03:46:12.427 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+03:46:12.433 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+03:46:12.434 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+03:46:12.434 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+03:46:12.434 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+03:46:12.435 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+03:46:12.435 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+03:46:12.435 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+03:46:12.435 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+03:46:12.458 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+03:46:12.459 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+03:46:12.478 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+03:46:12.479 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+03:46:12.479 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+03:46:12.514 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+03:46:12.517 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+03:46:12.517 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+03:46:12.525 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+03:46:12.532 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+03:46:12.950 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+03:46:12.991 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+03:46:13.086 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:46:13.086 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:46:13.087 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:46:13.087 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:46:13.087 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:46:13.087 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:46:13.088 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+03:46:13.088 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+03:46:13.088 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.088 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.089 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.090 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.090 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.090 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.090 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.090 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.091 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.092 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.093 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.094 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.095 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.096 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.097 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.098 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.099 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.100 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.101 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:46:13.102 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+03:46:13.103 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+03:47:28.615 [GamePacketHandler-18-3] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+03:48:54.311 [GamePacketHandler-18-4] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+03:50:21.034 [GamePacketHandler-18-6] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+03:51:16.991 [GamePacketHandler-18-9] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+03:59:11.697 [GamePacketHandler-18-10] ERROR com.eu.habbo.habbohotel.guilds.GuildManager - Caught SQL exception
+java.sql.SQLIntegrityConstraintViolationException: (conn=340) Duplicate entry '1-15' for key 'user_guild'
+	at org.mariadb.jdbc.export.ExceptionFactory.createException(ExceptionFactory.java:317)
+	at org.mariadb.jdbc.export.ExceptionFactory.create(ExceptionFactory.java:402)
+	at org.mariadb.jdbc.message.ClientMessage.readPacket(ClientMessage.java:310)
+	at org.mariadb.jdbc.message.client.PrepareExecutePacket.readPacket(PrepareExecutePacket.java:193)
+	at org.mariadb.jdbc.client.impl.StandardClient.readPacket(StandardClient.java:1549)
+	at org.mariadb.jdbc.client.impl.StandardClient.readResults(StandardClient.java:1488)
+	at org.mariadb.jdbc.client.impl.StandardClient.execute(StandardClient.java:1347)
+	at org.mariadb.jdbc.ServerPreparedStatement.executePipeline(ServerPreparedStatement.java:129)
+	at org.mariadb.jdbc.ServerPreparedStatement.executeInternal(ServerPreparedStatement.java:81)
+	at org.mariadb.jdbc.ServerPreparedStatement.execute(ServerPreparedStatement.java:354)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.execute(ProxyPreparedStatement.java:44)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.execute(HikariProxyPreparedStatement.java)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at com.eu.habbo.database.observability.SlowQueryMonitor.invokeDelegate(SlowQueryMonitor.java:209)
+	at com.eu.habbo.database.observability.SlowQueryMonitor$StatementHandler.invoke(SlowQueryMonitor.java:129)
+	at jdk.proxy2/jdk.proxy2.$Proxy3.execute(Unknown Source)
+	at com.eu.habbo.habbohotel.guilds.GuildManager.addView(GuildManager.java:853)
+	at com.eu.habbo.messages.incoming.guilds.forums.GuildForumDataEvent.handle(GuildForumDataEvent.java:44)
+	at com.eu.habbo.messages.PacketManager.handlePacket(PacketManager.java:803)
+	at com.eu.habbo.threading.runnables.ChannelReadHandler.run(ChannelReadHandler.java:24)
+	at com.eu.habbo.networking.gameserver.decoders.GameMessageHandler.channelRead(GameMessageHandler.java:87)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:357)
+	at com.eu.habbo.networking.gameserver.decoders.PacketDispatchLatencyHandler.channelRead(PacketDispatchLatencyHandler.java:31)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:357)
+	at com.eu.habbo.networking.gameserver.ExecutionAdmissionHandler.lambda$dispatch$0(ExecutionAdmissionHandler.java:190)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:148)
+	at io.netty.util.concurrent.DefaultEventExecutor.run(DefaultEventExecutor.java:66)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1214)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+03:59:48.551 [GamePacketHandler-18-12] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+04:00:55.265 [GamePacketHandler-18-15] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+04:10:07.215 [GamePacketHandler-18-2] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+04:15:22.206 [GamePacketHandler-18-5] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+04:16:06.804 [GamePacketHandler-18-6] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+13:38:54.984 [HabExec-1-1] ERROR com.eu.habbo.core.ConfigurationManager - Config key not found youtube.apikey
+13:38:55.334 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Caught exception
+java.lang.NumberFormatException: For input string: "  "
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+	at java.base/java.lang.Integer.parseInt(Integer.java:565)
+	at java.base/java.lang.Integer.valueOf(Integer.java:912)
+	at com.eu.habbo.habbohotel.catalog.CatalogPage.<init>(CatalogPage.java:93)
+	at com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout.<init>(Default_3x3Layout.java:12)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.loadCatalogPages(CatalogManager.java:548)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.initialize(CatalogManager.java:362)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:349)
+	at com.eu.habbo.habbohotel.catalog.CatalogManager.<init>(CatalogManager.java:327)
+	at com.eu.habbo.habbohotel.HotelServiceRegistry.create(HotelServiceRegistry.java:33)
+	at com.eu.habbo.habbohotel.GameEnvironment.load(GameEnvironment.java:139)
+	at com.eu.habbo.PolarisBootstrap.initializeHotel(PolarisBootstrap.java:206)
+	at com.eu.habbo.StartupPhases.run(StartupPhases.java:16)
+	at com.eu.habbo.PolarisBootstrap.start(PolarisBootstrap.java:70)
+	at com.eu.habbo.Emulator.main(Emulator.java:195)
+13:38:55.338 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogPage - Failed to parse includes column value of (  ) for catalog page (9965890)
+13:38:55.866 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 118: limited_sells must be between zero and limited_stack
+13:38:55.869 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 212: limited_sells must be between zero and limited_stack
+13:38:55.870 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 215: limited_sells must be between zero and limited_stack
+13:38:55.871 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 234: limited_sells must be between zero and limited_stack
+13:38:55.873 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 262: limited_sells must be between zero and limited_stack
+13:38:55.874 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 271: limited_sells must be between zero and limited_stack
+13:38:56.080 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10719: amount must be positive
+13:38:56.081 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 10720: amount must be positive
+13:38:56.168 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451889: amount must be positive
+13:38:56.168 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451904: amount must be positive
+13:38:56.169 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451905: amount must be positive
+13:38:56.170 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451921: amount must be positive
+13:38:56.170 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 4451926: amount must be positive
+13:38:56.203 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 11398992: amount must be positive
+13:38:56.228 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908072: amount must be positive
+13:38:56.229 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908075: amount must be positive
+13:38:56.229 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908076: amount must be positive
+13:38:56.229 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908077: amount must be positive
+13:38:56.233 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908260: amount must be positive
+13:38:56.233 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908261: amount must be positive
+13:38:56.235 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908402: amount must be positive
+13:38:56.235 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908403: amount must be positive
+13:38:56.236 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908408: amount must be positive
+13:38:56.236 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 16908409: amount must be positive
+13:38:56.396 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828052: amount must be positive
+13:38:56.396 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828053: amount must be positive
+13:38:56.397 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828054: amount must be positive
+13:38:56.397 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 52828055: amount must be positive
+13:38:56.429 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 60900001: amount must be positive
+13:38:56.442 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 65600151: amount must be positive
+13:38:56.444 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600091: amount must be positive
+13:38:56.444 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600101: amount must be positive
+13:38:56.444 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600111: amount must be positive
+13:38:56.445 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600131: amount must be positive
+13:38:56.445 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600141: amount must be positive
+13:38:56.445 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600151: amount must be positive
+13:38:56.446 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 66600161: amount must be positive
+13:38:56.498 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_stack must not be negative
+13:38:56.498 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 86873233: limited_sells must be between zero and limited_stack
+13:38:56.554 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887741: amount must be positive
+13:38:56.554 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887742: amount must be positive
+13:38:56.554 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 99887743: amount must be positive
+13:38:56.611 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 996661147: amount must be positive
+13:38:56.619 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: cost_points must not be negative
+13:38:56.619 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234571078: limited_sells must be between zero and limited_stack
+13:38:56.650 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1234572771: amount must be positive
+13:38:56.665 [main] ERROR com.eu.habbo.habbohotel.catalog.CatalogManager - Catalog value validation: catalog item 1996663475: cost_credits must not be negative
+13:38:57.655 [main] ERROR com.eu.habbo.core.TextsManager - Text key not found: commands.keys.cmd_roomfx
+13:38:57.759 [main] ERROR com.eu.habbo.habbohotel.achievements.TalentTrackLevel - Talent track level 2 of type CITIZENSHIP lists 1 achievements but 2 levels
+13:38:57.962 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+13:38:57.963 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+13:38:57.964 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+13:38:57.964 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+13:38:57.965 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+13:38:57.965 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+13:38:57.966 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9153
+13:38:57.966 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9152
+13:38:57.967 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.967 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.968 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.968 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.969 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.970 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.970 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.970 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.971 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.972 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.972 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.973 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.974 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.974 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.975 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.976 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.977 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.978 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.979 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.980 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.981 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.982 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.983 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.984 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.985 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.986 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.987 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.988 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.989 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.990 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.991 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.992 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.992 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.993 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.993 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.993 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.994 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.995 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.995 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.995 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.996 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.997 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.997 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.997 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:57.998 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:57.999 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:58.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9621
+13:38:58.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9622
+13:38:58.000 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+13:38:58.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+13:38:58.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+13:38:58.001 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+13:38:58.002 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+13:38:58.002 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+13:38:58.002 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9793
+13:38:58.003 [main] ERROR com.eu.habbo.habbohotel.crafting.CraftingManager - Unknown ingredient item 9801
+13:46:33.948 [GamePacketHandler-18-3] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+13:51:07.326 [GamePacketHandler-18-6] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+io.netty.handler.timeout.ReadTimeoutException
+14:01:34.540 [GamePacketHandler-18-1] ERROR com.eu.habbo.networking.gameserver.decoders.GameMessageHandler - Disconnecting client, exception in GameMessageHandler.
+java.lang.NoClassDefFoundError: com/eu/habbo/messages/incoming/users/UserInputGuard
+	at com.eu.habbo.messages.incoming.users.RequestWearingBadgesEvent.handle(RequestWearingBadgesEvent.java:14)
+	at com.eu.habbo.messages.PacketManager.handlePacket(PacketManager.java:803)
+	at com.eu.habbo.threading.runnables.ChannelReadHandler.run(ChannelReadHandler.java:24)
+	at com.eu.habbo.networking.gameserver.decoders.GameMessageHandler.channelRead(GameMessageHandler.java:87)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:357)
+	at com.eu.habbo.networking.gameserver.decoders.PacketDispatchLatencyHandler.channelRead(PacketDispatchLatencyHandler.java:31)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:357)
+	at com.eu.habbo.networking.gameserver.ExecutionAdmissionHandler.lambda$dispatch$0(ExecutionAdmissionHandler.java:190)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:148)
+	at io.netty.util.concurrent.DefaultEventExecutor.run(DefaultEventExecutor.java:66)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1214)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: java.lang.ClassNotFoundException: com.eu.habbo.messages.incoming.users.UserInputGuard
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:580)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
+	... 14 common frames omitted

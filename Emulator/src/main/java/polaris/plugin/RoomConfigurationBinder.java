@@ -11,6 +11,7 @@ import polaris.core.ConfigurationManager;
 import polaris.core.config.ConfigurationBinder;
 import polaris.hotel.bots.Bot;
 import polaris.hotel.bots.BotManager;
+import polaris.hotel.bots.dialogue.BotDialogues;
 import polaris.hotel.items.interactions.InteractionPostIt;
 import polaris.hotel.items.interactions.InteractionRoller;
 import polaris.hotel.modtool.WordFilter;
@@ -110,6 +111,9 @@ final class RoomConfigurationBinder extends ConfigurationBinder {
                 "hotel.bot.limit.walking.distance.radius",
                 () -> Bot.BOT_WALKING_DISTANCE_RADIUS =
                         this.configuration.getInt("hotel.bot.limit.walking.distance.radius", 5));
+        this.apply(
+                "hotel.bot.dialogue.distance",
+                () -> BotDialogues.setMaxDistance(this.configuration.getInt("hotel.bot.dialogue.distance", 6)));
     }
 
     private void bindLimits() {

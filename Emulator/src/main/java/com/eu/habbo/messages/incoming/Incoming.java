@@ -27,6 +27,8 @@ public class Incoming {
     public static final int ChestEnableWiredEvent = 9345; // One-way: make this chest answer wired
     public static final int GetWiredContractContentsEvent = 9346; // Official contract editor: fetch a contract
     public static final int UpdateWiredContractEvent = 9347; // Official contract editor: save a contract
+    public static final int RoleplayFurniMenuRequestEvent = 9500;
+    public static final int RoleplayFurniActionEvent = 9501;
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;

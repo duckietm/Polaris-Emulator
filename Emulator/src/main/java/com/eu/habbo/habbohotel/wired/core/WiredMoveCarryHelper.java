@@ -1218,7 +1218,11 @@ public final class WiredMoveCarryHelper {
             if (roomUnit != null
                     && (roomUnit.hasStatus(RoomUnitStatus.SIT) || roomUnit.hasStatus(RoomUnitStatus.LAY))
                     && isEligibleUser(
-                            room, movingItem, roomUnit, occupiedTiles, WiredExtraMoveCarryUsers.MODE_DIRECTLY_ON_FURNI)) {
+                            room,
+                            movingItem,
+                            roomUnit,
+                            occupiedTiles,
+                            WiredExtraMoveCarryUsers.MODE_DIRECTLY_ON_FURNI)) {
                 riders.add(roomUnit);
             }
         }
@@ -1510,8 +1514,10 @@ public final class WiredMoveCarryHelper {
                 + Math.max(duration, WiredMovementsComposer.DEFAULT_DURATION)
                 + STATUS_SUPPRESSION_GRACE_MS;
         // A renewed hold keeps the posture of the first one: that is what the clients were last told.
-        SUPPRESSED_STATUS_COMPOSER_UNTIL.compute(roomUnit, (unit, current) ->
-                new StatusHold(suppressedUntil, current != null ? current.posture() : posture(unit)));
+        SUPPRESSED_STATUS_COMPOSER_UNTIL.compute(
+                roomUnit,
+                (unit, current) ->
+                        new StatusHold(suppressedUntil, current != null ? current.posture() : posture(unit)));
     }
 
     private static String posture(RoomUnit roomUnit) {

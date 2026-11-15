@@ -1,0 +1,13 @@
+{
+  "menus": {
+    "rp_urban_basura": {
+      "title": "Basura urbana",
+      "buttons": [
+        {
+          "label": "Buscar en basura",
+          "actionId": "actionBuscarBasuraUrbana"
+        }
+      ]
+    }
+  }
+}

@@ -59,8 +59,16 @@ hosting-panel restarts.
 ### 2. Game server
 
 ```
+<!-- cd Emulator
+./mvnw package          # mvnw.cmd package on Windows -->
+
+NUEVA FORMA:
 cd Emulator
-./mvnw package          # mvnw.cmd package on Windows
+Primero para acomodar los formatos:
+./mvnw.cmd spotless:apply 
+Luego:
+./mvnw.cmd clean install package -DskipTests
+
 ```
 
 The build produces `target/Polaris-<version>-jar-with-dependencies.jar`.

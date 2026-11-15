@@ -26,8 +26,6 @@ import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
 import com.eu.habbo.util.logback.ConsoleStyle;
-// import com.websockets.plugin.WebsocketsManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,6 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
+// import com.websockets.plugin.WebsocketsManager;
 
 public final class Emulator {
 
@@ -227,16 +226,19 @@ public final class Emulator {
                 LOGGER.debug("Debugging enabled.");
             }
 
+            EmulatorLoadedEvent emulatorLoadedEvent = new EmulatorLoadedEvent();
+            Emulator.getPluginManager().fireEvent(emulatorLoadedEvent);
+            Emulator.isReady = true;
+            Emulator.timeStarted = getLongUnixTimestamp();
+
             // ------------------------------------
             // Registrando el evento de encendido
             // ------------------------------------
             // Excepcion de encendido para rp
             // roleplayWebsocketsRoomsInfo.onEnable();
+            // roleplayWebsocketsRoomsInfo.onEmulatorLoadedEvent(emulatorLoadedEvent);
+            // roleplayWebsocketsRoomsInfo.loadItemsManager();
             // websocketsManager.onEnable();
-
-            Emulator.getPluginManager().fireEvent(new EmulatorLoadedEvent());
-            Emulator.isReady = true;
-            Emulator.timeStarted = getLongUnixTimestamp();
 
             if (shouldLaunchGui()) {
                 EmulatorDashboard.launch();

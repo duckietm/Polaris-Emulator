@@ -271,9 +271,10 @@ public class SecureLoginEvent extends MessageHandler {
             return false;
         }
 
-        Emulator.getGameEnvironment()
-                .getHabboManager()
-                .consumeSsoTicket(habbo.getHabboInfo().getId());
+        // Deja en el sistema que el ticket ya fue gastado, para que no pueda ser usado de nuevo. El ticket
+        // Emulator.getGameEnvironment()
+        //         .getHabboManager()
+        //         .consumeSsoTicket(habbo.getHabboInfo().getId());
         return true;
     }
 

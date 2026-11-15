@@ -1,0 +1,35 @@
+{
+  "menus": {
+    "rp_urban_basura": {
+      "title": "Acciones",
+      "buttons": [
+        {
+          "label": "Buscar en basura",
+          "actionId": "actionBuscarBasuraUrbana"
+        }
+      ]
+    },
+    "opti_pizzas": {
+      "title": "Acciones",
+      "buttons": [
+        {
+          "label": "Comprar comida",
+          "actionId": "actionComprarComidaMaquina"
+        }
+      ]
+    },
+    "atm_cajero_byth_rp": {
+      "title": "Acciones",
+      "buttons": [
+        {
+          "label": "Abrir Cajero",
+          "actionId": "AbrirCajeroAutomatico"
+        },
+        {
+          "label": "Robar Cajero",
+          "actionId": "ForzarCajeroAutomatico"
+        }
+      ]
+    }
+  }
+}

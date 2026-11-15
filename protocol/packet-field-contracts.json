@@ -79,6 +79,15 @@
         "stability": "stable"
       },
       {
+        "name": "roleplay_furni_client",
+        "direction": "client_to_server",
+        "start": 9500,
+        "end": 9599,
+        "origin": "custom",
+        "feature": "roleplay_furni",
+        "stability": "stable"
+      },
+      {
         "name": "reward_track_tools_client",
         "direction": "client_to_server",
         "start": 10100,
@@ -175,6 +184,15 @@
         "end": 9499,
         "origin": "custom",
         "feature": "custom_features",
+        "stability": "stable"
+      },
+      {
+        "name": "roleplay_furni_server",
+        "direction": "server_to_client",
+        "start": 9500,
+        "end": 9599,
+        "origin": "custom",
+        "feature": "roleplay_furni",
         "stability": "stable"
       },
       {
@@ -19119,6 +19137,60 @@
       ]
     },
     {
+      "name": "ROLEPLAY_FURNI_CONTEXT_MENU_REQUEST",
+      "direction": "client_to_server",
+      "header": 9500,
+      "java": {
+        "symbol": "RoleplayFurniMenuRequestEvent",
+        "className": "RoleplayFurniMenuRequestEvent",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/incoming/RoleplayFurniMenuRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "GetRoleplayFurniContextMenuComposer",
+        "className": "GetRoleplayFurniContextMenuComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/GetRoleplayFurniContextMenuComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "ROLEPLAY_FURNI_ACTION_REQUEST",
+      "direction": "client_to_server",
+      "header": 9501,
+      "java": {
+        "symbol": "RoleplayFurniActionEvent",
+        "className": "RoleplayFurniActionEvent",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/incoming/RoleplayFurniActionEvent.java"
+      },
+      "typescript": {
+        "symbol": "RequestRoleplayFurniActionComposer",
+        "className": "RequestRoleplayFurniActionComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/RequestRoleplayFurniActionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "ROOM_INFO_UPDATED",
       "direction": "server_to_client",
       "header": 3297,
@@ -24102,6 +24174,22 @@
     }
   ],
   "exemptions": [
+    {
+      "name": "ROLEPLAY_FURNI_CONTEXT_MENU_RESPONSE",
+      "direction": "server_to_client",
+      "header": 9502,
+      "java": {
+        "symbol": "RoleplayFurniContextMenuComposer",
+        "className": "RoleplayFurniContextMenuComposer",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/outgoing/RoleplayFurniContextMenuComposer.java"
+      },
+      "typescript": {
+        "symbol": "ROLEPLAY_FURNI_CONTEXT_MENU",
+        "className": "RoleplayFurniContextMenuMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/RoleplayFurniContextMenuMessageParser.ts"
+      },
+      "reason": "Java and TypeScript analyzers do not model the data-dependent button list in this packet."
+    },
     {
       "name": "WIRED_VARIABLES_FOR_OBJECT",
       "direction": "server_to_client",

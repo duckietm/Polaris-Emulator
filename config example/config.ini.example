@@ -37,6 +37,12 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 
+# Roleplay furni context-menu WebSocket. The browser derives its host/protocol from socket.url and defaults to port 2097.
+rp_rooms_info.ws.host=0.0.0.0
+rp_rooms_info.ws.port=2097
+# Relative to the emulator working directory. Copy config example/roleplay-furni-menus.json.example here.
+rp_rooms_info.furni_context_menus.file=roleplay-furni-menus.json
+
 # CMS HTTP API. Secure replacement for RCON, served on the game server port
 # (same paths as the other /api/* endpoints). Runs side by side with RCON so the
 # CMS can migrate command-by-command. Disabled by default.

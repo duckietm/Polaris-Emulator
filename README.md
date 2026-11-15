@@ -20,6 +20,12 @@ online.
   `Emulator/` folder ships the Maven wrapper (`mvnw` / `mvnw.cmd`)
 - **Database:** MariaDB (CI runs the migrations against 10.11, 11.4 and 12.3)
 
+## Downloads
+- **JDK 25:**
+https://adoptium.net/es/download?link=https%3A%2F%2Fgithub.com%2Fadoptium%2Ftemurin25-binaries%2Freleases%2Fdownload%2Fjdk-25.0.5%252B8%2FOpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.msi&vendor=Adoptium&checksum=e1d3c94032579dc16af9abb311f4552ba271466b74c8767e8ce39585a4c64d40
+- **MariaDB 10.11 (LTS):**
+https://mirror.insacom.cl/mariadb///mariadb-10.11.19/winx64-packages/mariadb-10.11.19-winx64.msi
+
 ## Quick start
 
 ### 1. Database
@@ -56,20 +62,18 @@ java -jar Polaris-<version>-jar-with-dependencies.jar --migrations=repair
 is no interactive startup prompt, because that would hang Docker, systemd and
 hosting-panel restarts.
 
-### 2. Game server
-
+### 2. Game server (NO USAR)
 ```
-<!-- cd Emulator
-./mvnw package          # mvnw.cmd package on Windows -->
-
-NUEVA FORMA:
 cd Emulator
-Primero para acomodar los formatos:
-./mvnw.cmd spotless:apply 
-Luego:
-./mvnw.cmd clean install package -DskipTests
-
+./mvnw package          # mvnw.cmd package on Windows 
 ```
+### 2. Game server
+### . NUEVA FORMA:
+cd Emulator
+- **Primero para acomodar los formatos:**
+./mvnw.cmd spotless:apply
+- **Luego:**
+./mvnw.cmd clean install package -DskipTests
 
 The build produces `target/Polaris-<version>-jar-with-dependencies.jar`.
 Place a `config.ini` with your database credentials next to the jar (or set

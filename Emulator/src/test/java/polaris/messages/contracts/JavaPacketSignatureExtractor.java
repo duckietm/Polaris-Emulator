@@ -11,6 +11,7 @@ import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -187,18 +188,62 @@ final class JavaPacketSignatureExtractor {
     private static Map<MethodCallExpr, ListLoop> listLoops(MethodDeclaration method, JavaPacketSide side) {
         Map<MethodCallExpr, ListLoop> loops = new IdentityHashMap<>();
         for (Statement statement : method.findAll(Statement.class)) {
-            if (!(statement instanceof ForEachStmt) && !(statement instanceof ForStmt)) continue;
-            Statement body = statement instanceof ForEachStmt each ? each.getBody() : ((ForStmt) statement).getBody();
+            Statement body;
+            if (statement instanceof ForEachStmt each) body = each.getBody();
+            else if (statement instanceof ForStmt indexed) body = indexed.getBody();
+            else if (statement instanceof WhileStmt loop) body = loop.getBody();
+            else continue;
             if (!body.findAll(BreakStmt.class).isEmpty()
                     || !body.findAll(ContinueStmt.class).isEmpty()
                     || !body.findAll(ReturnStmt.class).isEmpty()) continue;
-            Optional<Statement> previous = previousSibling(statement);
-            if (previous.isEmpty()) continue;
-            Optional<MethodCallExpr> counter =
-                    side == JavaPacketSide.OUTGOING ? outgoingCounter(previous.get(), statement) : Optional.empty();
+            Optional<MethodCallExpr> counter = side == JavaPacketSide.OUTGOING
+                    ? previousSibling(statement).flatMap(previous -> outgoingCounter(previous, statement))
+                    : incomingCounter(statement, body);
             counter.ifPresent(call -> loops.put(call, new ListLoop(statement, wireType(call, side), body)));
         }
         return loops;
+    }
+
+    /**
+     * {@code int n = packet.readInt()} followed by a loop that runs {@code n} times. Guards on {@code n} that read
+     * nothing from the packet may sit between them; the body must not touch {@code n}.
+     */
+    private static Optional<MethodCallExpr> incomingCounter(Statement loop, Statement body) {
+        Optional<Statement> previous = previousSibling(loop);
+        while (previous.isPresent() && previous.get() instanceof IfStmt guard) {
+            boolean reads = guard.findAll(MethodCallExpr.class).stream()
+                    .anyMatch(call -> wireType(call, JavaPacketSide.INCOMING) != null || isLocalCall(call));
+            if (reads) return Optional.empty();
+            previous = previousSibling(previous.get());
+        }
+        if (previous.isEmpty()
+                || !(previous.get() instanceof ExpressionStmt expression)
+                || !(expression.getExpression() instanceof VariableDeclarationExpr declaration)
+                || declaration.getVariables().size() != 1) return Optional.empty();
+        VariableDeclarator variable = declaration.getVariable(0);
+        if (variable.getInitializer().isEmpty() || !(variable.getInitializer().get() instanceof MethodCallExpr call))
+            return Optional.empty();
+        String countType = wireType(call, JavaPacketSide.INCOMING);
+        if (!"int".equals(countType) && !"short".equals(countType)) return Optional.empty();
+        String count = variable.getNameAsString();
+        boolean bodyTouchesCount = body.findAll(NameExpr.class).stream()
+                .anyMatch(name -> name.getNameAsString().equals(count));
+        if (bodyTouchesCount) return Optional.empty();
+
+        if (loop instanceof WhileStmt decrementing) {
+            return decrementing.getCondition().toString().equals(count + "-- > 0")
+                    ? Optional.of(call)
+                    : Optional.empty();
+        }
+        if (!(loop instanceof ForStmt indexed)
+                || indexed.getCompare().isEmpty()
+                || !(indexed.getCompare().get() instanceof BinaryExpr compare)
+                || compare.getOperator() != BinaryExpr.Operator.LESS
+                || !compare.getLeft().isNameExpr()
+                || !compare.getRight().toString().equals(count)) return Optional.empty();
+        return isZeroBasedIncrement(indexed, compare.getLeft().asNameExpr().getNameAsString())
+                ? Optional.of(call)
+                : Optional.empty();
     }
 
     /** {@code response.appendInt(xs.size())} followed by a loop over {@code xs}. */

@@ -228,6 +228,48 @@ class JavaPacketSignatureExtractorTest {
         }
     }
 
+    @Test
+    void extractsAnIncomingListAfterItsCount() throws Exception {
+        assertEquals("list<int>[int,string],boolean", incomingShape("ListIncomingFixture.java", "handle"));
+    }
+
+    @Test
+    void extractsAnIncomingShortCount() throws Exception {
+        assertEquals("list<short>[int]", incomingShape("ListIncomingFixture.java", "shortCount"));
+    }
+
+    @Test
+    void extractsANestedIncomingList() throws Exception {
+        assertEquals("list<int>[string,list<int>[int]]", incomingShape("ListIncomingFixture.java", "nested"));
+    }
+
+    @Test
+    void extractsADecrementingIncomingLoop() throws Exception {
+        assertEquals("list<int>[int]", incomingShape("ListIncomingFixture.java", "decrementing"));
+    }
+
+    @Test
+    void acceptsAGuardOnTheCountWithoutReads() throws Exception {
+        assertEquals("list<int>[int,string],boolean", incomingShape("ListIncomingFixture.java", "countUsedBefore"));
+    }
+
+    @Test
+    void rejectsIncomingListsThatAreNotDescribedExactly() throws Exception {
+        for (String method : List.of("countFromField", "conditionalRead", "countChangedInBody", "guardThatReads")) {
+            ExtractionResult result =
+                    extractor.extract(fixture("ListIncomingFixture.java"), JavaPacketSide.INCOMING, method);
+            assertTrue(result.unsupportedReason().isPresent(), method);
+        }
+    }
+
+    private String incomingShape(String fixtureName, String method) throws IOException {
+        ExtractionResult result = extractor.extract(fixture(fixtureName), JavaPacketSide.INCOMING, method);
+        assertFalse(
+                result.unsupportedReason().isPresent(),
+                () -> result.unsupportedReason().orElseThrow());
+        return shape(result.fields());
+    }
+
     private String outgoingShape(String fixtureName, String method) throws IOException {
         ExtractionResult result = extractor.extract(fixture(fixtureName), JavaPacketSide.OUTGOING, method);
         assertFalse(

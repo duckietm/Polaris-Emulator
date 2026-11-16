@@ -1,10 +1,5 @@
 package com.srth.plugin.Rooms.Mapa.Taxi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.TreeMap;
-
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -15,8 +10,11 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
 import com.srth.plugin.habbo.HabboRp;
 import com.srth.plugin.websocket.Habbo.HabboClient;
-
 import gnu.trove.map.hash.THashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.TreeMap;
 
 public class RecorridoTaxi implements ICycleable {
 
@@ -38,7 +36,6 @@ public class RecorridoTaxi implements ICycleable {
         this.pauseAtDestinationForPoliceTransport = pauseAtDestinationForPoliceTransport;
         this.setStatus(true);
         this.goTo(habbo, roomId);
-
     }
 
     public void setStatus(boolean value) {
@@ -55,7 +52,8 @@ public class RecorridoTaxi implements ICycleable {
 
     public int getRoomMapa(String name) {
         return RoleplayWebsocketsRoomsInfo.getRoomsRoleplayManager()
-                .getRoom(name).getRoomId();
+                .getRoom(name)
+                .getRoomId();
     }
 
     public String getControllerUserEnterRoom(Room roomObjetiveView, Room room) {
@@ -79,7 +77,6 @@ public class RecorridoTaxi implements ICycleable {
             } else {
                 flechaObjetivo = "room_switcher_back_left";
             }
-
         }
 
         if (room.getId() == this.getRoomMapa("calles_peligrosas_3")) {
@@ -89,8 +86,7 @@ public class RecorridoTaxi implements ICycleable {
                     || roomObjetiveView.getId() == this.getRoomMapa("calle_del_lago")
                     || roomObjetiveView.getId() == this.getRoomMapa("calle_del_puente")
                     || roomObjetiveView.getId() == this.getRoomMapa("calle_de_los_recursos")
-                    || roomObjetiveView.getName().contains("[CASA]")
-                    ) {
+                    || roomObjetiveView.getName().contains("[CASA]")) {
                 flechaObjetivo = "room_switcher_back_right";
             }
 
@@ -107,7 +103,6 @@ public class RecorridoTaxi implements ICycleable {
             if (roomObjetiveView.getId() == this.getRoomMapa("cafeteria")) {
                 flechaObjetivo = "room_switcher_front_right";
             }
-
         }
 
         if (room.getId() == this.getRoomMapa("basurero")) {
@@ -132,7 +127,6 @@ public class RecorridoTaxi implements ICycleable {
                     || roomObjetiveView.getId() == this.getRoomMapa("basurero")) {
                 flechaObjetivo = "room_switcher_front_left";
             }
-
         }
 
         if (room.getId() == this.getRoomMapa("centro_penitenciario")) {
@@ -179,10 +173,9 @@ public class RecorridoTaxi implements ICycleable {
 
         if (room.getId() == this.getRoomMapa("calle_del_puente")) {
 
-            if(roomObjetiveView.getId() == this.getRoomMapa("calle_de_los_recursos")){
+            if (roomObjetiveView.getId() == this.getRoomMapa("calle_de_los_recursos")) {
                 flechaObjetivo = "room_switcher_front_right";
-            } else 
-            if (roomObjetiveView.getName().contains("[CASA]")) {
+            } else if (roomObjetiveView.getName().contains("[CASA]")) {
                 flechaObjetivo = "room_switcher_home";
             } else {
                 flechaObjetivo = "room_switcher_front_left";
@@ -204,8 +197,7 @@ public class RecorridoTaxi implements ICycleable {
 
         int cantidadFlechas = 0;
         for (HabboItem itemHabbo : room.getFloorItems()) {
-            if (!itemHabbo.getBaseItem().getName()
-                    .equalsIgnoreCase(flechaObjetivo)) {
+            if (!itemHabbo.getBaseItem().getName().equalsIgnoreCase(flechaObjetivo)) {
                 continue;
             }
 
@@ -224,7 +216,6 @@ public class RecorridoTaxi implements ICycleable {
                 continue;
             }
         }
-
     }
 
     public void changeFlechasObjetive(Room room, String flechaObjetivo, HabboItem itemPisado) {
@@ -250,8 +241,8 @@ public class RecorridoTaxi implements ICycleable {
         // 3. Ordenamos ambas listas igual que en el RoomTylesManager para que los
         // índices coincidan
         // Usamos el Eje Y si es una de las excepciones de diagonal, si no, Eje X.
-        boolean useYAxis = (nombreFlechaPisada.contains("back_left") && flechaObjetivo.contains("front_right")) ||
-                (nombreFlechaPisada.contains("front_right") && flechaObjetivo.contains("back_left"));
+        boolean useYAxis = (nombreFlechaPisada.contains("back_left") && flechaObjetivo.contains("front_right"))
+                || (nombreFlechaPisada.contains("front_right") && flechaObjetivo.contains("back_left"));
 
         if (useYAxis) {
             flechasDeLaSala.sort((i1, i2) -> Short.compare(i1.getY(), i2.getY()));
@@ -293,7 +284,8 @@ public class RecorridoTaxi implements ICycleable {
 
             if (habbo != null && room != null) {
 
-                HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
+                HabboRp habboRp =
+                        RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
                 HabboClient habboClient = habboRp.getHabboClient();
 
                 habboRp.setProgressPendiente(false);
@@ -314,7 +306,6 @@ public class RecorridoTaxi implements ICycleable {
                     this.habboEjecute = habbo;
 
                     this.execute(habbo);
-
                 }
             }
         } catch (Exception e) {
@@ -344,7 +335,8 @@ public class RecorridoTaxi implements ICycleable {
                         if (status == true) {
 
                             Habbo habbo = habboEjecute;
-                            HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
+                            HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager()
+                                    .getHabboRp(habbo);
 
                             Room roomActual = habbo.getHabboInfo().getCurrentRoom();
 
@@ -363,28 +355,29 @@ public class RecorridoTaxi implements ICycleable {
                             // RoleplayWebsocketsRoomsInfo.utilities().LOGGER(roomObjetive.getName() + "");
 
                             if (roomActual.getId() == roomObjetive.getId()) {
-                                // if (pauseAtDestinationForPoliceTransport) {
-                                //     setStatus(false);
-                                //     return;
-                                // }
-
-                                Emulator.getThreading().run(() -> {
-
-                                    RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
-                                            .removeRecorridoTaxi(habbo);
-
-                                    habbo.shout(RoleplayWebsocketsRoomsInfo.getTexts()
-                                            .getValue("recorrido_msg_finalice_taxi"));
-
-                                    roomObjetive = null;
-
-                                    habboRp.setEnable(0);
-                                    habboRp.registerCache("existConfirmacionExitRecorrido", 0 + "");
-                                    roomActual.giveEffect(habbo, Integer.valueOf(0), -1);
-
+                                if (pauseAtDestinationForPoliceTransport) {
                                     setStatus(false);
+                                    return;
+                                }
 
-                                }, 1000);
+                                Emulator.getThreading()
+                                        .run(
+                                                () -> {
+                                                    RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
+                                                            .removeRecorridoTaxi(habbo);
+
+                                                    habbo.shout(RoleplayWebsocketsRoomsInfo.getTexts()
+                                                            .getValue("recorrido_msg_finalice_taxi"));
+
+                                                    roomObjetive = null;
+
+                                                    habboRp.setEnable(0);
+                                                    habboRp.registerCache("existConfirmacionExitRecorrido", 0 + "");
+                                                    roomActual.giveEffect(habbo, Integer.valueOf(0), -1);
+
+                                                    setStatus(false);
+                                                },
+                                                1000);
 
                                 return;
                             }
@@ -395,8 +388,8 @@ public class RecorridoTaxi implements ICycleable {
                             }
 
                             // Por defecto 634 // Personalizado 750
-                            int enable_taxi = RoleplayWebsocketsRoomsInfo.getConfig()
-                                    .getInt("enable_taxi_id");
+                            int enable_taxi =
+                                    RoleplayWebsocketsRoomsInfo.getConfig().getInt("enable_taxi_id");
                             habboRp.setEnable(enable_taxi);
                             habbo.getHabboInfo().getCurrentRoom().giveEffect(habbo, Integer.valueOf(enable_taxi), -1);
 
@@ -426,7 +419,6 @@ public class RecorridoTaxi implements ICycleable {
                             if (tile != null && tile.isWalkable()) {
 
                                 habbo.getRoomUnit().setGoalLocation(tile);
-
                             }
 
                         } else {
@@ -438,7 +430,6 @@ public class RecorridoTaxi implements ICycleable {
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
-
                 }
             }
         };
@@ -446,5 +437,4 @@ public class RecorridoTaxi implements ICycleable {
         Thread hilo = new Thread(runnable);
         hilo.start();
     }
-
 }

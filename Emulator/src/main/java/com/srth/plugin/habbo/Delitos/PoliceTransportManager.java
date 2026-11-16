@@ -28,7 +28,8 @@ public final class PoliceTransportManager {
     private static final Map<Integer, Transport> BY_PASSENGER = new HashMap<>();
     private static final Set<Integer> SKIP_DEFAULT_PRISON_PLACEMENT = new HashSet<>();
 
-    private PoliceTransportManager() {}
+    private PoliceTransportManager() {
+    }
 
     public static synchronized boolean isTransporting(Habbo habbo) {
         if (habbo == null) {
@@ -61,8 +62,8 @@ public final class PoliceTransportManager {
         Room room = police.getHabboInfo().getCurrentRoom();
         if (room == null
                 || room != passenger.getHabboInfo().getCurrentRoom()
-                || room.getCategory()
-                        != RoleplayWebsocketsRoomsInfo.getConfig().getInt("global_room.category.roleplay.id")) {
+                || room.getCategory() != RoleplayWebsocketsRoomsInfo.getConfig()
+                        .getInt("global_room.category.roleplay.id")) {
             return false;
         }
 
@@ -109,8 +110,7 @@ public final class PoliceTransportManager {
             return false;
         }
 
-        int destinationRoomId =
-                RoleplayWebsocketsRoomsInfo.getJobsManager().getJob("police").getRoomId();
+        int destinationRoomId = RoleplayWebsocketsRoomsInfo.getJobsManager().getJob("police").getRoomId();
         if (destinationRoomId < 1) {
             whisper(police, "No se configuró la sala de la estación policial.");
             return false;
@@ -193,11 +193,9 @@ public final class PoliceTransportManager {
             return;
         }
         police.getRoomUnit().setFastWalk(true);
-        RoomTile policeTile =
-                nextPoliceTile != null ? nextPoliceTile : police.getRoomUnit().getCurrentLocation();
+        RoomTile policeTile = nextPoliceTile != null ? nextPoliceTile : police.getRoomUnit().getCurrentLocation();
 
-        RecorridoTaxi route =
-                RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi().getRecorridoTaxi(police);
+        RecorridoTaxi route = RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi().getRecorridoTaxi(police);
         Room room = police.getHabboInfo().getCurrentRoom();
         if (transport.arrivedAtStation || room != null && room.getId() == transport.destinationRoomId) {
             transport.arrivedAtStation = true;
@@ -358,6 +356,7 @@ public final class PoliceTransportManager {
     }
 
     private static void preparePrisonEntry(Transport transport, RoomTile targetPoliceTile) {
+
         Room room = transport.police.getHabboInfo().getCurrentRoom();
         if (room == null
                 || room.getId() != transport.destinationRoomId
@@ -381,6 +380,7 @@ public final class PoliceTransportManager {
             }
 
             RoomTile gateBase = room.getLayout().getTile(gate.getX(), gate.getY());
+
             if (gateBase == null) {
                 sendPrisonerToRocks(
                         transport, room, "No se pudo determinar prison_gate; se ingresará al prisionero en las rocas.");
@@ -406,6 +406,8 @@ public final class PoliceTransportManager {
         if (policeTile == null) {
             return;
         }
+
+        RoleplayWebsocketsRoomsInfo.utilities().LOGGER("Distancia: "+policeTile.distance(transport.gateApproach));
 
         if (policeTile.distance(transport.gateApproach) > 0) {
             transport.police.getRoomUnit().setGoalLocation(transport.gateApproach);
@@ -472,21 +474,21 @@ public final class PoliceTransportManager {
     private static int[] getDirection(int rotation) {
         switch (Math.floorMod(rotation, 8)) {
             case 0:
-                return new int[] {0, -1};
+                return new int[] { 0, -1 };
             case 1:
-                return new int[] {1, -1};
+                return new int[] { 1, -1 };
             case 2:
-                return new int[] {1, 0};
+                return new int[] { 1, 0 };
             case 3:
-                return new int[] {1, 1};
+                return new int[] { 1, 1 };
             case 4:
-                return new int[] {0, 1};
+                return new int[] { 0, 1 };
             case 5:
-                return new int[] {-1, 1};
+                return new int[] { -1, 1 };
             case 6:
-                return new int[] {-1, 0};
+                return new int[] { -1, 0 };
             default:
-                return new int[] {-1, -1};
+                return new int[] { -1, -1 };
         }
     }
 

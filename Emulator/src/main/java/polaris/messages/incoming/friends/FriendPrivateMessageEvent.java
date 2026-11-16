@@ -18,9 +18,7 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         User user = this.client.getUser();
 
         if (message.isEmpty()
-                || !(FriendInputGuard.isValidConsoleTarget(userId, user.hasPermission(StaffChatBuddy.PERMISSION_KEY))
-                        || FriendInputGuard.isChannelTarget(
-                                userId, user.getMessenger().getChannel(userId) != null))) {
+                || !FriendInputGuard.isValidConsoleTarget(userId, user.hasPermission(StaffChatBuddy.PERMISSION_KEY))) {
             return;
         }
 

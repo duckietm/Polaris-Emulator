@@ -52,11 +52,6 @@ final class FriendInputGuard {
         return hasStaffChat && id == StaffChatBuddy.BUDDY_ID;
     }
 
-    /** A chat channel the player was given (negative id), such as a plugin's gang chat. */
-    static boolean isChannelTarget(int id, boolean hasChannel) {
-        return hasChannel && id < 0;
-    }
-
     static boolean isValidConsoleTarget(int userId, boolean hasStaffChat) {
         return isPositiveId(userId) || isStaffChatTarget(userId, hasStaffChat);
     }

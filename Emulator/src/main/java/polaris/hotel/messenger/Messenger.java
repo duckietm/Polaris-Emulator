@@ -288,39 +288,11 @@ public class Messenger {
         }
     }
 
-    /** Friends that count toward the friend limit: chat channels such as Staff Chat (negative ids) take no slot. */
+    /** Friends that count toward the friend limit: the Staff Chat entry (id -1) takes no slot. */
     public int countedFriends() {
-        return (int) this.friends.keySet().stream().filter(id -> id > 0).count();
-    }
+        int staffChat = this.friends.containsKey(StaffChatBuddy.BUDDY_ID) ? 1 : 0;
 
-    /** The channel with this id the player has, or null; only negative ids are channels. */
-    public ChannelBuddy getChannel(int id) {
-        return id < 0 && this.friends.get(id) instanceof ChannelBuddy channel ? channel : null;
-    }
-
-    /**
-     * Gives the player a chat channel, or replaces the one with the same id, and shows it in their console at once.
-     * Plugins use it for channels of their own (a gang chat, a team chat); pick an id below -1, Staff Chat's.
-     */
-    public void addChannel(User user, ChannelBuddy channel) {
-        boolean replaced = this.friends.put(channel.getId(), channel) != null;
-
-        if (user != null && user.getClient() != null) {
-            user.getClient().sendResponse(new UpdateFriendComposer(user, channel, replaced ? 0 : 1));
-        }
-    }
-
-    /** Takes a chat channel away from the player and out of their console. */
-    public void removeChannel(User user, int id) {
-        if (this.getChannel(id) == null) {
-            return;
-        }
-
-        MessengerBuddy removed = this.friends.remove(id);
-
-        if (removed != null && user != null && user.getClient() != null) {
-            user.getClient().sendResponse(new UpdateFriendComposer(user, removed, -1));
-        }
+        return this.friends.size() - staffChat;
     }
 
     public void loadFriendRequests(User user) {

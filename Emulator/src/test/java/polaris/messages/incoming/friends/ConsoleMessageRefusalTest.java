@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import polaris.Emulator;
 import polaris.hotel.gameclients.GameClient;
-import polaris.hotel.messenger.ChannelBuddy;
 import polaris.hotel.messenger.Messenger;
 import polaris.hotel.messenger.MessengerBuddy;
 import polaris.hotel.messenger.StaffChatBuddy;
@@ -151,48 +150,6 @@ class ConsoleMessageRefusalTest {
         verify(staffChat).onMessageReceived(fixture.user, "hi staff");
         verify(fixture.client).sendResponse(any(MessengerMessageAckComposer.class));
         verify(fixture.client, never()).sendResponse(any(MessengerMessageFailedComposer.class));
-    }
-
-    @Test
-    void aChannelAPluginGaveIsReachedWithoutTheStaffPermission() throws Exception {
-        Fixture fixture = new Fixture(-2, "hi gang");
-        ChannelBuddy channel = mock(ChannelBuddy.class);
-        when(fixture.messenger.getChannel(-2)).thenReturn(channel);
-        when(fixture.messenger.getFriend(-2)).thenReturn(channel);
-
-        try (var emulator = mockStatic(Emulator.class)) {
-            emulator.when(Emulator::getPluginManager).thenReturn(fixture.plugins);
-            fixture.privateMessage();
-        }
-
-        verify(channel).onMessageReceived(fixture.user, "hi gang");
-    }
-
-    @Test
-    void messengerPathSendsToAChannelWithoutStoringIt() throws Exception {
-        Fixture fixture = new Fixture(-2, "hi gang");
-        ChannelBuddy channel = mock(ChannelBuddy.class);
-        when(fixture.messenger.getChannel(-2)).thenReturn(channel);
-        when(fixture.messenger.getFriend(-2)).thenReturn(channel);
-
-        try (var histories = mockStatic(MessengerHistoryServices.class)) {
-            fixture.messengerMessage(0, -2, 0, "hi gang");
-            histories.verifyNoInteractions();
-        }
-
-        verify(channel).onMessageReceived(fixture.user, "hi gang");
-        verify(fixture.client).sendResponse(any(MessengerMessageAckComposer.class));
-    }
-
-    @Test
-    void aNegativeIdThatIsNoChannelStaysRefused() throws Exception {
-        Fixture fixture = new Fixture(-3, "hello");
-
-        fixture.privateMessage();
-        fixture.messengerMessage(0, -3, 0, "hello");
-
-        verify(fixture.messenger, never()).getFriend(-3);
-        verify(fixture.client).sendResponse(any(MessengerMessageFailedComposer.class));
     }
 
     @Test

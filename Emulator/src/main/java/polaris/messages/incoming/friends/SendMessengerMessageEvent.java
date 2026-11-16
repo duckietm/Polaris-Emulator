@@ -41,14 +41,10 @@ public final class SendMessengerMessageEvent extends MessageHandler {
         GameEnvironment environment = Emulator.getGameEnvironment();
         int senderId = client.getUser().getUserInfo().getId();
         boolean hasStaffChat = client.getUser().hasPermission(StaffChatBuddy.PERMISSION_KEY);
-        // A channel a plugin gave the player (a gang chat) is reached like Staff Chat, without its permission.
-        boolean toChannel = conversationId == 0
-                && FriendInputGuard.isChannelTarget(
-                        recipientId, client.getUser().getMessenger().getChannel(recipientId) != null);
 
         try {
             if (!client.getUser().getUserStats().allowTalk()) throw new IllegalStateException("muted");
-            if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId, hasStaffChat) && !toChannel)
+            if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId, hasStaffChat))
                 throw new IllegalArgumentException("invalid message target");
             if (!isClientMessage(type)) throw new IllegalArgumentException("unsupported message type");
             // Same per-user console limit as the Flash message packet.
@@ -57,8 +53,8 @@ public final class SendMessengerMessageEvent extends MessageHandler {
             if (conversationId <= 0) {
                 MessengerBuddy buddy = client.getUser().getMessenger().getFriend(recipientId);
                 if (buddy == null) throw new SecurityException("not friends");
-                if (FriendInputGuard.isStaffChatTarget(recipientId, hasStaffChat) || toChannel) {
-                    this.sendToChannel(buddy, confirmationId, type, message, metadata);
+                if (FriendInputGuard.isStaffChatTarget(recipientId, hasStaffChat)) {
+                    this.sendStaffChat(buddy, confirmationId, type, message, metadata);
                     return;
                 }
             }
@@ -116,13 +112,10 @@ public final class SendMessengerMessageEvent extends MessageHandler {
         }
     }
 
-    /**
-     * Staff Chat and the other channels are broadcasts, not stored conversations: text only, acknowledged without
-     * history ids.
-     */
-    private void sendToChannel(MessengerBuddy buddy, int confirmationId, int type, String message, String metadata) {
+    /** Staff Chat is a broadcast, not a stored conversation: text only, acknowledged without history ids. */
+    private void sendStaffChat(MessengerBuddy buddy, int confirmationId, int type, String message, String metadata) {
         if (type != TEXT_MESSAGE || message.isEmpty() || !metadata.isEmpty())
-            throw new IllegalArgumentException("A channel takes plain text only");
+            throw new IllegalArgumentException("Staff Chat takes plain text only");
 
         buddy.onMessageReceived(client.getUser(), message);
         int senderId = client.getUser().getUserInfo().getId();

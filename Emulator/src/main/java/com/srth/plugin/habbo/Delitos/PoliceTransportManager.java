@@ -1,11 +1,5 @@
 package com.srth.plugin.habbo.Delitos;
 
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
@@ -17,10 +11,16 @@ import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
+import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
 import com.srth.plugin.Rooms.Mapa.Taxi.ControllerRecorridosTaxi;
 import com.srth.plugin.Rooms.Mapa.Taxi.RecorridoTaxi;
 import com.srth.plugin.habbo.HabboRp;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public final class PoliceTransportManager {
 
@@ -28,8 +28,7 @@ public final class PoliceTransportManager {
     private static final Map<Integer, Transport> BY_PASSENGER = new HashMap<>();
     private static final Set<Integer> SKIP_DEFAULT_PRISON_PLACEMENT = new HashSet<>();
 
-    private PoliceTransportManager() {
-    }
+    private PoliceTransportManager() {}
 
     public static synchronized boolean isTransporting(Habbo habbo) {
         if (habbo == null) {
@@ -51,15 +50,19 @@ public final class PoliceTransportManager {
     }
 
     public static synchronized boolean canOffer(Habbo police, Habbo passenger) {
-        if (police == null || passenger == null || police == passenger
-                || isTransporting(police) || isTransporting(passenger)) {
+        if (police == null
+                || passenger == null
+                || police == passenger
+                || isTransporting(police)
+                || isTransporting(passenger)) {
             return false;
         }
 
         Room room = police.getHabboInfo().getCurrentRoom();
-        if (room == null || room != passenger.getHabboInfo().getCurrentRoom()
-                || room.getCategory() != RoleplayWebsocketsRoomsInfo.getConfig()
-                        .getInt("global_room.category.roleplay.id")) {
+        if (room == null
+                || room != passenger.getHabboInfo().getCurrentRoom()
+                || room.getCategory()
+                        != RoleplayWebsocketsRoomsInfo.getConfig().getInt("global_room.category.roleplay.id")) {
             return false;
         }
 
@@ -74,18 +77,22 @@ public final class PoliceTransportManager {
         }
 
         ControllerRecorridosTaxi taxiController = RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi();
-        return taxiController != null && taxiController.getRecorridoTaxi(police) == null
+        return taxiController != null
+                && taxiController.getRecorridoTaxi(police) == null
                 && taxiController.getRecorridoTaxi(passenger) == null;
     }
 
     public static synchronized boolean start(Habbo police, Habbo passenger) throws SQLException {
         if (!canOffer(police, passenger)) {
-            whisper(police, "No puedes iniciar el traslado: acércate al usuario y verifica que ninguno esté en otro traslado.");
+            whisper(
+                    police,
+                    "No puedes iniciar el traslado: acércate al usuario y verifica que ninguno esté en otro traslado.");
             return false;
         }
 
         HabboRp policeRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(police);
-        if (policeRp == null || policeRp.getJobActive() == null
+        if (policeRp == null
+                || policeRp.getJobActive() == null
                 || !policeRp.getJobActive().getName().equalsIgnoreCase("police")) {
             whisper(police, "Debes tener activo el trabajo de policía para llevar a un usuario.");
             return false;
@@ -102,7 +109,8 @@ public final class PoliceTransportManager {
             return false;
         }
 
-        int destinationRoomId = RoleplayWebsocketsRoomsInfo.getJobsManager().getJob("police").getRoomId();
+        int destinationRoomId =
+                RoleplayWebsocketsRoomsInfo.getJobsManager().getJob("police").getRoomId();
         if (destinationRoomId < 1) {
             whisper(police, "No se configuró la sala de la estación policial.");
             return false;
@@ -120,9 +128,18 @@ public final class PoliceTransportManager {
         }
 
         int taxiEnable = RoleplayWebsocketsRoomsInfo.getConfig().getInt("enable_taxi_id");
-        Transport transport = new Transport(police, passenger, policeRp, passengerRp, passenger.getHabboInfo().getLook(),
-                passenger.getRoomUnit().canWalk(), passenger.getRoomUnit().getEffectId(),
-                passengerRp.getEnable(), taxiEnable, police.getRoomUnit().isFastWalk(), destinationRoomId);
+        Transport transport = new Transport(
+                police,
+                passenger,
+                policeRp,
+                passengerRp,
+                passenger.getHabboInfo().getLook(),
+                passenger.getRoomUnit().canWalk(),
+                passenger.getRoomUnit().getEffectId(),
+                passengerRp.getEnable(),
+                taxiEnable,
+                police.getRoomUnit().isFastWalk(),
+                destinationRoomId);
         BY_POLICE.put(police.getHabboInfo().getId(), transport);
         BY_PASSENGER.put(passenger.getHabboInfo().getId(), transport);
 
@@ -150,6 +167,16 @@ public final class PoliceTransportManager {
     }
 
     public static synchronized void onPoliceStep(Habbo habbo) {
+        onPoliceStep(habbo, null);
+    }
+
+    public static synchronized void onPoliceStep(UserTakeStepEvent event) {
+        if (event != null && !event.isCancelled()) {
+            onPoliceStep(event.habbo, event.toLocation);
+        }
+    }
+
+    private static void onPoliceStep(Habbo habbo, RoomTile nextPoliceTile) {
         if (habbo == null) {
             return;
         }
@@ -166,13 +193,16 @@ public final class PoliceTransportManager {
             return;
         }
         police.getRoomUnit().setFastWalk(true);
+        RoomTile policeTile =
+                nextPoliceTile != null ? nextPoliceTile : police.getRoomUnit().getCurrentLocation();
 
-        RecorridoTaxi route = RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
-                .getRecorridoTaxi(police);
+        RecorridoTaxi route =
+                RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi().getRecorridoTaxi(police);
         Room room = police.getHabboInfo().getCurrentRoom();
         if (transport.arrivedAtStation || room != null && room.getId() == transport.destinationRoomId) {
             transport.arrivedAtStation = true;
-            preparePrisonEntry(transport);
+            hideAndFollow(transport, policeTile);
+            preparePrisonEntry(transport, policeTile);
             return;
         }
 
@@ -183,7 +213,7 @@ public final class PoliceTransportManager {
             return;
         }
 
-        hideAndFollow(transport);
+        hideAndFollow(transport, policeTile);
     }
 
     public static synchronized void onUserEnterRoom(Habbo habbo, Room room) {
@@ -194,22 +224,28 @@ public final class PoliceTransportManager {
         Transport asPolice = BY_POLICE.get(habbo.getHabboInfo().getId());
         if (asPolice != null) {
             habbo.getRoomUnit().setFastWalk(true);
-            Emulator.getThreading().run(() -> {
-                synchronized (PoliceTransportManager.class) {
-                    if (BY_POLICE.get(habbo.getHabboInfo().getId()) == asPolice
-                            && habbo.getHabboInfo().getCurrentRoom() == room) {
-                        habbo.getRoomUnit().setFastWalk(true);
-                    }
-                }
-            }, 500);
+            Emulator.getThreading()
+                    .run(
+                            () -> {
+                                synchronized (PoliceTransportManager.class) {
+                                    if (BY_POLICE.get(habbo.getHabboInfo().getId()) == asPolice
+                                            && habbo.getHabboInfo().getCurrentRoom() == room) {
+                                        habbo.getRoomUnit().setFastWalk(true);
+                                    }
+                                }
+                            },
+                            500);
             asPolice.arrivedAtStation = room.getId() == asPolice.destinationRoomId;
             forwardPassenger(asPolice, room);
             if (asPolice.arrivedAtStation && asPolice.passenger.getHabboInfo().getCurrentRoom() == room) {
-                Emulator.getThreading().run(() -> {
-                    synchronized (PoliceTransportManager.class) {
-                        preparePrisonEntry(asPolice);
-                    }
-                }, 100);
+                Emulator.getThreading()
+                        .run(
+                                () -> {
+                                    synchronized (PoliceTransportManager.class) {
+                                        preparePrisonEntry(asPolice);
+                                    }
+                                },
+                                100);
             }
             return;
         }
@@ -231,11 +267,14 @@ public final class PoliceTransportManager {
 
         if (asPassenger.arrivedAtStation && room.getId() == asPassenger.destinationRoomId) {
             SKIP_DEFAULT_PRISON_PLACEMENT.add(habbo.getHabboInfo().getId());
-            Emulator.getThreading().run(() -> {
-                synchronized (PoliceTransportManager.class) {
-                    preparePrisonEntry(asPassenger);
-                }
-            }, 100);
+            Emulator.getThreading()
+                    .run(
+                            () -> {
+                                synchronized (PoliceTransportManager.class) {
+                                    preparePrisonEntry(asPassenger);
+                                }
+                            },
+                            100);
         } else {
             hideAndFollow(asPassenger);
         }
@@ -285,10 +324,13 @@ public final class PoliceTransportManager {
     }
 
     private static void hideAndFollow(Transport transport) {
+        hideAndFollow(transport, transport.police.getRoomUnit().getCurrentLocation());
+    }
+
+    private static void hideAndFollow(Transport transport, RoomTile policeTile) {
         Habbo police = transport.police;
         Habbo passenger = transport.passenger;
         Room room = police.getHabboInfo().getCurrentRoom();
-        RoomTile policeTile = police.getRoomUnit().getCurrentLocation();
         if (room == null || room != passenger.getHabboInfo().getCurrentRoom() || policeTile == null) {
             return;
         }
@@ -312,8 +354,13 @@ public final class PoliceTransportManager {
     }
 
     private static void preparePrisonEntry(Transport transport) {
+        preparePrisonEntry(transport, null);
+    }
+
+    private static void preparePrisonEntry(Transport transport, RoomTile targetPoliceTile) {
         Room room = transport.police.getHabboInfo().getCurrentRoom();
-        if (room == null || room.getId() != transport.destinationRoomId
+        if (room == null
+                || room.getId() != transport.destinationRoomId
                 || room != transport.passenger.getHabboInfo().getCurrentRoom()) {
             return;
         }
@@ -328,22 +375,23 @@ public final class PoliceTransportManager {
             }
 
             if (gate == null) {
-                sendPrisonerToRocks(transport, room,
-                        "No se encontró prison_gate; se ingresará al prisionero en las rocas.");
+                sendPrisonerToRocks(
+                        transport, room, "No se encontró prison_gate; se ingresará al prisionero en las rocas.");
                 return;
             }
 
             RoomTile gateBase = room.getLayout().getTile(gate.getX(), gate.getY());
             if (gateBase == null) {
-                sendPrisonerToRocks(transport, room,
-                        "No se pudo determinar prison_gate; se ingresará al prisionero en las rocas.");
+                sendPrisonerToRocks(
+                        transport, room, "No se pudo determinar prison_gate; se ingresará al prisionero en las rocas.");
                 return;
             }
 
-            int facing = Math.floorMod(gate.getRotation(), 8);
-            RoomTile approach = findGateApproachTile(room, gateBase, facing);
+            RoomTile approach = findGateApproachTile(room, gateBase, gate.getRotation());
             if (approach == null) {
-                sendPrisonerToRocks(transport, room,
+                sendPrisonerToRocks(
+                        transport,
+                        room,
                         "No hay una baldosa transitable delante de prison_gate; se ingresará al prisionero en las rocas.");
                 return;
             }
@@ -352,7 +400,9 @@ public final class PoliceTransportManager {
             transport.gateApproach = approach;
         }
 
-        RoomTile policeTile = transport.police.getRoomUnit().getCurrentLocation();
+        RoomTile policeTile = targetPoliceTile != null
+                ? targetPoliceTile
+                : transport.police.getRoomUnit().getCurrentLocation();
         if (policeTile == null) {
             return;
         }
@@ -367,8 +417,7 @@ public final class PoliceTransportManager {
 
     private static void sendPrisonerToRocks(Transport transport, Room room, String message) {
         transport.passengerRp.getDelitosHabbo().setEncarceled(true);
-        boolean delivered = new PolicesManager()
-                .sendTransportedPrisonerToRandomRock(room, transport.passenger);
+        boolean delivered = new PolicesManager().sendTransportedPrisonerToRandomRock(room, transport.passenger);
         finishTaxiRoute(transport);
         release(transport, false, !delivered);
         if (delivered) {
@@ -380,13 +429,14 @@ public final class PoliceTransportManager {
         }
     }
 
-    private static RoomTile findGateApproachTile(Room room, RoomTile gateBase, int facing) {
-        RoomTile tileInFront = room.getLayout().getTileInFront(gateBase, facing);
+    static RoomTile findGateApproachTile(Room room, RoomTile gateBase, int facing) {
+        int approachDirection = Math.floorMod(facing + 4, 8);
+        RoomTile tileInFront = room.getLayout().getTileInFront(gateBase, approachDirection);
         if (isPassableTile(tileInFront)) {
             return tileInFront;
         }
 
-        return findAdjacentTileOnSide(room, gateBase, facing);
+        return findAdjacentTileOnSide(room, gateBase, approachDirection);
     }
 
     private static RoomTile findAdjacentTileOnSide(Room room, RoomTile gateBase, int facing) {
@@ -413,28 +463,30 @@ public final class PoliceTransportManager {
     }
 
     private static boolean isPassableTile(RoomTile tile) {
-        return tile != null && tile.state != RoomTileState.INVALID
-                && tile.state != RoomTileState.BLOCKED && tile.state != RoomTileState.LAY;
+        return tile != null
+                && tile.state != RoomTileState.INVALID
+                && tile.state != RoomTileState.BLOCKED
+                && tile.state != RoomTileState.LAY;
     }
 
     private static int[] getDirection(int rotation) {
         switch (Math.floorMod(rotation, 8)) {
             case 0:
-                return new int[] { 0, -1 };
+                return new int[] {0, -1};
             case 1:
-                return new int[] { 1, -1 };
+                return new int[] {1, -1};
             case 2:
-                return new int[] { 1, 0 };
+                return new int[] {1, 0};
             case 3:
-                return new int[] { 1, 1 };
+                return new int[] {1, 1};
             case 4:
-                return new int[] { 0, 1 };
+                return new int[] {0, 1};
             case 5:
-                return new int[] { -1, 1 };
+                return new int[] {-1, 1};
             case 6:
-                return new int[] { -1, 0 };
+                return new int[] {-1, 0};
             default:
-                return new int[] { -1, -1 };
+                return new int[] {-1, -1};
         }
     }
 
@@ -519,9 +571,18 @@ public final class PoliceTransportManager {
         private HabboItem gate;
         private RoomTile gateApproach;
 
-        private Transport(Habbo police, Habbo passenger, HabboRp policeRp, HabboRp passengerRp, String passengerLook,
-                boolean passengerCouldWalk, int passengerEffect, int passengerEnable, int taxiEnable,
-                boolean policeFastWalk, int destinationRoomId) {
+        private Transport(
+                Habbo police,
+                Habbo passenger,
+                HabboRp policeRp,
+                HabboRp passengerRp,
+                String passengerLook,
+                boolean passengerCouldWalk,
+                int passengerEffect,
+                int passengerEnable,
+                int taxiEnable,
+                boolean policeFastWalk,
+                int destinationRoomId) {
             this.police = police;
             this.passenger = passenger;
             this.policeRp = policeRp;

@@ -1,13 +1,5 @@
 package com.srth.plugin;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -18,49 +10,46 @@ import com.eu.habbo.messages.outgoing.rooms.RoomRelativeMapComposer;
 import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.EventListener;
 import com.eu.habbo.plugin.HabboPlugin;
-import com.eu.habbo.plugin.events.emulator.EmulatorLoadItemsManagerEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
-import com.srth.plugin.habbo.Tareas.TareasManager;
-import com.srth.plugin.habbo.Tareas.Level.LevelManagerRP;
-import com.srth.plugin.habbo.Tareas.Level.habbo.LevelHabboManager;
-import com.srth.plugin.Horario.HorarioManager;
-import com.srth.plugin.Horario.Timer.TimerCash;
-import com.srth.plugin.Horario.Timer.TimerEstatus;
 import com.srth.plugin.ActionItems.ItemActionManager;
 import com.srth.plugin.ActionItems.RoleplayFurniMenuManager;
 import com.srth.plugin.Consola.ConsolaManager;
 import com.srth.plugin.Crafteos.CraffteoManager;
+import com.srth.plugin.Horario.HorarioManager;
+import com.srth.plugin.Horario.Timer.TimerCash;
+import com.srth.plugin.Horario.Timer.TimerEstatus;
 import com.srth.plugin.Retos.CategoriaReto;
 import com.srth.plugin.Retos.RetosTutorialManager;
 import com.srth.plugin.Retos.TareaCategoria;
-import com.srth.plugin.Rooms.RoomsManager;
 import com.srth.plugin.Rooms.Mapa.MapaManager;
 import com.srth.plugin.Rooms.Mapa.Taxi.ControllerRecorridosTaxi;
+import com.srth.plugin.Rooms.RoomsManager;
 import com.srth.plugin.Turnos.TurnosManager;
 import com.srth.plugin.Tutorial.TutorialHabboRpManager;
 import com.srth.plugin.bots.BotsManager;
 import com.srth.plugin.bots.shop.ShopBotsManager;
 import com.srth.plugin.events.RegisterHabboEvents;
-import com.srth.plugin.messages.incoming.RoleplayFurniActionEvent;
-import com.srth.plugin.messages.incoming.RoleplayFurniMenuRequestEvent;
 import com.srth.plugin.events.habboHandlers.HandlerBotSettings;
 import com.srth.plugin.events.habboHandlers.HandlerOnClickUser;
-import com.srth.plugin.events.habboHandlers.HandlerRequestRoomLoadEvent;
+import com.srth.plugin.events.habboHandlers.HandlerRedeemItemEvent;
 import com.srth.plugin.events.habboHandlers.HandlerRoomSettingsSaved;
 import com.srth.plugin.events.habboHandlers.handledFurniClick;
 import com.srth.plugin.events.habboHandlers.handlerUserClickTile;
-import com.srth.plugin.events.habboHandlers.HandlerRedeemItemEvent;
-import com.srth.plugin.habbo.HabboRpManager;
 import com.srth.plugin.habbo.CraftItems.CraftManager;
 import com.srth.plugin.habbo.CraftItems.ListCrafts.CraftCocineros;
+import com.srth.plugin.habbo.Delitos.PoliceTransportManager;
+import com.srth.plugin.habbo.HabboRpManager;
 import com.srth.plugin.habbo.Inventorys.CofreInventoryManager;
 import com.srth.plugin.habbo.Inventorys.Items.ManagerItems;
 import com.srth.plugin.habbo.Jobs.JobsManager;
-import com.srth.plugin.habbo.Jobs.WorkSystemLevelManager;
 import com.srth.plugin.habbo.Jobs.Levels.LevelManager;
 import com.srth.plugin.habbo.Jobs.Tasks.TaskManager;
+import com.srth.plugin.habbo.Jobs.WorkSystemLevelManager;
 import com.srth.plugin.habbo.Shooter.ShooterManager;
+import com.srth.plugin.habbo.Tareas.Level.LevelManagerRP;
+import com.srth.plugin.habbo.Tareas.Level.habbo.LevelHabboManager;
+import com.srth.plugin.habbo.Tareas.TareasManager;
 import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerDormir;
 import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerHambre;
 import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerHigiene;
@@ -68,18 +57,26 @@ import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerOnline;
 import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerVida;
 import com.srth.plugin.interactions.hackercajeros.control.InteractionManagerHackerCajeros;
 import com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre;
+import com.srth.plugin.messages.incoming.RoleplayFurniActionEvent;
+import com.srth.plugin.messages.incoming.RoleplayFurniMenuRequestEvent;
+import com.srth.plugin.utilities.UtilitesRoleplay;
 import com.srth.plugin.utilities.checkDatabase;
 import com.srth.plugin.utilities.checkRPSettings;
 import com.srth.plugin.utilities.checkRPTexts;
 import com.srth.plugin.utilities.checkRPUsers;
-import com.srth.plugin.utilities.UtilitesRoleplay;
 import com.srth.plugin.utilities.loadConfig;
 import com.srth.plugin.utilities.loadPlayerCommands;
 import com.srth.plugin.utilities.loadTexts;
 import com.srth.plugin.utilities.utils.comprobateUsePlugin;
-import com.srth.plugin.websocket.WebSocketServer;
 import com.srth.plugin.websocket.Habbo.SSOClientManager;
+import com.srth.plugin.websocket.WebSocketServer;
 import com.srth.plugin.websocket.communication.incoming.IncomingManager;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventListener {
 
@@ -139,15 +136,16 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
 
         Emulator.getPluginManager().registerEvents(this, this);
 
-        LOGGER.info("Detected Plugin `{}` by {} version {}!", this.getClass().getCanonicalName(), "SrThrone",
-                "1.0.0");
+        LOGGER.info("Detected Plugin `{}` by {} version {}!", this.getClass().getCanonicalName(), "SrThrone", "1.0.0");
 
         INSTANCE = this;
         roleplayFurniMenuManager = new RoleplayFurniMenuManager();
-        Emulator.getGameServer().getPacketManager().registerHandler(
-                Incoming.RoleplayFurniMenuRequestEvent, RoleplayFurniMenuRequestEvent.class);
-        Emulator.getGameServer().getPacketManager().registerHandler(
-                Incoming.RoleplayFurniActionEvent, RoleplayFurniActionEvent.class);
+        Emulator.getGameServer()
+                .getPacketManager()
+                .registerHandler(Incoming.RoleplayFurniMenuRequestEvent, RoleplayFurniMenuRequestEvent.class);
+        Emulator.getGameServer()
+                .getPacketManager()
+                .registerHandler(Incoming.RoleplayFurniActionEvent, RoleplayFurniActionEvent.class);
 
         RegisterHabboEvents registerUtils = new RegisterHabboEvents();
         registerUtils.Init();
@@ -167,7 +165,8 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
         String credits_em = utilities().encode(Emulator.getConfig().getValue("roleplay_websocket_plugin_credits"));
 
         if (!RoleplayWebsocketsRoomsInfo.getConfig().getBoolean("roleplay_websocket_active")
-                || !credits_pg.equalsIgnoreCase("U3JUaHJvbmU=") || !credits_em.equalsIgnoreCase("U3JUaHJvbmU=")) {
+                || !credits_pg.equalsIgnoreCase("U3JUaHJvbmU=")
+                || !credits_em.equalsIgnoreCase("U3JUaHJvbmU=")) {
             LOGGER.error("[ROLEPLAY WEBSOCKETS ROOM INFO] plugin its illegally, stopping emulator!");
             LOGGER.error("[ROLEPLAY WEBSOCKETS ROOM INFO] plugin its illegally, stopping emulator!");
             LOGGER.error("[ROLEPLAY WEBSOCKETS ROOM INFO] plugin its illegally, stopping emulator!");
@@ -319,11 +318,13 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
         // Mapa Manager
         mapaManager = new MapaManager();
         mapaManager.loadAll();
-        RoleplayWebsocketsRoomsInfo.utilities().LOGGER(
-                "[ROLEPLAY WEBSOCKETS ROOM INFO] | Salas RP Oficiales: " + mapaManager.getListRooms().size() + "");
+        RoleplayWebsocketsRoomsInfo.utilities()
+                .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | Salas RP Oficiales: "
+                        + mapaManager.getListRooms().size() + "");
 
         RoleplayWebsocketsRoomsInfo.utilities()
-                .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | Levels cargados: " + levelManagerRP.getArrayLevels().size());
+                .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | Levels cargados: "
+                        + levelManagerRP.getArrayLevels().size());
 
         // CraftManager (ELIMINAR PRONTO)
         craftManager = new CraftManager();
@@ -355,8 +356,7 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
                 .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | CATEGORIAS DE RETOS CARGADOS: "
                         + retosTutorialManager.getCategorias().size());
         RoleplayWebsocketsRoomsInfo.utilities()
-                .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | RETOS TOTALES: "
-                        + numberRetos);
+                .LOGGER("[ROLEPLAY WEBSOCKETS ROOM INFO] | RETOS TOTALES: " + numberRetos);
 
         shopBotsManager = new ShopBotsManager();
         shopBotsManager.loadShops();
@@ -379,7 +379,6 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
                 .LOGGER(ANSI_GREEN + "[ROLEPLAY WEBSOCKETS ROOM INFO] | INICIALIZADO CORRECTAMENTE");
         RoleplayWebsocketsRoomsInfo.utilities()
                 .LOGGER(ANSI_GREEN + "----------------------------------------------------------------------");
-
     }
 
     @Override
@@ -394,6 +393,9 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
     public void onStepEvent(UserTakeStepEvent e) {
         getRoomsRoleplayManager().eventUserMove(e.habbo);
         ShooterManager.onUserMove(e);
+        if (!e.isCancelled()) {
+            PoliceTransportManager.onPoliceStep(e);
+        }
     }
 
     public void loadItemsManager() {
@@ -418,25 +420,28 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
             return false;
         }
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection
-                        .prepareStatement("SELECT * FROM items WHERE item_id= ? AND room_id!= ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM items WHERE item_id= ? AND room_id!= ?")) {
             statement.setInt(1, item.getId());
             statement.setInt(2, 0);
             if (statement.execute()) {
                 try (ResultSet set = statement.getResultSet()) {
                     while (set.next()) {
 
-                        Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(set.getInt("room_id"));
+                        Room room =
+                                Emulator.getGameEnvironment().getRoomManager().loadRoom(set.getInt("room_id"));
                         if (room != null) {
 
-                            if (room.getCategory() != RoleplayWebsocketsRoomsInfo.getConfig()
-                                    .getInt("global_room.category.roleplay.id")) {
+                            if (room.getCategory()
+                                    != RoleplayWebsocketsRoomsInfo.getConfig()
+                                            .getInt("global_room.category.roleplay.id")) {
                                 continue;
                             }
 
-                            try (Connection conn2 = Emulator.getDatabase().getDataSource().getConnection()) {
-                                try (PreparedStatement statement2 = conn2
-                                        .prepareStatement("UPDATE items SET extra_data= ?, z= ? WHERE id = ?")) {
+                            try (Connection conn2 =
+                                    Emulator.getDatabase().getDataSource().getConnection()) {
+                                try (PreparedStatement statement2 =
+                                        conn2.prepareStatement("UPDATE items SET extra_data= ?, z= ? WHERE id = ?")) {
                                     statement2.setString(1, extra_data);
                                     statement2.setString(2, z + "");
                                     statement2.setInt(3, set.getInt("id"));
@@ -447,7 +452,6 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
                                 exception.printStackTrace();
                             }
                         }
-
                     }
                 }
             }
@@ -462,8 +466,8 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
         if (el_item != null) {
             int id_furni = el_item.getId();
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-                try (PreparedStatement statement = conn
-                        .prepareStatement("UPDATE items_base SET interaction_type= ? WHERE id = ?")) {
+                try (PreparedStatement statement =
+                        conn.prepareStatement("UPDATE items_base SET interaction_type= ? WHERE id = ?")) {
                     statement.setString(1, interaction_type);
                     statement.setInt(2, id_furni);
                     statement.executeUpdate();
@@ -480,8 +484,8 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
         if (el_item != null) {
             int id_furni = el_item.getId();
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-                try (PreparedStatement statement = conn
-                        .prepareStatement("UPDATE items SET extra_data= ? WHERE item_id = ?")) {
+                try (PreparedStatement statement =
+                        conn.prepareStatement("UPDATE items SET extra_data= ? WHERE item_id = ?")) {
                     statement.setString(1, extra_data);
                     statement.setInt(2, id_furni);
                     statement.executeUpdate();

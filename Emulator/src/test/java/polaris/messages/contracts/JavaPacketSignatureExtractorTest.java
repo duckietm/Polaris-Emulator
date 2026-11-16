@@ -220,8 +220,8 @@ class JavaPacketSignatureExtractorTest {
 
     @Test
     void rejectsListsThatAreNotDescribedExactly() throws Exception {
-        for (String method :
-                List.of("countMismatch", "otherIterable", "conditionalBody", "breakBody", "detachedCounter")) {
+        for (String method : List.of(
+                "countMismatch", "otherIterable", "conditionalBody", "breakBody", "detachedCounter", "emptyItem")) {
             ExtractionResult result =
                     extractor.extract(fixture("ListOutgoingFixture.java"), JavaPacketSide.OUTGOING, method);
             assertTrue(result.unsupportedReason().isPresent(), method);
@@ -260,6 +260,15 @@ class JavaPacketSignatureExtractorTest {
                     extractor.extract(fixture("ListIncomingFixture.java"), JavaPacketSide.INCOMING, method);
             assertTrue(result.unsupportedReason().isPresent(), method);
         }
+    }
+
+    @Test
+    void namesAMissingRootMethodByFileNameOnly() {
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> extractor.extract(fixture("ListOutgoingFixture.java"), JavaPacketSide.OUTGOING, "missing"));
+
+        assertEquals("Method missing not found in ListOutgoingFixture.java", error.getMessage());
     }
 
     private String incomingShape(String fixtureName, String method) throws IOException {

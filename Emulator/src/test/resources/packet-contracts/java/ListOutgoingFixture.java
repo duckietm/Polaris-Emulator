@@ -87,6 +87,13 @@ final class ListOutgoingFixture {
         }
     }
 
+    void emptyItem() {
+        this.response.appendInt(rooms.size());
+        for (Room room : rooms) {
+            room.touch();
+        }
+    }
+
     void detachedCounter() {
         this.response.appendInt(ids.size());
         this.response.appendString("x");

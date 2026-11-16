@@ -93,7 +93,9 @@ final class JavaPacketSignatureExtractor {
             }
         }
         MethodDeclaration root = methods.get(rootMethod);
-        if (root == null) throw new IllegalArgumentException("Method " + rootMethod + " not found in " + source);
+        // The file name only: the message lands in the committed manifest and must not depend on the checkout path.
+        if (root == null)
+            throw new IllegalArgumentException("Method " + rootMethod + " not found in " + source.getFileName());
         return extractMethod(root, side, methods, new ArrayDeque<>());
     }
 
@@ -146,6 +148,10 @@ final class JavaPacketSignatureExtractor {
             if (loop != null) {
                 ExtractionResult item = extractScope(loop.body(), context);
                 if (item.unsupportedReason().isPresent()) return item;
+                if (item.fields().isEmpty()) {
+                    return ExtractionResult.unsupported("List item reads nothing statically inside "
+                            + context.method().getNameAsString());
+                }
                 fields.add(new ListSchema(loop.countType(), item.fields()));
                 continue;
             }

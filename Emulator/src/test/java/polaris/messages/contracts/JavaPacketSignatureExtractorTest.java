@@ -188,6 +188,67 @@ class JavaPacketSignatureExtractorTest {
                 new PacketContractContext("OPTIONAL_FIXTURE", "server_to_client", "Fixture.java"));
     }
 
+    @Test
+    void extractsAListAfterItsSizeCounter() throws Exception {
+        assertEquals("list<int>[int,string],boolean", outgoingShape("ListOutgoingFixture.java", "composeInternal"));
+    }
+
+    @Test
+    void extractsTwoConsecutiveListsInOrder() throws Exception {
+        assertEquals("list<int>[int],list<int>[string]", outgoingShape("ListOutgoingFixture.java", "twoLists"));
+    }
+
+    @Test
+    void extractsANestedListInsideTheItem() throws Exception {
+        assertEquals("list<int>[string,list<int>[int]]", outgoingShape("ListOutgoingFixture.java", "nested"));
+    }
+
+    @Test
+    void extractsAShortCounter() throws Exception {
+        assertEquals("list<short>[int]", outgoingShape("ListOutgoingFixture.java", "shortCount"));
+    }
+
+    @Test
+    void extractsAnIndexedForOverSize() throws Exception {
+        assertEquals("list<int>[int]", outgoingShape("ListOutgoingFixture.java", "indexed"));
+    }
+
+    @Test
+    void extractsAListWhoseItemIsWrittenByALocalHelper() throws Exception {
+        assertEquals("list<int>[int,string]", outgoingShape("ListOutgoingFixture.java", "helperBody"));
+    }
+
+    @Test
+    void rejectsListsThatAreNotDescribedExactly() throws Exception {
+        for (String method :
+                List.of("countMismatch", "otherIterable", "conditionalBody", "breakBody", "detachedCounter")) {
+            ExtractionResult result =
+                    extractor.extract(fixture("ListOutgoingFixture.java"), JavaPacketSide.OUTGOING, method);
+            assertTrue(result.unsupportedReason().isPresent(), method);
+        }
+    }
+
+    private String outgoingShape(String fixtureName, String method) throws IOException {
+        ExtractionResult result = extractor.extract(fixture(fixtureName), JavaPacketSide.OUTGOING, method);
+        assertFalse(
+                result.unsupportedReason().isPresent(),
+                () -> result.unsupportedReason().orElseThrow());
+        return shape(result.fields());
+    }
+
+    static String shape(List<WireSchema> fields) {
+        return String.join(
+                ",",
+                fields.stream()
+                        .map(field -> switch (field) {
+                            case ScalarSchema scalar -> scalar.type();
+                            case ListSchema list -> "list<" + list.countType() + ">[" + shape(list.item()) + "]";
+                            case OptionalSchema optional -> "optional[" + shape(optional.fields()) + "]";
+                            case VariantSchema variant -> "variant";
+                        })
+                        .toList());
+    }
+
     private static Path fixture(String name) {
         return Path.of("src", "test", "resources", "packet-contracts", "java", name);
     }

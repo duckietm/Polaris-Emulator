@@ -15,6 +15,45 @@ import org.junit.jupiter.api.Test;
 class SSOClientManagerTest {
 
     @Test
+    void bindsWebsocketThatConnectsBeforeGameSession() {
+        Habbo habbo = habboWithSso("active-ticket");
+        EmbeddedChannel websocketChannel = new EmbeddedChannel();
+
+        try {
+            SSOClientManager.addClient("active-ticket", websocketChannel);
+
+            HabboClient roleplayClient = SSOClientManager.bindToSession(habbo);
+
+            assertNotNull(roleplayClient);
+            assertSame(habbo, roleplayClient.getHabbo());
+            assertSame(websocketChannel, roleplayClient.getChannel());
+        } finally {
+            SSOClientManager.removeClient(websocketChannel);
+            HabboClientManager.killClient(websocketChannel.id());
+            websocketChannel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void disconnectRemovesOnlyTheSocketThatWasRegistered() {
+        EmbeddedChannel oldChannel = new EmbeddedChannel();
+        EmbeddedChannel currentChannel = new EmbeddedChannel();
+
+        try {
+            SSOClientManager.addClient("active-ticket", oldChannel);
+            SSOClientManager.addClient("active-ticket", currentChannel);
+            SSOClientManager.removeClient(oldChannel);
+
+            assertSame(currentChannel, SSOClientManager.getClientChannel("active-ticket"));
+        } finally {
+            SSOClientManager.removeClient(oldChannel);
+            SSOClientManager.removeClient(currentChannel);
+            oldChannel.finishAndReleaseAll();
+            currentChannel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
     void bindsWebsocketThatConnectsAfterGameSession() {
         HabboRpManager habboRpManager = new HabboRpManager();
         HabboRp habboRp = mock(HabboRp.class);
@@ -25,6 +64,7 @@ class SSOClientManagerTest {
         habboRpManager.getHabboRps().put(7, habboRp);
 
         try {
+            SSOClientManager.addClient("active-ticket", websocketChannel);
             HabboClient roleplayClient =
                     SSOClientManager.bindToExistingSession("active-ticket", websocketChannel, habboRpManager);
 
@@ -32,6 +72,7 @@ class SSOClientManagerTest {
             assertSame(habbo, roleplayClient.getHabbo());
             assertSame(websocketChannel, roleplayClient.getChannel());
         } finally {
+            SSOClientManager.removeClient(websocketChannel);
             HabboClientManager.killClient(websocketChannel.id());
             websocketChannel.finishAndReleaseAll();
         }

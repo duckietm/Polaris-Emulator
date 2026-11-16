@@ -10,6 +10,7 @@ import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
 import com.srth.plugin.habbo.HabboRp;
 import com.srth.plugin.habbo.HabboRpManager;
 import com.srth.plugin.habbo.Jobs.Job;
+import com.srth.plugin.websocket.Habbo.SSOClientManager;
 
 public class OnLogin implements EventListener {
 
@@ -37,6 +38,7 @@ public class OnLogin implements EventListener {
                 habboRp.setShooterHabbo(event.habbo);
                 habboRp.setHabboTutorial(event.habbo);
                 habboRp.setHabboRetos(event.habbo);
+                SSOClientManager.bindToSession(event.habbo);
 
                 if (habboRp.getHabboTutorial().getCompleted() == false) {
                     if (event.habbo.getHabboInfo().getUsername().contains("SrThrone")) {

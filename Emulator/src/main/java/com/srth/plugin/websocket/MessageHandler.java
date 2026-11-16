@@ -1,6 +1,7 @@
 package com.srth.plugin.websocket;
 
 import com.srth.plugin.websocket.Habbo.HabboClientManager;
+import com.srth.plugin.websocket.Habbo.SSOClientManager;
 import com.srth.plugin.websocket.communication.incoming.Incoming;
 import com.srth.plugin.metrics.RoleplayMetrics;
 import io.netty.channel.ChannelHandlerContext;
@@ -18,6 +19,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<BinaryWebSocketF
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         RoleplayMetrics.websocketDisconnected();
         HabboClientManager.killClient(ctx.channel().id());
+        SSOClientManager.removeClient(ctx.channel());
         ctx.channel().close();
     }
 

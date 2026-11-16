@@ -270,7 +270,7 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
         // UPDATEAR CAMA "hosptl_bed"
         this.updateItemBaseInteraction("hosptl_bed", "camilla_hospital_rp");
 
-        SSOClientManager.SSOclients.clear();
+        SSOClientManager.clearClients();
 
         // Registro de handlers (eventos)
         ICallable onClickUser = new HandlerOnClickUser();

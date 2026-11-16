@@ -292,12 +292,8 @@ public class HabboRp {
         this.client = HabboClientManager.getHabboClient(habbo);
         if (this.client == null) {
             if (habbo != null) {
-                if (SSOClientManager.SSOclients.get(habbo.getHabboInfo().getSso()) != null) {
-                    new HabboClientManager().addClient(SSOClientManager.SSOclients.get(habbo.getHabboInfo().getSso()),
-                            habbo);
-                    // SSOClientManager.SSOclients.remove(habbo.getHabboInfo().getSso());
-                    this.client = HabboClientManager.getHabboClient(habbo);
-
+                this.client = SSOClientManager.bindToSession(habbo);
+                if (this.client != null) {
                     RoleplayWebsocketsRoomsInfo.utilities().LOGGER("HabboClient null, se ha creado uno nuevo para el habbo: "
                             + habbo.getHabboInfo().getUsername());
                 }

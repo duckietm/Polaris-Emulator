@@ -363,10 +363,11 @@ public class RecorridoTaxi implements ICycleable {
                             // RoleplayWebsocketsRoomsInfo.utilities().LOGGER(roomObjetive.getName() + "");
 
                             if (roomActual.getId() == roomObjetive.getId()) {
-                                // if (pauseAtDestinationForPoliceTransport) {
-                                //     setStatus(false);
-                                //     return;
-                                // }
+                                
+                                if (pauseAtDestinationForPoliceTransport) {
+                                    setStatus(false);
+                                    return;
+                                }
 
                                 Emulator.getThreading().run(() -> {
 

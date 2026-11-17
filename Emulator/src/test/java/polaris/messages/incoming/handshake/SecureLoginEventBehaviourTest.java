@@ -91,6 +91,7 @@ import polaris.messages.outgoing.generic.alerts.MessagesForYouComposer;
 import polaris.messages.outgoing.habbicons.UserHabbiconsComposer;
 import polaris.messages.outgoing.handshake.AvailabilityStatusMessageComposer;
 import polaris.messages.outgoing.handshake.EnableNotificationsComposer;
+import polaris.messages.outgoing.handshake.HotelSettingsComposer;
 import polaris.messages.outgoing.handshake.IsFirstLoginOfDayComposer;
 import polaris.messages.outgoing.handshake.PingComposer;
 import polaris.messages.outgoing.handshake.SecureLoginOKComposer;
@@ -386,6 +387,7 @@ class SecureLoginEventBehaviourTest {
         this.composer(AvailabilityStatusMessageComposer.class, "AvailabilityStatus");
         this.composer(PingComposer.class, "Ping");
         this.composer(EnableNotificationsComposer.class, "EnableNotifications");
+        this.composer(HotelSettingsComposer.class, "HotelSettings");
         this.composer(UserAchievementScoreComposer.class, "UserAchievementScore");
         this.composer(IsFirstLoginOfDayComposer.class, "IsFirstLoginOfDay");
         this.composer(MysteryBoxKeysComposer.class, "MysteryBoxKeys");

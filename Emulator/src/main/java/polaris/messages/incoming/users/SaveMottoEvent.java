@@ -8,6 +8,11 @@ import polaris.messages.outgoing.users.ExtendedProfileChangedComposer;
 import polaris.plugin.events.users.UserSavedMottoEvent;
 
 public class SaveMottoEvent extends MessageHandler {
+    /** The longest motto the server accepts ({@code motto.max_length}). */
+    public static int maximumLength() {
+        return Emulator.getConfig().getInt("motto.max_length", 38);
+    }
+
     // Each save wrote the user row and broadcast the room data, as often as the client sent it.
     @Override
     public int getRatelimit() {
@@ -23,7 +28,7 @@ public class SaveMottoEvent extends MessageHandler {
         Emulator.getPluginManager().fireEvent(event);
         motto = UserInputGuard.normalizeText(event.newMotto);
 
-        if (motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) return;
+        if (motto.length() > maximumLength()) return;
 
         boolean changed = !motto.equals(this.client.getUser().getUserInfo().getMotto());
         // An unchanged motto needs no write and no broadcast.

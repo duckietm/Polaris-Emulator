@@ -117,6 +117,7 @@ class NitroSecureApiHandlerTest {
             "/api/cms/ping",
             "/api/health",
             "/api/maintenance",
+            "/api/public-settings",
             "/api/emustats",
             "/api/public/wired/variable",
             "/api/authx"

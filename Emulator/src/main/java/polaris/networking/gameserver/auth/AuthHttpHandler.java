@@ -94,6 +94,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String CHANGE_USERNAME_PATH = "/api/auth/change-username";
     static final String HEALTH_PATH = "/api/health";
     static final String MAINTENANCE_PATH = "/api/maintenance";
+    static final String PUBLIC_SETTINGS_PATH = "/api/public-settings";
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -153,7 +154,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 || path.equals(CHANGE_EMAIL_PATH)
                 || path.equals(CHANGE_USERNAME_PATH)
                 || path.equals(HEALTH_PATH)
-                || path.equals(MAINTENANCE_PATH);
+                || path.equals(MAINTENANCE_PATH)
+                || path.equals(PUBLIC_SETTINGS_PATH);
     }
 
     private void handle(ChannelHandlerContext ctx, FullHttpRequest req, String path) {
@@ -182,6 +184,15 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             status.addProperty("enabled", MaintenanceMode.isEnabled());
             status.addProperty("message", MaintenanceMode.getMessage());
             sendJson(ctx, req, HttpResponseStatus.OK, status);
+            return;
+        }
+
+        if (path.equals(PUBLIC_SETTINGS_PATH)) {
+            if (!isGetOrHead(req)) {
+                sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, errorPayload("Use GET."));
+                return;
+            }
+            sendJson(ctx, req, HttpResponseStatus.OK, publicSettings());
             return;
         }
 
@@ -313,5 +324,19 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static boolean isGetOrHead(FullHttpRequest req) {
         return req.method() == HttpMethod.GET || req.method() == HttpMethod.HEAD;
+    }
+
+    /**
+     * What the login page needs before any session exists: whether Turnstile guards the login and its public site key.
+     * Nothing secret goes here.
+     */
+    static JsonObject publicSettings() {
+        JsonObject turnstile = new JsonObject();
+        turnstile.addProperty("enabled", TurnstileSettings.enabled());
+        turnstile.addProperty("sitekey", TurnstileSettings.siteKey());
+
+        JsonObject settings = new JsonObject();
+        settings.add("turnstile", turnstile);
+        return settings;
     }
 }

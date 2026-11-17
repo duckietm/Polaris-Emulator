@@ -169,6 +169,22 @@ class TaxiBotRideManagerTest {
         assertSame(frontTile, approachTile);
     }
 
+    @Test
+    void passengerFollowsOnTheBotsPreviousTileEvenWhenTheBotStopped() {
+        Room room = mock(Room.class);
+        RoomUnit botUnit = mock(RoomUnit.class);
+        RoomUnit passengerUnit = mock(RoomUnit.class);
+        RoomTile previousTile = tile(10, 10);
+        RoomTile botTile = tile(11, 10);
+
+        when(botUnit.getPreviousLocation()).thenReturn(previousTile);
+        when(botUnit.getCurrentLocation()).thenReturn(botTile);
+        when(room.getRoomUnitsAt(previousTile)).thenReturn(List.of());
+
+        assertSame(
+                previousTile, TaxiBotRideManager.findPassengerFollowTile(room, botUnit, passengerUnit, tile(15, 10)));
+    }
+
     private static HabboItem teleportArrow(int x, int y) {
         HabboItem item = mock(HabboItem.class);
         Item baseItem = mock(Item.class);

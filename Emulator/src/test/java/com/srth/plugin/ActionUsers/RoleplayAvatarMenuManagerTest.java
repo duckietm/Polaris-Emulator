@@ -10,6 +10,9 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager.RoleplayMenu;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -38,10 +41,24 @@ class RoleplayAvatarMenuManagerTest {
         manager.registerBotMenu(
                 "Taxista",
                 new RoleplayAvatarMenuManager.Menu(
-                        "Taxi", List.of(new RoleplayAvatarMenuManager.Button("Acción propia", "taxi_custom", true))));
-
+                        "Acciones",
+                        List.of(new RoleplayAvatarMenuManager.Button("Acción propia", "taxi_custom", true))));
         assertEquals("Taxista", manager.getBotMenu(bot).title());
+        manager.registerBotContextMenu(
+                "Taxista",
+                new RoleplayMenu(
+                        "Taxi",
+                        List.of(new RoleplayMenu.Button(
+                                "Vehículo",
+                                "taxi_vehicle",
+                                true,
+                                new RoleplayMenu(
+                                        "Vehículo",
+                                        List.of(new RoleplayMenu.Button("Acción propia", "taxi_custom", true)))))));
+
+        assertEquals("Taxista", manager.getBotContextMenu(bot).title());
         assertTrue(manager.executeBotAction(null, bot, "taxi_custom"));
+        assertFalse(manager.executeBotAction(null, bot, "taxi_vehicle"));
         assertFalse(manager.executeBotAction(null, bot, "bot_greet"));
         assertEquals(1, executions.get());
     }
@@ -58,6 +75,28 @@ class RoleplayAvatarMenuManagerTest {
 
         assertEquals("Ciudadano", menu.title());
         assertTrue(menu.buttons().isEmpty());
+    }
+
+    @Test
+    void policeActionsAreGroupedUnderThePoliceSubmenu() {
+        JsonArray actions = new JsonArray();
+        actions.add(action("Revisar pertenencias", "UserActionRevisarPertenencias", true));
+        actions.add(action("Arrestar al usuario", "UserActionArrestar", false));
+
+        RoleplayMenu menu = RoleplayAvatarMenuManager.buildUserMenu("Ciudadano", actions);
+
+        assertEquals(1, menu.buttons().size());
+        assertEquals("Policía", menu.buttons().get(0).label());
+        assertTrue(menu.buttons().get(0).submenu().containsEnabledAction("UserActionRevisarPertenencias"));
+        assertFalse(menu.buttons().get(0).submenu().containsEnabledAction("UserActionArrestar"));
+    }
+
+    private static JsonObject action(String label, String actionId, boolean enabled) {
+        JsonObject action = new JsonObject();
+        action.addProperty("use_btn_name", label);
+        action.addProperty("event", actionId);
+        action.addProperty("unlock", enabled ? 1 : 0);
+        return action;
     }
 
     private static final class TrackingBot extends Bot {

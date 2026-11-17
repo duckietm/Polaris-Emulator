@@ -263,6 +263,29 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void keepsUnknownPacketOperationsUnsupported() throws Exception {
+        assertTrue(extractor
+                .extract(fixture("ListOutgoingFixture.java"), JavaPacketSide.OUTGOING, "unknownAppend")
+                .unsupportedReason()
+                .orElseThrow()
+                .contains("Unknown packet operation appendDouble"));
+        assertTrue(extractor
+                .extract(fixture("ListIncomingFixture.java"), JavaPacketSide.INCOMING, "unknownRead")
+                .unsupportedReason()
+                .orElseThrow()
+                .contains("Unknown packet operation readDouble"));
+    }
+
+    @Test
+    void keepsAConditionalReadInsideAListItemUnsupported() throws Exception {
+        assertTrue(extractor
+                .extract(fixture("ListIncomingFixture.java"), JavaPacketSide.INCOMING, "conditionalItemRead")
+                .unsupportedReason()
+                .orElseThrow()
+                .contains("Conditional packet operation"));
+    }
+
+    @Test
     void namesAMissingRootMethodByFileNameOnly() {
         IllegalArgumentException error = assertThrows(
                 IllegalArgumentException.class,

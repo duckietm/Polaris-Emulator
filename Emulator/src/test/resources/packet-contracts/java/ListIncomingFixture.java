@@ -60,6 +60,19 @@ final class ListIncomingFixture {
         }
     }
 
+    void conditionalItemRead() {
+        int count = this.packet.readInt();
+        for (int i = 0; i < count; i++) {
+            int id = this.packet.readInt();
+            boolean flag = this.packet.bytesAvailable() > 0 ? this.packet.readBoolean() : false;
+        }
+    }
+
+    void unknownRead() {
+        int id = this.packet.readInt();
+        double ratio = this.packet.readDouble();
+    }
+
     void countChangedInBody() {
         int count = this.packet.readInt();
         for (int i = 0; i < count; i++) {

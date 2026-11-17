@@ -8,6 +8,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -156,6 +157,15 @@ final class JavaPacketSignatureExtractor {
                 continue;
             }
             String wireType = wireType(call, context.side());
+            if (wireType == null && isUnknownPacketOperation(call, context.side())) {
+                return ExtractionResult.unsupported("Unknown packet operation " + call.getNameAsString() + " inside "
+                        + context.method().getNameAsString());
+            }
+            // Outside a list a conditional read keeps its old reading; inside one it would misdescribe every item.
+            boolean inListItem = scope != context.method().getBody().orElseThrow();
+            if (wireType != null && inListItem && insideConditionalExpression(call, scope)) {
+                return ExtractionResult.unsupported("Conditional packet operation " + call + " inside a list item");
+            }
             if (wireType != null) {
                 ScalarSchema field = new ScalarSchema(wireType, inferredName(call));
                 IfStmt guard = call.findAncestor(IfStmt.class).orElse(null);
@@ -438,6 +448,28 @@ final class JavaPacketSignatureExtractor {
         String scope = call.getScope().orElseThrow().toString();
         if (!scope.equals(expectedScope) && !scope.equals("this." + expectedScope)) return null;
         return (side == JavaPacketSide.INCOMING ? INCOMING_TYPES : OUTGOING_TYPES).get(call.getNameAsString());
+    }
+
+    /** A read or append on the packet that the analyzer has no wire type for, such as readDouble or appendRawBytes. */
+    private static boolean isUnknownPacketOperation(MethodCallExpr call, JavaPacketSide side) {
+        String expectedScope = side == JavaPacketSide.INCOMING ? "packet" : "response";
+        String prefix = side == JavaPacketSide.INCOMING ? "read" : "append";
+        if (call.getScope().isEmpty()) return false;
+        String scope = call.getScope().orElseThrow().toString();
+        return (scope.equals(expectedScope) || scope.equals("this." + expectedScope))
+                && call.getNameAsString().startsWith(prefix);
+    }
+
+    private static boolean insideConditionalExpression(Node node, Node scope) {
+        Node current = node;
+        while (current.getParentNode().isPresent() && current != scope) {
+            current = current.getParentNode().orElseThrow();
+            if (current instanceof ConditionalExpr) return true;
+            if (current instanceof BinaryExpr binary
+                    && (binary.getOperator() == BinaryExpr.Operator.AND
+                            || binary.getOperator() == BinaryExpr.Operator.OR)) return true;
+        }
+        return false;
     }
 
     private static boolean isLocalCall(MethodCallExpr call) {

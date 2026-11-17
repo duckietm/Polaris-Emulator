@@ -87,6 +87,11 @@ final class ListOutgoingFixture {
         }
     }
 
+    void unknownAppend() {
+        this.response.appendInt(7);
+        this.response.appendDouble(1.5);
+    }
+
     void emptyItem() {
         this.response.appendInt(rooms.size());
         for (Room room : rooms) {

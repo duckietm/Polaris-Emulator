@@ -30,6 +30,7 @@ public class Outgoing {
     public static final int WiredContractContentsComposer = 9349;
     public static final int WiredContractUpdateResultComposer = 9352;
     public static final int RoleplayFurniContextMenuComposer = 9502;
+    public static final int RoleplayAvatarContextMenuComposer = 9505;
     public static final int FavoriteRoomsCountComposer = 151;
     public static final int UserCurrencyComposer = 2018;
     public static final int RedeemVoucherOKComposer = 3336;

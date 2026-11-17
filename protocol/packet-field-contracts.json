@@ -19191,6 +19191,70 @@
       ]
     },
     {
+      "name": "ROLEPLAY_AVATAR_CONTEXT_MENU_REQUEST",
+      "direction": "client_to_server",
+      "header": 9503,
+      "java": {
+        "symbol": "RoleplayAvatarContextMenuRequestEvent",
+        "className": "RoleplayAvatarContextMenuRequestEvent",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/incoming/RoleplayAvatarContextMenuRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "GetRoleplayAvatarContextMenuComposer",
+        "className": "GetRoleplayAvatarContextMenuComposer",
+        "path": "packages/communication/src/messages/outgoing/room/unit/GetRoleplayAvatarContextMenuComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "ROLEPLAY_AVATAR_ACTION_REQUEST",
+      "direction": "client_to_server",
+      "header": 9504,
+      "java": {
+        "symbol": "RoleplayAvatarActionEvent",
+        "className": "RoleplayAvatarActionEvent",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/incoming/RoleplayAvatarActionEvent.java"
+      },
+      "typescript": {
+        "symbol": "RequestRoleplayAvatarActionComposer",
+        "className": "RequestRoleplayAvatarActionComposer",
+        "path": "packages/communication/src/messages/outgoing/room/unit/RequestRoleplayAvatarActionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "ROOM_INFO_UPDATED",
       "direction": "server_to_client",
       "header": 3297,
@@ -24189,6 +24253,22 @@
         "path": "packages/communication/src/messages/parser/room/furniture/RoleplayFurniContextMenuMessageParser.ts"
       },
       "reason": "Java and TypeScript analyzers do not model the data-dependent button list in this packet."
+    },
+    {
+      "name": "ROLEPLAY_AVATAR_CONTEXT_MENU_RESPONSE",
+      "direction": "server_to_client",
+      "header": 9505,
+      "java": {
+        "symbol": "RoleplayAvatarContextMenuComposer",
+        "className": "RoleplayAvatarContextMenuComposer",
+        "path": "Emulator/src/main/java/com/srth/plugin/messages/outgoing/RoleplayAvatarContextMenuComposer.java"
+      },
+      "typescript": {
+        "symbol": "ROLEPLAY_AVATAR_CONTEXT_MENU",
+        "className": "RoleplayAvatarContextMenuMessageParser",
+        "path": "packages/communication/src/messages/parser/room/unit/RoleplayAvatarContextMenuMessageParser.ts"
+      },
+      "reason": "The response carries a data-dependent list of menu buttons."
     },
     {
       "name": "WIRED_VARIABLES_FOR_OBJECT",

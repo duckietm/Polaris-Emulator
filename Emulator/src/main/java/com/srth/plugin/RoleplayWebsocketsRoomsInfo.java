@@ -14,6 +14,7 @@ import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.srth.plugin.ActionItems.ItemActionManager;
 import com.srth.plugin.ActionItems.RoleplayFurniMenuManager;
+import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager;
 import com.srth.plugin.Consola.ConsolaManager;
 import com.srth.plugin.Crafteos.CraffteoManager;
 import com.srth.plugin.Horario.HorarioManager;
@@ -57,6 +58,8 @@ import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerOnline;
 import com.srth.plugin.habbo.VidaHambreDormir.Timer.TimerVida;
 import com.srth.plugin.interactions.hackercajeros.control.InteractionManagerHackerCajeros;
 import com.srth.plugin.interactions.vidayhambre.control.InteractionManagerVidayHambre;
+import com.srth.plugin.messages.incoming.RoleplayAvatarActionEvent;
+import com.srth.plugin.messages.incoming.RoleplayAvatarContextMenuRequestEvent;
 import com.srth.plugin.messages.incoming.RoleplayFurniActionEvent;
 import com.srth.plugin.messages.incoming.RoleplayFurniMenuRequestEvent;
 import com.srth.plugin.utilities.UtilitesRoleplay;
@@ -110,6 +113,7 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
     private static LevelManager levelManagerWork;
     private static ItemActionManager itemActionManager;
     private static RoleplayFurniMenuManager roleplayFurniMenuManager;
+    private static RoleplayAvatarMenuManager roleplayAvatarMenuManager;
     private static CraftManager craftManager;
 
     // NUEVO CRAFTEO MANAGER
@@ -140,12 +144,20 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
 
         INSTANCE = this;
         roleplayFurniMenuManager = new RoleplayFurniMenuManager();
+        roleplayAvatarMenuManager = new RoleplayAvatarMenuManager();
         Emulator.getGameServer()
                 .getPacketManager()
                 .registerHandler(Incoming.RoleplayFurniMenuRequestEvent, RoleplayFurniMenuRequestEvent.class);
         Emulator.getGameServer()
                 .getPacketManager()
                 .registerHandler(Incoming.RoleplayFurniActionEvent, RoleplayFurniActionEvent.class);
+        Emulator.getGameServer()
+                .getPacketManager()
+                .registerHandler(
+                        Incoming.RoleplayAvatarContextMenuRequestEvent, RoleplayAvatarContextMenuRequestEvent.class);
+        Emulator.getGameServer()
+                .getPacketManager()
+                .registerHandler(Incoming.RoleplayAvatarActionEvent, RoleplayAvatarActionEvent.class);
 
         RegisterHabboEvents registerUtils = new RegisterHabboEvents();
         registerUtils.Init();
@@ -532,6 +544,10 @@ public class RoleplayWebsocketsRoomsInfo extends HabboPlugin implements EventLis
 
     public static RoleplayFurniMenuManager getRoleplayFurniMenuManager() {
         return roleplayFurniMenuManager;
+    }
+
+    public static RoleplayAvatarMenuManager getRoleplayAvatarMenuManager() {
+        return roleplayAvatarMenuManager;
     }
 
     public static ManagerItems getItemsManager() {

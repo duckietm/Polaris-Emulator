@@ -20,22 +20,50 @@ public class RecorridoTaxi implements ICycleable {
 
     private THashMap<Integer, Room> user_visited = new THashMap<Integer, Room>();
 
-    private boolean status = false;
+    private volatile boolean status = false;
 
     private Habbo habboEjecute = null;
     private Room roomObjetive = null;
     private TreeMap<Integer, HabboItem> objetives = new TreeMap<Integer, HabboItem>();
     private HabboItem objetiveFinal = null;
     private final boolean pauseAtDestinationForPoliceTransport;
+    private final boolean taxiBotRideMode;
+    private final Habbo habbo;
+    private final int roomObjectiveId;
+    private volatile boolean started;
 
     public RecorridoTaxi(Habbo habbo, int roomId) {
-        this(habbo, roomId, false);
+        this(habbo, roomId, false, false, false);
     }
 
     public RecorridoTaxi(Habbo habbo, int roomId, boolean pauseAtDestinationForPoliceTransport) {
+        this(habbo, roomId, pauseAtDestinationForPoliceTransport, false, false);
+    }
+
+    RecorridoTaxi(
+            Habbo habbo,
+            int roomId,
+            boolean pauseAtDestinationForPoliceTransport,
+            boolean taxiBotRideMode,
+            boolean deferStart) {
+        this.habbo = habbo;
+        this.roomObjectiveId = roomId;
         this.pauseAtDestinationForPoliceTransport = pauseAtDestinationForPoliceTransport;
+        this.taxiBotRideMode = taxiBotRideMode;
         this.setStatus(true);
-        this.goTo(habbo, roomId);
+        if (!deferStart) {
+            this.start();
+        }
+    }
+
+    public synchronized boolean start() {
+        if (!this.status) {
+            return false;
+        }
+        if (!this.started) {
+            this.goTo(this.habbo, this.roomObjectiveId);
+        }
+        return this.started;
     }
 
     public void setStatus(boolean value) {
@@ -44,6 +72,14 @@ public class RecorridoTaxi implements ICycleable {
 
     public boolean getStatus() {
         return this.status;
+    }
+
+    public boolean isStarted() {
+        return this.started;
+    }
+
+    public boolean isTaxiBotRideMode() {
+        return this.taxiBotRideMode;
     }
 
     public Room getRoomObjetive() {
@@ -304,6 +340,7 @@ public class RecorridoTaxi implements ICycleable {
 
                     this.roomObjetive = roomLoaded;
                     this.habboEjecute = habbo;
+                    this.started = true;
 
                     this.execute(habbo);
                 }
@@ -330,7 +367,7 @@ public class RecorridoTaxi implements ICycleable {
                 while (true) {
                     try {
                         // En él, hacemos que el hilo duerma
-                        Thread.sleep(1000);
+                        Thread.sleep(taxiBotRideMode ? 150L : 1000L);
 
                         if (status == true) {
 
@@ -360,22 +397,18 @@ public class RecorridoTaxi implements ICycleable {
                                     return;
                                 }
 
+                                if (taxiBotRideMode) {
+                                    setStatus(false);
+                                    RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
+                                            .finishTaxiBotRide(habbo);
+                                    return;
+                                }
+
                                 Emulator.getThreading()
                                         .run(
                                                 () -> {
                                                     RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
-                                                            .removeRecorridoTaxi(habbo);
-
-                                                    habbo.shout(RoleplayWebsocketsRoomsInfo.getTexts()
-                                                            .getValue("recorrido_msg_finalice_taxi"));
-
-                                                    roomObjetive = null;
-
-                                                    habboRp.setEnable(0);
-                                                    habboRp.registerCache("existConfirmacionExitRecorrido", 0 + "");
-                                                    roomActual.giveEffect(habbo, Integer.valueOf(0), -1);
-
-                                                    setStatus(false);
+                                                            .completeRecorridoTaxi(habbo);
                                                 },
                                                 1000);
 
@@ -385,6 +418,12 @@ public class RecorridoTaxi implements ICycleable {
                             if (objetiveFinal == null) {
                                 setStatus(false);
                                 return;
+                            }
+
+                            if (taxiBotRideMode) {
+                                RoleplayWebsocketsRoomsInfo.getControllerRecorridosTaxi()
+                                        .guideTaxiBot(habbo, roomActual, objetiveFinal);
+                                continue;
                             }
 
                             // Por defecto 634 // Personalizado 750

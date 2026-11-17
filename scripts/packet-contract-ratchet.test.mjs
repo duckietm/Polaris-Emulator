@@ -57,7 +57,29 @@ describe('packet contract coverage ratchet', () =>
 
         const errors = compareManifests(base, head, []);
 
-        assert.ok(errors.some(error => error.includes('exemptions 3 -> 4')), errors.join('\n'));
+        assert.ok(errors.some(error => error.includes('client_to_server:12 became exempt')), errors.join('\n'));
+    });
+
+    it('fails when a new exemption hides behind a packet that became a contract', () =>
+    {
+        const head = manifest({
+            contracts: [ ...base.contracts, packet('server_to_client', 3000) ],
+            exemptions: [ packet('server_to_client', 3001), packet('client_to_server', 11), packet('client_to_server', 12) ]
+        });
+
+        const errors = compareManifests(base, head, []);
+
+        assert.ok(errors.some(error => error.includes('client_to_server:12 became exempt')), errors.join('\n'));
+    });
+
+    it('fails when an unpaired packet becomes exempt', () =>
+    {
+        const withUnpaired = manifest({ ...base, unpaired: [ packet('client_to_server', 12) ] });
+        const head = manifest({ contracts: base.contracts, exemptions: [ ...base.exemptions, packet('client_to_server', 12) ] });
+
+        const errors = compareManifests(withUnpaired, head, []);
+
+        assert.ok(errors.some(error => error.includes('client_to_server:12 became exempt')), errors.join('\n'));
     });
 
     it('accepts a declared exception', () =>

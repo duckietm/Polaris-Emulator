@@ -30,14 +30,12 @@ export const compareManifests = (base, head, exceptions) =>
         if(!headContracts.has(id) && !excused.has(id)) errors.push(`${ id } left contracts (${ packet.name })`);
     }
 
+    // Packet by packet, not by count: a contract gained elsewhere must not hide a new exemption.
     const baseExemptions = new Set(base.exemptions.map(key));
-    const newlyExcused = head.exemptions.filter(packet => !baseExemptions.has(key(packet)) && excused.has(key(packet))).length;
-    const allowed = base.exemptions.length + newlyExcused;
-    if(head.exemptions.length > allowed)
+    for(const packet of head.exemptions)
     {
-        const added = head.exemptions.filter(packet => !baseExemptions.has(key(packet)) && !excused.has(key(packet)));
-        errors.push(`exemptions ${ base.exemptions.length } -> ${ head.exemptions.length }: `
-            + (added.map(packet => `${ key(packet) } (${ packet.name })`).join(', ') || 'count rose'));
+        const id = key(packet);
+        if(!baseExemptions.has(id) && !excused.has(id)) errors.push(`${ id } became exempt (${ packet.name })`);
     }
 
     return errors;

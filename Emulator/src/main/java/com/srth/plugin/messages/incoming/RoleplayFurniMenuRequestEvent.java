@@ -3,9 +3,10 @@ package com.srth.plugin.messages.incoming;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.srth.plugin.ActionItems.RoleplayFurniMenuManager;
+import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager.RoleplayMenu;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
 import com.srth.plugin.messages.outgoing.RoleplayFurniContextMenuComposer;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +30,8 @@ public class RoleplayFurniMenuRequestEvent extends MessageHandler {
         Room room = this.currentRoom();
         HabboItem furni = room == null ? null : room.getHabboItem(objectId);
         String furniName = furni == null ? "" : furni.getBaseItem().getName();
-        RoleplayFurniMenuManager.Menu menu =
-                RoleplayWebsocketsRoomsInfo.getRoleplayFurniMenuManager().getMenu(furniName, this.client.getHabbo());
+        RoleplayMenu menu = RoleplayWebsocketsRoomsInfo.getRoleplayFurniMenuManager()
+                .getContextMenu(furniName, this.client.getHabbo());
 
         if (menu != null) {
             LOGGER.info(
@@ -40,6 +41,6 @@ public class RoleplayFurniMenuRequestEvent extends MessageHandler {
                     menu.buttons().size());
         }
 
-        this.client.sendResponse(new RoleplayFurniContextMenuComposer(requestId, objectId, furniName, menu));
+        this.client.sendResponse(new RoleplayFurniContextMenuComposer(requestId, objectId, furniName, menu, List.of()));
     }
 }

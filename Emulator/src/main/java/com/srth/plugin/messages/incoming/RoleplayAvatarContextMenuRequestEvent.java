@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.srth.plugin.ActionUsers.ManagerClickHabbos;
 import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager;
+import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager.RoleplayMenu;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
 import com.srth.plugin.messages.outgoing.RoleplayAvatarContextMenuComposer;
 import com.srth.plugin.websocket.Habbo.HabboClient;
@@ -37,15 +38,14 @@ public class RoleplayAvatarContextMenuRequestEvent extends MessageHandler {
         RoleplayAvatarMenuManager manager = RoleplayWebsocketsRoomsInfo.getRoleplayAvatarMenuManager();
         Room room = this.currentRoom();
         boolean isRoleplayRoom = manager != null && manager.isRoleplayRoom(room);
-        RoleplayAvatarMenuManager.Menu menu =
-                isRoleplayRoom ? new RoleplayAvatarMenuManager.Menu("Acciones", List.of()) : null;
+        RoleplayMenu menu = isRoleplayRoom ? new RoleplayMenu("Acciones", List.of()) : null;
 
         if (isRoleplayRoom) {
             if (targetType == RoleplayAvatarMenuManager.TARGET_USER) {
                 Habbo target = room.getHabbo(targetId);
                 if (target != null) {
                     try {
-                        menu = manager.getUserMenu(target, this.client.getHabbo());
+                        menu = manager.getUserContextMenu(target, this.client.getHabbo());
                     } catch (SQLException exception) {
                         LOGGER.error("Unable to create the roleplay avatar menu for user {}.", targetId, exception);
                     }
@@ -54,12 +54,12 @@ public class RoleplayAvatarContextMenuRequestEvent extends MessageHandler {
                 this.hideLegacyUserActions();
             } else {
                 Bot target = room.getBot(targetId);
-                if (target != null) menu = manager.getBotMenu(target);
+                if (target != null) menu = manager.getBotContextMenu(target);
             }
         }
 
-        this.client.sendResponse(
-                new RoleplayAvatarContextMenuComposer(requestId, targetType, targetId, isRoleplayRoom, menu));
+        this.client.sendResponse(new RoleplayAvatarContextMenuComposer(
+                requestId, targetType, targetId, isRoleplayRoom, menu, List.of()));
     }
 
     private void hideLegacyUserActions() {

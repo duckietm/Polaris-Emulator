@@ -6,7 +6,9 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.srth.plugin.ActionUsers.ManagerClickHabbos;
 import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager;
+import com.srth.plugin.ActionUsers.RoleplayAvatarMenuManager.RoleplayMenu;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
+import com.srth.plugin.messages.outgoing.RoleplayAvatarContextMenuComposer;
 import com.srth.plugin.websocket.Habbo.HabboClient;
 import com.srth.plugin.websocket.Habbo.HabboClientManager;
 import gnu.trove.map.hash.THashMap;
@@ -47,17 +49,30 @@ public class RoleplayAvatarActionEvent extends MessageHandler {
         Habbo target = room.getHabbo(targetId);
         if (target == null || target == actor) return;
 
-        RoleplayAvatarMenuManager.Menu menu;
+        RoleplayMenu menu;
         try {
-            menu = manager.getUserMenu(target, actor);
+            menu = manager.getUserContextMenu(target, actor);
         } catch (SQLException exception) {
             LOGGER.error("Unable to validate roleplay avatar action '{}' for user {}.", actionId, targetId, exception);
             return;
         }
 
-        boolean allowed = menu.buttons().stream()
-                .anyMatch(button -> button.enabled() && button.actionId().equals(actionId));
-        if (!allowed) return;
+        if (RoleplayMenu.isNavigationAction(actionId)) {
+            RoleplayMenu.Navigation navigation =
+                    RoleplayMenu.parseNavigation(actionId).orElse(null);
+            if (navigation == null || menu.page(navigation.requestId(), navigation.path()) == null) return;
+
+            this.client.sendResponse(new RoleplayAvatarContextMenuComposer(
+                    navigation.requestId(),
+                    RoleplayAvatarMenuManager.TARGET_USER,
+                    targetId,
+                    true,
+                    menu,
+                    navigation.path()));
+            return;
+        }
+
+        if (!menu.containsEnabledAction(actionId)) return;
 
         HabboClient habboClient = HabboClientManager.getHabboClient(actor);
         if (habboClient == null) {
@@ -80,6 +95,23 @@ public class RoleplayAvatarActionEvent extends MessageHandler {
 
     private void executeBotAction(Room room, RoleplayAvatarMenuManager manager, int targetId, String actionId) {
         Bot bot = room.getBot(targetId);
+        RoleplayMenu menu = manager.getBotContextMenu(bot);
+        if (RoleplayMenu.isNavigationAction(actionId)) {
+            RoleplayMenu.Navigation navigation =
+                    RoleplayMenu.parseNavigation(actionId).orElse(null);
+            if (navigation == null || menu == null || menu.page(navigation.requestId(), navigation.path()) == null)
+                return;
+
+            this.client.sendResponse(new RoleplayAvatarContextMenuComposer(
+                    navigation.requestId(),
+                    RoleplayAvatarMenuManager.TARGET_BOT,
+                    targetId,
+                    true,
+                    menu,
+                    navigation.path()));
+            return;
+        }
+
         if (bot == null || !manager.executeBotAction(this.client.getHabbo(), bot, actionId)) {
             LOGGER.debug("Rejected roleplay bot action '{}' for bot {}.", actionId, targetId);
         }

@@ -19,6 +19,7 @@ import com.srth.plugin.websocket.Habbo.HabboClient;
 import com.srth.plugin.websocket.Habbo.HabboClientManager;
 import com.srth.plugin.websocket.communication.Outcoming;
 import com.srth.plugin.websocket.communication.outgoing.messages.MessageManager;
+import com.srth.plugin.habbo.HabboRp;
 
 import gnu.trove.map.hash.THashMap;
 
@@ -57,7 +58,21 @@ public class ManagerButtonsExpandiblesRoom {
     // list.put(2, this.generateItemArray(0, "TUTORIAL RP",
     // "viewInformacionRoleplay", "icon-info-settings"));
 
-    list.put(3, this.generateItemArray(0, "Salir del modo RP", "exitModoRP", "icon-mundo"));
+    list.put(2, this.generateItemArray(0, "Tareas roleplay", "viewTareasWindow", "icon-info-settings"));
+
+    list.put(3, this.generateItemArray(0, "Empleos", "viewEmpleosWindows", "icon-info-settings"));
+
+    if (RoleplayWebsocketsRoomsInfo.getTutorialHabboRpManager().getButtonMoreTareas(habbo) != null) {
+
+      HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
+
+      if (habboRp.getHabboTutorial().getParteTutorial() >= 20) {
+        list.put(4, this.generateItemArray(0, "Tutoriales", "viewRetosTutorial", "icon-info-settings"));
+      }
+
+    }
+
+    list.put(5, this.generateItemArray(0, "Salir del modo RP", "exitModoRP", "icon-mundo"));
 
     for (JsonObject data : list.values()) {
       Tarray.add(data);
@@ -78,8 +93,26 @@ public class ManagerButtonsExpandiblesRoom {
   public void incoming(THashMap<String, Object> data, HabboClient wsclient) throws SQLException {
     String get_action = ((String) data.get("action"));
 
-    if (get_action.equalsIgnoreCase("ViewInformacionRoleplay")) {
+    if (get_action.equalsIgnoreCase("viewTareasWindow")) {
 
+      HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(wsclient.getHabbo());
+      habboRp.getTareas().showTareasWindow();
+
+      habboRp.registerCache("windowTareasActive", "1");
+    }
+
+    if (get_action.equalsIgnoreCase("viewEmpleosWindows")) {
+
+      RoleplayWebsocketsRoomsInfo.getJobsManager().showWindowJob(wsclient.getHabbo());
+
+    }
+    if (get_action.equalsIgnoreCase("viewRetosTutorial")) {
+
+      RoleplayWebsocketsRoomsInfo.getRetosTutorialManager().showListRetos(wsclient.getHabbo());
+
+    }
+
+    if (get_action.equalsIgnoreCase("ViewInformacionRoleplay")) {
     }
 
     if (get_action.equalsIgnoreCase("exitModoRP")) {

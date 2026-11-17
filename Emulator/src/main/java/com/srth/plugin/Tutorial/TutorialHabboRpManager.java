@@ -562,7 +562,7 @@ public class TutorialHabboRpManager {
                         jsonObject.addProperty("title", "Tutoriales");
                         jsonObject.addProperty("img", rutaImagesNotifications + "/tareas/frank.gif");
                         jsonObject.addProperty("event", "viewRetosTutorial");
-                        jsonObject.addProperty("notification", 0);
+                        jsonObject.addProperty("notification", 0); 
 
                         return jsonObject;
 

@@ -256,29 +256,29 @@ public class HabboTareas {
 
     public void showButtonTareas() {
         try {
-            HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
-            JsonArray buttonInfo = new JsonArray();
+            // HabboRp habboRp = RoleplayWebsocketsRoomsInfo.getHabboRpManager().getHabboRp(habbo);
+            // JsonArray buttonInfo = new JsonArray();
 
-            JsonObject jsonObject;
-            jsonObject = new JsonObject();
-            jsonObject.addProperty("title", "Tareas roleplay");
-            jsonObject.addProperty("img", rutaImagesNotifications + "/tareas/quest.png");
-            jsonObject.addProperty("event", "viewTareasWindow");
-            jsonObject.addProperty("notification", notifications);
-            buttonInfo.add(jsonObject);
+            // JsonObject jsonObject;
+            // jsonObject = new JsonObject();
+            // jsonObject.addProperty("title", "Tareas roleplay");
+            // jsonObject.addProperty("img", rutaImagesNotifications + "/tareas/quest.png");
+            // jsonObject.addProperty("event", "viewTareasWindow");
+            // jsonObject.addProperty("notification", notifications);
+            // buttonInfo.add(jsonObject);
 
-            if (RoleplayWebsocketsRoomsInfo.getTutorialHabboRpManager().getButtonMoreTareas(habbo) != null) {
-                buttonInfo.add(RoleplayWebsocketsRoomsInfo.getTutorialHabboRpManager().getButtonMoreTareas(habbo));
-            }
+            // if (RoleplayWebsocketsRoomsInfo.getTutorialHabboRpManager().getButtonMoreTareas(habbo) != null) {
+            //     buttonInfo.add(RoleplayWebsocketsRoomsInfo.getTutorialHabboRpManager().getButtonMoreTareas(habbo));
+            // }
 
-            jsonObject = new JsonObject();
-            jsonObject.addProperty("title", "Empleos");
-            jsonObject.addProperty("img", rutaImagesNotifications + "/tareas/empleos.png");
-            jsonObject.addProperty("event", "viewEmpleosWindows");
-            buttonInfo.add(jsonObject);
+            // jsonObject = new JsonObject();
+            // jsonObject.addProperty("title", "Empleos");
+            // jsonObject.addProperty("img", rutaImagesNotifications + "/tareas/empleos.png");
+            // jsonObject.addProperty("event", "viewEmpleosWindows");
+            // buttonInfo.add(jsonObject);
 
-            habboRp.getHabboClient()
-                    .send(new MessageManager("MessageManager", true, Outcoming.TareasFranButton, buttonInfo));
+            // habboRp.getHabboClient()
+            //         .send(new MessageManager("MessageManager", true, Outcoming.TareasFranButton, buttonInfo));
 
         } catch (Exception e) {
         }

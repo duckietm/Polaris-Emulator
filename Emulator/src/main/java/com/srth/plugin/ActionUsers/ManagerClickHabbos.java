@@ -9,7 +9,6 @@ import com.google.gson.JsonObject;
 import com.srth.plugin.ActionUsers.Actions.UserActionArrestar;
 import com.srth.plugin.ActionUsers.Actions.UserActionCurar;
 import com.srth.plugin.ActionUsers.Actions.UserActionExitOtherPrision;
-// import com.srth.plugin.ActionUsers.Actions.UserActionRevisarPertenencias;
 import com.srth.plugin.ActionUsers.Actions.UserActionRobar;
 import com.srth.plugin.ActionUsers.Actions.UserActionViewOtherExpediente;
 import com.srth.plugin.ActionUsers.Actions.UserActionVisitHomeRoom;
@@ -274,7 +273,7 @@ public class ManagerClickHabbos {
                 break;
 
             case "UserActionRevisarPertenencias":
-                // new UserActionRevisarPertenencias(wsclient.getHabbo().getClient(), targetHabbo);
+                new UserActionRevisarPertenencias(wsclient.getHabbo().getClient(), targetHabbo);
                 break;
         }
     }

@@ -242,6 +242,8 @@ public final class TaxiBotRideManager {
             }
 
             if (target.equals(botTile) && !botUnit.isWalking()) {
+                renderPassengerBehindBot(room, botUnit, passengerUnit, target);
+                passengerUnit.setFastWalk(true);
                 ride.botRotation = botUnit.getBodyRotation();
                 ride.botInTransit = true;
                 removeBot(ride.bot);
@@ -255,13 +257,26 @@ public final class TaxiBotRideManager {
                 botUnit.setGoalLocation(target);
             }
 
-            RoomTile followTile =
-                    botUnit.isWalking() ? botUnit.getPreviousLocation() : findTileBehindBot(room, botUnit, target);
-            if (followTile != null
-                    && !followTile.equals(passengerUnit.getCurrentLocation())
-                    && !followTile.equals(passengerUnit.getGoal())) {
-                passengerUnit.setGoalLocation(followTile);
-            }
+            renderPassengerBehindBot(room, botUnit, passengerUnit, target);
+        }
+    }
+
+    private static void renderPassengerBehindBot(Room room, RoomUnit botUnit, RoomUnit passengerUnit, RoomTile target) {
+        RoomTile followTile = findPassengerFollowTile(room, botUnit, passengerUnit, target);
+        if (followTile == null) {
+            return;
+        }
+
+        boolean locationChanged = !followTile.equals(passengerUnit.getCurrentLocation());
+        boolean rotationChanged = passengerUnit.getBodyRotation() != botUnit.getBodyRotation();
+        if (locationChanged) {
+            passengerUnit.setLocation(followTile);
+        }
+        if (rotationChanged) {
+            passengerUnit.setRotation(botUnit.getBodyRotation());
+        }
+        if (locationChanged || rotationChanged) {
+            room.sendComposer(new RoomUserStatusComposer(passengerUnit).compose());
         }
     }
 
@@ -611,6 +626,27 @@ public final class TaxiBotRideManager {
 
         RoomTile previous = botUnit.getPreviousLocation();
         return previous != null && isAvailableSpawnTile(room, previous) ? previous : null;
+    }
+
+    static RoomTile findPassengerFollowTile(Room room, RoomUnit botUnit, RoomUnit passengerUnit, RoomTile target) {
+        if (room == null || botUnit == null || passengerUnit == null || botUnit.getCurrentLocation() == null) {
+            return null;
+        }
+
+        RoomTile previousTile = botUnit.getPreviousLocation();
+        if (isAvailableFollowTile(room, previousTile, passengerUnit)) {
+            return previousTile;
+        }
+
+        return findTileBehindBot(room, botUnit, target);
+    }
+
+    private static boolean isAvailableFollowTile(Room room, RoomTile tile, RoomUnit passengerUnit) {
+        if (!isWalkableTile(tile)) {
+            return false;
+        }
+
+        return room.getRoomUnitsAt(tile).stream().allMatch(unit -> unit == passengerUnit);
     }
 
     private static boolean isWalkableTile(RoomTile tile) {

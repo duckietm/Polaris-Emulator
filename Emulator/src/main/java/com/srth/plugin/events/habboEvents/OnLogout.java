@@ -1,7 +1,5 @@
 package com.srth.plugin.events.habboEvents;
 
-import java.sql.SQLException;
-
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -11,14 +9,14 @@ import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.EventListener;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.srth.plugin.RoleplayWebsocketsRoomsInfo;
-import com.srth.plugin.habbo.HabboRp;
+import com.srth.plugin.Rooms.Mapa.Taxi.TaxiBotRideManager;
 import com.srth.plugin.habbo.Delitos.PoliceTransportManager;
+import com.srth.plugin.habbo.HabboRp;
 import com.srth.plugin.habbo.Jobs.Job;
-import com.srth.plugin.habbo.Jobs.WorkSystemLevelManager;
 import com.srth.plugin.habbo.Jobs.Player.LevelPlayer;
+import com.srth.plugin.habbo.Jobs.WorkSystemLevelManager;
 import com.srth.plugin.websocket.Habbo.HabboClient;
-import com.srth.plugin.websocket.Habbo.HabboClientManager;
-import com.srth.plugin.websocket.Habbo.SSOClientManager;
+import java.sql.SQLException;
 
 public class OnLogout implements EventListener {
 
@@ -32,6 +30,7 @@ public class OnLogout implements EventListener {
         }
 
         PoliceTransportManager.handleLogout(event);
+        TaxiBotRideManager.handleLogout(habbo);
 
         if (habbo != null)
 
@@ -40,8 +39,9 @@ public class OnLogout implements EventListener {
 
         // Si estaba en una sala RP se establece esa ultima sala de entrada
         Room roomvieja = habbo.getHabboInfo().getCurrentRoom();
-        if (roomvieja != null && roomvieja.getCategory() == RoleplayWebsocketsRoomsInfo.getConfig()
-                .getInt("global_room.category.roleplay.id")) {
+        if (roomvieja != null
+                && roomvieja.getCategory()
+                        == RoleplayWebsocketsRoomsInfo.getConfig().getInt("global_room.category.roleplay.id")) {
             int id_room_vieja = roomvieja.getId();
             habbo.getHabboInfo().setHomeRoom(id_room_vieja);
         } else {
@@ -83,7 +83,8 @@ public class OnLogout implements EventListener {
             jobActive.removeEmpleado(habbo);
         }
 
-        LevelPlayer player = WorkSystemLevelManager.getOnlinePlayers().get(habbo.getHabboInfo().getId());
+        LevelPlayer player = WorkSystemLevelManager.getOnlinePlayers()
+                .get(habbo.getHabboInfo().getId());
         if (player != null) {
             player.resetTasksActive();
             WorkSystemLevelManager.removeOnlinePlayer(player.getPlayerStats().getUserId());
@@ -94,8 +95,5 @@ public class OnLogout implements EventListener {
             // HabboClientManager.killClient(client.getChannel().id());
             // SSOClientManager.SSOclients.remove(event.habbo.getHabboInfo().getSso());
         }
-
-
     }
-
 }

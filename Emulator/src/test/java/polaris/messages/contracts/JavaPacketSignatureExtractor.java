@@ -6,12 +6,25 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.BreakStmt;
+import com.github.javaparser.ast.stmt.ContinueStmt;
 import com.github.javaparser.ast.stmt.DoStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.ForStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.SwitchStmt;
 import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
@@ -19,10 +32,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,7 +94,9 @@ final class JavaPacketSignatureExtractor {
             }
         }
         MethodDeclaration root = methods.get(rootMethod);
-        if (root == null) throw new IllegalArgumentException("Method " + rootMethod + " not found in " + source);
+        // The file name only: the message lands in the committed manifest and must not depend on the checkout path.
+        if (root == null)
+            throw new IllegalArgumentException("Method " + rootMethod + " not found in " + source.getFileName());
         return extractMethod(root, side, methods, new ArrayDeque<>());
     }
 
@@ -94,7 +111,8 @@ final class JavaPacketSignatureExtractor {
         }
         stack.addLast(methodName);
         try {
-            Optional<String> dynamic = dynamicControlFlow(method, side);
+            Map<MethodCallExpr, ListLoop> loops = listLoops(method, side);
+            Optional<String> dynamic = dynamicControlFlow(method, side, methods, loops);
             if (dynamic.isPresent()) return ExtractionResult.unsupported(dynamic.get());
 
             TryCatchAnalysis tryCatch = analyzeTryCatch(method, side);
@@ -102,37 +120,207 @@ final class JavaPacketSignatureExtractor {
                 return ExtractionResult.unsupported(tryCatch.unsupportedReason().orElseThrow());
             }
 
-            List<MethodCallExpr> calls = method.getBody().orElseThrow().findAll(MethodCallExpr.class).stream()
-                    .sorted(Comparator.comparing(
-                            call -> call.getBegin().orElseThrow(),
-                            Comparator.comparingInt((com.github.javaparser.Position position) -> position.line)
-                                    .thenComparingInt(position -> position.column)))
-                    .toList();
-            List<WireSchema> fields = new ArrayList<>();
-            for (MethodCallExpr call : calls) {
-                if (tryCatch.callsToSkip().contains(call)) continue;
-                String wireType = wireType(call, side);
-                if (wireType != null) {
-                    ScalarSchema field = new ScalarSchema(wireType, inferredName(call));
-                    IfStmt guard = call.findAncestor(IfStmt.class).orElse(null);
-                    fields.add(
-                            guard != null && isOptionalTail(guard, method, side)
-                                    ? new OptionalSchema(inferredName(call), List.of(field))
-                                    : field);
-                    continue;
-                }
-                if (isLocalCall(call) && methods.containsKey(call.getNameAsString())) {
-                    ExtractionResult helper = extractMethod(methods.get(call.getNameAsString()), side, methods, stack);
-                    if (helper.unsupportedReason().isPresent()) return helper;
-                    fields.addAll(helper.fields());
-                }
-            }
+            ExtractionResult fields = extractScope(
+                    method.getBody().orElseThrow(), new ScopeContext(method, side, methods, stack, tryCatch, loops));
+            if (fields.unsupportedReason().isPresent()) return fields;
             Optional<String> delegation = externalDelegation(method, side);
             if (delegation.isPresent()) return ExtractionResult.unsupported(delegation.get());
-            return ExtractionResult.supported(fields);
+            return fields;
         } finally {
             stack.removeLast();
         }
+    }
+
+    /** The packet operations inside one scope: the method body, or the body of a recognised list loop. */
+    private ExtractionResult extractScope(Node scope, ScopeContext context) {
+        Set<Node> loopNodes = Collections.newSetFromMap(new IdentityHashMap<>());
+        context.loops().values().forEach(loop -> loopNodes.add(loop.loop()));
+        List<MethodCallExpr> calls = scope.findAll(MethodCallExpr.class).stream()
+                .sorted(Comparator.comparing(
+                        call -> call.getBegin().orElseThrow(),
+                        Comparator.comparingInt((com.github.javaparser.Position position) -> position.line)
+                                .thenComparingInt(position -> position.column)))
+                .toList();
+        List<WireSchema> fields = new ArrayList<>();
+        for (MethodCallExpr call : calls) {
+            if (context.tryCatch().callsToSkip().contains(call)) continue;
+            if (insideLoopOf(call, scope, loopNodes)) continue;
+            ListLoop loop = context.loops().get(call);
+            if (loop != null) {
+                ExtractionResult item = extractScope(loop.body(), context);
+                if (item.unsupportedReason().isPresent()) return item;
+                if (item.fields().isEmpty()) {
+                    return ExtractionResult.unsupported("List item reads nothing statically inside "
+                            + context.method().getNameAsString());
+                }
+                fields.add(new ListSchema(loop.countType(), item.fields()));
+                continue;
+            }
+            String wireType = wireType(call, context.side());
+            if (wireType == null && isUnknownPacketOperation(call, context.side())) {
+                return ExtractionResult.unsupported("Unknown packet operation " + call.getNameAsString() + " inside "
+                        + context.method().getNameAsString());
+            }
+            // Outside a list a conditional read keeps its old reading; inside one it would misdescribe every item.
+            boolean inListItem = scope != context.method().getBody().orElseThrow();
+            if (wireType != null && inListItem && insideConditionalExpression(call, scope)) {
+                return ExtractionResult.unsupported("Conditional packet operation " + call + " inside a list item");
+            }
+            if (wireType != null) {
+                ScalarSchema field = new ScalarSchema(wireType, inferredName(call));
+                IfStmt guard = call.findAncestor(IfStmt.class).orElse(null);
+                fields.add(
+                        guard != null && isOptionalTail(guard, context.method(), context.side())
+                                ? new OptionalSchema(inferredName(call), List.of(field))
+                                : field);
+                continue;
+            }
+            if (isLocalCall(call) && context.methods().containsKey(call.getNameAsString())) {
+                ExtractionResult helper = extractMethod(
+                        context.methods().get(call.getNameAsString()),
+                        context.side(),
+                        context.methods(),
+                        context.stack());
+                if (helper.unsupportedReason().isPresent()) return helper;
+                fields.addAll(helper.fields());
+            }
+        }
+        return ExtractionResult.supported(fields);
+    }
+
+    private static boolean insideLoopOf(Node call, Node scope, Set<Node> loopNodes) {
+        Node current = call;
+        while (current.getParentNode().isPresent() && current != scope) {
+            current = current.getParentNode().orElseThrow();
+            if (current != scope && loopNodes.contains(current)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Loops written as a list: the count of the collection immediately before a loop over that same collection,
+     * keyed by the call that writes or reads the count. Anything else stays a data-dependent loop.
+     */
+    private static Map<MethodCallExpr, ListLoop> listLoops(MethodDeclaration method, JavaPacketSide side) {
+        Map<MethodCallExpr, ListLoop> loops = new IdentityHashMap<>();
+        for (Statement statement : method.findAll(Statement.class)) {
+            Statement body;
+            if (statement instanceof ForEachStmt each) body = each.getBody();
+            else if (statement instanceof ForStmt indexed) body = indexed.getBody();
+            else if (statement instanceof WhileStmt loop) body = loop.getBody();
+            else continue;
+            if (!body.findAll(BreakStmt.class).isEmpty()
+                    || !body.findAll(ContinueStmt.class).isEmpty()
+                    || !body.findAll(ReturnStmt.class).isEmpty()) continue;
+            Optional<MethodCallExpr> counter = side == JavaPacketSide.OUTGOING
+                    ? previousSibling(statement).flatMap(previous -> outgoingCounter(previous, statement))
+                    : incomingCounter(statement, body);
+            counter.ifPresent(call -> loops.put(call, new ListLoop(statement, wireType(call, side), body)));
+        }
+        return loops;
+    }
+
+    /**
+     * {@code int n = packet.readInt()} followed by a loop that runs {@code n} times. Guards on {@code n} that read
+     * nothing from the packet may sit between them; the body must not touch {@code n}.
+     */
+    private static Optional<MethodCallExpr> incomingCounter(Statement loop, Statement body) {
+        Optional<Statement> previous = previousSibling(loop);
+        while (previous.isPresent() && previous.get() instanceof IfStmt guard) {
+            boolean reads = guard.findAll(MethodCallExpr.class).stream()
+                    .anyMatch(call -> wireType(call, JavaPacketSide.INCOMING) != null || isLocalCall(call));
+            if (reads) return Optional.empty();
+            previous = previousSibling(previous.get());
+        }
+        if (previous.isEmpty()
+                || !(previous.get() instanceof ExpressionStmt expression)
+                || !(expression.getExpression() instanceof VariableDeclarationExpr declaration)
+                || declaration.getVariables().size() != 1) return Optional.empty();
+        VariableDeclarator variable = declaration.getVariable(0);
+        if (variable.getInitializer().isEmpty() || !(variable.getInitializer().get() instanceof MethodCallExpr call))
+            return Optional.empty();
+        String countType = wireType(call, JavaPacketSide.INCOMING);
+        if (!"int".equals(countType) && !"short".equals(countType)) return Optional.empty();
+        String count = variable.getNameAsString();
+        boolean bodyTouchesCount = body.findAll(NameExpr.class).stream()
+                .anyMatch(name -> name.getNameAsString().equals(count));
+        if (bodyTouchesCount) return Optional.empty();
+
+        if (loop instanceof WhileStmt decrementing) {
+            return decrementing.getCondition().toString().equals(count + "-- > 0")
+                    ? Optional.of(call)
+                    : Optional.empty();
+        }
+        if (!(loop instanceof ForStmt indexed)
+                || indexed.getCompare().isEmpty()
+                || !(indexed.getCompare().get() instanceof BinaryExpr compare)
+                || compare.getOperator() != BinaryExpr.Operator.LESS
+                || !compare.getLeft().isNameExpr()
+                || !compare.getRight().toString().equals(count)) return Optional.empty();
+        return isZeroBasedIncrement(indexed, compare.getLeft().asNameExpr().getNameAsString())
+                ? Optional.of(call)
+                : Optional.empty();
+    }
+
+    /** {@code response.appendInt(xs.size())} followed by a loop over {@code xs}. */
+    private static Optional<MethodCallExpr> outgoingCounter(Statement previous, Statement loop) {
+        if (!(previous instanceof ExpressionStmt expression)
+                || !(expression.getExpression() instanceof MethodCallExpr call)) return Optional.empty();
+        String countType = wireType(call, JavaPacketSide.OUTGOING);
+        if (!"int".equals(countType) && !"short".equals(countType)) return Optional.empty();
+        if (call.getArguments().size() != 1) return Optional.empty();
+        Optional<String> collection = sizeOf(call.getArgument(0));
+        if (collection.isEmpty()) return Optional.empty();
+        if (loop instanceof ForEachStmt each) {
+            return each.getIterable().toString().equals(collection.get()) ? Optional.of(call) : Optional.empty();
+        }
+        ForStmt indexed = (ForStmt) loop;
+        if (indexed.getCompare().isEmpty()
+                || !(indexed.getCompare().get() instanceof BinaryExpr compare)
+                || compare.getOperator() != BinaryExpr.Operator.LESS
+                || !compare.getLeft().isNameExpr()
+                || !sizeOf(compare.getRight()).equals(collection)) return Optional.empty();
+        return isZeroBasedIncrement(indexed, compare.getLeft().asNameExpr().getNameAsString())
+                ? Optional.of(call)
+                : Optional.empty();
+    }
+
+    /** {@code xs.size()} or {@code xs.length} as the text of {@code xs}. */
+    private static Optional<String> sizeOf(Expression expression) {
+        if (expression instanceof MethodCallExpr size
+                && size.getNameAsString().equals("size")
+                && size.getArguments().isEmpty()
+                && size.getScope().isPresent()) {
+            return Optional.of(size.getScope().get().toString());
+        }
+        if (expression instanceof FieldAccessExpr length
+                && length.getNameAsString().equals("length")) {
+            return Optional.of(length.getScope().toString());
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isZeroBasedIncrement(ForStmt loop, String index) {
+        if (loop.getInitialization().size() != 1
+                || !(loop.getInitialization().getFirst().orElseThrow() instanceof VariableDeclarationExpr declaration)
+                || declaration.getVariables().size() != 1) return false;
+        VariableDeclarator variable = declaration.getVariable(0);
+        if (!variable.getNameAsString().equals(index)
+                || variable.getInitializer()
+                        .map(value -> !value.toString().equals("0"))
+                        .orElse(true)) return false;
+        if (loop.getUpdate().size() != 1) return false;
+        String update = loop.getUpdate().getFirst().orElseThrow().toString();
+        return update.equals(index + "++") || update.equals("++" + index) || update.equals(index + " += 1");
+    }
+
+    private static Optional<Statement> previousSibling(Statement statement) {
+        if (!(statement.getParentNode().orElse(null) instanceof BlockStmt block)) return Optional.empty();
+        List<Statement> statements = block.getStatements();
+        for (int index = 1; index < statements.size(); index++) {
+            if (statements.get(index) == statement) return Optional.of(statements.get(index - 1));
+        }
+        return Optional.empty();
     }
 
     private static TryCatchAnalysis analyzeTryCatch(MethodDeclaration method, JavaPacketSide side) {
@@ -199,7 +387,13 @@ final class JavaPacketSignatureExtractor {
         return Optional.empty();
     }
 
-    private static Optional<String> dynamicControlFlow(MethodDeclaration method, JavaPacketSide side) {
+    private static Optional<String> dynamicControlFlow(
+            MethodDeclaration method,
+            JavaPacketSide side,
+            Map<String, MethodDeclaration> methods,
+            Map<MethodCallExpr, ListLoop> loops) {
+        Set<Node> listLoops = Collections.newSetFromMap(new IdentityHashMap<>());
+        loops.values().forEach(loop -> listLoops.add(loop.loop()));
         List<Node> controls = new ArrayList<>();
         controls.addAll(method.findAll(IfStmt.class));
         controls.addAll(method.findAll(SwitchStmt.class));
@@ -208,13 +402,28 @@ final class JavaPacketSignatureExtractor {
         controls.addAll(method.findAll(WhileStmt.class));
         controls.addAll(method.findAll(DoStmt.class));
         for (Node control : controls) {
+            if (listLoops.contains(control)) continue;
             if (control instanceof IfStmt guard && isOptionalTail(guard, method, side)) continue;
-            if (control.findAll(MethodCallExpr.class).stream().anyMatch(call -> wireType(call, side) != null)) {
+            if (writesPacket(control, side, methods, new HashSet<>())) {
                 return Optional.of("Data-dependent packet operations in "
                         + control.getClass().getSimpleName() + " inside " + method.getNameAsString());
             }
         }
         return Optional.empty();
+    }
+
+    /** Whether a node reads or writes packet fields, directly or through local helper methods. */
+    private static boolean writesPacket(
+            Node node, JavaPacketSide side, Map<String, MethodDeclaration> methods, Set<String> visited) {
+        for (MethodCallExpr call : node.findAll(MethodCallExpr.class)) {
+            if (wireType(call, side) != null) return true;
+            String name = call.getNameAsString();
+            if (isLocalCall(call)
+                    && methods.containsKey(name)
+                    && visited.add(name)
+                    && writesPacket(methods.get(name), side, methods, visited)) return true;
+        }
+        return false;
     }
 
     private static boolean isOptionalTail(IfStmt guard, MethodDeclaration method, JavaPacketSide side) {
@@ -241,6 +450,28 @@ final class JavaPacketSignatureExtractor {
         return (side == JavaPacketSide.INCOMING ? INCOMING_TYPES : OUTGOING_TYPES).get(call.getNameAsString());
     }
 
+    /** A read or append on the packet that the analyzer has no wire type for, such as readDouble or appendRawBytes. */
+    private static boolean isUnknownPacketOperation(MethodCallExpr call, JavaPacketSide side) {
+        String expectedScope = side == JavaPacketSide.INCOMING ? "packet" : "response";
+        String prefix = side == JavaPacketSide.INCOMING ? "read" : "append";
+        if (call.getScope().isEmpty()) return false;
+        String scope = call.getScope().orElseThrow().toString();
+        return (scope.equals(expectedScope) || scope.equals("this." + expectedScope))
+                && call.getNameAsString().startsWith(prefix);
+    }
+
+    private static boolean insideConditionalExpression(Node node, Node scope) {
+        Node current = node;
+        while (current.getParentNode().isPresent() && current != scope) {
+            current = current.getParentNode().orElseThrow();
+            if (current instanceof ConditionalExpr) return true;
+            if (current instanceof BinaryExpr binary
+                    && (binary.getOperator() == BinaryExpr.Operator.AND
+                            || binary.getOperator() == BinaryExpr.Operator.OR)) return true;
+        }
+        return false;
+    }
+
     private static boolean isLocalCall(MethodCallExpr call) {
         return call.getScope().isEmpty()
                 || call.getScope().map(scope -> scope.toString().equals("this")).orElse(false);
@@ -263,6 +494,16 @@ final class JavaPacketSignatureExtractor {
         return "";
     }
 }
+
+record ListLoop(Statement loop, String countType, Statement body) {}
+
+record ScopeContext(
+        MethodDeclaration method,
+        JavaPacketSide side,
+        Map<String, MethodDeclaration> methods,
+        Deque<String> stack,
+        TryCatchAnalysis tryCatch,
+        Map<MethodCallExpr, ListLoop> loops) {}
 
 record TryCatchAnalysis(Set<MethodCallExpr> callsToSkip, Optional<String> unsupportedReason) {
     TryCatchAnalysis {

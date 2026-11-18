@@ -19,3 +19,4 @@ config.ini
 /logging/database/slow-queries.log
 /logging/errors/runtime.txt
 /logging/errors/runtime.txt
+logging/database/slow-queries.log

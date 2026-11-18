@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class JavaPacketSignatureExtractorTest {
@@ -286,6 +287,25 @@ class JavaPacketSignatureExtractorTest {
             ExtractionResult result = extractor.extract(
                     fixture("delegations/SerializerComposerFixture.java"), JavaPacketSide.OUTGOING, method);
             assertTrue(result.unsupportedReason().isPresent(), method);
+        }
+    }
+
+    @Test
+    void keepsDelegatesThatCannotBeDescribedExactlyUnsupported() throws Exception {
+        Map<String, JavaPacketSide> methods = Map.of(
+                "ternaryDelegate", JavaPacketSide.OUTGOING,
+                "lambdaDelegate", JavaPacketSide.OUTGOING,
+                "virtualHelper", JavaPacketSide.OUTGOING,
+                "renameCollision", JavaPacketSide.OUTGOING,
+                "shadowedDeclaration", JavaPacketSide.OUTGOING,
+                "argumentRead", JavaPacketSide.INCOMING,
+                "storedPacket", JavaPacketSide.INCOMING,
+                "superConstructor", JavaPacketSide.INCOMING,
+                "conditionalInsideDelegate", JavaPacketSide.INCOMING);
+        for (Map.Entry<String, JavaPacketSide> method : methods.entrySet()) {
+            ExtractionResult result = extractor.extract(
+                    fixture("delegations/ReviewFalseGreensFixture.java"), method.getValue(), method.getKey());
+            assertTrue(result.unsupportedReason().isPresent(), method.getKey() + " gave " + result.fields());
         }
     }
 

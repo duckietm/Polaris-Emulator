@@ -12,10 +12,12 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
@@ -25,6 +27,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.BreakStmt;
 import com.github.javaparser.ast.stmt.ContinueStmt;
 import com.github.javaparser.ast.stmt.DoStmt;
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.ForStmt;
@@ -107,15 +110,17 @@ final class JavaPacketSignatureExtractor {
         // The file name only: the message lands in the committed manifest and must not depend on the checkout path.
         if (root == null)
             throw new IllegalArgumentException("Method " + rootMethod + " not found in " + source.getFileName());
-        return extractMethod(root, type, side, methods, new ArrayDeque<>());
+        return extractMethod(root, type, side, methods, new ArrayDeque<>(), false);
     }
 
+    /** {@code strict} (inside a delegate) refuses conditional packet operations anywhere, not only in list items. */
     private ExtractionResult extractMethod(
             MethodDeclaration method,
             TypeDeclaration<?> owner,
             JavaPacketSide side,
             Map<String, MethodDeclaration> methods,
-            Deque<String> stack) {
+            Deque<String> stack,
+            boolean strict) {
         String methodName = method.getNameAsString();
         String key = owner.getNameAsString() + "#" + methodName;
         if (stack.contains(key)) {
@@ -138,7 +143,7 @@ final class JavaPacketSignatureExtractor {
             Set<Node> resolved = Collections.newSetFromMap(new IdentityHashMap<>());
             ExtractionResult fields = extractScope(
                     method.getBody().orElseThrow(),
-                    new ScopeContext(method, owner, side, methods, stack, tryCatch, loops, resolved));
+                    new ScopeContext(method, owner, side, methods, stack, tryCatch, loops, resolved, strict));
             if (fields.unsupportedReason().isPresent()) return fields;
             Optional<String> delegation = externalDelegation(method, side, resolved);
             if (delegation.isPresent()) return ExtractionResult.unsupported(delegation.get());
@@ -164,6 +169,8 @@ final class JavaPacketSignatureExtractor {
         for (Expression node : nodes) {
             if (insideLoopOf(node, scope, loopNodes)) continue;
             if (node instanceof ObjectCreationExpr creation) {
+                Optional<String> refused = delegateGuard(creation, scope, context.side());
+                if (refused.isPresent()) return ExtractionResult.unsupported(refused.get());
                 ExtractionResult delegated = extractDelegate(creation, context);
                 if (delegated.unsupportedReason().isPresent()) return delegated;
                 fields.addAll(delegated.fields());
@@ -189,8 +196,9 @@ final class JavaPacketSignatureExtractor {
             }
             // Outside a list a conditional read keeps its old reading; inside one it would misdescribe every item.
             boolean inListItem = scope != context.method().getBody().orElseThrow();
-            if (wireType != null && inListItem && insideConditionalExpression(call, scope)) {
-                return ExtractionResult.unsupported("Conditional packet operation " + call + " inside a list item");
+            if (wireType != null && (inListItem || context.strict()) && insideConditionalExpression(call, scope)) {
+                return ExtractionResult.unsupported(
+                        "Conditional packet operation " + call + " inside a list item or a delegate");
             }
             if (wireType != null) {
                 ScalarSchema field = new ScalarSchema(wireType, inferredName(call));
@@ -213,12 +221,15 @@ final class JavaPacketSignatureExtractor {
                         context.owner(),
                         context.side(),
                         context.methods(),
-                        context.stack());
+                        context.stack(),
+                        context.strict());
                 if (helped.unsupportedReason().isPresent()) return helped;
                 fields.addAll(helped.fields());
                 continue;
             }
             if (packetIndex >= 0) {
+                Optional<String> refused = delegateGuard(call, scope, context.side());
+                if (refused.isPresent()) return ExtractionResult.unsupported(refused.get());
                 ExtractionResult delegated = extractDelegate(call, context);
                 if (delegated.unsupportedReason().isPresent()) return delegated;
                 fields.addAll(delegated.fields());
@@ -304,17 +315,96 @@ final class JavaPacketSignatureExtractor {
                     .orElse(type);
             target = method;
         }
+        String expected = context.side() == JavaPacketSide.INCOMING ? "packet" : "response";
+        if (usesName(target, packetIndex, expected, type)) {
+            return ExtractionResult.unsupported(unresolved + ": it already uses the name " + expected);
+        }
+        MethodDeclaration copy = withPacketParameter(target, packetIndex, context.side());
+        boolean forwardsToConstructor = copy.findAll(ExplicitConstructorInvocationStmt.class).stream()
+                .anyMatch(invocation -> packetArgument(invocation.getArguments(), context.side()) >= 0);
+        if (forwardsToConstructor) {
+            return ExtractionResult.unsupported(unresolved + ": it hands the packet to another constructor");
+        }
+        boolean storesPacket = copy.findAll(NameExpr.class).stream()
+                .filter(name -> name.getNameAsString().equals(expected))
+                .anyMatch(name -> name.getParentNode()
+                        .map(parent -> (parent instanceof AssignExpr assign && assign.getValue() == name)
+                                || (parent instanceof VariableDeclarator variable
+                                        && variable.getInitializer().orElse(null) == name))
+                        .orElse(false));
+        if (storesPacket) return ExtractionResult.unsupported(unresolved + ": it keeps the packet to use it later");
+        if (target instanceof MethodDeclaration method && !method.isStatic()) {
+            Optional<String> overridden = overriddenHelper(copy, type);
+            if (overridden.isPresent()) {
+                return ExtractionResult.unsupported(unresolved + ": it calls " + overridden.get()
+                        + ", which is overridden below " + type.getNameAsString());
+            }
+        }
         context.resolved().add(node);
-        ExtractionResult result = extractMethod(
-                withPacketParameter(target, packetIndex, context.side()),
-                type,
-                context.side(),
-                methodsOf(type),
-                context.stack());
+        ExtractionResult result = extractMethod(copy, type, context.side(), methodsOf(type), context.stack(), true);
         if (result.fields().stream().anyMatch(field -> field instanceof OptionalSchema)) {
             return ExtractionResult.unsupported("Optional tail inside the delegated " + kind + " " + label);
         }
         return result;
+    }
+
+    /**
+     * A delegate reached only sometimes (a ternary, {@code &&} or {@code ||}), inside a lambda that may run any
+     * number of times, or after packet operations in its own arguments, cannot be described as a fixed sequence.
+     */
+    private static Optional<String> delegateGuard(Expression node, Node scope, JavaPacketSide side) {
+        String label = node instanceof MethodCallExpr call ? call.getNameAsString() : node.toString();
+        if (insideConditionalExpression(node, scope)) {
+            return Optional.of("Packet fields delegated to " + label + " under a condition");
+        }
+        for (Node current = node; current.getParentNode().isPresent() && current != scope; ) {
+            current = current.getParentNode().orElseThrow();
+            if (current instanceof LambdaExpr) {
+                return Optional.of("Packet fields delegated to " + label + " inside a lambda");
+            }
+        }
+        List<Expression> arguments =
+                node instanceof MethodCallExpr call ? call.getArguments() : ((ObjectCreationExpr) node).getArguments();
+        boolean readsInArguments = arguments.stream()
+                .flatMap(argument -> argument.findAll(MethodCallExpr.class).stream())
+                .anyMatch(call -> wireType(call, side) != null);
+        if (readsInArguments) return Optional.of("Packet operations inside the arguments of " + label);
+        return Optional.empty();
+    }
+
+    /** Whether the delegate already uses the name its packet parameter would be renamed to. */
+    private static boolean usesName(
+            CallableDeclaration<?> callable, int position, String expected, TypeDeclaration<?> owner) {
+        if (position < 0 || position >= callable.getParameters().size()) return false;
+        if (callable.getParameter(position).getNameAsString().equals(expected)) return false;
+        boolean inBody = callable.findAll(NameExpr.class).stream()
+                        .anyMatch(name -> name.getNameAsString().equals(expected))
+                || callable.findAll(FieldAccessExpr.class).stream()
+                        .anyMatch(field -> field.getNameAsString().equals(expected))
+                || callable.findAll(VariableDeclarator.class).stream()
+                        .anyMatch(variable -> variable.getNameAsString().equals(expected));
+        return inBody || owner.getFieldByName(expected).isPresent();
+    }
+
+    /** A local helper the delegate calls, at any depth, that a class below the delegate's class overrides. */
+    private Optional<String> overriddenHelper(MethodDeclaration delegate, TypeDeclaration<?> type) {
+        Map<String, MethodDeclaration> methods = methodsOf(type);
+        Deque<MethodDeclaration> pending = new ArrayDeque<>(List.of(delegate));
+        Set<String> seen = new HashSet<>();
+        while (!pending.isEmpty()) {
+            for (MethodCallExpr call : pending.removeFirst().findAll(MethodCallExpr.class)) {
+                if (!isLocalCall(call) || !seen.add(call.getNameAsString())) continue;
+                if (index.overriddenBelow(
+                        type.getNameAsString(),
+                        call.getNameAsString(),
+                        call.getArguments().size())) {
+                    return Optional.of(call.getNameAsString());
+                }
+                MethodDeclaration helper = methods.get(call.getNameAsString());
+                if (helper != null) pending.add(helper);
+            }
+        }
+        return Optional.empty();
     }
 
     /** The method of that name and arity in a type or its superclasses; empty when there is not exactly one. */
@@ -333,11 +423,16 @@ final class JavaPacketSignatureExtractor {
                 .flatMap(parent -> findMethod(parent, name, arity, unit, depth + 1));
     }
 
-    /** The declared type of a local variable, a parameter or a field named {@code name}, as written. */
+    /**
+     * The declared type of a local variable, a parameter or a field named {@code name}, as written. Two locals of
+     * that name in different blocks give {@code var}, which is refused: the block scope is not tracked.
+     */
     private static Optional<String> declaredType(String name, ScopeContext context) {
-        for (VariableDeclarator variable : context.method().findAll(VariableDeclarator.class)) {
-            if (variable.getNameAsString().equals(name)) return Optional.of(variable.getTypeAsString());
-        }
+        List<VariableDeclarator> locals = context.method().findAll(VariableDeclarator.class).stream()
+                .filter(variable -> variable.getNameAsString().equals(name))
+                .toList();
+        if (locals.size() > 1) return Optional.of("var");
+        if (locals.size() == 1) return Optional.of(locals.getFirst().getTypeAsString());
         for (Parameter parameter : context.method().getParameters()) {
             if (parameter.getNameAsString().equals(name)) return Optional.of(parameter.getTypeAsString());
         }
@@ -725,7 +820,8 @@ record ScopeContext(
         Deque<String> stack,
         TryCatchAnalysis tryCatch,
         Map<MethodCallExpr, ListLoop> loops,
-        Set<Node> resolved) {}
+        Set<Node> resolved,
+        boolean strict) {}
 
 record TryCatchAnalysis(Set<MethodCallExpr> callsToSkip, Optional<String> unsupportedReason) {
     TryCatchAnalysis {

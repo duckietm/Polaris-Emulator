@@ -816,6 +816,7 @@ public class Outgoing {
     public static final int SoundboardPlayDeniedComposer = 9440;
     public static final int SoundboardCatalogComposer = 9441;
     public static final int SoundboardCatalogResultComposer = 9442;
+    public static final int HotelSettingsComposer = 9477;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
     public static final int MentionsPageComposer = 4803;

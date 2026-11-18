@@ -43,6 +43,7 @@ import polaris.messages.outgoing.habbicons.UserHabbiconsComposer;
 import polaris.messages.outgoing.handshake.AvailabilityStatusMessageComposer;
 import polaris.messages.outgoing.handshake.DisconnectReasonComposer;
 import polaris.messages.outgoing.handshake.EnableNotificationsComposer;
+import polaris.messages.outgoing.handshake.HotelSettingsComposer;
 import polaris.messages.outgoing.handshake.IsFirstLoginOfDayComposer;
 import polaris.messages.outgoing.handshake.PingComposer;
 import polaris.messages.outgoing.handshake.SecureLoginOKComposer;
@@ -455,6 +456,7 @@ public class SecureLoginEvent extends MessageHandler {
         messages.add(new PingComposer().compose());
         messages.add(new EnableNotificationsComposer(Emulator.getConfig().getBoolean("bubblealerts.enabled", true))
                 .compose());
+        messages.add(new HotelSettingsComposer().compose());
         messages.add(new UserAchievementScoreComposer(user).compose());
         messages.add(new IsFirstLoginOfDayComposer(UsernameEvent.isFirstLoginOfDay(
                         user.getUserInfo().getLastOnline(), (int) (System.currentTimeMillis() / 1000L)))

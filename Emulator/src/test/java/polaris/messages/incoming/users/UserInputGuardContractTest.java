@@ -45,7 +45,7 @@ class UserInputGuardContractTest {
         String motto = source("SaveMottoEvent");
 
         int pluginValue = motto.indexOf("UserInputGuard.normalizeText(event.newMotto)");
-        int lengthGuard = motto.indexOf("motto.length() > Emulator.getConfig().getInt", pluginValue);
+        int lengthGuard = motto.indexOf("motto.length() > maximumLength()", pluginValue);
         int save = motto.indexOf("setMotto(motto)", lengthGuard);
         int achievement = motto.indexOf("AchievementManager.progressAchievement", save);
 

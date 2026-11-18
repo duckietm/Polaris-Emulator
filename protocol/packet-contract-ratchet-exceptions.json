@@ -1,1 +1,14 @@
-[]
+[
+    {
+        "direction": "server_to_client",
+        "header": 1891,
+        "name": "WIRED_ROOM_STATS",
+        "reason": "Both analyzers skipped the double field without a word, so the contract left it out. Unknown packet operations now make a packet exempt."
+    },
+    {
+        "direction": "server_to_client",
+        "header": 10059,
+        "name": "CATALOG_ADMIN_RESULT",
+        "reason": "The emulator writes raw bytes with appendRawBytes, which the analyzer skipped without a word. Unknown packet operations now make a packet exempt."
+    }
+]

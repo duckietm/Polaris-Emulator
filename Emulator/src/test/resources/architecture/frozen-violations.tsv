@@ -1770,6 +1770,7 @@ U|polaris/messages/outgoing/guilds/GuildPartsComposer.java|CALL|getGameEnvironme
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getDatabase|2
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getGameEnvironment|1
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getIntUnixTimestamp|1
+U|polaris/messages/outgoing/handshake/HotelSettingsComposer.java|CALL|getConfig|1
 U|polaris/messages/outgoing/hotelview/BonusRareComposer.java|CALL|getConfig|4
 U|polaris/messages/outgoing/hotelview/NewsListComposer.java|CALL|getGameEnvironment|1
 U|polaris/messages/outgoing/housekeeping/HousekeepingUserDetailComposer.java|CALL|getDatabase|1
@@ -1919,7 +1920,8 @@ U|polaris/networking/gameserver/auth/SessionEndpoints.java|CALL|getIntUnixTimest
 U|polaris/networking/gameserver/auth/SmtpMailService.java|CALL|getConfig|9
 U|polaris/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getConfig|1
 U|polaris/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getDatabase|2
-U|polaris/networking/gameserver/auth/TurnstileVerifier.java|CALL|getConfig|3
+U|polaris/networking/gameserver/auth/TurnstileSettings.java|CALL|getConfig|4
+U|polaris/networking/gameserver/auth/TurnstileVerifier.java|CALL|getConfig|1
 U|polaris/networking/gameserver/badges/BadgeHttpHandler.java|CALL|getGameEnvironment|6
 U|polaris/networking/gameserver/badges/BadgeLeaderboardHttpHandler.java|CALL|getDatabase|2
 U|polaris/networking/gameserver/cms/CmsApiHandler.java|CALL|getConfig|2

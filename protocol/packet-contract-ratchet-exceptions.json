@@ -7,12 +7,6 @@
     },
     {
         "direction": "server_to_client",
-        "header": 9463,
-        "name": "HABBICON_INFO",
-        "reason": "The renderer reads the body through the module function parseHabbicon, which the analyzer did not follow. Reads passed to an external reader now make a packet exempt."
-    },
-    {
-        "direction": "server_to_client",
         "header": 10059,
         "name": "CATALOG_ADMIN_RESULT",
         "reason": "The emulator writes raw bytes with appendRawBytes, which the analyzer skipped without a word. Unknown packet operations now make a packet exempt."

@@ -1,5 +1,5 @@
 {
-  "description": "Packets the contract generator found with different fields on the emulator and on the renderer and set aside as exemptions in packet-field-contracts.json. PacketWireMismatchBaselineTest fails when a packet joins this list or leaves it without this file changing: fix the wire on one side, or add the packet here on purpose. GET_HABBICON_SHOP_DATA is not a real mismatch: its handler skips the first int of the packet, which the analyzer cannot see. CAMPAIGN_CALENDAR_DOOR_OPENED is compatible too: the server always sends the reward fields after the four AIR ones and the renderer reads them only while bytes are available, which the manifest cannot express. MARKETPLACE_CONFIG is compatible the same way: the server always sends AIR's three seller-fee fields and the Collectibles marketplace part after the eight original fields, and the renderer reads each block only while bytes are available, so it also accepts older servers. The thirteen server_to_client packets from USER_CHANGE_NAME on appeared when the analyzer learned to describe lists; each was checked by hand and all of them decode the same on both sides. USER_CHANGE_NAME, COLLECTIBLE_WALLETS and ROOM_ROLLING send an empty list as a literal count 0. GAME_CENTER_GAME_LIST, NAVIGATOR_COLLAPSED, GROUP_CREATE_OPTIONS and QUESTION_ANSWERED write their lists unrolled (a literal count followed by that many entries); GAME_CENTER_GAME_LIST's count says 2 but three games are written, so the client never reads the last one. The MESSENGER_* packets are paired with the wrong renderer parser: their events share one file and the analyzer takes its first class. CATALOG_STUDIO_LOAD_HISTORY and CATALOG_STUDIO_VALIDATE through Array.from({ length }), which the analyzer does not follow yet.",
+  "description": "Packets the contract generator found with different fields on the emulator and on the renderer and set aside as exemptions in packet-field-contracts.json. PacketWireMismatchBaselineTest fails when a packet joins this list or leaves it without this file changing: fix the wire on one side, or add the packet here on purpose. GET_HABBICON_SHOP_DATA is not a real mismatch: its handler skips the first int of the packet, which the analyzer cannot see. CAMPAIGN_CALENDAR_DOOR_OPENED is compatible too: the server always sends the reward fields after the four AIR ones and the renderer reads them only while bytes are available, which the manifest cannot express. MARKETPLACE_CONFIG is compatible the same way: the server always sends AIR's three seller-fee fields and the Collectibles marketplace part after the eight original fields, and the renderer reads each block only while bytes are available, so it also accepts older servers. The server_to_client packets from USER_CHANGE_NAME on appeared when the analyzer learned to describe lists and to follow delegated readers and serializers; each was checked by hand and all of them decode the same on both sides. USER_CHANGE_NAME, COLLECTIBLE_WALLETS, ROOM_ROLLING and the three UNIT_CHAT packets send an empty list as a literal count 0. GAME_CENTER_GAME_LIST, NAVIGATOR_COLLAPSED, NAVIGATOR_METADATA, GROUP_CREATE_OPTIONS and QUESTION_ANSWERED write their lists unrolled (a literal count followed by that many entries); GAME_CENTER_GAME_LIST's count says 2 but three games are written, so the client never reads the last one. ACHIEVEMENT_PROGRESSED and USER_PROFILE always send trailing fields that the renderer reads only while bytes are available. BADGE_POINT_LIMITS writes its items through InventoryAchievementsComposer.this.response, a receiver the analyzer does not recognise.",
   "mismatches": [
     { "direction": "client_to_server", "header": 6000, "name": "SNOWWAR_LOAD_STAGE_READY" },
     { "direction": "client_to_server", "header": 6003, "name": "SNOWWAR_WALK" },
@@ -10,21 +10,21 @@
     { "direction": "server_to_client", "header": 118, "name": "USER_CHANGE_NAME" },
     { "direction": "server_to_client", "header": 222, "name": "GAME_CENTER_GAME_LIST" },
     { "direction": "server_to_client", "header": 400, "name": "COLLECTIBLE_WALLETS" },
+    { "direction": "server_to_client", "header": 1036, "name": "UNIT_CHAT_SHOUT" },
+    { "direction": "server_to_client", "header": 1446, "name": "UNIT_CHAT" },
     { "direction": "server_to_client", "header": 1543, "name": "NAVIGATOR_COLLAPSED" },
     { "direction": "server_to_client", "header": 1823, "name": "MARKETPLACE_CONFIG" },
+    { "direction": "server_to_client", "header": 2107, "name": "ACHIEVEMENT_PROGRESSED" },
     { "direction": "server_to_client", "header": 2159, "name": "GROUP_CREATE_OPTIONS" },
+    { "direction": "server_to_client", "header": 2501, "name": "BADGE_POINT_LIMITS" },
     { "direction": "server_to_client", "header": 2551, "name": "CAMPAIGN_CALENDAR_DOOR_OPENED" },
     { "direction": "server_to_client", "header": 2589, "name": "QUESTION_ANSWERED" },
+    { "direction": "server_to_client", "header": 2704, "name": "UNIT_CHAT_WHISPER" },
+    { "direction": "server_to_client", "header": 3052, "name": "NAVIGATOR_METADATA" },
     { "direction": "server_to_client", "header": 3207, "name": "ROOM_ROLLING" },
-    { "direction": "server_to_client", "header": 4901, "name": "MESSENGER_HISTORY" },
-    { "direction": "server_to_client", "header": 4902, "name": "MESSENGER_MESSAGE_ACK" },
-    { "direction": "server_to_client", "header": 4903, "name": "MESSENGER_MESSAGE_FAILED" },
-    { "direction": "server_to_client", "header": 4905, "name": "MESSENGER_READ_CURSOR" },
+    { "direction": "server_to_client", "header": 3898, "name": "USER_PROFILE" },
     { "direction": "server_to_client", "header": 5012, "name": "SNOWWAR_GAMES_INFORMATION" },
     { "direction": "server_to_client", "header": 9406, "name": "SOUNDBOARD_PLAY" },
-    { "direction": "server_to_client", "header": 9450, "name": "DAILY_TASK_UPDATED" },
-    { "direction": "server_to_client", "header": 10071, "name": "CATALOG_STUDIO_LOAD_HISTORY" },
-    { "direction": "server_to_client", "header": 10072, "name": "CATALOG_STUDIO_UNDO" },
-    { "direction": "server_to_client", "header": 10073, "name": "CATALOG_STUDIO_VALIDATE" }
+    { "direction": "server_to_client", "header": 10072, "name": "CATALOG_STUDIO_UNDO" }
   ]
 }

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class JavaPacketSignatureExtractorTest {
@@ -258,6 +259,64 @@ class JavaPacketSignatureExtractorTest {
         for (String method : List.of("countFromField", "conditionalRead", "countChangedInBody", "guardThatReads")) {
             ExtractionResult result =
                     extractor.extract(fixture("ListIncomingFixture.java"), JavaPacketSide.INCOMING, method);
+            assertTrue(result.unsupportedReason().isPresent(), method);
+        }
+    }
+
+    @Test
+    void followsComposerSerializersIntoOtherClasses() throws Exception {
+        assertEquals(
+                "int,int,string,int,boolean",
+                outgoingShape("delegations/SerializerComposerFixture.java", "composeInternal"));
+        assertEquals(
+                "list<int>[int,string,int]",
+                outgoingShape("delegations/SerializerComposerFixture.java", "forEachList"));
+        assertEquals(
+                "int,short,string", outgoingShape("delegations/SerializerComposerFixture.java", "staticSerializer"));
+    }
+
+    @Test
+    void keepsSerializersThatCannotBeResolvedExactlyUnsupported() throws Exception {
+        for (String method : List.of(
+                "abstractReceiver",
+                "overriddenReceiver",
+                "overloadedSerializer",
+                "recursiveSerializer",
+                "conditionalSerializer",
+                "untypedReceiver")) {
+            ExtractionResult result = extractor.extract(
+                    fixture("delegations/SerializerComposerFixture.java"), JavaPacketSide.OUTGOING, method);
+            assertTrue(result.unsupportedReason().isPresent(), method);
+        }
+    }
+
+    @Test
+    void keepsDelegatesThatCannotBeDescribedExactlyUnsupported() throws Exception {
+        Map<String, JavaPacketSide> methods = Map.of(
+                "ternaryDelegate", JavaPacketSide.OUTGOING,
+                "lambdaDelegate", JavaPacketSide.OUTGOING,
+                "virtualHelper", JavaPacketSide.OUTGOING,
+                "renameCollision", JavaPacketSide.OUTGOING,
+                "shadowedDeclaration", JavaPacketSide.OUTGOING,
+                "argumentRead", JavaPacketSide.INCOMING,
+                "storedPacket", JavaPacketSide.INCOMING,
+                "superConstructor", JavaPacketSide.INCOMING,
+                "conditionalInsideDelegate", JavaPacketSide.INCOMING);
+        for (Map.Entry<String, JavaPacketSide> method : methods.entrySet()) {
+            ExtractionResult result = extractor.extract(
+                    fixture("delegations/ReviewFalseGreensFixture.java"), method.getValue(), method.getKey());
+            assertTrue(result.unsupportedReason().isPresent(), method.getKey() + " gave " + result.fields());
+        }
+    }
+
+    @Test
+    void followsHandlerReadersIntoOtherClasses() throws Exception {
+        assertEquals("int,string,int,boolean", incomingShape("delegations/ReaderHandlerFixture.java", "handle"));
+        assertEquals("int,string", incomingShape("delegations/ReaderHandlerFixture.java", "staticReader"));
+        assertEquals("boolean", incomingShape("delegations/ReaderHandlerFixture.java", "instanceReader"));
+        for (String method : List.of("abstractReader", "handlerPassed")) {
+            ExtractionResult result = extractor.extract(
+                    fixture("delegations/ReaderHandlerFixture.java"), JavaPacketSide.INCOMING, method);
             assertTrue(result.unsupportedReason().isPresent(), method);
         }
     }

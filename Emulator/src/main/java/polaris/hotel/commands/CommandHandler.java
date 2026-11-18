@@ -421,6 +421,7 @@ public class CommandHandler {
         addCommand(new MuteBotsCommand());
         addCommand(new MuteCommand());
         addCommand(new MutePetsCommand());
+        addCommand(new PayCommand());
         addCommand(new PetInfoCommand());
         addCommand(new PickallCommand());
         addCommand(new PickallBuildersClubCommand());

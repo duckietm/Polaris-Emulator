@@ -39,7 +39,9 @@ public class NavigatorManager {
         long millis = System.currentTimeMillis();
 
         this.filters.put(NavigatorPublicFilter.name, new NavigatorPublicFilter());
-        this.filters.put(NavigatorHotelFilter.name, new NavigatorHotelFilter());
+        this.filters.put(NavigatorHotelFilter.name, new NavigatorAllRoomsFilter());
+        this.filters.put(
+                NavigatorRoleplaySupport.ROLEPLAY_VIEW, new NavigatorRoleplayFilter(new NavigatorHotelFilter()));
         this.filters.put(NavigatorRoomAdsFilter.name, new NavigatorRoomAdsFilter());
         this.filters.put(NavigatorUserFilter.name, new NavigatorUserFilter());
         this.filters.put(NavigatorFavoriteFilter.name, new NavigatorFavoriteFilter());

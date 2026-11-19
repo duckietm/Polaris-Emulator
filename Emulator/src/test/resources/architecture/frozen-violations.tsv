@@ -1897,6 +1897,7 @@ U|polaris/networking/Server.java|CALL|getConfig|1
 U|polaris/networking/gameserver/GamePacketExecutionGroup.java|CALL|getConfig|2
 U|polaris/networking/gameserver/GameServer.java|CALL|getConfig|1
 U|polaris/networking/gameserver/WebSocketChannelInitializer.java|CALL|getConfig|1
+U|polaris/networking/gameserver/WebSocketChannelInitializer.java|CALL|getPluginManager|2
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getConfig|3
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getDatabase|3
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getIntUnixTimestamp|3

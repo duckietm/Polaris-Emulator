@@ -52,6 +52,33 @@ such a nested question from the rank alone, so it ends instead of overflowing th
 anything. To check a permission the plugin needs for its own command, call `user.hasPermission` from the command,
 not from this method.
 
+## Shipping the client part
+
+A plugin with a panel in the client ships its script inside the jar and names it in `plugin.json`:
+
+```json
+{
+  "name": "Example plugin",
+  "author": "Hotel developer",
+  "main": "example.polaris.ExamplePlugin",
+  "client": { "script": "client/example-plugin.js" }
+}
+```
+
+The hotel installs the whole plugin by dropping the jar in `plugins/`: nothing goes in the client configuration.
+When the plugins load, the emulator reads the script and lists it at `GET /api/client-plugins`, with the URL it
+serves it from (`/api/client-plugins/<id>.js`, the id being the plugin name in lower case) and its integrity. The
+client loads every listed script, and the browser refuses one whose content changed. A plugin reload picks up a new
+script.
+
+- The path is relative to the jar root: letters, digits, `.`, `_`, `-` and `/`, ending in `.js`, at most 255
+  characters. The file is at most 2 MB.
+- A script that cannot be served (bad path, missing file, too large) is skipped with a warning in the log; the
+  server side of the plugin still loads.
+- The script registers itself with `window.OctanePlugins.register(...)` as any client plugin does.
+- The client must be allowed to load scripts from the emulator's address: its origin in `ws.whitelist`, and its
+  host in the client's `script-src` when the hotel sets a Content Security Policy.
+
 ## Talking to your own client panel
 
 A plugin and a panel in the client exchange JSON on a channel of their own, without packets of their own:

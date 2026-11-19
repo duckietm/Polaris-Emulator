@@ -55,7 +55,8 @@ class PluginClientScriptsTest {
         assertEquals("Polaris RP", found.name());
         assertArrayEquals(script, found.content());
         String expected = "sha384-"
-                + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-384").digest(script));
+                + Base64.getEncoder()
+                        .encodeToString(MessageDigest.getInstance("SHA-384").digest(script));
         assertEquals(expected, found.integrity());
     }
 
@@ -91,7 +92,8 @@ class PluginClientScriptsTest {
 
         PluginClientScripts scripts = PluginClientScripts.collect(List.of(second, first, twin));
 
-        assertEquals(List.of("arcade", "shop", "shop-2"),
+        assertEquals(
+                List.of("arcade", "shop", "shop-2"),
                 scripts.scripts().stream().map(PluginClientScripts.Script::id).toList());
     }
 
@@ -132,7 +134,8 @@ class PluginClientScriptsTest {
             }
         }
 
-        URLClassLoader loader = new URLClassLoader(new URL[] {jar.toUri().toURL()}, getClass().getClassLoader());
+        URLClassLoader loader =
+                new URLClassLoader(new URL[] {jar.toUri().toURL()}, getClass().getClassLoader());
         this.loaders.add(loader);
 
         TestPlugin plugin = new TestPlugin();

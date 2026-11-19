@@ -115,7 +115,8 @@ public class PluginClientHttpHandler extends ChannelInboundHandlerAdapter {
         return GSON.toJson(body);
     }
 
-    private static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, String json) {
+    private static void sendJson(
+            ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, String json) {
         send(ctx, req, status, "application/json; charset=UTF-8", json.getBytes(StandardCharsets.UTF_8), null);
     }
 
@@ -133,8 +134,9 @@ public class PluginClientHttpHandler extends ChannelInboundHandlerAdapter {
         if (contentType != null) {
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
         }
-        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, withBody || req.method() == HttpMethod.HEAD ? body.length : 0);
-        response.headers().set(HttpHeaderNames.X_CONTENT_TYPE_OPTIONS, "nosniff");
+        response.headers()
+                .setInt(HttpHeaderNames.CONTENT_LENGTH, withBody || req.method() == HttpMethod.HEAD ? body.length : 0);
+        response.headers().set("X-Content-Type-Options", "nosniff");
         // The list changes with every plugin reload; a script is checked again against its ETag.
         response.headers().set(HttpHeaderNames.CACHE_CONTROL, "no-cache");
         if (etag != null) {

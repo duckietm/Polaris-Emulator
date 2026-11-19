@@ -37,7 +37,8 @@ public final class PluginClientScripts {
     private static final int MAX_ID_LENGTH = 64;
 
     // Segments start with a letter, digit, '_' or '-', so "..", "." and hidden names cannot be named.
-    private static final Pattern SCRIPT_PATH = Pattern.compile("[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*\\.js");
+    private static final Pattern SCRIPT_PATH =
+            Pattern.compile("[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*\\.js");
 
     public static final PluginClientScripts EMPTY = new PluginClientScripts(List.of());
 
@@ -83,7 +84,11 @@ public final class PluginClientScripts {
             String path = plugin.configuration.client.script.trim();
             String problem = scriptPathProblem(path);
             if (problem != null) {
-                LOGGER.warn("Plugin {} declares the client script \"{}\": {}. Its client part is not served.", name, path, problem);
+                LOGGER.warn(
+                        "Plugin {} declares the client script \"{}\": {}. Its client part is not served.",
+                        name,
+                        path,
+                        problem);
                 continue;
             }
 
@@ -91,12 +96,19 @@ public final class PluginClientScripts {
             try {
                 content = read(plugin.classLoader, path);
             } catch (IOException e) {
-                LOGGER.warn("Plugin {} client script {} could not be read: {}. Its client part is not served.", name, path, e.getMessage());
+                LOGGER.warn(
+                        "Plugin {} client script {} could not be read: {}. Its client part is not served.",
+                        name,
+                        path,
+                        e.getMessage());
                 continue;
             }
 
             if (content == null) {
-                LOGGER.warn("Plugin {} declares the client script {}, which its jar does not contain. Its client part is not served.", name, path);
+                LOGGER.warn(
+                        "Plugin {} declares the client script {}, which its jar does not contain. Its client part is not served.",
+                        name,
+                        path);
                 continue;
             }
 
@@ -109,7 +121,8 @@ public final class PluginClientScripts {
     /** Why a declared script path cannot be served, or null when it can. */
     static String scriptPathProblem(String path) {
         if (path == null || path.isEmpty()) return "the path is empty";
-        if (path.length() > MAX_SCRIPT_PATH_LENGTH) return "the path is longer than " + MAX_SCRIPT_PATH_LENGTH + " characters";
+        if (path.length() > MAX_SCRIPT_PATH_LENGTH)
+            return "the path is longer than " + MAX_SCRIPT_PATH_LENGTH + " characters";
         if (!SCRIPT_PATH.matcher(path).matches()) {
             return "it must be a relative path inside the jar, of letters, digits, '.', '_', '-' and '/', ending in .js";
         }
@@ -140,7 +153,8 @@ public final class PluginClientScripts {
         }
     }
 
-    // Looked up in the plugin's own jar only: getResource asks the emulator first, which could answer with its own file.
+    // Looked up in the plugin's own jar only: getResource asks the emulator first, which could answer with its own
+    // file.
     private static byte[] read(ClassLoader classLoader, String path) throws IOException {
         if (!(classLoader instanceof URLClassLoader urlClassLoader)) return null;
 

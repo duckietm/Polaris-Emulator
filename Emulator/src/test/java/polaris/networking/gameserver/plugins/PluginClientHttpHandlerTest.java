@@ -45,7 +45,6 @@ class PluginClientHttpHandlerTest {
 
     private URLClassLoader loader;
     private PluginClientScripts scripts;
-    private EmbeddedChannel channel;
 
     @BeforeEach
     void loadAPlugin() throws IOException {
@@ -56,7 +55,8 @@ class PluginClientHttpHandlerTest {
             out.write(SCRIPT.getBytes(StandardCharsets.UTF_8));
             out.closeEntry();
         }
-        this.loader = new URLClassLoader(new URL[] {jar.toUri().toURL()}, getClass().getClassLoader());
+        this.loader =
+                new URLClassLoader(new URL[] {jar.toUri().toURL()}, getClass().getClassLoader());
 
         TestPlugin plugin = new TestPlugin();
         plugin.configuration = new PluginConfiguration();
@@ -67,12 +67,10 @@ class PluginClientHttpHandlerTest {
         plugin.classLoader = this.loader;
 
         this.scripts = PluginClientScripts.collect(List.of(plugin));
-        this.channel = new EmbeddedChannel(new PluginClientHttpHandler(() -> this.scripts));
     }
 
     @AfterEach
     void close() throws IOException {
-        this.channel.finishAndReleaseAll();
         this.loader.close();
     }
 
@@ -88,7 +86,8 @@ class PluginClientHttpHandlerTest {
         JsonObject entry = plugins.get(0).getAsJsonObject();
         assertEquals("Shop", entry.get("name").getAsString());
         assertEquals("/api/client-plugins/shop.js", entry.get("url").getAsString());
-        assertEquals(this.scripts.find("shop").integrity(), entry.get("integrity").getAsString());
+        assertEquals(
+                this.scripts.find("shop").integrity(), entry.get("integrity").getAsString());
         ReferenceCountUtil.release(response);
     }
 
@@ -99,15 +98,14 @@ class PluginClientHttpHandlerTest {
         assertEquals(HttpResponseStatus.OK, response.status());
         assertEquals(SCRIPT, response.content().toString(StandardCharsets.UTF_8));
         assertEquals("text/javascript; charset=UTF-8", response.headers().get(HttpHeaderNames.CONTENT_TYPE));
-        assertEquals("nosniff", response.headers().get(HttpHeaderNames.X_CONTENT_TYPE_OPTIONS));
+        assertEquals("nosniff", response.headers().get("X-Content-Type-Options"));
         String etag = response.headers().get(HttpHeaderNames.ETAG);
         assertNotNull(etag);
         ReferenceCountUtil.release(response);
 
         FullHttpRequest again = request(HttpMethod.GET, "/api/client-plugins/shop.js");
         again.headers().set(HttpHeaderNames.IF_NONE_MATCH, etag);
-        this.channel.writeInbound(again);
-        FullHttpResponse cached = this.channel.readOutbound();
+        FullHttpResponse cached = send(again);
 
         assertEquals(HttpResponseStatus.NOT_MODIFIED, cached.status());
         assertEquals(0, cached.content().readableBytes());
@@ -140,19 +138,27 @@ class PluginClientHttpHandlerTest {
 
     @Test
     void otherPathsPassThrough() {
-        FullHttpRequest request = request(HttpMethod.GET, "/api/client-pluginsx");
-        this.channel.writeInbound(request);
+        EmbeddedChannel channel = new EmbeddedChannel(new PluginClientHttpHandler(() -> this.scripts));
+        channel.writeInbound(request(HttpMethod.GET, "/api/client-pluginsx"));
 
-        assertNull(this.channel.readOutbound());
-        FullHttpRequest passed = this.channel.readInbound();
+        assertNull(channel.readOutbound());
+        FullHttpRequest passed = channel.readInbound();
         assertNotNull(passed);
         ReferenceCountUtil.release(passed);
+        channel.finishAndReleaseAll();
     }
 
     private FullHttpResponse send(HttpMethod method, String uri) {
-        this.channel.writeInbound(request(method, uri));
-        FullHttpResponse response = this.channel.readOutbound();
+        return send(request(method, uri));
+    }
+
+    // The handler closes the connection after each answer, as the other web API handlers do: one channel per request.
+    private FullHttpResponse send(FullHttpRequest request) {
+        EmbeddedChannel channel = new EmbeddedChannel(new PluginClientHttpHandler(() -> this.scripts));
+        channel.writeInbound(request);
+        FullHttpResponse response = channel.readOutbound();
         assertNotNull(response);
+        channel.finish();
         return response;
     }
 

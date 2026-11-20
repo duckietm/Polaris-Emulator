@@ -57,7 +57,11 @@ class UserProfilePrivacyContractTest {
         int banner = profile.indexOf("this.response.appendInt(this.userInfo.getProfileBanner());");
         int accent = profile.indexOf("this.response.appendInt(this.userInfo.getProfileAccent());");
 
+        int bannerImage = profile.indexOf("this.response.appendString(uploadedPictures[0]);");
+        int backgroundImage = profile.indexOf("this.response.appendString(uploadedPictures[1]);");
+
         assertTrue(hidden > 0 && hidden < border && border < banner && banner < accent);
+        assertTrue(accent < bannerImage && bannerImage < backgroundImage, "uploaded pictures follow the accent");
     }
 
     @Test

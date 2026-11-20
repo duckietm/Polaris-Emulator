@@ -18,6 +18,7 @@ import polaris.hotel.users.ProfileVisibility;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -165,6 +166,10 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendInt(this.userInfo.getInfostandBorder());
         this.response.appendInt(this.userInfo.getProfileBanner());
         this.response.appendInt(this.userInfo.getProfileAccent());
+        // Uploaded pictures: file names served on /profile-images/, '' when there is none.
+        String[] uploadedPictures = ProfileImageService.storedNames(this.userInfo.getId());
+        this.response.appendString(uploadedPictures[0]);
+        this.response.appendString(uploadedPictures[1]);
 
         return this.response;
     }

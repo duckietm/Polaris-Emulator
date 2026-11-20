@@ -24,7 +24,9 @@ public class InfostandBackgroundManager {
         STAND("stand"),
         OVERLAY("overlay"),
         CARD("card"),
-        BORDER("border");
+        BORDER("border"),
+        BANNER("banner"),
+        ACCENT("accent");
 
         public final String dbValue;
 
@@ -97,22 +99,29 @@ public class InfostandBackgroundManager {
                     this.entries.get(Category.STAND).size(),
                     this.entries.get(Category.OVERLAY).size(),
                     this.entries.get(Category.CARD).size(),
-                    this.entries.get(Category.BORDER).size()));
+                    this.entries.get(Category.BORDER).size(),
+                    this.entries.get(Category.BANNER).size(),
+                    this.entries.get(Category.ACCENT).size()));
             LOGGER.debug(
-                    "Infostand Background Manager assets: {} bg, {} stands, {} overlays, {} cards, {} borders",
+                    "Infostand Background Manager assets: {} bg, {} stands, {} overlays, {} cards, {} borders, {} banners, {} accents",
                     this.entries.get(Category.BACKGROUND).size(),
                     this.entries.get(Category.STAND).size(),
                     this.entries.get(Category.OVERLAY).size(),
                     this.entries.get(Category.CARD).size(),
-                    this.entries.get(Category.BORDER).size());
+                    this.entries.get(Category.BORDER).size(),
+                    this.entries.get(Category.BANNER).size(),
+                    this.entries.get(Category.ACCENT).size());
         } else {
             LOGGER.info(
                     "InfostandBackgroundManager -> infostand_backgrounds is empty, server-side validation disabled (only range clamp will apply).");
         }
     }
 
-    static String summary(int backgrounds, int stands, int overlays, int cards, int borders) {
-        int total = backgrounds + stands + overlays + cards + borders;
+    static String summary(int... categorySizes) {
+        int total = 0;
+        for (int size : categorySizes) {
+            total += size;
+        }
         return String.format("Infostand Background Manager -> Loaded! (%d assets)", total);
     }
 

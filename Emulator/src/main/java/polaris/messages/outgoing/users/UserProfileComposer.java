@@ -160,6 +160,11 @@ public class UserProfileComposer extends MessageComposer {
         // Official isHidden: the owner hides the profile from everybody else. The hidden fields
         // above are already left out for those viewers; the client shows the hidden notice.
         this.response.appendBoolean(profileHidden);
+        // Profile window customisation, after isHidden for the same reason: the border picked for the
+        // infostand, the banner from the gallery and the accent colour from the palette (0 = none).
+        this.response.appendInt(this.userInfo.getInfostandBorder());
+        this.response.appendInt(this.userInfo.getProfileBanner());
+        this.response.appendInt(this.userInfo.getProfileAccent());
 
         return this.response;
     }

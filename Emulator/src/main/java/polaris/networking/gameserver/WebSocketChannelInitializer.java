@@ -43,6 +43,7 @@ import polaris.networking.gameserver.handlers.PreUpgradeConnectionLimit;
 import polaris.networking.gameserver.handlers.SustainedUnwritableHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpHandler;
+import polaris.networking.gameserver.plugins.PluginClientHttpHandler;
 import polaris.networking.gameserver.ssl.SSLCertificateLoader;
 import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
 import polaris.networking.gameserver.wired.WiredVariableApiHandler;
@@ -155,6 +156,13 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
                         "blockingHttpAdmissionStats",
                         BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());
+        // Served from memory: the scripts are read from the plugin jars when the plugins load.
+        ch.pipeline()
+                .addLast(
+                        "pluginClientHttpHandler",
+                        new PluginClientHttpHandler(() -> Emulator.getPluginManager() == null
+                                ? null
+                                : Emulator.getPluginManager().getClientScripts()));
         ch.pipeline().addLast("wsProtocolHandler", new WebSocketServerProtocolHandler(this.wsConfig));
         ch.pipeline().addLast("wsHttpCleanup", new WebSocketHttpCleanupHandler());
         ch.pipeline().addLast("wsFrameAggregator", new WebSocketFrameAggregator(MAX_FRAME_SIZE));

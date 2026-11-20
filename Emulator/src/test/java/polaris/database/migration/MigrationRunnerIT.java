@@ -81,6 +81,14 @@ class MigrationRunnerIT {
                     "Polaris column users.auth_ticket_expires_at must exist");
             assertTrue(
                     columnExists(ds, "users", "background_border_id"), "current profile background schema must exist");
+            assertTrue(
+                    columnExists(ds, "users", "profile_banner_id") && columnExists(ds, "users", "profile_accent_id"),
+                    "profile banner and accent columns must exist");
+            assertTrue(
+                    columnExists(ds, "users", "profile_banner_image")
+                            && columnExists(ds, "users", "profile_background_image")
+                            && columnExists(ds, "users", "profile_images_blocked"),
+                    "uploaded profile picture columns must exist");
             assertTrue(columnExists(ds, "users", "access_token_version"), "credential revocation state must exist");
             assertTrue(
                     columnExists(ds, "users_settings", "volume_soundboard"),

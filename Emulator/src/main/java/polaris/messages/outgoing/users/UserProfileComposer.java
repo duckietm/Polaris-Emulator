@@ -18,6 +18,7 @@ import polaris.hotel.users.ProfileVisibility;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -160,6 +161,15 @@ public class UserProfileComposer extends MessageComposer {
         // Official isHidden: the owner hides the profile from everybody else. The hidden fields
         // above are already left out for those viewers; the client shows the hidden notice.
         this.response.appendBoolean(profileHidden);
+        // Profile window customisation, after isHidden for the same reason: the border picked for the
+        // infostand, the banner from the gallery and the accent colour from the palette (0 = none).
+        this.response.appendInt(this.userInfo.getInfostandBorder());
+        this.response.appendInt(this.userInfo.getProfileBanner());
+        this.response.appendInt(this.userInfo.getProfileAccent());
+        // Uploaded pictures: file names served on /profile-images/, '' when there is none.
+        String[] uploadedPictures = ProfileImageService.storedNames(this.userInfo.getId());
+        this.response.appendString(uploadedPictures[0]);
+        this.response.appendString(uploadedPictures[1]);
 
         return this.response;
     }

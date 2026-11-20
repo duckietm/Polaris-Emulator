@@ -2633,6 +2633,16 @@
           "kind": "scalar",
           "type": "int",
           "name": "requestedBorder"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedBanner"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedAccent"
         }
       ]
     },
@@ -33533,7 +33543,7 @@
         "className": "UserProfileParser",
         "path": "packages/communication/src/messages/parser/user/data/UserProfileParser.ts"
       },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, string, string, string, string, int, int, boolean, boolean, boolean, list\u003cint:[int, string, string, string, string, boolean, int, boolean]\u003e, int, boolean, int, int, int, int, string, string, string, string, string, string, string, int, int, int, int, boolean] versus TypeScript [int, string, string, string, string, int, int, boolean, boolean, boolean, list\u003cint:[int, string, string, string, string, boolean, int, boolean]\u003e, int, boolean, optional\u003cbytesAvailable:[int, int, int, int, string, string, string, string, string, string, string, int, int, int, int, boolean]\u003e]"
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, string, string, string, string, int, int, boolean, boolean, boolean, list\u003cint:[int, string, string, string, string, boolean, int, boolean]\u003e, int, boolean, int, int, int, int, string, string, string, string, string, string, string, int, int, int, int, boolean, int, int, int, string, string] versus TypeScript [int, string, string, string, string, int, int, boolean, boolean, boolean, list\u003cint:[int, string, string, string, string, boolean, int, boolean]\u003e, int, boolean, optional\u003cbytesAvailable:[int, int, int, int, string, string, string, string, string, string, string, int, int, int, int, boolean, int, int, int, string, string]\u003e]"
     },
     {
       "name": "NOT_ENOUGH_BALANCE",

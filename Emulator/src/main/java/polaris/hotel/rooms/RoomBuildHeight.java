@@ -21,6 +21,7 @@ final class RoomBuildHeight {
         }
 
         double floor = layout.getHeightAtSquare(tile.x, tile.y);
+        // The picked height may be below the floor when the hotel allows it; the ceiling always holds.
         return Math.min(floor + actor.getRoomUnit().getBuildHeight(), Room.MAXIMUM_FURNI_HEIGHT);
     }
 }

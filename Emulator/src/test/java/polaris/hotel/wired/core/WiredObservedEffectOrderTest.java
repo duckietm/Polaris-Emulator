@@ -77,6 +77,8 @@ class WiredObservedEffectOrderTest {
                 List.of(increase, decrease, set, secondSet),
                 WiredObservedEffectOrder.apply(List.of(set, increase, secondSet, decrease)));
         assertEquals(List.of(set, secondSet), WiredObservedEffectOrder.apply(List.of(set, secondSet)));
+        // An increase runs before a decrease, whatever the box order.
+        assertEquals(List.of(increase, decrease), WiredObservedEffectOrder.apply(List.of(decrease, increase)));
     }
 
     @Test

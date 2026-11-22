@@ -232,10 +232,11 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
                 return roomUnit.hasStatus(RoomUnitStatus.LAY);
             case WiredUserActionType.STAND:
                 return !roomUnit.hasStatus(RoomUnitStatus.SIT) && !roomUnit.hasStatus(RoomUnitStatus.LAY);
+            case WiredUserActionType.RELAX:
+                // Sleep and Awake follow the avatar's real sleep state: a sleeper passes Sleep until it wakes.
+                return roomUnit.isIdle();
             case WiredUserActionType.AWAKE:
-                // AIR's sleep lasts 2 s: awake unless the avatar fell asleep in the last 2 s.
-                return !WiredActionMemory.recentExpression(
-                        roomUnit, WiredUserActionType.RELAX, System.currentTimeMillis());
+                return !roomUnit.isIdle();
             case WiredUserActionType.SIGN:
                 return this.matchesSignState(roomUnit);
             case WiredUserActionType.DANCE:

@@ -637,8 +637,11 @@ public final class WiredEngine {
         Room room = ctx.room();
         RoomUnit actor = ctx.actor().orElse(null);
 
+        // A called stack runs its selectors without flashing them, as it does not flash its trigger.
+        boolean flash = ctx.event() == null || !ctx.event().isStackCall();
+
         for (InteractionWiredEffect wiredEffect : executedSelectors) {
-            if (room != null && !room.isHideWired() && room.getWiredRuntime() != null) {
+            if (flash && room != null && !room.isHideWired() && room.getWiredRuntime() != null) {
                 boolean filterMode = wiredEffect.usesExistingSelectorTargets();
 
                 room.getWiredRuntime()

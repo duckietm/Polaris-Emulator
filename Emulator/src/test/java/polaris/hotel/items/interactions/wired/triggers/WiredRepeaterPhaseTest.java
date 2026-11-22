@@ -41,4 +41,31 @@ class WiredRepeaterPhaseTest {
         assertFalse(phase.shouldFire(false, 0L, 2_400L, 500L));
         assertTrue(phase.shouldFire(false, 0L, 2_500L, 500L));
     }
+
+    @Test
+    void aRepeaterPlacedAfterAResetJoinsTheRoomTimer() {
+        // The room's timers were reset at 2 550; a repeater that was there fires at 2 550, 3 550, 4 550, ...
+        WiredRepeaterPhase late = new WiredRepeaterPhase();
+        late.join(2_550L, 3_900L, 1_000L);
+
+        List<Long> fired = new ArrayList<>();
+        for (long now = 3_900L; now <= 6_600L; now += 50L) {
+            if (late.shouldFire(now % 1_000L == 0, 3_550L, now, 1_000L)) fired.add(now);
+        }
+
+        assertEquals(List.of(4_550L, 5_550L, 6_550L), fired);
+    }
+
+    @Test
+    void joiningDoesNothingWithoutARoomResetOrAfterTheRepeatersOwnReset() {
+        WiredRepeaterPhase untouched = new WiredRepeaterPhase();
+        untouched.join(-1L, 3_900L, 1_000L);
+        assertTrue(untouched.shouldFire(true, 3_550L, 3_900L, 1_000L));
+
+        WiredRepeaterPhase reset = new WiredRepeaterPhase();
+        reset.reset(5_000L);
+        reset.join(2_550L, 5_010L, 1_000L);
+        assertFalse(reset.shouldFire(true, 5_000L, 5_010L, 1_000L));
+        assertTrue(reset.shouldFire(false, 5_000L, 5_500L, 1_000L));
+    }
 }

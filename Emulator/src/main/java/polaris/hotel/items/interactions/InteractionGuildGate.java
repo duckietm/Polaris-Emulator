@@ -11,6 +11,7 @@ import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.users.User;
+import polaris.hotel.wired.WiredEffectType;
 import polaris.threading.runnables.CloseGate;
 
 public class InteractionGuildGate extends InteractionGuildFurni implements ConditionalGate {
@@ -26,6 +27,10 @@ public class InteractionGuildGate extends InteractionGuildFurni implements Condi
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        // Nobody opens a group gate by hand; a wired Toggle State still switches it.
+        boolean byWired = objects != null && objects.length >= 2 && objects[1] instanceof WiredEffectType;
+        if (client != null && !byWired) return;
+
         super.onClick(client, room, objects);
     }
 

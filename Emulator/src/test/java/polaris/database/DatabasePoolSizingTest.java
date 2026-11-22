@@ -42,4 +42,22 @@ class DatabasePoolSizingTest {
         assertEquals(50, hikari.getMaximumPoolSize());
         assertEquals(10, hikari.getMinimumIdle());
     }
+
+    @Test
+    void thePoolRunsAtReadCommittedUnlessToldOtherwise() throws Exception {
+        assertEquals("TRANSACTION_READ_COMMITTED", this.isolation(""));
+        assertEquals("TRANSACTION_REPEATABLE_READ", this.isolation("db.pool.transaction_isolation=repeatable_read\n"));
+        assertEquals(null, this.isolation("db.pool.transaction_isolation=default\n"));
+        assertEquals("TRANSACTION_READ_COMMITTED", this.isolation("db.pool.transaction_isolation=nonsense\n"));
+    }
+
+    private String isolation(String settings) throws Exception {
+        Path configFile = this.tempDirectory.resolve("isolation.ini");
+        Files.writeString(configFile, settings);
+        HikariConfig hikari = new HikariConfig();
+
+        DatabasePool.applyTransactionIsolation(hikari, new ConfigurationManager(configFile.toString()));
+
+        return hikari.getTransactionIsolation();
+    }
 }

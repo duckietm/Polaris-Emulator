@@ -47,7 +47,7 @@ class RoomSettingsInputGuardContractTest {
         int setChatDistance = source.indexOf("room.setChatDistance(options.chatDistance())", setTags);
         int readBasics = source.indexOf("RoomBasics basics = this.readBasics(room)");
         int readOptions = source.indexOf("RoomOptions options = this.readOptions()", readBasics);
-        int readExtras = source.indexOf("RoomExtras extras = this.readExtras()", readOptions);
+        int readExtras = source.indexOf("RoomExtras extras = this.readExtras(room)", readOptions);
         int firstWrite = source.indexOf("this.applyBasics(room, basics)", readExtras);
 
         assertTrue(

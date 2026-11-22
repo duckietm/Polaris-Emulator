@@ -11,6 +11,7 @@ import polaris.hotel.gameclients.GameClient;
 import polaris.hotel.items.Item;
 import polaris.hotel.items.interactions.InteractionWiredTrigger;
 import polaris.hotel.items.interactions.wired.WiredSettings;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.rooms.WiredProjectileFlights;
@@ -120,7 +121,9 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
             }
         } else if (this.variableItemId <= 0
                 || !event.getInternalVariableKey().isEmpty()
-                || event.getVariableDefinitionItemId() != this.variableItemId) {
+                || (event.getVariableDefinitionItemId() != this.variableItemId
+                        && event.getVariableDefinitionItemId()
+                                != echoedVariable(event.getRoom(), this.variableItemId))) {
             return false;
         }
 
@@ -148,6 +151,19 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger impleme
             case UNCHANGED -> this.unchangedEnabled;
             default -> false;
         };
+    }
+
+    /**
+     * The custom variable an Echo box mirrors, or 0: a trigger set on the echo fires for changes of that variable,
+     * which is where a write through the echo lands.
+     */
+    static int echoedVariable(Room room, int variableItemId) {
+        if (room == null || room.getRoomSpecialTypes() == null) return 0;
+        if (!(room.getRoomSpecialTypes().getExtra(variableItemId) instanceof WiredExtraVariableEcho echo)
+                || echo.isContextEcho()) {
+            return 0;
+        }
+        return Math.max(0, echo.getSourceVariableItemId());
     }
 
     @Deprecated

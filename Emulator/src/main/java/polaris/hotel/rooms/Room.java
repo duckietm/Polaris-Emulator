@@ -1860,6 +1860,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.rightsManager.hasRights(user);
     }
 
+    /** Rights that reach other people (kick, mute, ban, sending another user's furni back). */
+    public boolean hasModerationRights(User user) {
+        return this.rightsManager.hasModerationRights(user);
+    }
+
     public boolean hasExplicitRights(User user) {
         return user != null && this.rights.contains(user.getUserInfo().getId());
     }

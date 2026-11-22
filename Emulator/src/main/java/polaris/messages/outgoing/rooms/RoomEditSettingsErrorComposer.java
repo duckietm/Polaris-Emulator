@@ -12,6 +12,8 @@ public class RoomEditSettingsErrorComposer extends MessageComposer {
     public static final int ROOM_TAGS_BADWWORDS = 11;
     public static final int RESTRICTED_TAGS = 12;
     public static final int TAGS_TOO_LONG = 13;
+    /** A setting outside the classic list was refused; the info names its field. */
+    public static final int CUSTOM_SETTING_INVALID = 16;
 
     private final int roomId;
     private final int errorCode;

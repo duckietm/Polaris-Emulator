@@ -235,7 +235,8 @@ public class UserStats implements Runnable {
                 safeColumnInt(set, "online_indicator_preference", 0));
         this.wiredWhisperDisabled = "1".equals(safeColumnString(set, "wired_whisper_disabled", "0"));
         this.wiredMenuPreferences = safeColumnString(set, "wired_menu_preferences", "");
-        this.playTestMode = UserPreferencePackets.isPlayTestModeStored(this.wiredMenuPreferences);
+        // The stored value never switches playtest on at login: only the checkbox and :playtest do, in a session.
+        this.playTestMode = false;
         this.safetyLocked = "1".equals(safeColumnString(set, "safety_locked", "0"));
         this.modToolWindowX = safeColumnInt(set, "modtool_window_x", 0);
         this.modToolWindowY = safeColumnInt(set, "modtool_window_y", 0);
@@ -1314,6 +1315,14 @@ public class UserStats implements Runnable {
         }
 
         return true;
+    }
+
+    /**
+     * Locked out of trading by the hotel (a sanction or a staff decision). This is the lock alone: the
+     * trading pass a new player has yet to earn is a different matter and does not count here.
+     */
+    public boolean isTradeLocked() {
+        return !this.allowTrade;
     }
 
     public boolean allowTrade() {

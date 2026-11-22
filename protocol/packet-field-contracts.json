@@ -2476,12 +2476,12 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "userTypeFilter"
+          "name": "sortTypeFilter"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": "sortTypeFilter"
+          "name": "userTypeFilter"
         }
       ]
     },

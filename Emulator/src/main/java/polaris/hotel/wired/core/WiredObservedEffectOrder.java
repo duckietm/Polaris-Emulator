@@ -41,6 +41,8 @@ final class WiredObservedEffectOrder {
             new Rule(WiredEffectWhisper.class::isInstance, WiredObservedEffectOrder::changesWhatAMessageShows),
             new Rule(WiredObservedEffectOrder::givesScore, WiredEffectControlClock.class::isInstance),
             new Rule(WiredObservedEffectOrder::setsClock, WiredObservedEffectOrder::stepsClock),
+            // An increase runs before a decrease of the same firing, whatever the box order.
+            new Rule(WiredObservedEffectOrder::lowersClock, WiredObservedEffectOrder::raisesClock),
             // A variable removed in the firing that gives it is gone afterwards.
             new Rule(WiredEffectRemoveVariable.class::isInstance, WiredEffectGiveVariable.class::isInstance),
             // Give and Change Variable read the state, rotation and position the furni and user moves leave.
@@ -98,6 +100,14 @@ final class WiredObservedEffectOrder {
 
     private static boolean stepsClock(IWiredEffect effect) {
         return effect instanceof WiredEffectAdjustClock adjust && !adjust.isSet();
+    }
+
+    private static boolean raisesClock(IWiredEffect effect) {
+        return effect instanceof WiredEffectAdjustClock adjust && adjust.isIncrease();
+    }
+
+    private static boolean lowersClock(IWiredEffect effect) {
+        return effect instanceof WiredEffectAdjustClock adjust && adjust.isDecrease();
     }
 
     private static boolean givesScore(IWiredEffect effect) {

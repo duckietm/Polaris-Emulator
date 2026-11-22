@@ -62,7 +62,8 @@ public class RoomPickupItemEvent extends MessageHandler {
             if (this.askToConfirm(item, confirmed)) return;
             room.pickUpItem(item, this.client.getUser());
         } else {
-            if (room.hasRights(this.client.getUser())) {
+            // Another user's furni: only with rights that reach other people, not a group member's decorating rights.
+            if (room.hasModerationRights(this.client.getUser())) {
                 if (this.client.getUser().hasPermission(Permission.ACC_ANYROOMOWNER)
                         && !WiredWebApiOwnership.isWebApiItem(item)) {
                     item.setUserId(this.client.getUser().getUserInfo().getId());

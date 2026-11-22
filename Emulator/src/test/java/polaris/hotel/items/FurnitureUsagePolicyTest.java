@@ -110,4 +110,14 @@ class FurnitureUsagePolicyTest {
         assertTrue(Files.readString(Path.of("src/main/java/polaris/hotel/rooms/RoomPlayTestSupport.java"))
                 .contains("FurnitureUsagePolicy.of(item) >= FurnitureUsagePolicy.EVERYBODY"));
     }
+
+    @Test
+    void groupFurniAreForRightsHoldersAndGroupGatesForNobody() {
+        UserItem groupFurni = mock(polaris.hotel.items.interactions.InteractionGuildFurni.class);
+        UserItem groupGate = mock(polaris.hotel.items.interactions.InteractionGuildGate.class);
+        when(groupGate.isUsable()).thenReturn(true);
+
+        assertEquals(FurnitureUsagePolicy.RIGHTS, FurnitureUsagePolicy.of(groupFurni));
+        assertEquals(FurnitureUsagePolicy.NOBODY, FurnitureUsagePolicy.of(groupGate));
+    }
 }

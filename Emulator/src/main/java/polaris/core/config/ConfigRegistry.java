@@ -169,6 +169,7 @@ public final class ConfigRegistry {
         keys.add(definition("io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
         keys.add(definition("io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
         keys.add(definition("io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
+        keys.add(definition("db.pool.transaction_isolation", ConfigKey.ValueType.STRING, "READ_COMMITTED", true));
         add(
                 keys,
                 ConfigKey.ValueType.LONG,

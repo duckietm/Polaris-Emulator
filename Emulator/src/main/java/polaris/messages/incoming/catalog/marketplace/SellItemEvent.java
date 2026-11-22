@@ -33,6 +33,14 @@ public class SellItemEvent extends MessageHandler {
             return;
         }
 
+        // The same lock the sell request answers with: a packet sent without asking first is refused too.
+        if (this.client.getUser().getUserStats() != null
+                && this.client.getUser().getUserStats().isTradeLocked()) {
+            this.client.sendResponse(
+                    new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.FAILED_TECHNICAL_ERROR));
+            return;
+        }
+
         final int credits = this.packet.readInt();
         final int furniType = this.packet.readInt(); // 1 = FLOOR_TYPE, 2 = WALL_TYPE
         final int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());

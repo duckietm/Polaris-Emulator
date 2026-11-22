@@ -26,6 +26,8 @@ public final class QuestRewards {
 
     /** A furni: the extra parameter is the items_base name, the amount is how many. */
     public static final String TYPE_FURNI = "furni";
+    /** A Habbicon; the extra parameter is its id. */
+    public static final String TYPE_HABBICON = "habbicon";
 
     /** How many copies one prize may hand out at once. */
     public static final int MAX_FURNI_PER_PRIZE = 10;
@@ -90,7 +92,30 @@ public final class QuestRewards {
             case TYPE_DIAMONDS -> grantActivityPoints(user, DIAMONDS_POINT_TYPE, amount, operationId);
             case TYPE_BADGE -> grantBadge(user, extra);
             case TYPE_FURNI -> grantFurni(user, extra, amount);
+            case TYPE_HABBICON -> grantHabbicon(user, extra);
             default -> LOGGER.warn("Unknown quest reward type {}", rewardType);
+        }
+    }
+
+    /** The Habbicon id a prize names in its extra parameter, or 0. */
+    public static int habbiconIdOf(String extra) {
+        try {
+            return extra == null ? 0 : Math.max(0, Integer.parseInt(extra.trim()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /** Gives the Habbicon a prize names; one the user already owns is left as it is. */
+    public static void grantHabbicon(User user, String extra) {
+        int id = habbiconIdOf(extra);
+        if (user == null || id <= 0 || user.getHabbiconService() == null) {
+            return;
+        }
+        try {
+            user.getHabbiconService().grantPrize(user, id);
+        } catch (Exception e) {
+            LOGGER.warn("Quest reward Habbicon {} was not given: {}", id, e.getMessage());
         }
     }
 
@@ -124,6 +149,7 @@ public final class QuestRewards {
     public static final int PRODUCT_FLOOR = 1;
     public static final int PRODUCT_BADGE = 4;
     public static final int PRODUCT_CURRENCY = 8;
+    public static final int PRODUCT_HABBICON = 12;
     public static final int PRODUCT_UNKNOWN = -1;
 
     /**
@@ -143,6 +169,11 @@ public final class QuestRewards {
         if (TYPE_BADGE.equals(type)) {
             String code = extra == null ? "" : extra;
             return new ActiveDailyTasksComposer.Reward(PRODUCT_BADGE, code, code, amount);
+        }
+
+        if (TYPE_HABBICON.equals(type) && habbiconIdOf(extra) > 0) {
+            return new ActiveDailyTasksComposer.Reward(
+                    PRODUCT_HABBICON, String.valueOf(habbiconIdOf(extra)), extra.trim(), amount);
         }
 
         if (TYPE_FURNI.equals(type)) {

@@ -62,12 +62,28 @@ public class MarketplaceOwnItemsComposer extends MessageComposer {
                 else this.response.appendInt(0);
 
                 this.response.appendInt(0);
+
+                // A sold or expired offer carries when that happened: a 64-bit time in milliseconds, as its high
+                // and low halves. The client reads it for exactly these two states.
+                if (offer.getState() == MarketPlaceState.SOLD || offer.getState() == MarketPlaceState.CLOSED) {
+                    long statusTime = statusTimeMillis(offer);
+                    this.response.appendInt((int) (statusTime >>> 32));
+                    this.response.appendInt((int) statusTime);
+                }
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
             }
         }
 
         return this.response;
+    }
+
+    /** When a sold offer was sold, or when an expired one ran out. */
+    static long statusTimeMillis(MarketPlaceOffer offer) {
+        if (offer.getState() == MarketPlaceState.SOLD && offer.getSoldTimestamp() > 0) {
+            return offer.getSoldTimestamp() * 1000L;
+        }
+        return (offer.getTimestamp() + (long) Math.max(0, offer.secondsLeft(offer.getTimestamp()))) * 1000L;
     }
 
     public User getUser() {

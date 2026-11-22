@@ -19,8 +19,9 @@ public class WiredVariableHoldersPageEvent extends MessageHandler {
         String variableId = this.packet.readString();
         int page = this.packet.readInt();
         int pageSize = this.packet.readInt();
-        int userTypeFilter = this.packet.readInt();
+        // The client sends the sort before the user type; the answer carries them the other way round.
         int sortTypeFilter = this.packet.readInt();
+        int userTypeFilter = this.packet.readInt();
         Room room = currentRoom();
 
         if (room == null || !room.canInspectWired(this.client.getUser())) {

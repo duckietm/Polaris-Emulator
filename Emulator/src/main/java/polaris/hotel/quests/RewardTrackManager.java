@@ -531,6 +531,10 @@ public class RewardTrackManager {
                     extraParams = item.getType().code.toLowerCase() + ":" + item.getName();
                 }
             }
+            // A Habbicon prize travels with its id as the product item type.
+            if (QuestRewards.TYPE_HABBICON.equalsIgnoreCase(prize.getRewardType())) {
+                productItemTypeId = QuestRewards.habbiconIdOf(prize.getExtraParams());
+            }
             prizes.add(new RewardTracksComposer.Prize(
                     prize.getId(),
                     prize.getRequiredPoints(),

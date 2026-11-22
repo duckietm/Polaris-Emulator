@@ -16,6 +16,7 @@ import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.WiredTriggerType;
 import polaris.hotel.wired.core.WiredEvent;
 import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredRoomTime;
 import polaris.hotel.wired.tick.WiredTickable;
 import polaris.messages.ServerMessage;
 
@@ -141,6 +142,7 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
 
         // Fire when elapsed time is a multiple of repeatTime
         long currentTime = System.currentTimeMillis();
+        this.phase.join(WiredRoomTime.timerResetAt(room, currentTime), currentTime, this.repeatTime);
         if (this.phase.shouldFire(
                 elapsedMs % this.repeatTime == 0, room.getCycleTimestamp(), currentTime, this.repeatTime)) {
             if (this.getRoomId() != 0

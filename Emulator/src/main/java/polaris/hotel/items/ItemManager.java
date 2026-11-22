@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.items.interactions.InteractionAntenna;
 import polaris.hotel.items.interactions.InteractionAreaHideControl;
 import polaris.hotel.items.interactions.InteractionArrow;
 import polaris.hotel.items.interactions.InteractionBackgroundToner;
@@ -650,7 +651,7 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("vendingmachine_no_sides", InteractionNoSidesVendingMachine.class));
         this.interactionsList.add(new ItemInteraction("tile_walkmagic", InteractionTileWalkMagic.class));
-        this.interactionsList.add(new ItemInteraction("antenna", InteractionDefault.class));
+        this.interactionsList.add(new ItemInteraction("antenna", InteractionAntenna.class));
         this.interactionsList.add(new ItemInteraction("room_invisible_click_tile", InteractionDefault.class));
 
         this.interactionsList.add(new ItemInteraction("game_timer", InteractionGameTimer.class));

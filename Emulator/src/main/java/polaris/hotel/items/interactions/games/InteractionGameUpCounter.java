@@ -174,6 +174,11 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
         this.needsUpdate(true);
     }
 
+    /** Whether the counter is counting or paused, as opposed to stopped. */
+    public boolean isActive() {
+        return this.isRunning || this.isPaused;
+    }
+
     public void restartFromZero(Room room) {
         boolean wasActive = this.isRunning || this.isPaused;
 

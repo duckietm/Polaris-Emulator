@@ -70,6 +70,14 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
     }
 
     /** Whether this box sets the clock, rather than increasing or decreasing it. */
+    public boolean isIncrease() {
+        return this.operator == OPERATOR_INCREASE;
+    }
+
+    public boolean isDecrease() {
+        return this.operator == OPERATOR_DECREASE;
+    }
+
     public boolean isSet() {
         return this.operator == OPERATOR_SET;
     }

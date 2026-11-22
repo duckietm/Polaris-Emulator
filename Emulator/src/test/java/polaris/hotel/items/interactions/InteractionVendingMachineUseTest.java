@@ -43,4 +43,11 @@ class InteractionVendingMachineUseTest {
         assertFalse(InteractionVendingMachine.isStillServed(user, unit, mock(Room.class)));
         assertFalse(InteractionVendingMachine.isStillServed(user, mock(RoomUnit.class), room));
     }
+
+    @Test
+    void theItemIsHandedOverBeforeTheMachineCloses() {
+        assertEquals(1250, InteractionVendingMachine.HAND_OVER_MS);
+        assertEquals(1500, InteractionVendingMachine.RESET_MS);
+        assertEquals(1000, InteractionVendingMachine.EMPTY_RESET_MS);
+    }
 }

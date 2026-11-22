@@ -209,6 +209,7 @@ class RoomPlayTestEnforcementTest {
         Room room = mock(Room.class);
         when(room.getOwnerId()).thenReturn(OWNER);
         when(room.hasRights(any(User.class))).thenReturn(true);
+        when(room.hasModerationRights(any(User.class))).thenReturn(true);
         when(room.getLayout()).thenReturn(mock(RoomLayout.class));
         return room;
     }

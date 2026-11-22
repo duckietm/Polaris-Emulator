@@ -31,6 +31,14 @@ public class BuyItemEvent extends MessageHandler {
             return;
         }
 
+        // A trade-locked player cannot take furni out of the marketplace either.
+        if (this.client.getUser().getUserStats() != null
+                && this.client.getUser().getUserStats().isTradeLocked()) {
+            this.client.sendResponse(
+                    new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.REFRESH, 0, offerId, 0));
+            return;
+        }
+
         MarketPlace.buyItem(offerId, this.client);
     }
 }

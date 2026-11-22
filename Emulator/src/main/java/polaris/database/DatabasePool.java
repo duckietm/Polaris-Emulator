@@ -29,6 +29,8 @@ class DatabasePool {
     private static final String DB_POOL_IDLE_TIMEOUT = "db.pool.idle_timeout_ms";
     private static final String DB_POOL_MAX_LIFETIME = "db.pool.max_lifetime_ms";
     private static final String DB_POOL_LEAK_THRESHOLD = "db.pool.leak_detection_ms";
+    static final String DB_POOL_TRANSACTION_ISOLATION = "db.pool.transaction_isolation";
+    static final String DEFAULT_TRANSACTION_ISOLATION = "TRANSACTION_READ_COMMITTED";
     private static final String DB_POOL_VALIDATION_TIMEOUT = "db.pool.validation_timeout_ms";
 
     private HikariDataSource database;
@@ -54,6 +56,8 @@ class DatabasePool {
             if (leakThreshold > 0) {
                 databaseConfiguration.setLeakDetectionThreshold(leakThreshold);
             }
+
+            applyTransactionIsolation(databaseConfiguration, config);
 
             // Use the MariaDB Connector/J native protocol instead of the Oracle MySQL driver.
             databaseConfiguration.setJdbcUrl("jdbc:mariadb://"
@@ -103,6 +107,37 @@ class DatabasePool {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Several transactions read rows plainly and then lock them (FOR UPDATE). MariaDB 11.6 and later, with snapshot
+     * isolation on by default, refuses such a locking read under REPEATABLE READ, so the pool runs at READ
+     * COMMITTED. "default" keeps whatever the database server is set to.
+     */
+    static void applyTransactionIsolation(HikariConfig databaseConfiguration, ConfigurationManager config) {
+        String level = config.getValue(DB_POOL_TRANSACTION_ISOLATION, DEFAULT_TRANSACTION_ISOLATION);
+        level = level == null ? "" : level.trim().toUpperCase(java.util.Locale.ROOT);
+        if (level.isEmpty() || "DEFAULT".equals(level)) {
+            return;
+        }
+        if (!level.startsWith("TRANSACTION_")) {
+            level = "TRANSACTION_" + level;
+        }
+        if (!java.util.Set.of(
+                        "TRANSACTION_READ_UNCOMMITTED",
+                        "TRANSACTION_READ_COMMITTED",
+                        "TRANSACTION_REPEATABLE_READ",
+                        "TRANSACTION_SERIALIZABLE")
+                .contains(level)) {
+            LoggerFactory.getLogger(DatabasePool.class)
+                    .warn(
+                            "Unknown {} '{}'; using {}",
+                            DB_POOL_TRANSACTION_ISOLATION,
+                            level,
+                            DEFAULT_TRANSACTION_ISOLATION);
+            level = DEFAULT_TRANSACTION_ISOLATION;
+        }
+        databaseConfiguration.setTransactionIsolation(level);
     }
 
     static void applyPoolSizing(HikariConfig databaseConfiguration, ConfigurationManager config) {

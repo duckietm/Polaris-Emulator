@@ -23,6 +23,8 @@ import polaris.hotel.pets.Pet;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.rooms.RoomUnitType;
+import polaris.hotel.rooms.RoomWiredInternalVariables;
+import polaris.hotel.rooms.WiredVariableDefinitionInfo;
 import polaris.hotel.rooms.variables.UserVariableHolders;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserItem;
@@ -450,6 +452,8 @@ public final class WiredTextPlaceholderUtil {
 
     private static String buildVariableReplacement(WiredContext ctx, WiredExtraTextOutputVariable extra) {
         if (definitionPickedUp(ctx.room(), extra)) return null;
+        // An add-on that was never saved names no variable: it is ignored and its placeholder stays as written.
+        if (extra.getVariableToken() == null || extra.getVariableToken().isEmpty()) return null;
         WiredArrayVariableDefinition arrayDefinition = extra.getArrayDefinition(ctx.room());
         if (arrayDefinition != null) return buildArrayReplacement(ctx, extra, arrayDefinition);
         List<String> values =
@@ -587,51 +591,72 @@ public final class WiredTextPlaceholderUtil {
         return value == null ? List.of() : List.of(value);
     }
 
+    /**
+     * What a furni, user or bot shows for a variable it does not hold, and for one without a value (a flag), held
+     * or not.
+     */
+    static final String NO_VALUE = "null";
+
+    /** Whether a built-in variable of the target (furni 0, user 1) carries a value; an unlisted one is read as it is. */
+    private static boolean internalHasValue(int target, String key) {
+        RoomWiredInternalVariables.Row row =
+                RoomWiredInternalVariables.byId(RoomWiredInternalVariables.idOf(target, key));
+        return row == null || row.hasValue();
+    }
+
     private static String resolveUserVariableValue(Room room, RoomUnit roomUnit, WiredExtraTextOutputVariable extra) {
         if (room == null || roomUnit == null) {
             return null;
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = readUserInternalValue(
-                    room, roomUnit, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
-            return value != null ? String.valueOf(value) : null;
+            String key = WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken());
+            Integer value = internalHasValue(1, key) ? readUserInternalValue(room, roomUnit, key) : null;
+            return value != null ? String.valueOf(value) : NO_VALUE;
         }
 
         int holder = UserVariableHolders.of(room, roomUnit);
         if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, extra.getVariableItemId())) {
-            return null;
+            return NO_VALUE;
         }
 
+        WiredVariableDefinitionInfo info = room.getUserVariableManager().getDefinitionInfo(extra.getVariableItemId());
+        if (info != null && !info.hasValue()) return NO_VALUE;
+
         Integer value = room.getUserVariableManager().getCurrentValue(holder, extra.getVariableItemId());
+        if (value == null) return NO_VALUE;
         if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
             return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
         }
 
-        return value != null ? String.valueOf(value) : null;
+        return String.valueOf(value);
     }
 
-    private static String resolveFurniVariableValue(Room room, UserItem item, WiredExtraTextOutputVariable extra) {
+    static String resolveFurniVariableValue(Room room, UserItem item, WiredExtraTextOutputVariable extra) {
         if (room == null || item == null) {
             return null;
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = readFurniInternalValue(
-                    room, item, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
-            return value != null ? String.valueOf(value) : null;
+            String key = WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken());
+            Integer value = internalHasValue(0, key) ? readFurniInternalValue(room, item, key) : null;
+            return value != null ? String.valueOf(value) : NO_VALUE;
         }
 
         if (!room.getFurniVariableManager().hasVariable(item.getId(), extra.getVariableItemId())) {
-            return null;
+            return NO_VALUE;
         }
 
+        WiredVariableDefinitionInfo info = room.getFurniVariableManager().getDefinitionInfo(extra.getVariableItemId());
+        if (info != null && !info.hasValue()) return NO_VALUE;
+
         Integer value = room.getFurniVariableManager().getCurrentValue(item.getId(), extra.getVariableItemId());
+        if (value == null) return NO_VALUE;
         if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
             return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
         }
 
-        return value != null ? String.valueOf(value) : null;
+        return String.valueOf(value);
     }
 
     private static String resolveRoomVariableValue(Room room, WiredExtraTextOutputVariable extra) {

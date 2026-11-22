@@ -12,6 +12,9 @@ speaker chat counter 1, muted count 0, singing false
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, :about, 2, 0)
+WiredManager.triggerUserSays(room, unit, :about, 2, 0)
+speaker <- Whisper(:about)
 returned
 line ":about" command false delivered false
 speaker chat counter 2, muted count 0, singing false
@@ -232,6 +235,9 @@ speaker chat counter 0, muted count 0, singing false
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 2, 0)
+WiredManager.triggerUserSays(room, unit, hello, 2, 0)
+speaker <- Whisper(hello)
 returned
 line "hello" command false delivered false
 speaker chat counter 1, muted count 0, singing false
@@ -302,6 +308,9 @@ speaker chat counter 1, muted count 0, singing false
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 2, 0)
+WiredManager.triggerUserSays(room, unit, hello, 2, 0)
+speaker <- Whisper(hello)
 returned
 line "hello" command false delivered false
 speaker chat counter 2, muted count 0, singing false
@@ -430,6 +439,8 @@ QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, hello, 2, 0)
+WiredManager.triggerUserSays(room, unit, hello, 2, 0)
 speaker <- NameChanged(speaker)
 speaker <- Whisper(hello)
 speaker <- NameChanged(speaker)
@@ -552,6 +563,9 @@ QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, psst, 2, 0)
+WiredManager.triggerUserSays(room, unit, psst, 2, 0)
+speaker <- Whisper(psst)
 returned
 line "psst" command false delivered false
 speaker chat counter 3, muted count 0, singing false
@@ -561,6 +575,8 @@ QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, psst, 2, 0)
+WiredManager.triggerUserSays(room, unit, psst, 2, 0)
 speaker <- Whisper(psst)
 staff <- Whisper(To target: psst)
 returned
@@ -572,6 +588,8 @@ QuestProgressEvents.progress(speaker, TALK_IN_ROOM, 1)
 plugin event UserIdleEvent
 room.unIdle(speaker)
 room <- Typing(unit)
+WiredManager.shouldSuppressUserSaysOutput(room, unit, psst, 2, 0)
+WiredManager.triggerUserSays(room, unit, psst, 2, 0)
 speaker <- Whisper(psst)
 target <- Whisper(psst)
 staff <- Whisper(To target: psst)

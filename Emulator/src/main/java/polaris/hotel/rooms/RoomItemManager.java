@@ -772,14 +772,22 @@ public class RoomItemManager {
      * Places a floor furniture item at a position.
      */
     public FurnitureMovementError placeFloorFurniAt(UserItem item, RoomTile tile, int rotation, User owner) {
-        return this.placement.placeFloorFurniture(item, tile, rotation, owner);
+        return this.rememberPlaced(item, this.placement.placeFloorFurniture(item, tile, rotation, owner));
     }
 
     /**
      * Places a wall furniture item at a position.
      */
     public FurnitureMovementError placeWallFurniAt(UserItem item, String wallPosition, User owner) {
-        return this.placement.placeWallFurniture(item, wallPosition, owner);
+        return this.rememberPlaced(item, this.placement.placeWallFurniture(item, wallPosition, owner));
+    }
+
+    /** A furni placed after the room loaded goes back to where it was placed on a wired Rollback. */
+    private FurnitureMovementError rememberPlaced(UserItem item, FurnitureMovementError result) {
+        if (result == FurnitureMovementError.NONE && this.room.getWiredRuntime() != null) {
+            this.room.getWiredRuntime().getRestorePoints().capturePlaced(item);
+        }
+        return result;
     }
 
     /**

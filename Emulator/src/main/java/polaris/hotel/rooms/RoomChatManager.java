@@ -376,8 +376,8 @@ public class RoomChatManager {
             return;
         }
 
-        boolean suppressSaysOutput = chatType != RoomChatType.WHISPER
-                && !ignoreWired
+        // A whisper fires User Says Something like a spoken line; one a stack takes is not delivered.
+        boolean suppressSaysOutput = !ignoreWired
                 && WiredManager.shouldSuppressUserSaysOutput(
                         user.getUserInfo().getCurrentRoom(),
                         user.getRoomUnit(),
@@ -399,7 +399,7 @@ public class RoomChatManager {
         // The line's wired runs first: its one flash, then its Show Message texts, then the speaker's own line (or
         // the echo of a hidden one), then the texts of stacks its signals reached (observed on AIR
         // WIN63-202610151745).
-        boolean runsWired = chatType != RoomChatType.WHISPER && !ignoreWired && !roomChatMessage.isCommand;
+        boolean runsWired = !ignoreWired && !roomChatMessage.isCommand;
         if (runsWired) {
             WiredBoxFlashes.runSayPass(() -> WiredManager.triggerUserSays(
                     user.getUserInfo().getCurrentRoom(),
@@ -415,7 +415,12 @@ public class RoomChatManager {
         // they never stay on this thread to follow the next line it handles.
         try {
             if (chatType == RoomChatType.WHISPER) {
-                this.handleWhisper(user, roomChatMessage, prefixMessage, clearPrefixMessage);
+                if (suppressSaysOutput || roomChatMessage.getTargetUser() == null) {
+                    // Taken by a stack, or whispered to somebody who is not here: only the speaker sees it.
+                    whisperBackToSpeaker(user, roomChatMessage);
+                } else {
+                    this.handleWhisper(user, roomChatMessage, prefixMessage, clearPrefixMessage);
+                }
             } else if (chatType == RoomChatType.TALK) {
                 if (suppressSaysOutput) {
                     whisperBackToSpeaker(user, roomChatMessage);

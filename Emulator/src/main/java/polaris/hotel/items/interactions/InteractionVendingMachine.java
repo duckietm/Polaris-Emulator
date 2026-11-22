@@ -75,6 +75,10 @@ public class InteractionVendingMachine extends UserItem {
         }
     }
 
+    static final int HAND_OVER_MS = 1250;
+    static final int RESET_MS = 1500;
+    static final int EMPTY_RESET_MS = 1000;
+
     private void useVendingMachine(GameClient client, Room room, RoomUnit unit) {
         // One dispense per cycle: a click while the machine is still serving is ignored, so
         // repeated clicks cannot queue a hand item each.
@@ -88,6 +92,12 @@ public class InteractionVendingMachine extends UserItem {
         if (!unit.isWalking() && !unit.hasStatus(RoomUnitStatus.SIT) && !unit.hasStatus(RoomUnitStatus.LAY)) {
             this.rotateToMachine(room, unit);
         }
+
+        // The item is handed over 1250 ms after the use and the machine closes at 1500 ms; one that hands
+        // nothing over closes at 1000 ms. Both run on the machine's own timer, not on the room tick.
+        boolean handsOver = this.getBaseItem().getVendingItems() != null
+                && !this.getBaseItem().getVendingItems().isEmpty();
+        int handOverMs = handsOver ? HAND_OVER_MS : EMPTY_RESET_MS;
 
         Emulator.getThreading()
                 .run(
@@ -103,9 +113,9 @@ public class InteractionVendingMachine extends UserItem {
                                     room.giveEffect(user, this.getBaseItem().getEffectF(), -1);
                             }
 
-                            Emulator.getThreading().run(this, 500);
+                            Emulator.getThreading().run(this, RESET_MS - handOverMs);
                         },
-                        1500);
+                        handOverMs);
     }
 
     /** Marks the machine busy; false when a previous use has not been reset yet. */

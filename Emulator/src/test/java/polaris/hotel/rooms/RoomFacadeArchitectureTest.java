@@ -20,9 +20,10 @@ class RoomFacadeArchitectureTest {
         // 2177: rooms.date_created carried as a field with its getter for housekeeping.
         // 2186: the soundboard room mode getter and setter, delegating to the media session.
         // 2188: claimItem, the one-line delegation an item consumer claims through.
+        // 2196: hasModerationRights, the one-line delegation to the rights manager.
         // Raise this only for delegations and plain data, never for logic.
         assertTrue(
-                source.lines().count() <= 2191,
+                source.lines().count() <= 2196,
                 "Keep Room.java below the post-extraction compatibility-facade ceiling");
         assertFalse(source.contains("prepareStatement("), "Database statements belong in collaborators");
         assertFalse(source.matches("(?s).*\"(?:SELECT|INSERT|UPDATE|DELETE) .*"));

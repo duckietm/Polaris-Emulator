@@ -2662,6 +2662,8 @@ METHOD-ANNOTATION polaris.hotel.items.interactions.wired.effects.WiredEffectAdju
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#execute(polaris.hotel.wired.core.WiredContext):void throws -
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#getType(-):polaris.hotel.wired.WiredEffectType throws -
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#getWiredData(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#isDecrease(-):boolean throws -
+METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#isIncrease(-):boolean throws -
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#isSet(-):boolean throws -
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#loadWiredData(java.sql.ResultSet,polaris.hotel.rooms.Room):void throws java.sql.SQLException
 METHOD public polaris.hotel.items.interactions.wired.effects.WiredEffectAdjustClock#onPickUp(-):void throws -
@@ -8888,6 +8890,7 @@ METHOD public static polaris.hotel.wired.core.WiredRoomTime#now(polaris.hotel.ro
 METHOD public static polaris.hotel.wired.core.WiredRoomTime#now(polaris.hotel.rooms.Room,java.lang.String):java.time.ZonedDateTime throws -
 METHOD public static polaris.hotel.wired.core.WiredRoomTime#pulsesSinceTimerReset(polaris.hotel.rooms.Room,long):int throws -
 METHOD public static polaris.hotel.wired.core.WiredRoomTime#scheduleTimersReset(polaris.hotel.rooms.Room,long,long):void throws -
+METHOD public static polaris.hotel.wired.core.WiredRoomTime#timerResetAt(polaris.hotel.rooms.Room,long):long throws -
 METHOD public static polaris.hotel.wired.core.WiredRoomTime#zoneFor(polaris.hotel.rooms.Room):java.time.ZoneId throws -
 METHOD public static polaris.hotel.wired.core.WiredRoomTime#zoneFor(polaris.hotel.rooms.Room,java.lang.String):java.time.ZoneId throws -
 

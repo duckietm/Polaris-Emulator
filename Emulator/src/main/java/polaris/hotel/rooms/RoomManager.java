@@ -735,6 +735,10 @@ public class RoomManager {
     void openRoom(User user, Room room, RoomTile doorLocation, boolean isReconnectSpawn) {
         if (room == null || room.getLayout() == null) return;
 
+        // Somebody is on the way in: an empty room starts its idle count again, so its idle tick does not close
+        // it between this entry and the user appearing in it.
+        room.resetIdleCycles();
+
         this.markRoomOpened(user, room);
         // Decided before the entry log records the room as visited.
         boolean firstVisit = markRoomVisited(user.getUserStats(), room.getId());

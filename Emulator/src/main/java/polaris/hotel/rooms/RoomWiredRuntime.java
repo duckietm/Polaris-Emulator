@@ -23,6 +23,7 @@ public final class RoomWiredRuntime {
     private final WiredVisualizationService visualization;
     private final WiredTradingManager trading;
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
+    private final RoomRestorePoints restorePoints = new RoomRestorePoints();
     private final WiredBoxFlashes boxFlashes;
     private final WiredMessageBudget messageBudget = new WiredMessageBudget();
     private final WiredSignalLoops signalLoops = new WiredSignalLoops();
@@ -181,6 +182,11 @@ public final class RoomWiredRuntime {
     }
 
     /** The flights projectile add-ons launched here, read by the {@code @projectile.*} variables. */
+    /** Where the room's furni stood at the last load, for the wired menu's Rollback. */
+    public RoomRestorePoints getRestorePoints() {
+        return this.restorePoints;
+    }
+
     public WiredProjectileFlights getProjectileFlights() {
         return this.projectiles;
     }

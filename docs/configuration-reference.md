@@ -29,6 +29,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `db.pool.max_lifetime_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.maxsize` | integer | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.minsize` | integer | `0` | — | yes | no | Database connection-pool setting. |
+| `db.pool.transaction_isolation` | string | `READ_COMMITTED` | — | yes | no | Database connection-pool setting. |
 | `db.pool.validation_timeout_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.port` | integer | `0` | `DB_PORT` | yes | no | Database startup setting. |
 | `db.slow_query.enabled` | boolean | `false` | — | yes | no | Sanitized slow-query diagnostic setting. |

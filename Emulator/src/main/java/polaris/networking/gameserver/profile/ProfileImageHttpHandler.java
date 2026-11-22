@@ -31,14 +31,15 @@ import polaris.networking.gameserver.auth.AccessTokenService;
 import polaris.networking.gameserver.auth.CorsOriginGate;
 
 /**
- * {@code POST /api/profile/image?kind=banner|background} stores the signed-in player's picture (the raw
+ * {@code POST /profile-images/upload?kind=banner|background} stores the signed-in player's picture (the raw
  * JPEG or PNG as the body), {@code DELETE} on the same path removes it, and {@code GET
- * /profile-images/<file>} serves the stored pictures.
+ * /profile-images/<file>} serves the stored pictures. The upload stays outside {@code /api/}: the client
+ * encrypts every {@code /api/} call, and the secure envelope takes at most a few dozen kilobytes.
  */
 public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfileImageHttpHandler.class);
 
-    static final String API_PATH = "/api/profile/image";
+    static final String API_PATH = "/profile-images/upload";
     static final String FILES_PATH = "/profile-images/";
 
     private final ProfileImageService service;
@@ -60,14 +61,14 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         }
 
         String path = new QueryStringDecoder(req.uri()).path();
-        if (!path.equals(API_PATH) && !path.startsWith(FILES_PATH)) {
+        if (!path.startsWith(FILES_PATH)) {
             super.channelRead(ctx, msg);
             return;
         }
 
         try {
-            if (path.startsWith(FILES_PATH)) serveFile(ctx, req, path.substring(FILES_PATH.length()));
-            else handleApi(ctx, req);
+            if (path.equals(API_PATH)) handleApi(ctx, req);
+            else serveFile(ctx, req, path.substring(FILES_PATH.length()));
         } catch (Exception e) {
             LOGGER.error("[profile/image] unexpected error path={}", path, e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, result(false, "failed"));

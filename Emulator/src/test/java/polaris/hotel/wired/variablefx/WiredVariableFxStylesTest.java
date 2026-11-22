@@ -51,6 +51,26 @@ class WiredVariableFxStylesTest {
     }
 
     @Test
+    void theChristmas2026SetIsKnown() {
+        assertTrue(WiredVariableFxStyles.isKnownIcon("xmas26.bauble_red"));
+        assertTrue(WiredVariableFxStyles.isKnownIcon("xmas26.snowman"));
+        assertTrue(WiredVariableFxStyles.isKnownIcon("ranch.aubergine"));
+        assertFalse(WiredVariableFxStyles.isKnownIcon("xmas26.reindeer"));
+
+        assertEquals(24, WiredVariableFxStyles.styleCount(WiredVariableFxStyles.CATEGORY_STATUS_BAR));
+        assertEquals(
+                "xmas26.tree",
+                WiredVariableFxStyles.get(WiredVariableFxStyles.CATEGORY_STATUS_BAR, 22)
+                        .extra()
+                        .get(WiredVariableFxStyles.EXTRA_ICON));
+
+        WiredVariableFxStyles.Style snowman = WiredVariableFxStyles.get(WiredVariableFxStyles.CATEGORY_BOSS_BAR, 2);
+        assertEquals(3, WiredVariableFxStyles.styleCount(WiredVariableFxStyles.CATEGORY_BOSS_BAR));
+        assertEquals("xmas26.snowman", snowman.extra().get(WiredVariableFxStyles.EXTRA_ICON));
+        assertEquals("#3C5B92", snowman.extra().get(WiredVariableFxStyles.EXTRA_COLOR));
+    }
+
+    @Test
     void segmentsOnlyApplyToTheSegmentedRenderers() {
         assertTrue(WiredVariableFxStyles.supportsSegments(WiredVariableFxStyles.RENDERER_BLOCK));
         assertTrue(WiredVariableFxStyles.supportsSegments(WiredVariableFxStyles.RENDERER_ARROW));

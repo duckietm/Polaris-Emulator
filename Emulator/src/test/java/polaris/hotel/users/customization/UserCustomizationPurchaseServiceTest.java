@@ -154,6 +154,34 @@ class UserCustomizationPurchaseServiceTest {
         verify(repository, never()).findCatalogPrefix(17);
     }
 
+    @Test
+    void catalogOfferWithAReservedWordIsNotSold() throws Exception {
+        UserCustomizationRepository repository = mock(UserCustomizationRepository.class);
+        when(repository.loadPrefixSettings()).thenReturn(Map.of());
+        when(repository.loadPrefixBlacklist()).thenReturn(List.of("staff"));
+        when(repository.findCatalogPrefix(17))
+                .thenReturn(Optional.of(new UserCustomizationRepository.CatalogPrefixOffer(
+                        17, "Staff Pick", "St\u00e1ff", "#3B82F6", "*", "cartoon", "", 20, 0)));
+        UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(repository, List.of());
+
+        var result = service.purchaseCatalogPrefix(userWithRank(1), 17);
+
+        assertEquals(UserCustomizationPurchaseService.Status.UNAVAILABLE, result.status());
+        verify(repository, never()).insertPrefix(any());
+    }
+
+    @Test
+    void reservedPrefixIgnoresCaseAccentsAndInvisibleCharacters() {
+        List<String> blacklist = List.of("staff", "admin");
+
+        assertAll(
+                () -> assertEquals(true, UserCustomizationPurchaseService.isReservedPrefix("(STAFF)", blacklist)),
+                () -> assertEquals(
+                        true, UserCustomizationPurchaseService.isReservedPrefix("Ad\u200Bm\u00ecn", blacklist)),
+                () -> assertEquals(false, UserCustomizationPurchaseService.isReservedPrefix("VIP", blacklist)),
+                () -> assertEquals(false, UserCustomizationPurchaseService.isReservedPrefix("Staff", List.of())));
+    }
+
     private static User userWithRank(int rank) {
         User user = mock(User.class, RETURNS_DEEP_STUBS);
         when(user.getInventory().getPrefixesComponent().getPrefixes()).thenReturn(List.of());

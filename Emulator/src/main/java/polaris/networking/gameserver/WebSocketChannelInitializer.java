@@ -44,6 +44,7 @@ import polaris.networking.gameserver.handlers.SustainedUnwritableHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import polaris.networking.gameserver.handlers.WebSocketHttpHandler;
 import polaris.networking.gameserver.plugins.PluginClientHttpHandler;
+import polaris.networking.gameserver.profile.ProfileImageHttpHandler;
 import polaris.networking.gameserver.ssl.SSLCertificateLoader;
 import polaris.networking.gameserver.stats.EmuStatsHttpHandler;
 import polaris.networking.gameserver.wired.WiredVariableApiHandler;
@@ -146,6 +147,12 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline()
                 .addLast("blockingHttpAdmissionBadge", BlockingHttpExecutionGroup.admissionHandler("badgeHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeHttpHandler", new BadgeHttpHandler());
+        // Profile pictures are decoded, re-encoded and read from disk: blocking work, off the socket loop.
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionProfileImage",
+                        BlockingHttpExecutionGroup.admissionHandler("profileImageHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "profileImageHttpHandler", new ProfileImageHttpHandler(configuration));
         ch.pipeline()
                 .addLast(
                         "blockingHttpAdmissionBadgeLeaderboard",

@@ -6,6 +6,7 @@ import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserStats;
 import polaris.hotel.users.infostand.InfostandBackgroundManager;
 import polaris.hotel.users.infostand.InfostandBackgroundManager.Category;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.rooms.users.RoomUserDataComposer;
 
@@ -14,6 +15,9 @@ public class ChangeInfostandBgEvent extends MessageHandler {
     private static final long COOLDOWN_MS = 500L;
     private static final int MIN_ID = 0;
     private static final int MAX_ID = 9999;
+    private static final int KEEP = -1;
+    /** An accent of the player's own colour: this bit over the colour as 0xRRGGBB. */
+    public static final int CUSTOM_ACCENT = 0x1000000;
 
     @Override
     public void handle() throws Exception {
@@ -38,6 +42,17 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int requestedOverlay = sanitize(this.packet.readInt());
         int requestedCard = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
         int requestedBorder = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
+        // Profile banner and accent: a client that leaves them out, or sends KEEP, keeps the saved ones.
+        int requestedBanner = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
+        int requestedAccent = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
+        // A feature the hotel turned off keeps whatever was saved, for the day it is turned on again.
+        ProfileImageService.Settings settings = ProfileImageService.get().settings();
+        requestedBanner =
+                requestedBanner == KEEP || !settings.banner() ? info.getProfileBanner() : sanitize(requestedBanner);
+        int rawAccent = requestedAccent;
+        boolean customAccent = settings.theme() && isCustomAccent(rawAccent);
+        requestedAccent =
+                requestedAccent == KEEP || !settings.theme() ? info.getProfileAccent() : sanitize(requestedAccent);
 
         InfostandBackgroundManager manager = Emulator.getGameEnvironment() != null
                 ? Emulator.getGameEnvironment().getInfostandBackgroundManager()
@@ -48,12 +63,18 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int backgroundOverlay = resolve(manager, user, Category.OVERLAY, requestedOverlay, info.getInfostandOverlay());
         int backgroundCard = resolve(manager, user, Category.CARD, requestedCard, info.getInfostandCardBg());
         int backgroundBorder = resolve(manager, user, Category.BORDER, requestedBorder, info.getInfostandBorder());
+        int profileBanner = resolve(manager, user, Category.BANNER, requestedBanner, info.getProfileBanner());
+        int profileAccent = customAccent
+                ? rawAccent
+                : resolve(manager, user, Category.ACCENT, requestedAccent, info.getProfileAccent());
 
         if (info.getInfostandBg() == backgroundImage
                 && info.getInfostandStand() == backgroundStand
                 && info.getInfostandOverlay() == backgroundOverlay
                 && info.getInfostandCardBg() == backgroundCard
-                && info.getInfostandBorder() == backgroundBorder) {
+                && info.getInfostandBorder() == backgroundBorder
+                && info.getProfileBanner() == profileBanner
+                && info.getProfileAccent() == profileAccent) {
             return;
         }
 
@@ -62,6 +83,8 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         info.setInfostandOverlay(backgroundOverlay);
         info.setInfostandCardBg(backgroundCard);
         info.setInfostandBorder(backgroundBorder);
+        info.setProfileBanner(profileBanner);
+        info.setProfileAccent(profileAccent);
         info.run();
 
         if (info.getCurrentRoom() != null) {
@@ -69,6 +92,11 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         } else {
             this.client.sendResponse(new RoomUserDataComposer(user));
         }
+    }
+
+    /** The accent bit with nothing above it, so the colour is the low 24 bits. */
+    static boolean isCustomAccent(int value) {
+        return (value & 0xFF000000) == CUSTOM_ACCENT;
     }
 
     private static int sanitize(int value) {

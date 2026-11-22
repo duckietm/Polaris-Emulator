@@ -18,6 +18,7 @@ import polaris.hotel.users.ProfileVisibility;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -160,6 +161,20 @@ public class UserProfileComposer extends MessageComposer {
         // Official isHidden: the owner hides the profile from everybody else. The hidden fields
         // above are already left out for those viewers; the client shows the hidden notice.
         this.response.appendBoolean(profileHidden);
+        // Profile window customisation, after isHidden for the same reason: the border picked for the
+        // infostand, the banner from the gallery and the accent colour (0 = none). A feature the hotel
+        // turned off is sent as none, so a client that knows nothing of the switches shows nothing either.
+        ProfileImageService.Settings settings = ProfileImageService.get().settings();
+        this.response.appendInt(this.userInfo.getInfostandBorder());
+        this.response.appendInt(settings.banner() ? this.userInfo.getProfileBanner() : 0);
+        this.response.appendInt(settings.theme() ? this.userInfo.getProfileAccent() : 0);
+        // Uploaded pictures: file names served on /profile-images/, '' when there is none.
+        String[] uploadedPictures = ProfileImageService.storedNames(this.userInfo.getId());
+        this.response.appendString(settings.banner() && settings.enabled() ? uploadedPictures[0] : "");
+        this.response.appendString(settings.enabled() ? uploadedPictures[1] : "");
+        // The player's own background (colours, angle, pattern), then which features the hotel has on.
+        this.response.appendString(uploadedPictures[2]);
+        this.response.appendInt(settings.features());
 
         return this.response;
     }

@@ -46,7 +46,44 @@ class UserProfilePrivacyContractTest {
         assertTrue(profile.contains("hideDetails?ProfileVisibility.HIDDEN_VALUE:Messenger.getFriendCount("));
         assertTrue(profile.contains("if(hideDetails)guilds=newArrayList<>();"));
         assertTrue(profile.contains("hideDetails?ProfileVisibility.HIDDEN_VALUE:Emulator.getIntUnixTimestamp()"));
-        assertTrue(profile.contains("this.response.appendBoolean(profileHidden);"), "isHidden stays the last field");
+        assertTrue(profile.contains("this.response.appendBoolean(profileHidden);"), "isHidden is still written");
+    }
+
+    @Test
+    void profileCustomisationFollowsIsHiddenSoOlderClientsStopBeforeIt() throws Exception {
+        String profile = source("messages/outgoing/users/UserProfileComposer.java");
+        int hidden = profile.indexOf("this.response.appendBoolean(profileHidden);");
+        int border = profile.indexOf("this.response.appendInt(this.userInfo.getInfostandBorder());");
+        int banner = profile.indexOf("this.response.appendInt(settings.banner()?this.userInfo.getProfileBanner():0);");
+        int accent = profile.indexOf("this.response.appendInt(settings.theme()?this.userInfo.getProfileAccent():0);");
+
+        int bannerImage = profile.indexOf(
+                "this.response.appendString(settings.banner()&&settings.enabled()?uploadedPictures[0]:\"\");");
+        int backgroundImage =
+                profile.indexOf("this.response.appendString(settings.enabled()?uploadedPictures[1]:\"\");");
+        int backgroundStyle = profile.indexOf("this.response.appendString(uploadedPictures[2]);");
+        int features = profile.indexOf("this.response.appendInt(settings.features());");
+
+        assertTrue(hidden > 0 && hidden < border && border < banner && banner < accent);
+        assertTrue(accent < bannerImage && bannerImage < backgroundImage, "uploaded pictures follow the accent");
+        assertTrue(backgroundImage < backgroundStyle && backgroundStyle < features, "style and features come last");
+    }
+
+    @Test
+    void backgroundRequestWithoutBannerOrAccentKeepsTheSavedOnes() throws Exception {
+        String event = source("messages/incoming/users/ChangeInfostandBgEvent.java");
+
+        assertTrue(event.contains("privatestaticfinalintKEEP=-1;"));
+        assertTrue(event.contains("intrequestedBanner=this.packet.bytesAvailable()>=4?this.packet.readInt():KEEP;"));
+        assertTrue(event.contains("intrequestedAccent=this.packet.bytesAvailable()>=4?this.packet.readInt():KEEP;"));
+        assertTrue(
+                event.contains(
+                        "requestedBanner=requestedBanner==KEEP||!settings.banner()?info.getProfileBanner():sanitize(requestedBanner);"));
+        assertTrue(
+                event.contains(
+                        "requestedAccent=requestedAccent==KEEP||!settings.theme()?info.getProfileAccent():sanitize(requestedAccent);"));
+        assertTrue(event.contains("resolve(manager,user,Category.BANNER,requestedBanner,info.getProfileBanner())"));
+        assertTrue(event.contains("resolve(manager,user,Category.ACCENT,requestedAccent,info.getProfileAccent())"));
     }
 
     @Test

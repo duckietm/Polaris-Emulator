@@ -52,6 +52,8 @@ public class UserInfo implements Runnable {
     private int InfostandOverlay;
     private int InfostandCardBg;
     private int InfostandBorder;
+    private int profileBanner;
+    private int profileAccent;
     private int loadingRoom;
     private Room currentRoom;
     private String roomEntryMethod = "door";
@@ -116,6 +118,13 @@ public class UserInfo implements Runnable {
                 this.InfostandBorder = set.getInt("background_border_id");
             } catch (SQLException ignored) {
                 this.InfostandBorder = 0;
+            }
+            try {
+                this.profileBanner = set.getInt("profile_banner_id");
+                this.profileAccent = set.getInt("profile_accent_id");
+            } catch (SQLException ignored) {
+                this.profileBanner = 0;
+                this.profileAccent = 0;
             }
             this.currentRoom = null;
         } catch (SQLException e) {
@@ -443,6 +452,24 @@ public class UserInfo implements Runnable {
 
     public void setInfostandBorder(int infostandBorder) {
         InfostandBorder = infostandBorder;
+    }
+
+    /** The banner across the top of the profile window, an id from the banner gallery (0 = none). */
+    public int getProfileBanner() {
+        return this.profileBanner;
+    }
+
+    public void setProfileBanner(int profileBanner) {
+        this.profileBanner = profileBanner;
+    }
+
+    /** The accent colour of the profile window, an id from the accent palette (0 = the default). */
+    public int getProfileAccent() {
+        return this.profileAccent;
+    }
+
+    public void setProfileAccent(int profileAccent) {
+        this.profileAccent = profileAccent;
     }
 
     public Rank getRank() {
@@ -858,7 +885,7 @@ public class UserInfo implements Runnable {
             SqlQueries.update(
                     // No `rank`: it is written where it changes (UserManager.setRank), so a rank set in the
                     // database (a CMS) while the user is online is not overwritten by this save.
-                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
+                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ?, profile_banner_id = ?, profile_accent_id = ? WHERE id = ?",
                     this.motto,
                     this.online ? "1" : "0",
                     this.look,
@@ -874,6 +901,8 @@ public class UserInfo implements Runnable {
                     this.InfostandOverlay,
                     this.InfostandCardBg,
                     this.InfostandBorder,
+                    this.profileBanner,
+                    this.profileAccent,
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);

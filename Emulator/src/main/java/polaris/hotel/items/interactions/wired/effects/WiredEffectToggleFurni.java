@@ -42,6 +42,7 @@ import polaris.hotel.items.interactions.InteractionWiredTrigger;
 import polaris.hotel.items.interactions.games.InteractionGameGate;
 import polaris.hotel.items.interactions.games.InteractionGameScoreboard;
 import polaris.hotel.items.interactions.games.InteractionGameTimer;
+import polaris.hotel.items.interactions.games.InteractionGameUpCounter;
 import polaris.hotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiTeleporter;
 import polaris.hotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiTile;
 import polaris.hotel.items.interactions.games.freeze.InteractionFreezeBlock;
@@ -88,6 +89,8 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
             "wf_antenna2",
             "wf_pressureplate",
             "wf_arrowplate",
+            "wf_arrowplate_8dir",
+            "wf_ringplate",
             "wf_box",
             "wf_pyramid",
             "wf_tile1",
@@ -426,6 +429,12 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
     }
 
     private void toggleItemState(Room room, User user, UserItem item) throws Exception {
+        if (item instanceof InteractionGameUpCounter counter) {
+            // Toggle State starts an up counter; a later firing neither restarts nor stops it.
+            if (!counter.isActive()) counter.restartFromZero(room);
+            return;
+        }
+
         if (item instanceof InteractionQueueSpeedControl queueSpeed) {
             // Its state also carries the animation frame, so it steps a whole mode, never a frame.
             // AIR shows the next mode group, but the rollers keep the step time a user chose.

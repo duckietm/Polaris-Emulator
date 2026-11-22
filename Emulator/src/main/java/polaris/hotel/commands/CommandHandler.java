@@ -426,6 +426,7 @@ public class CommandHandler {
         addCommand(new PickallCommand());
         addCommand(new PickallBuildersClubCommand());
         addCommand(new PingCommand());
+        addCommand(new ProfileImageCommand());
         addCommand(new PixelCommand());
         addCommand(new PluginsCommand());
         addCommand(new PointsCommand());

@@ -91,7 +91,46 @@ public final class WiredVariableFxStyles {
             "misc_heart",
             "misc_skull",
             "misc_star",
-            "misc_coin");
+            "misc_coin",
+            // Campaign sets, grouped in the picker by the part before the dot.
+            "ranch.aubergine",
+            "ranch.carrot",
+            "ranch.corn",
+            "ranch.egg",
+            "ranch.grape",
+            "ranch.potato",
+            "ranch.pumpkin",
+            "ranch.sapling",
+            "ranch.tomato",
+            "ranch.wheat",
+            "xmas26.bauble_red",
+            "xmas26.bauble_blue",
+            "xmas26.bauble_green",
+            "xmas26.bauble_gold",
+            "xmas26.bell",
+            "xmas26.candycane",
+            "xmas26.coal",
+            "xmas26.cookie",
+            "xmas26.gingerbreadman",
+            "xmas26.ice_cube",
+            "xmas26.key",
+            "xmas26.list",
+            "xmas26.present_green",
+            "xmas26.present_red",
+            "xmas26.present_blue",
+            "xmas26.present_purple",
+            "xmas26.present_pink",
+            "xmas26.present_orange",
+            "xmas26.present_gold",
+            "xmas26.santahat",
+            "xmas26.snowball",
+            "xmas26.stocking",
+            "xmas26.ticket_red",
+            "xmas26.ticket_blue",
+            "xmas26.ticket_orange",
+            "xmas26.ticket_green",
+            "xmas26.tree",
+            "xmas26.snowman");
 
     private WiredVariableFxStyles() {}
 
@@ -169,6 +208,8 @@ public final class WiredVariableFxStyles {
             {"upgrading", "#6bdc34", "false"},
             {"star_power", "#ffd900", "true"},
             {"droplet", "#4aabf5", "false"},
+            {"xmas26.tree", "#368349", "false"},
+            {"xmas26.snowball", "#acdafa", "false"},
         };
         int[] statusRenderers = {RENDERER_BLOCK, RENDERER_STRIPED, RENDERER_ARROW};
         for (int styleId = 0; styleId < statusBars.length; styleId++) {
@@ -200,6 +241,20 @@ public final class WiredVariableFxStyles {
                 EXTRA_ICON_ALIGNMENT,
                 "double");
         add(table, CATEGORY_BOSS_BAR, 1, new int[] {RENDERER_BOSS});
+        // The Christmas 2026 boss: a snowman at each end and its own metallic blue.
+        add(
+                table,
+                CATEGORY_BOSS_BAR,
+                2,
+                new int[] {RENDERER_BOSS},
+                EXTRA_ICON,
+                "xmas26.snowman",
+                EXTRA_ICON_ALIGNMENT,
+                "double",
+                EXTRA_COLOR,
+                "#3C5B92",
+                EXTRA_METALLIC,
+                "true");
 
         add(table, CATEGORY_NUMBER_DISPLAY, 0, new int[] {RENDERER_NUMBER_FREEZE}, EXTRA_DESIGN, "freeze_style");
         add(table, CATEGORY_NUMBER_DISPLAY, 1, new int[] {RENDERER_NUMBER_STYLED}, EXTRA_DESIGN, "shalimar");

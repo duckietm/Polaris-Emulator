@@ -173,7 +173,8 @@ public final class UserCustomizationPurchaseService {
             return PurchaseResult.failure("Your rank is too low to purchase prefixes.");
         }
         var offer = this.repository.findCatalogPrefix(catalogPrefixId).orElse(null);
-        if (offer == null) {
+        // An offer whose text carries a reserved word (staff, admin, ...) is not sold, even when the catalog lists it.
+        if (offer == null || isReservedPrefix(offer.text(), this.repository.loadPrefixBlacklist())) {
             return PurchaseResult.unavailable();
         }
         if (offer.points() > 0 && user.getUserInfo().getCurrencyAmount(offer.pointsType()) < offer.points()) {
@@ -392,8 +393,20 @@ public final class UserCustomizationPurchaseService {
             return false;
         }
         // The prefix blacklist (admin, staff, mod, owner, ...) keeps players from posing as the hotel team.
-        for (String word : this.repository.loadPrefixBlacklist()) {
-            if (folded.contains(foldForFilter(word))) {
+        return isReservedPrefix(text, this.repository.loadPrefixBlacklist());
+    }
+
+    /**
+     * Whether a prefix text carries a word of the prefix blacklist (admin, staff, mod, owner, ...), compared without
+     * case, accents or invisible characters. Players may neither write nor buy such a prefix; staff may still grant it.
+     */
+    public static boolean isReservedPrefix(String text, Collection<String> blacklist) {
+        if (text == null || text.isEmpty() || blacklist == null) {
+            return false;
+        }
+        String folded = foldForFilter(text);
+        for (String word : blacklist) {
+            if (word != null && !word.isBlank() && folded.contains(foldForFilter(word))) {
                 return true;
             }
         }

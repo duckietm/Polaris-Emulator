@@ -1743,6 +1743,8 @@ U|polaris/messages/incoming/wheel/WheelOpenEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/wheel/WheelSpinEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/wired/WiredConditionSaveDataEvent.java|CALL|getThreading|1
 U|polaris/messages/incoming/wired/WiredEffectSaveDataEvent.java|CALL|getThreading|2
+U|polaris/messages/incoming/wired/WiredRoomStateActionEvent.java|CALL|getGameEnvironment|1
+U|polaris/messages/incoming/wired/WiredRoomStateActionEvent.java|CALL|getThreading|1
 U|polaris/messages/incoming/wired/WiredTriggerSaveDataEvent.java|CALL|getThreading|1
 U|polaris/messages/outgoing/achievements/AchievementListComposer.java|CALL|getGameEnvironment|2
 U|polaris/messages/outgoing/achievements/talenttrack/TalentTrackComposer.java|CALL|getGameEnvironment|1

@@ -55,7 +55,8 @@ public final class RewardTrackAdmin {
             QuestRewards.TYPE_DIAMONDS,
             QuestRewards.TYPE_CREDITS,
             QuestRewards.TYPE_BADGE,
-            QuestRewards.TYPE_FURNI);
+            QuestRewards.TYPE_FURNI,
+            QuestRewards.TYPE_HABBICON);
 
     private RewardTrackAdmin() {}
 
@@ -198,6 +199,9 @@ public final class RewardTrackAdmin {
         if (type.equals(QuestRewards.TYPE_BADGE)
                 && (input.extraParams() == null || input.extraParams().isBlank())) {
             return "A badge prize needs the badge code in the extra parameters";
+        }
+        if (type.equals(QuestRewards.TYPE_HABBICON) && QuestRewards.habbiconIdOf(input.extraParams()) <= 0) {
+            return "A Habbicon prize needs the Habbicon id in the extra parameters";
         }
         if (type.equals(QuestRewards.TYPE_FURNI)) {
             if (input.extraParams() == null || input.extraParams().isBlank()) {

@@ -2,6 +2,8 @@ package polaris.hotel.items;
 
 import java.util.Locale;
 import java.util.Set;
+import polaris.hotel.items.interactions.InteractionGuildFurni;
+import polaris.hotel.items.interactions.InteractionGuildGate;
 import polaris.hotel.items.interactions.InteractionInformationTerminal;
 import polaris.hotel.items.interactions.InteractionPostIt;
 import polaris.hotel.items.interactions.InteractionPuzzleBox;
@@ -53,11 +55,17 @@ public final class FurnitureUsagePolicy {
             return NOBODY;
         }
 
+        // Nobody opens a group gate by hand: walking through it does.
+        if (item instanceof InteractionGuildGate) {
+            return NOBODY;
+        }
+
         if (isUsableByEverybody(item)) {
             return EVERYBODY;
         }
 
-        return item.isUsable() ? RIGHTS : NOBODY;
+        // Group furni show "Use" to rights holders also with a single state (it opens the group's page).
+        return item.isUsable() || item instanceof InteractionGuildFurni ? RIGHTS : NOBODY;
     }
 
     /**

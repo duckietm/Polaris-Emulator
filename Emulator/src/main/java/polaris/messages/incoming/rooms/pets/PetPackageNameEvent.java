@@ -132,7 +132,7 @@ public class PetPackageNameEvent extends MessageHandler {
                         }
                     } else {
                         this.client.sendResponse(
-                                new PetPackageNameValidationComposer(itemId, nameError, name == null ? "" : name));
+                                new PetPackageNameValidationComposer(itemId, nameError, errorDetail(nameError, name)));
                         return;
                     }
                 }
@@ -141,6 +141,23 @@ public class PetPackageNameEvent extends MessageHandler {
 
         this.client.sendResponse(
                 new PetPackageNameValidationComposer(itemId, PetPackageNameValidationComposer.CLOSE_WIDGET, ""));
+    }
+
+    /**
+     * What the name dialog adds to its message: the longest name allowed for "too long", the characters that are
+     * not allowed for "invalid characters", nothing for the rest.
+     */
+    static String errorDetail(int nameError, String name) {
+        if (nameError == PetPackageNameValidationComposer.NAME_TOO_LONG) {
+            return Integer.toString(CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM);
+        }
+        if (nameError != PetPackageNameValidationComposer.CONTAINS_INVALID_CHARS || name == null) {
+            return "";
+        }
+
+        StringBuilder refused = new StringBuilder();
+        name.codePoints().filter(c -> !Character.isLetterOrDigit(c)).distinct().forEach(refused::appendCodePoint);
+        return refused.toString();
     }
 
     static int validatePetPackageName(String name) {

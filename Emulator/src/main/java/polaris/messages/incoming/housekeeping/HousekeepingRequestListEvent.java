@@ -18,6 +18,7 @@ import polaris.hotel.permissions.TemporaryRanks;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.outgoing.housekeeping.HousekeepingListComposer;
 
 /**
@@ -49,6 +50,10 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
     static final String HOTEL_STATS = "hotel.stats";
     static final String HOTEL_PERMISSIONS = "hotel.permissions";
     static final String HOTEL_SECURITY = "hotel.security";
+    /** Pictures players uploaded to their profile and still show, newest first; the target is the page. */
+    static final String HOTEL_PROFILE_IMAGES = "hotel.profile_images";
+
+    private static final int PROFILE_IMAGE_PAGE = 60;
 
     private static final int CLONE_LIMIT = 50;
     private static final int NAME_LIMIT = 50;
@@ -122,6 +127,11 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
                     List.of(List.of(
                             HousekeepingLockdown.isLocked() ? "1" : "0",
                             HousekeepingTargetRankGuard.isTopRank(this.client.getUser()) ? "1" : "0"))));
+            return;
+        }
+
+        if (HOTEL_PROFILE_IMAGES.equals(listKey)) {
+            this.client.sendResponse(profileImages(listKey, Math.max(0, targetId)));
             return;
         }
 
@@ -448,5 +458,22 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
         sorted.sort(Comparator.comparingInt((ModToolRoomVisit visit) -> visit.timestamp)
                 .reversed());
         return sorted;
+    }
+
+    /** One page of uploaded profile pictures still shown: id, owner, kind, file and upload time. */
+    static HousekeepingListComposer profileImages(String listKey, int page) {
+        List<List<String>> rows =
+                ProfileImageService.get().recent(PROFILE_IMAGE_PAGE, page * PROFILE_IMAGE_PAGE).stream()
+                        .map(picture -> List.of(
+                                Integer.toString(picture.id()),
+                                Integer.toString(picture.userId()),
+                                picture.username() == null ? "" : picture.username(),
+                                picture.kind(),
+                                picture.fileName(),
+                                Integer.toString(picture.createdAt())))
+                        .toList();
+
+        return new HousekeepingListComposer(
+                listKey, page, true, "", List.of("id", "user_id", "username", "kind", "file", "created_at"), rows);
     }
 }

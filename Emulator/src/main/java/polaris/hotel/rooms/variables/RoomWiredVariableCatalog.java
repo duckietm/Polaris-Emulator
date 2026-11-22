@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import polaris.hotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomWiredInternalVariables;
 import polaris.hotel.rooms.WiredVariableDefinitionInfo;
@@ -56,19 +57,27 @@ public final class RoomWiredVariableCatalog {
 
     public static final int HOLDER_FURNI = 2;
 
-    /** Official {@code userTypeFilter} values of the variable overview. */
-    public static final int USER_FILTER_ALL = 0;
+    /** Official {@code userTypeFilter} values of the variable overview: all, Habbo, pet, bot. */
+    public static final int USER_FILTER_ALL = -1;
 
-    public static final int USER_FILTER_IN_ROOM = 1;
+    public static final int USER_FILTER_HABBO = 1;
 
-    /** Official {@code sortTypFilter} values; -1 keeps the natural (holder id) order. */
-    public static final int SORT_NONE = -1;
+    public static final int USER_FILTER_PET = 2;
 
-    public static final int SORT_VALUE_ASCENDING = 0;
+    public static final int USER_FILTER_BOT = 4;
 
-    public static final int SORT_VALUE_DESCENDING = 1;
+    /** Official {@code sortTypeFilter} values, in the order of the client's menu. */
+    public static final int SORT_VALUE_HIGHEST = 0;
 
-    public static final int SORT_NAME = 2;
+    public static final int SORT_VALUE_LOWEST = 1;
+
+    public static final int SORT_CREATION_OLDEST = 2;
+
+    public static final int SORT_CREATION_LATEST = 3;
+
+    public static final int SORT_UPDATE_OLDEST = 4;
+
+    public static final int SORT_UPDATE_LATEST = 5;
 
     private RoomWiredVariableCatalog() {}
 
@@ -509,7 +518,7 @@ public final class RoomWiredVariableCatalog {
                 variableId(target, definitionItemId),
                 isSubVariable(room, target, definitionItemId) ? TYPE_SUB : TYPE_CREATED,
                 name,
-                availability,
+                isEcho(room, definitionItemId) ? AVAILABILITY_ECHO : availability,
                 target,
                 hasValue,
                 textConnected,
@@ -517,6 +526,15 @@ public final class RoomWiredVariableCatalog {
                 textConnector(room, definitionItemId),
                 WiredVariableTextConnectorSupport.fallbackText(room, definitionItemId),
                 WiredPointerVariableSupport.isPointer(room, definitionItemId));
+    }
+
+    /** What the client is told for an Echo variable, whatever the variable it echoes has. */
+    static final int AVAILABILITY_ECHO = 21;
+
+    private static boolean isEcho(Room room, int definitionItemId) {
+        return room != null
+                && room.getRoomSpecialTypes() != null
+                && room.getRoomSpecialTypes().getExtra(definitionItemId) instanceof WiredExtraVariableEcho;
     }
 
     private static boolean isSubVariable(Room room, int target, int definitionItemId) {
@@ -648,25 +666,39 @@ public final class RoomWiredVariableCatalog {
         List<Holder> result = new ArrayList<>();
 
         for (Holder holder : holders) {
-            if (userTypeFilter == USER_FILTER_IN_ROOM
-                    && holder.getEntityType() == HOLDER_USER
-                    && !UserVariableHolders.isInRoom(room, holder.getEntityId())) {
+            if (holder.getEntityType() == HOLDER_USER && !matchesUserType(holder.getEntityId(), userTypeFilter)) {
                 continue;
             }
 
             result.add(holder);
         }
 
-        if (sortTypeFilter == SORT_VALUE_ASCENDING) {
-            result.sort(Comparator.comparingInt(Holder::getValue).thenComparingInt(Holder::getEntityId));
-        } else if (sortTypeFilter == SORT_VALUE_DESCENDING) {
-            result.sort(Comparator.comparingInt(Holder::getValue).reversed().thenComparingInt(Holder::getEntityId));
-        } else if (sortTypeFilter == SORT_NAME) {
-            result.sort(Comparator.comparing(Holder::getEntityName, String.CASE_INSENSITIVE_ORDER)
-                    .thenComparingInt(Holder::getEntityId));
-        }
+        Comparator<Holder> order =
+                switch (sortTypeFilter) {
+                    case SORT_VALUE_LOWEST -> Comparator.comparingInt(Holder::getValue);
+                    case SORT_CREATION_OLDEST -> Comparator.comparingLong(Holder::getCreatedAt);
+                    case SORT_CREATION_LATEST ->
+                        Comparator.comparingLong(Holder::getCreatedAt).reversed();
+                    case SORT_UPDATE_OLDEST -> Comparator.comparingLong(Holder::getUpdatedAt);
+                    case SORT_UPDATE_LATEST ->
+                        Comparator.comparingLong(Holder::getUpdatedAt).reversed();
+                    default -> Comparator.comparingInt(Holder::getValue).reversed();
+                };
+        result.sort(order.thenComparingInt(Holder::getEntityId));
 
         return result;
+    }
+
+    /** Whether a user-variable holder is of the kind the user type menu asks for; an unknown value shows everyone. */
+    static boolean matchesUserType(int holderKey, int userTypeFilter) {
+        UserVariableHolders.Kind wanted =
+                switch (userTypeFilter) {
+                    case USER_FILTER_HABBO -> UserVariableHolders.Kind.USER;
+                    case USER_FILTER_PET -> UserVariableHolders.Kind.PET;
+                    case USER_FILTER_BOT -> UserVariableHolders.Kind.BOT;
+                    default -> null;
+                };
+        return wanted == null || UserVariableHolders.kindOf(holderKey) == wanted;
     }
 
     /** The string id the client uses for a definition of the given target. */

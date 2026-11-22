@@ -7,8 +7,10 @@ import polaris.messages.outgoing.Outgoing;
 
 public class PetPackageNameValidationComposer extends MessageComposer {
     public static final int CLOSE_WIDGET = 0;
-    public static final int NAME_TOO_SHORT = 1;
-    public static final int NAME_TOO_LONG = 2;
+    /** The client's order: 1 is "too long", 2 is "too short". */
+    public static final int NAME_TOO_LONG = 1;
+
+    public static final int NAME_TOO_SHORT = 2;
     public static final int CONTAINS_INVALID_CHARS = 3;
     public static final int FORBIDDEN_WORDS = 4;
 

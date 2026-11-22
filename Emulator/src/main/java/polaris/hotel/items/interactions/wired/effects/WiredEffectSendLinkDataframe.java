@@ -18,6 +18,7 @@ import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.WiredEffectType;
 import polaris.hotel.wired.core.WiredContext;
 import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredPointerVariableSupport;
 import polaris.hotel.wired.core.WiredSourceUtil;
 import polaris.hotel.wired.core.WiredTextPlaceholderUtil;
 import polaris.hotel.wired.core.WiredVariableOperand;
@@ -103,9 +104,14 @@ public class WiredEffectSendLinkDataframe extends WiredEffectSendLinkBase
                         row.userSource(),
                         row.furniSource(),
                         new ArrayList<>(this.sourceFurni));
-                if (value == null) return null;
+                // A holder without the variable still sends its row: -1 as a number, "null" as a text.
+                if (value == null) {
+                    return row.mode() == WiredLinkDataframeCodec.NUMBER_VARIABLE ? "-1" : "null";
+                }
                 if (row.mode() == WiredLinkDataframeCodec.NUMBER_VARIABLE) return Integer.toString(value);
-                int definitionId = WiredLinkDataframeCodec.parseVariableId(row.variableId());
+                // A pointer is shown through the text connector of the variable it points at.
+                int definitionId = WiredPointerVariableSupport.resolve(
+                        ctx, room, WiredLinkDataframeCodec.parseVariableId(row.variableId()));
                 String text =
                         definitionId > 0 ? WiredVariableTextConnectorSupport.toText(room, definitionId, value) : null;
                 return text != null ? text : Integer.toString(value);

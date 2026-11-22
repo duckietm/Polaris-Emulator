@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -88,8 +90,18 @@ final class RoomLoadOperations implements RoomLoader.Operations {
         this.withConnection("Caught exception loading items", connection -> {
             synchronized (this.room) {
                 this.room.getItemManager().loadItems(connection);
+                this.captureRestorePoints();
             }
         });
+    }
+
+    /** The furni as they loaded: what the wired menu's Rollback goes back to. */
+    private void captureRestorePoints() {
+        if (this.room.getWiredRuntime() == null) return;
+
+        List<UserItem> items = new ArrayList<>(this.room.getFloorItems());
+        items.addAll(this.room.getWallItems());
+        this.room.getWiredRuntime().getRestorePoints().captureLoaded(items);
     }
 
     @Override

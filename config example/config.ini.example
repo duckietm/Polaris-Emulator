@@ -61,6 +61,9 @@ db.pool.max_lifetime_ms       = 1800000
 db.pool.validation_timeout_ms = 5000
 # Set to 0 to disable leak detection.
 db.pool.leak_detection_ms     = 20000
+# Transaction isolation of the pool: READ_COMMITTED (default; needed on MariaDB 11.6 and later),
+# REPEATABLE_READ, SERIALIZABLE, READ_UNCOMMITTED, or "default" to keep the database server's own.
+db.pool.transaction_isolation = READ_COMMITTED
 
 enc.enabled=false
 enc.e=3

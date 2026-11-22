@@ -213,6 +213,25 @@ public final class HabbiconService {
         return changed(connection, userId, before, Map.of());
     }
 
+    /**
+     * Hands a Habbicon out as a prize (a reward track level): it becomes owned, unseen, at no cost. One the user
+     * already has is rejected with code 4.
+     */
+    public Change grantPrize(User user, int id) throws SQLException {
+        int userId = user.getUserInfo().getId();
+        Change change = transact(userId, connection -> {
+            Snapshot before = load(connection, userId);
+            Item item = before.requireItem(id);
+            if (item.owned() || item.collected()) {
+                throw new Rejected(4);
+            }
+            save(connection, userId, id, OWNED, true);
+            return changed(connection, userId, before, Map.of());
+        });
+        publish(user, change);
+        return change;
+    }
+
     public Change change(int userId, Action action, int id) throws SQLException {
         return transact(userId, connection -> {
             Snapshot before = load(connection, userId);

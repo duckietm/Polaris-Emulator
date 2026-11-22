@@ -27,6 +27,11 @@ public class RequestSellItemEvent extends MessageHandler {
 
         MarketplaceTokenService tokens = MarketplaceTokenService.installed();
         User user = this.client.getUser();
+        // A trade-locked player may not move furni through the marketplace either; no trading pass is needed.
+        if (user != null && user.getUserStats() != null && user.getUserStats().isTradeLocked()) {
+            this.client.sendResponse(new MarketplaceSellItemComposer(MarketplaceSellItemComposer.NOT_ALLOWED, 0));
+            return;
+        }
         if (tokens == null || user == null || !tokens.settings().enabled()) {
             this.client.sendResponse(new MarketplaceSellItemComposer(MarketplaceSellItemComposer.ALLOWED, 0));
             return;

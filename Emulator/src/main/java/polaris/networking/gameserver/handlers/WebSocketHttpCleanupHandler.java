@@ -27,6 +27,8 @@ public class WebSocketHttpCleanupHandler extends ChannelInboundHandlerAdapter {
         "wiredApiHandler",
         "blockingHttpAdmissionBadge",
         "badgeHttpHandler",
+        "blockingHttpAdmissionProfileImage",
+        "profileImageHttpHandler",
         "blockingHttpAdmissionBadgeLeaderboard",
         "badgeLeaderboardHttpHandler",
         "blockingHttpAdmissionStats",

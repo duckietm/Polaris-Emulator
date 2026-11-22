@@ -17,6 +17,20 @@ final class WiredRepeaterPhase {
         this.nextDue = -1L;
     }
 
+    /**
+     * Joins the room timer: a repeater placed or saved after a Reset Timers fires on the multiples of its interval
+     * counted from that reset, in step with the repeaters that were there when it ran.
+     */
+    synchronized void join(long roomResetAt, long now, long intervalMs) {
+        if (this.resetAt >= 0 || roomResetAt < 0) {
+            return;
+        }
+        long interval = Math.max(1L, intervalMs);
+        this.resetAt = roomResetAt;
+        long missed = now <= roomResetAt ? 0 : (now - roomResetAt + interval - 1) / interval;
+        this.nextDue = roomResetAt + missed * interval;
+    }
+
     synchronized boolean shouldFire(boolean onSharedPhase, long lastRoomTick, long now, long intervalMs) {
         if (this.resetAt < 0) {
             return onSharedPhase;

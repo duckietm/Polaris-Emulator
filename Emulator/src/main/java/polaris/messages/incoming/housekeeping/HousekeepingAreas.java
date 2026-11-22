@@ -12,6 +12,7 @@ final class HousekeepingAreas {
     static final String ROOMS = "acc_hk_rooms";
     static final String PERMISSIONS = "acc_hk_permissions";
     static final String HOTEL = "acc_hk_hotel";
+    static final String PROFILE_IMAGES = "acc_hk_profile_images";
 
     private HousekeepingAreas() {}
 
@@ -25,6 +26,7 @@ final class HousekeepingAreas {
             case "hotel.bans" -> BANS;
             case "hotel.permissions" -> PERMISSIONS;
             case "hotel.wordfilter", "hotel.security" -> HOTEL;
+            case "hotel.profile_images" -> PROFILE_IMAGES;
             default -> null;
         };
     }

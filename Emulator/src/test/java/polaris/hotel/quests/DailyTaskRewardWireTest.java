@@ -49,6 +49,14 @@ class DailyTaskRewardWireTest {
     }
 
     @Test
+    void aHabbiconIsSentAsItsId() {
+        assertEquals(new Reward(12, "31", "31", 1), wire("habbicon", " 31 ", 1));
+        assertEquals(new Reward(-1, "habbicon", "", 1), wire("habbicon", "zombie", 1));
+        assertEquals(0, QuestRewards.habbiconIdOf(null));
+        assertEquals(0, QuestRewards.habbiconIdOf("-4"));
+    }
+
+    @Test
     void aMissingFurniOrAnUnknownTypeIsTheUnknownProduct() {
         assertEquals(new Reward(-1, "furni", "", 1), wire("furni", "nothing", 1));
         assertEquals(new Reward(-1, "pixels", "", 4), wire("pixels", "", 4));

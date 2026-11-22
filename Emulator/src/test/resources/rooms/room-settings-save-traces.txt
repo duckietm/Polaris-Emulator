@@ -122,11 +122,14 @@ client <- RoomSettingsSaved(room)
 == gate / the room is not loaded
 
 
-== idle / kick too soon after sleep
+== idle / kick timeout too short
+client <- RoomEditSettingsError(50, 16, idleAutokickTimeoutSeconds)
 
+== idle / kick too soon after sleep
+client <- RoomEditSettingsError(50, 16, idleAutokickTimeoutSeconds)
 
 == idle / sleep timeout too short
-
+client <- RoomEditSettingsError(50, 16, idleSleepTimeoutSeconds)
 
 == idle / switched off, timeouts ignored
 room.setName(Lounge)
@@ -154,9 +157,37 @@ room.setAllowUnderpass(true)
 room.setMuteAllPets(false)
 room.setLeaveOnDoorTileEnabled(true)
 room.setIdleSleepEnabled(false)
-room.setIdleSleepTimeoutSeconds(0)
 room.setIdleAutokickEnabled(false)
-room.setIdleAutokickTimeoutSeconds(0)
+room.setNeedsUpdate(true)
+room.sendComposer(RoomThickness(room))
+room.sendComposer(RoomChatSettings(room))
+room.sendComposer(RoomSettingsUpdated(room))
+client <- RoomSettingsSaved(room)
+
+== idle / without club only the pet setting is saved
+room.setName(Lounge)
+room.setDescription(A quiet room)
+room.setState(OPEN)
+room.setUsersMax(25)
+room.setCategory(3)
+room.setTags(fun;chat;)
+room.setTradeMode(2)
+room.setAllowPets(true)
+room.setAllowPetsEat(false)
+room.setAllowWalkthrough(true)
+room.setHideWall(false)
+room.setWallSize(0)
+room.setFloorSize(-1)
+room.setMuteOption(1)
+room.setKickOption(1)
+room.setBanOption(0)
+room.setChatMode(0)
+room.setChatWeight(1)
+room.setChatSpeed(1)
+room.setChatDistance(14)
+room.setChatProtection(2)
+room.setAllowUnderpass(true)
+room.setMuteAllPets(false)
 room.setNeedsUpdate(true)
 room.sendComposer(RoomThickness(room))
 room.sendComposer(RoomChatSettings(room))

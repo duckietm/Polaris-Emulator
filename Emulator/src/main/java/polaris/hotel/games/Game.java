@@ -2,6 +2,7 @@ package polaris.hotel.games;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.hotel.wired.highscores.WiredHighscoreDataEntry;
+import polaris.hotel.wired.highscores.WiredHighscoreScoreType;
 import polaris.messages.outgoing.guides.GuideSessionPartnerIsPlayingComposer;
 import polaris.plugin.Event;
 import polaris.plugin.events.games.GameStartedEvent;
@@ -212,49 +214,16 @@ public abstract class Game implements Runnable {
                 }
             }
 
-            if (winningTeam.getMembers().size() > 0) {
-                for (UserItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-                    Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .getHighscoreManager()
-                            .addHighscoreData(new WiredHighscoreDataEntry(
-                                    item.getId(),
-                                    winningTeam.getMembers().stream()
-                                            .map(m -> m.getUser().getUserInfo().getId())
-                                            .collect(Collectors.toList()),
-                                    winningTeam.getTotalScore(),
-                                    true,
-                                    Emulator.getIntUnixTimestamp()));
-                }
-            }
-
             for (GameTeam team : this.teams.values()) {
                 if (team == winningTeam) continue;
 
                 for (GamePlayer player : team.getMembers()) {
                     WiredManager.triggerTeamLoses(this.room, player.getUser().getRoomUnit());
                 }
-
-                if (team.getMembers().size() > 0 && team.getTotalScore() > 0) {
-                    for (UserItem item :
-                            this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-                        Emulator.getGameEnvironment()
-                                .getItemManager()
-                                .getHighscoreManager()
-                                .addHighscoreData(new WiredHighscoreDataEntry(
-                                        item.getId(),
-                                        team.getMembers().stream()
-                                                .map(m -> m.getUser()
-                                                        .getUserInfo()
-                                                        .getId())
-                                                .collect(Collectors.toList()),
-                                        team.getTotalScore(),
-                                        false,
-                                        Emulator.getIntUnixTimestamp()));
-                    }
-                }
             }
         }
+
+        this.writeHighscores();
 
         for (UserItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
             ((InteractionWiredHighscore) item).reloadData();
@@ -393,5 +362,55 @@ public abstract class Game implements Runnable {
 
     public GameState getState() {
         return state;
+    }
+
+    /**
+     * Writes the round into every high score board of the room, each by its own kind. The points boards get a
+     * team's points when it scored; most-wins counts a win for every team that shares the top, non-zero score; the
+     * fastest and longest time boards store the length of the round in seconds for every team, also one without
+     * points.
+     */
+    private void writeHighscores() {
+        int topScore = 0;
+        for (GameTeam team : this.teams.values()) {
+            topScore = Math.max(topScore, team.getTotalScore());
+        }
+        int roundSeconds = Math.max(0, this.endTime - this.startTime);
+        int now = Emulator.getIntUnixTimestamp();
+
+        for (GameTeam team : this.teams.values()) {
+            if (team.getMembers().isEmpty()) continue;
+
+            int points = team.getTotalScore();
+            boolean top = topScore > 0 && points == topScore;
+            List<Integer> userIds = team.getMembers().stream()
+                    .map(m -> m.getUser().getUserInfo().getId())
+                    .collect(Collectors.toList());
+
+            for (UserItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
+                WiredHighscoreScoreType kind = ((InteractionWiredHighscore) item).scoreType;
+                if (!writesBoard(kind, points, top)) continue;
+
+                Emulator.getGameEnvironment()
+                        .getItemManager()
+                        .getHighscoreManager()
+                        .addHighscoreData(new WiredHighscoreDataEntry(
+                                item.getId(), userIds, boardScore(kind, points, roundSeconds), top, now));
+            }
+        }
+    }
+
+    /** What a board of this kind stores for a team: the length of the round on a time board, else its points. */
+    static int boardScore(WiredHighscoreScoreType kind, int points, int roundSeconds) {
+        return isTimeBoard(kind) ? roundSeconds : points;
+    }
+
+    /** A time board takes every team; the other boards a team that scored or shares the top score. */
+    static boolean writesBoard(WiredHighscoreScoreType kind, int points, boolean top) {
+        return isTimeBoard(kind) || top || points > 0;
+    }
+
+    private static boolean isTimeBoard(WiredHighscoreScoreType kind) {
+        return kind == WiredHighscoreScoreType.FASTESTTIME || kind == WiredHighscoreScoreType.LONGESTTIME;
     }
 }

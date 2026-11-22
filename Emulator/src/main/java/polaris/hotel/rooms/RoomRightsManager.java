@@ -179,6 +179,31 @@ public class RoomRightsManager {
                         && this.room.getCurrentUsers().containsKey(userId));
     }
 
+    /**
+     * Rights that reach other people: kicking, muting, banning, and sending another user's furni back.
+     * A group member who may only decorate the group's room (the group's "members have rights" setting,
+     * controller level 2) holds rights for building and nothing more, so that level alone is not
+     * enough here. Real room rights and group admins count, as the owner does.
+     */
+    public boolean hasModerationRights(User user) {
+        if (user == null || user.getUserInfo() == null) {
+            return false;
+        }
+        int userId = user.getUserInfo().getId();
+        if (this.isOwner(user) || this.rights.contains(userId)) {
+            return true;
+        }
+        if (user.getRoomUnit() == null || !this.room.getCurrentUsers().containsKey(userId)) {
+            return false;
+        }
+        return moderates(user.getRoomUnit().getRightsLevel());
+    }
+
+    /** Every controller level but "none" and "group member who may decorate". */
+    static boolean moderates(RoomRightLevels level) {
+        return level != null && level != RoomRightLevels.NONE && level != RoomRightLevels.GUILD_RIGHTS;
+    }
+
     /** Room moderation settings, as the room settings window saves them. */
     static final int MODERATION_OWNER_ONLY = 0;
 
@@ -215,7 +240,7 @@ public class RoomRightsManager {
         if (option >= MODERATION_EVERYONE && everyoneAllowed) {
             return true;
         }
-        return option >= MODERATION_RIGHTS_HOLDERS && this.hasRights(user);
+        return option >= MODERATION_RIGHTS_HOLDERS && this.hasModerationRights(user);
     }
 
     /**

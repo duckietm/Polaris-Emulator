@@ -67,6 +67,20 @@ public final class WiredRoomTime {
         return Math.max(0L, nowMs - since);
     }
 
+    /**
+     * When the room's last Reset Timers took effect, or -1 while the room was never reset: the origin every
+     * repeater of the room counts from.
+     */
+    public static long timerResetAt(Room room, long nowMs) {
+        if (room == null) {
+            return -1L;
+        }
+
+        applyDueReset(room.getId(), nowMs);
+        Long resetMs = TIMER_RESETS_MS.get(room.getId());
+        return resetMs != null ? resetMs : -1L;
+    }
+
     /** {@link #millisSinceTimerReset} in 500 ms pulses, what @wired_timer reads. */
     public static int pulsesSinceTimerReset(Room room, long nowMs) {
         return (int) Math.min(Integer.MAX_VALUE, millisSinceTimerReset(room, nowMs) / ROOM_TICK_MS);

@@ -59,14 +59,22 @@ public class RoomSettingsSaveEvent extends MessageHandler {
             int chatDistance,
             int chatProtection) {}
 
-    /** The pet, door tile and idle settings newer clients send last, the timeouts in range. */
+    /**
+     * The pet, door tile and idle settings newer clients send last, the timeouts in range. Without
+     * {@code clubSettings} only the pet setting is written.
+     */
     private record IdleSettings(
             boolean muteAllPets,
+            boolean clubSettings,
             boolean leaveOnDoorTileEnabled,
             boolean sleepEnabled,
             int sleepTimeoutSeconds,
             boolean autokickEnabled,
-            int autokickTimeoutSeconds) {}
+            int autokickTimeoutSeconds) {
+        static IdleSettings petsOnly(boolean muteAllPets) {
+            return new IdleSettings(muteAllPets, false, false, false, 0, false, 0);
+        }
+    }
 
     /** The fields newer clients add at the end; null where the client left them out. */
     private record RoomExtras(Boolean allowUnderpass, IdleSettings idle) {}
@@ -89,7 +97,7 @@ public class RoomSettingsSaveEvent extends MessageHandler {
 
         if (options == null) return;
 
-        RoomExtras extras = this.readExtras();
+        RoomExtras extras = this.readExtras(room);
 
         if (extras == null) return;
 
@@ -341,7 +349,11 @@ public class RoomSettingsSaveEvent extends MessageHandler {
      * The fields newer clients add at the end: underpass, then the pet, door tile and idle settings. Older clients
      * leave them out. Null when an idle timeout is out of range.
      */
-    private RoomExtras readExtras() {
+    /**
+     * Reads the trailing fields; null once the packet is refused. A timeout out of range is answered with the
+     * field's name, which the settings window shows next to that field.
+     */
+    private RoomExtras readExtras(Room room) {
         Boolean allowUnderpass = this.packet.bytesAvailable() > 0 ? this.packet.readBoolean() : null;
 
         if (this.packet.bytesAvailable() <= 0) return new RoomExtras(allowUnderpass, null);
@@ -353,11 +365,18 @@ public class RoomSettingsSaveEvent extends MessageHandler {
         boolean idleAutokickEnabled = this.packet.readBoolean();
         int idleAutokickTimeoutSeconds = this.packet.readInt();
 
-        if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
-                || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
-                || (idleSleepEnabled
-                        && idleAutokickEnabled
-                        && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
+        // The door tile and idle settings are club features: without club the stored values stay as they are,
+        // whatever the packet carries.
+        if (!this.client.getUser().getUserStats().hasActiveClub()) {
+            return new RoomExtras(allowUnderpass, IdleSettings.petsOnly(muteAllPets));
+        }
+
+        String refused = refusedIdleField(
+                idleSleepEnabled, idleSleepTimeoutSeconds, idleAutokickEnabled, idleAutokickTimeoutSeconds);
+
+        if (refused != null) {
+            this.client.sendResponse(new RoomEditSettingsErrorComposer(
+                    room.getId(), RoomEditSettingsErrorComposer.CUSTOM_SETTING_INVALID, refused));
             return null;
         }
 
@@ -365,11 +384,24 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 allowUnderpass,
                 new IdleSettings(
                         muteAllPets,
+                        true,
                         leaveOnDoorTileEnabled,
                         idleSleepEnabled,
                         idleSleepTimeoutSeconds,
                         idleAutokickEnabled,
                         idleAutokickTimeoutSeconds));
+    }
+
+    /** Name of the idle timeout the client has to correct, or null when both are fine. Only a timer that is on counts. */
+    static String refusedIdleField(
+            boolean sleepEnabled, int sleepTimeoutSeconds, boolean autokickEnabled, int autokickTimeoutSeconds) {
+        if (sleepEnabled && !isInRange(sleepTimeoutSeconds, 30, 3600)) return "idleSleepTimeoutSeconds";
+        if (autokickEnabled && !isInRange(autokickTimeoutSeconds, 60, 36000)) return "idleAutokickTimeoutSeconds";
+        if (sleepEnabled && autokickEnabled && autokickTimeoutSeconds < sleepTimeoutSeconds + 30) {
+            return "idleAutokickTimeoutSeconds";
+        }
+
+        return null;
     }
 
     private void applyExtras(Room room, RoomExtras extras) {
@@ -380,11 +412,15 @@ public class RoomSettingsSaveEvent extends MessageHandler {
         if (idle == null) return;
 
         room.setMuteAllPets(idle.muteAllPets());
+
+        if (!idle.clubSettings()) return;
+
         room.setLeaveOnDoorTileEnabled(idle.leaveOnDoorTileEnabled());
         room.setIdleSleepEnabled(idle.sleepEnabled());
-        room.setIdleSleepTimeoutSeconds(idle.sleepEnabled() ? idle.sleepTimeoutSeconds() : 0);
+        // A timer that is switched off keeps the timeout it had, so switching it back on restores it.
+        if (idle.sleepEnabled()) room.setIdleSleepTimeoutSeconds(idle.sleepTimeoutSeconds());
         room.setIdleAutokickEnabled(idle.autokickEnabled());
-        room.setIdleAutokickTimeoutSeconds(idle.autokickEnabled() ? idle.autokickTimeoutSeconds() : 0);
+        if (idle.autokickEnabled()) room.setIdleAutokickTimeoutSeconds(idle.autokickTimeoutSeconds());
     }
 
     /** Marks the room for saving and tells everyone in it and the owner about the new settings. */

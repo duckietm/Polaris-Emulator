@@ -15,6 +15,7 @@ import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.UserNickIcon;
 import polaris.hotel.users.UserPrefix;
+import polaris.hotel.users.customization.UserCustomizationPurchaseService;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -26,6 +27,19 @@ public class UserNickIconsComposer extends MessageComposer {
 
     public UserNickIconsComposer(User user) {
         this.user = user;
+    }
+
+    private static List<String> prefixBlacklist(Connection connection) {
+        List<String> words = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("SELECT word FROM custom_prefix_blacklist");
+                ResultSet set = statement.executeQuery()) {
+            while (set.next()) {
+                words.add(set.getString(1));
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Prefix blacklist unavailable; the catalog is listed without it", e);
+        }
+        return words;
     }
 
     @Override
@@ -105,8 +119,14 @@ public class UserNickIconsComposer extends MessageComposer {
                         "SELECT id, display_name, text, color, icon, effect, font, points, points_type FROM custom_prefixes_catalog WHERE enabled = 1 ORDER BY sort_order ASC, id ASC")) {
             try (ResultSet set = statement.executeQuery()) {
                 List<CatalogPrefix> catalogPrefixes = new ArrayList<>();
+                List<String> blacklist = prefixBlacklist(connection);
 
                 while (set.next()) {
+                    // An offer with a reserved word (staff, admin, ...) is not for sale; its owners still see it.
+                    if (UserCustomizationPurchaseService.isReservedPrefix(set.getString("text"), blacklist)
+                            && !ownedPrefixesByCatalogId.containsKey(set.getInt("id"))) {
+                        continue;
+                    }
                     catalogPrefixes.add(new CatalogPrefix(
                             set.getInt("id"),
                             set.getString("display_name"),

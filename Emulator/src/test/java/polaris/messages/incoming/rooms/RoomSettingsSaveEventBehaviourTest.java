@@ -45,6 +45,7 @@ import polaris.hotel.rooms.RoomCategory;
 import polaris.hotel.rooms.RoomManager;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.UserStats;
 import polaris.messages.ClientMessage;
 import polaris.messages.ServerMessage;
 import polaris.messages.incoming.Incoming;
@@ -81,6 +82,7 @@ class RoomSettingsSaveEventBehaviourTest {
 
     private GameClient client;
     private User user;
+    private boolean club = true;
     private Room room;
 
     /** One settings packet; every field starts valid, a scenario changes what it is about. */
@@ -385,6 +387,17 @@ class RoomSettingsSaveEventBehaviourTest {
         this.save("idle / switched off, timeouts ignored", settings);
 
         this.fresh();
+        this.club = false;
+        settings = new Settings();
+        settings.idleSleepSeconds = 5;
+        this.save("idle / without club only the pet setting is saved", settings);
+
+        this.fresh();
+        settings = new Settings();
+        settings.idleAutokickSeconds = 59;
+        this.save("idle / kick timeout too short", settings);
+
+        this.fresh();
         settings = new Settings();
         settings.withIdle = false;
         this.save("legacy / no idle settings", settings);
@@ -404,12 +417,16 @@ class RoomSettingsSaveEventBehaviourTest {
         this.recording = false;
         this.roomLoaded = true;
         this.owner = true;
+        this.club = true;
         this.existingPassword = "";
 
         this.user = mock(User.class, withSettings().name("ann"));
         UserInfo info = mock(UserInfo.class);
         when(info.getUsername()).thenReturn("ann");
         when(this.user.getUserInfo()).thenReturn(info);
+        UserStats stats = mock(UserStats.class);
+        when(stats.hasActiveClub()).thenAnswer(i -> this.club);
+        when(this.user.getUserStats()).thenReturn(stats);
         this.client = mock(GameClient.class, withSettings().name("client"));
         when(this.client.getUser()).thenReturn(this.user);
         doAnswer(i -> this.record("client <- " + this.label(i.getArgument(0))))

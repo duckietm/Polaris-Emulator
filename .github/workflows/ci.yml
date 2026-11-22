@@ -43,6 +43,12 @@ jobs:
             echo "database=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # A packet that leaves the verified contracts, or a new exemption, needs a reason in
+      # protocol/packet-contract-ratchet-exceptions.json.
+      - name: Packet contract coverage ratchet
+        if: github.event_name == 'pull_request'
+        run: node scripts/packet-contract-ratchet.mjs --base "${{ github.event.pull_request.base.sha }}"
+
   build:
     name: Build + unit + integration
     runs-on: ubuntu-latest

@@ -13,6 +13,10 @@ public final class CorsOriginGate {
 
     private CorsOriginGate() {}
 
+    private static String whitelist() {
+        return Emulator.getConfig().getValue(CONFIG_KEY, CONFIG_DEFAULT);
+    }
+
     public static boolean isAllowed(FullHttpRequest req) {
         if (req == null) return false;
         String origin = req.headers().get(HttpHeaderNames.ORIGIN);
@@ -29,7 +33,7 @@ public final class CorsOriginGate {
         if (host == null || host.isEmpty()) return false;
         if (host.startsWith("www.")) host = host.substring(4);
 
-        String configured = Emulator.getConfig().getValue(CONFIG_KEY, CONFIG_DEFAULT);
+        String configured = whitelist();
         if (configured == null || configured.isEmpty()) return false;
 
         for (String entry : configured.split(",")) {
@@ -38,6 +42,24 @@ public final class CorsOriginGate {
             }
         }
         return false;
+    }
+
+    /**
+     * The request's origin when it may be put in a link that is mailed to a player: it has to be on the whitelist,
+     * and the whitelist must name hosts. With a bare "*" entry any page passes, so a request sent with a made-up
+     * Origin would otherwise get the hotel to mail a link to that address. Null when it cannot be trusted this way.
+     */
+    public static String linkableOrigin(FullHttpRequest req) {
+        if (!isAllowed(req)) return null;
+
+        String configured = whitelist();
+        for (String entry : configured.split(",")) {
+            if ("*".equals(entry.trim())) return null;
+        }
+
+        String origin = req.headers().get(HttpHeaderNames.ORIGIN);
+        while (origin.endsWith("/")) origin = origin.substring(0, origin.length() - 1);
+        return origin;
     }
 
     /**

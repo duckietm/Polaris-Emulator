@@ -60,8 +60,23 @@ public class MentionManager {
     /** Someone who gets the mention: always a user id, and the connected user when they are online. */
     private record Target(int userId, User online) {}
 
-    private Set<String> parseAliases(String configKey, String defaultValue) {
-        Set<String> aliases = new HashSet<>();
+    /** The words after @ that mention everyone, as the hotel configured them: trimmed, lower case, comma separated. */
+    public static String everyoneAliasList() {
+        return String.join(",", parseAliases("mentions.everyone.aliases", "all,everyone,tutti"));
+    }
+
+    /** The words after @ that mention all of a user's friends, comma separated. */
+    public static String friendsAliasList() {
+        return String.join(",", parseAliases("mentions.friends.aliases", "friends,amici"));
+    }
+
+    /** The words after @ that mention everyone in the room, comma separated. */
+    public static String roomAliasList() {
+        return String.join(",", parseAliases("mentions.room.aliases", "room,stanza"));
+    }
+
+    private static Set<String> parseAliases(String configKey, String defaultValue) {
+        Set<String> aliases = new LinkedHashSet<>();
         String raw = Emulator.getConfig().getValue(configKey, defaultValue);
         for (String alias : raw.split(",")) {
             String trimmed = alias.trim().toLowerCase();

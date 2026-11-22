@@ -127,6 +127,7 @@ class WebSocketHttpOffloadTest {
             awaitRemoved(channel, "badgeHttpHandler");
             awaitRemoved(channel, "badgeLeaderboardHttpHandler");
             awaitRemoved(channel, "emuStatsHttpHandler");
+            awaitRemoved(channel, "pluginClientHttpHandler");
             assertNotNull(channel.pipeline().context("wsCodec"));
         } finally {
             channel.close().syncUninterruptibly();

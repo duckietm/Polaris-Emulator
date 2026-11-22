@@ -263,6 +263,10 @@ U|polaris/hotel/commands/MuteBotsCommand.java|CALL|getTexts|2
 U|polaris/hotel/commands/MuteCommand.java|CALL|getGameEnvironment|1
 U|polaris/hotel/commands/MuteCommand.java|CALL|getTexts|7
 U|polaris/hotel/commands/MutePetsCommand.java|CALL|getTexts|2
+U|polaris/hotel/commands/PayCommand.java|CALL|getConfig|2
+U|polaris/hotel/commands/PayCommand.java|CALL|getDatabase|1
+U|polaris/hotel/commands/PayCommand.java|CALL|getGameServer|1
+U|polaris/hotel/commands/PayCommand.java|CALL|getTexts|1
 U|polaris/hotel/commands/PetInfoCommand.java|CALL|getTexts|19
 U|polaris/hotel/commands/PickallCommand.java|CALL|getTexts|1
 U|polaris/hotel/commands/PingCommand.java|CALL|getTexts|1
@@ -946,6 +950,7 @@ U|polaris/hotel/quests/RewardTrackManager.java|CALL|getGameEnvironment|2
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getGameServer|1
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getThreading|3
+U|polaris/hotel/rooms/BuildHeightPolicy.java|CALL|getConfig|1
 U|polaris/hotel/rooms/BuildersClubRoomSupport.java|CALL|getDatabase|10
 U|polaris/hotel/rooms/BuildersClubRoomSupport.java|CALL|getGameEnvironment|10
 U|polaris/hotel/rooms/CustomRoomLayout.java|CALL|getDatabase|1
@@ -1516,6 +1521,7 @@ U|polaris/messages/incoming/navigator/SearchRoomsMyFavouriteEvent.java|CALL|getG
 U|polaris/messages/incoming/navigator/SearchRoomsVisitedEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/navigator/SearchRoomsWithRightsEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/notifications/ActivateNotificationsEvent.java|CALL|getConfig|1
+U|polaris/messages/incoming/plugins/PluginChannelActionEvent.java|CALL|getPluginManager|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getDatabase|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/polls/AnswerPollEvent.java|CALL|getThreading|1
@@ -1769,6 +1775,7 @@ U|polaris/messages/outgoing/guilds/GuildPartsComposer.java|CALL|getGameEnvironme
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getDatabase|2
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getGameEnvironment|1
 U|polaris/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getIntUnixTimestamp|1
+U|polaris/messages/outgoing/handshake/HotelSettingsComposer.java|CALL|getConfig|1
 U|polaris/messages/outgoing/hotelview/BonusRareComposer.java|CALL|getConfig|4
 U|polaris/messages/outgoing/hotelview/NewsListComposer.java|CALL|getGameEnvironment|1
 U|polaris/messages/outgoing/housekeeping/HousekeepingUserDetailComposer.java|CALL|getDatabase|1
@@ -1891,6 +1898,7 @@ U|polaris/networking/Server.java|CALL|getConfig|1
 U|polaris/networking/gameserver/GamePacketExecutionGroup.java|CALL|getConfig|2
 U|polaris/networking/gameserver/GameServer.java|CALL|getConfig|1
 U|polaris/networking/gameserver/WebSocketChannelInitializer.java|CALL|getConfig|1
+U|polaris/networking/gameserver/WebSocketChannelInitializer.java|CALL|getPluginManager|2
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getConfig|3
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getDatabase|3
 U|polaris/networking/gameserver/auth/AccessTokenService.java|CALL|getIntUnixTimestamp|3
@@ -1918,7 +1926,8 @@ U|polaris/networking/gameserver/auth/SessionEndpoints.java|CALL|getIntUnixTimest
 U|polaris/networking/gameserver/auth/SmtpMailService.java|CALL|getConfig|9
 U|polaris/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getConfig|1
 U|polaris/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getDatabase|2
-U|polaris/networking/gameserver/auth/TurnstileVerifier.java|CALL|getConfig|3
+U|polaris/networking/gameserver/auth/TurnstileSettings.java|CALL|getConfig|4
+U|polaris/networking/gameserver/auth/TurnstileVerifier.java|CALL|getConfig|1
 U|polaris/networking/gameserver/badges/BadgeHttpHandler.java|CALL|getGameEnvironment|6
 U|polaris/networking/gameserver/badges/BadgeLeaderboardHttpHandler.java|CALL|getDatabase|2
 U|polaris/networking/gameserver/cms/CmsApiHandler.java|CALL|getConfig|2

@@ -33,7 +33,8 @@ class RoomBuildHeightTest {
     void theWidgetIsOfferedWithTheRightsAndWithdrawnWithThem() throws Exception {
         String rights = source("polaris/hotel/rooms/RoomRightsManager.java");
 
-        assertTrue(rights.contains("boolean mayBuild = !flatCtrl.equals(RoomRightLevels.NONE);"));
+        assertTrue(rights.contains(
+                "boolean mayBuild = BuildHeightPolicy.mayUse(user, !flatCtrl.equals(RoomRightLevels.NONE));"));
         assertTrue(rights.contains("new BuildHeightAvailableComposer(mayBuild)"));
         assertTrue(rights.contains("user.getRoomUnit().setBuildHeight(false, 0.0D);"));
     }
@@ -42,9 +43,10 @@ class RoomBuildHeightTest {
     void theHandlerRefusesSomebodyWhoCannotBuildAndClampsTheHeight() throws Exception {
         String handler = source("polaris/messages/incoming/rooms/items/SetBuildHeightEvent.java");
 
-        assertTrue(handler.contains("if (enabled && !room.hasRights(this.client.getUser())) return;"));
+        assertTrue(handler.contains(
+                "!BuildHeightPolicy.mayUse(this.client.getUser(), room.hasRights(this.client.getUser()))"));
         assertTrue(handler.contains("this.packet.readInt() / HEIGHT_SCALE"));
-        assertTrue(handler.contains("Math.max(0.0D, Math.min(height, Room.MAXIMUM_FURNI_HEIGHT))"));
+        assertTrue(handler.contains("BuildHeightPolicy.minHeight(), BuildHeightPolicy.maxHeight()"));
     }
 
     @Test

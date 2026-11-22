@@ -66,6 +66,8 @@ public class PluginManager {
 
     // Walked by every denied permission check on the network threads while a reload clears and refills it.
     private final Set<PolarisPlugin> plugins = ConcurrentHashMap.newKeySet();
+    // Rebuilt by every load, so the client sees the scripts of the plugins loaded now.
+    private volatile PluginClientScripts clientScripts = PluginClientScripts.EMPTY;
     private final Set<Method> methods = new HashSet<>();
     private final BooleanSupplier honorPriority;
     private final Object dispatchStateLock = new Object();
@@ -219,6 +221,8 @@ public class PluginManager {
                 }
             }
         }
+
+        this.clientScripts = PluginClientScripts.collect(this.plugins);
     }
 
     private static void closeQuietly(Closeable resource, String pluginName) {
@@ -343,6 +347,7 @@ public class PluginManager {
     }
 
     private void disposePluginsInternal() {
+        this.clientScripts = PluginClientScripts.EMPTY;
         for (PolarisPlugin p : this.plugins) {
             if (p != null) {
 
@@ -422,6 +427,11 @@ public class PluginManager {
 
     public Set<PolarisPlugin> getPlugins() {
         return this.plugins;
+    }
+
+    /** The client scripts of the loaded plugins, which the client loads on its own. */
+    public PluginClientScripts getClientScripts() {
+        return this.clientScripts;
     }
 
     private DispatchSnapshot currentDispatchSnapshot(Class<? extends Event> eventType) {

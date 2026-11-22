@@ -33,6 +33,112 @@ exactly an old class name or an old method name are translated too, so
 `Class.forName("com.eu.habbo...")` and `getMethod("getHabbo")` keep working.
 Names built at runtime (string concatenation) cannot be translated.
 
+## Permissions
+
+`hasPermission(User, String)` is not a check the plugin runs: it is the emulator asking the plugin. Whenever a
+user's rank (and their own permission overrides) deny a key, every installed plugin is asked whether it grants that
+key anyway, and the client's permission map is built the same way. Return `true` only for keys the plugin owns and
+decides, and `false` for everything else:
+
+```java
+@Override
+public boolean hasPermission(User user, String key) {
+    return key.equals("cmd_example") && isExampleModerator(user);
+}
+```
+
+Do not answer with `user.hasPermission(key)`: that asks the emulator, which asks the plugins again. Polaris answers
+such a nested question from the rank alone, so it ends instead of overflowing the stack, but it can never grant
+anything. To check a permission the plugin needs for its own command, call `user.hasPermission` from the command,
+not from this method.
+
+## Shipping the client part
+
+A plugin with a panel in the client ships its script inside the jar and names it in `plugin.json`:
+
+```json
+{
+  "name": "Example plugin",
+  "author": "Hotel developer",
+  "main": "example.polaris.ExamplePlugin",
+  "client": { "script": "client/example-plugin.js" }
+}
+```
+
+The hotel installs the whole plugin by dropping the jar in `plugins/`: nothing goes in the client configuration.
+When the plugins load, the emulator reads the script and lists it at `GET /api/client-plugins`, with the URL it
+serves it from (`/api/client-plugins/<id>.js`, the id being the plugin name in lower case) and its integrity. The
+client loads every listed script, and the browser refuses one whose content changed. A plugin reload picks up a new
+script.
+
+- The path is relative to the jar root: letters, digits, `.`, `_`, `-` and `/`, ending in `.js`, at most 255
+  characters. The file is at most 2 MB.
+- A script that cannot be served (bad path, missing file, too large) is skipped with a warning in the log; the
+  server side of the plugin still loads.
+- The script registers itself with `window.OctanePlugins.register(...)` as any client plugin does.
+- The client must be allowed to load scripts from the emulator's address: its origin in `ws.whitelist`, and its
+  host in the client's `script-src` when the hotel sets a Content Security Policy.
+
+## Talking to your own client panel
+
+A plugin and a panel in the client exchange JSON on a channel of their own, without packets of their own:
+
+```java
+PluginChannel.send(user, "casino.table", "{\"open\":true,\"bet\":10}");
+
+@EventHandler
+public static void onPanel(UserPluginChannelEvent event) {
+    if (!event.channel.equals("casino.table")) return;
+    // event.payload is what the panel sent; validate it like any player input.
+}
+```
+
+On the client, a panel listens with `onChannel("casino.table", data => ...)` and answers with
+`sendChannel("casino.table", { action: "spin" })`, both on `window.OctanePlugins`.
+
+- Name channels after the plugin, lower case: letters, digits, `.`, `-`, `_`, at most 64 characters.
+- A payload is at most 16384 characters either way. `PluginChannel.send` returns false and sends nothing
+  for a bad channel, an oversized payload or an offline user.
+- The emulator drops a client message with a bad channel or payload, and limits how often a client sends
+  them. Everything else reaches the plugins as `UserPluginChannelEvent`; the content is yours to check.
+- On the wire these are `PLUGIN_CHANNEL_MESSAGE` (10200) and `PLUGIN_CHANNEL_ACTION` (10201), in the
+  `plugin_channel` range of the packet contract.
+
+## Giving a bot something to say
+
+A bot can talk with players through its menu: when a player opens the menu of a bot a dialogue handles, the menu
+shows what the bot says and a few options; picking one asks the dialogue for the next page.
+
+```java
+BotDialogues.register(new BotDialogue() {
+    public boolean handles(Bot bot) {
+        return bot.getName().equals("Clerk");
+    }
+
+    public BotDialoguePage open(User user, Bot bot) {
+        return BotDialoguePage.of("Hello! What do you need?",
+                BotDialoguePage.option("menu", "What do you sell?"),
+                BotDialoguePage.option("bye", "Goodbye"));
+    }
+
+    public BotDialoguePage choose(User user, Bot bot, String key) {
+        return key.equals("menu") ? BotDialoguePage.of("Bread, water and coffee.") : null;
+    }
+});
+```
+
+- The option keys stay on the server: the client only sends which option of the page it was shown, with that
+  page's code, so a dialogue may act on the key directly.
+- A choice counts once, for the page that player was shown, within `BotDialogues.SESSION_SECONDS` (60), while the
+  player is in the bot's room and within `hotel.bot.dialogue.distance` tiles of it (default 6, 0 for anywhere in
+  the room). Anything else is ignored.
+- A page is cut to size: a 200-character text, 40-character labels, at most 6 options, no control characters.
+- `null` from `open` shows nothing; `null` from `choose` closes the dialogue. A dialogue that throws closes it too,
+  and the error is logged.
+- Both methods run on the network thread: keep them short. Call `BotDialogues.unregister` when the plugin stops.
+- On the wire these are `BOT_DIALOGUE` (10210, server to client) and `BOT_DIALOGUE_OPEN` (10211) /
+  `BOT_DIALOGUE_CHOOSE` (10212), in the `bot_dialogue` range of the packet contract.
+
 ## Events
 
 Register listeners through the plugin manager and annotate callbacks with

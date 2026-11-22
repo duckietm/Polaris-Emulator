@@ -467,6 +467,14 @@ public final class Emulator {
                 "",
                 "Folder of furniture .nitro/.hab bundles for furni directions; empty uses "
                         + "camera.render.assets.furniture_dir.");
+        configuration.register(
+                "building.cmd_buildheight.min_height",
+                "0",
+                "Lowest height of the build height widget, in tiles from the floor; negative allows building below it.");
+        configuration.register(
+                "building.cmd_buildheight.max_height",
+                "40",
+                "Highest height of the build height widget, in tiles; never above the furniture ceiling.");
         configuration.register("furni.directions.cache_size", "8192", "Furni types whose directions stay cached.");
         configuration.register(
                 "furni.directions.wait_ms", "50", "Longest wait for a bundle read before the default rotations apply.");

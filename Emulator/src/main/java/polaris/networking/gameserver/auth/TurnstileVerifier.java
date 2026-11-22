@@ -25,7 +25,7 @@ public final class TurnstileVerifier {
     private TurnstileVerifier() {}
 
     public static boolean isEnabled() {
-        return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("login.turnstile.enabled", false);
+        return TurnstileSettings.enabled();
     }
 
     public static boolean verify(String token, String remoteIp) {

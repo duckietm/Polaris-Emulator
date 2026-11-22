@@ -816,6 +816,7 @@ public class Outgoing {
     public static final int SoundboardPlayDeniedComposer = 9440;
     public static final int SoundboardCatalogComposer = 9441;
     public static final int SoundboardCatalogResultComposer = 9442;
+    public static final int HotelSettingsComposer = 9477;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
     public static final int MentionsPageComposer = 4803;
@@ -915,4 +916,8 @@ public class Outgoing {
     // AIR avatar collectibles (avatar editor NFT tab, docs/collectibles.md): official ids, free here.
     public static final int UserNftWardrobeComposer = 2236;
     public static final int SelectedNftWardrobeOutfitComposer = 350;
+    // CUSTOM generic plugin channel, 10200-10209 (docs/plugin-author-guide.md).
+    public static final int PluginChannelMessageComposer = 10200;
+    // CUSTOM bot dialogues in the bot menu, 10210-10219 (docs/plugin-author-guide.md).
+    public static final int BotDialogueComposer = 10210;
 }

@@ -372,7 +372,8 @@ public class RoomRightsManager {
         user.getClient().sendResponse(new RoomRightsComposer(RoomPlayTestSupport.reportedLevel(user, flatCtrl)));
         // The build height widget is hidden until the hotel says it may be used here, so the answer
         // travels with the rights; losing rights also drops a height the user had picked.
-        boolean mayBuild = !flatCtrl.equals(RoomRightLevels.NONE);
+        // The rank has to be allowed the widget too (cmd_buildheight; every rank is, unless the hotel changed it).
+        boolean mayBuild = BuildHeightPolicy.mayUse(user, !flatCtrl.equals(RoomRightLevels.NONE));
         // Playtest hides it too (the hotel's own rule beyond AIR).
         if (RoomPlayTestSupport.isBuildingRefused(user)) {
             mayBuild = false;

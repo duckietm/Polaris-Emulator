@@ -217,6 +217,7 @@
     "users_marketplace_tokens": ["tokens", "user_id"],
     "users_navigator_settings": ["caption", "display", "list_type", "user_id"],
     "users_pets": ["color", "created", "energy", "experience", "gnome_data", "hair_color", "hair_style", "happiness", "hunger", "id", "mp_allow_breed", "mp_breedable", "mp_color", "mp_death_timestamp", "mp_eyes", "mp_eyes_color", "mp_is_dead", "mp_mouth", "mp_mouth_color", "mp_nose", "mp_nose_color", "mp_type", "name", "race", "respect", "ride", "room_id", "rot", "saddle", "saddle_item_id", "thirst", "type", "user_id", "x", "y", "z"],
+    "users_profile_images": ["created_at", "file_name", "id", "kind", "removed_at", "removed_by", "user_id"],
     "users_quests": ["accepted", "accepted_at", "completed_at", "progress", "quest_id", "user_id"],
     "users_recipes": ["recipe", "user_id"],
     "users_remember_families": ["created_at", "current_version", "expires_at", "family_id", "last_ip", "revoked", "user_id"],

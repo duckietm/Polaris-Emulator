@@ -148,6 +148,38 @@ public class InfostandBackgroundManager {
         return true;
     }
 
+    /**
+     * Why a user may not pick an id: "unknown" (not in the table), "hc", "ambassador" or "rank"; null when they may.
+     * Mirrors {@link #canUse}, so the client can show a lock and its reason instead of a choice that is ignored.
+     */
+    public String denialReason(User user, Category category, int id) {
+        if (id == 0 || !this.enforce) return null;
+        if (user == null) return "unknown";
+
+        Map<Integer, Entry> categoryEntries = this.entries.get(category);
+        Entry entry = categoryEntries == null ? null : categoryEntries.get(id);
+        if (entry == null) return "unknown";
+
+        UserInfo info = user.getUserInfo();
+        int rankId = (info != null && info.getRank() != null) ? info.getRank().getId() : 0;
+        UserStats stats = user.getUserStats();
+
+        if (entry.isHcOnly && !(stats != null && stats.hasActiveClub())) return "hc";
+        if (entry.isAmbassadorOnly && !user.hasPermission(Permission.ACC_AMBASSADOR)) return "ambassador";
+        if (rankId < entry.minRank) return "rank";
+        return null;
+    }
+
+    /** The ids listed for a category, with their rules; empty when the table is not enforced. */
+    public Map<Integer, Entry> entries(Category category) {
+        Map<Integer, Entry> categoryEntries = this.entries.get(category);
+        return categoryEntries == null ? Collections.emptyMap() : Collections.unmodifiableMap(categoryEntries);
+    }
+
+    public boolean isEnforced() {
+        return this.enforce;
+    }
+
     public static final class Entry {
         public final int minRank;
         public final boolean isHcOnly;

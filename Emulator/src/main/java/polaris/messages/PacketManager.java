@@ -1762,6 +1762,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.HousekeepingLockdownEvent,
                 polaris.messages.incoming.housekeeping.HousekeepingLockdownEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingRemoveProfileImageEvent,
+                polaris.messages.incoming.housekeeping.HousekeepingRemoveProfileImageEvent.class);
 
         this.registerHandler(
                 Incoming.RequestRareValuesEvent, polaris.messages.incoming.rarevalues.RequestRareValuesEvent.class);

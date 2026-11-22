@@ -21,9 +21,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.WiredPlatform;
 import polaris.core.ConfigurationManager;
+import polaris.hotel.GameEnvironment;
+import polaris.hotel.users.User;
+import polaris.hotel.users.infostand.InfostandBackgroundManager;
+import polaris.hotel.users.infostand.InfostandBackgroundManager.Category;
+import polaris.hotel.users.profile.AnimatedBanner;
 import polaris.hotel.users.profile.ProfileImageService;
 import polaris.hotel.users.profile.ProfileImageService.Kind;
 import polaris.hotel.users.profile.ProfileImageService.ProfileImageException;
@@ -41,6 +48,8 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
 
     static final String API_PATH = "/profile-images/upload";
     static final String FILES_PATH = "/profile-images/";
+    /** Which gallery choices the signed-in player may pick, and why the others are locked. */
+    static final String OPTIONS_PATH = "/profile-images/options";
 
     private final ProfileImageService service;
 
@@ -68,6 +77,7 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
 
         try {
             if (path.equals(API_PATH)) handleApi(ctx, req);
+            else if (path.equals(OPTIONS_PATH)) handleOptions(ctx, req);
             else serveFile(ctx, req, path.substring(FILES_PATH.length()));
         } catch (Exception e) {
             LOGGER.error("[profile/image] unexpected error path={}", path, e);
@@ -116,13 +126,84 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         }
 
         try {
-            String file = this.service.store(userId, kind, ByteBufUtil.getBytes(req.content()));
+            byte[] picture = ByteBufUtil.getBytes(req.content());
+            AnimatedBanner.Placement placement =
+                    AnimatedBanner.isGif(picture) ? placement(new QueryStringDecoder(req.uri()).parameters()) : null;
+            String file = this.service.store(userId, kind, picture, placement);
             JsonObject body = result(true, "ok");
             body.addProperty("file", file);
             sendJson(ctx, req, HttpResponseStatus.OK, body);
         } catch (ProfileImageException e) {
             sendJson(ctx, req, statusFor(e.getCode()), result(false, e.getCode()));
         }
+    }
+
+    /** Where the client placed an animated banner: scale and centre in the editor frame, and sharp pixels. */
+    static AnimatedBanner.Placement placement(Map<String, List<String>> parameters) {
+        return new AnimatedBanner.Placement(
+                number(parameters, "scale"),
+                number(parameters, "cx"),
+                number(parameters, "cy"),
+                "1".equals(first(parameters, "pixelated")));
+    }
+
+    private static double number(Map<String, List<String>> parameters, String key) {
+        try {
+            double value = Double.parseDouble(first(parameters, key));
+            return Double.isFinite(value) ? value : Double.NaN;
+        } catch (NumberFormatException | NullPointerException e) {
+            return Double.NaN;
+        }
+    }
+
+    private static String first(Map<String, List<String>> parameters, String key) {
+        List<String> values = parameters.get(key);
+        return values == null || values.isEmpty() ? null : values.get(0);
+    }
+
+    /**
+     * For each category of the customiser, the ids the hotel lists and, for the ones the player may not pick, why:
+     * "hc", "ambassador" or "rank". The client shows those with a lock instead of a choice that is ignored.
+     */
+    private void handleOptions(ChannelHandlerContext ctx, FullHttpRequest req) {
+        if (req.method() == HttpMethod.OPTIONS) {
+            FullHttpResponse response =
+                    new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+            applyCors(req, response);
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            return;
+        }
+
+        int userId = authenticate(req);
+        if (userId == 0) {
+            sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, result(false, "unauthorized"));
+            return;
+        }
+
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+        InfostandBackgroundManager manager = environment == null ? null : environment.getInfostandBackgroundManager();
+        User user = environment == null ? null : environment.getUserManager().getUser(userId);
+        sendJson(ctx, req, HttpResponseStatus.OK, options(manager, user));
+    }
+
+    static JsonObject options(InfostandBackgroundManager manager, User user) {
+        JsonObject body = result(true, "ok");
+        boolean enforced = manager != null && manager.isEnforced();
+        body.addProperty("enforced", enforced);
+
+        JsonObject categories = new JsonObject();
+        if (enforced) {
+            for (Category category : Category.values()) {
+                JsonObject listed = new JsonObject();
+                for (Integer id : manager.entries(category).keySet()) {
+                    String reason = user == null ? "offline" : manager.denialReason(user, category, id);
+                    listed.addProperty(Integer.toString(id), reason == null ? "" : reason);
+                }
+                categories.add(category.dbValue, listed);
+            }
+        }
+        body.add("categories", categories);
+        return body;
     }
 
     private void serveFile(ChannelHandlerContext ctx, FullHttpRequest req, String fileName) throws IOException {
@@ -140,7 +221,7 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         byte[] bytes = req.method() == HttpMethod.HEAD ? new byte[0] : Files.readAllBytes(file);
         FullHttpResponse response =
                 new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(bytes));
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "image/jpeg");
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, fileName.endsWith(".gif") ? "image/gif" : "image/jpeg");
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, (int) Files.size(file));
         // A file name is never reused: a new picture always gets a new name.
         response.headers().set(HttpHeaderNames.CACHE_CONTROL, "public, max-age=31536000, immutable");
@@ -192,7 +273,7 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         if (origin != null && !origin.isEmpty() && CorsOriginGate.isAllowed(req)) {
             response.headers().set("Access-Control-Allow-Origin", origin);
             response.headers().set("Access-Control-Allow-Credentials", "true");
-            response.headers().set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS");
+            response.headers().set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
             response.headers().set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
         }
     }

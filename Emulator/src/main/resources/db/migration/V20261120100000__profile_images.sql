@@ -3,7 +3,7 @@
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS `profile_banner_image` VARCHAR(64) NULL DEFAULT NULL AFTER `profile_accent_id`,
 ADD COLUMN IF NOT EXISTS `profile_background_image` VARCHAR(64) NULL DEFAULT NULL AFTER `profile_banner_image`,
-ADD COLUMN IF NOT EXISTS `profile_images_blocked` TINYINT(1) NOT NULL DEFAULT 0 AFTER `profile_background_image`;
+ADD COLUMN IF NOT EXISTS `profile_images_blocked` INT(11) NOT NULL DEFAULT 0 AFTER `profile_background_image`;
 
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
     ('commands.description.cmd_profileimage', ':profileimage <username> <remove|block|unblock>'),

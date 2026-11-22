@@ -162,14 +162,19 @@ public class UserProfileComposer extends MessageComposer {
         // above are already left out for those viewers; the client shows the hidden notice.
         this.response.appendBoolean(profileHidden);
         // Profile window customisation, after isHidden for the same reason: the border picked for the
-        // infostand, the banner from the gallery and the accent colour from the palette (0 = none).
+        // infostand, the banner from the gallery and the accent colour (0 = none). A feature the hotel
+        // turned off is sent as none, so a client that knows nothing of the switches shows nothing either.
+        ProfileImageService.Settings settings = ProfileImageService.get().settings();
         this.response.appendInt(this.userInfo.getInfostandBorder());
-        this.response.appendInt(this.userInfo.getProfileBanner());
-        this.response.appendInt(this.userInfo.getProfileAccent());
+        this.response.appendInt(settings.banner() ? this.userInfo.getProfileBanner() : 0);
+        this.response.appendInt(settings.theme() ? this.userInfo.getProfileAccent() : 0);
         // Uploaded pictures: file names served on /profile-images/, '' when there is none.
         String[] uploadedPictures = ProfileImageService.storedNames(this.userInfo.getId());
-        this.response.appendString(uploadedPictures[0]);
-        this.response.appendString(uploadedPictures[1]);
+        this.response.appendString(settings.banner() && settings.enabled() ? uploadedPictures[0] : "");
+        this.response.appendString(settings.enabled() ? uploadedPictures[1] : "");
+        // The player's own background (colours, angle, pattern), then which features the hotel has on.
+        this.response.appendString(uploadedPictures[2]);
+        this.response.appendInt(settings.features());
 
         return this.response;
     }

@@ -1,5 +1,6 @@
 package polaris.networking.gameserver.profile;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -50,6 +51,12 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
     static final String FILES_PATH = "/profile-images/";
     /** Which gallery choices the signed-in player may pick, and why the others are locked. */
     static final String OPTIONS_PATH = "/profile-images/options";
+    /** {@code GET ?kind=} lists the player's own uploads of a kind, {@code DELETE ?kind=&id=} deletes one. */
+    static final String LIBRARY_PATH = "/profile-images/library";
+    /** {@code POST ?kind=&id=} puts one of the player's own uploads back on their profile. */
+    static final String SELECT_PATH = "/profile-images/select";
+    /** {@code POST ?value=rrggbb;rrggbb;angle;pattern} saves the player's own background, {@code value=} clears it. */
+    static final String STYLE_PATH = "/profile-images/style";
 
     private final ProfileImageService service;
 
@@ -78,6 +85,9 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         try {
             if (path.equals(API_PATH)) handleApi(ctx, req);
             else if (path.equals(OPTIONS_PATH)) handleOptions(ctx, req);
+            else if (path.equals(LIBRARY_PATH)) handleLibrary(ctx, req);
+            else if (path.equals(SELECT_PATH)) handleSelect(ctx, req);
+            else if (path.equals(STYLE_PATH)) handleStyle(ctx, req);
             else serveFile(ctx, req, path.substring(FILES_PATH.length()));
         } catch (Exception e) {
             LOGGER.error("[profile/image] unexpected error path={}", path, e);
@@ -138,6 +148,152 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    /** Answers a preflight; true when the request was one. */
+    private static boolean preflight(ChannelHandlerContext ctx, FullHttpRequest req) {
+        if (req.method() != HttpMethod.OPTIONS) return false;
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+        applyCors(req, response);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        return true;
+    }
+
+    private static Kind kindOf(Map<String, List<String>> parameters) {
+        String key = first(parameters, "kind");
+        return key == null ? null : Kind.fromKey(key);
+    }
+
+    private static int idOf(Map<String, List<String>> parameters) {
+        try {
+            return Integer.parseInt(first(parameters, "id"));
+        } catch (NumberFormatException | NullPointerException e) {
+            return 0;
+        }
+    }
+
+    private void handleLibrary(ChannelHandlerContext ctx, FullHttpRequest req) {
+        if (preflight(ctx, req)) return;
+
+        int userId = authenticate(req);
+        if (userId == 0) {
+            sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, result(false, "unauthorized"));
+            return;
+        }
+
+        Map<String, List<String>> parameters = new QueryStringDecoder(req.uri()).parameters();
+        Kind kind = kindOf(parameters);
+        if (kind == null) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, result(false, "invalid"));
+            return;
+        }
+
+        if (req.method() == HttpMethod.DELETE) {
+            if (!this.service.allowChange(userId)) {
+                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, result(false, "rate_limited"));
+                return;
+            }
+            boolean forgotten = this.service.forget(userId, kind, idOf(parameters));
+            sendJson(
+                    ctx,
+                    req,
+                    forgotten ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND,
+                    result(forgotten, forgotten ? "ok" : "not_found"));
+            return;
+        }
+
+        if (req.method() != HttpMethod.GET) {
+            sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, result(false, "invalid"));
+            return;
+        }
+
+        JsonObject body = result(true, "ok");
+        JsonArray items = new JsonArray();
+        for (ProfileImageService.LibraryPicture picture : this.service.library(userId, kind)) {
+            JsonObject item = new JsonObject();
+            item.addProperty("id", picture.id());
+            item.addProperty("file", picture.fileName());
+            item.addProperty("createdAt", picture.createdAt());
+            items.add(item);
+        }
+        body.add("items", items);
+        sendJson(ctx, req, HttpResponseStatus.OK, body);
+    }
+
+    private void handleSelect(ChannelHandlerContext ctx, FullHttpRequest req) {
+        if (preflight(ctx, req)) return;
+
+        int userId = authenticate(req);
+        if (userId == 0) {
+            sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, result(false, "unauthorized"));
+            return;
+        }
+        if (req.method() != HttpMethod.POST) {
+            sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, result(false, "invalid"));
+            return;
+        }
+
+        Map<String, List<String>> parameters = new QueryStringDecoder(req.uri()).parameters();
+        Kind kind = kindOf(parameters);
+        if (kind == null) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, result(false, "invalid"));
+            return;
+        }
+
+        if (!this.service.allowChange(userId)) {
+            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, result(false, "rate_limited"));
+            return;
+        }
+
+        try {
+            boolean selected = this.service.select(userId, kind, idOf(parameters));
+            sendJson(
+                    ctx,
+                    req,
+                    selected ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND,
+                    result(selected, selected ? "ok" : "not_found"));
+        } catch (ProfileImageException e) {
+            sendJson(ctx, req, statusFor(e.getCode()), result(false, e.getCode()));
+        }
+    }
+
+    private void handleStyle(ChannelHandlerContext ctx, FullHttpRequest req) {
+        if (preflight(ctx, req)) return;
+
+        int userId = authenticate(req);
+        if (userId == 0) {
+            sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, result(false, "unauthorized"));
+            return;
+        }
+        if (req.method() != HttpMethod.POST) {
+            sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, result(false, "invalid"));
+            return;
+        }
+
+        String style = ProfileImageService.normalizeBackgroundStyle(
+                first(new QueryStringDecoder(req.uri()).parameters(), "value"));
+        if (style == null) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, result(false, "invalid"));
+            return;
+        }
+
+        // The pattern over the colours is a card background of the gallery, with the same rules as picking it.
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+        InfostandBackgroundManager manager = environment == null ? null : environment.getInfostandBackgroundManager();
+        User user = environment == null ? null : environment.getUserManager().getUser(userId);
+        int pattern = ProfileImageService.backgroundStylePattern(style);
+        if (manager != null && !manager.canUse(user, Category.CARD, pattern)) {
+            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, result(false, "locked"));
+            return;
+        }
+
+        if (!this.service.allowChange(userId)) {
+            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, result(false, "rate_limited"));
+            return;
+        }
+
+        this.service.setBackgroundStyle(userId, style);
+        sendJson(ctx, req, HttpResponseStatus.OK, result(true, "ok"));
+    }
+
     /** Where the client placed an animated banner: scale and centre in the editor frame, and sharp pixels. */
     static AnimatedBanner.Placement placement(Map<String, List<String>> parameters) {
         return new AnimatedBanner.Placement(
@@ -183,7 +339,9 @@ public class ProfileImageHttpHandler extends ChannelInboundHandlerAdapter {
         GameEnvironment environment = WiredPlatform.gameEnvironment();
         InfostandBackgroundManager manager = environment == null ? null : environment.getInfostandBackgroundManager();
         User user = environment == null ? null : environment.getUserManager().getUser(userId);
-        sendJson(ctx, req, HttpResponseStatus.OK, options(manager, user));
+        JsonObject body = options(manager, user);
+        body.addProperty("features", this.service.settings().features());
+        sendJson(ctx, req, HttpResponseStatus.OK, body);
     }
 
     static JsonObject options(InfostandBackgroundManager manager, User user) {

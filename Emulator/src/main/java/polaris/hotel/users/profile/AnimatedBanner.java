@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.function.UnaryOperator;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -41,6 +43,12 @@ public final class AnimatedBanner {
 
     private static final String GIF_METADATA = "javax_imageio_gif_image_1.0";
 
+    /**
+     * A full-size canvas is up to 16 MB: at most two GIFs are composed at once, so a burst of uploads cannot
+     * take the server's memory. The others are refused and may try again.
+     */
+    private static final Semaphore RENDERING = new Semaphore(2);
+
     /** Where the picture sits in the 1280 x 220 editor frame. */
     public record Placement(double scale, double centerX, double centerY, boolean pixelated) {}
 
@@ -61,18 +69,21 @@ public final class AnimatedBanner {
             throw new ProfileImageException("invalid", "The banner has no placement.");
         }
 
-        List<Frame> frames = decode(gif);
-        List<BufferedImage> placed = new ArrayList<>(frames.size());
-        for (Frame frame : frames) {
-            placed.add(place(frame.image(), placement));
+        if (!RENDERING.tryAcquire()) {
+            throw new ProfileImageException("rate_limited", "Other banners are being prepared, try again.");
         }
 
         byte[] encoded;
         try {
-            encoded =
-                    encode(placed, frames.stream().map(Frame::delayCentiseconds).toList());
+            // Each frame is placed as soon as it is composed: only the small placed copies are kept.
+            List<Frame> frames = decode(gif, image -> place(image, placement));
+            encoded = encode(
+                    frames.stream().map(Frame::image).toList(),
+                    frames.stream().map(Frame::delayCentiseconds).toList());
         } catch (IOException e) {
             throw new ProfileImageException("failed", "The animation could not be written.");
+        } finally {
+            RENDERING.release();
         }
         if (encoded.length > MAX_OUTPUT_BYTES) {
             throw new ProfileImageException("too_large", "The animation is too large once placed.");
@@ -82,6 +93,11 @@ public final class AnimatedBanner {
 
     /** Every frame as the full logical screen, composed as the GIF's offsets and disposal methods say. */
     static List<Frame> decode(byte[] gif) throws ProfileImageException {
+        return decode(gif, AnimatedBanner::copy);
+    }
+
+    /** Every composed frame handed to {@code keep}, which returns what is kept of it. */
+    static List<Frame> decode(byte[] gif, UnaryOperator<BufferedImage> keep) throws ProfileImageException {
         if (!isGif(gif)) throw new ProfileImageException("invalid", "This is not a GIF.");
 
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(gif))) {
@@ -116,6 +132,11 @@ public final class AnimatedBanner {
                 BufferedImage canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
                 List<Frame> frames = new ArrayList<>(count);
                 for (int index = 0; index < count; index++) {
+                    // A frame declares its own size: checked before its pixels are allocated.
+                    if (reader.getWidth(index) > MAX_SOURCE_SIDE || reader.getHeight(index) > MAX_SOURCE_SIDE) {
+                        throw new ProfileImageException(
+                                "too_large", "The GIF is larger than " + MAX_SOURCE_SIDE + " pixels.");
+                    }
                     BufferedImage part = reader.read(index);
                     Node meta = reader.getImageMetadata(index).getAsTree(GIF_METADATA);
                     Node descriptor = child(meta, "ImageDescriptor");
@@ -133,7 +154,7 @@ public final class AnimatedBanner {
                         graphics.dispose();
                     }
                     // Browsers play frames shorter than 2 centiseconds at 10: do the same, so it looks as it did.
-                    frames.add(new Frame(copy(canvas), delay < 2 ? 10 : delay));
+                    frames.add(new Frame(keep.apply(canvas), delay < 2 ? 10 : delay));
 
                     if (disposal.equals("restoreToBackgroundColor")) {
                         Graphics2D clear = canvas.createGraphics();

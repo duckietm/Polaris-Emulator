@@ -87,6 +87,7 @@ class MigrationRunnerIT {
             assertTrue(
                     columnExists(ds, "users", "profile_banner_image")
                             && columnExists(ds, "users", "profile_background_image")
+                            && columnExists(ds, "users", "profile_background_style")
                             && columnExists(ds, "users", "profile_images_blocked"),
                     "uploaded profile picture columns must exist");
             assertTrue(columnExists(ds, "users", "access_token_version"), "credential revocation state must exist");

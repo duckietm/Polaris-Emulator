@@ -45,8 +45,10 @@ public class ProfileImageCommand extends Command {
         }
 
         switch (action) {
-            case "remove" -> this.service.removeAll(target.getId(), null);
-            case "block" -> this.service.removeAll(target.getId(), true);
+            case "remove" ->
+                this.service.removeAll(target.getId(), null, staff.getUserInfo().getId());
+            case "block" ->
+                this.service.removeAll(target.getId(), true, staff.getUserInfo().getId());
             default -> this.service.setBlocked(target.getId(), false);
         }
 

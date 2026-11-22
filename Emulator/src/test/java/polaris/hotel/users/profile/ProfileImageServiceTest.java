@@ -84,4 +84,26 @@ class ProfileImageServiceTest {
         assertEquals(220, Kind.BANNER.height);
         assertEquals(1380, Kind.BACKGROUND.height);
     }
+
+    @Test
+    void acceptsOnlyAWellFormedBackgroundStyle() {
+        assertEquals("1e7cb8;0b2a40;135;12", ProfileImageService.normalizeBackgroundStyle(" 1E7CB8;0b2a40;135;12 "));
+        assertEquals("", ProfileImageService.normalizeBackgroundStyle(""));
+        assertEquals(null, ProfileImageService.normalizeBackgroundStyle("1e7cb8;0b2a40;30;12"));
+        assertEquals(null, ProfileImageService.normalizeBackgroundStyle("red;blue;0;0"));
+        assertEquals(null, ProfileImageService.normalizeBackgroundStyle("1e7cb8;0b2a40;0;0;url(x)"));
+        assertEquals(12, ProfileImageService.backgroundStylePattern("1e7cb8;0b2a40;135;12"));
+        assertEquals(0, ProfileImageService.backgroundStylePattern(""));
+    }
+
+    @Test
+    void reportsTheFeaturesTheHotelHasOn() {
+        assertEquals(7, ProfileImageService.Settings.DEFAULTS.features());
+        assertEquals(
+                ProfileImageService.FEATURE_UPLOAD,
+                new ProfileImageService.Settings(true, "x", 0, false, false).features());
+        assertEquals(
+                ProfileImageService.FEATURE_BANNER | ProfileImageService.FEATURE_THEME,
+                new ProfileImageService.Settings(false, "x", 0, true, true).features());
+    }
 }

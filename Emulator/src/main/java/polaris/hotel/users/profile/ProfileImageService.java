@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +43,27 @@ public class ProfileImageService {
     public static final String ENABLED_SETTING = "profile.images.enabled";
     public static final String LOCATION_SETTING = "profile.images.location";
     public static final String COOLDOWN_SETTING = "profile.images.cooldown_seconds";
+    /** The banner on top of the profile window and its gallery; off, nobody shows or picks one. */
+    public static final String BANNER_SETTING = "profile.banner.enabled";
+    /** The accent colour of the profile and of the owner's windows; off, nobody shows or picks one. */
+    public static final String THEME_SETTING = "profile.theme.enabled";
+
+    /** The features the profile packet and the options call report: one bit each. */
+    public static final int FEATURE_BANNER = 1;
+
+    public static final int FEATURE_UPLOAD = 2;
+    public static final int FEATURE_THEME = 4;
+
+    /** How many pictures of each kind a player keeps to pick again; older ones are deleted. */
+    public static final int LIBRARY_SIZE = 6;
+
+    /**
+     * A background of the player's own: two colours as six hex digits each, the angle of the gradient
+     * between them and a gallery card background laid over it (0 for none), as "rrggbb;rrggbb;angle;pattern".
+     */
+    private static final Pattern BACKGROUND_STYLE =
+            Pattern.compile("[0-9a-f]{6};[0-9a-f]{6};(0|45|90|135|180|225|270|315);[0-9]{1,4}");
+
     public static final String DEFAULT_LOCATION = "profile-images";
     public static final int DEFAULT_COOLDOWN_SECONDS = 60;
 
@@ -96,8 +118,20 @@ public class ProfileImageService {
     private static final ProfileImageService INSTANCE = new ProfileImageService();
 
     /** The hotel's settings for uploads, read from its configuration by whoever owns it. */
-    public record Settings(boolean enabled, String location, int cooldownSeconds) {
-        public static final Settings DEFAULTS = new Settings(true, DEFAULT_LOCATION, DEFAULT_COOLDOWN_SECONDS);
+    public record Settings(boolean enabled, String location, int cooldownSeconds, boolean banner, boolean theme) {
+        public static final Settings DEFAULTS =
+                new Settings(true, DEFAULT_LOCATION, DEFAULT_COOLDOWN_SECONDS, true, true);
+
+        public Settings(boolean enabled, String location, int cooldownSeconds) {
+            this(enabled, location, cooldownSeconds, true, true);
+        }
+
+        /** The {@code FEATURE_*} bits that are on. */
+        public int features() {
+            return (this.banner ? FEATURE_BANNER : 0)
+                    | (this.enabled ? FEATURE_UPLOAD : 0)
+                    | (this.theme ? FEATURE_THEME : 0);
+        }
 
         public static Settings from(ConfigurationManager configuration) {
             if (configuration == null) return DEFAULTS;
@@ -105,19 +139,41 @@ public class ProfileImageService {
             return new Settings(
                     configuration.getBoolean(ENABLED_SETTING, true),
                     location == null || location.isBlank() ? DEFAULT_LOCATION : location,
-                    Math.max(0, configuration.getInt(COOLDOWN_SETTING, DEFAULT_COOLDOWN_SECONDS)));
+                    Math.max(0, configuration.getInt(COOLDOWN_SETTING, DEFAULT_COOLDOWN_SECONDS)),
+                    configuration.getBoolean(BANNER_SETTING, true),
+                    configuration.getBoolean(THEME_SETTING, true));
         }
     }
+
+    /** One picture a player uploaded and may put back on their profile. */
+    public record LibraryPicture(int id, String fileName, int createdAt) {}
 
     /** One stored picture still on a profile, for the staff's review list. */
     public record StoredPicture(int id, int userId, String username, String kind, String fileName, int createdAt) {}
 
     private final Map<Integer, Long> lastUpload = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> lastChange = new ConcurrentHashMap<>();
+
+    /** The shortest time between two changes that are not uploads (picking a saved picture, a style). */
+    static final long CHANGE_COOLDOWN_MILLIS = 1000L;
+
     private final AtomicBoolean orphansChecked = new AtomicBoolean(false);
     private volatile Settings settings = Settings.DEFAULTS;
 
     public static ProfileImageService get() {
         return INSTANCE;
+    }
+
+    /** False when the player changed their pictures or style less than a second ago; otherwise counts this change. */
+    public boolean allowChange(int userId) {
+        long now = System.currentTimeMillis();
+        Long last = this.lastChange.put(userId, now);
+        return last == null || now - last >= CHANGE_COOLDOWN_MILLIS;
+    }
+
+    /** The hotel's settings as last read; the defaults until the first connection is set up. */
+    public Settings settings() {
+        return this.settings;
     }
 
     /** Takes the hotel's current settings; the HTTP handler passes them as it is set up for a connection. */
@@ -131,13 +187,37 @@ public class ProfileImageService {
         }
     }
 
-    /** The stored file names of a user's banner and background pictures, "" for each one they do not have. */
+    /**
+     * The stored file names of a user's banner and background pictures and their own background style, "" for
+     * each one they do not have.
+     */
     public static String[] storedNames(int userId) {
         return SqlQueries.queryOne(
-                        "SELECT profile_banner_image, profile_background_image FROM users WHERE id = ? LIMIT 1",
-                        set -> new String[] {nullToEmpty(set.getString(1)), nullToEmpty(set.getString(2))},
+                        "SELECT profile_banner_image, profile_background_image, profile_background_style FROM users "
+                                + "WHERE id = ? LIMIT 1",
+                        set -> new String[] {
+                            nullToEmpty(set.getString(1)), nullToEmpty(set.getString(2)), nullToEmpty(set.getString(3))
+                        },
                         userId)
-                .orElse(new String[] {"", ""});
+                .orElse(new String[] {"", "", ""});
+    }
+
+    /** A background style as the client sends it, or null when it is not one. "" clears the style. */
+    public static String normalizeBackgroundStyle(String style) {
+        if (style == null) return null;
+        String value = style.trim().toLowerCase(Locale.ROOT);
+        if (value.isEmpty()) return "";
+        return BACKGROUND_STYLE.matcher(value).matches() ? value : null;
+    }
+
+    /** The gallery card background a style lays over its colours, 0 for none. */
+    public static int backgroundStylePattern(String style) {
+        if (style == null || style.isEmpty()) return 0;
+        return Integer.parseInt(style.substring(style.lastIndexOf(';') + 1));
+    }
+
+    public void setBackgroundStyle(int userId, String style) {
+        SqlQueries.update("UPDATE users SET profile_background_style = ? WHERE id = ?", style, userId);
     }
 
     private static String nullToEmpty(String value) {
@@ -201,26 +281,87 @@ public class ProfileImageService {
         }
 
         this.lastUpload.put(userId, now);
-        String previous = replace(userId, kind, fileName);
-        markRemoved(previous, userId);
-        deleteFile(previous);
+        // The picture it replaces stays in the player's library, to be picked again.
+        replace(userId, kind, fileName);
         SqlQueries.update(
                 "INSERT INTO users_profile_images (user_id, kind, file_name, created_at) VALUES (?, ?, ?, ?)",
                 userId,
                 kind.key,
                 fileName,
                 (int) (now / 1000L));
+        prune(userId, kind);
         return fileName;
     }
 
-    /** Takes the picture of one kind off a profile, by its owner. */
+    /** The pictures of one kind a player uploaded and still has, newest first. */
+    public List<LibraryPicture> library(int userId, Kind kind) {
+        return SqlQueries.query(
+                "SELECT id, file_name, created_at FROM users_profile_images "
+                        + "WHERE user_id = ? AND kind = ? AND removed_at IS NULL ORDER BY created_at DESC, id DESC",
+                set -> new LibraryPicture(set.getInt("id"), set.getString("file_name"), set.getInt("created_at")),
+                userId,
+                kind.key);
+    }
+
+    /** Puts a picture from the player's own library back on their profile. */
+    public boolean select(int userId, Kind kind, int pictureId) throws ProfileImageException {
+        if (!this.settings.enabled()) throw new ProfileImageException("disabled", "Profile pictures are turned off.");
+        if (isBlocked(userId)) throw new ProfileImageException("blocked", "This user may not use profile pictures.");
+
+        LibraryPicture picture = owned(userId, kind, pictureId);
+        if (picture == null) return false;
+        replace(userId, kind, picture.fileName());
+        return true;
+    }
+
+    /** Deletes a picture from the player's own library, and takes it off the profile if it is shown there. */
+    public boolean forget(int userId, Kind kind, int pictureId) {
+        LibraryPicture picture = owned(userId, kind, pictureId);
+        if (picture == null) return false;
+
+        String current = storedNames(userId)[kind == Kind.BANNER ? 0 : 1];
+        if (current.equals(picture.fileName())) replace(userId, kind, null);
+        markRemoved(picture.fileName(), userId);
+        deleteFile(picture.fileName());
+        return true;
+    }
+
+    private static LibraryPicture owned(int userId, Kind kind, int pictureId) {
+        return SqlQueries.queryOne(
+                        "SELECT id, file_name, created_at FROM users_profile_images "
+                                + "WHERE id = ? AND user_id = ? AND kind = ? AND removed_at IS NULL LIMIT 1",
+                        set -> new LibraryPicture(
+                                set.getInt("id"), set.getString("file_name"), set.getInt("created_at")),
+                        pictureId,
+                        userId,
+                        kind.key)
+                .orElse(null);
+    }
+
+    /** Keeps the newest {@link #LIBRARY_SIZE} pictures of a kind, and always the one on the profile. */
+    private void prune(int userId, Kind kind) {
+        String current = storedNames(userId)[kind == Kind.BANNER ? 0 : 1];
+        List<LibraryPicture> pictures = library(userId, kind);
+        for (int index = LIBRARY_SIZE; index < pictures.size(); index++) {
+            String fileName = pictures.get(index).fileName();
+            if (fileName.equals(current)) continue;
+            markRemoved(fileName, userId);
+            deleteFile(fileName);
+        }
+    }
+
+    /** Takes the picture of one kind off a profile, by its owner: it stays in their library. */
     public void remove(int userId, Kind kind) {
         remove(userId, kind, userId);
     }
 
-    /** Takes the picture of one kind off a profile; {@code removedBy} is the owner or a member of staff. */
+    /**
+     * Takes the picture of one kind off a profile. Its owner keeps it in their library; a member of staff
+     * ({@code removedBy} another user) deletes it.
+     */
     public void remove(int userId, Kind kind, int removedBy) {
         String previous = replace(userId, kind, null);
+        if (removedBy == userId) return;
         markRemoved(previous, removedBy);
         deleteFile(previous);
     }
@@ -284,7 +425,9 @@ public class ProfileImageService {
         if (current.equals(picture.fileName())) {
             remove(picture.userId(), kind, staffId);
         } else {
+            // A picture only in the owner's library: nobody sees it, but it may not be picked again.
             markRemoved(picture.fileName(), staffId);
+            deleteFile(picture.fileName());
         }
         if (block) setBlocked(picture.userId(), true);
         return true;
@@ -304,6 +447,10 @@ public class ProfileImageService {
                         if (set.getString(1) != null) named.add(set.getString(1));
                         if (set.getString(2) != null) named.add(set.getString(2));
                     });
+            // The pictures players keep in their library to pick again.
+            SqlQueries.forEach(
+                    "SELECT file_name FROM users_profile_images WHERE removed_at IS NULL",
+                    set -> named.add(set.getString(1)));
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.warn("Profile pictures: could not read which files are in use, nothing was cleaned up", e);
             return 0;

@@ -6,6 +6,7 @@ import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserStats;
 import polaris.hotel.users.infostand.InfostandBackgroundManager;
 import polaris.hotel.users.infostand.InfostandBackgroundManager.Category;
+import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.rooms.users.RoomUserDataComposer;
 
@@ -15,6 +16,8 @@ public class ChangeInfostandBgEvent extends MessageHandler {
     private static final int MIN_ID = 0;
     private static final int MAX_ID = 9999;
     private static final int KEEP = -1;
+    /** An accent of the player's own colour: this bit over the colour as 0xRRGGBB. */
+    public static final int CUSTOM_ACCENT = 0x1000000;
 
     @Override
     public void handle() throws Exception {
@@ -42,8 +45,14 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         // Profile banner and accent: a client that leaves them out, or sends KEEP, keeps the saved ones.
         int requestedBanner = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
         int requestedAccent = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
-        requestedBanner = requestedBanner == KEEP ? info.getProfileBanner() : sanitize(requestedBanner);
-        requestedAccent = requestedAccent == KEEP ? info.getProfileAccent() : sanitize(requestedAccent);
+        // A feature the hotel turned off keeps whatever was saved, for the day it is turned on again.
+        ProfileImageService.Settings settings = ProfileImageService.get().settings();
+        requestedBanner =
+                requestedBanner == KEEP || !settings.banner() ? info.getProfileBanner() : sanitize(requestedBanner);
+        int rawAccent = requestedAccent;
+        boolean customAccent = settings.theme() && isCustomAccent(rawAccent);
+        requestedAccent =
+                requestedAccent == KEEP || !settings.theme() ? info.getProfileAccent() : sanitize(requestedAccent);
 
         InfostandBackgroundManager manager = Emulator.getGameEnvironment() != null
                 ? Emulator.getGameEnvironment().getInfostandBackgroundManager()
@@ -55,7 +64,9 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int backgroundCard = resolve(manager, user, Category.CARD, requestedCard, info.getInfostandCardBg());
         int backgroundBorder = resolve(manager, user, Category.BORDER, requestedBorder, info.getInfostandBorder());
         int profileBanner = resolve(manager, user, Category.BANNER, requestedBanner, info.getProfileBanner());
-        int profileAccent = resolve(manager, user, Category.ACCENT, requestedAccent, info.getProfileAccent());
+        int profileAccent = customAccent
+                ? rawAccent
+                : resolve(manager, user, Category.ACCENT, requestedAccent, info.getProfileAccent());
 
         if (info.getInfostandBg() == backgroundImage
                 && info.getInfostandStand() == backgroundStand
@@ -81,6 +92,11 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         } else {
             this.client.sendResponse(new RoomUserDataComposer(user));
         }
+    }
+
+    /** The accent bit with nothing above it, so the colour is the low 24 bits. */
+    static boolean isCustomAccent(int value) {
+        return (value & 0xFF000000) == CUSTOM_ACCENT;
     }
 
     private static int sanitize(int value) {

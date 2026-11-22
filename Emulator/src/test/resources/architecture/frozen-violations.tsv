@@ -950,6 +950,7 @@ U|polaris/hotel/quests/RewardTrackManager.java|CALL|getGameEnvironment|2
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getGameServer|1
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getThreading|3
+U|polaris/hotel/rooms/BuildHeightPolicy.java|CALL|getConfig|1
 U|polaris/hotel/rooms/BuildersClubRoomSupport.java|CALL|getDatabase|10
 U|polaris/hotel/rooms/BuildersClubRoomSupport.java|CALL|getGameEnvironment|10
 U|polaris/hotel/rooms/CustomRoomLayout.java|CALL|getDatabase|1

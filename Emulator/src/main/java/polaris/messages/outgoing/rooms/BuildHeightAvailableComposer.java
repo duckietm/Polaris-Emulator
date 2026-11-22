@@ -1,6 +1,6 @@
 package polaris.messages.outgoing.rooms;
 
-import polaris.hotel.rooms.Room;
+import polaris.hotel.rooms.BuildHeightPolicy;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -25,8 +25,8 @@ public class BuildHeightAvailableComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.BuildHeightAvailableComposer);
         this.response.appendBoolean(this.available);
-        this.response.appendInt(0);
-        this.response.appendInt((int) Room.MAXIMUM_FURNI_HEIGHT);
+        this.response.appendInt(BuildHeightPolicy.minHeight());
+        this.response.appendInt(BuildHeightPolicy.maxHeight());
         return this.response;
     }
 }

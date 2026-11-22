@@ -1,5 +1,6 @@
 package polaris.messages.incoming.rooms.items;
 
+import polaris.hotel.rooms.BuildHeightPolicy;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomPlayTestSupport;
 import polaris.messages.incoming.MessageHandler;
@@ -8,7 +9,8 @@ import polaris.messages.incoming.MessageHandler;
  * Sets the sender's build height (packet 9351, sent by the build height widget). The client sends the
  * height in hundredths of a tile while the slider moves and a disabled packet when the widget closes.
  * The mode only changes where furniture the user places or moves lands; it is refused to anybody who
- * cannot build in the room, and the height is clamped to the hotel's furniture ceiling.
+ * cannot build in the room or whose rank is not allowed the widget, and the height is kept inside the
+ * hotel's range (see {@link BuildHeightPolicy}).
  */
 public class SetBuildHeightEvent extends MessageHandler {
 
@@ -30,7 +32,9 @@ public class SetBuildHeightEvent extends MessageHandler {
 
         if (this.client.getUser().getRoomUnit() == null) return;
 
-        if (enabled && !room.hasRights(this.client.getUser())) return;
+        // Build rights in the room and a rank that is allowed the widget: a client that was never offered it
+        // cannot switch it on with a packet of its own.
+        if (enabled && !BuildHeightPolicy.mayUse(this.client.getUser(), room.hasRights(this.client.getUser()))) return;
 
         // Playtest (the hotel's own rule beyond AIR): no build height, as for a visitor without rights.
         if (enabled && RoomPlayTestSupport.isBuildingRefused(this.client.getUser())) return;
@@ -38,6 +42,8 @@ public class SetBuildHeightEvent extends MessageHandler {
         this.client
                 .getUser()
                 .getRoomUnit()
-                .setBuildHeight(enabled, Math.max(0.0D, Math.min(height, Room.MAXIMUM_FURNI_HEIGHT)));
+                .setBuildHeight(
+                        enabled,
+                        BuildHeightPolicy.clamp(height, BuildHeightPolicy.minHeight(), BuildHeightPolicy.maxHeight()));
     }
 }

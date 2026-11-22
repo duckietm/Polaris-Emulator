@@ -131,6 +131,8 @@ class RoomPlayTestEnforcementTest {
             when(this.user.getRoomUnit()).thenReturn(this.unit);
             when(this.user.getClient()).thenReturn(this.client);
             when(this.user.hasPermission(Permission.ACC_MOVEROTATE)).thenReturn(freeMovements);
+            // Every rank is allowed the build height widget unless the hotel says otherwise.
+            when(this.user.hasPermission(BuildHeightPolicy.PERMISSION, true)).thenReturn(true);
             when(this.info.getId()).thenReturn(USER);
             when(this.info.getCurrentRoom()).thenReturn(room);
             when(this.stats.isPlayTestMode()).thenReturn(playTest);

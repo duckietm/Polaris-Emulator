@@ -20,8 +20,12 @@ class ConsumedFurniClaimTest {
         String clothing = Files.readString(INCOMING.resolve("items/RedeemClothingEvent.java"));
 
         assertTrue(
-                pets.split("if \\(!room\\.claimItem\\(item\\)\\) return;", -1).length - 1 >= 4,
+                pets.split("if \\(!this\\.claim\\(room, item\\)\\) return;", -1).length - 1 >= 4,
                 "every plant product and the horse item");
+        // The claim takes a placed product out of the room and one used from the inventory out of the inventory.
+        assertTrue(pets.contains(": room.claimItem(item);"), "a product in the room is claimed from the room");
+        assertTrue(
+                pets.contains("tryRemoveUserItem(item)"), "a product in the inventory is claimed from the inventory");
         assertFalse(pets.contains("room.removeUserItem(item);"));
         assertTrue(clothing.indexOf("room.claimItem(item)") < clothing.indexOf("this.grantClothing(clothing.id)"));
         assertTrue(clothing.contains("room.addUserItem(item);"), "a refused grant puts the furni back");

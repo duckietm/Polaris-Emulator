@@ -49,7 +49,9 @@ import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.rooms.RoomUnit;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.UserInventory;
 import polaris.hotel.users.UserItem;
+import polaris.hotel.users.inventory.ItemsComponent;
 import polaris.messages.ClientMessage;
 import polaris.messages.ServerMessage;
 import polaris.messages.incoming.Incoming;
@@ -105,6 +107,7 @@ class PetUseItemEventBehaviourTest {
     // the world of one scenario, reset by fresh()
     private boolean inRoom;
     private boolean itemThere;
+    private boolean inInventory;
     private boolean petThere;
     private int itemOwner;
     private int petOwner;
@@ -210,6 +213,26 @@ class PetUseItemEventBehaviourTest {
         this.use("horse / a dye whose name has no number");
     }
 
+    // ---------------------------------------------------------------- products used from the inventory
+
+    @Test
+    void fromTheInventory() throws Exception {
+        this.fresh("horse_saddle1", this.horse());
+        this.itemThere = false;
+        this.inInventory = true;
+        this.use("inventory / a saddle from the inventory");
+
+        this.fresh("mnstr_revival", this.plant(true, true, false, 3));
+        this.itemThere = false;
+        this.inInventory = true;
+        this.use("inventory / revival from the inventory on a dead plant");
+
+        this.fresh("mnstr_revival", this.plant(false, true, false, 3));
+        this.itemThere = false;
+        this.inInventory = true;
+        this.use("inventory / revival from the inventory on a living plant");
+    }
+
     // ---------------------------------------------------------------- monster plants
 
     @Test
@@ -255,6 +278,7 @@ class PetUseItemEventBehaviourTest {
         this.recording = false;
         this.inRoom = true;
         this.itemThere = true;
+        this.inInventory = false;
         this.petThere = true;
         this.itemOwner = OWNER_ID;
         this.petOwner = OWNER_ID;
@@ -293,8 +317,24 @@ class PetUseItemEventBehaviourTest {
         when(info.getId()).thenReturn(OWNER_ID);
         when(info.getCurrentRoom()).thenAnswer(i -> this.inRoom ? this.room : null);
         when(user.getUserInfo()).thenReturn(info);
+        // A product can also be used straight from the inventory.
+        ItemsComponent inventoryItems = this.traced(ItemsComponent.class, "inventory");
+        when(inventoryItems.getUserItem(anyInt()))
+                .thenAnswer(i -> this.inInventory && i.<Integer>getArgument(0) == ITEM_ID ? this.item : null);
+        when(inventoryItems.tryRemoveUserItem(any())).thenAnswer(i -> this.inInventory);
+        UserInventory inventory = mock(UserInventory.class);
+        when(inventory.getItemsComponent()).thenReturn(inventoryItems);
+        when(user.getInventory()).thenReturn(inventory);
         this.client = mock(GameClient.class);
         when(this.client.getUser()).thenReturn(user);
+        org.mockito.Mockito.doAnswer(i -> {
+                    if (this.recording)
+                        this.trace.add(
+                                "client <- " + i.getArgument(0).getClass().getSimpleName());
+                    return null;
+                })
+                .when(this.client)
+                .sendResponse(any(polaris.messages.outgoing.MessageComposer.class));
     }
 
     private HorsePet horse() {

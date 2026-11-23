@@ -2,6 +2,8 @@ package polaris.messages.incoming.rooms.pets;
 
 import polaris.Emulator;
 import polaris.hotel.achievements.AchievementManager;
+import polaris.hotel.items.Item;
+import polaris.hotel.items.ItemManager;
 import polaris.hotel.pets.HorsePet;
 import polaris.hotel.pets.MonsterplantPet;
 import polaris.hotel.pets.Pet;
@@ -10,6 +12,9 @@ import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomUnitStatus;
 import polaris.hotel.users.UserItem;
 import polaris.messages.incoming.MessageHandler;
+import polaris.messages.outgoing.inventory.AddUserItemComposer;
+import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
+import polaris.messages.outgoing.inventory.RemoveUserItemComposer;
 import polaris.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import polaris.messages.outgoing.rooms.pets.PetStatusUpdateComposer;
 import polaris.messages.outgoing.rooms.pets.RoomPetHorseFigureComposer;
@@ -17,6 +22,35 @@ import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import polaris.threading.runnables.QueryDeleteUserItem;
 
 public class PetUseItemEvent extends MessageHandler {
+    /** Whether the product lies in the user's inventory instead of in the room. */
+    private boolean fromInventory;
+
+    /**
+     * Takes the product for good, from the room or the inventory: false when it is gone meanwhile (picked up,
+     * traded away, or a plugin kept it), and nothing may then be changed.
+     */
+    private boolean claim(Room room, UserItem item) {
+        return this.fromInventory
+                ? this.client.getUser().getInventory().getItemsComponent().tryRemoveUserItem(item)
+                : room.claimItem(item);
+    }
+
+    /** Tells the clients the product is gone: the room for a placed one, its owner for one from the inventory. */
+    private void announceTaken(Room room, UserItem item, boolean used) {
+        if (this.fromInventory) {
+            this.client.sendResponse(new RemoveUserItemComposer(item.getId()));
+            return;
+        }
+
+        room.sendComposer(
+                (used ? new RemoveFloorItemComposer(item, true) : new RemoveFloorItemComposer(item)).compose());
+    }
+
+    /** The tiles under a product that lay in the room lose its height and its blocking. */
+    private void releaseTiles(Room room, UserItem item) {
+        if (!this.fromInventory) freeTiles(room, item);
+    }
+
     @Override
     public void handle() throws Exception {
         int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
@@ -25,6 +59,13 @@ public class PetUseItemEvent extends MessageHandler {
         if (room == null) return;
 
         UserItem item = this.client.getUser().getUserInfo().getCurrentRoom().getUserItem(itemId);
+
+        // The official client also uses a product straight from the inventory (its "Use" button there): the id is
+        // then the inventory item's, and the product is taken from the inventory instead of the room.
+        if (item == null && this.client.getUser().getInventory() != null) {
+            item = this.client.getUser().getInventory().getItemsComponent().getUserItem(itemId);
+            this.fromInventory = item != null;
+        }
 
         if (item == null) return;
 
@@ -48,19 +89,49 @@ public class PetUseItemEvent extends MessageHandler {
     private void useOnHorse(Room room, UserItem item, HorsePet horse) {
         // needsUpdate also means "not saved yet": a horse that was scratched or fed carries it, and any furni used on
         // it was then taken and deleted. Only a horse item that changed the horse is used up.
+        int replacedSaddleId = replacedSaddle(item, horse);
         if (!applyHorseItem(item, horse)) return;
 
         // The item is claimed before the room hears about it: a pickup that won the race keeps the item, and the
         // horse keeps the look it was just given, so the item is never both used and back in an inventory.
-        if (!room.claimItem(item)) return;
+        if (!this.claim(room, item)) return;
 
         Emulator.getThreading().run(horse);
         room.sendComposer(new RoomPetHorseFigureComposer(horse).compose());
-        room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
-        // As a plant product does: the tiles under the used furni lose its height and its blocking.
-        freeTiles(room, item);
+        this.announceTaken(room, item, true);
+        this.releaseTiles(room, item);
         item.setRoomId(0);
-        Emulator.getGameEnvironment().getItemManager().deleteItem(item);
+        items().deleteItem(item);
+
+        this.giveSaddleBack(replacedSaddleId);
+    }
+
+    private static ItemManager items() {
+        return Emulator.getGameEnvironment().getItemManager();
+    }
+
+    /**
+     * The saddle a new saddle takes the place of: its furni definition id, or 0 when the item is no saddle, the
+     * horse wears none, or the horse is an old one that never recorded which saddle it wears.
+     */
+    static int replacedSaddle(UserItem item, HorsePet horse) {
+        String name = item.getBaseItem().getName().toLowerCase();
+        return name.startsWith("horse_saddle") && horse.hasSaddle() ? Math.max(0, horse.getSaddleItemId()) : 0;
+    }
+
+    /** A saddle that was replaced goes back to its owner's inventory instead of being lost. */
+    private void giveSaddleBack(int saddleDefinitionId) {
+        if (saddleDefinitionId <= 0) return;
+
+        Item definition = items().getItem(saddleDefinitionId);
+        if (definition == null) return;
+
+        UserItem saddle = items().createItem(this.client.getUser().getUserInfo().getId(), definition, 0, 0, "");
+        if (saddle == null) return;
+
+        this.client.getUser().getInventory().getItemsComponent().addItem(saddle);
+        this.client.sendResponse(new AddUserItemComposer(saddle));
+        this.client.sendResponse(new InventoryRefreshComposer());
     }
 
     /** Applies a horse item to the horse; false when the furni is not one. */
@@ -138,7 +209,7 @@ public class PetUseItemEvent extends MessageHandler {
         if (!monsterplant.isDead()) return;
         // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
         // already used it.
-        if (!room.claimItem(item)) return;
+        if (!this.claim(room, item)) return;
 
         // Use revive() method which properly resets hasDied flag and sets needsUpdate
         monsterplant.revive();
@@ -162,7 +233,7 @@ public class PetUseItemEvent extends MessageHandler {
         if (monsterplant.isFullyGrown()) return;
         // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
         // already used it.
-        if (!room.claimItem(item)) return;
+        if (!this.claim(room, item)) return;
 
         monsterplant.setCreated(monsterplant.getCreated() - MonsterplantPet.growTime);
         monsterplant.needsUpdate = true;
@@ -194,7 +265,7 @@ public class PetUseItemEvent extends MessageHandler {
         if (!validItem) return;
         // Claimed before it is used: a pickup racing the use left the product in an inventory while the plant had
         // already used it.
-        if (!room.claimItem(item)) return;
+        if (!this.claim(room, item)) return;
 
         // setCanBreed now automatically sets needsUpdate
         monsterplant.setCanBreed(true);
@@ -211,10 +282,10 @@ public class PetUseItemEvent extends MessageHandler {
 
     /** Takes a used plant product out of the room, shows the plant's new state and frees the tiles under it. */
     private void takeUsedItem(Room room, UserItem item, Pet pet) {
-        room.sendComposer(new RemoveFloorItemComposer(item).compose());
+        this.announceTaken(room, item, false);
         room.sendComposer(new RoomUserStatusComposer(pet.getRoomUnit()).compose());
         room.sendComposer(new PetStatusUpdateComposer(pet).compose());
-        freeTiles(room, item);
+        this.releaseTiles(room, item);
     }
 
     /** The number after the second "_" of a furni name ("horse_dye_3" gives 3), or null when there is none. */

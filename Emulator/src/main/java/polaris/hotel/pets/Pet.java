@@ -19,6 +19,7 @@ import polaris.hotel.items.Item;
 import polaris.hotel.items.interactions.games.football.InteractionFootball;
 import polaris.hotel.items.interactions.pets.InteractionPetToy;
 import polaris.hotel.items.interactions.pets.InteractionPetTree;
+import polaris.hotel.pets.actions.ActionFree;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomChatMessage;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
@@ -394,6 +395,13 @@ public class Pet implements ISerialize, Runnable {
     public void handleCommand(PetCommand command, User user, String[] data) {
         this.idleCommandTicks = 0;
 
+        // A command to a ridden horse first puts the rider down, so the rider is never left floating where the
+        // horse stood; "free" is ignored while somebody rides.
+        if (this instanceof RideablePet rideable && rideable.getRider() != null) {
+            if (ignoredWhileRidden(command)) return;
+            rideable.getRider().getUserInfo().dismountPet();
+        }
+
         if (this.task == PetTasks.STAY) {
             this.stayStartedAt = 0;
             this.task = null;
@@ -406,6 +414,11 @@ public class Pet implements ISerialize, Runnable {
         }
 
         command.handle(this, user, data);
+    }
+
+    /** The command a ridden pet does not listen to: being set free. */
+    static boolean ignoredWhileRidden(PetCommand command) {
+        return command != null && command.action instanceof ActionFree;
     }
 
     private void chaseBall() {

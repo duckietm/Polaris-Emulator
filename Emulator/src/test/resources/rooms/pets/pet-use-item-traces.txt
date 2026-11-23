@@ -136,6 +136,32 @@ item.setRoomId(0)
 items.deleteItem(item)
 horse waits to be saved
 
+== inventory / a saddle from the inventory
+horse.hasSaddle(true)
+horse.setSaddleItemId(4000)
+threading.run(horse)
+room.sendComposer(RoomPetHorseFigure(horse))
+client <- RemoveUserItemComposer
+item.setRoomId(0)
+items.deleteItem(item)
+horse waits to be saved
+
+== inventory / revival from the inventory on a dead plant
+plant.revive()
+unit.clearStatus()
+unit.setStatus(GESTURE, rev)
+threading.run(plant)
+client <- RemoveUserItemComposer
+room.sendComposer(RoomUserStatus(unit))
+room.sendComposer(PetStatusUpdate(plant))
+progressAchievement(achievement MonsterPlantHealer)
+unit.removeStatus(GESTURE)
+threading.runPersistence(QueryDeleteUserItem(501))
+plant sends a packet update
+
+== inventory / revival from the inventory on a living plant
+
+
 == plant / a horse dye on a plant
 
 

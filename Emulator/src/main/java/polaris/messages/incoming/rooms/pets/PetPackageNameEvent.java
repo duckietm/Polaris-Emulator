@@ -144,12 +144,15 @@ public class PetPackageNameEvent extends MessageHandler {
     }
 
     /**
-     * What the name dialog adds to its message: the longest name allowed for "too long", the characters that are
-     * not allowed for "invalid characters", nothing for the rest.
+     * What the name dialog adds to its message: the longest name allowed for "too long", the shortest for "too
+     * short", the characters that are not allowed for "invalid characters", nothing for the rest.
      */
     static String errorDetail(int nameError, String name) {
         if (nameError == PetPackageNameValidationComposer.NAME_TOO_LONG) {
             return Integer.toString(CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM);
+        }
+        if (nameError == PetPackageNameValidationComposer.NAME_TOO_SHORT) {
+            return Integer.toString(CheckPetNameEvent.PET_NAME_LENGTH_MINIMUM);
         }
         if (nameError != PetPackageNameValidationComposer.CONTAINS_INVALID_CHARS || name == null) {
             return "";

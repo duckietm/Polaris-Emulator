@@ -20,6 +20,7 @@ import polaris.hotel.users.UserItem;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
+import polaris.messages.outgoing.rooms.pets.PetLevelUpdatedComposer;
 import polaris.messages.outgoing.rooms.pets.PetStatusUpdateComposer;
 import polaris.messages.outgoing.rooms.pets.RoomPetRespectComposer;
 import polaris.messages.outgoing.rooms.pets.breeding.MonsterplantBreedingResultComposer;
@@ -178,6 +179,9 @@ public class MonsterplantPet extends Pet implements IPetLook {
 
                     this.hasDied = true;
                     this.needsUpdate = true;
+                    // The clients in the room learn it can be revived: without it a revival potion offers the
+                    // plant only after the room is entered again.
+                    this.room.sendComposer(new PetStatusUpdateComposer(this).compose());
                 }
 
                 this.roomUnit.clearStatus();
@@ -186,7 +190,10 @@ public class MonsterplantPet extends Pet implements IPetLook {
             } else {
                 int difference = Emulator.getIntUnixTimestamp() - this.created + 1;
                 if (difference >= growTime) {
-                    this.growthStage = 7;
+                    if (this.growthStage != 7) {
+                        this.growthStage = 7;
+                        this.announceGrowth();
+                    }
                     boolean clear = false;
                     for (RoomUnitStatus s : this.roomUnit.getStatusMap().keySet()) {
                         if (s.equals(RoomUnitStatus.GROW)) {
@@ -206,6 +213,7 @@ public class MonsterplantPet extends Pet implements IPetLook {
                         this.roomUnit.clearStatus();
                         this.roomUnit.setStatus(RoomUnitStatus.fromString("grw" + this.growthStage), "");
                         this.packetUpdate = true;
+                        this.announceGrowth();
                     }
                 }
 
@@ -217,6 +225,15 @@ public class MonsterplantPet extends Pet implements IPetLook {
         }
 
         super.cycle();
+    }
+
+    /**
+     * Tells the room the plant's new growth stage and what it can do now. The client keeps both per pet and decides
+     * from them which plants a fertiliser or a rebreed potion is offered for.
+     */
+    private void announceGrowth() {
+        this.room.sendComposer(new PetLevelUpdatedComposer(this, this.growthStage).compose());
+        this.room.sendComposer(new PetStatusUpdateComposer(this).compose());
     }
 
     public int getType() {

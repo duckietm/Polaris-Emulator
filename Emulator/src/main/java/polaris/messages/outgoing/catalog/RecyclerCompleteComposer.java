@@ -11,16 +11,23 @@ public class RecyclerCompleteComposer extends MessageComposer {
     public static final int RECYCLING_FAILED = 2;
 
     private final int code;
+    private final int prizeId;
 
     public RecyclerCompleteComposer(int code) {
+        this(code, 0);
+    }
+
+    /** A finished exchange names the box it gave. */
+    public RecyclerCompleteComposer(int code, int prizeId) {
         this.code = code;
+        this.prizeId = prizeId;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RecyclerCompleteComposer);
         this.response.appendInt(this.code);
-        this.response.appendInt(0); // prize ID.
+        this.response.appendInt(this.prizeId);
         return this.response;
     }
 

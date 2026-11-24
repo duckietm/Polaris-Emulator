@@ -47,7 +47,7 @@ public class InteractionRoller extends UserItem {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        super.onClick(client, room, objects);
+        // A roller is not used: a double click on one does nothing, as in Habbo.
     }
 
     @Override

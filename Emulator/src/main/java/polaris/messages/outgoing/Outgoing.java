@@ -187,6 +187,8 @@ public class Outgoing {
     public static final int WiredVariablesForObjectComposer = 238;
     public static final int WiredClickUserResponseComposer = 9460; // CUSTOM
     public static final int WiredVariableHoldersPageComposer = 9461; // CUSTOM
+    public static final int WiredUserPermanentVariablesListComposer = 2933;
+    public static final int WiredPermanentVariableResultComposer = 2425;
     public static final int WiredVariableHoldersComposer = 9462; // CUSTOM
     public static final int WiredWebApiKeyResultComposer = 59;
     // Wired variable fx: the room tells each player what to draw over avatars and furni.

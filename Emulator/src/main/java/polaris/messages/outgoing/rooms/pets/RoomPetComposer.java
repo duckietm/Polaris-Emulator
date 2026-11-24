@@ -3,6 +3,7 @@ package polaris.messages.outgoing.rooms.pets;
 import java.util.Collection;
 import java.util.Collections;
 import polaris.hotel.pets.HorsePet;
+import polaris.hotel.pets.HorseSaddle;
 import polaris.hotel.pets.IPetLook;
 import polaris.hotel.pets.MonsterplantPet;
 import polaris.hotel.pets.Pet;
@@ -32,6 +33,12 @@ public class RoomPetComposer extends MessageComposer {
         return this.response;
     }
 
+    /** The saddle a horse wears, as the last part of its figure text. */
+    private static String saddlePart(HorsePet horse) {
+        HorseSaddle saddle = horse.saddle();
+        return " " + HorseSaddle.LAYER + " " + saddle.partId() + " " + saddle.paletteId();
+    }
+
     private void serializePet(Pet pet) {
         this.response.appendInt(pet.getId());
         this.response.appendString(pet.getName());
@@ -47,7 +54,8 @@ public class RoomPetComposer extends MessageComposer {
                     + ((pet instanceof HorsePet
                             ? (((HorsePet) pet).hasSaddle() ? "3" : "2") + " 2 " + ((HorsePet) pet).getHairStyle() + " "
                                     + ((HorsePet) pet).getHairColor() + " 3 " + ((HorsePet) pet).getHairStyle() + " "
-                                    + ((HorsePet) pet).getHairColor() + (((HorsePet) pet).hasSaddle() ? " 4 9 0" : "")
+                                    + ((HorsePet) pet).getHairColor()
+                                    + (((HorsePet) pet).hasSaddle() ? saddlePart((HorsePet) pet) : "")
                             : pet instanceof MonsterplantPet
                                     ? (((MonsterplantPet) pet).look.isEmpty()
                                             ? "2 1 8 6 0 -1 -1"

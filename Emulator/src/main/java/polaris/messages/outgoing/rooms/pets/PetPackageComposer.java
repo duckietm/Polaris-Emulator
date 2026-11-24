@@ -13,6 +13,16 @@ public class PetPackageComposer extends MessageComposer {
         this.item = item;
     }
 
+    /**
+     * The packet for a package: with the figure of the pet it holds when its state names one (the official client
+     * reads it after the id when it is there), the plain one otherwise.
+     */
+    public static PetPackageComposer of(UserItem item, String figure) {
+        return figure == null || figure.isEmpty()
+                ? new PetPackageComposer(item)
+                : new PetPackageWithFigureComposer(item, figure);
+    }
+
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.LeprechaunStarterBundleComposer);

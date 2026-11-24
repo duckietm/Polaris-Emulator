@@ -5,13 +5,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import polaris.hotel.catalog.RecyclerPrize;
 import polaris.hotel.users.UserItem;
 
 /**
  * What opening a recycler box came to. The box is opened in one transaction: its prize row is claimed, the reward is
  * inserted and the box is deleted together, so a failure leaves the box as it was and one box never pays twice.
  */
-public record RecycleBoxOpening(Result result, UserItem reward) {
+public record RecycleBoxOpening(Result result, UserItem reward, int chatStyleId) {
+    /** An opening that gave a furni, or nothing. */
+    public RecycleBoxOpening(Result result, UserItem reward) {
+        this(result, reward, 0);
+    }
+
     public enum Result {
         /** The reward is in the opener's inventory and the box is gone. */
         OPENED,
@@ -55,7 +61,7 @@ public record RecycleBoxOpening(Result result, UserItem reward) {
     private static RecycleBoxOpening openIn(Connection connection, ItemManager items, int userId, UserItem box)
             throws SQLException {
         int prize = prizeOf(connection, box.getId());
-        if (prize <= 0) {
+        if (prize == 0) {
             return deleteBox(connection, userId, box) ? EMPTY : FAILED;
         }
 
@@ -64,13 +70,22 @@ public record RecycleBoxOpening(Result result, UserItem reward) {
             if (delete.executeUpdate() != 1) return FAILED;
         }
 
+        // A box that holds a chat style (its number negated, see RecyclerPrize) gives no furni: the style is handed
+        // over by the caller once the box is gone.
+        int chatStyleId = RecyclerPrize.chatStyleOf(prize);
+        if (chatStyleId > 0) {
+            return deleteBox(connection, userId, box)
+                    ? new RecycleBoxOpening(Result.OPENED, null, chatStyleId)
+                    : FAILED;
+        }
+
         UserItem reward = insertReward(connection, items, userId, prize);
         if (reward == null) return FAILED;
 
         return deleteBox(connection, userId, box) ? new RecycleBoxOpening(Result.OPENED, reward) : FAILED;
     }
 
-    /** The base item the box pays out, or 0 when it holds none. */
+    /** The number the box holds: a furni definition id, a negated chat style id, or 0 when it holds nothing. */
     private static int prizeOf(Connection connection, int boxId) throws SQLException {
         try (PreparedStatement select = connection.prepareStatement(SELECT_PRIZE)) {
             select.setInt(1, boxId);

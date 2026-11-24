@@ -56,7 +56,9 @@ public final class RewardTrackAdmin {
             QuestRewards.TYPE_CREDITS,
             QuestRewards.TYPE_BADGE,
             QuestRewards.TYPE_FURNI,
-            QuestRewards.TYPE_HABBICON);
+            QuestRewards.TYPE_HABBICON,
+            QuestRewards.TYPE_BOT,
+            QuestRewards.TYPE_PET);
 
     private RewardTrackAdmin() {}
 
@@ -202,6 +204,13 @@ public final class RewardTrackAdmin {
         }
         if (type.equals(QuestRewards.TYPE_HABBICON) && QuestRewards.habbiconIdOf(input.extraParams()) <= 0) {
             return "A Habbicon prize needs the Habbicon id in the extra parameters";
+        }
+        if (type.equals(QuestRewards.TYPE_BOT) && CompanionPrize.bot(input.extraParams()) == null) {
+            return "A bot prize needs at least \"figure:<figure>\" in the extra parameters "
+                    + "(full form: <ai type>;name:<name>;figure:<figure>;gender:<M|F>;motto:<motto>)";
+        }
+        if (type.equals(QuestRewards.TYPE_PET) && CompanionPrize.pet(input.extraParams()) == null) {
+            return "A pet prize needs \"<type> <race> <colour> [name]\" in the extra parameters, e.g. 15 2 FFFFFF Horse";
         }
         if (type.equals(QuestRewards.TYPE_FURNI)) {
             if (input.extraParams() == null || input.extraParams().isBlank()) {

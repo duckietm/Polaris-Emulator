@@ -126,7 +126,7 @@
     "polls_questions": ["id", "min_selections", "options", "order", "parent_id", "poll_id", "question", "type"],
     "quests": ["campaign_code", "catalog_page_name", "chain_code", "code", "daily", "easy", "enabled", "goal_count", "goal_data", "goal_type", "id", "image_version", "reward_amount", "reward_badge", "reward_type", "seasonal_seconds", "sort_order", "wait_seconds"],
     "random_words": ["id", "word"],
-    "recycler_prizes": ["item_id", "rarity"],
+    "recycler_prizes": ["chat_style_id", "item_id", "rarity"],
     "reward_track_prizes": ["extra_params", "id", "premium", "product_item_type_id", "required_points", "reward_amount", "reward_type", "sort_order", "track_id"],
     "reward_track_task_levels": ["level", "points_reward", "premium", "required_count", "task_id", "track_id"],
     "reward_track_tasks": ["action_type", "id", "parameter", "premium", "sort_order", "track_id"],

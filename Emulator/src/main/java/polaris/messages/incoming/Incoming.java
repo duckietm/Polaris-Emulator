@@ -546,6 +546,9 @@ public class Incoming {
     public static final int WiredErrorLogsRequestEvent = 1132; // AIR (wired menu monitor error logs)
     public static final int WiredErrorLogsClearEvent = 1632; // AIR (wired menu monitor clear all)
     public static final int WiredVariableHoldersPageEvent = 975;
+    public static final int WiredPermanentVariablesRequestEvent = 2035;
+    public static final int WiredPermanentVariableSetEvent = 627;
+    public static final int WiredVariableDeleteAllHoldersEvent = 2480;
     public static final int WiredLeaderboardSubscribeEvent = 2833; // AIR (variable leaderboard)
     public static final int WiredLinkRequestConfigEvent = 3208; // AIR (WIRED Link)
     public static final int WiredLinkSaveSelectionEvent = 385; // AIR (WIRED Link)

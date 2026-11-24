@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import polaris.Emulator;
 import polaris.hotel.guilds.GuildMember;
 import polaris.hotel.guilds.GuildRank;
 import polaris.hotel.users.User;
@@ -135,6 +136,13 @@ final class RoomWiredAccessService {
                 this.inspectMask = sanitizeInspectMask(settings.inspectMask());
                 this.modifyMask = sanitizeModifyMask(settings.modifyMask());
                 this.timezone = sanitizeTimezone(settings.timezone());
+
+                // A room that never saved its wired settings can start with its group admins allowed to inspect
+                // and modify, as a new room on Habbo does, where the hotel asks for that.
+                if (settings.unsaved() && groupAdminsByDefault()) {
+                    this.inspectMask = Room.WIRED_ACCESS_GROUP_ADMINS;
+                    this.modifyMask = Room.WIRED_ACCESS_GROUP_ADMINS;
+                }
             } catch (SQLException exception) {
                 LOGGER.error("Caught SQL exception while loading wired room settings", exception);
             }
@@ -226,6 +234,13 @@ final class RoomWiredAccessService {
 
     private static boolean hasAccess(int mask, int permissionMask) {
         return (mask & permissionMask) != 0;
+    }
+
+    /** The hotel setting that gives group admins wired access in rooms without saved wired settings; off by default. */
+    static final String GROUP_ADMINS_DEFAULT_SETTING = "hotel.wired.access.default.group_admins";
+
+    private static boolean groupAdminsByDefault() {
+        return Emulator.getConfig() != null && Emulator.getConfig().getBoolean(GROUP_ADMINS_DEFAULT_SETTING, false);
     }
 
     private static int sanitizeInspectMask(int mask) {

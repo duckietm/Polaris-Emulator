@@ -8,6 +8,7 @@ import polaris.hotel.items.interactions.InteractionInformationTerminal;
 import polaris.hotel.items.interactions.InteractionPostIt;
 import polaris.hotel.items.interactions.InteractionPuzzleBox;
 import polaris.hotel.items.interactions.InteractionRandomState;
+import polaris.hotel.items.interactions.InteractionRoller;
 import polaris.hotel.items.interactions.InteractionSwitch;
 import polaris.hotel.items.interactions.InteractionSwitchRemoteControl;
 import polaris.hotel.items.interactions.InteractionTeleport;
@@ -57,6 +58,11 @@ public final class FurnitureUsagePolicy {
 
         // Nobody opens a group gate by hand: walking through it does.
         if (item instanceof InteractionGuildGate) {
+            return NOBODY;
+        }
+
+        // Nobody uses a roller, however many states its definition lists.
+        if (item instanceof InteractionRoller) {
             return NOBODY;
         }
 

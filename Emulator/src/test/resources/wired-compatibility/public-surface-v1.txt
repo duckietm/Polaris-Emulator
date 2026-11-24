@@ -8638,6 +8638,7 @@ METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#cleanupRoomUn
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#clearStatusComposerSuppression(polaris.hotel.rooms.RoomUnit):void throws -
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#collectIfOpen(java.util.List<polaris.messages.outgoing.rooms.WiredMovementsComposer$MovementData>):boolean throws -
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#collectedMovementCount(-):int throws -
+METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#deferObjectUpdate(polaris.hotel.rooms.Room,polaris.hotel.users.UserItem):boolean throws -
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#finishMovementCollection(-):polaris.messages.ServerMessage throws -
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#getAnimationDuration(polaris.hotel.rooms.Room,polaris.hotel.users.UserItem,int):int throws -
 METHOD public static polaris.hotel.wired.core.WiredMoveCarryHelper#getMovementError(polaris.hotel.rooms.Room,polaris.hotel.users.UserItem,polaris.hotel.users.UserItem,polaris.hotel.rooms.RoomTile,int,polaris.hotel.wired.core.WiredContext):polaris.hotel.rooms.FurnitureMovementError throws -
@@ -10321,6 +10322,16 @@ CONSTRUCTOR public polaris.messages.incoming.wired.WiredOpenEvent(-) throws -
 METHOD public polaris.messages.incoming.wired.WiredOpenEvent#getRatelimit(-):int throws -
 METHOD public polaris.messages.incoming.wired.WiredOpenEvent#handle(-):void throws java.lang.Exception
 
+TYPE public polaris.messages.incoming.wired.WiredPermanentVariableSetEvent extends polaris.messages.incoming.MessageHandler
+CONSTRUCTOR public polaris.messages.incoming.wired.WiredPermanentVariableSetEvent(-) throws -
+METHOD public polaris.messages.incoming.wired.WiredPermanentVariableSetEvent#getRatelimit(-):int throws -
+METHOD public polaris.messages.incoming.wired.WiredPermanentVariableSetEvent#handle(-):void throws java.lang.Exception
+
+TYPE public polaris.messages.incoming.wired.WiredPermanentVariablesRequestEvent extends polaris.messages.incoming.MessageHandler
+CONSTRUCTOR public polaris.messages.incoming.wired.WiredPermanentVariablesRequestEvent(-) throws -
+METHOD public polaris.messages.incoming.wired.WiredPermanentVariablesRequestEvent#getRatelimit(-):int throws -
+METHOD public polaris.messages.incoming.wired.WiredPermanentVariablesRequestEvent#handle(-):void throws java.lang.Exception
+
 TYPE public polaris.messages.incoming.wired.WiredRoomLogsPageEvent extends polaris.messages.incoming.MessageHandler
 FIELD public static final polaris.messages.incoming.wired.WiredRoomLogsPageEvent#LOG_SOURCE_SYSTEM:int
 FIELD public static final polaris.messages.incoming.wired.WiredRoomLogsPageEvent#LOG_SOURCE_WIRED:int
@@ -10404,6 +10415,11 @@ TYPE public polaris.messages.incoming.wired.WiredUserVariablesRequestEvent exten
 CONSTRUCTOR public polaris.messages.incoming.wired.WiredUserVariablesRequestEvent(-) throws -
 METHOD public polaris.messages.incoming.wired.WiredUserVariablesRequestEvent#getRatelimit(-):int throws -
 METHOD public polaris.messages.incoming.wired.WiredUserVariablesRequestEvent#handle(-):void throws java.lang.Exception
+
+TYPE public polaris.messages.incoming.wired.WiredVariableDeleteAllHoldersEvent extends polaris.messages.incoming.MessageHandler
+CONSTRUCTOR public polaris.messages.incoming.wired.WiredVariableDeleteAllHoldersEvent(-) throws -
+METHOD public polaris.messages.incoming.wired.WiredVariableDeleteAllHoldersEvent#getRatelimit(-):int throws -
+METHOD public polaris.messages.incoming.wired.WiredVariableDeleteAllHoldersEvent#handle(-):void throws java.lang.Exception
 
 TYPE public polaris.messages.incoming.wired.WiredVariableHashesEvent extends polaris.messages.incoming.MessageHandler
 CONSTRUCTOR public polaris.messages.incoming.wired.WiredVariableHashesEvent(-) throws -
@@ -10574,6 +10590,11 @@ CONSTRUCTOR public polaris.messages.outgoing.wired.WiredOpenComposer(polaris.hot
 METHOD protected polaris.messages.outgoing.wired.WiredOpenComposer#composeInternal(-):polaris.messages.ServerMessage throws -
 METHOD public polaris.messages.outgoing.wired.WiredOpenComposer#getItem(-):polaris.hotel.users.UserItem throws -
 
+TYPE public polaris.messages.outgoing.wired.WiredPermanentVariableResultComposer extends polaris.messages.outgoing.MessageComposer
+CONSTRUCTOR public polaris.messages.outgoing.wired.WiredPermanentVariableResultComposer(boolean) throws -
+METHOD protected polaris.messages.outgoing.wired.WiredPermanentVariableResultComposer#composeInternal(-):polaris.messages.ServerMessage throws -
+METHOD public polaris.messages.outgoing.wired.WiredPermanentVariableResultComposer#isSuccess(-):boolean throws -
+
 TYPE public polaris.messages.outgoing.wired.WiredRewardAlertComposer extends polaris.messages.outgoing.MessageComposer
 FIELD public static final polaris.messages.outgoing.wired.WiredRewardAlertComposer#LIMITED_NO_MORE_AVAILABLE:int
 FIELD public static final polaris.messages.outgoing.wired.WiredRewardAlertComposer#REWARD_ALL_COLLECTED:int
@@ -10625,6 +10646,12 @@ CONSTRUCTOR public polaris.messages.outgoing.wired.WiredTriggerDataComposer(pola
 METHOD protected polaris.messages.outgoing.wired.WiredTriggerDataComposer#composeInternal(-):polaris.messages.ServerMessage throws -
 METHOD public polaris.messages.outgoing.wired.WiredTriggerDataComposer#getRoom(-):polaris.hotel.rooms.Room throws -
 METHOD public polaris.messages.outgoing.wired.WiredTriggerDataComposer#getTrigger(-):polaris.hotel.items.interactions.InteractionWiredTrigger throws -
+
+TYPE public polaris.messages.outgoing.wired.WiredUserPermanentVariablesListComposer extends polaris.messages.outgoing.MessageComposer
+FIELD public static final polaris.messages.outgoing.wired.WiredUserPermanentVariablesListComposer#ENTITY_HABBO:int
+CONSTRUCTOR public polaris.messages.outgoing.wired.WiredUserPermanentVariablesListComposer(polaris.hotel.rooms.variables.PermanentUserVariables$Listing) throws -
+METHOD protected polaris.messages.outgoing.wired.WiredUserPermanentVariablesListComposer#composeInternal(-):polaris.messages.ServerMessage throws -
+METHOD public polaris.messages.outgoing.wired.WiredUserPermanentVariablesListComposer#getListing(-):polaris.hotel.rooms.variables.PermanentUserVariables$Listing throws -
 
 TYPE public polaris.messages.outgoing.wired.WiredUserVariablesDataComposer extends polaris.messages.outgoing.MessageComposer
 FIELD public static final polaris.messages.outgoing.wired.WiredUserVariablesDataComposer#METADATA_TYPE_CONTEXT:int

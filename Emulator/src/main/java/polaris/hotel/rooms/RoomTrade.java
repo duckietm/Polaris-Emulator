@@ -9,6 +9,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.items.CreditFurni;
 import polaris.hotel.items.interactions.wired.chest.InteractionWiredChest;
 import polaris.hotel.users.LedgerWalletMutation;
 import polaris.hotel.users.User;
@@ -441,8 +442,7 @@ public class RoomTrade {
         if (item instanceof InteractionWiredChest) return 0;
         if (!Emulator.getConfig().getBoolean("redeem.currency.trade")) return 0;
 
-        if (!item.getBaseItem().getName().startsWith("CF_")
-                && !item.getBaseItem().getName().startsWith("CFC_")) return 0;
+        if (!CreditFurni.isRedeemableCreditName(item.getBaseItem().getName())) return 0;
 
         try {
             return Integer.parseInt(item.getBaseItem().getName().split("_")[1]);

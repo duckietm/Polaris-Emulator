@@ -17,6 +17,7 @@ import polaris.hotel.items.interactions.InteractionWiredTrigger;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.wired.core.WiredManager;
+import polaris.hotel.wired.core.WiredMoveCarryHelper;
 import polaris.hotel.wired.core.WiredMovementPhysics;
 import polaris.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
 import polaris.messages.outgoing.rooms.items.FloorItemUpdateComposer;
@@ -730,7 +731,8 @@ final class RoomItemMovementService {
         item.needsUpdate(true);
         Emulator.getThreading().run(item);
 
-        if (sendUpdates) {
+        // Inside a wired firing the update waits for the firing's end, so a furni moved several times is sent once.
+        if (sendUpdates && !WiredMoveCarryHelper.deferObjectUpdate(this.room, item)) {
             this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
         }
 

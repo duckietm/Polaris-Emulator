@@ -7,6 +7,7 @@ import java.util.Map;
 import polaris.Emulator;
 import polaris.hotel.economy.EconomyMutationResult;
 import polaris.hotel.gameclients.GameClient;
+import polaris.hotel.items.CreditFurni;
 import polaris.hotel.items.interactions.wired.chest.InteractionWiredChest;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
 import polaris.hotel.users.LedgerWalletMutation;
@@ -93,7 +94,7 @@ public class RedeemCommand extends Command {
 
             String name = item.getBaseItem().getName();
 
-            if ((name.startsWith("CF_") || name.startsWith("CFC_")) && !name.contains("_diamond_")) {
+            if (CreditFurni.isRedeemableCreditName(name) && !name.contains("_diamond_")) {
                 add(redeemables, item, FurnitureRedeemedEvent.CREDITS, parsePositiveRedeemValue(name, 1));
             } else if (name.startsWith("PF_")) {
                 add(redeemables, item, FurnitureRedeemedEvent.PIXELS, parsePositiveRedeemValue(name, 1));

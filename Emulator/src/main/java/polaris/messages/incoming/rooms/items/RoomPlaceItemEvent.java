@@ -179,6 +179,9 @@ public class RoomPlaceItemEvent extends MessageHandler {
                 return;
             }
 
+            // Furni a user just put down or moved rests one tick before a roller acts on it.
+            room.getRollerManager().noteMovedByUser(item);
+
             // A wired box you just put down is a box you are about to configure: the official client
             // opens its window straight away rather than making you click what you just placed.
             if (item instanceof InteractionWired && room.canInspectWired(this.client.getUser())) {

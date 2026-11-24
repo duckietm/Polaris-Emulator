@@ -64,6 +64,9 @@ public class RotateMoveItemEvent extends MessageHandler {
             return;
         }
 
+        // Furni a user just put down or moved rests one tick before a roller acts on it.
+        room.getRollerManager().noteMovedByUser(item);
+
         if (moved) {
             polaris.hotel.quests.QuestProgressEvents.progress(
                     this.client.getUser(), polaris.hotel.quests.QuestGoalType.MOVE_FURNI, 1);

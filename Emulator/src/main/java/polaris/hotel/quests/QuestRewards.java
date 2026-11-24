@@ -4,12 +4,18 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.bots.Bot;
 import polaris.hotel.items.FurnitureType;
 import polaris.hotel.items.Item;
+import polaris.hotel.items.ItemManager;
+import polaris.hotel.pets.Pet;
+import polaris.hotel.pets.PetPackage;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserBadge;
 import polaris.hotel.users.UserItem;
 import polaris.hotel.users.inventory.BadgesComponent;
+import polaris.messages.outgoing.inventory.AddBotComposer;
+import polaris.messages.outgoing.inventory.AddPetComposer;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.quests.ActiveDailyTasksComposer;
@@ -28,6 +34,11 @@ public final class QuestRewards {
     public static final String TYPE_FURNI = "furni";
     /** A Habbicon; the extra parameter is its id. */
     public static final String TYPE_HABBICON = "habbicon";
+
+    /** A bot or a pet, described by the extra parameters; see {@link CompanionPrize}. */
+    public static final String TYPE_BOT = "bot";
+
+    public static final String TYPE_PET = "pet";
 
     /** How many copies one prize may hand out at once. */
     public static final int MAX_FURNI_PER_PRIZE = 10;
@@ -93,6 +104,8 @@ public final class QuestRewards {
             case TYPE_BADGE -> grantBadge(user, extra);
             case TYPE_FURNI -> grantFurni(user, extra, amount);
             case TYPE_HABBICON -> grantHabbicon(user, extra);
+            case TYPE_BOT -> grantBot(user, extra);
+            case TYPE_PET -> grantPet(user, extra);
             default -> LOGGER.warn("Unknown quest reward type {}", rewardType);
         }
     }
@@ -117,6 +130,83 @@ public final class QuestRewards {
         } catch (Exception e) {
             LOGGER.warn("Quest reward Habbicon {} was not given: {}", id, e.getMessage());
         }
+    }
+
+    /** Creates the bot a prize describes and puts it in the user's bot inventory, as a bought bot arrives. */
+    public static void grantBot(User user, String extra) {
+        CompanionPrize.Bot prize = CompanionPrize.bot(extra);
+        if (user == null || user.getClient() == null || prize == null) {
+            if (prize == null) LOGGER.warn("Quest reward bot has no figure: {}", extra);
+            return;
+        }
+
+        Bot bot = Emulator.getGameEnvironment()
+                .getBotManager()
+                .createBot(prize.data(), prize.type(), user.getUserInfo().getId());
+        if (bot == null) {
+            LOGGER.warn("Quest reward bot of type {} was not created", prize.type());
+            return;
+        }
+
+        bot.setOwnerId(user.getUserInfo().getId());
+        bot.setOwnerName(user.getUserInfo().getUsername());
+        user.getInventory().getBotsComponent().addBot(bot);
+        user.getClient().sendResponse(new AddBotComposer(bot));
+        user.getClient()
+                .sendResponse(new AddUserItemComposer(bot.getId(), AddUserItemComposer.AddUserItemCategory.BOT));
+    }
+
+    /** Creates the pet a prize describes and puts it in the user's pet inventory, as a bought pet arrives. */
+    public static void grantPet(User user, String extra) {
+        CompanionPrize.Pet prize = CompanionPrize.pet(extra);
+        if (user == null || user.getClient() == null || prize == null) {
+            if (prize == null) LOGGER.warn("Quest reward pet is not \"<type> <race> <colour> [name]\": {}", extra);
+            return;
+        }
+
+        // A pet without a name comes as its package, holding the pet: the winner places it and names the pet.
+        if (prize.name() == null && grantPetPackage(user, prize)) {
+            return;
+        }
+
+        Pet pet = Emulator.getGameEnvironment()
+                .getPetManager()
+                .createPet(prize.type(), prize.race(), prize.nameOrDefault(), user.getClient());
+        if (pet == null) {
+            LOGGER.warn("Quest reward pet of type {} does not exist", prize.type());
+            return;
+        }
+
+        pet.setColor(prize.color());
+        pet.needsUpdate = true;
+        Emulator.getThreading().run(pet);
+        user.getInventory().getPetsComponent().addPet(pet);
+        user.getClient().sendResponse(new AddPetComposer(pet));
+        user.getClient()
+                .sendResponse(new AddUserItemComposer(pet.getId(), AddUserItemComposer.AddUserItemCategory.PET));
+    }
+
+    /** Gives the official package of the pet's type with the pet in its state; false when the hotel has none. */
+    private static boolean grantPetPackage(User user, CompanionPrize.Pet prize) {
+        String packageName = PetPackage.packageNameFor(prize.type());
+        Item definition = packageName == null ? null : items().getItem(packageName);
+        if (definition == null || PetPackage.of(definition) == null) {
+            return false;
+        }
+
+        UserItem box = items().createItem(user.getUserInfo().getId(), definition, 0, 0, prize.figure());
+        if (box == null) {
+            return false;
+        }
+
+        user.getInventory().getItemsComponent().addItem(box);
+        user.getClient().sendResponse(new AddUserItemComposer(box));
+        user.getClient().sendResponse(new InventoryRefreshComposer());
+        return true;
+    }
+
+    private static ItemManager items() {
+        return Emulator.getGameEnvironment().getItemManager();
     }
 
     /** Puts {@code amount} copies of the furni named {@code itemName} in the user's hand. */
@@ -148,7 +238,9 @@ public final class QuestRewards {
 
     public static final int PRODUCT_FLOOR = 1;
     public static final int PRODUCT_BADGE = 4;
+    public static final int PRODUCT_BOT = 6;
     public static final int PRODUCT_CURRENCY = 8;
+    public static final int PRODUCT_PET = 10;
     public static final int PRODUCT_HABBICON = 12;
     public static final int PRODUCT_UNKNOWN = -1;
 
@@ -174,6 +266,17 @@ public final class QuestRewards {
         if (TYPE_HABBICON.equals(type) && habbiconIdOf(extra) > 0) {
             return new ActiveDailyTasksComposer.Reward(
                     PRODUCT_HABBICON, String.valueOf(habbiconIdOf(extra)), extra.trim(), amount);
+        }
+
+        // A bot and a pet are drawn from their figure, which travels as the extra parameter.
+        CompanionPrize.Bot bot = TYPE_BOT.equals(type) ? CompanionPrize.bot(extra) : null;
+        if (bot != null) {
+            return new ActiveDailyTasksComposer.Reward(PRODUCT_BOT, "", bot.figure(), amount);
+        }
+
+        CompanionPrize.Pet pet = TYPE_PET.equals(type) ? CompanionPrize.pet(extra) : null;
+        if (pet != null) {
+            return new ActiveDailyTasksComposer.Reward(PRODUCT_PET, String.valueOf(pet.type()), pet.figure(), amount);
         }
 
         if (TYPE_FURNI.equals(type)) {

@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Set;
 import polaris.Emulator;
 import polaris.hotel.achievements.AchievementManager;
+import polaris.hotel.catalog.RecyclerAchievements;
+import polaris.hotel.catalog.RecyclerPrize;
 import polaris.hotel.catalog.RecyclerRules;
-import polaris.hotel.items.Item;
 import polaris.hotel.items.ItemManager;
 import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.hotel.users.UserItem;
@@ -84,7 +85,9 @@ public class RecycleEvent extends MessageHandler {
             boolean consumed = false;
 
             try {
-                Item prize = Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize();
+                // A furni or, where the hotel lists them, a chat style the user does not own yet.
+                RecyclerPrize prize =
+                        Emulator.getGameEnvironment().getCatalogManager().drawRecyclerPrize(this.client.getUser());
 
                 if (prize == null) {
                     this.fail();
@@ -95,7 +98,7 @@ public class RecycleEvent extends MessageHandler {
                 // or neither did, so the taken furni go back to the inventory only on a null.
                 reward = Emulator.getGameEnvironment()
                         .getItemManager()
-                        .handleRecycle(this.client.getUser(), prize.getId() + "", items);
+                        .handleRecycle(this.client.getUser(), prize, items);
                 if (reward == null) {
                     this.fail();
                     return;
@@ -104,6 +107,7 @@ public class RecycleEvent extends MessageHandler {
 
                 if (cost > 0) this.client.getUser().givePoints(RecyclerRules.DUCKETS, -cost, "recycler.exchange");
                 RecyclerRules.exchanged(userId);
+                RecyclerAchievements.recycled(this.client.getUser(), items.size());
 
                 itemsComponent.addItem(reward);
 

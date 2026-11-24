@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.catalog.RecyclerBox;
+import polaris.hotel.catalog.RecyclerPrize;
 import polaris.hotel.items.interactions.InteractionAntenna;
 import polaris.hotel.items.interactions.InteractionAreaHideControl;
 import polaris.hotel.items.interactions.InteractionArrow;
@@ -1762,6 +1763,26 @@ public class ItemManager {
         }
 
         return this.recycleInTransaction(user, rewardItemId, consumed);
+    }
+
+    /** As {@link #handleRecycle(User, String, Collection)}, for a prize that may be a chat style. */
+    public UserItem handleRecycle(User user, RecyclerPrize prize, Collection<UserItem> consumed) {
+        int boxReward = prize == null ? 0 : prize.boxReward();
+        if (user == null
+                || user.getUserInfo() == null
+                || boxReward == 0
+                || consumed == null
+                || consumed.isEmpty()
+                || Emulator.getGameEnvironment().getCatalogManager().ecotronItem == null) {
+            return null;
+        }
+
+        // A chest gives back what it holds before its row goes, as QueryDeleteUserItem does.
+        for (UserItem item : consumed) {
+            ChestRelease.releaseToOwner(item);
+        }
+
+        return this.recycleInTransaction(user, boxReward, consumed);
     }
 
     private UserItem recycleInTransaction(User user, int rewardItemId, Collection<UserItem> consumed) {

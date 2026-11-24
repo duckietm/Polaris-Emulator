@@ -304,6 +304,9 @@ public class CatalogManager {
     public final Int2ObjectMap<CatalogPage> buildersClubCatalogPages;
     public final Int2ObjectMap<CatalogFeaturedPage> catalogFeaturedPages;
     public final Map<Integer, Set<Item>> prizes;
+    /** The chat styles the recycler can pay, by prize level; see {@link RecyclerPrize}. */
+    private final Map<Integer, Set<Integer>> chatStylePrizes = new HashMap<>();
+
     public final Map<Integer, Integer> giftWrappers;
     public final Map<Integer, Integer> giftFurnis;
     public final Set<CatalogItem> clubItems;
@@ -850,11 +853,23 @@ public class CatalogManager {
 
     public void loadRecycler() {
         Map<Integer, Set<Item>> loadedPrizes = new HashMap<>();
+        Map<Integer, Set<Integer>> loadedChatStyles = new HashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet set = statement.executeQuery("SELECT * FROM recycler_prizes")) {
+            // A hotel whose table does not carry the column yet only has furni prizes.
+            boolean hasChatStyles = hasColumn(set, "chat_style_id");
+
             while (set.next()) {
+                int chatStyleId = hasChatStyles ? set.getInt("chat_style_id") : 0;
+                if (chatStyleId > 0) {
+                    loadedChatStyles
+                            .computeIfAbsent(set.getInt("rarity"), ignored -> new HashSet<>())
+                            .add(chatStyleId);
+                    continue;
+                }
+
                 Item item = Emulator.getGameEnvironment().getItemManager().getItem(set.getInt("item_id"));
 
                 if (item != null) {
@@ -870,6 +885,18 @@ public class CatalogManager {
         }
 
         replaceContents(this.prizes, loadedPrizes);
+        synchronized (this.chatStylePrizes) {
+            this.chatStylePrizes.clear();
+            this.chatStylePrizes.putAll(loadedChatStyles);
+        }
+    }
+
+    private static boolean hasColumn(ResultSet set, String column) throws SQLException {
+        java.sql.ResultSetMetaData meta = set.getMetaData();
+        for (int index = 1; index <= meta.getColumnCount(); index++) {
+            if (column.equalsIgnoreCase(meta.getColumnLabel(index))) return true;
+        }
+        return false;
     }
 
     public void loadGiftWrappers() {
@@ -1203,6 +1230,77 @@ public class CatalogManager {
         }
 
         return 1;
+    }
+
+    /** The level a furni has in the recycler's prize list, the highest when it is listed twice; 0 when it is not. */
+    public int recyclerPrizeLevel(Item item) {
+        if (item == null) return 0;
+
+        int level = 0;
+        synchronized (this.prizes) {
+            for (Map.Entry<Integer, Set<Item>> entry : this.prizes.entrySet()) {
+                if (entry.getKey() > level && entry.getValue().contains(item)) level = entry.getKey();
+            }
+        }
+        return level;
+    }
+
+    /** The chat styles the recycler can pay, by prize level. */
+    public Map<Integer, Set<Integer>> getRecyclerChatStylePrizesSnapshot() {
+        synchronized (this.chatStylePrizes) {
+            Map<Integer, Set<Integer>> snapshot = new HashMap<>();
+            for (Map.Entry<Integer, Set<Integer>> entry : this.chatStylePrizes.entrySet()) {
+                snapshot.put(entry.getKey(), new HashSet<>(entry.getValue()));
+            }
+            return snapshot;
+        }
+    }
+
+    /** The level a chat style has in the recycler's prize list, the highest when it is listed twice; 0 when it is not. */
+    public int recyclerChatStyleLevel(int chatStyleId) {
+        int level = 0;
+        synchronized (this.chatStylePrizes) {
+            for (Map.Entry<Integer, Set<Integer>> entry : this.chatStylePrizes.entrySet()) {
+                if (entry.getKey() > level && entry.getValue().contains(chatStyleId)) level = entry.getKey();
+            }
+        }
+        return level;
+    }
+
+    /**
+     * The prize of one exchange: a level is drawn as for {@link #getRandomRecyclerPrize()}, then one of that level's
+     * furni and chat styles, each as likely as the next. A chat style the user already owns is left out, so an
+     * exchange never pays one twice; null when the level has nothing to give.
+     */
+    public RecyclerPrize drawRecyclerPrize(User user) {
+        ConfigurationManager config = Emulator.getConfig();
+        Random random = Emulator.getRandom();
+        int level = drawRecyclerRarity(
+                rarity -> config.getInt("hotel.ecotron.rarity.chance." + rarity, 0), random::nextInt);
+
+        List<RecyclerPrize> candidates = new ArrayList<>();
+        synchronized (this.prizes) {
+            Set<Item> levelPrizes = this.prizes.get(level);
+            if (levelPrizes != null) levelPrizes.forEach(item -> candidates.add(RecyclerPrize.furni(item)));
+        }
+
+        Set<Integer> styles;
+        synchronized (this.chatStylePrizes) {
+            styles =
+                    this.chatStylePrizes.containsKey(level) ? new HashSet<>(this.chatStylePrizes.get(level)) : Set.of();
+        }
+        if (!styles.isEmpty() && user != null && user.getUserInfo() != null) {
+            List<Integer> owned =
+                    ChatStyleRepository.findOwnedStyles(user.getUserInfo().getId());
+            styles.stream()
+                    .filter(style -> !owned.contains(style))
+                    .sorted()
+                    .forEach(style -> candidates.add(RecyclerPrize.chatStyle(style)));
+        }
+
+        RecyclerPrize prize = RecyclerPrize.pick(candidates, random::nextInt);
+        if (prize == null) LOGGER.error("No rewards specified for rarity level {}", level);
+        return prize;
     }
 
     public Item getRandomRecyclerPrize() {

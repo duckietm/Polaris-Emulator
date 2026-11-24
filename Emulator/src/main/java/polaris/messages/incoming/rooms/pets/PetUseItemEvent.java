@@ -4,6 +4,7 @@ import polaris.Emulator;
 import polaris.hotel.achievements.AchievementManager;
 import polaris.hotel.items.Item;
 import polaris.hotel.items.ItemManager;
+import polaris.hotel.pets.HorseCoat;
 import polaris.hotel.pets.HorsePet;
 import polaris.hotel.pets.MonsterplantPet;
 import polaris.hotel.pets.Pet;
@@ -145,20 +146,17 @@ public class PetUseItemEvent extends MessageHandler {
         }
 
         if (name.startsWith("horse_dye")) {
-            int race = numberSuffix(name);
-            int raceType = (race * 4) - 2;
-
-            if (race >= 13 && race <= 17) raceType = ((2 + race) * 4) + 1;
-
-            if (race == 0) raceType = 0;
-
-            horse.setRace(raceType);
+            // The dye changes the coat colour and leaves the breed (the marking) the horse has.
+            horse.setRace(HorseCoat.dyed(horse.getRace(), numberSuffix(name)));
             horse.needsUpdate = true;
         } else if (name.startsWith("horse_hairdye")) {
             int splittedHairdye = numberSuffix(name);
             int newHairdye = 48;
+            Integer described = HorseCoat.hairValue(item.getBaseItem().getCustomParams());
 
-            if (splittedHairdye == 0) {
+            if (described != null) {
+                newHairdye = described;
+            } else if (splittedHairdye == 0) {
                 newHairdye = -1;
             } else if (splittedHairdye == 1) {
                 newHairdye = 1;
@@ -173,8 +171,11 @@ public class PetUseItemEvent extends MessageHandler {
         } else if (name.startsWith("horse_hairstyle")) {
             int splittedHairstyle = numberSuffix(name);
             int newHairstyle = 100;
+            Integer described = HorseCoat.hairValue(item.getBaseItem().getCustomParams());
 
-            if (splittedHairstyle == 0) {
+            if (described != null) {
+                newHairstyle = described;
+            } else if (splittedHairstyle == 0) {
                 newHairstyle = -1;
             } else {
                 newHairstyle += splittedHairstyle;

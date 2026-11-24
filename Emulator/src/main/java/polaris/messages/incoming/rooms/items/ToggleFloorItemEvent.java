@@ -9,6 +9,7 @@ import polaris.hotel.commands.FurniDataCommand;
 import polaris.hotel.items.interactions.InteractionDice;
 import polaris.hotel.items.interactions.pets.InteractionMonsterPlantSeed;
 import polaris.hotel.pets.MonsterplantPet;
+import polaris.hotel.pets.PetPackage;
 import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomPlayTestSupport;
@@ -172,6 +173,14 @@ public class ToggleFloorItemEvent extends MessageHandler {
             if (PET_BOXES.contains(item.getBaseItem().getName())
                     && room.getCurrentPets().size() < Room.MAXIMUM_PETS) {
                 this.client.sendResponse(new PetPackageComposer(item));
+                return;
+            }
+
+            // Any furni the furni data describes as a pet package opens the name window too, with the pet it holds
+            // when its state names one.
+            PetPackage petPackage = PetPackage.of(item.getBaseItem());
+            if (petPackage != null && room.getCurrentPets().size() < Room.MAXIMUM_PETS) {
+                this.client.sendResponse(PetPackageComposer.of(item, petPackage.figureIn(item.getExtradata())));
                 return;
             }
 

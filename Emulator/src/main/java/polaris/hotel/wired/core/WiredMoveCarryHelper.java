@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,16 +39,25 @@ import polaris.hotel.users.UserItem;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.rooms.WiredMovementsComposer;
 import polaris.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
+import polaris.messages.outgoing.rooms.items.FloorItemUpdateComposer;
 import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
 
 public final class WiredMoveCarryHelper {
     private static final double DIRECT_HEIGHT_TOLERANCE = 0.1D;
+    /** A rider is drawn one unit above the pet he rides. */
+    private static final double RIDER_HEIGHT = 1.0D;
+
     private static final int STATUS_SUPPRESSION_GRACE_MS = 250;
     private static final long USER_FOLLOWER_TTL_MS = 10000L;
     private static final ThreadLocal<Set<Integer>> SUPPRESSED_STATUS_ROOM_UNIT_IDS = new ThreadLocal<>();
     private static final ThreadLocal<List<WiredMovementsComposer.MovementData>> COLLECTED_MOVEMENTS =
             new ThreadLocal<>();
     private static final ThreadLocal<Integer> MOVEMENT_COLLECTION_DEPTH = new ThreadLocal<>();
+    // The furni a firing moved without animation, in the order first moved: each gets one object update with its
+    // final tile, rotation and height when the firing ends, instead of one per move.
+    private static final ThreadLocal<Map<Integer, MovedFurni>> PENDING_OBJECT_UPDATES = new ThreadLocal<>();
+
+    private record MovedFurni(Room room, UserItem item) {}
     // The firings that opened the nested collections, innermost last. A firing that does not run
     // Execute in Order sends nothing for a furni it moves and brings back, as in Habbo.
     private static final ThreadLocal<Deque<Firing>> FIRINGS = ThreadLocal.withInitial(ArrayDeque::new);
@@ -238,9 +248,15 @@ public final class WiredMoveCarryHelper {
         // A furni that stays on its tile (an altitude or rotation write) takes the users sitting or lying on it along,
         // in the same animation: otherwise the tile update moved them to the new height at once while the furni was
         // still animating there, and a repeating move left them bouncing out of step with their seat.
+        // The same goes for the users standing on it: a furni that wired raises or lowers lifts everyone it holds up
+        // in its own movement, so they glide with it instead of snapping to the new height.
         if (!carryContext.active && isSameTile(oldLocation, targetTile)) {
-            carryContext = prepareSeatedCarryContext(room, movingItem);
+            carryContext = prepareInPlaceCarryContext(room, movingItem);
         }
+
+        // A furni that stays on its own tiles cannot land on anyone: wired may raise, lower or turn it while users
+        // stand on it. Only a turn that reaches a new tile is checked for users, as a move is.
+        boolean inPlace = isSameTile(oldLocation, targetTile) && keepsFootprint(room, movingItem, targetTile, rotation);
         WiredMovementPhysics movementPhysics = getMovementPhysics(room, stackItem, movingItem, ctx);
         FurnitureMovementError movementError =
                 room.furnitureFitsAtWithPhysics(targetTile, movingItem, rotation, false, movementPhysics);
@@ -249,18 +265,16 @@ public final class WiredMoveCarryHelper {
             return movementError;
         }
 
-        if (carryContext.active) {
+        if (inPlace) {
+            movementError = FurnitureMovementError.NONE;
+        } else if (carryContext.active) {
             movementError = getBlockingUnitError(room, movingItem, targetTile, rotation, carryContext, movementPhysics);
-
-            if (movementError != FurnitureMovementError.NONE) {
-                return movementError;
-            }
         } else {
             movementError = room.furnitureFitsAtWithPhysics(targetTile, movingItem, rotation, true, movementPhysics);
+        }
 
-            if (movementError != FurnitureMovementError.NONE) {
-                return movementError;
-            }
+        if (movementError != FurnitureMovementError.NONE) {
+            return movementError;
         }
 
         boolean useWiredMovements = !hasNoAnimationExtra(room, stackItem);
@@ -370,9 +384,46 @@ public final class WiredMoveCarryHelper {
                 room.getLayout() == null ? null : room.getLayout().getTile(movingItem.getX(), movingItem.getY());
         double oldZ = movingItem.getZ();
 
-        FurnitureMovementError result = (z == null)
-                ? room.moveFurniTo(movingItem, targetTile, rotation, actor, sendUpdates)
-                : room.moveFurniTo(movingItem, targetTile, rotation, z, actor, sendUpdates, false);
+        // A turn on the furni's own tiles is not stopped by the users standing on it, as an altitude write never was.
+        boolean inPlace = isSameTile(oldLocation, targetTile) && keepsFootprint(room, movingItem, targetTile, rotation);
+
+        // A stack without a movement extra lifts as well: a furni raised or lowered on its own tiles takes everyone
+        // it holds up along in its movement, instead of leaving them to snap to the new height with the tile update.
+        CarryContext lift = (!sendUpdates && inPlace && z != null)
+                ? prepareInPlaceCarryContext(room, movingItem)
+                : CarryContext.disabled();
+        Set<Integer> previousSuppressedRoomUnitIds = SUPPRESSED_STATUS_ROOM_UNIT_IDS.get();
+
+        if (lift.active) {
+            HashSet<Integer> suppressedRoomUnitIds = previousSuppressedRoomUnitIds == null
+                    ? new HashSet<>()
+                    : new HashSet<>(previousSuppressedRoomUnitIds);
+            suppressedRoomUnitIds.addAll(lift.carriedUserIds);
+            SUPPRESSED_STATUS_ROOM_UNIT_IDS.set(suppressedRoomUnitIds);
+        }
+
+        FurnitureMovementError result;
+        try {
+            if (z != null) {
+                result = room.moveFurniTo(movingItem, targetTile, rotation, z, actor, sendUpdates, false);
+            } else if (inPlace) {
+                result = room.moveFurniTo(movingItem, targetTile, rotation, actor, sendUpdates, false);
+            } else {
+                result = room.moveFurniTo(movingItem, targetTile, rotation, actor, sendUpdates);
+            }
+        } finally {
+            if (lift.active) {
+                if (previousSuppressedRoomUnitIds == null || previousSuppressedRoomUnitIds.isEmpty()) {
+                    SUPPRESSED_STATUS_ROOM_UNIT_IDS.remove();
+                } else {
+                    SUPPRESSED_STATUS_ROOM_UNIT_IDS.set(previousSuppressedRoomUnitIds);
+                }
+            }
+        }
+
+        List<CarriedUnitMove> liftedMoves = (lift.active && result == FurnitureMovementError.NONE)
+                ? getCarriedUnitMoves(room, movingItem, targetTile, rotation, lift)
+                : List.of();
 
         if (result == FurnitureMovementError.NONE
                 && !sendUpdates
@@ -382,27 +433,39 @@ public final class WiredMoveCarryHelper {
                         || Double.compare(oldZ, movingItem.getZ()) != 0)) {
             room.getWiredRuntime().markFurnitureMoving(movingItem, WiredMovementsComposer.DEFAULT_DURATION);
             List<WiredMovementsComposer.MovementData> collectedMovements = COLLECTED_MOVEMENTS.get();
+            List<WiredMovementsComposer.MovementData> movements = new ArrayList<>();
+            movements.add(WiredMovementsComposer.furniMovement(
+                    movingItem.getId(),
+                    oldLocation.x,
+                    oldLocation.y,
+                    targetTile.x,
+                    targetTile.y,
+                    oldZ,
+                    movingItem.getZ(),
+                    movingItem.getRotation(),
+                    WiredMovementsComposer.DEFAULT_DURATION,
+                    0,
+                    WiredMovementsComposer.FURNI_ANCHOR_NONE,
+                    0));
+
+            for (CarriedUnitMove liftedMove : liftedMoves) {
+                movements.add(carriedUnitMovement(liftedMove, WiredMovementsComposer.DEFAULT_DURATION));
+            }
 
             if (collectedMovements != null) {
-                collect(
-                        collectedMovements,
-                        WiredMovementsComposer.furniMovement(
-                                movingItem.getId(),
-                                oldLocation.x,
-                                oldLocation.y,
-                                targetTile.x,
-                                targetTile.y,
-                                oldZ,
-                                movingItem.getZ(),
-                                movingItem.getRotation(),
-                                WiredMovementsComposer.DEFAULT_DURATION,
-                                0,
-                                WiredMovementsComposer.FURNI_ANCHOR_NONE,
-                                0));
-            } else {
+                for (WiredMovementsComposer.MovementData movement : movements) {
+                    collect(collectedMovements, movement);
+                }
+            } else if (liftedMoves.isEmpty()) {
                 room.sendComposer(new FloorItemOnRollerComposer(
                                 movingItem, null, oldLocation, oldZ, targetTile, movingItem.getZ(), 0, room)
                         .compose());
+            } else {
+                room.sendComposer(new WiredMovementsComposer(movements).compose());
+            }
+
+            for (CarriedUnitMove liftedMove : liftedMoves) {
+                updateCarriedUnitState(liftedMove);
             }
         }
 
@@ -477,6 +540,7 @@ public final class WiredMoveCarryHelper {
 
         if (currentDepth == null || currentDepth <= 0) {
             COLLECTED_MOVEMENTS.set(new ArrayList<>());
+            PENDING_OBJECT_UPDATES.set(new LinkedHashMap<>());
             MOVEMENT_COLLECTION_DEPTH.set(1);
             WiredMoveStyleHelper.beginCollection();
             return;
@@ -500,6 +564,7 @@ public final class WiredMoveCarryHelper {
         List<WiredMovementsComposer.MovementData> movements = COLLECTED_MOVEMENTS.get();
         COLLECTED_MOVEMENTS.remove();
         MOVEMENT_COLLECTION_DEPTH.remove();
+        sendPendingObjectUpdates();
         Map<Integer, Integer> furniFirings = new HashMap<>(FURNI_FIRINGS.get());
         Map<Integer, Integer> originalRotations = new HashMap<>(ORIGINAL_ROTATIONS.get());
         FURNI_FIRINGS.get().clear();
@@ -617,6 +682,37 @@ public final class WiredMoveCarryHelper {
         }
     }
 
+    /**
+     * Holds the object update of a furni moved inside a firing until the firing ends, so several moves of one furni
+     * go out as one update with where it ended up. False outside a firing: the caller sends the update itself.
+     */
+    public static boolean deferObjectUpdate(Room room, UserItem item) {
+        Map<Integer, MovedFurni> pending = PENDING_OBJECT_UPDATES.get();
+
+        if (pending == null || room == null || item == null) {
+            return false;
+        }
+
+        pending.putIfAbsent(item.getId(), new MovedFurni(room, item));
+        return true;
+    }
+
+    /** One update per moved furni, with its state as the firing left it; a furni that left the room gets none. */
+    private static void sendPendingObjectUpdates() {
+        Map<Integer, MovedFurni> pending = PENDING_OBJECT_UPDATES.get();
+        PENDING_OBJECT_UPDATES.remove();
+
+        if (pending == null) {
+            return;
+        }
+
+        for (MovedFurni moved : pending.values()) {
+            if (moved.item().getRoomId() == moved.room().getId()) {
+                moved.room().sendComposer(new FloorItemUpdateComposer(moved.item()).compose());
+            }
+        }
+    }
+
     static boolean isCollectingMovements() {
         Integer depth = MOVEMENT_COLLECTION_DEPTH.get();
         return depth != null && depth > 0;
@@ -625,6 +721,7 @@ public final class WiredMoveCarryHelper {
     static void clearThreadLocalsForCurrentThread() {
         SUPPRESSED_STATUS_ROOM_UNIT_IDS.remove();
         COLLECTED_MOVEMENTS.remove();
+        PENDING_OBJECT_UPDATES.remove();
         MOVEMENT_COLLECTION_DEPTH.remove();
         FIRINGS.remove();
         FURNI_FIRINGS.remove();
@@ -1140,17 +1237,146 @@ public final class WiredMoveCarryHelper {
         return a != null && b != null && a.x == b.x && a.y == b.y;
     }
 
-    /** The users sitting or lying on the moving furni itself, carried without a carry-users extra. */
-    private static CarryContext prepareSeatedCarryContext(Room room, UserItem movingItem) {
-        List<RoomUnit> riders = seatedRiders(room, movingItem);
+    /** Whether the furni covers the same tiles before and after: an altitude write, or a turn that keeps its tiles. */
+    static boolean keepsFootprint(Room room, UserItem movingItem, RoomTile targetTile, int rotation) {
+        if (room == null || room.getLayout() == null || movingItem == null || movingItem.getBaseItem() == null) {
+            return false;
+        }
 
-        if (riders.isEmpty()) {
+        if (movingItem.getRotation() == rotation) {
+            return true;
+        }
+
+        int width = movingItem.getBaseItem().getWidth();
+        int length = movingItem.getBaseItem().getLength();
+
+        return sameTiles(
+                room.getLayout().getTilesAt(targetTile, width, length, movingItem.getRotation()),
+                room.getLayout().getTilesAt(targetTile, width, length, rotation));
+    }
+
+    static boolean sameTiles(Collection<RoomTile> before, Collection<RoomTile> after) {
+        if (before == null || after == null || before.size() != after.size()) {
+            return false;
+        }
+
+        Set<Long> covered = new HashSet<>();
+        for (RoomTile tile : before) {
+            if (tile != null) covered.add(((long) tile.x << 32) | (tile.y & 0xffffffffL));
+        }
+
+        for (RoomTile tile : after) {
+            if (tile == null || !covered.contains(((long) tile.x << 32) | (tile.y & 0xffffffffL))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** One unit a lift takes along: {@code stepping} when its announced walk step ends on the furni. */
+    record LiftedUnit(RoomUnit unit, boolean stepping, boolean riding, RoomUnit rider) {
+        /** The unit whose tile this one shares: its rider for a horse, else itself. */
+        RoomUnit anchor() {
+            return this.rider != null ? this.rider : this.unit;
+        }
+    }
+
+    /**
+     * The units a furni holds up without sitting or lying on it, in the order their entries are sent: the users and
+     * bots standing directly on it, the ones who asked to walk away but have not taken a step yet, the ones whose
+     * announced step ends on it, and a rider followed by his horse. A user on a rug stacked on the furni has the rug
+     * as his height source and is left to the tile update; a pet that nobody rides is not lifted.
+     */
+    static List<LiftedUnit> liftedUnits(Room room, UserItem movingItem) {
+        List<LiftedUnit> lifted = new ArrayList<>();
+
+        if (room == null || movingItem == null || movingItem.getBaseItem() == null || room.getLayout() == null) {
+            return lifted;
+        }
+
+        RoomTile anchorTile = room.getLayout().getTile(movingItem.getX(), movingItem.getY());
+        if (anchorTile == null) {
+            return lifted;
+        }
+
+        Collection<RoomTile> occupiedTiles = room.getLayout()
+                .getTilesAt(
+                        anchorTile,
+                        movingItem.getBaseItem().getWidth(),
+                        movingItem.getBaseItem().getLength(),
+                        movingItem.getRotation());
+
+        if (occupiedTiles == null || occupiedTiles.isEmpty()) {
+            return lifted;
+        }
+
+        for (RoomUnit roomUnit : room.getRoomUnits()) {
+            if (roomUnit == null
+                    || (roomUnit.getRoomUnitType() != RoomUnitType.USER
+                            && roomUnit.getRoomUnitType() != RoomUnitType.BOT)
+                    || roomUnit.getCurrentLocation() == null
+                    || !roomUnit.isInRoom()
+                    || roomUnit.hasStatus(RoomUnitStatus.SIT)
+                    || roomUnit.hasStatus(RoomUnitStatus.LAY)
+                    || !occupiesMovingFurni(occupiedTiles, roomUnit)) {
+                continue;
+            }
+
+            RoomUnit horse = riddenUnit(room, roomUnit);
+
+            // A rider is one unit above his horse, and it is the horse the furni holds up.
+            if (!isHeldUpBy(room, movingItem, roomUnit, horse != null ? RIDER_HEIGHT : 0.0D)) {
+                continue;
+            }
+
+            // The current location of a walker is the tile his announced step ends on.
+            boolean stepping = roomUnit.hasStatus(RoomUnitStatus.MOVE);
+
+            lifted.add(new LiftedUnit(roomUnit, stepping, horse != null, null));
+            if (horse != null) {
+                lifted.add(new LiftedUnit(horse, stepping, false, roomUnit));
+            }
+        }
+
+        return lifted;
+    }
+
+    /** The horse this unit rides, when it is a user on one. */
+    private static RoomUnit riddenUnit(Room room, RoomUnit roomUnit) {
+        User user = room.getUser(roomUnit);
+
+        if (user == null || user.getUserInfo() == null || user.getUserInfo().getRiding() == null) {
+            return null;
+        }
+
+        return user.getUserInfo().getRiding().getRoomUnit();
+    }
+
+    private static boolean isHeldUpBy(Room room, UserItem movingItem, RoomUnit roomUnit, double above) {
+        if (room.getTopItemAt(roomUnit.getX(), roomUnit.getY()) == movingItem) {
+            return true;
+        }
+
+        double feetZ = roomUnit.getZ() - above;
+        return Math.abs(feetZ - getCarrySurfaceZ(movingItem, roomUnit, feetZ)) <= DIRECT_HEIGHT_TOLERANCE;
+    }
+
+    /**
+     * Everyone a furni that stays on its tile takes along, carried without a carry-users extra: the users sitting or
+     * lying on it and the units it holds up (see {@link #liftedUnits}).
+     */
+    private static CarryContext prepareInPlaceCarryContext(Room room, UserItem movingItem) {
+        List<RoomUnit> seated = seatedRiders(room, movingItem);
+        List<LiftedUnit> lifted = liftedUnits(room, movingItem);
+
+        if (seated.isEmpty() && lifted.isEmpty()) {
             return CarryContext.disabled();
         }
 
         // The carry holds the rider's status back while the seat animates, and a repeater keeps renewing that, so the
         // status that sat the user down would never reach the clients: send it once as the ride starts.
-        List<RoomUnit> unannounced = ridersToAnnounce(riders);
+        List<RoomUnit> unannounced = ridersToAnnounce(seated);
         if (!unannounced.isEmpty()) {
             room.sendComposer(new RoomUserStatusComposer(unannounced, true).compose());
         }
@@ -1159,7 +1385,7 @@ public final class WiredMoveCarryHelper {
         List<CarriedRoomUnit> carriedUnits = new ArrayList<>();
         HashSet<Integer> carriedIds = new HashSet<>();
 
-        for (RoomUnit roomUnit : riders) {
+        for (RoomUnit roomUnit : seated) {
             carriedUnits.add(new CarriedRoomUnit(
                     roomUnit,
                     roomUnit.getCurrentLocation(),
@@ -1170,7 +1396,35 @@ public final class WiredMoveCarryHelper {
             carriedIds.add(roomUnit.getId());
         }
 
+        for (LiftedUnit unit : lifted) {
+            if (carriedIds.add(unit.unit().getId())) {
+                carriedUnits.add(liftedRoomUnit(movingItem, unit));
+            }
+        }
+
         return new CarryContext(true, carriedUnits, carriedIds);
+    }
+
+    /**
+     * Where a lifted unit comes from and how far above the furni it is. A unit that stands starts where it is; one
+     * whose step ends on the furni starts on the tile it left, at that tile's height. A horse is one unit under its
+     * rider on both ends.
+     */
+    private static CarriedRoomUnit liftedRoomUnit(UserItem movingItem, LiftedUnit lifted) {
+        RoomUnit anchor = lifted.anchor();
+        boolean horse = lifted.rider() != null;
+        double riderAbove = lifted.riding() ? RIDER_HEIGHT : 0.0D;
+        double unitZ = horse ? anchor.getZ() - RIDER_HEIGHT : lifted.unit().getZ();
+        RoomTile from = anchor.getCurrentLocation();
+        double fromZ = unitZ;
+
+        if (lifted.stepping() && anchor.getPreviousLocation() != null) {
+            from = anchor.getPreviousLocation();
+            fromZ = from.getStackHeight() + riderAbove;
+        }
+
+        return new CarriedRoomUnit(
+                lifted.unit(), from, fromZ, unitZ - movingItem.getZ(), 0, 0, anchor, lifted.stepping(), unitZ);
     }
 
     /** The riders whose status is not held back yet: their ride starts now, so the clients may not know they sit. */
@@ -1358,18 +1612,7 @@ public final class WiredMoveCarryHelper {
                 anchorId));
 
         for (CarriedUnitMove carriedMove : carriedMoves) {
-            suppressStatusComposer(carriedMove.roomUnit, animationDuration);
-            movements.add(WiredMovementsComposer.userSlideMovement(
-                    carriedMove.roomUnit.getId(),
-                    carriedMove.oldLocation.x,
-                    carriedMove.oldLocation.y,
-                    carriedMove.destinationTile.x,
-                    carriedMove.destinationTile.y,
-                    carriedMove.oldZ,
-                    carriedMove.newZ,
-                    carriedMove.roomUnit.getBodyRotation().getValue(),
-                    carriedMove.roomUnit.getHeadRotation().getValue(),
-                    animationDuration));
+            movements.add(carriedUnitMovement(carriedMove, animationDuration));
         }
 
         if (jumpStrength != 0 && !carriedMoves.isEmpty()) {
@@ -1395,6 +1638,56 @@ public final class WiredMoveCarryHelper {
         }
     }
 
+    /**
+     * The movement entry of a unit that goes with a furni: a slide, with its status held back while it lasts; a unit in
+     * a walk step keeps walking, from the tile it left to its step's tile at the new height, and its status is not held.
+     */
+    private static WiredMovementsComposer.MovementData carriedUnitMovement(CarriedUnitMove carriedMove, int duration) {
+        RoomUnit roomUnit = carriedMove.roomUnit;
+
+        if (carriedMove.stepping) {
+            return WiredMovementsComposer.userWalkMovement(
+                    roomUnit.getId(),
+                    carriedMove.oldLocation.x,
+                    carriedMove.oldLocation.y,
+                    carriedMove.destinationTile.x,
+                    carriedMove.destinationTile.y,
+                    carriedMove.oldZ,
+                    carriedMove.newZ,
+                    roomUnit.getBodyRotation().getValue(),
+                    roomUnit.getHeadRotation().getValue(),
+                    duration);
+        }
+
+        suppressStatusComposer(roomUnit, duration);
+        return WiredMovementsComposer.userSlideMovement(
+                roomUnit.getId(),
+                carriedMove.oldLocation.x,
+                carriedMove.oldLocation.y,
+                carriedMove.destinationTile.x,
+                carriedMove.destinationTile.y,
+                carriedMove.oldZ,
+                carriedMove.newZ,
+                roomUnit.getBodyRotation().getValue(),
+                roomUnit.getHeadRotation().getValue(),
+                duration);
+    }
+
+    /** A walker lifted during its step stays where the step put it: only its height, and the step's, change. */
+    private static void liftSteppingUnit(CarriedUnitMove carriedMove) {
+        RoomUnit roomUnit = carriedMove.roomUnit;
+        roomUnit.setZ(carriedMove.newZ);
+
+        // Written into the map directly: the step is the same one, so its start time stays.
+        if (roomUnit.hasStatus(RoomUnitStatus.MOVE)) {
+            roomUnit.getStatusMap()
+                    .put(
+                            RoomUnitStatus.MOVE,
+                            carriedMove.destinationTile.x + "," + carriedMove.destinationTile.y + ","
+                                    + carriedMove.newZ);
+        }
+    }
+
     private static void applyInstantCarryState(
             Room room, UserItem movingItem, RoomTile targetTile, int rotation, CarryContext carryContext) {
         if (!carryContext.active || room == null || movingItem == null || targetTile == null) {
@@ -1406,7 +1699,7 @@ public final class WiredMoveCarryHelper {
         for (CarriedUnitMove carriedMove : carriedMoves) {
             updateCarriedUnitStateInstant(carriedMove);
 
-            User user = room.getUser(carriedMove.roomUnit);
+            User user = carriedMove.stepping ? null : room.getUser(carriedMove.roomUnit);
             if (user != null && shouldRefreshPostureWithTileUpdate(carriedMove.roomUnit)) {
                 Set<User> movedUsers = new HashSet<>();
                 movedUsers.add(user);
@@ -1435,7 +1728,32 @@ public final class WiredMoveCarryHelper {
         for (CarriedRoomUnit carriedRoomUnit : carryContext.carriedUsers) {
             RoomUnit roomUnit = carriedRoomUnit.roomUnit;
 
-            if (roomUnit == null || roomUnit.getCurrentLocation() == null || roomUnit.isWalking()) {
+            if (roomUnit == null) {
+                continue;
+            }
+
+            if (carriedRoomUnit.liftAnchor != null) {
+                // A lifted unit stays on its tile, or ends its step there; it is lifted whether or not it has a goal.
+                RoomTile liftTile = carriedRoomUnit.liftAnchor.getCurrentLocation();
+                // A lifted unit keeps its height above the furni's base, whichever of its surfaces held it up.
+                double liftedZ = movingItem.getZ() + carriedRoomUnit.heightOffset;
+
+                // A walker's step is only sent again when the furni changed the height it ends at (not for a turn).
+                boolean sameStep = carriedRoomUnit.stepping && Double.compare(liftedZ, carriedRoomUnit.standingZ) == 0;
+
+                if (liftTile != null && !sameStep) {
+                    carriedMoves.add(new CarriedUnitMove(
+                            roomUnit,
+                            carriedRoomUnit.oldLocation,
+                            carriedRoomUnit.oldZ,
+                            liftTile,
+                            liftedZ,
+                            carriedRoomUnit.stepping));
+                }
+                continue;
+            }
+
+            if (roomUnit.getCurrentLocation() == null || roomUnit.isWalking()) {
                 continue;
             }
 
@@ -1450,7 +1768,7 @@ public final class WiredMoveCarryHelper {
             double carrySurfaceZ = getCarrySurfaceZ(movingItem, roomUnit, carriedRoomUnit.oldZ);
             double newZ = carrySurfaceZ + carriedRoomUnit.heightOffset;
             carriedMoves.add(new CarriedUnitMove(
-                    roomUnit, carriedRoomUnit.oldLocation, carriedRoomUnit.oldZ, destinationTile, newZ));
+                    roomUnit, carriedRoomUnit.oldLocation, carriedRoomUnit.oldZ, destinationTile, newZ, false));
         }
 
         return carriedMoves;
@@ -1480,6 +1798,11 @@ public final class WiredMoveCarryHelper {
     }
 
     private static void updateCarriedUnitState(CarriedUnitMove carriedMove) {
+        if (carriedMove.stepping) {
+            liftSteppingUnit(carriedMove);
+            return;
+        }
+
         carriedMove.roomUnit.setLocation(carriedMove.destinationTile);
         carriedMove.roomUnit.setZ(carriedMove.newZ);
         carriedMove.roomUnit.setLastRollerTime(System.currentTimeMillis());
@@ -1492,6 +1815,12 @@ public final class WiredMoveCarryHelper {
     }
 
     private static void updateCarriedUnitStateInstant(CarriedUnitMove carriedMove) {
+        if (carriedMove.stepping) {
+            liftSteppingUnit(carriedMove);
+            carriedMove.roomUnit.statusUpdate(true);
+            return;
+        }
+
         carriedMove.roomUnit.setLocation(carriedMove.destinationTile);
         carriedMove.roomUnit.setZ(carriedMove.newZ);
         carriedMove.roomUnit.setPreviousLocation(carriedMove.destinationTile);
@@ -1758,6 +2087,12 @@ public final class WiredMoveCarryHelper {
         private final double heightOffset;
         private final int relativeX;
         private final int relativeY;
+        /** Set for a unit a furni lifts on its own tile: the unit whose tile it ends on (a horse's rider, or itself). */
+        private final RoomUnit liftAnchor;
+        /** A lifted unit whose announced walk step ends on the furni. */
+        private final boolean stepping;
+        /** The height a lifted unit has, or ends its step at, before the lift. */
+        private final double standingZ;
 
         private CarriedRoomUnit(
                 RoomUnit roomUnit,
@@ -1766,12 +2101,28 @@ public final class WiredMoveCarryHelper {
                 double heightOffset,
                 int relativeX,
                 int relativeY) {
+            this(roomUnit, oldLocation, oldZ, heightOffset, relativeX, relativeY, null, false, oldZ);
+        }
+
+        private CarriedRoomUnit(
+                RoomUnit roomUnit,
+                RoomTile oldLocation,
+                double oldZ,
+                double heightOffset,
+                int relativeX,
+                int relativeY,
+                RoomUnit liftAnchor,
+                boolean stepping,
+                double standingZ) {
             this.roomUnit = roomUnit;
             this.oldLocation = oldLocation;
             this.oldZ = oldZ;
             this.heightOffset = heightOffset;
             this.relativeX = relativeX;
             this.relativeY = relativeY;
+            this.liftAnchor = liftAnchor;
+            this.stepping = stepping;
+            this.standingZ = standingZ;
         }
     }
 
@@ -1781,14 +2132,22 @@ public final class WiredMoveCarryHelper {
         private final double oldZ;
         private final RoomTile destinationTile;
         private final double newZ;
+        /** The unit is in a walk step that ends on the destination: it keeps walking, at the new height. */
+        private final boolean stepping;
 
         private CarriedUnitMove(
-                RoomUnit roomUnit, RoomTile oldLocation, double oldZ, RoomTile destinationTile, double newZ) {
+                RoomUnit roomUnit,
+                RoomTile oldLocation,
+                double oldZ,
+                RoomTile destinationTile,
+                double newZ,
+                boolean stepping) {
             this.roomUnit = roomUnit;
             this.oldLocation = oldLocation;
             this.oldZ = oldZ;
             this.destinationTile = destinationTile;
             this.newZ = newZ;
+            this.stepping = stepping;
         }
     }
 

@@ -535,6 +535,15 @@ public class RewardTrackManager {
             if (QuestRewards.TYPE_HABBICON.equalsIgnoreCase(prize.getRewardType())) {
                 productItemTypeId = QuestRewards.habbiconIdOf(prize.getExtraParams());
             }
+            // A bot or a pet prize travels with its figure, what the client draws it from.
+            if (QuestRewards.TYPE_BOT.equalsIgnoreCase(prize.getRewardType())) {
+                CompanionPrize.Bot bot = CompanionPrize.bot(prize.getExtraParams());
+                if (bot != null) extraParams = bot.figure();
+            }
+            if (QuestRewards.TYPE_PET.equalsIgnoreCase(prize.getRewardType())) {
+                CompanionPrize.Pet pet = CompanionPrize.pet(prize.getExtraParams());
+                if (pet != null) extraParams = pet.figure();
+            }
             prizes.add(new RewardTracksComposer.Prize(
                     prize.getId(),
                     prize.getRequiredPoints(),

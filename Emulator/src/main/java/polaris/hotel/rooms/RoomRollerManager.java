@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
@@ -32,6 +33,12 @@ public class RoomRollerManager {
 
     private final Room room;
 
+    /** How long furni a user just put down or moved rests before a roller takes it: one room tick. */
+    static final long USER_MOVE_REST_MS = 500L;
+
+    /** The furni users placed or moved a moment ago, by id, with the time it happened. */
+    private final ConcurrentHashMap<Integer, Long> movedByUser = new ConcurrentHashMap<>();
+
     public RoomRollerManager(Room room) {
         this.room = room;
     }
@@ -47,6 +54,8 @@ public class RoomRollerManager {
         // Do not add a second gate here — it would cause rollers to fire at
         // speed^2 intervals instead of the intended speed.
 
+        Set<Integer> resting = this.restingFurni(cycleTimestamp);
+
         // In the order they are composed: a ridden horse before its rider, a stack from the top down.
         Set<MessageComposer> messages = new LinkedHashSet<>();
         Set<Integer> rollerFurniIds = new HashSet<>();
@@ -54,7 +63,12 @@ public class RoomRollerManager {
 
         for (InteractionRoller roller :
                 this.room.getRoomSpecialTypes().rollerSnapshot().values()) {
-            processRoller(roller, messages, rollerFurniIds, rolledUnitIds, updatedUnit);
+            // A roller a user just moved waits a tick before it carries what stands on it.
+            if (resting.contains(roller.getId())) {
+                continue;
+            }
+
+            processRoller(roller, messages, rollerFurniIds, rolledUnitIds, updatedUnit, resting);
         }
 
         // Process pyramids
@@ -70,6 +84,47 @@ public class RoomRollerManager {
         return true;
     }
 
+    /**
+     * A user placed or moved this furni: it rests one room tick before rollers act on it. For a roller that means it
+     * carries nothing for that tick, for anything else that the roller under it leaves it where it is.
+     */
+    public void noteMovedByUser(UserItem item) {
+        if (item != null) {
+            this.movedByUser.put(item.getId(), System.currentTimeMillis());
+        }
+    }
+
+    /** The furni still resting at this cycle; marks that have run out are dropped. */
+    private Set<Integer> restingFurni(long cycleTimestamp) {
+        if (this.movedByUser.isEmpty()) {
+            return Set.of();
+        }
+
+        return restingAt(this.movedByUser, cycleTimestamp);
+    }
+
+    static Set<Integer> restingAt(ConcurrentHashMap<Integer, Long> movedAt, long now) {
+        Set<Integer> resting = new HashSet<>();
+        movedAt.forEach((id, since) -> {
+            if (now - since < USER_MOVE_REST_MS) {
+                resting.add(id);
+            } else {
+                movedAt.remove(id, since);
+            }
+        });
+        return resting;
+    }
+
+    /**
+     * A roller never lifts what rides it: a unit stays put when it would stand higher on the tile in front than it
+     * does now. Rolling onto the next roller is the exception, whatever its height.
+     */
+    static boolean wouldLift(double standingZ, double targetZ, boolean ontoRoller) {
+        return !ontoRoller && targetZ > standingZ + LIFT_TOLERANCE;
+    }
+
+    private static final double LIFT_TOLERANCE = 0.01D;
+
     /** What the tile in front of a roller lets on: units, furniture, and the roller it may chain into. */
     private record RollTarget(
             UserItem newRoller, boolean allowUsers, boolean allowFurniture, boolean stackContainsRoller) {}
@@ -82,7 +137,8 @@ public class RoomRollerManager {
             Set<MessageComposer> messages,
             Set<Integer> rollerFurniIds,
             Set<Integer> rolledUnitIds,
-            Set<RoomUnit> updatedUnit) {
+            Set<RoomUnit> updatedUnit,
+            Set<Integer> resting) {
 
         RoomLayout layout = this.room.getLayout();
 
@@ -92,6 +148,8 @@ public class RoomRollerManager {
         }
 
         Set<UserItem> itemsOnRoller = this.itemsOnRoller(roller, rollerTile);
+        // Furni a user just put on the roller rests a tick before the roller takes it.
+        itemsOnRoller.removeIf(item -> resting.contains(item.getId()));
 
         if (!rollerTile.hasUnits() && itemsOnRoller.isEmpty()) {
             return;
@@ -372,6 +430,11 @@ public class RoomRollerManager {
                 continue;
             }
 
+            if (!InteractionRoller.NO_RULES
+                    && wouldLift(this.standingZ(unit), targetZ, topItem instanceof InteractionRoller)) {
+                continue;
+            }
+
             if (roomUserRolledEvent != null && unit.getRoomUnitType() == RoomUnitType.USER) {
                 roomUserRolledEvent = new UserRolledEvent(this.room.getUser(unit), roller, tileInFront);
                 Emulator.getPluginManager().fireEvent(roomUserRolledEvent);
@@ -398,6 +461,18 @@ public class RoomRollerManager {
                 unit.sitUpdate = true;
             }
         }
+    }
+
+    /** Where the unit stands: its own height, or its horse's for a rider (who is drawn one unit above it). */
+    private double standingZ(RoomUnit unit) {
+        if (unit.getRoomUnitType() == RoomUnitType.USER) {
+            User user = this.room.getUser(unit);
+            if (user != null && user.getUserInfo() != null && user.getUserInfo().getRiding() != null) {
+                return unit.getZ() - 1.0D;
+            }
+        }
+
+        return unit.getZ();
     }
 
     /** The units on the roller tile, without a pet that is being ridden: it moves with its rider. */

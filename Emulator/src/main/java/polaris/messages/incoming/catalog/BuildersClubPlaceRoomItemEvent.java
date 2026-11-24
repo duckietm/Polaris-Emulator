@@ -149,6 +149,9 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
             return;
         }
 
+        // Furni a user just put down rests one tick before a roller acts on it.
+        room.getRollerManager().noteMovedByUser(item);
+
         polaris.hotel.quests.QuestProgressEvents.progress(
                 this.client.getUser(), polaris.hotel.quests.QuestGoalType.PLACE_BUILDERS_CLUB_FURNI, 1);
 

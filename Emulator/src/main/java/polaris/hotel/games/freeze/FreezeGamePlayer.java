@@ -56,20 +56,21 @@ public class FreezeGamePlayer extends GamePlayer {
         }
     }
 
+    /**
+     * Takes one life. The hit that takes the last one only freezes the player, like any other hit: the player leaves
+     * the game when that freeze ends (see {@link #isOut()}), not at once.
+     */
     public void takeLife() {
-        this.lives--;
-        if (this.lives == 0) {
-            this.dead = true;
-
-            FreezeGame game =
-                    (FreezeGame) super.getUser().getUserInfo().getCurrentRoom().getGame(FreezeGame.class);
-
-            if (game != null) {
-                game.playerDies(this);
-            }
-        } else {
-            super.getUser().getUserInfo().getCurrentRoom().sendComposer(new FreezeLivesComposer(this).compose());
+        if (this.lives > 0) {
+            this.lives--;
         }
+
+        super.getUser().getUserInfo().getCurrentRoom().sendComposer(new FreezeLivesComposer(this).compose());
+    }
+
+    /** Whether the freeze that took the player's last life has ended: the game takes the player out. */
+    public boolean isOut() {
+        return !this.dead && this.lives <= 0 && this.frozenTime <= 0;
     }
 
     public int getLives() {
@@ -173,7 +174,8 @@ public class FreezeGamePlayer extends GamePlayer {
         if (this.frozenTime > 0) {
             this.frozenTime--;
 
-            if (this.frozenTime <= 0) {
+            // A player without lives stays put when the freeze ends: the game moves them off the field.
+            if (this.frozenTime <= 0 && this.lives > 0) {
                 super.getUser().getRoomUnit().setCanWalk(true);
                 needsEffectUpdate = true;
             }

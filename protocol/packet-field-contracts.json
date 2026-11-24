@@ -1829,6 +1829,48 @@
       ]
     },
     {
+      "name": "WIRED_PERMANENT_VARIABLE_SET",
+      "direction": "client_to_server",
+      "header": 627,
+      "java": {
+        "symbol": "WiredPermanentVariableSetEvent",
+        "className": "WiredPermanentVariableSetEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/wired/WiredPermanentVariableSetEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_PERMANENT_VARIABLE_SET",
+        "className": "WiredPermanentVariableSetComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredPermanentVariableSetComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "entityType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "entityId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "variableId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "value"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "action"
+        }
+      ]
+    },
+    {
       "name": "GET_CRAFTING_RECIPE",
       "direction": "client_to_server",
       "header": 633,
@@ -4658,6 +4700,33 @@
       ]
     },
     {
+      "name": "WIRED_PERMANENT_VARIABLES_REQUEST",
+      "direction": "client_to_server",
+      "header": 2035,
+      "java": {
+        "symbol": "WiredPermanentVariablesRequestEvent",
+        "className": "WiredPermanentVariablesRequestEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/wired/WiredPermanentVariablesRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_PERMANENT_VARIABLES_REQUEST",
+        "className": "WiredPermanentVariablesRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredPermanentVariablesRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "entityType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "entityId"
+        }
+      ]
+    },
+    {
       "name": "SET_TARGETTED_OFFER_STATE",
       "direction": "client_to_server",
       "header": 2041,
@@ -5750,6 +5819,28 @@
         "path": "packages/communication/src/messages/outgoing/catalog/GetHabboClubExtendOfferMessageComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "WIRED_VARIABLE_DELETE_ALL_HOLDERS",
+      "direction": "client_to_server",
+      "header": 2480,
+      "java": {
+        "symbol": "WiredVariableDeleteAllHoldersEvent",
+        "className": "WiredVariableDeleteAllHoldersEvent",
+        "path": "Emulator/src/main/java/polaris/messages/incoming/wired/WiredVariableDeleteAllHoldersEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_DELETE_ALL_HOLDERS",
+        "className": "WiredVariableDeleteAllHoldersComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredVariableDeleteAllHoldersComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "variableId"
+        }
+      ]
     },
     {
       "name": "GET_DAILY_QUEST",
@@ -20977,6 +21068,28 @@
       "fields": []
     },
     {
+      "name": "WIRED_PERMANENT_VARIABLE_RESULT",
+      "direction": "server_to_client",
+      "header": 2425,
+      "java": {
+        "symbol": "WiredPermanentVariableResultComposer",
+        "className": "WiredPermanentVariableResultComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/wired/WiredPermanentVariableResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_PERMANENT_VARIABLE_RESULT",
+        "className": "WiredPermanentVariableResultParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredPermanentVariableResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "USER_FIGURE",
       "direction": "server_to_client",
       "header": 2429,
@@ -22279,6 +22392,89 @@
           "kind": "scalar",
           "type": "int",
           "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_USER_PERMANENT_VARIABLES_LIST",
+      "direction": "server_to_client",
+      "header": 2933,
+      "java": {
+        "symbol": "WiredUserPermanentVariablesListComposer",
+        "className": "WiredUserPermanentVariablesListComposer",
+        "path": "Emulator/src/main/java/polaris/messages/outgoing/wired/WiredUserPermanentVariablesListComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_USER_PERMANENT_VARIABLES_LIST",
+        "className": "WiredUserPermanentVariablesListParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredUserPermanentVariablesListParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "list",
+          "countType": "int",
+          "item": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": ""
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": ""
+            }
+          ]
         }
       ]
     },

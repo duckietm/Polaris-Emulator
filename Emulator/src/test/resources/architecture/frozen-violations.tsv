@@ -134,6 +134,7 @@ U|polaris/hotel/catalog/CatalogPurchaseTransaction.java|CALL|getDatabase|1
 U|polaris/hotel/catalog/ClubOffer.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/catalog/LtdRaffleManager.java|CALL|getConfig|2
 U|polaris/hotel/catalog/LtdRaffleManager.java|CALL|getThreading|1
+U|polaris/hotel/catalog/RecyclerAchievements.java|CALL|getGameEnvironment|3
 U|polaris/hotel/catalog/RecyclerRules.java|CALL|getConfig|2
 U|polaris/hotel/catalog/RecyclerRules.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/catalog/TargetOffer.java|CALL|getIntUnixTimestamp|1
@@ -488,6 +489,7 @@ U|polaris/hotel/hotelview/NewsList.java|CALL|getDatabase|1
 U|polaris/hotel/hotlooks/HotLooksManager.java|CALL|getConfig|1
 U|polaris/hotel/hotlooks/HotLooksManager.java|CALL|getDatabase|1
 U|polaris/hotel/items/CrackableReward.java|CALL|getRandom|1
+U|polaris/hotel/items/CreditFurni.java|CALL|getConfig|2
 U|polaris/hotel/items/FurnidataSourceResolver.java|CALL|getConfig|3
 U|polaris/hotel/items/FurnidataWatcher.java|CALL|getConfig|3
 U|polaris/hotel/items/FurnidataWatcher.java|CALL|getGameEnvironment|1
@@ -495,7 +497,7 @@ U|polaris/hotel/items/FurnitureTextProvider.java|CALL|getConfig|3
 U|polaris/hotel/items/Item.java|CALL|getGameEnvironment|4
 U|polaris/hotel/items/Item.java|CALL|getRandom|1
 U|polaris/hotel/items/ItemManager.java|CALL|getDatabase|14
-U|polaris/hotel/items/ItemManager.java|CALL|getGameEnvironment|5
+U|polaris/hotel/items/ItemManager.java|CALL|getGameEnvironment|6
 U|polaris/hotel/items/ItemManager.java|CALL|getPluginManager|1
 U|polaris/hotel/items/ItemManager.java|CALL|getThreading|1
 U|polaris/hotel/items/NewUserGift.java|CALL|getGameEnvironment|2
@@ -945,7 +947,8 @@ U|polaris/hotel/quests/QuestManager.java|CALL|getDatabase|3
 U|polaris/hotel/quests/QuestManager.java|CALL|getIntUnixTimestamp|4
 U|polaris/hotel/quests/QuestManager.java|CALL|getThreading|1
 U|polaris/hotel/quests/QuestProgressEvents.java|CALL|getGameEnvironment|4
-U|polaris/hotel/quests/QuestRewards.java|CALL|getGameEnvironment|2
+U|polaris/hotel/quests/QuestRewards.java|CALL|getGameEnvironment|5
+U|polaris/hotel/quests/QuestRewards.java|CALL|getThreading|1
 U|polaris/hotel/quests/RewardTrackAdmin.java|CALL|getDatabase|7
 U|polaris/hotel/quests/RewardTrackAdmin.java|CALL|getGameEnvironment|1
 U|polaris/hotel/quests/RewardTrackManager.java|CALL|getDatabase|5
@@ -1017,6 +1020,7 @@ U|polaris/hotel/rooms/variables/RoomVariableManager.java|CALL|getDatabase|3
 U|polaris/hotel/rooms/variables/RoomVariableManager.java|CALL|getIntUnixTimestamp|3
 U|polaris/hotel/rooms/variables/RoomVariableManager.java|CALL|getThreading|1
 U|polaris/hotel/rooms/RoomVisitorQueueSupport.java|CALL|getGameEnvironment|2
+U|polaris/hotel/rooms/RoomWiredAccessService.java|CALL|getConfig|2
 U|polaris/hotel/rooms/TraxManager.java|CALL|getGameEnvironment|13
 U|polaris/hotel/rooms/TraxManager.java|CALL|getIntUnixTimestamp|6
 U|polaris/hotel/rooms/TraxManager.java|CALL|getThreading|3
@@ -1631,7 +1635,7 @@ U|polaris/messages/incoming/rooms/pets/CompostMonsterplantEvent.java|CALL|getGam
 U|polaris/messages/incoming/rooms/pets/HorseRemoveSaddleEvent.java|CALL|getDatabase|1
 U|polaris/messages/incoming/rooms/pets/HorseRemoveSaddleEvent.java|CALL|getGameEnvironment|2
 U|polaris/messages/incoming/rooms/pets/HorseRemoveSaddleEvent.java|CALL|getThreading|1
-U|polaris/messages/incoming/rooms/pets/PetPackageNameEvent.java|CALL|getGameEnvironment|1
+U|polaris/messages/incoming/rooms/pets/PetPackageNameEvent.java|CALL|getGameEnvironment|2
 U|polaris/messages/incoming/rooms/pets/PetPackageNameEvent.java|CALL|getThreading|1
 U|polaris/messages/incoming/rooms/pets/PetPickupEvent.java|CALL|getGameEnvironment|1
 U|polaris/messages/incoming/rooms/pets/PetPickupEvent.java|CALL|getTexts|1

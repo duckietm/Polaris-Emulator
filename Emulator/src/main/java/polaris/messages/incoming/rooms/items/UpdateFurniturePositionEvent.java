@@ -70,6 +70,9 @@ public class UpdateFurniturePositionEvent extends MessageHandler {
             return;
         }
 
+        // Furni a user just put down or moved rests one tick before a roller acts on it.
+        room.getRollerManager().noteMovedByUser(item);
+
         if (oldTile != null) {
             List<WiredMovementsComposer.MovementData> movements = new ArrayList<>(1);
             movements.add(WiredMovementsComposer.furniMovement(

@@ -119,9 +119,17 @@ final class RoomRepository {
     }
 
     record WiredSettings(int inspectMask, int modifyMask, String timezone) {
+        private static final WiredSettings UNSAVED =
+                new WiredSettings(Room.WIRED_ACCESS_DEFAULT_INSPECT_MASK, Room.WIRED_ACCESS_DEFAULT_MODIFY_MASK, "");
 
+        /** What a room without a saved row has; the same instance every time, so {@link #unsaved()} can tell. */
         static WiredSettings defaults() {
-            return new WiredSettings(Room.WIRED_ACCESS_DEFAULT_INSPECT_MASK, Room.WIRED_ACCESS_DEFAULT_MODIFY_MASK, "");
+            return UNSAVED;
+        }
+
+        /** Whether these are the defaults of a room that never saved its wired settings. */
+        boolean unsaved() {
+            return this == UNSAVED;
         }
     }
 }

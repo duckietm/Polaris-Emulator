@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
 import polaris.hotel.economy.EconomyMutationResult;
+import polaris.hotel.items.CreditFurni;
 import polaris.hotel.items.interactions.wired.chest.InteractionWiredChest;
 import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.hotel.rooms.BuildersClubRoomSupport;
@@ -40,7 +41,7 @@ public class RedeemItemEvent extends MessageHandler {
         }
 
         String name = item.getBaseItem().getName();
-        return name.startsWith("CF_") || name.startsWith("CFC_") || name.startsWith("DF_") || name.startsWith("PF_");
+        return CreditFurni.isRedeemableCreditName(name) || name.startsWith("DF_") || name.startsWith("PF_");
     }
 
     /**

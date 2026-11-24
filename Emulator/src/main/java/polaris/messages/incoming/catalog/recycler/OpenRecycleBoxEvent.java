@@ -1,6 +1,7 @@
 package polaris.messages.incoming.catalog.recycler;
 
 import polaris.Emulator;
+import polaris.hotel.catalog.RecyclerAchievements;
 import polaris.hotel.catalog.RecyclerBox;
 import polaris.hotel.items.RecycleBoxOpening;
 import polaris.hotel.items.interactions.InteractionGift;
@@ -10,12 +11,14 @@ import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomChatMessage;
 import polaris.hotel.rooms.RoomChatMessageBubbles;
 import polaris.hotel.rooms.RoomTile;
+import polaris.hotel.users.ChatStyleRepository;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserItem;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.inventory.AddUserItemComposer;
 import polaris.messages.outgoing.inventory.InventoryRefreshComposer;
 import polaris.messages.outgoing.rooms.UpdateStackHeightComposer;
+import polaris.messages.outgoing.rooms.items.ChatStylePrizeOpenedComposer;
 import polaris.messages.outgoing.rooms.items.PresentItemOpenedComposer;
 import polaris.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import polaris.messages.outgoing.rooms.users.RoomUserWhisperComposer;
@@ -75,7 +78,13 @@ public class OpenRecycleBoxEvent extends MessageHandler {
                 Emulator.getGameEnvironment().getItemManager().openRecycleBox(this.client.getUser(), box);
 
         switch (opening.result()) {
-            case OPENED -> this.giveReward(box, opening.reward());
+            case OPENED -> {
+                if (opening.chatStyleId() > 0) {
+                    this.giveChatStyle(opening.chatStyleId());
+                } else {
+                    this.giveReward(box, opening.reward());
+                }
+            }
             case EMPTY ->
                 this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
                         Emulator.getTexts().getValue("error.recycler.box.empty"),
@@ -95,6 +104,17 @@ public class OpenRecycleBoxEvent extends MessageHandler {
         this.client.sendResponse(new InventoryRefreshComposer());
 
         this.client.sendResponse(new PresentItemOpenedComposer(reward, box.getExtradata(), true));
+        RecyclerAchievements.boxOpened(this.client.getUser(), reward.getBaseItem());
+    }
+
+    /**
+     * The box held a chat style: it joins the user's styles (told by the style's own packet), and the box card gets its
+     * "present opened" reply with the product type chat_style.
+     */
+    private void giveChatStyle(int chatStyleId) {
+        ChatStyleRepository.grant(this.client.getUser(), chatStyleId);
+        this.client.sendResponse(new ChatStylePrizeOpenedComposer(chatStyleId));
+        RecyclerAchievements.chatStyleWon(this.client.getUser(), chatStyleId);
     }
 
     /**

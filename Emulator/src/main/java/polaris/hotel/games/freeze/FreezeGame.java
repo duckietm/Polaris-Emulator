@@ -1,7 +1,9 @@
 package polaris.hotel.games.freeze;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -18,7 +20,6 @@ import polaris.hotel.items.interactions.games.freeze.InteractionFreezeExitTile;
 import polaris.hotel.items.interactions.games.freeze.InteractionFreezeTile;
 import polaris.hotel.items.interactions.games.freeze.gates.InteractionFreezeGate;
 import polaris.hotel.items.interactions.games.freeze.scoreboards.InteractionFreezeScoreboard;
-import polaris.hotel.items.interactions.wired.effects.WiredEffectTeleport;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomLayout;
 import polaris.hotel.rooms.RoomTile;
@@ -200,15 +201,48 @@ public class FreezeGame extends Game {
         }
     }
 
+    /** The effect of a user who is leaving the field. */
+    static final int LEAVING_EFFECT = 4;
+    /** A leaving user is moved to an exit four room ticks later, and the effect ends three ticks after that. */
+    static final int LEAVE_DELAY_MS = 2000;
+
+    static final int LEAVE_EFFECT_END_MS = 1500;
+
+    /**
+     * Takes a player out of the game: they lose the freeze points once more and their team, get the leaving effect,
+     * and are moved to an exit a moment later. Called when the freeze that took the last life has ended.
+     */
     public synchronized void playerDies(GamePlayer player) {
-        Emulator.getThreading().run(new FreezeClearEffects(player.getUser()), 1000);
-        if (this.room.getRoomSpecialTypes().hasFreezeExitTile()) {
-            InteractionFreezeExitTile tile = this.room.getRoomSpecialTypes().getRandomFreezeExitTile();
-            tile.setExtradata("1");
-            this.room.updateItemState(tile);
-            this.room.teleportUserToItem(player.getUser(), tile);
+        if (player instanceof FreezeGamePlayer freezePlayer) {
+            freezePlayer.dead = true;
         }
-        this.removeUser(player.getUser());
+
+        player.addScore(-FREEZE_LOOSE_POINTS);
+
+        User user = player.getUser();
+        this.removeUser(user);
+        this.sendOffTheField(user);
+    }
+
+    /** Gives the leaving effect now, moves the user to an exit after the delay, and ends the effect after that. */
+    private void sendOffTheField(User user) {
+        this.room.giveEffect(user, LEAVING_EFFECT, -1);
+        Emulator.getThreading().run(() -> this.moveToExit(user), LEAVE_DELAY_MS);
+    }
+
+    private void moveToExit(User user) {
+        if (user.getRoomUnit() != null && user.getUserInfo().getCurrentRoom() == this.room) {
+            user.getRoomUnit().setCanWalk(true);
+
+            if (this.room.getRoomSpecialTypes().hasFreezeExitTile()) {
+                InteractionFreezeExitTile tile = this.room.getRoomSpecialTypes().getRandomFreezeExitTile();
+                tile.setExtradata("1");
+                this.room.updateItemState(tile);
+                this.room.teleportUserToItem(user, tile);
+            }
+        }
+
+        Emulator.getThreading().run(new FreezeClearEffects(user), LEAVE_EFFECT_END_MS);
     }
 
     @Override
@@ -223,11 +257,11 @@ public class FreezeGame extends Game {
             for (User user : this.room.getUsers()) {
                 if (this.getTeamForUser(user) == null) {
                     for (UserItem item : this.room.getItemsAt(user.getRoomUnit().getCurrentLocation())) {
+                        // A user without a team on the field leaves it as a player who is out does: with the
+                        // leaving effect, to an exit a moment later.
                         if (item instanceof InteractionFreezeTile) {
-                            UserItem exitTile = this.room.getRoomSpecialTypes().getRandomFreezeExitTile();
-                            WiredEffectTeleport.teleportUnitToTile(
-                                    user.getRoomUnit(),
-                                    this.room.getLayout().getTile(exitTile.getX(), exitTile.getY()));
+                            this.sendOffTheField(user);
+                            break;
                         }
                     }
                 }
@@ -249,9 +283,16 @@ public class FreezeGame extends Game {
 
             if (this.state.equals(GameState.PAUSED)) return;
 
+            // Players whose last freeze ended this tick leave after the loop: leaving changes the team's members.
+            List<FreezeGamePlayer> out = new ArrayList<>();
+
             for (GameTeam team : this.teams.values()) {
                 for (GamePlayer player : team.getMembers()) {
                     ((FreezeGamePlayer) player).cycle();
+
+                    if (((FreezeGamePlayer) player).isOut()) {
+                        out.add((FreezeGamePlayer) player);
+                    }
                 }
 
                 int totalScore = team.getTotalScore();
@@ -271,6 +312,10 @@ public class FreezeGame extends Game {
                     scoreboard.setExtradata(totalScore + "");
                     this.room.updateItemState(scoreboard);
                 }
+            }
+
+            for (FreezeGamePlayer player : out) {
+                this.playerDies(player);
             }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
@@ -295,6 +340,11 @@ public class FreezeGame extends Game {
             players.addAll(team.getMembers());
 
             for (GamePlayer p : players) {
+                // Nobody stays frozen once the game is over: the ticks that end a freeze have stopped.
+                if (p.getUser() != null && p.getUser().getRoomUnit() != null) {
+                    p.getUser().getRoomUnit().setCanWalk(true);
+                }
+
                 if (p.getScoreAchievementValue() > 0) {
                     if (team.equals(winningTeam)) {
                         AchievementManager.progressAchievement(

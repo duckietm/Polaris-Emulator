@@ -2,6 +2,8 @@ package polaris.hotel.pets;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import polaris.Emulator;
+import polaris.hotel.items.Item;
 import polaris.hotel.users.User;
 
 public class RideablePet extends Pet {
@@ -10,6 +12,7 @@ public class RideablePet extends Pet {
     private boolean hasSaddle;
     private boolean anyoneCanRide;
     private int saddleItemId;
+    private volatile HorseSaddle saddle;
 
     public RideablePet(ResultSet set) throws SQLException {
         super(set);
@@ -62,5 +65,20 @@ public class RideablePet extends Pet {
 
     public void setSaddleItemId(int saddleItemId) {
         this.saddleItemId = saddleItemId;
+        this.saddle = null;
+    }
+
+    /** The saddle worn, by its furni definition: its figure part and the rider's effect. */
+    public HorseSaddle saddle() {
+        HorseSaddle current = this.saddle;
+        if (current == null) {
+            current = HorseSaddle.of(this.saddleItemId > 0 ? saddleDefinition(this.saddleItemId) : null);
+            this.saddle = current;
+        }
+        return current;
+    }
+
+    private static Item saddleDefinition(int itemId) {
+        return Emulator.getGameEnvironment().getItemManager().getItem(itemId);
     }
 }

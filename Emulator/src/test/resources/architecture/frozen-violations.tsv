@@ -121,7 +121,7 @@ U|polaris/hotel/catalog/CatalogItem.java|CALL|getThreading|1
 U|polaris/hotel/catalog/CatalogLimitedConfiguration.java|CALL|getConfig|2
 U|polaris/hotel/catalog/CatalogLimitedConfiguration.java|CALL|getDatabase|4
 U|polaris/hotel/catalog/CatalogLimitedConfiguration.java|CALL|getIntUnixTimestamp|1
-U|polaris/hotel/catalog/CatalogManager.java|CALL|getConfig|18
+U|polaris/hotel/catalog/CatalogManager.java|CALL|getConfig|19
 U|polaris/hotel/catalog/CatalogManager.java|CALL|getDatabase|14
 U|polaris/hotel/catalog/CatalogManager.java|CALL|getGameEnvironment|41
 U|polaris/hotel/catalog/CatalogManager.java|CALL|getIntUnixTimestamp|6
@@ -134,6 +134,8 @@ U|polaris/hotel/catalog/CatalogPurchaseTransaction.java|CALL|getDatabase|1
 U|polaris/hotel/catalog/ClubOffer.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/catalog/LtdRaffleManager.java|CALL|getConfig|2
 U|polaris/hotel/catalog/LtdRaffleManager.java|CALL|getThreading|1
+U|polaris/hotel/catalog/RecyclerRules.java|CALL|getConfig|2
+U|polaris/hotel/catalog/RecyclerRules.java|CALL|getIntUnixTimestamp|2
 U|polaris/hotel/catalog/TargetOffer.java|CALL|getIntUnixTimestamp|1
 U|polaris/hotel/catalog/Voucher.java|CALL|getDatabase|2
 U|polaris/hotel/catalog/Voucher.java|CALL|getIntUnixTimestamp|1
@@ -901,6 +903,7 @@ U|polaris/hotel/pets/PetManager.java|CALL|getDatabase|3
 U|polaris/hotel/pets/PetManager.java|CALL|getGameEnvironment|1
 U|polaris/hotel/pets/PetManager.java|CALL|getRandom|13
 U|polaris/hotel/pets/PetStatsManager.java|CALL|getConfig|10
+U|polaris/hotel/pets/RideablePet.java|CALL|getGameEnvironment|1
 U|polaris/hotel/pets/actions/ActionBounce.java|CALL|getThreading|1
 U|polaris/hotel/pets/actions/ActionBreatheFire.java|CALL|getThreading|1
 U|polaris/hotel/pets/actions/ActionChickenDance.java|CALL|getThreading|1

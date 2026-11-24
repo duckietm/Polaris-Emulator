@@ -312,8 +312,8 @@ public class CatalogManager {
     public final Map<Integer, ClothItem> clothing;
     public final Int2IntMap offerDefs;
     public final Int2IntMap buildersClubOfferDefs;
-    /** The base item every recycler box is made of. */
-    public static final String RECYCLER_BOX = "ecotron_box";
+    /** The classic recycler box; see {@link RecyclerBox} for the one a hotel gives. */
+    public static final String RECYCLER_BOX = RecyclerBox.CLASSIC;
 
     public final Item ecotronItem;
     public final Map<Integer, CatalogLimitedConfiguration> limitedNumbers;
@@ -348,7 +348,11 @@ public class CatalogManager {
 
         if (initialize) {
             this.initialize();
-            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem(RECYCLER_BOX);
+            // The box the hotel chose (RecyclerBox.SETTING); without that furni, the classic one.
+            ItemManager items = Emulator.getGameEnvironment().getItemManager();
+            Item chosen = items.getItem(
+                    RecyclerBox.chosen(Emulator.getConfig().getValue(RecyclerBox.SETTING, RecyclerBox.CLASSIC)));
+            this.ecotronItem = chosen != null ? chosen : items.getItem(RecyclerBox.CLASSIC);
             LOGGER.info("Catalog Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
         } else {
             this.ecotronItem = null;

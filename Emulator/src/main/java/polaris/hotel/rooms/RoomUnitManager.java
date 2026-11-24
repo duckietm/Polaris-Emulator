@@ -973,12 +973,15 @@ public class RoomUnitManager {
         }
 
         if (this.room.isAllowEffects() && roomUnit != null) {
+            // A rider keeps the effect of the saddle they sit on: only that effect is given while riding (the classic
+            // saddle's also before the rider is registered, as it always was).
             if (effectId != RIDING_EFFECT_ID) {
                 User rider = this.getUserByRoomUnit(roomUnit);
 
                 if (rider != null
                         && rider.getUserInfo() != null
-                        && rider.getUserInfo().getRiding() != null) {
+                        && rider.getUserInfo().getRiding() != null
+                        && rider.getUserInfo().getRiding().saddle().effectId() != effectId) {
                     return;
                 }
             }

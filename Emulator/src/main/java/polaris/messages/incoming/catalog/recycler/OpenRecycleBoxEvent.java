@@ -1,7 +1,7 @@
 package polaris.messages.incoming.catalog.recycler;
 
 import polaris.Emulator;
-import polaris.hotel.catalog.CatalogManager;
+import polaris.hotel.catalog.RecyclerBox;
 import polaris.hotel.items.RecycleBoxOpening;
 import polaris.hotel.items.interactions.InteractionGift;
 import polaris.hotel.permissions.Permission;
@@ -36,7 +36,7 @@ public class OpenRecycleBoxEvent extends MessageHandler {
 
         if (item instanceof InteractionGift gift) {
             this.openGift(room, gift);
-        } else if (CatalogManager.RECYCLER_BOX.equals(item.getBaseItem().getName())) {
+        } else if (RecyclerBox.isBox(item.getBaseItem().getName())) {
             this.openBox(room, item);
         }
         // Any other furni is not a box: opening it would delete it with nothing in return.

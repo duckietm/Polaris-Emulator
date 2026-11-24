@@ -389,6 +389,9 @@ Core hotel gameplay, economy, room, catalog and moderation settings.
 | `hotel.catalog.ltd.limit.enabled` | `1` | `boolean` | Enable daily purchase limits for limited catalog items. |
 | `hotel.catalog.purchase.cooldown` | `1` | `boolean` | Cooldown in seconds between catalog purchases. |
 | `hotel.catalog.recycler.enabled` | `1` | `boolean` | Enable the catalog recycler feature. |
+| `hotel.ecotron.box` | `ecotron_box` | `string` | Box a Furni-Matic exchange gives: `ecotron_box` (classic) or `matic_box` (Mystery Box, dated yyyy-MM-dd). Both keep opening. Read at start-up. |
+| `recycler.ducket_cost` | `0` | `integer` | Duckets one Furni-Matic exchange costs; 0: free. |
+| `recycler.timeout_seconds` | `0` | `integer` | Seconds a user waits between two Furni-Matic exchanges; 0: no wait. |
 | `hotel.chat.max.length` | `100` | `integer` | Maximum number of characters allowed in one public chat message. |
 | `hotel.daily.respect` | `3` | `integer` | Daily amount of respect points available for users. |
 | `hotel.daily.respect.pets` | `3` | `integer` | Daily amount of pet respect points available for users. |

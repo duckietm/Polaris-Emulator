@@ -11,8 +11,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import polaris.Emulator;
+import polaris.hotel.catalog.RecyclerBox;
 import polaris.hotel.items.interactions.InteractionAntenna;
 import polaris.hotel.items.interactions.InteractionAreaHideControl;
 import polaris.hotel.items.interactions.InteractionArrow;
@@ -1848,10 +1849,8 @@ public class ItemManager {
     }
 
     private UserItem insertRecycleBox(Connection connection, int userId, int rewardItemId) throws SQLException {
-        String extradata = Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-"
-                + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
-                + Calendar.getInstance().get(Calendar.YEAR);
         Item ecotron = Emulator.getGameEnvironment().getCatalogManager().ecotronItem;
+        String extradata = RecyclerBox.date(ecotron.getName(), LocalDate.now());
 
         int boxId;
         try (PreparedStatement statement = connection.prepareStatement(

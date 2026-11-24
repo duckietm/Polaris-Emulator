@@ -37,7 +37,7 @@ public class RoomUnitRidePet implements Runnable {
             }
 
             user.getRoomUnit().stopWalking();
-            user.getUserInfo().getCurrentRoom().giveEffect(user, 77, -1);
+            user.getUserInfo().getCurrentRoom().giveEffect(user, pet.saddle().effectId(), -1);
             user.getUserInfo().setRiding(pet);
             user.getRoomUnit().setCurrentLocation(this.pet.getRoomUnit().getCurrentLocation());
             user.getRoomUnit().setPreviousLocation(this.pet.getRoomUnit().getCurrentLocation());

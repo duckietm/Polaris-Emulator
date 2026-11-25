@@ -92,9 +92,26 @@ class WiredEffectGiveVariableOfficialTest {
     }
 
     @Test
-    void fromAVariableOnTheSelectionEveryTargetGetsTheFirstHoldersValue() throws Exception {
+    void fromAVariableSeveralFurniHoldEachTargetGetsTheValueOfADifferentOne() throws Exception {
         WiredEffectGiveVariable box = saved(
                 new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 1, WiredValueVariable.TARGET_FURNI, 0}, "40\t41");
+
+        fire(box);
+
+        // Same holder off: the two furni holding the reference (7 and 9) are paired with the two targets at random.
+        org.mockito.ArgumentCaptor<Integer> firstValue = org.mockito.ArgumentCaptor.forClass(Integer.class);
+        org.mockito.ArgumentCaptor<Integer> secondValue = org.mockito.ArgumentCaptor.forClass(Integer.class);
+        verify(furniVariables).assignVariable(eq(this.first), eq(VARIABLE), firstValue.capture(), eq(false));
+        verify(furniVariables).assignVariable(eq(this.second), eq(VARIABLE), secondValue.capture(), eq(false));
+        org.junit.jupiter.api.Assertions.assertEquals(
+                java.util.Set.of(7, 9), java.util.Set.of(firstValue.getValue(), secondValue.getValue()));
+    }
+
+    @Test
+    void fromAVariableOnlyOneFurniHoldsEveryTargetGetsItsValue() throws Exception {
+        WiredEffectGiveVariable box = saved(
+                new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 1, WiredValueVariable.TARGET_FURNI, 0}, "40\t41");
+        when(furniVariables.hasVariable(eq(2), eq(REFERENCE))).thenReturn(false);
 
         fire(box);
         verify(furniVariables).assignVariable(this.first, VARIABLE, 7, false);

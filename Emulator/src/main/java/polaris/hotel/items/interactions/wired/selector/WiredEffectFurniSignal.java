@@ -44,21 +44,18 @@ public class WiredEffectFurniSignal extends InteractionWiredEffect implements Wi
 
         boolean includeWiredItems = this.includeWiredTargets(ctx);
 
-        Set<UserItem> result = new LinkedHashSet<>();
+        Set<UserItem> matched = new LinkedHashSet<>();
 
         if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
             List<UserItem> signalItems = WiredSourceUtil.resolveItems(ctx, WiredSourceUtil.SOURCE_SIGNAL, null);
-            Set<UserItem> matched = signalItems.stream()
+            signalItems.stream()
                     .filter(item -> item != null && (includeWiredItems || !(item instanceof InteractionWired)))
-                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-
-            result = this.applySelectorModifiers(
-                    matched,
-                    this.getSelectableItems(room, ctx),
-                    ctx.targets().items(),
-                    this.filterExisting,
-                    this.invert);
+                    .forEach(matched::add);
         }
+
+        // Without a signal nothing matches: filter, invert and the earlier selectors' picks still apply.
+        Set<UserItem> result = this.applySelectorModifiers(
+                matched, this.getSelectableItems(room, ctx), ctx.targets().items(), this.filterExisting, this.invert);
 
         ctx.targets().setItems(result);
     }

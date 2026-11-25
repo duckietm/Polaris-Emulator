@@ -114,4 +114,83 @@ class ChestTransactionLogTest {
 
         assertEquals(false, reloaded.isLocked());
     }
+
+    private static ChestTransactionLog.StoredRow row(
+            int id, int chestId, int kind, int type, int source, int amount, String details, int method) {
+        boolean withdraw = type == ChestTransactionLog.TYPE_WITHDRAW;
+        return new ChestTransactionLog.StoredRow(
+                id,
+                chestId,
+                kind,
+                type,
+                source,
+                7,
+                "Frank",
+                withdraw ? amount : 0,
+                withdraw ? 0 : amount,
+                details,
+                1000 + id,
+                method,
+                method < 0 ? "" : "55, x2");
+    }
+
+    @Test
+    void aContractTradeOverSeveralChestsIsOneTransaction() {
+        ChestTransactionLog.TransactionDetails details = ChestTransactionLog.combine(
+                9,
+                List.of(
+                        row(40, 100, ChestStorage.KIND_FURNI, ChestTransactionLog.TYPE_DEPOSIT, 0, 2, "88:2", 4),
+                        row(41, 101, ChestStorage.KIND_CURRENCY, ChestTransactionLog.TYPE_DEPOSIT, 0, 30, null, 4),
+                        row(42, 100, ChestStorage.KIND_FURNI, ChestTransactionLog.TYPE_WITHDRAW, 1, 3, "-12:1,9:2", 4),
+                        row(43, 102, ChestStorage.KIND_CURRENCY, ChestTransactionLog.TYPE_WITHDRAW, 1, 5, null, 4)));
+
+        ChestTransactionLog.Transaction transaction = details.transaction();
+        assertEquals(40, transaction.id(), "the first row names the transaction");
+        assertEquals(9, transaction.roomId());
+        assertEquals(ChestTransactionLog.METHOD_CONTRACT_TRADE, transaction.method());
+        assertEquals("55, x2", transaction.definitionInfo());
+        assertEquals("Frank", transaction.userName());
+        assertEquals(1043, transaction.timestamp());
+        assertEquals(3, transaction.chestCount());
+        assertEquals(3, transaction.withdrawnFurni());
+        assertEquals(2, transaction.depositedFurni());
+        assertEquals(5, transaction.withdrawnCoins());
+        assertEquals(30, transaction.depositedCoins());
+        assertEquals(List.of(100, 101, 102), details.chestIds());
+        assertEquals(
+                List.of(new ChestTransactionLog.DetailItem(-12, 1), new ChestTransactionLog.DetailItem(9, 2)),
+                details.withdrawn());
+        assertEquals(List.of(new ChestTransactionLog.DetailItem(88, 2)), details.deposited());
+        assertEquals(false, details.incomplete());
+    }
+
+    @Test
+    void aRowFromBeforeTheMethodsReadsItsMethodFromWhoMovedIt() {
+        assertEquals(
+                ChestTransactionLog.METHOD_MANUAL, ChestTransactionLog.methodOf(-1, ChestTransactionLog.SOURCE_USER));
+        assertEquals(
+                ChestTransactionLog.METHOD_WIRED, ChestTransactionLog.methodOf(-1, ChestTransactionLog.SOURCE_WIRED));
+        assertEquals(
+                ChestTransactionLog.METHOD_CONTRACT_REWARD,
+                ChestTransactionLog.methodOf(
+                        ChestTransactionLog.METHOD_CONTRACT_REWARD, ChestTransactionLog.SOURCE_WIRED));
+    }
+
+    @Test
+    void furniTheLinesDoNotNameMarkTheDetailsIncomplete() {
+        ChestTransactionLog.TransactionDetails details = ChestTransactionLog.combine(
+                9, List.of(row(40, 100, ChestStorage.KIND_FURNI, ChestTransactionLog.TYPE_WITHDRAW, 0, 4, "88:1", -1)));
+
+        assertTrue(details.incomplete());
+        assertEquals(ChestTransactionLog.METHOD_MANUAL, details.transaction().method());
+    }
+
+    @Test
+    void theExtraInfoNamesTheBoxOrTheContract() {
+        assertEquals("812, 25", ChestTransactionLog.wiredInfo(812, 25, false));
+        assertEquals("812, all", ChestTransactionLog.wiredInfo(812, 25, true));
+        assertEquals("55, x3", ChestTransactionLog.contractInfo(55, 3));
+        assertEquals("55, x1", ChestTransactionLog.contractInfo(55, 0));
+        assertEquals(255, ChestTransactionLog.clampInfo("x".repeat(400)).length());
+    }
 }

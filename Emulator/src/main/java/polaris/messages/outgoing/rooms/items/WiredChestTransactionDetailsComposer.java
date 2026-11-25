@@ -1,5 +1,6 @@
 package polaris.messages.outgoing.rooms.items;
 
+import java.util.List;
 import polaris.hotel.items.interactions.wired.chest.ChestTransactionLog;
 import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.messages.ServerMessage;
@@ -7,49 +8,48 @@ import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
 
 /**
- * One wired chest transaction with the furni it moved. Wire layout:
+ * One wired chest transaction with its chests and furni, as AIR's WiredTransactionDetails. Wire layout:
  *
  * <pre>
- *   int transactionId, int chestId, int chestKind, int type, int source,
- *   int userId, string userName, int currencyType,
- *   int withdrawn, int deposited, int timestamp,
- *   int itemCount, [ int spriteId, int quantity ]*
+ *   the transaction (the row layout of {@link WiredChestRoomLogsComposer}),
+ *   int chestCount, [ int chestId ]*,
+ *   int withdrawnCount, [ bool wall, int typeId, string posterId, int quantity ]*,
+ *   int depositedCount, [ bool wall, int typeId, string posterId, int quantity ]*,
+ *   bool incomplete
  * </pre>
  *
- * The item list is empty for a currency transaction. {@code spriteId} is the furnidata class id, the
- * same identity {@link ChestDataComposer} sends, so the client can render an icon without a lookup
- * table of its own; it is negated for a wall item, so the icon comes from the right furni list.
+ * {@code typeId} is the furnidata class id, the same identity {@link ChestDataComposer} sends. {@code incomplete}
+ * says the lines do not name all the furni the counts do.
  */
 public class WiredChestTransactionDetailsComposer extends MessageComposer {
-    private final ChestTransactionLog.Details details;
+    private final ChestTransactionLog.TransactionDetails details;
 
-    public WiredChestTransactionDetailsComposer(ChestTransactionLog.Details details) {
+    public WiredChestTransactionDetailsComposer(ChestTransactionLog.TransactionDetails details) {
         this.details = details;
     }
 
     @Override
     protected ServerMessage composeInternal() {
-        ChestTransactionLog.Row row = this.details.row();
-
         this.response.init(Outgoing.WiredChestTransactionDetailsComposer);
-        this.response.appendInt(row.id());
-        this.response.appendInt(BuildersClubItemIds.toWire(row.chestId()));
-        this.response.appendInt(row.chestKind());
-        this.response.appendInt(row.type());
-        this.response.appendInt(row.source());
-        this.response.appendInt(row.userId());
-        this.response.appendString(row.userName());
-        this.response.appendInt(row.currencyType());
-        this.response.appendInt(row.withdrawn());
-        this.response.appendInt(row.deposited());
-        this.response.appendInt(row.timestamp());
+        WiredChestRoomLogsComposer.appendTransaction(this.response, this.details.transaction());
+        this.response.appendInt(this.details.chestIds().size());
+        for (Integer chestId : this.details.chestIds()) {
+            this.response.appendInt(BuildersClubItemIds.toWire(chestId));
+        }
+        this.appendItems(this.details.withdrawn());
+        this.appendItems(this.details.deposited());
+        this.response.appendBoolean(this.details.incomplete());
+        return this.response;
+    }
 
-        this.response.appendInt(this.details.items().size());
-        for (ChestTransactionLog.DetailItem item : this.details.items()) {
-            this.response.appendInt(item.spriteId());
+    private void appendItems(List<ChestTransactionLog.DetailItem> items) {
+        this.response.appendInt(items.size());
+        for (ChestTransactionLog.DetailItem item : items) {
+            // A wall item is stored with its type id negated.
+            this.response.appendBoolean(item.spriteId() < 0);
+            this.response.appendInt(Math.abs(item.spriteId()));
+            this.response.appendString("");
             this.response.appendInt(item.quantity());
         }
-
-        return this.response;
     }
 }

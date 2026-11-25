@@ -92,18 +92,23 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
             // reached or the chests are empty.
             int remaining = everything ? Integer.MAX_VALUE : resolved;
             List<ChestFurniStoredItem> given = new ArrayList<>();
-            for (InteractionWiredChestFurni chest : chests) {
-                if (remaining <= 0) break;
-                int want = remaining;
-                List<ChestFurniStoredItem> taken = ChestWithdrawals.furni(
-                                user,
-                                chest,
-                                room,
-                                storage -> storage.removeFurniInOrder(this.iterationType, want, RANDOM),
-                                ChestTransactionLog.SOURCE_WIRED)
-                        .furni();
-                given.addAll(taken);
-                remaining -= taken.size();
+            // One line in the transaction log for everything this box hands this user, whatever chests it comes from.
+            try (ChestTransactionLog.Scope ignored = ChestTransactionLog.begin(
+                    ChestTransactionLog.METHOD_WIRED,
+                    ChestTransactionLog.wiredInfo(this.getId(), resolved, everything))) {
+                for (InteractionWiredChestFurni chest : chests) {
+                    if (remaining <= 0) break;
+                    int want = remaining;
+                    List<ChestFurniStoredItem> taken = ChestWithdrawals.furni(
+                                    user,
+                                    chest,
+                                    room,
+                                    storage -> storage.removeFurniInOrder(this.iterationType, want, RANDOM),
+                                    ChestTransactionLog.SOURCE_WIRED)
+                            .furni();
+                    given.addAll(taken);
+                    remaining -= taken.size();
+                }
             }
             if (!given.isEmpty()) this.reward.announce(user, ChestAirWire.givenRule(0, given));
         }

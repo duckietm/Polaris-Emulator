@@ -665,48 +665,58 @@ public class WiredTradingManager {
         List<InteractionWiredChest> chests = this.usableHere(negotiation);
         WiredEvent.TransactionTotals[] totals = {null};
 
-        int failure = WiredChestPayouts.holding(chests, () -> {
-            if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
+        int method = reward.isEmpty()
+                ? ChestTransactionLog.METHOD_CONTRACT_PAYMENT
+                : ChestTransactionLog.METHOD_CONTRACT_TRADE;
+        int failure = this.logged(
+                negotiation,
+                method,
+                () -> WiredChestPayouts.holding(chests, () -> {
+                    if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
 
-            int cover = WiredChestPayouts.coverFailure(chests, reward);
-            if (cover != ChestTransactionFailures.NONE) return cover;
+                    int cover = WiredChestPayouts.coverFailure(chests, reward);
+                    if (cover != ChestTransactionFailures.NONE) return cover;
 
-            // What pays: the furni the rule matched, plus enough credit furni for its coins.
-            List<UserItem> furniPayment = new ArrayList<>();
-            for (Integer itemId : match.consumedItemIds()) {
-                UserItem item = negotiation.vault().peek(itemId);
-                // The negotiation ended since the confirmation (timeout, cancel, leaving) and handed the table back.
-                if (item == null) return ChestTransactionFailures.TRADE_CANCELLED;
-                furniPayment.add(item);
-            }
-            List<UserItem> creditPayment = pickCredits(
-                    negotiation.vault().heldItems(), match.consumedItemIds(), WiredChestPayouts.coins(paidRule));
-            if (creditPayment == null) return ChestTransactionFailures.INSUFFICIENT_FUNDS;
+                    // What pays: the furni the rule matched, plus enough credit furni for its coins.
+                    List<UserItem> furniPayment = new ArrayList<>();
+                    for (Integer itemId : match.consumedItemIds()) {
+                        UserItem item = negotiation.vault().peek(itemId);
+                        // The negotiation ended since the confirmation (timeout, cancel, leaving) and handed the table
+                        // back.
+                        if (item == null) return ChestTransactionFailures.TRADE_CANCELLED;
+                        furniPayment.add(item);
+                    }
+                    List<UserItem> creditPayment = pickCredits(
+                            negotiation.vault().heldItems(),
+                            match.consumedItemIds(),
+                            WiredChestPayouts.coins(paidRule));
+                    if (creditPayment == null) return ChestTransactionFailures.INSUFFICIENT_FUNDS;
 
-            int room = storeFailure(chests, furniPayment, creditPayment);
-            if (room != ChestTransactionFailures.NONE) return room;
+                    int room = storeFailure(chests, furniPayment, creditPayment);
+                    if (room != ChestTransactionFailures.NONE) return room;
 
-            Payment payment = pay(user, negotiation, chests, furniPayment, creditPayment);
+                    Payment payment = pay(user, negotiation, chests, furniPayment, creditPayment);
 
-            // Paid in part (a chest or the database refused some of it): the reward used to be handed out
-            // anyway, and what was not taken went back to the player when the table closed. Now what
-            // reached a chest comes back too, and nothing is given.
-            if (payment.consumed().size() != furniPayment.size() + creditPayment.size()) {
-                this.refundDeposits(user, payment);
-                return ChestTransactionFailures.TRADE_CANCELLED;
-            }
-            negotiation.session().consume(payment.consumed());
+                    // Paid in part (a chest or the database refused some of it): the reward used to be handed out
+                    // anyway, and what was not taken went back to the player when the table closed. Now what
+                    // reached a chest comes back too, and nothing is given.
+                    if (payment.consumed().size() != furniPayment.size() + creditPayment.size()) {
+                        this.refundDeposits(user, payment);
+                        return ChestTransactionFailures.TRADE_CANCELLED;
+                    }
+                    negotiation.session().consume(payment.consumed());
 
-            List<Term> given =
-                    WiredChestPayouts.give(user, this.room, chests, reward, this.earningsCategory(negotiation));
-            if (!given.isEmpty() && user.getClient() != null) {
-                user.getClient()
-                        .sendResponse(WiredTransactionSuccessComposer.reward(given, negotiation.rewardText(), false));
-            }
-            totals[0] = WiredTransactionVariables.totals(
-                    negotiation.session().settledTimes(), furniPayment.size(), coinsOf(creditPayment), given);
-            return ChestTransactionFailures.NONE;
-        });
+                    List<Term> given =
+                            WiredChestPayouts.give(user, this.room, chests, reward, this.earningsCategory(negotiation));
+                    if (!given.isEmpty() && user.getClient() != null) {
+                        user.getClient()
+                                .sendResponse(
+                                        WiredTransactionSuccessComposer.reward(given, negotiation.rewardText(), false));
+                    }
+                    totals[0] = WiredTransactionVariables.totals(
+                            negotiation.session().settledTimes(), furniPayment.size(), coinsOf(creditPayment), given);
+                    return ChestTransactionFailures.NONE;
+                }));
 
         if (failure != ChestTransactionFailures.NONE) {
             cancelWithReason(user, failure);
@@ -906,17 +916,21 @@ public class WiredTradingManager {
         for (UserItem item : offered) (ChestAirWire.creditValue(item) > 0 ? credits : furni).add(item);
 
         List<InteractionWiredChest> chests = this.usableHere(negotiation);
-        int failure = WiredChestPayouts.holding(chests, () -> {
-            if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
+        int failure = this.logged(
+                negotiation,
+                ChestTransactionLog.METHOD_CONTRACT_PAYMENT,
+                () -> WiredChestPayouts.holding(chests, () -> {
+                    if (chests.isEmpty()) return ChestTransactionFailures.NO_OR_LOCKED_CHESTS;
 
-            int room = storeFailure(chests, furni, credits);
-            if (room != ChestTransactionFailures.NONE) return room;
+                    int room = storeFailure(chests, furni, credits);
+                    if (room != ChestTransactionFailures.NONE) return room;
 
-            negotiation
-                    .session()
-                    .consume(pay(user, negotiation, chests, furni, credits).consumed());
-            return ChestTransactionFailures.NONE;
-        });
+                    negotiation
+                            .session()
+                            .consume(pay(user, negotiation, chests, furni, credits)
+                                    .consumed());
+                    return ChestTransactionFailures.NONE;
+                }));
 
         if (failure != ChestTransactionFailures.NONE) {
             cancelWithReason(user, failure);
@@ -928,6 +942,18 @@ public class WiredTradingManager {
                 WiredTransactionSuccessComposer.TYPE_PAYMENT,
                 WiredTransactionVariables.totals(1, furni.size(), coinsOf(credits), List.of()));
         return true;
+    }
+
+    /**
+     * What a contract moves in and out of its chests is one line in the transaction log, with the contract's id
+     * and the multiplier it settled at.
+     */
+    private int logged(Negotiation negotiation, int method, java.util.function.IntSupplier settlement) {
+        String info = ChestTransactionLog.contractInfo(
+                firstOf(negotiation.contractIds()), negotiation.session().settledTimes());
+        try (ChestTransactionLog.Scope ignored = ChestTransactionLog.begin(method, info)) {
+            return settlement.getAsInt();
+        }
     }
 
     /** The coins a set of credit furni is worth. */

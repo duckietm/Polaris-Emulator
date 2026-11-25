@@ -89,19 +89,24 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
             // Taken from the chests in order until the amount is reached or they are empty.
             int remaining = everything ? Integer.MAX_VALUE : resolved;
             int total = 0;
-            for (InteractionWiredChestCurrency chest : chests) {
-                if (remaining <= 0) break;
-                // The coins land in the earnings window row the box names (AIR earnings category).
-                int taken = ChestWithdrawals.coins(
-                                user,
-                                chest,
-                                room,
-                                everything ? -1 : remaining,
-                                ChestTransactionLog.SOURCE_WIRED,
-                                this.earningsCategory)
-                        .coins();
-                total += taken;
-                remaining -= taken;
+            // One line in the transaction log for everything this box hands this user, whatever chests it comes from.
+            try (ChestTransactionLog.Scope ignored = ChestTransactionLog.begin(
+                    ChestTransactionLog.METHOD_WIRED,
+                    ChestTransactionLog.wiredInfo(this.getId(), resolved, everything))) {
+                for (InteractionWiredChestCurrency chest : chests) {
+                    if (remaining <= 0) break;
+                    // The coins land in the earnings window row the box names (AIR earnings category).
+                    int taken = ChestWithdrawals.coins(
+                                    user,
+                                    chest,
+                                    room,
+                                    everything ? -1 : remaining,
+                                    ChestTransactionLog.SOURCE_WIRED,
+                                    this.earningsCategory)
+                            .coins();
+                    total += taken;
+                    remaining -= taken;
+                }
             }
             if (total > 0) this.reward.announce(user, ChestAirWire.givenRule(total, List.of()));
         }

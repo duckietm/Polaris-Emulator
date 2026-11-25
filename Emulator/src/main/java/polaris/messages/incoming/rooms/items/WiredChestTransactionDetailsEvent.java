@@ -31,7 +31,8 @@ public class WiredChestTransactionDetailsEvent extends MessageHandler {
         int transactionId = this.packet.readInt();
         if (transactionId <= 0) return;
 
-        ChestTransactionLog.Details details = ChestTransactionLog.details(room.getId(), transactionId);
+        ChestTransactionLog.TransactionDetails details =
+                ChestTransactionLog.transactionDetails(room.getId(), transactionId);
         if (details == null) return;
 
         this.client.sendResponse(new WiredChestTransactionDetailsComposer(details));

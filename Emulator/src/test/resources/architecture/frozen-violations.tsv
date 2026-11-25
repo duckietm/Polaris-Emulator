@@ -96,6 +96,7 @@ U|polaris/hotel/bots/ButlerBot.java|CALL|getDatabase|1
 U|polaris/hotel/bots/ButlerBot.java|CALL|getPluginManager|1
 U|polaris/hotel/bots/ButlerBot.java|CALL|getTexts|2
 U|polaris/hotel/bots/ButlerBot.java|CALL|getThreading|3
+U|polaris/hotel/bots/DebugLoadBot.java|CALL|getThreading|2
 U|polaris/hotel/bots/FrankBot.java|CALL|getConfig|1
 U|polaris/hotel/bots/FrankBot.java|CALL|getDatabase|1
 U|polaris/hotel/bots/FrankBot.java|CALL|getThreading|6
@@ -190,10 +191,15 @@ U|polaris/hotel/commands/CommandsCommand.java|CALL|getGameEnvironment|1
 U|polaris/hotel/commands/CommandsCommand.java|CALL|getTexts|3
 U|polaris/hotel/commands/ControlCommand.java|CALL|getTexts|6
 U|polaris/hotel/commands/CoordsCommand.java|CALL|getTexts|9
+U|polaris/hotel/commands/CopyRoomCommand.java|CALL|getDatabase|1
+U|polaris/hotel/commands/CopyRoomCommand.java|CALL|getTexts|4
 U|polaris/hotel/commands/CreditsCommand.java|CALL|getGameEnvironment|1
 U|polaris/hotel/commands/CreditsCommand.java|CALL|getGameServer|1
 U|polaris/hotel/commands/CreditsCommand.java|CALL|getTexts|9
 U|polaris/hotel/commands/DanceCommand.java|CALL|getTexts|4
+U|polaris/hotel/commands/DebugLoadCommand.java|CALL|getConfig|1
+U|polaris/hotel/commands/DebugLoadCommand.java|CALL|getTexts|2
+U|polaris/hotel/commands/DebugLoadCommand.java|CALL|getThreading|1
 U|polaris/hotel/commands/DiagonalCommand.java|CALL|getTexts|3
 U|polaris/hotel/commands/DisconnectCommand.java|CALL|getGameEnvironment|1
 U|polaris/hotel/commands/DisconnectCommand.java|CALL|getTexts|6

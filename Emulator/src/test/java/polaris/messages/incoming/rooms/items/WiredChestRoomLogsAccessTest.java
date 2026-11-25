@@ -48,6 +48,6 @@ class WiredChestRoomLogsAccessTest {
                 Path.of("src/main/java/polaris/messages/incoming/rooms/items/WiredChestRoomLogsEvent.java"));
 
         assertTrue(handler.indexOf("if (!room.hasRights(user) && !mayReadChestLog(room, chestId)) return;")
-                < handler.indexOf("ChestTransactionLog.page("));
+                < handler.indexOf("ChestTransactionLog.transactions("));
     }
 }

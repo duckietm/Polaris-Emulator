@@ -536,17 +536,29 @@ TYPE public final polaris.hotel.items.interactions.wired.chest.ChestTransactionL
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_ALL:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_CURRENCY:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_FURNI:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#LIST_CHEST:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#LIST_ROOM:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#MAX_PAGE_SIZE:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#METHOD_CONTRACT_PAYMENT:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#METHOD_CONTRACT_REWARD:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#METHOD_CONTRACT_TRADE:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#METHOD_MANUAL:int
+FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#METHOD_WIRED:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#SOURCE_USER:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#SOURCE_WIRED:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#TYPE_DEPOSIT:int
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#TYPE_WITHDRAW:int
+METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#begin(int,java.lang.String):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Scope throws -
+METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#contractInfo(int,int):java.lang.String throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#details(int,int):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Details throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#normalizeFilter(int):int throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#page(int,int,int,int):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Page throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#page(int,int,int,int,int):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Page throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#prune(int):void throws -
 METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#record(int,int,int,int,int,polaris.hotel.users.User,int,int,int,java.util.List<polaris.hotel.items.interactions.wired.chest.ChestFurniStoredItem>):void throws -
+METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#transactionDetails(int,int):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails throws -
+METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#transactions(int,int,int,int,int):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage throws -
+METHOD public static polaris.hotel.items.interactions.wired.chest.ChestTransactionLog#wiredInfo(int,int,boolean):java.lang.String throws -
 
 TYPE public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem extends java.lang.Record
 RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem spriteId:int
@@ -613,6 +625,73 @@ METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$R
 METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Row#userId(-):int throws -
 METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Row#userName(-):java.lang.String throws -
 METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Row#withdrawn(-):int throws -
+
+TYPE public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Scope extends java.lang.Object implements java.lang.AutoCloseable
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Scope#close(-):void throws -
+
+TYPE public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction extends java.lang.Record
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction id:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction roomId:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction method:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction definitionInfo:java.lang.String
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction userId:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction userName:java.lang.String
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction timestamp:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction chestCount:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction withdrawnFurni:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction depositedFurni:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction withdrawnCoins:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction depositedCoins:int
+CONSTRUCTOR public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction(int,int,int,java.lang.String,int,java.lang.String,int,int,int,int,int,int) throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#chestCount(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#definitionInfo(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#depositedCoins(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#depositedFurni(-):int throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#equals(java.lang.Object):boolean throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#hashCode(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#id(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#method(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#roomId(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#timestamp(-):int throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#toString(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#userId(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#userName(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#withdrawnCoins(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction#withdrawnFurni(-):int throws -
+
+TYPE public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails extends java.lang.Record
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails transaction:polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails chestIds:java.util.List<java.lang.Integer>
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails withdrawn:java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails deposited:java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails incomplete:boolean
+CONSTRUCTOR public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails(polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction,java.util.List<java.lang.Integer>,java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>,java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>,boolean) throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#chestIds(-):java.util.List<java.lang.Integer> throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#deposited(-):java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem> throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#equals(java.lang.Object):boolean throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#hashCode(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#incomplete(-):boolean throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#toString(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#transaction(-):polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionDetails#withdrawn(-):java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem> throws -
+
+TYPE public static final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage extends java.lang.Record
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage listType:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage listId:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage total:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage page:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage amount:int
+RECORD polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage rows:java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction>
+CONSTRUCTOR public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage(int,int,int,int,int,java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction>) throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#amount(-):int throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#equals(java.lang.Object):boolean throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#hashCode(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#listId(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#listType(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#page(-):int throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#rows(-):java.util.List<polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$Transaction> throws -
+METHOD public final polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#toString(-):java.lang.String throws -
+METHOD public polaris.hotel.items.interactions.wired.chest.ChestTransactionLog$TransactionPage#total(-):int throws -
 
 TYPE public final polaris.hotel.items.interactions.wired.chest.ChestWiredCompare extends java.lang.Object
 FIELD public static final polaris.hotel.items.interactions.wired.chest.ChestWiredCompare#EQUAL:int
@@ -8749,6 +8828,12 @@ TYPE public final polaris.hotel.wired.core.WiredQuantifier extends java.lang.Obj
 METHOD public static polaris.hotel.wired.core.WiredQuantifier#fold(java.lang.Iterable<java.lang.Boolean>,boolean):boolean throws -
 METHOD public static polaris.hotel.wired.core.WiredQuantifier#overEmpty(boolean):boolean throws -
 METHOD public static polaris.hotel.wired.core.WiredQuantifier#overEmptyNegated(boolean):boolean throws -
+
+TYPE public final polaris.hotel.wired.core.WiredReferencePairing extends java.lang.Object
+CONSTRUCTOR public polaris.hotel.wired.core.WiredReferencePairing(java.util.Collection<java.lang.Long>) throws -
+CONSTRUCTOR public polaris.hotel.wired.core.WiredReferencePairing(java.util.Collection<java.lang.Long>,java.util.Random) throws -
+METHOD public polaris.hotel.wired.core.WiredReferencePairing#isEmpty(-):boolean throws -
+METHOD public polaris.hotel.wired.core.WiredReferencePairing#next(-):java.lang.Long throws -
 
 TYPE public final polaris.hotel.wired.core.WiredRoomDiagnostics extends java.lang.Object
 CONSTRUCTOR public polaris.hotel.wired.core.WiredRoomDiagnostics(int,int,int,int,int,int,int) throws -

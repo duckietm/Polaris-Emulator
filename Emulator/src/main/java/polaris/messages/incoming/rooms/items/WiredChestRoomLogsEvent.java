@@ -44,8 +44,8 @@ public class WiredChestRoomLogsEvent extends MessageHandler {
         // "View logs" button asks for these pages, and an open chest shows its log to anyone, as its window does.
         if (!room.hasRights(user) && !mayReadChestLog(room, chestId)) return;
 
-        this.client.sendResponse(
-                new WiredChestRoomLogsComposer(ChestTransactionLog.page(room.getId(), filter, amount, page, chestId)));
+        this.client.sendResponse(new WiredChestRoomLogsComposer(
+                ChestTransactionLog.transactions(room.getId(), filter, amount, page, chestId)));
     }
 
     /** Whether the log of this one chest is open to a user without rights: the chest exists here and is open to all. */

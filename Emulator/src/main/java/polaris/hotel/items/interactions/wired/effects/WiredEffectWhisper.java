@@ -182,6 +182,15 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         return new ArrayList<>(recipients.values());
     }
 
+    /**
+     * A message for everyone still belongs to the box's users: a selector (or any other chosen source) that
+     * picked nobody shows nothing. Only the triggering-user source keeps showing without a user, so stacks
+     * on a timer or another userless trigger go on announcing to the room.
+     */
+    static boolean hasNobodyToShowFor(boolean shownToRoom, int userSource, List<RoomUnit> sourceUsers) {
+        return shownToRoom && sourceUsers.isEmpty() && userSource != WiredSourceUtil.SOURCE_TRIGGER;
+    }
+
     /** The bot behind the first source unit, when that unit is a bot; null otherwise. */
     static Bot sourceBot(Room room, List<RoomUnit> sourceUsers) {
         for (RoomUnit roomUnit : sourceUsers) {
@@ -283,6 +292,10 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
 
             boolean shownToRoom = this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS;
+
+            if (hasNobodyToShowFor(shownToRoom, this.userSource, sourceUsers)) {
+                return;
+            }
 
             // A message shown to everyone whose source is a bot is said aloud by that bot, as in Habbo; one chat line
             // for the room, so it uses the room's budget. Behaviour observed in plus-emulator/PlusEMU a8523821.

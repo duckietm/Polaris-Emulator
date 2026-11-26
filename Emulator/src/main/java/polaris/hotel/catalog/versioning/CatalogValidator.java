@@ -24,9 +24,9 @@ public final class CatalogValidator {
             Set<Integer> currencyTypes,
             Map<Integer, Integer> liveLimitedSells,
             Set<String> supportedLayouts) {
-        this.itemDefinitionIds = Set.copyOf(itemDefinitionIds);
-        this.currencyTypes = Set.copyOf(currencyTypes);
-        this.liveLimitedSells = Map.copyOf(liveLimitedSells);
+        this.itemDefinitionIds = CatalogLookupCopies.set(itemDefinitionIds);
+        this.currencyTypes = CatalogLookupCopies.set(currencyTypes);
+        this.liveLimitedSells = CatalogLookupCopies.map(liveLimitedSells);
         this.supportedLayouts = Set.copyOf(supportedLayouts);
     }
 

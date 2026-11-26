@@ -45,10 +45,11 @@ public class WiredEffectUsersSignal extends InteractionWiredEffect implements Wi
         if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
             List<RoomUnit> signalUsers = WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_SIGNAL);
             result.addAll(signalUsers);
-
-            result = this.applySelectorModifiers(
-                    result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
         }
+
+        // Without a signal nobody matches: filter, invert and the earlier selectors' picks still apply.
+        result = this.applySelectorModifiers(
+                result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
 
         ctx.targets().setUsers(result);
     }

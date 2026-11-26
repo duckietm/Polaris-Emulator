@@ -11,6 +11,7 @@ import polaris.hotel.items.Item;
 import polaris.hotel.items.interactions.InteractionWiredEffect;
 import polaris.hotel.items.interactions.wired.WiredSettings;
 import polaris.hotel.items.interactions.wired.chest.ChestTransactionFailures;
+import polaris.hotel.items.interactions.wired.chest.ChestTransactionLog;
 import polaris.hotel.items.interactions.wired.chest.ContractMultiplier;
 import polaris.hotel.items.interactions.wired.chest.ContractRules;
 import polaris.hotel.items.interactions.wired.chest.InteractionWiredChest;
@@ -242,22 +243,25 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
         List<InteractionWiredContract.Term> reward =
                 rules.times(rewardRuns(runs)).getRule();
         List<List<InteractionWiredContract.Term>> paid = new ArrayList<>();
-        int failure = WiredChestPayouts.holding(chests, () -> {
-            int cover = chests.isEmpty()
-                    ? ChestTransactionFailures.NO_OR_LOCKED_CHESTS
-                    : WiredChestPayouts.coverFailure(chests, reward);
-            if (cover != ChestTransactionFailures.NONE) return cover;
+        int failure = this.loggedAsReward(
+                contracts,
+                rewardRuns(runs),
+                () -> WiredChestPayouts.holding(chests, () -> {
+                    int cover = chests.isEmpty()
+                            ? ChestTransactionFailures.NO_OR_LOCKED_CHESTS
+                            : WiredChestPayouts.coverFailure(chests, reward);
+                    if (cover != ChestTransactionFailures.NONE) return cover;
 
-            List<InteractionWiredContract.Term> given =
-                    WiredChestPayouts.give(actor, room, chests, reward, earningsCategory(contracts));
-            if (!given.isEmpty() && actor.getClient() != null) {
-                actor.getClient()
-                        .sendResponse(WiredTransactionSuccessComposer.reward(
-                                given, rewardText(contracts), showRewardDialog(contracts)));
-            }
-            paid.add(given);
-            return ChestTransactionFailures.NONE;
-        });
+                    List<InteractionWiredContract.Term> given =
+                            WiredChestPayouts.give(actor, room, chests, reward, earningsCategory(contracts));
+                    if (!given.isEmpty() && actor.getClient() != null) {
+                        actor.getClient()
+                                .sendResponse(WiredTransactionSuccessComposer.reward(
+                                        given, rewardText(contracts), showRewardDialog(contracts)));
+                    }
+                    paid.add(given);
+                    return ChestTransactionFailures.NONE;
+                }));
 
         if (failure != ChestTransactionFailures.NONE) {
             ChestTransactionFailures.send(actor, failure);
@@ -275,6 +279,16 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect
      * How many times a reward that asks for nothing is paid: the fixed multiplier, else once. The auto
      * multiplier counts how often an offer covers the price, and with no price there is nothing to count.
      */
+    /** Everything the reward takes out of the chests is one "contract reward" line in the transaction log. */
+    private int loggedAsReward(
+            List<? extends InteractionWiredContract> contracts, int times, java.util.function.IntSupplier payout) {
+        int contractId = contracts.isEmpty() ? 0 : contracts.get(0).getId();
+        try (ChestTransactionLog.Scope ignored = ChestTransactionLog.begin(
+                ChestTransactionLog.METHOD_CONTRACT_REWARD, ChestTransactionLog.contractInfo(contractId, times))) {
+            return payout.getAsInt();
+        }
+    }
+
     static int rewardRuns(ContractMultiplier runs) {
         return runs.mode() == ContractMultiplier.MODE_FIXED ? runs.value() : 1;
     }

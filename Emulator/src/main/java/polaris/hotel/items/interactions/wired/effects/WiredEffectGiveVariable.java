@@ -35,6 +35,7 @@ import polaris.hotel.wired.core.WiredEvent;
 import polaris.hotel.wired.core.WiredInternalVariableSupport;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.hotel.wired.core.WiredPointerVariableSupport;
+import polaris.hotel.wired.core.WiredReferencePairing;
 import polaris.hotel.wired.core.WiredSourceUtil;
 import polaris.hotel.wired.core.WiredValueVariable;
 import polaris.hotel.wired.core.WiredVariableDefinitionFlash;
@@ -110,75 +111,107 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
             return;
         }
 
-        Integer shared = null;
-        if (this.fromVariable && !this.sameHolder) {
-            shared = WiredValueVariable.read(
-                    ctx,
-                    room,
-                    this.referenceTarget,
-                    this.referenceVariableId,
-                    this.furniSource,
-                    this.selectedFurni,
-                    this.userSource);
-            if (shared == null) return;
-        }
-
-        if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
-            if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
-                for (UserItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
-                    room.getWiredRuntime().setMovesFreely(item, true);
-                }
+        PAIRING.set(this.referencePairing(ctx, room));
+        try {
+            Integer shared = null;
+            if (this.fromVariable && !this.sameHolder) {
+                shared = WiredValueVariable.read(
+                        ctx,
+                        room,
+                        this.referenceTarget,
+                        this.referenceVariableId,
+                        this.furniSource,
+                        this.selectedFurni,
+                        this.userSource);
+                if (shared == null) return;
             }
-            return;
-        }
 
-        if (!this.internalVariableKey.isEmpty()) {
-            if (this.targetType != TARGET_USER) return;
-            for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
-                if (unit == null) continue;
-                Integer internalValue = this.valueFor(ctx, room, shared, UserVariableHolders.of(room, unit));
-                if (internalValue == null) continue;
-                if (!this.overrideExisting
-                        && WiredInternalVariableSupport.hasUserValue(room, unit, this.internalVariableKey)) continue;
-                if ("@has_rights".equals(this.internalVariableKey)) {
-                    User user = room.getUser(unit);
-                    if (user == null || user.getUserInfo() == null) continue;
-                    Integer previous = WiredInternalVariableSupport.readUserValue(room, unit, "@has_rights");
-                    room.giveRights(user.getUserInfo().getId());
-                    WiredInternalVariableSupport.emitUserChange(
-                            room,
-                            unit,
-                            "@has_rights",
-                            previous,
-                            WiredInternalVariableSupport.readUserValue(room, unit, "@has_rights"));
-                } else {
-                    WiredInternalVariableSupport.writeUserValue(room, unit, this.internalVariableKey, internalValue);
+            if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
+                if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
+                    for (UserItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
+                        room.getWiredRuntime().setMovesFreely(item, true);
+                    }
                 }
+                return;
             }
-            return;
-        }
 
-        // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
-        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
-        if (variableId <= 0) return;
+            if (!this.internalVariableKey.isEmpty()) {
+                if (this.targetType != TARGET_USER) return;
+                for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+                    if (unit == null) continue;
+                    Integer internalValue = this.valueFor(ctx, room, shared, UserVariableHolders.of(room, unit));
+                    if (internalValue == null) continue;
+                    if (!this.overrideExisting
+                            && WiredInternalVariableSupport.hasUserValue(room, unit, this.internalVariableKey))
+                        continue;
+                    if ("@has_rights".equals(this.internalVariableKey)) {
+                        User user = room.getUser(unit);
+                        if (user == null || user.getUserInfo() == null) continue;
+                        Integer previous = WiredInternalVariableSupport.readUserValue(room, unit, "@has_rights");
+                        room.giveRights(user.getUserInfo().getId());
+                        WiredInternalVariableSupport.emitUserChange(
+                                room,
+                                unit,
+                                "@has_rights",
+                                previous,
+                                WiredInternalVariableSupport.readUserValue(room, unit, "@has_rights"));
+                    } else {
+                        WiredInternalVariableSupport.writeUserValue(
+                                room, unit, this.internalVariableKey, internalValue);
+                    }
+                }
+                return;
+            }
 
-        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room, variableId);
-        if (arrayDefinition != null && arrayDefinition.isArray()) {
-            this.giveArray(ctx, room, arrayDefinition);
-            return;
-        }
+            // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
+            int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+            if (variableId <= 0) return;
 
-        boolean given =
-                switch (this.targetType) {
-                    case TARGET_USER -> this.executeUserVariables(ctx, room, shared, variableId);
-                    case TARGET_FURNI -> this.executeFurniVariables(ctx, room, shared, variableId);
-                    case TARGET_CONTEXT -> this.executeContextVariables(ctx, room, shared, variableId);
-                    default -> false;
-                };
-        // A give that gave something also flashes the variable's definition box; one that gave nothing does not.
-        if (given) {
-            WiredVariableDefinitionFlash.flash(room, variableId, WiredVariableDefinitionFlash.KIND_GIVEN);
+            WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room, variableId);
+            if (arrayDefinition != null && arrayDefinition.isArray()) {
+                this.giveArray(ctx, room, arrayDefinition);
+                return;
+            }
+
+            boolean given =
+                    switch (this.targetType) {
+                        case TARGET_USER -> this.executeUserVariables(ctx, room, shared, variableId);
+                        case TARGET_FURNI -> this.executeFurniVariables(ctx, room, shared, variableId);
+                        case TARGET_CONTEXT -> this.executeContextVariables(ctx, room, shared, variableId);
+                        default -> false;
+                    };
+            // A give that gave something also flashes the variable's definition box; one that gave nothing does not.
+            if (given) {
+                WiredVariableDefinitionFlash.flash(room, variableId, WiredVariableDefinitionFlash.KIND_GIVEN);
+            }
+        } finally {
+            PAIRING.remove();
         }
+    }
+
+    /** The pairing of the run in progress on this thread, when its reference is a furni variable (see below). */
+    private static final ThreadLocal<WiredReferencePairing> PAIRING = new ThreadLocal<>();
+
+    /**
+     * With "same holder" off and a furni variable as the reference, a furni or context destination takes the value
+     * of one of the reference furni, paired at random each run ({@link WiredReferencePairing}); users stay on the
+     * first value. Null when that does not apply.
+     */
+    private WiredReferencePairing referencePairing(WiredContext ctx, Room room) {
+        if (!this.fromVariable || this.sameHolder) return null;
+        if (this.targetType != TARGET_FURNI && this.targetType != TARGET_CONTEXT) return null;
+        if (WiredValueVariable.normalizeTarget(this.referenceTarget) != WiredValueVariable.TARGET_FURNI) return null;
+
+        int id = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableId);
+        if (id <= 0 || room.getFurniVariableManager().getDefinitionInfo(id) == null) return null;
+
+        List<Long> values = new java.util.ArrayList<>();
+        for (UserItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
+            if (item != null && room.getFurniVariableManager().hasVariable(item.getId(), id)) {
+                values.add((long) room.getFurniVariableManager().getCurrentValue(item.getId(), id));
+            }
+        }
+        return values.size() > 1 ? new WiredReferencePairing(values) : null;
     }
 
     /**
@@ -187,7 +220,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect
      */
     private Integer valueFor(WiredContext ctx, Room room, Integer shared, int holderId) {
         if (!this.fromVariable) return this.initialValue;
-        if (!this.sameHolder) return shared;
+        if (!this.sameHolder) {
+            WiredReferencePairing pairing = PAIRING.get();
+            return pairing == null ? shared : Integer.valueOf(pairing.next().intValue());
+        }
 
         int id = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableId);
         return switch (this.targetType) {

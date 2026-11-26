@@ -45,7 +45,7 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                 }
             }
         }
-        return Set.copyOf(types);
+        return CatalogLookupCopies.set(types);
     }
 
     private static Set<Integer> loadIntegerColumn(Connection connection, String sql, String column)
@@ -55,7 +55,7 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                 ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) values.add(resultSet.getInt(column));
         }
-        return Set.copyOf(values);
+        return CatalogLookupCopies.set(values);
     }
 
     private static Map<Integer, Integer> loadLimitedSells(Connection connection) throws SQLException {
@@ -66,6 +66,6 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                 values.put(resultSet.getInt("id"), resultSet.getInt("limited_sells"));
             }
         }
-        return Map.copyOf(values);
+        return CatalogLookupCopies.map(values);
     }
 }

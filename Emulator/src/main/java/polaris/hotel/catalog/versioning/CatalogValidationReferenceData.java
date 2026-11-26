@@ -10,9 +10,9 @@ public record CatalogValidationReferenceData(
         Set<String> supportedLayouts) {
 
     public CatalogValidationReferenceData {
-        itemDefinitionIds = Set.copyOf(itemDefinitionIds);
-        currencyTypes = Set.copyOf(currencyTypes);
-        liveLimitedSells = Map.copyOf(liveLimitedSells);
+        itemDefinitionIds = CatalogLookupCopies.set(itemDefinitionIds);
+        currencyTypes = CatalogLookupCopies.set(currencyTypes);
+        liveLimitedSells = CatalogLookupCopies.map(liveLimitedSells);
         supportedLayouts = Set.copyOf(supportedLayouts);
     }
 

@@ -48,6 +48,7 @@ import polaris.hotel.wired.core.WiredInternalVariableSupport;
 import polaris.hotel.wired.core.WiredManager;
 import polaris.hotel.wired.core.WiredMoveCarryHelper;
 import polaris.hotel.wired.core.WiredPointerVariableSupport;
+import polaris.hotel.wired.core.WiredReferencePairing;
 import polaris.hotel.wired.core.WiredSourceUtil;
 import polaris.hotel.wired.core.WiredUserMovementHelper;
 import polaris.hotel.wired.core.WiredVariableChangeFold;
@@ -970,6 +971,10 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
         if (this.referenceSameHolder) return snapshot.values.get(destinationEntityId);
         if (snapshot.targetType == destinationTarget && snapshot.values.containsKey(destinationEntityId))
             return snapshot.values.get(destinationEntityId);
+        // Several furni hold the reference: each furni destination takes the value of one of them, paired at
+        // random each run. Users keep the value at their own place in the list.
+        if (snapshot.targetType == TARGET_FURNI && destinationTarget == TARGET_FURNI && snapshot.values.size() > 1)
+            return snapshot.pairing().next();
         if (destinationIndex >= 0 && destinationIndex < snapshot.values.size())
             return new ArrayList<>(snapshot.values.values()).get(destinationIndex);
         return new ArrayList<>(snapshot.values.values()).get(0);
@@ -1587,6 +1592,14 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect
 
         boolean isEmpty() {
             return this.values.isEmpty();
+        }
+
+        private WiredReferencePairing pairing;
+
+        /** One pairing per run: a snapshot is read once for a run and dropped after it. */
+        WiredReferencePairing pairing() {
+            if (this.pairing == null) this.pairing = new WiredReferencePairing(this.values.values());
+            return this.pairing;
         }
     }
 

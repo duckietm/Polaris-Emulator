@@ -18,9 +18,8 @@ public class PetPackageComposer extends MessageComposer {
      * reads it after the id when it is there), the plain one otherwise.
      */
     public static PetPackageComposer of(UserItem item, String figure) {
-        return figure == null || figure.isEmpty()
-                ? new PetPackageComposer(item)
-                : new PetPackageWithFigureComposer(item, figure);
+        PetPackageComposer withFigure = PetPackageWithFigureComposer.parse(item, figure);
+        return withFigure != null ? withFigure : new PetPackageComposer(item);
     }
 
     @Override

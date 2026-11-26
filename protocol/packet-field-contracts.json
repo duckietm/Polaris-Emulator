@@ -21012,8 +21012,44 @@
           "fields": [
             {
               "kind": "scalar",
+              "type": "int",
+              "name": "typeId"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "paletteId"
+            },
+            {
+              "kind": "scalar",
               "type": "string",
+              "name": "color"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
               "name": ""
+            },
+            {
+              "kind": "list",
+              "countType": "int",
+              "item": [
+                {
+                  "kind": "scalar",
+                  "type": "int",
+                  "name": ""
+                },
+                {
+                  "kind": "scalar",
+                  "type": "int",
+                  "name": ""
+                },
+                {
+                  "kind": "scalar",
+                  "type": "int",
+                  "name": ""
+                }
+              ]
             }
           ]
         }

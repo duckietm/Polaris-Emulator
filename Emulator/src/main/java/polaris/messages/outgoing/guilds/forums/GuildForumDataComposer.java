@@ -60,7 +60,7 @@ public class GuildForumDataComposer extends MessageComposer {
         int lastSeenAt = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT `timestamp` FROM `guild_forum_views` WHERE `user_id` = ? AND `guild_id` = ? LIMIT 1")) {
+                        "SELECT MAX(`timestamp`) AS `timestamp` FROM `guild_forum_views` WHERE `user_id` = ? AND `guild_id` = ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, guildId);
             ResultSet set = statement.executeQuery();

@@ -66,7 +66,30 @@ class UserProfilePrivacyContractTest {
 
         assertTrue(hidden > 0 && hidden < border && border < banner && banner < accent);
         assertTrue(accent < bannerImage && bannerImage < backgroundImage, "uploaded pictures follow the accent");
-        assertTrue(backgroundImage < backgroundStyle && backgroundStyle < features, "style and features come last");
+        assertTrue(backgroundImage < backgroundStyle && backgroundStyle < features, "style and features follow");
+
+        int direction = profile.indexOf("this.response.appendInt(pose.direction());");
+        int offsetX = profile.indexOf("this.response.appendInt(pose.offsetX());");
+        int offsetY = profile.indexOf("this.response.appendInt(pose.offsetY());");
+        assertTrue(
+                features < direction && direction < offsetX && offsetX < offsetY,
+                "the avatar pose comes last, so older clients stop before it");
+    }
+
+    @Test
+    void everyRoomUserRecordCarriesThePoseRightAfterTheBadgesRank() throws Exception {
+        String users = source("messages/outgoing/rooms/users/RoomUsersComposer.java");
+
+        // The client reads the pose unguarded inside each user record: both user paths must write it.
+        for (String owner : new String[] {"this.user", "user"}) {
+            String rank = "this.response.appendInt(BadgeRanks.rankOf(" + owner + ".getUserInfo().getId()));"
+                    + "ProfileAvatarPosepose=" + owner + ".getUserInfo().getProfileAvatarPose();"
+                    + "this.response.appendInt(pose.direction());"
+                    + "this.response.appendInt(pose.offsetX());"
+                    + "this.response.appendInt(pose.offsetY());"
+                    + "this.response.appendString(" + owner + ".getUserInfo().getRoomEntryMethod());";
+            assertTrue(users.contains(rank), owner + " record writes the pose between badgesRank and entry method");
+        }
     }
 
     @Test

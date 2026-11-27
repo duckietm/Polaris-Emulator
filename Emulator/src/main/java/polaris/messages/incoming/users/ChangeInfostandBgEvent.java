@@ -6,6 +6,7 @@ import polaris.hotel.users.UserInfo;
 import polaris.hotel.users.UserStats;
 import polaris.hotel.users.infostand.InfostandBackgroundManager;
 import polaris.hotel.users.infostand.InfostandBackgroundManager.Category;
+import polaris.hotel.users.profile.ProfileAvatarPose;
 import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.incoming.MessageHandler;
 import polaris.messages.outgoing.rooms.users.RoomUserDataComposer;
@@ -45,6 +46,13 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         // Profile banner and accent: a client that leaves them out, or sends KEEP, keeps the saved ones.
         int requestedBanner = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
         int requestedAccent = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : KEEP;
+        // The avatar's pose in the picture, one block: a client that leaves it out, or sends KEEP as the direction,
+        // keeps the saved pose. A direction outside 0-7 keeps the saved one, offsets are clamped to the box.
+        int requestedDirection = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : ProfileAvatarPose.KEEP;
+        int requestedOffsetX = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : 0;
+        int requestedOffsetY = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : 0;
+        ProfileAvatarPose pose = ProfileAvatarPose.resolve(
+                requestedDirection, requestedOffsetX, requestedOffsetY, info.getProfileAvatarPose());
         // A feature the hotel turned off keeps whatever was saved, for the day it is turned on again.
         ProfileImageService.Settings settings = ProfileImageService.get().settings();
         requestedBanner =
@@ -74,7 +82,8 @@ public class ChangeInfostandBgEvent extends MessageHandler {
                 && info.getInfostandCardBg() == backgroundCard
                 && info.getInfostandBorder() == backgroundBorder
                 && info.getProfileBanner() == profileBanner
-                && info.getProfileAccent() == profileAccent) {
+                && info.getProfileAccent() == profileAccent
+                && info.getProfileAvatarPose().equals(pose)) {
             return;
         }
 
@@ -85,6 +94,7 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         info.setInfostandBorder(backgroundBorder);
         info.setProfileBanner(profileBanner);
         info.setProfileAccent(profileAccent);
+        info.setProfileAvatarPose(pose);
         info.run();
 
         if (info.getCurrentRoom() != null) {

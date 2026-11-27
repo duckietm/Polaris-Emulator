@@ -2,6 +2,7 @@ package polaris.messages.outgoing.rooms.users;
 
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
+import polaris.hotel.users.profile.ProfileAvatarPose;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -35,6 +36,11 @@ public class RoomUserDataComposer extends MessageComposer {
         this.response.appendString(customizationData.prefixFont);
         this.response.appendString(customizationData.displayOrder);
         this.response.appendInt(this.user.getUserInfo().getInfostandBorder());
+        // The avatar's pose in the profile picture, after the border so older clients stop before it.
+        ProfileAvatarPose pose = this.user.getUserInfo().getProfileAvatarPose();
+        this.response.appendInt(pose.direction());
+        this.response.appendInt(pose.offsetX());
+        this.response.appendInt(pose.offsetY());
         return this.response;
     }
 

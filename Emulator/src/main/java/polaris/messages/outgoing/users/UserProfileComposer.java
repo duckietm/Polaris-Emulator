@@ -18,6 +18,7 @@ import polaris.hotel.users.ProfileVisibility;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.UserInfo;
+import polaris.hotel.users.profile.ProfileAvatarPose;
 import polaris.hotel.users.profile.ProfileImageService;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
@@ -175,6 +176,11 @@ public class UserProfileComposer extends MessageComposer {
         // The player's own background (colours, angle, pattern), then which features the hotel has on.
         this.response.appendString(uploadedPictures[2]);
         this.response.appendInt(settings.features());
+        // The avatar's pose in the profile picture: direction, then its offset in the box (2, 0, 0 by default).
+        ProfileAvatarPose pose = this.userInfo.getProfileAvatarPose();
+        this.response.appendInt(pose.direction());
+        this.response.appendInt(pose.offsetX());
+        this.response.appendInt(pose.offsetY());
 
         return this.response;
     }

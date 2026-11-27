@@ -24,6 +24,7 @@ import polaris.hotel.rooms.PendingRoomEntry;
 import polaris.hotel.rooms.Room;
 import polaris.hotel.rooms.RoomTile;
 import polaris.hotel.rooms.RoomUnit;
+import polaris.hotel.users.profile.ProfileAvatarPose;
 import polaris.messages.outgoing.rooms.users.RoomUserStatusComposer;
 
 public class UserInfo implements Runnable {
@@ -54,6 +55,7 @@ public class UserInfo implements Runnable {
     private int InfostandBorder;
     private int profileBanner;
     private int profileAccent;
+    private ProfileAvatarPose profileAvatarPose = ProfileAvatarPose.DEFAULT;
     private int loadingRoom;
     private Room currentRoom;
     private String roomEntryMethod = "door";
@@ -125,6 +127,14 @@ public class UserInfo implements Runnable {
             } catch (SQLException ignored) {
                 this.profileBanner = 0;
                 this.profileAccent = 0;
+            }
+            try {
+                this.profileAvatarPose = ProfileAvatarPose.of(
+                        set.getInt("profile_avatar_direction"),
+                        set.getInt("profile_avatar_offset_x"),
+                        set.getInt("profile_avatar_offset_y"));
+            } catch (SQLException ignored) {
+                this.profileAvatarPose = ProfileAvatarPose.DEFAULT;
             }
             this.currentRoom = null;
         } catch (SQLException e) {
@@ -470,6 +480,15 @@ public class UserInfo implements Runnable {
 
     public void setProfileAccent(int profileAccent) {
         this.profileAccent = profileAccent;
+    }
+
+    /** How the avatar stands in the profile picture: its direction and its offset in the box. */
+    public ProfileAvatarPose getProfileAvatarPose() {
+        return this.profileAvatarPose;
+    }
+
+    public void setProfileAvatarPose(ProfileAvatarPose profileAvatarPose) {
+        this.profileAvatarPose = profileAvatarPose == null ? ProfileAvatarPose.DEFAULT : profileAvatarPose;
     }
 
     public Rank getRank() {
@@ -885,7 +904,7 @@ public class UserInfo implements Runnable {
             SqlQueries.update(
                     // No `rank`: it is written where it changes (UserManager.setRank), so a rank set in the
                     // database (a CMS) while the user is online is not overwritten by this save.
-                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ?, profile_banner_id = ?, profile_accent_id = ? WHERE id = ?",
+                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ?, profile_banner_id = ?, profile_accent_id = ?, profile_avatar_direction = ?, profile_avatar_offset_x = ?, profile_avatar_offset_y = ? WHERE id = ?",
                     this.motto,
                     this.online ? "1" : "0",
                     this.look,
@@ -903,6 +922,9 @@ public class UserInfo implements Runnable {
                     this.InfostandBorder,
                     this.profileBanner,
                     this.profileAccent,
+                    this.profileAvatarPose.direction(),
+                    this.profileAvatarPose.offsetX(),
+                    this.profileAvatarPose.offsetY(),
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);

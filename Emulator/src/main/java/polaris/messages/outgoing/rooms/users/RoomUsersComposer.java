@@ -10,6 +10,7 @@ import polaris.hotel.rooms.BuildersClubItemIds;
 import polaris.hotel.users.User;
 import polaris.hotel.users.UserCustomizationData;
 import polaris.hotel.users.inventory.BadgeRanks;
+import polaris.hotel.users.profile.ProfileAvatarPose;
 import polaris.messages.ServerMessage;
 import polaris.messages.outgoing.MessageComposer;
 import polaris.messages.outgoing.Outgoing;
@@ -79,8 +80,14 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendString(customizationData.prefixEffect);
             this.response.appendString(customizationData.prefixFont);
             this.response.appendString(customizationData.displayOrder);
-            // Official badgesRank: place on the total-badges leaderboard, -1 if unknown.
+            // Official badgesRank: place on the total-badges leaderboard, -1 if unknown. Then the avatar's pose in
+            // the profile picture (direction, offset x, offset y): written for every user record, as the client
+            // reads it unguarded inside the record.
             this.response.appendInt(BadgeRanks.rankOf(this.user.getUserInfo().getId()));
+            ProfileAvatarPose pose = this.user.getUserInfo().getProfileAvatarPose();
+            this.response.appendInt(pose.direction());
+            this.response.appendInt(pose.offsetX());
+            this.response.appendInt(pose.offsetY());
             this.response.appendString(this.user.getUserInfo().getRoomEntryMethod());
             this.response.appendInt(
                     BuildersClubItemIds.toWire(this.user.getUserInfo().getRoomEntryTeleportId()));
@@ -130,6 +137,10 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendString(customizationData.prefixFont);
                     this.response.appendString(customizationData.displayOrder);
                     this.response.appendInt(BadgeRanks.rankOf(user.getUserInfo().getId()));
+                    ProfileAvatarPose pose = user.getUserInfo().getProfileAvatarPose();
+                    this.response.appendInt(pose.direction());
+                    this.response.appendInt(pose.offsetX());
+                    this.response.appendInt(pose.offsetY());
                     this.response.appendString(user.getUserInfo().getRoomEntryMethod());
                     this.response.appendInt(
                             BuildersClubItemIds.toWire(user.getUserInfo().getRoomEntryTeleportId()));

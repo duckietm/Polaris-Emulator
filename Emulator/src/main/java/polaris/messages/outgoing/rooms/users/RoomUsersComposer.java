@@ -80,18 +80,14 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendString(customizationData.prefixEffect);
             this.response.appendString(customizationData.prefixFont);
             this.response.appendString(customizationData.displayOrder);
-            // Official badgesRank: place on the total-badges leaderboard, -1 if unknown. Then the avatar's pose in
-            // the profile picture (direction, offset x, offset y): written for every user record, as the client
-            // reads it unguarded inside the record.
+            // Official badgesRank: place on the total-badges leaderboard, -1 if unknown. The profile picture pose
+            // follows the last record (appendPoses).
             this.response.appendInt(BadgeRanks.rankOf(this.user.getUserInfo().getId()));
-            ProfileAvatarPose pose = this.user.getUserInfo().getProfileAvatarPose();
-            this.response.appendInt(pose.direction());
-            this.response.appendInt(pose.offsetX());
-            this.response.appendInt(pose.offsetY());
             this.response.appendString(this.user.getUserInfo().getRoomEntryMethod());
             this.response.appendInt(
                     BuildersClubItemIds.toWire(this.user.getUserInfo().getRoomEntryTeleportId()));
             this.response.appendInt(this.user.getUserInfo().getInfostandBorder());
+            this.appendPoses(List.of(this.user));
         } else if (this.users != null) {
             // The count is of what is written: a null entry was skipped but counted, and the client then read the
             // next packet's bytes as a user and dropped the whole roster.
@@ -137,16 +133,13 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendString(customizationData.prefixFont);
                     this.response.appendString(customizationData.displayOrder);
                     this.response.appendInt(BadgeRanks.rankOf(user.getUserInfo().getId()));
-                    ProfileAvatarPose pose = user.getUserInfo().getProfileAvatarPose();
-                    this.response.appendInt(pose.direction());
-                    this.response.appendInt(pose.offsetX());
-                    this.response.appendInt(pose.offsetY());
                     this.response.appendString(user.getUserInfo().getRoomEntryMethod());
                     this.response.appendInt(
                             BuildersClubItemIds.toWire(user.getUserInfo().getRoomEntryTeleportId()));
                     this.response.appendInt(user.getUserInfo().getInfostandBorder());
                 }
             }
+            this.appendPoses(users);
         } else if (this.bot != null) {
             this.response.appendInt(1);
             this.response.appendInt(0 - this.bot.getId());
@@ -206,6 +199,22 @@ public class RoomUsersComposer extends MessageComposer {
             }
         }
         return this.response;
+    }
+
+    /**
+     * The profile picture pose of the users (direction, offset x, offset y), after the last record: a count, then per
+     * user its room unit id and the three values. Kept out of the records, so a client that does not read it only
+     * leaves the end of the packet unread, and a client that reads it still parses a server without it.
+     */
+    private void appendPoses(List<User> users) {
+        this.response.appendInt(users.size());
+        for (User user : users) {
+            ProfileAvatarPose pose = user.getUserInfo().getProfileAvatarPose();
+            this.response.appendInt(user.getRoomUnit().getId());
+            this.response.appendInt(pose.direction());
+            this.response.appendInt(pose.offsetX());
+            this.response.appendInt(pose.offsetY());
+        }
     }
 
     public User getUser() {

@@ -77,19 +77,28 @@ class UserProfilePrivacyContractTest {
     }
 
     @Test
-    void everyRoomUserRecordCarriesThePoseRightAfterTheBadgesRank() throws Exception {
+    void theRoomUserPosesFollowTheLastRecord() throws Exception {
         String users = source("messages/outgoing/rooms/users/RoomUsersComposer.java");
 
-        // The client reads the pose unguarded inside each user record: both user paths must write it.
+        // Inside a record the pose broke every client that did not read it (and every server that did not write it):
+        // the records keep their old shape, and the poses are one block after the last one.
         for (String owner : new String[] {"this.user", "user"}) {
-            String rank = "this.response.appendInt(BadgeRanks.rankOf(" + owner + ".getUserInfo().getId()));"
-                    + "ProfileAvatarPosepose=" + owner + ".getUserInfo().getProfileAvatarPose();"
-                    + "this.response.appendInt(pose.direction());"
-                    + "this.response.appendInt(pose.offsetX());"
-                    + "this.response.appendInt(pose.offsetY());"
+            String record = "this.response.appendInt(BadgeRanks.rankOf(" + owner + ".getUserInfo().getId()));"
                     + "this.response.appendString(" + owner + ".getUserInfo().getRoomEntryMethod());";
-            assertTrue(users.contains(rank), owner + " record writes the pose between badgesRank and entry method");
+            assertTrue(users.contains(record), owner + " record goes from badgesRank straight to the entry method");
         }
+
+        assertTrue(
+                users.contains(
+                        "this.response.appendInt(this.user.getUserInfo().getInfostandBorder());this.appendPoses(List.of(this.user));"));
+        assertTrue(users.contains("}}this.appendPoses(users);"));
+        assertTrue(users.contains(
+                "privatevoidappendPoses(List<User>users){this.response.appendInt(users.size());for(Useruser:users){"
+                        + "ProfileAvatarPosepose=user.getUserInfo().getProfileAvatarPose();"
+                        + "this.response.appendInt(user.getRoomUnit().getId());"
+                        + "this.response.appendInt(pose.direction());"
+                        + "this.response.appendInt(pose.offsetX());"
+                        + "this.response.appendInt(pose.offsetY());"));
     }
 
     @Test

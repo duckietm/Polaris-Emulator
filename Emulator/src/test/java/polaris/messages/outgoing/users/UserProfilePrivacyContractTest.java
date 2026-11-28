@@ -66,7 +66,39 @@ class UserProfilePrivacyContractTest {
 
         assertTrue(hidden > 0 && hidden < border && border < banner && banner < accent);
         assertTrue(accent < bannerImage && bannerImage < backgroundImage, "uploaded pictures follow the accent");
-        assertTrue(backgroundImage < backgroundStyle && backgroundStyle < features, "style and features come last");
+        assertTrue(backgroundImage < backgroundStyle && backgroundStyle < features, "style and features follow");
+
+        int direction = profile.indexOf("this.response.appendInt(pose.direction());");
+        int offsetX = profile.indexOf("this.response.appendInt(pose.offsetX());");
+        int offsetY = profile.indexOf("this.response.appendInt(pose.offsetY());");
+        assertTrue(
+                features < direction && direction < offsetX && offsetX < offsetY,
+                "the avatar pose comes last, so older clients stop before it");
+    }
+
+    @Test
+    void theRoomUserPosesFollowTheLastRecord() throws Exception {
+        String users = source("messages/outgoing/rooms/users/RoomUsersComposer.java");
+
+        // Inside a record the pose broke every client that did not read it (and every server that did not write it):
+        // the records keep their old shape, and the poses are one block after the last one.
+        for (String owner : new String[] {"this.user", "user"}) {
+            String record = "this.response.appendInt(BadgeRanks.rankOf(" + owner + ".getUserInfo().getId()));"
+                    + "this.response.appendString(" + owner + ".getUserInfo().getRoomEntryMethod());";
+            assertTrue(users.contains(record), owner + " record goes from badgesRank straight to the entry method");
+        }
+
+        assertTrue(
+                users.contains(
+                        "this.response.appendInt(this.user.getUserInfo().getInfostandBorder());this.appendPoses(List.of(this.user));"));
+        assertTrue(users.contains("}}this.appendPoses(users);"));
+        assertTrue(users.contains(
+                "privatevoidappendPoses(List<User>users){this.response.appendInt(users.size());for(Useruser:users){"
+                        + "ProfileAvatarPosepose=user.getUserInfo().getProfileAvatarPose();"
+                        + "this.response.appendInt(user.getRoomUnit().getId());"
+                        + "this.response.appendInt(pose.direction());"
+                        + "this.response.appendInt(pose.offsetX());"
+                        + "this.response.appendInt(pose.offsetY());"));
     }
 
     @Test

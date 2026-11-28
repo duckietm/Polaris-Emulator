@@ -85,6 +85,11 @@ class MigrationRunnerIT {
                     columnExists(ds, "users", "profile_banner_id") && columnExists(ds, "users", "profile_accent_id"),
                     "profile banner and accent columns must exist");
             assertTrue(
+                    columnExists(ds, "users", "profile_avatar_direction")
+                            && columnExists(ds, "users", "profile_avatar_offset_x")
+                            && columnExists(ds, "users", "profile_avatar_offset_y"),
+                    "profile avatar pose columns must exist");
+            assertTrue(
                     columnExists(ds, "users", "profile_banner_image")
                             && columnExists(ds, "users", "profile_background_image")
                             && columnExists(ds, "users", "profile_background_style")

@@ -860,6 +860,8 @@ public class GuildManager {
     }
 
     public void addView(int userId, int guildId) {
+        // The table keeps one read marker per reader and forum: a first visit sets it, later visits leave it to the
+        // read marker the client sends (GuildForumMarkAsReadEvent), so a visit never marks unread messages read.
         // Only the last week counts anywhere, so older views leave memory instead of growing forever.
         ForumView view = new ForumView(userId, guildId, Emulator.getIntUnixTimestamp());
         int cutoff = view.getTimestamp() - FORUM_VIEW_WINDOW_SECONDS;
@@ -869,7 +871,7 @@ public class GuildManager {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO `guild_forum_views`(`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?)")) {
+                        "INSERT IGNORE INTO `guild_forum_views`(`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?)")) {
             statement.setInt(1, view.getUserId());
             statement.setInt(2, view.getGuildId());
             statement.setInt(3, view.getTimestamp());

@@ -25,8 +25,10 @@ public class GetUnreadForumsCountEvent extends MessageHandler {
             + " JOIN `guilds` ON `guilds`.`id` = `guilds_members`.`guild_id` AND `guilds`.`forum` = '1'"
             + " JOIN `guilds_forums_threads` ON `guilds_forums_threads`.`guild_id` = `guilds`.`id`"
             + " JOIN `guilds_forums_comments` ON `guilds_forums_comments`.`thread_id` = `guilds_forums_threads`.`id`"
-            + " LEFT JOIN `guild_forum_views` ON `guild_forum_views`.`user_id` = `guilds_members`.`user_id`"
-            + " AND `guild_forum_views`.`guild_id` = `guilds`.`id`"
+            // The newest read marker of the reader per forum, so a table with several rows per pair still reads right.
+            + " LEFT JOIN (SELECT `guild_id`, MAX(`timestamp`) AS `timestamp` FROM `guild_forum_views`"
+            + " WHERE `user_id` = ? GROUP BY `guild_id`) AS `guild_forum_views`"
+            + " ON `guild_forum_views`.`guild_id` = `guilds`.`id`"
             + " WHERE `guilds_members`.`user_id` = ?"
             + " AND `guilds_forums_comments`.`created_at` > COALESCE(`guild_forum_views`.`timestamp`, 0)"
             + " GROUP BY `guilds`.`id`) AS `unread_forums`";
@@ -46,6 +48,7 @@ public class GetUnreadForumsCountEvent extends MessageHandler {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(QUERY)) {
             statement.setInt(1, userId);
+            statement.setInt(2, userId);
 
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) return set.getInt(1);
